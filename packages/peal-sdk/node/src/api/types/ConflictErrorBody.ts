@@ -3,15 +3,15 @@
 import * as Peal from "../index.js";
 
 export type ConflictErrorBody = 
-    | Peal.ConflictErrorBody.PostNotReviewable
-    | Peal.ConflictErrorBody.TooManyReviewLinks;
+    | Peal.ConflictErrorBody.ChannelSetNameTaken
+    | Peal.ConflictErrorBody.TooManyChannelSets;
 
 export namespace ConflictErrorBody {
-    export interface PostNotReviewable extends Peal.PostNotReviewableEncoded {
-        _tag: "PostNotReviewable";
+    export interface ChannelSetNameTaken extends Peal.ChannelSetNameTakenEncoded {
+        _tag: "ChannelSetNameTaken";
     }
 
-    export interface TooManyReviewLinks extends Peal.TooManyReviewLinksEncoded {
-        _tag: "TooManyReviewLinks";
+    export interface TooManyChannelSets extends Peal.TooManyChannelSetsEncoded {
+        _tag: "TooManyChannelSets";
     }
 }

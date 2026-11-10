@@ -14,6 +14,8 @@ pub struct Channel {
     pub handle: String,
     #[serde(default)]
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
     pub platform: Platform,
     pub status: ChannelStatus,
     #[serde(rename = "tokenExpiresAt")]
@@ -35,6 +37,7 @@ pub struct ChannelBuilder {
     display_name: Option<String>,
     handle: Option<String>,
     id: Option<String>,
+    label: Option<String>,
     platform: Option<Platform>,
     status: Option<ChannelStatus>,
     token_expires_at: Option<String>,
@@ -63,6 +66,11 @@ impl ChannelBuilder {
 
     pub fn id(mut self, value: impl Into<String>) -> Self {
         self.id = Some(value.into());
+        self
+    }
+
+    pub fn label(mut self, value: impl Into<String>) -> Self {
+        self.label = Some(value.into());
         self
     }
 
@@ -96,6 +104,7 @@ impl ChannelBuilder {
                 .handle
                 .ok_or_else(|| BuildError::missing_field("handle"))?,
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
+            label: self.label,
             platform: self
                 .platform
                 .ok_or_else(|| BuildError::missing_field("platform"))?,

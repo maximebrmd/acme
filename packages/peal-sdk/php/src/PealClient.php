@@ -24,6 +24,10 @@ use Peal\Partner\PartnerClient;
 use Peal\PartnerAccount\PartnerAccountClient;
 use Peal\ConnectLinks\ConnectLinksClient;
 use Peal\Review\ReviewClient;
+use Peal\Tags\TagsClient;
+use Peal\Signatures\SignaturesClient;
+use Peal\ChannelSets\ChannelSetsClient;
+use Peal\ChannelDefaults\ChannelDefaultsClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
 
@@ -140,6 +144,26 @@ class PealClient
     public ReviewClient $review;
 
     /**
+     * @var TagsClient $tags
+     */
+    public TagsClient $tags;
+
+    /**
+     * @var SignaturesClient $signatures
+     */
+    public SignaturesClient $signatures;
+
+    /**
+     * @var ChannelSetsClient $channelSets
+     */
+    public ChannelSetsClient $channelSets;
+
+    /**
+     * @var ChannelDefaultsClient $channelDefaults
+     */
+    public ChannelDefaultsClient $channelDefaults;
+
+    /**
      * @var array{
      *   baseUrl?: string,
      *   client?: ClientInterface,
@@ -212,5 +236,9 @@ class PealClient
         $this->partnerAccount = new PartnerAccountClient($this->client, $this->options);
         $this->connectLinks = new ConnectLinksClient($this->client, $this->options);
         $this->review = new ReviewClient($this->client, $this->options);
+        $this->tags = new TagsClient($this->client, $this->options);
+        $this->signatures = new SignaturesClient($this->client, $this->options);
+        $this->channelSets = new ChannelSetsClient($this->client, $this->options);
+        $this->channelDefaults = new ChannelDefaultsClient($this->client, $this->options);
     }
 }

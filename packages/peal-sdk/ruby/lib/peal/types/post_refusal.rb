@@ -28,6 +28,12 @@ module Peal
       member -> { Peal::Types::DuplicatePostEncoded }, key: "DUPLICATE_POST"
 
       member -> { Peal::Types::ForbiddenEncoded }, key: "FORBIDDEN"
+
+      member -> { Peal::Types::UnknownTagsEncoded }, key: "UNKNOWN_TAGS"
+
+      member -> { Peal::Types::ChannelSetNotFoundEncoded }, key: "CHANNEL_SET_NOT_FOUND"
+
+      member -> { Peal::Types::SignatureNotFoundEncoded }, key: "SIGNATURE_NOT_FOUND"
     end
   end
 end

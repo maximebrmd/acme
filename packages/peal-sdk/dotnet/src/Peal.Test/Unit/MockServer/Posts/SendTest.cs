@@ -91,6 +91,10 @@ public class SendTest : BaseMockServerTest
                 "via": "web"
               },
               "status": "draft",
+              "tagIds": [
+                "tagIds",
+                "tagIds"
+              ],
               "targets": [
                 {
                   "channelId": "channelId",
@@ -140,6 +144,26 @@ public class SendTest : BaseMockServerTest
                   "status": "pending",
                   "unconfirmedReason": "noResponse"
                 }
+              ],
+              "warnings": [
+                {
+                  "_tag": "channelsDropped",
+                  "channelIds": [
+                    "channelIds",
+                    "channelIds"
+                  ],
+                  "channelSetId": "channelSetId",
+                  "channelSetName": "channelSetName"
+                },
+                {
+                  "_tag": "channelsDropped",
+                  "channelIds": [
+                    "channelIds",
+                    "channelIds"
+                  ],
+                  "channelSetId": "channelSetId",
+                  "channelSetName": "channelSetName"
+                }
               ]
             }
             """;
@@ -166,6 +190,7 @@ public class SendTest : BaseMockServerTest
                 WorkspaceId = "workspaceId",
                 AllowDuplicate = null,
                 ChannelIds = new List<string>() { "channelIds", "channelIds" },
+                ChannelSets = null,
                 Content = new PostContent
                 {
                     Media = new List<MediaAttachment>()
@@ -180,7 +205,10 @@ public class SendTest : BaseMockServerTest
                     },
                     Text = "text",
                 },
+                DefaultSignatures = null,
                 Options = null,
+                SignatureId = null,
+                TagIds = null,
                 When = new PostTiming(new PostTiming.Now(new PostTimingNow { TimeZone = null })),
             }
         );
@@ -252,6 +280,9 @@ public class SendTest : BaseMockServerTest
                 "via": "web"
               },
               "status": "draft",
+              "tagIds": [
+                "tagIds"
+              ],
               "targets": [
                 {
                   "channelId": "channelId",
@@ -266,6 +297,16 @@ public class SendTest : BaseMockServerTest
                   "round": 1,
                   "status": "pending",
                   "unconfirmedReason": "noResponse"
+                }
+              ],
+              "warnings": [
+                {
+                  "_tag": "channelsDropped",
+                  "channelIds": [
+                    "channelIds"
+                  ],
+                  "channelSetId": "channelSetId",
+                  "channelSetName": "channelSetName"
                 }
               ]
             }

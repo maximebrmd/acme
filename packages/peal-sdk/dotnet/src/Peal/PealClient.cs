@@ -55,6 +55,10 @@ public partial class PealClient : IPealClient
         PartnerAccount = new PartnerAccountClient(_client);
         ConnectLinks = new ConnectLinksClient(_client);
         Review = new ReviewClient(_client);
+        Tags = new TagsClient(_client);
+        Signatures = new SignaturesClient(_client);
+        ChannelSets = new ChannelSetsClient(_client);
+        ChannelDefaults = new ChannelDefaultsClient(_client);
     }
 
     public ISystemClient System { get; }
@@ -100,4 +104,12 @@ public partial class PealClient : IPealClient
     public IConnectLinksClient ConnectLinks { get; }
 
     public IReviewClient Review { get; }
+
+    public ITagsClient Tags { get; }
+
+    public ISignaturesClient Signatures { get; }
+
+    public IChannelSetsClient ChannelSets { get; }
+
+    public IChannelDefaultsClient ChannelDefaults { get; }
 }

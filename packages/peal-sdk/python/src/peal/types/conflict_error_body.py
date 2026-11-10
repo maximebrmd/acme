@@ -8,19 +8,17 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
-from .post_not_reviewable_encoded_status import PostNotReviewableEncodedStatus
 
 
-class ConflictErrorBody_PostNotReviewable(UniversalBaseModel):
+class ConflictErrorBody_ChannelSetNameTaken(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["PostNotReviewable"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "PostNotReviewable"
+        typing.Literal["ChannelSetNameTaken"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "ChannelSetNameTaken"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
-    status: PostNotReviewableEncodedStatus
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -32,16 +30,16 @@ class ConflictErrorBody_PostNotReviewable(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class ConflictErrorBody_TooManyReviewLinks(UniversalBaseModel):
+class ConflictErrorBody_TooManyChannelSets(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["TooManyReviewLinks"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "TooManyReviewLinks"
+        typing.Literal["TooManyChannelSets"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "TooManyChannelSets"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
-    limit: int
+    allowed: int
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -54,6 +52,6 @@ class ConflictErrorBody_TooManyReviewLinks(UniversalBaseModel):
 
 
 ConflictErrorBody = typing_extensions.Annotated[
-    typing.Union[ConflictErrorBody_PostNotReviewable, ConflictErrorBody_TooManyReviewLinks],
+    typing.Union[ConflictErrorBody_ChannelSetNameTaken, ConflictErrorBody_TooManyChannelSets],
     pydantic.Field(discriminator="type"),
 ]

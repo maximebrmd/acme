@@ -25,20 +25,36 @@ import social.peal.core.ObjectMappers;
 public final class PostDraft {
     private final List<String> channelIds;
 
+    private final Optional<List<String>> channelSets;
+
     private final PostContent content;
 
+    private final Optional<Boolean> defaultSignatures;
+
     private final Optional<List<ChannelOptions>> options;
+
+    private final Optional<String> signatureId;
+
+    private final Optional<List<String>> tagIds;
 
     private final Map<String, Object> additionalProperties;
 
     private PostDraft(
             List<String> channelIds,
+            Optional<List<String>> channelSets,
             PostContent content,
+            Optional<Boolean> defaultSignatures,
             Optional<List<ChannelOptions>> options,
+            Optional<String> signatureId,
+            Optional<List<String>> tagIds,
             Map<String, Object> additionalProperties) {
         this.channelIds = channelIds;
+        this.channelSets = channelSets;
         this.content = content;
+        this.defaultSignatures = defaultSignatures;
         this.options = options;
+        this.signatureId = signatureId;
+        this.tagIds = tagIds;
         this.additionalProperties = additionalProperties;
     }
 
@@ -47,14 +63,34 @@ public final class PostDraft {
         return channelIds;
     }
 
+    @JsonProperty("channelSets")
+    public Optional<List<String>> getChannelSets() {
+        return channelSets;
+    }
+
     @JsonProperty("content")
     public PostContent getContent() {
         return content;
     }
 
+    @JsonProperty("defaultSignatures")
+    public Optional<Boolean> getDefaultSignatures() {
+        return defaultSignatures;
+    }
+
     @JsonProperty("options")
     public Optional<List<ChannelOptions>> getOptions() {
         return options;
+    }
+
+    @JsonProperty("signatureId")
+    public Optional<String> getSignatureId() {
+        return signatureId;
+    }
+
+    @JsonProperty("tagIds")
+    public Optional<List<String>> getTagIds() {
+        return tagIds;
     }
 
     @java.lang.Override
@@ -69,12 +105,25 @@ public final class PostDraft {
     }
 
     private boolean equalTo(PostDraft other) {
-        return channelIds.equals(other.channelIds) && content.equals(other.content) && options.equals(other.options);
+        return channelIds.equals(other.channelIds)
+                && channelSets.equals(other.channelSets)
+                && content.equals(other.content)
+                && defaultSignatures.equals(other.defaultSignatures)
+                && options.equals(other.options)
+                && signatureId.equals(other.signatureId)
+                && tagIds.equals(other.tagIds);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelIds, this.content, this.options);
+        return Objects.hash(
+                this.channelIds,
+                this.channelSets,
+                this.content,
+                this.defaultSignatures,
+                this.options,
+                this.signatureId,
+                this.tagIds);
     }
 
     @java.lang.Override
@@ -105,16 +154,40 @@ public final class PostDraft {
 
         _FinalStage addAllChannelIds(List<String> channelIds);
 
+        _FinalStage channelSets(Optional<List<String>> channelSets);
+
+        _FinalStage channelSets(List<String> channelSets);
+
+        _FinalStage defaultSignatures(Optional<Boolean> defaultSignatures);
+
+        _FinalStage defaultSignatures(Boolean defaultSignatures);
+
         _FinalStage options(Optional<List<ChannelOptions>> options);
 
         _FinalStage options(List<ChannelOptions> options);
+
+        _FinalStage signatureId(Optional<String> signatureId);
+
+        _FinalStage signatureId(String signatureId);
+
+        _FinalStage tagIds(Optional<List<String>> tagIds);
+
+        _FinalStage tagIds(List<String> tagIds);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements ContentStage, _FinalStage {
         private PostContent content;
 
+        private Optional<List<String>> tagIds = Optional.empty();
+
+        private Optional<String> signatureId = Optional.empty();
+
         private Optional<List<ChannelOptions>> options = Optional.empty();
+
+        private Optional<Boolean> defaultSignatures = Optional.empty();
+
+        private Optional<List<String>> channelSets = Optional.empty();
 
         private List<String> channelIds = new ArrayList<>();
 
@@ -125,8 +198,12 @@ public final class PostDraft {
         @java.lang.Override
         public Builder from(PostDraft other) {
             channelIds(other.getChannelIds());
+            channelSets(other.getChannelSets());
             content(other.getContent());
+            defaultSignatures(other.getDefaultSignatures());
             options(other.getOptions());
+            signatureId(other.getSignatureId());
+            tagIds(other.getTagIds());
             return this;
         }
 
@@ -134,6 +211,32 @@ public final class PostDraft {
         @JsonSetter("content")
         public _FinalStage content(@NotNull PostContent content) {
             this.content = Objects.requireNonNull(content, "content must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage tagIds(List<String> tagIds) {
+            this.tagIds = Optional.ofNullable(tagIds);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "tagIds", nulls = Nulls.SKIP)
+        public _FinalStage tagIds(Optional<List<String>> tagIds) {
+            this.tagIds = tagIds;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage signatureId(String signatureId) {
+            this.signatureId = Optional.ofNullable(signatureId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "signatureId", nulls = Nulls.SKIP)
+        public _FinalStage signatureId(Optional<String> signatureId) {
+            this.signatureId = signatureId;
             return this;
         }
 
@@ -147,6 +250,32 @@ public final class PostDraft {
         @JsonSetter(value = "options", nulls = Nulls.SKIP)
         public _FinalStage options(Optional<List<ChannelOptions>> options) {
             this.options = options;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage defaultSignatures(Boolean defaultSignatures) {
+            this.defaultSignatures = Optional.ofNullable(defaultSignatures);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "defaultSignatures", nulls = Nulls.SKIP)
+        public _FinalStage defaultSignatures(Optional<Boolean> defaultSignatures) {
+            this.defaultSignatures = defaultSignatures;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage channelSets(List<String> channelSets) {
+            this.channelSets = Optional.ofNullable(channelSets);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "channelSets", nulls = Nulls.SKIP)
+        public _FinalStage channelSets(Optional<List<String>> channelSets) {
+            this.channelSets = channelSets;
             return this;
         }
 
@@ -176,14 +305,26 @@ public final class PostDraft {
 
         @java.lang.Override
         public PostDraft build() {
-            return new PostDraft(channelIds, content, options, additionalProperties);
+            return new PostDraft(
+                    channelIds,
+                    channelSets,
+                    content,
+                    defaultSignatures,
+                    options,
+                    signatureId,
+                    tagIds,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelIds")
+                    || key.equalsIgnoreCase("channelSets")
                     || key.equalsIgnoreCase("content")
-                    || key.equalsIgnoreCase("options")) {
+                    || key.equalsIgnoreCase("defaultSignatures")
+                    || key.equalsIgnoreCase("options")
+                    || key.equalsIgnoreCase("signatureId")
+                    || key.equalsIgnoreCase("tagIds")) {
                 return;
             }
             this.additionalProperties.put(key, value);

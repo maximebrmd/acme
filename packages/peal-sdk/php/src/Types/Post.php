@@ -63,16 +63,29 @@ class Post extends JsonSerializableType
     public string $status;
 
     /**
+     * @var array<string> $tagIds
+     */
+    #[JsonProperty('tagIds'), ArrayType(['string'])]
+    public array $tagIds;
+
+    /**
      * @var array<PostTarget> $targets
      */
     #[JsonProperty('targets'), ArrayType([PostTarget::class])]
     public array $targets;
 
     /**
+     * @var ?array<PostWarning> $warnings
+     */
+    #[JsonProperty('warnings'), ArrayType([PostWarning::class])]
+    public ?array $warnings;
+
+    /**
      * @param array{
      *   content: PostContent,
      *   id: string,
      *   status: value-of<PostStatus>,
+     *   tagIds: array<string>,
      *   targets: array<PostTarget>,
      *   authorId?: ?string,
      *   createdVia?: ?PostOrigin,
@@ -80,6 +93,7 @@ class Post extends JsonSerializableType
      *   schedule?: ?PostSchedule,
      *   scheduledBy?: ?string,
      *   scheduledVia?: ?PostOrigin,
+     *   warnings?: ?array<PostWarning>,
      * } $values
      */
     public function __construct(
@@ -94,7 +108,9 @@ class Post extends JsonSerializableType
         $this->scheduledBy = $values['scheduledBy'] ?? null;
         $this->scheduledVia = $values['scheduledVia'] ?? null;
         $this->status = $values['status'];
+        $this->tagIds = $values['tagIds'];
         $this->targets = $values['targets'];
+        $this->warnings = $values['warnings'] ?? null;
     }
 
     /**

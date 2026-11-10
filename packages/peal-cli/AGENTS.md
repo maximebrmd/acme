@@ -90,7 +90,7 @@
   (`commands/channel-settings.ts`) name a channel and turn it off or back
   on, and `peal posts duplicate` makes a draft of a post, reading it first
   only to say what the copy left out. `peal channels list` reads
-  `channels.list`, and `channels.search` once a filter or a page is asked
+  `channels.list`, and `channels.find` once a filter or a page is asked
   (`--platform`, `--status`, `--search`, `--limit`, `--cursor`): `--json`
   then prints the page, and the bare list keeps the array it always printed.
   A channel is shown with its label first and its handle always

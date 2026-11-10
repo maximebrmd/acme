@@ -24,6 +24,8 @@ pub struct PostValidation {
     pub valid: bool,
     #[serde(default)]
     pub violations: Vec<ContentViolation>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub warnings: Option<Vec<PostWarning>>,
 }
 
 impl PostValidation {
@@ -44,6 +46,7 @@ pub struct PostValidationBuilder {
     unknown_media: Option<Vec<String>>,
     valid: Option<bool>,
     violations: Option<Vec<ContentViolation>>,
+    warnings: Option<Vec<PostWarning>>,
 }
 
 impl PostValidationBuilder {
@@ -92,6 +95,11 @@ impl PostValidationBuilder {
         self
     }
 
+    pub fn warnings(mut self, value: Vec<PostWarning>) -> Self {
+        self.warnings = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`PostValidation`].
     /// This method will fail if any of the following fields are not set:
     /// - [`awaits_approval`](PostValidationBuilder::awaits_approval)
@@ -126,6 +134,7 @@ impl PostValidationBuilder {
             violations: self
                 .violations
                 .ok_or_else(|| BuildError::missing_field("violations"))?,
+            warnings: self.warnings,
         })
     }
 }

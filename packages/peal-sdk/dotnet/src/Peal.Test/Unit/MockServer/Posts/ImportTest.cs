@@ -68,6 +68,10 @@ public class ImportTest : BaseMockServerTest
                       "via": "web"
                     },
                     "status": "draft",
+                    "tagIds": [
+                      "tagIds",
+                      "tagIds"
+                    ],
                     "targets": [
                       {
                         "channelId": "channelId",
@@ -116,6 +120,26 @@ public class ImportTest : BaseMockServerTest
                         "round": 1,
                         "status": "pending",
                         "unconfirmedReason": "noResponse"
+                      }
+                    ],
+                    "warnings": [
+                      {
+                        "_tag": "channelsDropped",
+                        "channelIds": [
+                          "channelIds",
+                          "channelIds"
+                        ],
+                        "channelSetId": "channelSetId",
+                        "channelSetName": "channelSetName"
+                      },
+                      {
+                        "_tag": "channelsDropped",
+                        "channelIds": [
+                          "channelIds",
+                          "channelIds"
+                        ],
+                        "channelSetId": "channelSetId",
+                        "channelSetName": "channelSetName"
                       }
                     ]
                   },
@@ -167,6 +191,10 @@ public class ImportTest : BaseMockServerTest
                       "via": "web"
                     },
                     "status": "draft",
+                    "tagIds": [
+                      "tagIds",
+                      "tagIds"
+                    ],
                     "targets": [
                       {
                         "channelId": "channelId",
@@ -215,6 +243,26 @@ public class ImportTest : BaseMockServerTest
                         "round": 1,
                         "status": "pending",
                         "unconfirmedReason": "noResponse"
+                      }
+                    ],
+                    "warnings": [
+                      {
+                        "_tag": "channelsDropped",
+                        "channelIds": [
+                          "channelIds",
+                          "channelIds"
+                        ],
+                        "channelSetId": "channelSetId",
+                        "channelSetName": "channelSetName"
+                      },
+                      {
+                        "_tag": "channelsDropped",
+                        "channelIds": [
+                          "channelIds",
+                          "channelIds"
+                        ],
+                        "channelSetId": "channelSetId",
+                        "channelSetName": "channelSetName"
                       }
                     ]
                   },
@@ -286,6 +334,9 @@ public class ImportTest : BaseMockServerTest
                     },
                     "id": "id",
                     "status": "draft",
+                    "tagIds": [
+                      "tagIds"
+                    ],
                     "targets": [
                       {
                         "channelId": "channelId",

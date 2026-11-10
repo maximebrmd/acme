@@ -129,5 +129,25 @@ module Peal
     def review
       @review ||= Peal::Review::Client.new(client: @raw_client)
     end
+
+    # @return [Peal::Tags::Client]
+    def tags
+      @tags ||= Peal::Tags::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::Signatures::Client]
+    def signatures
+      @signatures ||= Peal::Signatures::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::ChannelSets::Client]
+    def channel_sets
+      @channel_sets ||= Peal::ChannelSets::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::ChannelDefaults::Client]
+    def channel_defaults
+      @channel_defaults ||= Peal::ChannelDefaults::Client.new(client: @raw_client)
+    end
   end
 end

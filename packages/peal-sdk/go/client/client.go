@@ -9,7 +9,9 @@ import (
 	assistant "github.com/peal-social/peal/packages/peal-sdk/go/assistant"
 	billing "github.com/peal-social/peal/packages/peal-sdk/go/billing"
 	capabilities "github.com/peal-social/peal/packages/peal-sdk/go/capabilities"
+	channeldefaults "github.com/peal-social/peal/packages/peal-sdk/go/channeldefaults"
 	channels "github.com/peal-social/peal/packages/peal-sdk/go/channels"
+	channelsets "github.com/peal-social/peal/packages/peal-sdk/go/channelsets"
 	connectlinks "github.com/peal-social/peal/packages/peal-sdk/go/connectlinks"
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
 	internal "github.com/peal-social/peal/packages/peal-sdk/go/internal"
@@ -25,7 +27,9 @@ import (
 	posts "github.com/peal-social/peal/packages/peal-sdk/go/posts"
 	review "github.com/peal-social/peal/packages/peal-sdk/go/review"
 	session "github.com/peal-social/peal/packages/peal-sdk/go/session"
+	signatures "github.com/peal-social/peal/packages/peal-sdk/go/signatures"
 	system "github.com/peal-social/peal/packages/peal-sdk/go/system"
+	tags "github.com/peal-social/peal/packages/peal-sdk/go/tags"
 	tiktok "github.com/peal-social/peal/packages/peal-sdk/go/tiktok"
 	webhooks "github.com/peal-social/peal/packages/peal-sdk/go/webhooks"
 )
@@ -53,6 +57,10 @@ type Client struct {
 	PartnerAccount          *partneraccount.Client
 	ConnectLinks            *connectlinks.Client
 	Review                  *review.Client
+	Tags                    *tags.Client
+	Signatures              *signatures.Client
+	ChannelSets             *channelsets.Client
+	ChannelDefaults         *channeldefaults.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -84,6 +92,10 @@ func NewClient(opts ...option.RequestOption) *Client {
 		PartnerAccount:          partneraccount.NewClient(options),
 		ConnectLinks:            connectlinks.NewClient(options),
 		Review:                  review.NewClient(options),
+		Tags:                    tags.NewClient(options),
+		Signatures:              signatures.NewClient(options),
+		ChannelSets:             channelsets.NewClient(options),
+		ChannelDefaults:         channeldefaults.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,
 		caller: internal.NewCaller(

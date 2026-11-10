@@ -26,36 +26,36 @@ public final class UnprocessableEntityErrorBody {
         return value.visit(visitor);
     }
 
-    public static UnprocessableEntityErrorBody connectFailed(ConnectFailedEncoded value) {
-        return new UnprocessableEntityErrorBody(new ConnectFailedValue(value));
+    public static UnprocessableEntityErrorBody unknownChannels(UnknownChannelsEncoded value) {
+        return new UnprocessableEntityErrorBody(new UnknownChannelsValue(value));
     }
 
-    public static UnprocessableEntityErrorBody returnUrlNotAllowed(ReturnUrlNotAllowedEncoded value) {
-        return new UnprocessableEntityErrorBody(new ReturnUrlNotAllowedValue(value));
+    public static UnprocessableEntityErrorBody postContentInvalid(PostContentInvalidEncoded value) {
+        return new UnprocessableEntityErrorBody(new PostContentInvalidValue(value));
     }
 
-    public boolean isConnectFailed() {
-        return value instanceof ConnectFailedValue;
+    public boolean isUnknownChannels() {
+        return value instanceof UnknownChannelsValue;
     }
 
-    public boolean isReturnUrlNotAllowed() {
-        return value instanceof ReturnUrlNotAllowedValue;
+    public boolean isPostContentInvalid() {
+        return value instanceof PostContentInvalidValue;
     }
 
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<ConnectFailedEncoded> getConnectFailed() {
-        if (isConnectFailed()) {
-            return Optional.of(((ConnectFailedValue) value).value);
+    public Optional<UnknownChannelsEncoded> getUnknownChannels() {
+        if (isUnknownChannels()) {
+            return Optional.of(((UnknownChannelsValue) value).value);
         }
         return Optional.empty();
     }
 
-    public Optional<ReturnUrlNotAllowedEncoded> getReturnUrlNotAllowed() {
-        if (isReturnUrlNotAllowed()) {
-            return Optional.of(((ReturnUrlNotAllowedValue) value).value);
+    public Optional<PostContentInvalidEncoded> getPostContentInvalid() {
+        if (isPostContentInvalid()) {
+            return Optional.of(((PostContentInvalidValue) value).value);
         }
         return Optional.empty();
     }
@@ -90,46 +90,46 @@ public final class UnprocessableEntityErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitConnectFailed(ConnectFailedEncoded connectFailed);
+        T visitUnknownChannels(UnknownChannelsEncoded unknownChannels);
 
-        T visitReturnUrlNotAllowed(ReturnUrlNotAllowedEncoded returnUrlNotAllowed);
+        T visitPostContentInvalid(PostContentInvalidEncoded postContentInvalid);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(ConnectFailedValue.class), @JsonSubTypes.Type(ReturnUrlNotAllowedValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(UnknownChannelsValue.class), @JsonSubTypes.Type(PostContentInvalidValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("ConnectFailed")
+    @JsonTypeName("UnknownChannels")
     @JsonIgnoreProperties("_tag")
-    private static final class ConnectFailedValue implements Value {
+    private static final class UnknownChannelsValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private ConnectFailedEncoded value;
+        private UnknownChannelsEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private ConnectFailedValue() {}
+        private UnknownChannelsValue() {}
 
-        private ConnectFailedValue(ConnectFailedEncoded value) {
+        private UnknownChannelsValue(UnknownChannelsEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitConnectFailed(value);
+            return visitor.visitUnknownChannels(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof ConnectFailedValue && equalTo((ConnectFailedValue) other);
+            return other instanceof UnknownChannelsValue && equalTo((UnknownChannelsValue) other);
         }
 
-        private boolean equalTo(ConnectFailedValue other) {
+        private boolean equalTo(UnknownChannelsValue other) {
             return value.equals(other.value);
         }
 
@@ -144,32 +144,32 @@ public final class UnprocessableEntityErrorBody {
         }
     }
 
-    @JsonTypeName("ReturnUrlNotAllowed")
+    @JsonTypeName("PostContentInvalid")
     @JsonIgnoreProperties("_tag")
-    private static final class ReturnUrlNotAllowedValue implements Value {
+    private static final class PostContentInvalidValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private ReturnUrlNotAllowedEncoded value;
+        private PostContentInvalidEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private ReturnUrlNotAllowedValue() {}
+        private PostContentInvalidValue() {}
 
-        private ReturnUrlNotAllowedValue(ReturnUrlNotAllowedEncoded value) {
+        private PostContentInvalidValue(PostContentInvalidEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitReturnUrlNotAllowed(value);
+            return visitor.visitPostContentInvalid(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof ReturnUrlNotAllowedValue && equalTo((ReturnUrlNotAllowedValue) other);
+            return other instanceof PostContentInvalidValue && equalTo((PostContentInvalidValue) other);
         }
 
-        private boolean equalTo(ReturnUrlNotAllowedValue other) {
+        private boolean equalTo(PostContentInvalidValue other) {
             return value.equals(other.value);
         }
 

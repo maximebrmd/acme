@@ -9,9 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::ConnectFailedEncoded }, key: "CONNECT_FAILED"
+      member -> { Peal::Types::UnknownChannelsEncoded }, key: "UNKNOWN_CHANNELS"
 
-      member -> { Peal::Types::ReturnURLNotAllowedEncoded }, key: "RETURN_URL_NOT_ALLOWED"
+      member -> { Peal::Types::PostContentInvalidEncoded }, key: "POST_CONTENT_INVALID"
     end
   end
 end

@@ -6,15 +6,20 @@ package social.peal.resources.channels;
 import java.util.List;
 import social.peal.core.ClientOptions;
 import social.peal.core.RequestOptions;
+import social.peal.resources.channels.requests.ChannelUpdate;
 import social.peal.resources.channels.requests.ChooseAccounts;
 import social.peal.resources.channels.requests.ConnectCallback;
 import social.peal.resources.channels.requests.ConnectChannel;
+import social.peal.resources.channels.requests.DisableChannelsRequest;
 import social.peal.resources.channels.requests.DisconnectChannelsRequest;
+import social.peal.resources.channels.requests.EnableChannelsRequest;
+import social.peal.resources.channels.requests.FindChannelsRequest;
 import social.peal.resources.channels.requests.ListChannelsRequest;
 import social.peal.resources.channels.requests.PlatformsChannelsRequest;
 import social.peal.resources.channels.requests.ReconnectChannelsRequest;
 import social.peal.types.Authorization;
 import social.peal.types.Channel;
+import social.peal.types.ChannelPage;
 import social.peal.types.ConnectOutcome;
 import social.peal.types.ConnectablePlatforms;
 import social.peal.types.Platform;
@@ -62,6 +67,34 @@ public class ChannelsClient {
      */
     public List<Channel> list(String workspaceId, ListChannelsRequest request, RequestOptions requestOptions) {
         return this.rawClient.list(workspaceId, request, requestOptions).body();
+    }
+
+    /**
+     * Lists the workspace's channels a page at a time, oldest first: 50 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>platform</code>, <code>status</code> (<code>active</code>, <code>refreshNeeded</code> or <code>disabled</code>) and <code>q</code>, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. <code>counts</code> says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+     */
+    public ChannelPage find(String workspaceId) {
+        return this.rawClient.find(workspaceId).body();
+    }
+
+    /**
+     * Lists the workspace's channels a page at a time, oldest first: 50 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>platform</code>, <code>status</code> (<code>active</code>, <code>refreshNeeded</code> or <code>disabled</code>) and <code>q</code>, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. <code>counts</code> says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+     */
+    public ChannelPage find(String workspaceId, RequestOptions requestOptions) {
+        return this.rawClient.find(workspaceId, requestOptions).body();
+    }
+
+    /**
+     * Lists the workspace's channels a page at a time, oldest first: 50 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>platform</code>, <code>status</code> (<code>active</code>, <code>refreshNeeded</code> or <code>disabled</code>) and <code>q</code>, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. <code>counts</code> says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+     */
+    public ChannelPage find(String workspaceId, FindChannelsRequest request) {
+        return this.rawClient.find(workspaceId, request).body();
+    }
+
+    /**
+     * Lists the workspace's channels a page at a time, oldest first: 50 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>platform</code>, <code>status</code> (<code>active</code>, <code>refreshNeeded</code> or <code>disabled</code>) and <code>q</code>, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. <code>counts</code> says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+     */
+    public ChannelPage find(String workspaceId, FindChannelsRequest request, RequestOptions requestOptions) {
+        return this.rawClient.find(workspaceId, request, requestOptions).body();
     }
 
     /**
@@ -217,6 +250,84 @@ public class ChannelsClient {
             String workspaceId, String channelId, DisconnectChannelsRequest request, RequestOptions requestOptions) {
         this.rawClient
                 .disconnect(workspaceId, channelId, request, requestOptions)
+                .body();
+    }
+
+    /**
+     * Gives the channel the name the workspace calls it by (<code>label</code>, 60 characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.
+     */
+    public Channel update(String workspaceId, String channelId, ChannelUpdate request) {
+        return this.rawClient.update(workspaceId, channelId, request).body();
+    }
+
+    /**
+     * Gives the channel the name the workspace calls it by (<code>label</code>, 60 characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.
+     */
+    public Channel update(String workspaceId, String channelId, ChannelUpdate request, RequestOptions requestOptions) {
+        return this.rawClient
+                .update(workspaceId, channelId, request, requestOptions)
+                .body();
+    }
+
+    /**
+     * Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (<code>channelDisabled</code>) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+     */
+    public Channel disable(String workspaceId, String channelId) {
+        return this.rawClient.disable(workspaceId, channelId).body();
+    }
+
+    /**
+     * Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (<code>channelDisabled</code>) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+     */
+    public Channel disable(String workspaceId, String channelId, RequestOptions requestOptions) {
+        return this.rawClient.disable(workspaceId, channelId, requestOptions).body();
+    }
+
+    /**
+     * Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (<code>channelDisabled</code>) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+     */
+    public Channel disable(String workspaceId, String channelId, DisableChannelsRequest request) {
+        return this.rawClient.disable(workspaceId, channelId, request).body();
+    }
+
+    /**
+     * Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (<code>channelDisabled</code>) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+     */
+    public Channel disable(
+            String workspaceId, String channelId, DisableChannelsRequest request, RequestOptions requestOptions) {
+        return this.rawClient
+                .disable(workspaceId, channelId, request, requestOptions)
+                .body();
+    }
+
+    /**
+     * Turns a channel back on. It posts again at once, or has the status <code>refreshNeeded</code> when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+     */
+    public Channel enable(String workspaceId, String channelId) {
+        return this.rawClient.enable(workspaceId, channelId).body();
+    }
+
+    /**
+     * Turns a channel back on. It posts again at once, or has the status <code>refreshNeeded</code> when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+     */
+    public Channel enable(String workspaceId, String channelId, RequestOptions requestOptions) {
+        return this.rawClient.enable(workspaceId, channelId, requestOptions).body();
+    }
+
+    /**
+     * Turns a channel back on. It posts again at once, or has the status <code>refreshNeeded</code> when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+     */
+    public Channel enable(String workspaceId, String channelId, EnableChannelsRequest request) {
+        return this.rawClient.enable(workspaceId, channelId, request).body();
+    }
+
+    /**
+     * Turns a channel back on. It posts again at once, or has the status <code>refreshNeeded</code> when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+     */
+    public Channel enable(
+            String workspaceId, String channelId, EnableChannelsRequest request, RequestOptions requestOptions) {
+        return this.rawClient
+                .enable(workspaceId, channelId, request, requestOptions)
                 .body();
     }
 }

@@ -248,7 +248,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
         summary: "List channels",
       })
     ),
-    HttpApiEndpoint.get("search", "/search", {
+    HttpApiEndpoint.get("find", "/search", {
       error: [Forbidden, HttpApiError.BadRequest],
       params: workspace,
       query: {

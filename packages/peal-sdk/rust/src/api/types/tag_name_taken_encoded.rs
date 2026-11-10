@@ -1,7 +1,9 @@
 pub use crate::prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
-pub struct ChannelNotFoundEncoded {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct TagNameTakenEncoded {
+    #[serde(rename = "_tag")]
+    pub tag: TagNameTakenEncodedTag,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -11,21 +13,27 @@ pub struct ChannelNotFoundEncoded {
     pub request_id: Option<String>,
 }
 
-impl ChannelNotFoundEncoded {
-    pub fn builder() -> ChannelNotFoundEncodedBuilder {
-        <ChannelNotFoundEncodedBuilder as Default>::default()
+impl TagNameTakenEncoded {
+    pub fn builder() -> TagNameTakenEncodedBuilder {
+        <TagNameTakenEncodedBuilder as Default>::default()
     }
 }
 
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
-pub struct ChannelNotFoundEncodedBuilder {
+pub struct TagNameTakenEncodedBuilder {
+    tag: Option<TagNameTakenEncodedTag>,
     code: Option<String>,
     message: Option<String>,
     request_id: Option<String>,
 }
 
-impl ChannelNotFoundEncodedBuilder {
+impl TagNameTakenEncodedBuilder {
+    pub fn tag(mut self, value: TagNameTakenEncodedTag) -> Self {
+        self.tag = Some(value);
+        self
+    }
+
     pub fn code(mut self, value: impl Into<String>) -> Self {
         self.code = Some(value.into());
         self
@@ -41,9 +49,12 @@ impl ChannelNotFoundEncodedBuilder {
         self
     }
 
-    /// Consumes the builder and constructs a [`ChannelNotFoundEncoded`].
-    pub fn build(self) -> Result<ChannelNotFoundEncoded, BuildError> {
-        Ok(ChannelNotFoundEncoded {
+    /// Consumes the builder and constructs a [`TagNameTakenEncoded`].
+    /// This method will fail if any of the following fields are not set:
+    /// - [`tag`](TagNameTakenEncodedBuilder::tag)
+    pub fn build(self) -> Result<TagNameTakenEncoded, BuildError> {
+        Ok(TagNameTakenEncoded {
+            tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
             code: self.code,
             message: self.message,
             request_id: self.request_id,

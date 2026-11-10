@@ -5,8 +5,12 @@ import * as Peal from "../index.js";
 export interface BulkPost {
     allowDuplicate?: boolean | undefined;
     channelIds: string[];
+    channelSets?: string[] | undefined;
     content: Peal.PostContent;
+    defaultSignatures?: boolean | undefined;
     options?: Peal.ChannelOptions[] | undefined;
+    signatureId?: string | undefined;
+    tagIds?: string[] | undefined;
     when: Peal.PostTiming;
     idempotencyKey?: string | undefined;
 }

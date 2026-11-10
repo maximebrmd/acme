@@ -8,19 +8,21 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
-from .connect_failure_reason import ConnectFailureReason
+from .content_violation import ContentViolation
 
 
-class UnprocessableEntityErrorBody_ConnectFailed(UniversalBaseModel):
+class UnprocessableEntityErrorBody_UnknownChannels(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["ConnectFailed"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "ConnectFailed"
+        typing.Literal["UnknownChannels"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "UnknownChannels"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
-    reason: ConnectFailureReason
+    channel_ids: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="channelIds"), pydantic.Field(alias="channelIds")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -32,15 +34,16 @@ class UnprocessableEntityErrorBody_ConnectFailed(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class UnprocessableEntityErrorBody_ReturnUrlNotAllowed(UniversalBaseModel):
+class UnprocessableEntityErrorBody_PostContentInvalid(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["ReturnUrlNotAllowed"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "ReturnUrlNotAllowed"
+        typing.Literal["PostContentInvalid"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "PostContentInvalid"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
     ] = None
+    violations: typing.List[ContentViolation]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -53,6 +56,6 @@ class UnprocessableEntityErrorBody_ReturnUrlNotAllowed(UniversalBaseModel):
 
 
 UnprocessableEntityErrorBody = typing_extensions.Annotated[
-    typing.Union[UnprocessableEntityErrorBody_ConnectFailed, UnprocessableEntityErrorBody_ReturnUrlNotAllowed],
+    typing.Union[UnprocessableEntityErrorBody_UnknownChannels, UnprocessableEntityErrorBody_PostContentInvalid],
     pydantic.Field(discriminator="type"),
 ]

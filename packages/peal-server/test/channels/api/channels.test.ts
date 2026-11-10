@@ -612,7 +612,7 @@ layer(UseCasesTest)("the channel search", (it) => {
         params: { ...params, channelId: third.id },
       });
 
-      const one = yield* client.channels.search({
+      const one = yield* client.channels.find({
         params,
         query: { limit: 2 },
       });
@@ -627,7 +627,7 @@ layer(UseCasesTest)("the channel search", (it) => {
         refreshNeeded: 0,
       });
 
-      const two = yield* client.channels.search({
+      const two = yield* client.channels.find({
         params,
         query: { cursor: one.nextCursor ?? "", limit: 2 },
       });
@@ -638,7 +638,7 @@ layer(UseCasesTest)("the channel search", (it) => {
       );
       assert.isNull(two.nextCursor);
 
-      const named = yield* client.channels.search({
+      const named = yield* client.channels.find({
         params,
         query: { q: "client a", status: "active" },
       });
@@ -649,7 +649,7 @@ layer(UseCasesTest)("the channel search", (it) => {
       );
 
       const badCursor = yield* client.channels
-        .search({ params, query: { cursor: "not-a-cursor" } })
+        .find({ params, query: { cursor: "not-a-cursor" } })
         .pipe(Effect.flip);
 
       assert.strictEqual(badCursor._tag, "BadRequest");

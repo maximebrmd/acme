@@ -6,29 +6,14 @@ pub use crate::prelude::*;
 pub enum PostRefusal {
     #[non_exhaustive]
     PostContentInvalid {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        code: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        message: Option<String>,
-        #[serde(rename = "requestId")]
-        #[serde(skip_serializing_if = "Option::is_none")]
-        request_id: Option<String>,
-        #[serde(default)]
-        violations: Vec<ContentViolation>,
+        #[serde(flatten)]
+        data: PostContentInvalidEncoded,
     },
 
     #[non_exhaustive]
     UnknownChannels {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        code: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        message: Option<String>,
-        #[serde(rename = "requestId")]
-        #[serde(skip_serializing_if = "Option::is_none")]
-        request_id: Option<String>,
-        #[serde(rename = "channelIds")]
-        #[serde(default)]
-        channel_ids: Vec<String>,
+        #[serde(flatten)]
+        data: UnknownChannelsEncoded,
     },
 
     #[non_exhaustive]
@@ -117,6 +102,42 @@ pub enum PostRefusal {
         data: ForbiddenEncoded,
     },
 
+    #[non_exhaustive]
+    UnknownTags {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+        #[serde(rename = "tagIds")]
+        #[serde(default)]
+        tag_ids: Vec<String>,
+    },
+
+    #[non_exhaustive]
+    ChannelSetNotFound {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+    },
+
+    #[non_exhaustive]
+    SignatureNotFound {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -125,22 +146,12 @@ pub enum PostRefusal {
 }
 
 impl PostRefusal {
-    pub fn post_content_invalid(violations: Vec<ContentViolation>) -> Self {
-        Self::PostContentInvalid {
-            code: None,
-            message: None,
-            request_id: None,
-            violations,
-        }
+    pub fn post_content_invalid(data: PostContentInvalidEncoded) -> Self {
+        Self::PostContentInvalid { data }
     }
 
-    pub fn unknown_channels(channel_ids: Vec<String>) -> Self {
-        Self::UnknownChannels {
-            code: None,
-            message: None,
-            request_id: None,
-            channel_ids,
-        }
+    pub fn unknown_channels(data: UnknownChannelsEncoded) -> Self {
+        Self::UnknownChannels { data }
     }
 
     pub fn unknown_media(media_ids: Vec<String>) -> Self {
@@ -202,87 +213,28 @@ impl PostRefusal {
         Self::Forbidden { data }
     }
 
-    pub fn post_content_invalid_with_code(
-        code: String,
-        message: Option<String>,
-        request_id: Option<String>,
-        violations: Vec<ContentViolation>,
-    ) -> Self {
-        Self::PostContentInvalid {
-            code: Some(code),
-            message,
-            request_id,
-            violations,
+    pub fn unknown_tags(tag_ids: Vec<String>) -> Self {
+        Self::UnknownTags {
+            code: None,
+            message: None,
+            request_id: None,
+            tag_ids,
         }
     }
 
-    pub fn post_content_invalid_with_message(
-        code: Option<String>,
-        message: String,
-        request_id: Option<String>,
-        violations: Vec<ContentViolation>,
-    ) -> Self {
-        Self::PostContentInvalid {
-            code,
-            message: Some(message),
-            request_id,
-            violations,
+    pub fn channel_set_not_found() -> Self {
+        Self::ChannelSetNotFound {
+            code: None,
+            message: None,
+            request_id: None,
         }
     }
 
-    pub fn post_content_invalid_with_request_id(
-        code: Option<String>,
-        message: Option<String>,
-        request_id: String,
-        violations: Vec<ContentViolation>,
-    ) -> Self {
-        Self::PostContentInvalid {
-            code,
-            message,
-            request_id: Some(request_id),
-            violations,
-        }
-    }
-
-    pub fn unknown_channels_with_code(
-        code: String,
-        message: Option<String>,
-        request_id: Option<String>,
-        channel_ids: Vec<String>,
-    ) -> Self {
-        Self::UnknownChannels {
-            code: Some(code),
-            message,
-            request_id,
-            channel_ids,
-        }
-    }
-
-    pub fn unknown_channels_with_message(
-        code: Option<String>,
-        message: String,
-        request_id: Option<String>,
-        channel_ids: Vec<String>,
-    ) -> Self {
-        Self::UnknownChannels {
-            code,
-            message: Some(message),
-            request_id,
-            channel_ids,
-        }
-    }
-
-    pub fn unknown_channels_with_request_id(
-        code: Option<String>,
-        message: Option<String>,
-        request_id: String,
-        channel_ids: Vec<String>,
-    ) -> Self {
-        Self::UnknownChannels {
-            code,
-            message,
-            request_id: Some(request_id),
-            channel_ids,
+    pub fn signature_not_found() -> Self {
+        Self::SignatureNotFound {
+            code: None,
+            message: None,
+            request_id: None,
         }
     }
 
@@ -517,6 +469,120 @@ impl PostRefusal {
             message,
             request_id: Some(request_id),
             duplicates,
+        }
+    }
+
+    pub fn unknown_tags_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        tag_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownTags {
+            code: Some(code),
+            message,
+            request_id,
+            tag_ids,
+        }
+    }
+
+    pub fn unknown_tags_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        tag_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownTags {
+            code,
+            message: Some(message),
+            request_id,
+            tag_ids,
+        }
+    }
+
+    pub fn unknown_tags_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        tag_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownTags {
+            code,
+            message,
+            request_id: Some(request_id),
+            tag_ids,
+        }
+    }
+
+    pub fn channel_set_not_found_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::ChannelSetNotFound {
+            code: Some(code),
+            message,
+            request_id,
+        }
+    }
+
+    pub fn channel_set_not_found_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::ChannelSetNotFound {
+            code,
+            message: Some(message),
+            request_id,
+        }
+    }
+
+    pub fn channel_set_not_found_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+    ) -> Self {
+        Self::ChannelSetNotFound {
+            code,
+            message,
+            request_id: Some(request_id),
+        }
+    }
+
+    pub fn signature_not_found_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::SignatureNotFound {
+            code: Some(code),
+            message,
+            request_id,
+        }
+    }
+
+    pub fn signature_not_found_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::SignatureNotFound {
+            code,
+            message: Some(message),
+            request_id,
+        }
+    }
+
+    pub fn signature_not_found_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+    ) -> Self {
+        Self::SignatureNotFound {
+            code,
+            message,
+            request_id: Some(request_id),
         }
     }
 

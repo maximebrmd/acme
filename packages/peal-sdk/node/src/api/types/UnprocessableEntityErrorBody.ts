@@ -3,15 +3,15 @@
 import * as Peal from "../index.js";
 
 export type UnprocessableEntityErrorBody = 
-    | Peal.UnprocessableEntityErrorBody.ConnectFailed
-    | Peal.UnprocessableEntityErrorBody.ReturnUrlNotAllowed;
+    | Peal.UnprocessableEntityErrorBody.UnknownChannels
+    | Peal.UnprocessableEntityErrorBody.PostContentInvalid;
 
 export namespace UnprocessableEntityErrorBody {
-    export interface ConnectFailed extends Peal.ConnectFailedEncoded {
-        _tag: "ConnectFailed";
+    export interface UnknownChannels extends Peal.UnknownChannelsEncoded {
+        _tag: "UnknownChannels";
     }
 
-    export interface ReturnUrlNotAllowed extends Peal.ReturnUrlNotAllowedEncoded {
-        _tag: "ReturnUrlNotAllowed";
+    export interface PostContentInvalid extends Peal.PostContentInvalidEncoded {
+        _tag: "PostContentInvalid";
     }
 }

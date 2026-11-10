@@ -260,6 +260,50 @@
       },
       "default": "./dist/cjs/api/resources/review/exports.js"
     },
+    "./tags": {
+      "import": {
+        "types": "./dist/esm/api/resources/tags/exports.d.mts",
+        "default": "./dist/esm/api/resources/tags/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/tags/exports.d.ts",
+        "default": "./dist/cjs/api/resources/tags/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/tags/exports.js"
+    },
+    "./signatures": {
+      "import": {
+        "types": "./dist/esm/api/resources/signatures/exports.d.mts",
+        "default": "./dist/esm/api/resources/signatures/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/signatures/exports.d.ts",
+        "default": "./dist/cjs/api/resources/signatures/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/signatures/exports.js"
+    },
+    "./channelSets": {
+      "import": {
+        "types": "./dist/esm/api/resources/channelSets/exports.d.mts",
+        "default": "./dist/esm/api/resources/channelSets/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/channelSets/exports.d.ts",
+        "default": "./dist/cjs/api/resources/channelSets/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/channelSets/exports.js"
+    },
+    "./channelDefaults": {
+      "import": {
+        "types": "./dist/esm/api/resources/channelDefaults/exports.d.mts",
+        "default": "./dist/esm/api/resources/channelDefaults/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/channelDefaults/exports.d.ts",
+        "default": "./dist/cjs/api/resources/channelDefaults/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/channelDefaults/exports.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

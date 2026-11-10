@@ -8,10 +8,19 @@ pub struct PostToValidate {
     #[serde(rename = "channelIds")]
     #[serde(default)]
     pub channel_ids: Vec<String>,
+    #[serde(rename = "channelSets")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub channel_sets: Option<Vec<String>>,
     #[serde(default)]
     pub content: PostContent,
+    #[serde(rename = "defaultSignatures")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_signatures: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub options: Option<Vec<ChannelOptions>>,
+    #[serde(rename = "signatureId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signature_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub when: Option<PostTiming>,
 }
@@ -27,8 +36,11 @@ impl PostToValidate {
 pub struct PostToValidateBuilder {
     allow_duplicate: Option<bool>,
     channel_ids: Option<Vec<String>>,
+    channel_sets: Option<Vec<String>>,
     content: Option<PostContent>,
+    default_signatures: Option<bool>,
     options: Option<Vec<ChannelOptions>>,
+    signature_id: Option<String>,
     when: Option<PostTiming>,
 }
 
@@ -43,13 +55,28 @@ impl PostToValidateBuilder {
         self
     }
 
+    pub fn channel_sets(mut self, value: Vec<String>) -> Self {
+        self.channel_sets = Some(value);
+        self
+    }
+
     pub fn content(mut self, value: PostContent) -> Self {
         self.content = Some(value);
         self
     }
 
+    pub fn default_signatures(mut self, value: bool) -> Self {
+        self.default_signatures = Some(value);
+        self
+    }
+
     pub fn options(mut self, value: Vec<ChannelOptions>) -> Self {
         self.options = Some(value);
+        self
+    }
+
+    pub fn signature_id(mut self, value: impl Into<String>) -> Self {
+        self.signature_id = Some(value.into());
         self
     }
 
@@ -68,10 +95,13 @@ impl PostToValidateBuilder {
             channel_ids: self
                 .channel_ids
                 .ok_or_else(|| BuildError::missing_field("channel_ids"))?,
+            channel_sets: self.channel_sets,
             content: self
                 .content
                 .ok_or_else(|| BuildError::missing_field("content"))?,
+            default_signatures: self.default_signatures,
             options: self.options,
+            signature_id: self.signature_id,
             when: self.when,
         })
     }

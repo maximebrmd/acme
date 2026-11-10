@@ -269,11 +269,15 @@ class RawPostsClient:
         *,
         channel_ids: typing.Sequence[str],
         content: PostContent,
+        channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
+        default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        signature_id: typing.Optional[str] = OMIT,
+        tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[Post]:
         """
-        Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.
+        Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. It may name channel sets (`channelSets`, by id or name), whose connected channels it is for as well, with the options each set keeps; a channel of a set that is no longer connected is left out, and the answer says so (`warnings`). A channel on which it gives no options takes the channel's default options, if it has some. With `defaultSignatures`, each channel's default signature goes under its text, and `signatureId` puts one signature under it on every channel: a signature is then text of the post, never added under a text that already ends with it. Needs post:create, channel:read, and media:read when it shows media.
 
         Parameters
         ----------
@@ -283,7 +287,15 @@ class RawPostsClient:
 
         content : PostContent
 
+        channel_sets : typing.Optional[typing.Sequence[str]]
+
+        default_signatures : typing.Optional[bool]
+
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        signature_id : typing.Optional[str]
+
+        tag_ids : typing.Optional[typing.Sequence[str]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -301,12 +313,16 @@ class RawPostsClient:
             method="POST",
             json={
                 "channelIds": channel_ids,
+                "channelSets": channel_sets,
                 "content": convert_and_respect_annotation_metadata(
                     object_=content, annotation=PostContent, direction="write"
                 ),
+                "defaultSignatures": default_signatures,
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "signatureId": signature_id,
+                "tagIds": tag_ids,
             },
             headers={
                 "content-type": "application/json",
@@ -402,11 +418,12 @@ class RawPostsClient:
         platform: typing.Optional[Platform] = None,
         sort: typing.Optional[PostSort] = None,
         status: typing.Optional[PostStatus] = None,
+        tag_id: typing.Optional[str] = None,
         to: typing.Optional[str] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[PostPage]:
         """
-        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 
         Parameters
         ----------
@@ -432,6 +449,8 @@ class RawPostsClient:
 
         status : typing.Optional[PostStatus]
 
+        tag_id : typing.Optional[str]
+
         to : typing.Optional[str]
 
         request_options : typing.Optional[RequestOptions]
@@ -456,6 +475,7 @@ class RawPostsClient:
                 "platform": platform,
                 "sort": sort,
                 "status": status,
+                "tagId": tag_id,
                 "to": to,
             },
             request_options=request_options,
@@ -544,11 +564,15 @@ class RawPostsClient:
         wait: typing.Optional[str] = None,
         idempotency_key: typing.Optional[str] = None,
         allow_duplicate: typing.Optional[bool] = OMIT,
+        channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
+        default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        signature_id: typing.Optional[str] = OMIT,
+        tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[Post]:
         """
-        Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says `allowDuplicate: true`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless `wait` says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+        Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. Instead of listing channels, or beside them, it may name channel sets (`channelSets`, by id or name): it goes to their connected channels, with the options each set keeps where it gives none, and a channel of a set that is no longer connected is left out and told in the answer's `warnings`, never silently; a set none of whose channels is left, with no other channel, is refused (UnknownChannels). A channel on which it gives no options takes the channel's default options. `defaultSignatures` puts each channel's default signature under its text, and `signatureId` one signature on every channel: signatures are text of the post, counted against each platform's limit, and never added twice. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says `allowDuplicate: true`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless `wait` says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
 
         Parameters
         ----------
@@ -566,7 +590,15 @@ class RawPostsClient:
 
         allow_duplicate : typing.Optional[bool]
 
+        channel_sets : typing.Optional[typing.Sequence[str]]
+
+        default_signatures : typing.Optional[bool]
+
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        signature_id : typing.Optional[str]
+
+        tag_ids : typing.Optional[typing.Sequence[str]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -588,12 +620,16 @@ class RawPostsClient:
             json={
                 "allowDuplicate": allow_duplicate,
                 "channelIds": channel_ids,
+                "channelSets": channel_sets,
                 "content": convert_and_respect_annotation_metadata(
                     object_=content, annotation=PostContent, direction="write"
                 ),
+                "defaultSignatures": default_signatures,
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "signatureId": signature_id,
+                "tagIds": tag_ids,
                 "when": convert_and_respect_annotation_metadata(object_=when, annotation=PostTiming, direction="write"),
             },
             headers={
@@ -935,7 +971,10 @@ class RawPostsClient:
         channel_ids: typing.Sequence[str],
         content: PostContent,
         allow_duplicate: typing.Optional[bool] = OMIT,
+        channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
+        default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        signature_id: typing.Optional[str] = OMIT,
         when: typing.Optional[PostTiming] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[PostValidation]:
@@ -952,7 +991,13 @@ class RawPostsClient:
 
         allow_duplicate : typing.Optional[bool]
 
+        channel_sets : typing.Optional[typing.Sequence[str]]
+
+        default_signatures : typing.Optional[bool]
+
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        signature_id : typing.Optional[str]
 
         when : typing.Optional[PostTiming]
 
@@ -973,12 +1018,15 @@ class RawPostsClient:
             json={
                 "allowDuplicate": allow_duplicate,
                 "channelIds": channel_ids,
+                "channelSets": channel_sets,
                 "content": convert_and_respect_annotation_metadata(
                     object_=content, annotation=PostContent, direction="write"
                 ),
+                "defaultSignatures": default_signatures,
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "signatureId": signature_id,
                 "when": convert_and_respect_annotation_metadata(object_=when, annotation=PostTiming, direction="write"),
             },
             headers={
@@ -1145,11 +1193,15 @@ class RawPostsClient:
         *,
         channel_ids: typing.Sequence[str],
         content: PostContent,
+        channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
+        default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        signature_id: typing.Optional[str] = OMIT,
+        tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[Post]:
         """
-        Replaces a draft's content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
+        Replaces a draft's content, channels and options: options left out are removed. Its tags are replaced by `tagIds` when given, and kept otherwise. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
 
         Parameters
         ----------
@@ -1161,7 +1213,15 @@ class RawPostsClient:
 
         content : PostContent
 
+        channel_sets : typing.Optional[typing.Sequence[str]]
+
+        default_signatures : typing.Optional[bool]
+
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        signature_id : typing.Optional[str]
+
+        tag_ids : typing.Optional[typing.Sequence[str]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1176,12 +1236,16 @@ class RawPostsClient:
             method="PUT",
             json={
                 "channelIds": channel_ids,
+                "channelSets": channel_sets,
                 "content": convert_and_respect_annotation_metadata(
                     object_=content, annotation=PostContent, direction="write"
                 ),
+                "defaultSignatures": default_signatures,
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "signatureId": signature_id,
+                "tagIds": tag_ids,
             },
             headers={
                 "content-type": "application/json",
@@ -1522,6 +1586,221 @@ class RawPostsClient:
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
+    def tag(
+        self,
+        workspace_id: str,
+        post_id: str,
+        *,
+        tag_ids: typing.Sequence[str],
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> HttpResponse[Post]:
+        """
+        Files a post under these tags of the workspace, 10 at most, instead of those it had; an empty list takes them all off. Tags say nothing to the platforms, so a post takes them whatever its status, sent or not. Needs post:update.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        tag_ids : typing.Sequence[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        HttpResponse[Post]
+            Post
+        """
+        _response = self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/tags",
+            method="PUT",
+            json={
+                "tagIds": tag_ids,
+            },
+            headers={
+                "content-type": "application/json",
+            },
+            request_options=request_options,
+            omit=OMIT,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    Post,
+                    parse_obj_as(
+                        type_=Post,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return HttpResponse(response=_response, data=_data)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 422:
+                raise UnprocessableEntityError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
+    def duplicate(
+        self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> HttpResponse[Post]:
+        """
+        Makes a new draft that says what the post says, whatever the post's status: its text, its media, its channels with their text and options, and its tags. What the workspace no longer has is left out rather than refused: a channel disconnected since, with the text the post had there, media deleted since, a tag deleted since. The copy has no time, and its author is whoever asked; the post itself is not changed. Needs post:read and post:create, and channel:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        HttpResponse[Post]
+            Post
+        """
+        _request_options_with_retries_disabled: typing.Optional[RequestOptions] = (
+            {**request_options, "max_retries": 0} if request_options is not None else {"max_retries": 0}
+        )
+        _response = self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/duplicate",
+            method="POST",
+            request_options=_request_options_with_retries_disabled,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    Post,
+                    parse_obj_as(
+                        type_=Post,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return HttpResponse(response=_response, data=_data)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 422:
+                raise UnprocessableEntityError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -2497,11 +2776,15 @@ class AsyncRawPostsClient:
         *,
         channel_ids: typing.Sequence[str],
         content: PostContent,
+        channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
+        default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        signature_id: typing.Optional[str] = OMIT,
+        tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[Post]:
         """
-        Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.
+        Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. It may name channel sets (`channelSets`, by id or name), whose connected channels it is for as well, with the options each set keeps; a channel of a set that is no longer connected is left out, and the answer says so (`warnings`). A channel on which it gives no options takes the channel's default options, if it has some. With `defaultSignatures`, each channel's default signature goes under its text, and `signatureId` puts one signature under it on every channel: a signature is then text of the post, never added under a text that already ends with it. Needs post:create, channel:read, and media:read when it shows media.
 
         Parameters
         ----------
@@ -2511,7 +2794,15 @@ class AsyncRawPostsClient:
 
         content : PostContent
 
+        channel_sets : typing.Optional[typing.Sequence[str]]
+
+        default_signatures : typing.Optional[bool]
+
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        signature_id : typing.Optional[str]
+
+        tag_ids : typing.Optional[typing.Sequence[str]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -2529,12 +2820,16 @@ class AsyncRawPostsClient:
             method="POST",
             json={
                 "channelIds": channel_ids,
+                "channelSets": channel_sets,
                 "content": convert_and_respect_annotation_metadata(
                     object_=content, annotation=PostContent, direction="write"
                 ),
+                "defaultSignatures": default_signatures,
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "signatureId": signature_id,
+                "tagIds": tag_ids,
             },
             headers={
                 "content-type": "application/json",
@@ -2630,11 +2925,12 @@ class AsyncRawPostsClient:
         platform: typing.Optional[Platform] = None,
         sort: typing.Optional[PostSort] = None,
         status: typing.Optional[PostStatus] = None,
+        tag_id: typing.Optional[str] = None,
         to: typing.Optional[str] = None,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[PostPage]:
         """
-        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+        Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 
         Parameters
         ----------
@@ -2660,6 +2956,8 @@ class AsyncRawPostsClient:
 
         status : typing.Optional[PostStatus]
 
+        tag_id : typing.Optional[str]
+
         to : typing.Optional[str]
 
         request_options : typing.Optional[RequestOptions]
@@ -2684,6 +2982,7 @@ class AsyncRawPostsClient:
                 "platform": platform,
                 "sort": sort,
                 "status": status,
+                "tagId": tag_id,
                 "to": to,
             },
             request_options=request_options,
@@ -2772,11 +3071,15 @@ class AsyncRawPostsClient:
         wait: typing.Optional[str] = None,
         idempotency_key: typing.Optional[str] = None,
         allow_duplicate: typing.Optional[bool] = OMIT,
+        channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
+        default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        signature_id: typing.Optional[str] = OMIT,
+        tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[Post]:
         """
-        Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says `allowDuplicate: true`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless `wait` says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+        Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. Instead of listing channels, or beside them, it may name channel sets (`channelSets`, by id or name): it goes to their connected channels, with the options each set keeps where it gives none, and a channel of a set that is no longer connected is left out and told in the answer's `warnings`, never silently; a set none of whose channels is left, with no other channel, is refused (UnknownChannels). A channel on which it gives no options takes the channel's default options. `defaultSignatures` puts each channel's default signature under its text, and `signatureId` one signature on every channel: signatures are text of the post, counted against each platform's limit, and never added twice. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says `allowDuplicate: true`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless `wait` says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
 
         Parameters
         ----------
@@ -2794,7 +3097,15 @@ class AsyncRawPostsClient:
 
         allow_duplicate : typing.Optional[bool]
 
+        channel_sets : typing.Optional[typing.Sequence[str]]
+
+        default_signatures : typing.Optional[bool]
+
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        signature_id : typing.Optional[str]
+
+        tag_ids : typing.Optional[typing.Sequence[str]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -2816,12 +3127,16 @@ class AsyncRawPostsClient:
             json={
                 "allowDuplicate": allow_duplicate,
                 "channelIds": channel_ids,
+                "channelSets": channel_sets,
                 "content": convert_and_respect_annotation_metadata(
                     object_=content, annotation=PostContent, direction="write"
                 ),
+                "defaultSignatures": default_signatures,
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "signatureId": signature_id,
+                "tagIds": tag_ids,
                 "when": convert_and_respect_annotation_metadata(object_=when, annotation=PostTiming, direction="write"),
             },
             headers={
@@ -3163,7 +3478,10 @@ class AsyncRawPostsClient:
         channel_ids: typing.Sequence[str],
         content: PostContent,
         allow_duplicate: typing.Optional[bool] = OMIT,
+        channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
+        default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        signature_id: typing.Optional[str] = OMIT,
         when: typing.Optional[PostTiming] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[PostValidation]:
@@ -3180,7 +3498,13 @@ class AsyncRawPostsClient:
 
         allow_duplicate : typing.Optional[bool]
 
+        channel_sets : typing.Optional[typing.Sequence[str]]
+
+        default_signatures : typing.Optional[bool]
+
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        signature_id : typing.Optional[str]
 
         when : typing.Optional[PostTiming]
 
@@ -3201,12 +3525,15 @@ class AsyncRawPostsClient:
             json={
                 "allowDuplicate": allow_duplicate,
                 "channelIds": channel_ids,
+                "channelSets": channel_sets,
                 "content": convert_and_respect_annotation_metadata(
                     object_=content, annotation=PostContent, direction="write"
                 ),
+                "defaultSignatures": default_signatures,
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "signatureId": signature_id,
                 "when": convert_and_respect_annotation_metadata(object_=when, annotation=PostTiming, direction="write"),
             },
             headers={
@@ -3373,11 +3700,15 @@ class AsyncRawPostsClient:
         *,
         channel_ids: typing.Sequence[str],
         content: PostContent,
+        channel_sets: typing.Optional[typing.Sequence[str]] = OMIT,
+        default_signatures: typing.Optional[bool] = OMIT,
         options: typing.Optional[typing.Sequence[ChannelOptions]] = OMIT,
+        signature_id: typing.Optional[str] = OMIT,
+        tag_ids: typing.Optional[typing.Sequence[str]] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[Post]:
         """
-        Replaces a draft's content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
+        Replaces a draft's content, channels and options: options left out are removed. Its tags are replaced by `tagIds` when given, and kept otherwise. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
 
         Parameters
         ----------
@@ -3389,7 +3720,15 @@ class AsyncRawPostsClient:
 
         content : PostContent
 
+        channel_sets : typing.Optional[typing.Sequence[str]]
+
+        default_signatures : typing.Optional[bool]
+
         options : typing.Optional[typing.Sequence[ChannelOptions]]
+
+        signature_id : typing.Optional[str]
+
+        tag_ids : typing.Optional[typing.Sequence[str]]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -3404,12 +3743,16 @@ class AsyncRawPostsClient:
             method="PUT",
             json={
                 "channelIds": channel_ids,
+                "channelSets": channel_sets,
                 "content": convert_and_respect_annotation_metadata(
                     object_=content, annotation=PostContent, direction="write"
                 ),
+                "defaultSignatures": default_signatures,
                 "options": convert_and_respect_annotation_metadata(
                     object_=options, annotation=typing.Sequence[ChannelOptions], direction="write"
                 ),
+                "signatureId": signature_id,
+                "tagIds": tag_ids,
             },
             headers={
                 "content-type": "application/json",
@@ -3750,6 +4093,221 @@ class AsyncRawPostsClient:
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
+    async def tag(
+        self,
+        workspace_id: str,
+        post_id: str,
+        *,
+        tag_ids: typing.Sequence[str],
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> AsyncHttpResponse[Post]:
+        """
+        Files a post under these tags of the workspace, 10 at most, instead of those it had; an empty list takes them all off. Tags say nothing to the platforms, so a post takes them whatever its status, sent or not. Needs post:update.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        tag_ids : typing.Sequence[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        AsyncHttpResponse[Post]
+            Post
+        """
+        _response = await self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/tags",
+            method="PUT",
+            json={
+                "tagIds": tag_ids,
+            },
+            headers={
+                "content-type": "application/json",
+            },
+            request_options=request_options,
+            omit=OMIT,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    Post,
+                    parse_obj_as(
+                        type_=Post,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return AsyncHttpResponse(response=_response, data=_data)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 422:
+                raise UnprocessableEntityError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            _response_json = _response.json()
+        except JSONDecodeError:
+            raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
+        except ValidationError as e:
+            raise ParsingError(
+                status_code=_response.status_code, headers=dict(_response.headers), body=_response.json(), cause=e
+            )
+        raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
+
+    async def duplicate(
+        self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> AsyncHttpResponse[Post]:
+        """
+        Makes a new draft that says what the post says, whatever the post's status: its text, its media, its channels with their text and options, and its tags. What the workspace no longer has is left out rather than refused: a channel disconnected since, with the text the post had there, media deleted since, a tag deleted since. The copy has no time, and its author is whoever asked; the post itself is not changed. Needs post:read and post:create, and channel:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        post_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        AsyncHttpResponse[Post]
+            Post
+        """
+        _request_options_with_retries_disabled: typing.Optional[RequestOptions] = (
+            {**request_options, "max_retries": 0} if request_options is not None else {"max_retries": 0}
+        )
+        _response = await self._client_wrapper.httpx_client.request(
+            f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/duplicate",
+            method="POST",
+            request_options=_request_options_with_retries_disabled,
+        )
+        try:
+            if 200 <= _response.status_code < 300:
+                _data = typing.cast(
+                    Post,
+                    parse_obj_as(
+                        type_=Post,  # type: ignore
+                        object_=_response.json(),
+                    ),
+                )
+                return AsyncHttpResponse(response=_response, data=_data)
+            if _response.status_code == 401:
+                raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        UnauthenticatedEncoded,
+                        parse_obj_as(
+                            type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 403:
+                raise ForbiddenError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 404:
+                raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 422:
+                raise UnprocessableEntityError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,

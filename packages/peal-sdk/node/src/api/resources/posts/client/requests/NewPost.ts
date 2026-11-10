@@ -29,7 +29,11 @@ export interface NewPost {
     "idempotency-key"?: string;
     allowDuplicate?: boolean;
     channelIds: string[];
+    channelSets?: string[];
     content: Peal.PostContent;
+    defaultSignatures?: boolean;
     options?: Peal.ChannelOptions[];
+    signatureId?: string;
+    tagIds?: string[];
     when: Peal.PostTiming;
 }

@@ -259,45 +259,8 @@ export const ChannelsHandlers = HttpApiBuilder.group(
             .turnOn(actor, params.channelId)
             .pipe(Effect.map(toChannelView), Effect.catchTags(settingFailures));
         }),
-      list: () =>
-        Effect.gen(function* list() {
-          const actor = actorOf(yield* CurrentMember);
-
-          const channels = yield* listChannels.list(actor).pipe(
-            Effect.catchTags({
-              DatabaseError: Effect.die,
-              MissingPermission: forbidden,
-            })
-          );
-
-          return channels.map(toChannelView);
-        }),
-      platforms: () =>
-        Effect.gen(function* platforms() {
-          const actor = actorOf(yield* CurrentMember);
-
-          const connectable = yield* connectChannel
-            .connectable(actor)
-            .pipe(Effect.catchTag("MissingPermission", forbidden));
-
-          return {
-            instagramConnections: connectable.instagramConnections,
-            linkedinConnections: connectable.linkedinConnections,
-            platforms: connectable.platforms,
-          };
-        }),
-      reconnect: ({ params }) =>
-        Effect.gen(function* reconnect() {
-          const actor = actorOf(yield* CurrentMember);
-
-          const authorizationUrl = yield* connectChannel
-            .reconnect(actor, params.channelId)
-            .pipe(Effect.catch(reconnectFailure));
-
-          return { authorizationUrl };
-        }),
-      search: ({ query }) =>
-        Effect.gen(function* search() {
+      find: ({ query }) =>
+        Effect.gen(function* find() {
           const actor = actorOf(yield* CurrentMember);
 
           // A cursor is the id of the page's last channel: one that is no
@@ -334,6 +297,43 @@ export const ChannelsHandlers = HttpApiBuilder.group(
             items: page.items.map(toChannelView),
             nextCursor: Option.getOrNull(page.next),
           };
+        }),
+      list: () =>
+        Effect.gen(function* list() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const channels = yield* listChannels.list(actor).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+            })
+          );
+
+          return channels.map(toChannelView);
+        }),
+      platforms: () =>
+        Effect.gen(function* platforms() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const connectable = yield* connectChannel
+            .connectable(actor)
+            .pipe(Effect.catchTag("MissingPermission", forbidden));
+
+          return {
+            instagramConnections: connectable.instagramConnections,
+            linkedinConnections: connectable.linkedinConnections,
+            platforms: connectable.platforms,
+          };
+        }),
+      reconnect: ({ params }) =>
+        Effect.gen(function* reconnect() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const authorizationUrl = yield* connectChannel
+            .reconnect(actor, params.channelId)
+            .pipe(Effect.catch(reconnectFailure));
+
+          return { authorizationUrl };
         }),
       update: ({ params, payload }) =>
         Effect.gen(function* update() {

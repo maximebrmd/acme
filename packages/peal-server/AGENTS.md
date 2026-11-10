@@ -28,22 +28,22 @@ The server follows DDD and Clean Architecture. Each bounded context in
 `packages/peal-server/src/` has four layers, plus a `container.ts` that wires
 them:
 
-| Context         | Holds                                                                       |
-| --------------- | --------------------------------------------------------------------------- |
-| `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters |
-| `channels`      | connected accounts, connect flows, encrypted tokens and their renewal       |
-| `media`         | uploads, storage, probing, alt text, files handed to platforms              |
-| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth, partner accounts     |
-| `notifications` | account emails, in-app notices, their emails, notification preferences      |
-| `assistant`     | the writing assistant: prompts, language models, the daily quota            |
-| `shared`        | the kernel the others build on                                              |
-| `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
-| `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
-| `staff`         | the staff console: what staff read and do, and the audit log of it          |
-| `activity`      | each workspace's activity log, and the requests counted for the rate limit  |
-| `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log   |
-| `legal`         | what French law has a host keep, and the legal requests that read it        |
-| `review`        | approval policies, requests and decisions, review links, comments           |
+| Context         | Holds                                                                                                                                                           |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters, and what a workspace saves to write and file them (tags, signatures, channel sets) |
+| `channels`      | connected accounts, connect flows, encrypted tokens and their renewal                                                                                           |
+| `media`         | uploads, storage, probing, alt text, files handed to platforms                                                                                                  |
+| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth, partner accounts                                                                                         |
+| `notifications` | account emails, in-app notices, their emails, notification preferences                                                                                          |
+| `assistant`     | the writing assistant: prompts, language models, the daily quota                                                                                                |
+| `shared`        | the kernel the others build on                                                                                                                                  |
+| `analytics`     | the posts it follows, snapshots of their counts, the hourly collection                                                                                          |
+| `billing`       | plans, subscriptions, entitlements, the billing page's usage                                                                                                    |
+| `staff`         | the staff console: what staff read and do, and the audit log of it                                                                                              |
+| `activity`      | each workspace's activity log, and the requests counted for the rate limit                                                                                      |
+| `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log                                                                                       |
+| `legal`         | what French law has a host keep, and the legal requests that read it                                                                                            |
+| `review`        | approval policies, requests and decisions, review links, comments                                                                                               |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.

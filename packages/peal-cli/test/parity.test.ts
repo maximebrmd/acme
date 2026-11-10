@@ -65,12 +65,12 @@ const coverage = {
     "Disconnecting deletes a channel and fails its scheduled posts: a person does it, in the web app."
   ),
   "channels.enable": by("channels enable"),
+  "channels.find": by("channels list"),
   "channels.list": by("channels list"),
   "channels.platforms": exempt(
     "Only the web app's connect forms read which platforms the server connects."
   ),
   "channels.reconnect": exempt(connecting),
-  "channels.search": by("channels list"),
   "channels.update": by("channels rename"),
   "connectLinks.create": by("links create"),
   "connectLinks.get": by("links show"),

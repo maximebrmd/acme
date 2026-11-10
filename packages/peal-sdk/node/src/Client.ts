@@ -6,7 +6,9 @@ import { ApiKeysClient } from "./api/resources/apiKeys/client/Client.js";
 import { AssistantClient } from "./api/resources/assistant/client/Client.js";
 import { BillingClient } from "./api/resources/billing/client/Client.js";
 import { CapabilitiesClient } from "./api/resources/capabilities/client/Client.js";
+import { ChannelDefaultsClient } from "./api/resources/channelDefaults/client/Client.js";
 import { ChannelsClient } from "./api/resources/channels/client/Client.js";
+import { ChannelSetsClient } from "./api/resources/channelSets/client/Client.js";
 import { ConnectLinksClient } from "./api/resources/connectLinks/client/Client.js";
 import { InvitationsClient } from "./api/resources/invitations/client/Client.js";
 import { LookupsClient } from "./api/resources/lookups/client/Client.js";
@@ -19,7 +21,9 @@ import { PartnerAccountClient } from "./api/resources/partnerAccount/client/Clie
 import { PostsClient } from "./api/resources/posts/client/Client.js";
 import { ReviewClient } from "./api/resources/review/client/Client.js";
 import { SessionClient } from "./api/resources/session/client/Client.js";
+import { SignaturesClient } from "./api/resources/signatures/client/Client.js";
 import { SystemClient } from "./api/resources/system/client/Client.js";
+import { TagsClient } from "./api/resources/tags/client/Client.js";
 import { TiktokClient } from "./api/resources/tiktok/client/Client.js";
 import { WebhooksClient } from "./api/resources/webhooks/client/Client.js";
 import type { BaseClientOptions, BaseRequestOptions } from "./BaseClient.js";
@@ -58,6 +62,10 @@ export class PealClient {
     protected _partnerAccount: PartnerAccountClient | undefined;
     protected _connectLinks: ConnectLinksClient | undefined;
     protected _review: ReviewClient | undefined;
+    protected _tags: TagsClient | undefined;
+    protected _signatures: SignaturesClient | undefined;
+    protected _channelSets: ChannelSetsClient | undefined;
+    protected _channelDefaults: ChannelDefaultsClient | undefined;
 
     constructor(options: PealClient.Options = {}) {
 
@@ -150,6 +158,22 @@ export class PealClient {
 
     public get review(): ReviewClient {
         return (this._review ??= new ReviewClient(this._options));
+    }
+
+    public get tags(): TagsClient {
+        return (this._tags ??= new TagsClient(this._options));
+    }
+
+    public get signatures(): SignaturesClient {
+        return (this._signatures ??= new SignaturesClient(this._options));
+    }
+
+    public get channelSets(): ChannelSetsClient {
+        return (this._channelSets ??= new ChannelSetsClient(this._options));
+    }
+
+    public get channelDefaults(): ChannelDefaultsClient {
+        return (this._channelDefaults ??= new ChannelDefaultsClient(this._options));
     }
 
     /**

@@ -19,11 +19,11 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.ReviewLinkNotFound"/>.
+    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.ChannelNotFound"/>.
     /// </summary>
-    public NotFoundErrorBody(NotFoundErrorBody.ReviewLinkNotFound value)
+    public NotFoundErrorBody(NotFoundErrorBody.ChannelNotFound value)
     {
-        Type = "ReviewLinkNotFound";
+        Type = "ChannelNotFound";
         Value = value.Value;
     }
 
@@ -48,9 +48,9 @@ public record NotFoundErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "ReviewLinkNotFound"
+    /// Returns true if <see cref="Type"/> is "ChannelNotFound"
     /// </summary>
-    public bool IsReviewLinkNotFound => Type == "ReviewLinkNotFound";
+    public bool IsChannelNotFound => Type == "ChannelNotFound";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "WorkspaceNotFound"
@@ -58,15 +58,13 @@ public record NotFoundErrorBody
     public bool IsWorkspaceNotFound => Type == "WorkspaceNotFound";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.ReviewLinkNotFoundEncoded"/> if <see cref="Type"/> is 'ReviewLinkNotFound', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.ChannelNotFoundEncoded"/> if <see cref="Type"/> is 'ChannelNotFound', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ReviewLinkNotFound'.</exception>
-    public Peal.ReviewLinkNotFoundEncoded AsReviewLinkNotFound() =>
-        IsReviewLinkNotFound
-            ? (Peal.ReviewLinkNotFoundEncoded)Value!
-            : throw new global::System.Exception(
-                "NotFoundErrorBody.Type is not 'ReviewLinkNotFound'"
-            );
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ChannelNotFound'.</exception>
+    public Peal.ChannelNotFoundEncoded AsChannelNotFound() =>
+        IsChannelNotFound
+            ? (Peal.ChannelNotFoundEncoded)Value!
+            : throw new global::System.Exception("NotFoundErrorBody.Type is not 'ChannelNotFound'");
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.WorkspaceNotFoundEncoded"/> if <see cref="Type"/> is 'WorkspaceNotFound', otherwise throws an exception.
@@ -80,29 +78,29 @@ public record NotFoundErrorBody
             );
 
     public T Match<T>(
-        Func<Peal.ReviewLinkNotFoundEncoded, T> onReviewLinkNotFound,
+        Func<Peal.ChannelNotFoundEncoded, T> onChannelNotFound,
         Func<Peal.WorkspaceNotFoundEncoded, T> onWorkspaceNotFound,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "ReviewLinkNotFound" => onReviewLinkNotFound(AsReviewLinkNotFound()),
+            "ChannelNotFound" => onChannelNotFound(AsChannelNotFound()),
             "WorkspaceNotFound" => onWorkspaceNotFound(AsWorkspaceNotFound()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.ReviewLinkNotFoundEncoded> onReviewLinkNotFound,
+        Action<Peal.ChannelNotFoundEncoded> onChannelNotFound,
         Action<Peal.WorkspaceNotFoundEncoded> onWorkspaceNotFound,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "ReviewLinkNotFound":
-                onReviewLinkNotFound(AsReviewLinkNotFound());
+            case "ChannelNotFound":
+                onChannelNotFound(AsChannelNotFound());
                 break;
             case "WorkspaceNotFound":
                 onWorkspaceNotFound(AsWorkspaceNotFound());
@@ -114,13 +112,13 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.ReviewLinkNotFoundEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.ChannelNotFoundEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsReviewLinkNotFound(out Peal.ReviewLinkNotFoundEncoded? value)
+    public bool TryAsChannelNotFound(out Peal.ChannelNotFoundEncoded? value)
     {
-        if (Type == "ReviewLinkNotFound")
+        if (Type == "ChannelNotFound")
         {
-            value = (Peal.ReviewLinkNotFoundEncoded)Value!;
+            value = (Peal.ChannelNotFoundEncoded)Value!;
             return true;
         }
         value = null;
@@ -143,7 +141,7 @@ public record NotFoundErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator NotFoundErrorBody(NotFoundErrorBody.ReviewLinkNotFound value) =>
+    public static implicit operator NotFoundErrorBody(NotFoundErrorBody.ChannelNotFound value) =>
         new(value);
 
     public static implicit operator NotFoundErrorBody(NotFoundErrorBody.WorkspaceNotFound value) =>
@@ -190,10 +188,10 @@ public record NotFoundErrorBody
 
             var value = discriminator switch
             {
-                "ReviewLinkNotFound" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.ReviewLinkNotFoundEncoded?>(options)
+                "ChannelNotFound" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ChannelNotFoundEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.ReviewLinkNotFoundEncoded"
+                            "Failed to deserialize Peal.ChannelNotFoundEncoded"
                         ),
                 "WorkspaceNotFound" => json.Deserialize<Peal.WorkspaceNotFoundEncoded?>(options)
                     ?? throw new JsonException(
@@ -213,7 +211,7 @@ public record NotFoundErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "ReviewLinkNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "ChannelNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     "WorkspaceNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
@@ -244,22 +242,22 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for ReviewLinkNotFound
+    /// Discriminated union type for ChannelNotFound
     /// </summary>
     [Serializable]
-    public struct ReviewLinkNotFound
+    public struct ChannelNotFound
     {
-        public ReviewLinkNotFound(Peal.ReviewLinkNotFoundEncoded value)
+        public ChannelNotFound(Peal.ChannelNotFoundEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.ReviewLinkNotFoundEncoded Value { get; set; }
+        internal Peal.ChannelNotFoundEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator NotFoundErrorBody.ReviewLinkNotFound(
-            Peal.ReviewLinkNotFoundEncoded value
+        public static implicit operator NotFoundErrorBody.ChannelNotFound(
+            Peal.ChannelNotFoundEncoded value
         ) => new(value);
     }
 

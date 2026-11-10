@@ -19,20 +19,20 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.ConnectFailed"/>.
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.UnknownChannels"/>.
     /// </summary>
-    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.ConnectFailed value)
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.UnknownChannels value)
     {
-        Type = "ConnectFailed";
+        Type = "UnknownChannels";
         Value = value.Value;
     }
 
     /// <summary>
-    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.ReturnUrlNotAllowed"/>.
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.PostContentInvalid"/>.
     /// </summary>
-    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.ReturnUrlNotAllowed value)
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.PostContentInvalid value)
     {
-        Type = "ReturnUrlNotAllowed";
+        Type = "PostContentInvalid";
         Value = value.Value;
     }
 
@@ -48,64 +48,64 @@ public record UnprocessableEntityErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "ConnectFailed"
+    /// Returns true if <see cref="Type"/> is "UnknownChannels"
     /// </summary>
-    public bool IsConnectFailed => Type == "ConnectFailed";
+    public bool IsUnknownChannels => Type == "UnknownChannels";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "ReturnUrlNotAllowed"
+    /// Returns true if <see cref="Type"/> is "PostContentInvalid"
     /// </summary>
-    public bool IsReturnUrlNotAllowed => Type == "ReturnUrlNotAllowed";
+    public bool IsPostContentInvalid => Type == "PostContentInvalid";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.ConnectFailedEncoded"/> if <see cref="Type"/> is 'ConnectFailed', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.UnknownChannelsEncoded"/> if <see cref="Type"/> is 'UnknownChannels', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ConnectFailed'.</exception>
-    public Peal.ConnectFailedEncoded AsConnectFailed() =>
-        IsConnectFailed
-            ? (Peal.ConnectFailedEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'UnknownChannels'.</exception>
+    public Peal.UnknownChannelsEncoded AsUnknownChannels() =>
+        IsUnknownChannels
+            ? (Peal.UnknownChannelsEncoded)Value!
             : throw new global::System.Exception(
-                "UnprocessableEntityErrorBody.Type is not 'ConnectFailed'"
+                "UnprocessableEntityErrorBody.Type is not 'UnknownChannels'"
             );
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.ReturnUrlNotAllowedEncoded"/> if <see cref="Type"/> is 'ReturnUrlNotAllowed', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.PostContentInvalidEncoded"/> if <see cref="Type"/> is 'PostContentInvalid', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ReturnUrlNotAllowed'.</exception>
-    public Peal.ReturnUrlNotAllowedEncoded AsReturnUrlNotAllowed() =>
-        IsReturnUrlNotAllowed
-            ? (Peal.ReturnUrlNotAllowedEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostContentInvalid'.</exception>
+    public Peal.PostContentInvalidEncoded AsPostContentInvalid() =>
+        IsPostContentInvalid
+            ? (Peal.PostContentInvalidEncoded)Value!
             : throw new global::System.Exception(
-                "UnprocessableEntityErrorBody.Type is not 'ReturnUrlNotAllowed'"
+                "UnprocessableEntityErrorBody.Type is not 'PostContentInvalid'"
             );
 
     public T Match<T>(
-        Func<Peal.ConnectFailedEncoded, T> onConnectFailed,
-        Func<Peal.ReturnUrlNotAllowedEncoded, T> onReturnUrlNotAllowed,
+        Func<Peal.UnknownChannelsEncoded, T> onUnknownChannels,
+        Func<Peal.PostContentInvalidEncoded, T> onPostContentInvalid,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "ConnectFailed" => onConnectFailed(AsConnectFailed()),
-            "ReturnUrlNotAllowed" => onReturnUrlNotAllowed(AsReturnUrlNotAllowed()),
+            "UnknownChannels" => onUnknownChannels(AsUnknownChannels()),
+            "PostContentInvalid" => onPostContentInvalid(AsPostContentInvalid()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.ConnectFailedEncoded> onConnectFailed,
-        Action<Peal.ReturnUrlNotAllowedEncoded> onReturnUrlNotAllowed,
+        Action<Peal.UnknownChannelsEncoded> onUnknownChannels,
+        Action<Peal.PostContentInvalidEncoded> onPostContentInvalid,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "ConnectFailed":
-                onConnectFailed(AsConnectFailed());
+            case "UnknownChannels":
+                onUnknownChannels(AsUnknownChannels());
                 break;
-            case "ReturnUrlNotAllowed":
-                onReturnUrlNotAllowed(AsReturnUrlNotAllowed());
+            case "PostContentInvalid":
+                onPostContentInvalid(AsPostContentInvalid());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -114,13 +114,13 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.ConnectFailedEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.UnknownChannelsEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsConnectFailed(out Peal.ConnectFailedEncoded? value)
+    public bool TryAsUnknownChannels(out Peal.UnknownChannelsEncoded? value)
     {
-        if (Type == "ConnectFailed")
+        if (Type == "UnknownChannels")
         {
-            value = (Peal.ConnectFailedEncoded)Value!;
+            value = (Peal.UnknownChannelsEncoded)Value!;
             return true;
         }
         value = null;
@@ -128,13 +128,13 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.ReturnUrlNotAllowedEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.PostContentInvalidEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsReturnUrlNotAllowed(out Peal.ReturnUrlNotAllowedEncoded? value)
+    public bool TryAsPostContentInvalid(out Peal.PostContentInvalidEncoded? value)
     {
-        if (Type == "ReturnUrlNotAllowed")
+        if (Type == "PostContentInvalid")
         {
-            value = (Peal.ReturnUrlNotAllowedEncoded)Value!;
+            value = (Peal.PostContentInvalidEncoded)Value!;
             return true;
         }
         value = null;
@@ -144,11 +144,11 @@ public record UnprocessableEntityErrorBody
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator UnprocessableEntityErrorBody(
-        UnprocessableEntityErrorBody.ConnectFailed value
+        UnprocessableEntityErrorBody.UnknownChannels value
     ) => new(value);
 
     public static implicit operator UnprocessableEntityErrorBody(
-        UnprocessableEntityErrorBody.ReturnUrlNotAllowed value
+        UnprocessableEntityErrorBody.PostContentInvalid value
     ) => new(value);
 
     [Serializable]
@@ -184,21 +184,14 @@ public record UnprocessableEntityErrorBody
                 discriminatorElement.GetString()
                 ?? throw new JsonException("Discriminator property '_tag' is null");
 
-            // Strip the discriminant property to prevent it from leaking into AdditionalProperties
-            var jsonObject = System.Text.Json.Nodes.JsonObject.Create(json);
-            jsonObject?.Remove("_tag");
-            var jsonWithoutDiscriminator =
-                jsonObject != null ? JsonSerializer.SerializeToElement(jsonObject, options) : json;
-
             var value = discriminator switch
             {
-                "ConnectFailed" => json.Deserialize<Peal.ConnectFailedEncoded?>(options)
-                    ?? throw new JsonException("Failed to deserialize Peal.ConnectFailedEncoded"),
-                "ReturnUrlNotAllowed" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.ReturnUrlNotAllowedEncoded?>(options)
-                        ?? throw new JsonException(
-                            "Failed to deserialize Peal.ReturnUrlNotAllowedEncoded"
-                        ),
+                "UnknownChannels" => json.Deserialize<Peal.UnknownChannelsEncoded?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.UnknownChannelsEncoded"),
+                "PostContentInvalid" => json.Deserialize<Peal.PostContentInvalidEncoded?>(options)
+                    ?? throw new JsonException(
+                        "Failed to deserialize Peal.PostContentInvalidEncoded"
+                    ),
                 _ => json.Deserialize<object?>(options),
             };
             return new UnprocessableEntityErrorBody(discriminator, value);
@@ -213,8 +206,8 @@ public record UnprocessableEntityErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "ConnectFailed" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "ReturnUrlNotAllowed" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "UnknownChannels" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "PostContentInvalid" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -244,42 +237,42 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for ConnectFailed
+    /// Discriminated union type for UnknownChannels
     /// </summary>
     [Serializable]
-    public struct ConnectFailed
+    public struct UnknownChannels
     {
-        public ConnectFailed(Peal.ConnectFailedEncoded value)
+        public UnknownChannels(Peal.UnknownChannelsEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.ConnectFailedEncoded Value { get; set; }
+        internal Peal.UnknownChannelsEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator UnprocessableEntityErrorBody.ConnectFailed(
-            Peal.ConnectFailedEncoded value
+        public static implicit operator UnprocessableEntityErrorBody.UnknownChannels(
+            Peal.UnknownChannelsEncoded value
         ) => new(value);
     }
 
     /// <summary>
-    /// Discriminated union type for ReturnUrlNotAllowed
+    /// Discriminated union type for PostContentInvalid
     /// </summary>
     [Serializable]
-    public struct ReturnUrlNotAllowed
+    public struct PostContentInvalid
     {
-        public ReturnUrlNotAllowed(Peal.ReturnUrlNotAllowedEncoded value)
+        public PostContentInvalid(Peal.PostContentInvalidEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.ReturnUrlNotAllowedEncoded Value { get; set; }
+        internal Peal.PostContentInvalidEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator UnprocessableEntityErrorBody.ReturnUrlNotAllowed(
-            Peal.ReturnUrlNotAllowedEncoded value
+        public static implicit operator UnprocessableEntityErrorBody.PostContentInvalid(
+            Peal.PostContentInvalidEncoded value
         ) => new(value);
     }
 }

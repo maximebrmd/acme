@@ -189,7 +189,7 @@ const list = Command.make(
     }
 
     const page = yield* client.channels
-      .search({ params: { workspaceId: workspace.id }, query })
+      .find({ params: { workspaceId: workspace.id }, query })
       .pipe(Effect.mapError(explain(url)));
 
     if (input.json) {

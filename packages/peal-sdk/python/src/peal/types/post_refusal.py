@@ -237,6 +237,69 @@ class PostRefusal_Forbidden(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class PostRefusal_UnknownTags(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["UnknownTags"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "UnknownTags"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+    tag_ids: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="tagIds"), pydantic.Field(alias="tagIds")
+    ]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class PostRefusal_ChannelSetNotFound(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["ChannelSetNotFound"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "ChannelSetNotFound"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class PostRefusal_SignatureNotFound(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["SignatureNotFound"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "SignatureNotFound"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 PostRefusal = typing_extensions.Annotated[
     typing.Union[
         PostRefusal_PostContentInvalid,
@@ -249,6 +312,9 @@ PostRefusal = typing_extensions.Annotated[
         PostRefusal_PostNotFound,
         PostRefusal_DuplicatePost,
         PostRefusal_Forbidden,
+        PostRefusal_UnknownTags,
+        PostRefusal_ChannelSetNotFound,
+        PostRefusal_SignatureNotFound,
     ],
     pydantic.Field(discriminator="type"),
 ]

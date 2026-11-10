@@ -109,6 +109,33 @@ public record PostRefusal
     }
 
     /// <summary>
+    /// Create an instance of PostRefusal with <see cref="PostRefusal.UnknownTags"/>.
+    /// </summary>
+    public PostRefusal(PostRefusal.UnknownTags value)
+    {
+        Type = "UnknownTags";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of PostRefusal with <see cref="PostRefusal.ChannelSetNotFound"/>.
+    /// </summary>
+    public PostRefusal(PostRefusal.ChannelSetNotFound value)
+    {
+        Type = "ChannelSetNotFound";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of PostRefusal with <see cref="PostRefusal.SignatureNotFound"/>.
+    /// </summary>
+    public PostRefusal(PostRefusal.SignatureNotFound value)
+    {
+        Type = "SignatureNotFound";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -168,6 +195,21 @@ public record PostRefusal
     /// Returns true if <see cref="Type"/> is "Forbidden"
     /// </summary>
     public bool IsForbidden => Type == "Forbidden";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "UnknownTags"
+    /// </summary>
+    public bool IsUnknownTags => Type == "UnknownTags";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "ChannelSetNotFound"
+    /// </summary>
+    public bool IsChannelSetNotFound => Type == "ChannelSetNotFound";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "SignatureNotFound"
+    /// </summary>
+    public bool IsSignatureNotFound => Type == "SignatureNotFound";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.PostContentInvalidEncoded"/> if <see cref="Type"/> is 'PostContentInvalid', otherwise throws an exception.
@@ -259,6 +301,33 @@ public record PostRefusal
             ? (Peal.ForbiddenEncoded)Value!
             : throw new global::System.Exception("PostRefusal.Type is not 'Forbidden'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.UnknownTagsEncoded"/> if <see cref="Type"/> is 'UnknownTags', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'UnknownTags'.</exception>
+    public Peal.UnknownTagsEncoded AsUnknownTags() =>
+        IsUnknownTags
+            ? (Peal.UnknownTagsEncoded)Value!
+            : throw new global::System.Exception("PostRefusal.Type is not 'UnknownTags'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.ChannelSetNotFoundEncoded"/> if <see cref="Type"/> is 'ChannelSetNotFound', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ChannelSetNotFound'.</exception>
+    public Peal.ChannelSetNotFoundEncoded AsChannelSetNotFound() =>
+        IsChannelSetNotFound
+            ? (Peal.ChannelSetNotFoundEncoded)Value!
+            : throw new global::System.Exception("PostRefusal.Type is not 'ChannelSetNotFound'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.SignatureNotFoundEncoded"/> if <see cref="Type"/> is 'SignatureNotFound', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'SignatureNotFound'.</exception>
+    public Peal.SignatureNotFoundEncoded AsSignatureNotFound() =>
+        IsSignatureNotFound
+            ? (Peal.SignatureNotFoundEncoded)Value!
+            : throw new global::System.Exception("PostRefusal.Type is not 'SignatureNotFound'");
+
     public T Match<T>(
         Func<Peal.PostContentInvalidEncoded, T> onPostContentInvalid,
         Func<Peal.UnknownChannelsEncoded, T> onUnknownChannels,
@@ -270,6 +339,9 @@ public record PostRefusal
         Func<Peal.PostNotFoundEncoded, T> onPostNotFound,
         Func<Peal.DuplicatePostEncoded, T> onDuplicatePost,
         Func<Peal.ForbiddenEncoded, T> onForbidden,
+        Func<Peal.UnknownTagsEncoded, T> onUnknownTags,
+        Func<Peal.ChannelSetNotFoundEncoded, T> onChannelSetNotFound,
+        Func<Peal.SignatureNotFoundEncoded, T> onSignatureNotFound,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -285,6 +357,9 @@ public record PostRefusal
             "PostNotFound" => onPostNotFound(AsPostNotFound()),
             "DuplicatePost" => onDuplicatePost(AsDuplicatePost()),
             "Forbidden" => onForbidden(AsForbidden()),
+            "UnknownTags" => onUnknownTags(AsUnknownTags()),
+            "ChannelSetNotFound" => onChannelSetNotFound(AsChannelSetNotFound()),
+            "SignatureNotFound" => onSignatureNotFound(AsSignatureNotFound()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -300,6 +375,9 @@ public record PostRefusal
         Action<Peal.PostNotFoundEncoded> onPostNotFound,
         Action<Peal.DuplicatePostEncoded> onDuplicatePost,
         Action<Peal.ForbiddenEncoded> onForbidden,
+        Action<Peal.UnknownTagsEncoded> onUnknownTags,
+        Action<Peal.ChannelSetNotFoundEncoded> onChannelSetNotFound,
+        Action<Peal.SignatureNotFoundEncoded> onSignatureNotFound,
         Action<string, object?> onUnknown_
     )
     {
@@ -334,6 +412,15 @@ public record PostRefusal
                 break;
             case "Forbidden":
                 onForbidden(AsForbidden());
+                break;
+            case "UnknownTags":
+                onUnknownTags(AsUnknownTags());
+                break;
+            case "ChannelSetNotFound":
+                onChannelSetNotFound(AsChannelSetNotFound());
+                break;
+            case "SignatureNotFound":
+                onSignatureNotFound(AsSignatureNotFound());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -481,6 +568,48 @@ public record PostRefusal
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.UnknownTagsEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsUnknownTags(out Peal.UnknownTagsEncoded? value)
+    {
+        if (Type == "UnknownTags")
+        {
+            value = (Peal.UnknownTagsEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ChannelSetNotFoundEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsChannelSetNotFound(out Peal.ChannelSetNotFoundEncoded? value)
+    {
+        if (Type == "ChannelSetNotFound")
+        {
+            value = (Peal.ChannelSetNotFoundEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.SignatureNotFoundEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsSignatureNotFound(out Peal.SignatureNotFoundEncoded? value)
+    {
+        if (Type == "SignatureNotFound")
+        {
+            value = (Peal.SignatureNotFoundEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator PostRefusal(PostRefusal.PostContentInvalid value) => new(value);
@@ -503,6 +632,12 @@ public record PostRefusal
     public static implicit operator PostRefusal(PostRefusal.DuplicatePost value) => new(value);
 
     public static implicit operator PostRefusal(PostRefusal.Forbidden value) => new(value);
+
+    public static implicit operator PostRefusal(PostRefusal.UnknownTags value) => new(value);
+
+    public static implicit operator PostRefusal(PostRefusal.ChannelSetNotFound value) => new(value);
+
+    public static implicit operator PostRefusal(PostRefusal.SignatureNotFound value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<PostRefusal>
@@ -545,16 +680,12 @@ public record PostRefusal
 
             var value = discriminator switch
             {
-                "PostContentInvalid" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.PostContentInvalidEncoded?>(options)
-                        ?? throw new JsonException(
-                            "Failed to deserialize Peal.PostContentInvalidEncoded"
-                        ),
-                "UnknownChannels" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.UnknownChannelsEncoded?>(options)
-                        ?? throw new JsonException(
-                            "Failed to deserialize Peal.UnknownChannelsEncoded"
-                        ),
+                "PostContentInvalid" => json.Deserialize<Peal.PostContentInvalidEncoded?>(options)
+                    ?? throw new JsonException(
+                        "Failed to deserialize Peal.PostContentInvalidEncoded"
+                    ),
+                "UnknownChannels" => json.Deserialize<Peal.UnknownChannelsEncoded?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.UnknownChannelsEncoded"),
                 "UnknownMedia" => jsonWithoutDiscriminator.Deserialize<Peal.UnknownMediaEncoded?>(
                     options
                 ) ?? throw new JsonException("Failed to deserialize Peal.UnknownMediaEncoded"),
@@ -582,6 +713,18 @@ public record PostRefusal
                 ) ?? throw new JsonException("Failed to deserialize Peal.DuplicatePostEncoded"),
                 "Forbidden" => json.Deserialize<Peal.ForbiddenEncoded?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.ForbiddenEncoded"),
+                "UnknownTags" => json.Deserialize<Peal.UnknownTagsEncoded?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.UnknownTagsEncoded"),
+                "ChannelSetNotFound" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ChannelSetNotFoundEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ChannelSetNotFoundEncoded"
+                        ),
+                "SignatureNotFound" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.SignatureNotFoundEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.SignatureNotFoundEncoded"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new PostRefusal(discriminator, value);
@@ -606,6 +749,9 @@ public record PostRefusal
                     "PostNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     "DuplicatePost" => JsonSerializer.SerializeToNode(value.Value, options),
                     "Forbidden" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "UnknownTags" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "ChannelSetNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "SignatureNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -829,5 +975,64 @@ public record PostRefusal
 
         public static implicit operator PostRefusal.Forbidden(Peal.ForbiddenEncoded value) =>
             new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for UnknownTags
+    /// </summary>
+    [Serializable]
+    public struct UnknownTags
+    {
+        public UnknownTags(Peal.UnknownTagsEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.UnknownTagsEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator PostRefusal.UnknownTags(Peal.UnknownTagsEncoded value) =>
+            new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for ChannelSetNotFound
+    /// </summary>
+    [Serializable]
+    public struct ChannelSetNotFound
+    {
+        public ChannelSetNotFound(Peal.ChannelSetNotFoundEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ChannelSetNotFoundEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator PostRefusal.ChannelSetNotFound(
+            Peal.ChannelSetNotFoundEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for SignatureNotFound
+    /// </summary>
+    [Serializable]
+    public struct SignatureNotFound
+    {
+        public SignatureNotFound(Peal.SignatureNotFoundEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.SignatureNotFoundEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator PostRefusal.SignatureNotFound(
+            Peal.SignatureNotFoundEncoded value
+        ) => new(value);
     }
 }

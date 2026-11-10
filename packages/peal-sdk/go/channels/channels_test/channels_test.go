@@ -103,6 +103,32 @@ func TestChannelsListWithWireMock(
 	VerifyRequestCount(t, "TestChannelsListWithWireMock", "GET", "/api/workspaces/workspaceId/channels", nil, 1)
 }
 
+func TestChannelsFindWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.FindChannelsRequest{
+		WorkspaceID: "workspaceId",
+	}
+	_, invocationErr := client.Channels.Find(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestChannelsFindWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestChannelsFindWithWireMock", "GET", "/api/workspaces/workspaceId/channels/search", nil, 1)
+}
+
 func TestChannelsPlatformsWithWireMock(
 	t *testing.T,
 ) {
@@ -267,4 +293,85 @@ func TestChannelsDisconnectWithWireMock(
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestChannelsDisconnectWithWireMock", "DELETE", "/api/workspaces/workspaceId/channels/channelId", nil, 1)
+}
+
+func TestChannelsUpdateWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.ChannelUpdate{
+		WorkspaceID: "workspaceId",
+		ChannelID:   "channelId",
+	}
+	_, invocationErr := client.Channels.Update(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestChannelsUpdateWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestChannelsUpdateWithWireMock", "PATCH", "/api/workspaces/workspaceId/channels/channelId", nil, 1)
+}
+
+func TestChannelsDisableWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.DisableChannelsRequest{
+		WorkspaceID: "workspaceId",
+		ChannelID:   "channelId",
+	}
+	_, invocationErr := client.Channels.Disable(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestChannelsDisableWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestChannelsDisableWithWireMock", "POST", "/api/workspaces/workspaceId/channels/channelId/disable", nil, 1)
+}
+
+func TestChannelsEnableWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.EnableChannelsRequest{
+		WorkspaceID: "workspaceId",
+		ChannelID:   "channelId",
+	}
+	_, invocationErr := client.Channels.Enable(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestChannelsEnableWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestChannelsEnableWithWireMock", "POST", "/api/workspaces/workspaceId/channels/channelId/enable", nil, 1)
 }

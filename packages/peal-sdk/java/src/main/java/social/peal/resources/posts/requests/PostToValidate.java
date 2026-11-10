@@ -30,9 +30,15 @@ public final class PostToValidate {
 
     private final List<String> channelIds;
 
+    private final Optional<List<String>> channelSets;
+
     private final PostContent content;
 
+    private final Optional<Boolean> defaultSignatures;
+
     private final Optional<List<ChannelOptions>> options;
+
+    private final Optional<String> signatureId;
 
     private final Optional<PostTiming> when;
 
@@ -41,14 +47,20 @@ public final class PostToValidate {
     private PostToValidate(
             Optional<Boolean> allowDuplicate,
             List<String> channelIds,
+            Optional<List<String>> channelSets,
             PostContent content,
+            Optional<Boolean> defaultSignatures,
             Optional<List<ChannelOptions>> options,
+            Optional<String> signatureId,
             Optional<PostTiming> when,
             Map<String, Object> additionalProperties) {
         this.allowDuplicate = allowDuplicate;
         this.channelIds = channelIds;
+        this.channelSets = channelSets;
         this.content = content;
+        this.defaultSignatures = defaultSignatures;
         this.options = options;
+        this.signatureId = signatureId;
         this.when = when;
         this.additionalProperties = additionalProperties;
     }
@@ -63,14 +75,29 @@ public final class PostToValidate {
         return channelIds;
     }
 
+    @JsonProperty("channelSets")
+    public Optional<List<String>> getChannelSets() {
+        return channelSets;
+    }
+
     @JsonProperty("content")
     public PostContent getContent() {
         return content;
     }
 
+    @JsonProperty("defaultSignatures")
+    public Optional<Boolean> getDefaultSignatures() {
+        return defaultSignatures;
+    }
+
     @JsonProperty("options")
     public Optional<List<ChannelOptions>> getOptions() {
         return options;
+    }
+
+    @JsonProperty("signatureId")
+    public Optional<String> getSignatureId() {
+        return signatureId;
     }
 
     @JsonProperty("when")
@@ -92,14 +119,25 @@ public final class PostToValidate {
     private boolean equalTo(PostToValidate other) {
         return allowDuplicate.equals(other.allowDuplicate)
                 && channelIds.equals(other.channelIds)
+                && channelSets.equals(other.channelSets)
                 && content.equals(other.content)
+                && defaultSignatures.equals(other.defaultSignatures)
                 && options.equals(other.options)
+                && signatureId.equals(other.signatureId)
                 && when.equals(other.when);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.allowDuplicate, this.channelIds, this.content, this.options, this.when);
+        return Objects.hash(
+                this.allowDuplicate,
+                this.channelIds,
+                this.channelSets,
+                this.content,
+                this.defaultSignatures,
+                this.options,
+                this.signatureId,
+                this.when);
     }
 
     @java.lang.Override
@@ -134,9 +172,21 @@ public final class PostToValidate {
 
         _FinalStage addAllChannelIds(List<String> channelIds);
 
+        _FinalStage channelSets(Optional<List<String>> channelSets);
+
+        _FinalStage channelSets(List<String> channelSets);
+
+        _FinalStage defaultSignatures(Optional<Boolean> defaultSignatures);
+
+        _FinalStage defaultSignatures(Boolean defaultSignatures);
+
         _FinalStage options(Optional<List<ChannelOptions>> options);
 
         _FinalStage options(List<ChannelOptions> options);
+
+        _FinalStage signatureId(Optional<String> signatureId);
+
+        _FinalStage signatureId(String signatureId);
 
         _FinalStage when(Optional<PostTiming> when);
 
@@ -149,7 +199,13 @@ public final class PostToValidate {
 
         private Optional<PostTiming> when = Optional.empty();
 
+        private Optional<String> signatureId = Optional.empty();
+
         private Optional<List<ChannelOptions>> options = Optional.empty();
+
+        private Optional<Boolean> defaultSignatures = Optional.empty();
+
+        private Optional<List<String>> channelSets = Optional.empty();
 
         private List<String> channelIds = new ArrayList<>();
 
@@ -163,8 +219,11 @@ public final class PostToValidate {
         public Builder from(PostToValidate other) {
             allowDuplicate(other.getAllowDuplicate());
             channelIds(other.getChannelIds());
+            channelSets(other.getChannelSets());
             content(other.getContent());
+            defaultSignatures(other.getDefaultSignatures());
             options(other.getOptions());
+            signatureId(other.getSignatureId());
             when(other.getWhen());
             return this;
         }
@@ -190,6 +249,19 @@ public final class PostToValidate {
         }
 
         @java.lang.Override
+        public _FinalStage signatureId(String signatureId) {
+            this.signatureId = Optional.ofNullable(signatureId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "signatureId", nulls = Nulls.SKIP)
+        public _FinalStage signatureId(Optional<String> signatureId) {
+            this.signatureId = signatureId;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage options(List<ChannelOptions> options) {
             this.options = Optional.ofNullable(options);
             return this;
@@ -199,6 +271,32 @@ public final class PostToValidate {
         @JsonSetter(value = "options", nulls = Nulls.SKIP)
         public _FinalStage options(Optional<List<ChannelOptions>> options) {
             this.options = options;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage defaultSignatures(Boolean defaultSignatures) {
+            this.defaultSignatures = Optional.ofNullable(defaultSignatures);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "defaultSignatures", nulls = Nulls.SKIP)
+        public _FinalStage defaultSignatures(Optional<Boolean> defaultSignatures) {
+            this.defaultSignatures = defaultSignatures;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage channelSets(List<String> channelSets) {
+            this.channelSets = Optional.ofNullable(channelSets);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "channelSets", nulls = Nulls.SKIP)
+        public _FinalStage channelSets(Optional<List<String>> channelSets) {
+            this.channelSets = channelSets;
             return this;
         }
 
@@ -241,15 +339,27 @@ public final class PostToValidate {
 
         @java.lang.Override
         public PostToValidate build() {
-            return new PostToValidate(allowDuplicate, channelIds, content, options, when, additionalProperties);
+            return new PostToValidate(
+                    allowDuplicate,
+                    channelIds,
+                    channelSets,
+                    content,
+                    defaultSignatures,
+                    options,
+                    signatureId,
+                    when,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("allowDuplicate")
                     || key.equalsIgnoreCase("channelIds")
+                    || key.equalsIgnoreCase("channelSets")
                     || key.equalsIgnoreCase("content")
+                    || key.equalsIgnoreCase("defaultSignatures")
                     || key.equalsIgnoreCase("options")
+                    || key.equalsIgnoreCase("signatureId")
                     || key.equalsIgnoreCase("when")) {
                 return;
             }

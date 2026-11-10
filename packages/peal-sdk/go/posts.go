@@ -329,6 +329,42 @@ func (d *DraftsPostsRequest) SetLimit(limit *string) {
 }
 
 var (
+	duplicatePostsRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	duplicatePostsRequestFieldPostID      = big.NewInt(1 << 1)
+)
+
+type DuplicatePostsRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+	PostID      string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (d *DuplicatePostsRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DuplicatePostsRequest) SetWorkspaceID(workspaceID string) {
+	d.WorkspaceID = workspaceID
+	d.require(duplicatePostsRequestFieldWorkspaceID)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DuplicatePostsRequest) SetPostID(postID string) {
+	d.PostID = postID
+	d.require(duplicatePostsRequestFieldPostID)
+}
+
+var (
 	getPostsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	getPostsRequestFieldPostID      = big.NewInt(1 << 1)
 )
@@ -720,7 +756,8 @@ var (
 	searchPostsRequestFieldPlatform    = big.NewInt(1 << 8)
 	searchPostsRequestFieldSort        = big.NewInt(1 << 9)
 	searchPostsRequestFieldStatus      = big.NewInt(1 << 10)
-	searchPostsRequestFieldTo          = big.NewInt(1 << 11)
+	searchPostsRequestFieldTagID       = big.NewInt(1 << 11)
+	searchPostsRequestFieldTo          = big.NewInt(1 << 12)
 )
 
 type SearchPostsRequest struct {
@@ -735,6 +772,7 @@ type SearchPostsRequest struct {
 	Platform    *Platform      `json:"-" url:"platform,omitempty"`
 	Sort        *PostSort      `json:"-" url:"sort,omitempty"`
 	Status      *PostStatus    `json:"-" url:"status,omitempty"`
+	TagID       *string        `json:"-" url:"tagId,omitempty"`
 	To          *string        `json:"-" url:"to,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -827,6 +865,13 @@ func (s *SearchPostsRequest) SetStatus(status *PostStatus) {
 	s.require(searchPostsRequestFieldStatus)
 }
 
+// SetTagID sets the TagID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SearchPostsRequest) SetTagID(tagID *string) {
+	s.TagID = tagID
+	s.require(searchPostsRequestFieldTagID)
+}
+
 // SetTo sets the To field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (s *SearchPostsRequest) SetTo(to *string) {
@@ -835,25 +880,33 @@ func (s *SearchPostsRequest) SetTo(to *string) {
 }
 
 var (
-	newPostFieldIdempotencyKey = big.NewInt(1 << 0)
-	newPostFieldWorkspaceID    = big.NewInt(1 << 1)
-	newPostFieldWait           = big.NewInt(1 << 2)
-	newPostFieldAllowDuplicate = big.NewInt(1 << 3)
-	newPostFieldChannelIDs     = big.NewInt(1 << 4)
-	newPostFieldContent        = big.NewInt(1 << 5)
-	newPostFieldOptions        = big.NewInt(1 << 6)
-	newPostFieldWhen           = big.NewInt(1 << 7)
+	newPostFieldIdempotencyKey    = big.NewInt(1 << 0)
+	newPostFieldWorkspaceID       = big.NewInt(1 << 1)
+	newPostFieldWait              = big.NewInt(1 << 2)
+	newPostFieldAllowDuplicate    = big.NewInt(1 << 3)
+	newPostFieldChannelIDs        = big.NewInt(1 << 4)
+	newPostFieldChannelSets       = big.NewInt(1 << 5)
+	newPostFieldContent           = big.NewInt(1 << 6)
+	newPostFieldDefaultSignatures = big.NewInt(1 << 7)
+	newPostFieldOptions           = big.NewInt(1 << 8)
+	newPostFieldSignatureID       = big.NewInt(1 << 9)
+	newPostFieldTagIDs            = big.NewInt(1 << 10)
+	newPostFieldWhen              = big.NewInt(1 << 11)
 )
 
 type NewPost struct {
-	IdempotencyKey *string           `json:"-" url:"-"`
-	WorkspaceID    string            `json:"-" url:"-"`
-	Wait           *string           `json:"-" url:"wait,omitempty"`
-	AllowDuplicate *bool             `json:"allowDuplicate,omitempty" url:"-"`
-	ChannelIDs     []string          `json:"channelIds" url:"-"`
-	Content        *PostContent      `json:"content" url:"-"`
-	Options        []*ChannelOptions `json:"options,omitempty" url:"-"`
-	When           *PostTiming       `json:"when" url:"-"`
+	IdempotencyKey    *string           `json:"-" url:"-"`
+	WorkspaceID       string            `json:"-" url:"-"`
+	Wait              *string           `json:"-" url:"wait,omitempty"`
+	AllowDuplicate    *bool             `json:"allowDuplicate,omitempty" url:"-"`
+	ChannelIDs        []string          `json:"channelIds" url:"-"`
+	ChannelSets       []string          `json:"channelSets,omitempty" url:"-"`
+	Content           *PostContent      `json:"content" url:"-"`
+	DefaultSignatures *bool             `json:"defaultSignatures,omitempty" url:"-"`
+	Options           []*ChannelOptions `json:"options,omitempty" url:"-"`
+	SignatureID       *string           `json:"signatureId,omitempty" url:"-"`
+	TagIDs            []string          `json:"tagIds,omitempty" url:"-"`
+	When              *PostTiming       `json:"when" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -903,6 +956,13 @@ func (n *NewPost) SetChannelIDs(channelIDs []string) {
 	n.require(newPostFieldChannelIDs)
 }
 
+// SetChannelSets sets the ChannelSets field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetChannelSets(channelSets []string) {
+	n.ChannelSets = channelSets
+	n.require(newPostFieldChannelSets)
+}
+
 // SetContent sets the Content field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NewPost) SetContent(content *PostContent) {
@@ -910,11 +970,32 @@ func (n *NewPost) SetContent(content *PostContent) {
 	n.require(newPostFieldContent)
 }
 
+// SetDefaultSignatures sets the DefaultSignatures field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetDefaultSignatures(defaultSignatures *bool) {
+	n.DefaultSignatures = defaultSignatures
+	n.require(newPostFieldDefaultSignatures)
+}
+
 // SetOptions sets the Options field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (n *NewPost) SetOptions(options []*ChannelOptions) {
 	n.Options = options
 	n.require(newPostFieldOptions)
+}
+
+// SetSignatureID sets the SignatureID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetSignatureID(signatureID *string) {
+	n.SignatureID = signatureID
+	n.require(newPostFieldSignatureID)
+}
+
+// SetTagIDs sets the TagIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetTagIDs(tagIDs []string) {
+	n.TagIDs = tagIDs
+	n.require(newPostFieldTagIDs)
 }
 
 // SetWhen sets the When field and marks it as non-optional;
@@ -942,6 +1023,72 @@ func (n *NewPost) MarshalJSON() ([]byte, error) {
 		embed: embed(*n),
 	}
 	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
+	postTagsFieldWorkspaceID = big.NewInt(1 << 0)
+	postTagsFieldPostID      = big.NewInt(1 << 1)
+	postTagsFieldTagIDs      = big.NewInt(1 << 2)
+)
+
+type PostTags struct {
+	WorkspaceID string   `json:"-" url:"-"`
+	PostID      string   `json:"-" url:"-"`
+	TagIDs      []string `json:"tagIds" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (p *PostTags) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTags) SetWorkspaceID(workspaceID string) {
+	p.WorkspaceID = workspaceID
+	p.require(postTagsFieldWorkspaceID)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTags) SetPostID(postID string) {
+	p.PostID = postID
+	p.require(postTagsFieldPostID)
+}
+
+// SetTagIDs sets the TagIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTags) SetTagIDs(tagIDs []string) {
+	p.TagIDs = tagIDs
+	p.require(postTagsFieldTagIDs)
+}
+
+func (p *PostTags) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostTags
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*p = PostTags(body)
+	return nil
+}
+
+func (p *PostTags) MarshalJSON() ([]byte, error) {
+	type embed PostTags
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
 	return json.Marshal(explicitMarshaler)
 }
 
@@ -1004,21 +1151,29 @@ func (a AttemptResult) Ptr() *AttemptResult {
 }
 
 var (
-	bulkPostFieldAllowDuplicate = big.NewInt(1 << 0)
-	bulkPostFieldChannelIDs     = big.NewInt(1 << 1)
-	bulkPostFieldContent        = big.NewInt(1 << 2)
-	bulkPostFieldOptions        = big.NewInt(1 << 3)
-	bulkPostFieldWhen           = big.NewInt(1 << 4)
-	bulkPostFieldIdempotencyKey = big.NewInt(1 << 5)
+	bulkPostFieldAllowDuplicate    = big.NewInt(1 << 0)
+	bulkPostFieldChannelIDs        = big.NewInt(1 << 1)
+	bulkPostFieldChannelSets       = big.NewInt(1 << 2)
+	bulkPostFieldContent           = big.NewInt(1 << 3)
+	bulkPostFieldDefaultSignatures = big.NewInt(1 << 4)
+	bulkPostFieldOptions           = big.NewInt(1 << 5)
+	bulkPostFieldSignatureID       = big.NewInt(1 << 6)
+	bulkPostFieldTagIDs            = big.NewInt(1 << 7)
+	bulkPostFieldWhen              = big.NewInt(1 << 8)
+	bulkPostFieldIdempotencyKey    = big.NewInt(1 << 9)
 )
 
 type BulkPost struct {
-	AllowDuplicate *bool             `json:"allowDuplicate,omitempty" url:"allowDuplicate,omitempty"`
-	ChannelIDs     []string          `json:"channelIds" url:"channelIds"`
-	Content        *PostContent      `json:"content" url:"content"`
-	Options        []*ChannelOptions `json:"options,omitempty" url:"options,omitempty"`
-	When           *PostTiming       `json:"when" url:"when"`
-	IdempotencyKey *string           `json:"idempotencyKey,omitempty" url:"idempotencyKey,omitempty"`
+	AllowDuplicate    *bool             `json:"allowDuplicate,omitempty" url:"allowDuplicate,omitempty"`
+	ChannelIDs        []string          `json:"channelIds" url:"channelIds"`
+	ChannelSets       []string          `json:"channelSets,omitempty" url:"channelSets,omitempty"`
+	Content           *PostContent      `json:"content" url:"content"`
+	DefaultSignatures *bool             `json:"defaultSignatures,omitempty" url:"defaultSignatures,omitempty"`
+	Options           []*ChannelOptions `json:"options,omitempty" url:"options,omitempty"`
+	SignatureID       *string           `json:"signatureId,omitempty" url:"signatureId,omitempty"`
+	TagIDs            []string          `json:"tagIds,omitempty" url:"tagIds,omitempty"`
+	When              *PostTiming       `json:"when" url:"when"`
+	IdempotencyKey    *string           `json:"idempotencyKey,omitempty" url:"idempotencyKey,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1041,6 +1196,13 @@ func (b *BulkPost) GetChannelIDs() []string {
 	return b.ChannelIDs
 }
 
+func (b *BulkPost) GetChannelSets() []string {
+	if b == nil {
+		return nil
+	}
+	return b.ChannelSets
+}
+
 func (b *BulkPost) GetContent() *PostContent {
 	if b == nil {
 		return nil
@@ -1048,11 +1210,32 @@ func (b *BulkPost) GetContent() *PostContent {
 	return b.Content
 }
 
+func (b *BulkPost) GetDefaultSignatures() *bool {
+	if b == nil {
+		return nil
+	}
+	return b.DefaultSignatures
+}
+
 func (b *BulkPost) GetOptions() []*ChannelOptions {
 	if b == nil {
 		return nil
 	}
 	return b.Options
+}
+
+func (b *BulkPost) GetSignatureID() *string {
+	if b == nil {
+		return nil
+	}
+	return b.SignatureID
+}
+
+func (b *BulkPost) GetTagIDs() []string {
+	if b == nil {
+		return nil
+	}
+	return b.TagIDs
 }
 
 func (b *BulkPost) GetWhen() *PostTiming {
@@ -1099,6 +1282,13 @@ func (b *BulkPost) SetChannelIDs(channelIDs []string) {
 	b.require(bulkPostFieldChannelIDs)
 }
 
+// SetChannelSets sets the ChannelSets field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BulkPost) SetChannelSets(channelSets []string) {
+	b.ChannelSets = channelSets
+	b.require(bulkPostFieldChannelSets)
+}
+
 // SetContent sets the Content field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (b *BulkPost) SetContent(content *PostContent) {
@@ -1106,11 +1296,32 @@ func (b *BulkPost) SetContent(content *PostContent) {
 	b.require(bulkPostFieldContent)
 }
 
+// SetDefaultSignatures sets the DefaultSignatures field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BulkPost) SetDefaultSignatures(defaultSignatures *bool) {
+	b.DefaultSignatures = defaultSignatures
+	b.require(bulkPostFieldDefaultSignatures)
+}
+
 // SetOptions sets the Options field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (b *BulkPost) SetOptions(options []*ChannelOptions) {
 	b.Options = options
 	b.require(bulkPostFieldOptions)
+}
+
+// SetSignatureID sets the SignatureID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BulkPost) SetSignatureID(signatureID *string) {
+	b.SignatureID = signatureID
+	b.require(bulkPostFieldSignatureID)
+}
+
+// SetTagIDs sets the TagIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BulkPost) SetTagIDs(tagIDs []string) {
+	b.TagIDs = tagIDs
+	b.require(bulkPostFieldTagIDs)
 }
 
 // SetWhen sets the When field and marks it as non-optional;
@@ -1634,108 +1845,6 @@ func (b *BulkResult) String() string {
 }
 
 var (
-	channelOptionsFieldChannelID = big.NewInt(1 << 0)
-	channelOptionsFieldOptions   = big.NewInt(1 << 1)
-)
-
-type ChannelOptions struct {
-	ChannelID string         `json:"channelId" url:"channelId"`
-	Options   *TargetOptions `json:"options" url:"options"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (c *ChannelOptions) GetChannelID() string {
-	if c == nil {
-		return ""
-	}
-	return c.ChannelID
-}
-
-func (c *ChannelOptions) GetOptions() *TargetOptions {
-	if c == nil {
-		return nil
-	}
-	return c.Options
-}
-
-func (c *ChannelOptions) GetExtraProperties() map[string]interface{} {
-	if c == nil {
-		return nil
-	}
-	return c.extraProperties
-}
-
-func (c *ChannelOptions) require(field *big.Int) {
-	next := new(big.Int)
-	if c.explicitFields != nil {
-		next.Set(c.explicitFields)
-	}
-	next.Or(next, field)
-	c.explicitFields = next
-}
-
-// SetChannelID sets the ChannelID field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ChannelOptions) SetChannelID(channelID string) {
-	c.ChannelID = channelID
-	c.require(channelOptionsFieldChannelID)
-}
-
-// SetOptions sets the Options field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ChannelOptions) SetOptions(options *TargetOptions) {
-	c.Options = options
-	c.require(channelOptionsFieldOptions)
-}
-
-func (c *ChannelOptions) UnmarshalJSON(data []byte) error {
-	type unmarshaler ChannelOptions
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*c = ChannelOptions(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *c)
-	if err != nil {
-		return err
-	}
-	c.extraProperties = extraProperties
-	c.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (c *ChannelOptions) MarshalJSON() ([]byte, error) {
-	type embed ChannelOptions
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*c),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (c *ChannelOptions) String() string {
-	if c == nil {
-		return "<nil>"
-	}
-	if len(c.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(c); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", c)
-}
-
-var (
 	channelPreviewFieldChannelID  = big.NewInt(1 << 0)
 	channelPreviewFieldHashtags   = big.NewInt(1 << 1)
 	channelPreviewFieldLinks      = big.NewInt(1 << 2)
@@ -1935,6 +2044,124 @@ func (c *ChannelPreview) MarshalJSON() ([]byte, error) {
 }
 
 func (c *ChannelPreview) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	channelSetNotFoundEncodedFieldCode      = big.NewInt(1 << 0)
+	channelSetNotFoundEncodedFieldMessage   = big.NewInt(1 << 1)
+	channelSetNotFoundEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type ChannelSetNotFoundEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChannelSetNotFoundEncoded) GetCode() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Code
+}
+
+func (c *ChannelSetNotFoundEncoded) GetMessage() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Message
+}
+
+func (c *ChannelSetNotFoundEncoded) GetRequestID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.RequestID
+}
+
+func (c *ChannelSetNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ChannelSetNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSetNotFoundEncoded) SetCode(code *string) {
+	c.Code = code
+	c.require(channelSetNotFoundEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSetNotFoundEncoded) SetMessage(message *string) {
+	c.Message = message
+	c.require(channelSetNotFoundEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSetNotFoundEncoded) SetRequestID(requestID *string) {
+	c.RequestID = requestID
+	c.require(channelSetNotFoundEncodedFieldRequestID)
+}
+
+func (c *ChannelSetNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelSetNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChannelSetNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChannelSetNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed ChannelSetNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ChannelSetNotFoundEncoded) String() string {
 	if c == nil {
 		return "<nil>"
 	}
@@ -8746,7 +8973,9 @@ var (
 	postFieldScheduledBy  = big.NewInt(1 << 6)
 	postFieldScheduledVia = big.NewInt(1 << 7)
 	postFieldStatus       = big.NewInt(1 << 8)
-	postFieldTargets      = big.NewInt(1 << 9)
+	postFieldTagIDs       = big.NewInt(1 << 9)
+	postFieldTargets      = big.NewInt(1 << 10)
+	postFieldWarnings     = big.NewInt(1 << 11)
 )
 
 // postNullableFields maps the wire names of Post's nullable fields (required or optional) to their field bits.
@@ -8760,16 +8989,18 @@ var postNullableFields = map[string]*big.Int{
 }
 
 type Post struct {
-	AuthorID     *string       `json:"authorId,omitempty" url:"authorId,omitempty"`
-	Content      *PostContent  `json:"content" url:"content"`
-	CreatedVia   *PostOrigin   `json:"createdVia,omitempty" url:"createdVia,omitempty"`
-	ID           string        `json:"id" url:"id"`
-	Outcome      *PostOutcome  `json:"outcome,omitempty" url:"outcome,omitempty"`
-	Schedule     *PostSchedule `json:"schedule,omitempty" url:"schedule,omitempty"`
-	ScheduledBy  *string       `json:"scheduledBy,omitempty" url:"scheduledBy,omitempty"`
-	ScheduledVia *PostOrigin   `json:"scheduledVia,omitempty" url:"scheduledVia,omitempty"`
-	Status       PostStatus    `json:"status" url:"status"`
-	Targets      []*PostTarget `json:"targets" url:"targets"`
+	AuthorID     *string        `json:"authorId,omitempty" url:"authorId,omitempty"`
+	Content      *PostContent   `json:"content" url:"content"`
+	CreatedVia   *PostOrigin    `json:"createdVia,omitempty" url:"createdVia,omitempty"`
+	ID           string         `json:"id" url:"id"`
+	Outcome      *PostOutcome   `json:"outcome,omitempty" url:"outcome,omitempty"`
+	Schedule     *PostSchedule  `json:"schedule,omitempty" url:"schedule,omitempty"`
+	ScheduledBy  *string        `json:"scheduledBy,omitempty" url:"scheduledBy,omitempty"`
+	ScheduledVia *PostOrigin    `json:"scheduledVia,omitempty" url:"scheduledVia,omitempty"`
+	Status       PostStatus     `json:"status" url:"status"`
+	TagIDs       []string       `json:"tagIds" url:"tagIds"`
+	Targets      []*PostTarget  `json:"targets" url:"targets"`
+	Warnings     []*PostWarning `json:"warnings,omitempty" url:"warnings,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -8841,11 +9072,25 @@ func (p *Post) GetStatus() PostStatus {
 	return p.Status
 }
 
+func (p *Post) GetTagIDs() []string {
+	if p == nil {
+		return nil
+	}
+	return p.TagIDs
+}
+
 func (p *Post) GetTargets() []*PostTarget {
 	if p == nil {
 		return nil
 	}
 	return p.Targets
+}
+
+func (p *Post) GetWarnings() []*PostWarning {
+	if p == nil {
+		return nil
+	}
+	return p.Warnings
 }
 
 func (p *Post) GetExtraProperties() map[string]interface{} {
@@ -8927,11 +9172,25 @@ func (p *Post) SetStatus(status PostStatus) {
 	p.require(postFieldStatus)
 }
 
+// SetTagIDs sets the TagIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Post) SetTagIDs(tagIDs []string) {
+	p.TagIDs = tagIDs
+	p.require(postFieldTagIDs)
+}
+
 // SetTargets sets the Targets field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *Post) SetTargets(targets []*PostTarget) {
 	p.Targets = targets
 	p.require(postFieldTargets)
+}
+
+// SetWarnings sets the Warnings field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Post) SetWarnings(warnings []*PostWarning) {
+	p.Warnings = warnings
+	p.require(postFieldWarnings)
 }
 
 func (p *Post) UnmarshalJSON(data []byte) error {
@@ -9204,23 +9463,32 @@ func (p *PostContent) String() string {
 }
 
 var (
-	postContentInvalidEncodedFieldCode       = big.NewInt(1 << 0)
-	postContentInvalidEncodedFieldMessage    = big.NewInt(1 << 1)
-	postContentInvalidEncodedFieldRequestID  = big.NewInt(1 << 2)
-	postContentInvalidEncodedFieldViolations = big.NewInt(1 << 3)
+	postContentInvalidEncodedFieldTag        = big.NewInt(1 << 0)
+	postContentInvalidEncodedFieldCode       = big.NewInt(1 << 1)
+	postContentInvalidEncodedFieldMessage    = big.NewInt(1 << 2)
+	postContentInvalidEncodedFieldRequestID  = big.NewInt(1 << 3)
+	postContentInvalidEncodedFieldViolations = big.NewInt(1 << 4)
 )
 
 type PostContentInvalidEncoded struct {
-	Code       *string             `json:"code,omitempty" url:"code,omitempty"`
-	Message    *string             `json:"message,omitempty" url:"message,omitempty"`
-	RequestID  *string             `json:"requestId,omitempty" url:"requestId,omitempty"`
-	Violations []*ContentViolation `json:"violations" url:"violations"`
+	Tag        PostContentInvalidEncodedTag `json:"_tag" url:"_tag"`
+	Code       *string                      `json:"code,omitempty" url:"code,omitempty"`
+	Message    *string                      `json:"message,omitempty" url:"message,omitempty"`
+	RequestID  *string                      `json:"requestId,omitempty" url:"requestId,omitempty"`
+	Violations []*ContentViolation          `json:"violations" url:"violations"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (p *PostContentInvalidEncoded) GetTag() PostContentInvalidEncodedTag {
+	if p == nil {
+		return ""
+	}
+	return p.Tag
 }
 
 func (p *PostContentInvalidEncoded) GetCode() *string {
@@ -9265,6 +9533,13 @@ func (p *PostContentInvalidEncoded) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	p.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostContentInvalidEncoded) SetTag(tag PostContentInvalidEncodedTag) {
+	p.Tag = tag
+	p.require(postContentInvalidEncodedFieldTag)
 }
 
 // SetCode sets the Code field and marks it as non-optional;
@@ -9337,16 +9612,43 @@ func (p *PostContentInvalidEncoded) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
+type PostContentInvalidEncodedTag string
+
+const (
+	PostContentInvalidEncodedTagPostContentInvalid PostContentInvalidEncodedTag = "PostContentInvalid"
+)
+
+func NewPostContentInvalidEncodedTagFromString(s string) (PostContentInvalidEncodedTag, error) {
+	switch s {
+	case "PostContentInvalid":
+		return PostContentInvalidEncodedTagPostContentInvalid, nil
+	}
+	var t PostContentInvalidEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PostContentInvalidEncodedTag) Ptr() *PostContentInvalidEncodedTag {
+	return &p
+}
+
 var (
-	postDraftFieldChannelIDs = big.NewInt(1 << 0)
-	postDraftFieldContent    = big.NewInt(1 << 1)
-	postDraftFieldOptions    = big.NewInt(1 << 2)
+	postDraftFieldChannelIDs        = big.NewInt(1 << 0)
+	postDraftFieldChannelSets       = big.NewInt(1 << 1)
+	postDraftFieldContent           = big.NewInt(1 << 2)
+	postDraftFieldDefaultSignatures = big.NewInt(1 << 3)
+	postDraftFieldOptions           = big.NewInt(1 << 4)
+	postDraftFieldSignatureID       = big.NewInt(1 << 5)
+	postDraftFieldTagIDs            = big.NewInt(1 << 6)
 )
 
 type PostDraft struct {
-	ChannelIDs []string          `json:"channelIds" url:"channelIds"`
-	Content    *PostContent      `json:"content" url:"content"`
-	Options    []*ChannelOptions `json:"options,omitempty" url:"options,omitempty"`
+	ChannelIDs        []string          `json:"channelIds" url:"channelIds"`
+	ChannelSets       []string          `json:"channelSets,omitempty" url:"channelSets,omitempty"`
+	Content           *PostContent      `json:"content" url:"content"`
+	DefaultSignatures *bool             `json:"defaultSignatures,omitempty" url:"defaultSignatures,omitempty"`
+	Options           []*ChannelOptions `json:"options,omitempty" url:"options,omitempty"`
+	SignatureID       *string           `json:"signatureId,omitempty" url:"signatureId,omitempty"`
+	TagIDs            []string          `json:"tagIds,omitempty" url:"tagIds,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -9362,6 +9664,13 @@ func (p *PostDraft) GetChannelIDs() []string {
 	return p.ChannelIDs
 }
 
+func (p *PostDraft) GetChannelSets() []string {
+	if p == nil {
+		return nil
+	}
+	return p.ChannelSets
+}
+
 func (p *PostDraft) GetContent() *PostContent {
 	if p == nil {
 		return nil
@@ -9369,11 +9678,32 @@ func (p *PostDraft) GetContent() *PostContent {
 	return p.Content
 }
 
+func (p *PostDraft) GetDefaultSignatures() *bool {
+	if p == nil {
+		return nil
+	}
+	return p.DefaultSignatures
+}
+
 func (p *PostDraft) GetOptions() []*ChannelOptions {
 	if p == nil {
 		return nil
 	}
 	return p.Options
+}
+
+func (p *PostDraft) GetSignatureID() *string {
+	if p == nil {
+		return nil
+	}
+	return p.SignatureID
+}
+
+func (p *PostDraft) GetTagIDs() []string {
+	if p == nil {
+		return nil
+	}
+	return p.TagIDs
 }
 
 func (p *PostDraft) GetExtraProperties() map[string]interface{} {
@@ -9399,6 +9729,13 @@ func (p *PostDraft) SetChannelIDs(channelIDs []string) {
 	p.require(postDraftFieldChannelIDs)
 }
 
+// SetChannelSets sets the ChannelSets field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostDraft) SetChannelSets(channelSets []string) {
+	p.ChannelSets = channelSets
+	p.require(postDraftFieldChannelSets)
+}
+
 // SetContent sets the Content field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *PostDraft) SetContent(content *PostContent) {
@@ -9406,11 +9743,32 @@ func (p *PostDraft) SetContent(content *PostContent) {
 	p.require(postDraftFieldContent)
 }
 
+// SetDefaultSignatures sets the DefaultSignatures field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostDraft) SetDefaultSignatures(defaultSignatures *bool) {
+	p.DefaultSignatures = defaultSignatures
+	p.require(postDraftFieldDefaultSignatures)
+}
+
 // SetOptions sets the Options field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *PostDraft) SetOptions(options []*ChannelOptions) {
 	p.Options = options
 	p.require(postDraftFieldOptions)
+}
+
+// SetSignatureID sets the SignatureID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostDraft) SetSignatureID(signatureID *string) {
+	p.SignatureID = signatureID
+	p.require(postDraftFieldSignatureID)
+}
+
+// SetTagIDs sets the TagIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostDraft) SetTagIDs(tagIDs []string) {
+	p.TagIDs = tagIDs
+	p.require(postDraftFieldTagIDs)
 }
 
 func (p *PostDraft) UnmarshalJSON(data []byte) error {
@@ -9902,6 +10260,9 @@ type PostRefusal struct {
 	PostNotFound         *PostNotFoundEncoded
 	DuplicatePost        *DuplicatePostEncoded
 	Forbidden            *ForbiddenEncoded
+	UnknownTags          *UnknownTagsEncoded
+	ChannelSetNotFound   *ChannelSetNotFoundEncoded
+	SignatureNotFound    *SignatureNotFoundEncoded
 
 	rawJSON json.RawMessage
 }
@@ -9983,6 +10344,27 @@ func (p *PostRefusal) GetForbidden() *ForbiddenEncoded {
 	return p.Forbidden
 }
 
+func (p *PostRefusal) GetUnknownTags() *UnknownTagsEncoded {
+	if p == nil {
+		return nil
+	}
+	return p.UnknownTags
+}
+
+func (p *PostRefusal) GetChannelSetNotFound() *ChannelSetNotFoundEncoded {
+	if p == nil {
+		return nil
+	}
+	return p.ChannelSetNotFound
+}
+
+func (p *PostRefusal) GetSignatureNotFound() *SignatureNotFoundEncoded {
+	if p == nil {
+		return nil
+	}
+	return p.SignatureNotFound
+}
+
 func (p *PostRefusal) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -10055,6 +10437,24 @@ func (p *PostRefusal) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		p.Forbidden = value
+	case "UnknownTags":
+		value := new(UnknownTagsEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.UnknownTags = value
+	case "ChannelSetNotFound":
+		value := new(ChannelSetNotFoundEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.ChannelSetNotFound = value
+	case "SignatureNotFound":
+		value := new(SignatureNotFoundEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.SignatureNotFound = value
 	}
 	p.rawJSON = json.RawMessage(data)
 	return nil
@@ -10094,6 +10494,15 @@ func (p PostRefusal) MarshalJSON() ([]byte, error) {
 	if p.Forbidden != nil {
 		return internal.MarshalJSONWithExtraProperty(p.Forbidden, "_tag", "Forbidden")
 	}
+	if p.UnknownTags != nil {
+		return internal.MarshalJSONWithExtraProperty(p.UnknownTags, "_tag", "UnknownTags")
+	}
+	if p.ChannelSetNotFound != nil {
+		return internal.MarshalJSONWithExtraProperty(p.ChannelSetNotFound, "_tag", "ChannelSetNotFound")
+	}
+	if p.SignatureNotFound != nil {
+		return internal.MarshalJSONWithExtraProperty(p.SignatureNotFound, "_tag", "SignatureNotFound")
+	}
 	if len(p.rawJSON) > 0 {
 		return p.rawJSON, nil
 	}
@@ -10111,6 +10520,9 @@ type PostRefusalVisitor interface {
 	VisitPostNotFound(*PostNotFoundEncoded) error
 	VisitDuplicatePost(*DuplicatePostEncoded) error
 	VisitForbidden(*ForbiddenEncoded) error
+	VisitUnknownTags(*UnknownTagsEncoded) error
+	VisitChannelSetNotFound(*ChannelSetNotFoundEncoded) error
+	VisitSignatureNotFound(*SignatureNotFoundEncoded) error
 }
 
 func (p *PostRefusal) Accept(visitor PostRefusalVisitor) error {
@@ -10143,6 +10555,15 @@ func (p *PostRefusal) Accept(visitor PostRefusalVisitor) error {
 	}
 	if p.Forbidden != nil {
 		return visitor.VisitForbidden(p.Forbidden)
+	}
+	if p.UnknownTags != nil {
+		return visitor.VisitUnknownTags(p.UnknownTags)
+	}
+	if p.ChannelSetNotFound != nil {
+		return visitor.VisitChannelSetNotFound(p.ChannelSetNotFound)
+	}
+	if p.SignatureNotFound != nil {
+		return visitor.VisitSignatureNotFound(p.SignatureNotFound)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", p)
 }
@@ -10181,6 +10602,15 @@ func (p *PostRefusal) validate() error {
 	}
 	if p.Forbidden != nil {
 		fields = append(fields, "Forbidden")
+	}
+	if p.UnknownTags != nil {
+		fields = append(fields, "UnknownTags")
+	}
+	if p.ChannelSetNotFound != nil {
+		fields = append(fields, "ChannelSetNotFound")
+	}
+	if p.SignatureNotFound != nil {
+		fields = append(fields, "SignatureNotFound")
 	}
 	if len(fields) == 0 {
 		if p.Type != "" {
@@ -10874,6 +11304,7 @@ var (
 	postValidationFieldUnknownMedia    = big.NewInt(1 << 6)
 	postValidationFieldValid           = big.NewInt(1 << 7)
 	postValidationFieldViolations      = big.NewInt(1 << 8)
+	postValidationFieldWarnings        = big.NewInt(1 << 9)
 )
 
 // postValidationNullableFields maps the wire names of PostValidation's nullable fields (required or optional) to their field bits.
@@ -10892,6 +11323,7 @@ type PostValidation struct {
 	UnknownMedia    []string              `json:"unknownMedia" url:"unknownMedia"`
 	Valid           bool                  `json:"valid" url:"valid"`
 	Violations      []*ContentViolation   `json:"violations" url:"violations"`
+	Warnings        []*PostWarning        `json:"warnings,omitempty" url:"warnings,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -10961,6 +11393,13 @@ func (p *PostValidation) GetViolations() []*ContentViolation {
 		return nil
 	}
 	return p.Violations
+}
+
+func (p *PostValidation) GetWarnings() []*PostWarning {
+	if p == nil {
+		return nil
+	}
+	return p.Warnings
 }
 
 func (p *PostValidation) GetExtraProperties() map[string]interface{} {
@@ -11042,6 +11481,13 @@ func (p *PostValidation) SetViolations(violations []*ContentViolation) {
 	p.require(postValidationFieldViolations)
 }
 
+// SetWarnings sets the Warnings field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostValidation) SetWarnings(warnings []*PostWarning) {
+	p.Warnings = warnings
+	p.require(postValidationFieldWarnings)
+}
+
 func (p *PostValidation) UnmarshalJSON(data []byte) error {
 	type unmarshaler PostValidation
 	var value unmarshaler
@@ -11077,6 +11523,226 @@ func (p *PostValidation) MarshalJSON() ([]byte, error) {
 }
 
 func (p *PostValidation) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PostWarning struct {
+	Type            string
+	ChannelsDropped *PostWarningChannelsDropped
+
+	rawJSON json.RawMessage
+}
+
+func (p *PostWarning) GetType() string {
+	if p == nil {
+		return ""
+	}
+	return p.Type
+}
+
+func (p *PostWarning) GetChannelsDropped() *PostWarningChannelsDropped {
+	if p == nil {
+		return nil
+	}
+	return p.ChannelsDropped
+}
+
+func (p *PostWarning) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"_tag"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	p.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant _tag", p)
+	}
+	switch unmarshaler.Type {
+	case "channelsDropped":
+		value := new(PostWarningChannelsDropped)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.ChannelsDropped = value
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p PostWarning) MarshalJSON() ([]byte, error) {
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+	if p.ChannelsDropped != nil {
+		return internal.MarshalJSONWithExtraProperty(p.ChannelsDropped, "_tag", "channelsDropped")
+	}
+	if len(p.rawJSON) > 0 {
+		return p.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", p)
+}
+
+type PostWarningVisitor interface {
+	VisitChannelsDropped(*PostWarningChannelsDropped) error
+}
+
+func (p *PostWarning) Accept(visitor PostWarningVisitor) error {
+	if p.ChannelsDropped != nil {
+		return visitor.VisitChannelsDropped(p.ChannelsDropped)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", p)
+}
+
+func (p *PostWarning) validate() error {
+	if p == nil {
+		return fmt.Errorf("type %T is nil", p)
+	}
+	var fields []string
+	if p.ChannelsDropped != nil {
+		fields = append(fields, "channelsDropped")
+	}
+	if len(fields) == 0 {
+		if p.Type != "" {
+			if len(p.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", p, p.Type)
+		}
+		return fmt.Errorf("type %T is empty", p)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", p, fields)
+	}
+	if p.Type != "" {
+		field := fields[0]
+		if p.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				p,
+				p.Type,
+				p,
+			)
+		}
+	}
+	return nil
+}
+
+var (
+	postWarningChannelsDroppedFieldChannelIDs     = big.NewInt(1 << 0)
+	postWarningChannelsDroppedFieldChannelSetID   = big.NewInt(1 << 1)
+	postWarningChannelsDroppedFieldChannelSetName = big.NewInt(1 << 2)
+)
+
+type PostWarningChannelsDropped struct {
+	ChannelIDs     []string `json:"channelIds" url:"channelIds"`
+	ChannelSetID   string   `json:"channelSetId" url:"channelSetId"`
+	ChannelSetName string   `json:"channelSetName" url:"channelSetName"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostWarningChannelsDropped) GetChannelIDs() []string {
+	if p == nil {
+		return nil
+	}
+	return p.ChannelIDs
+}
+
+func (p *PostWarningChannelsDropped) GetChannelSetID() string {
+	if p == nil {
+		return ""
+	}
+	return p.ChannelSetID
+}
+
+func (p *PostWarningChannelsDropped) GetChannelSetName() string {
+	if p == nil {
+		return ""
+	}
+	return p.ChannelSetName
+}
+
+func (p *PostWarningChannelsDropped) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostWarningChannelsDropped) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetChannelIDs sets the ChannelIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostWarningChannelsDropped) SetChannelIDs(channelIDs []string) {
+	p.ChannelIDs = channelIDs
+	p.require(postWarningChannelsDroppedFieldChannelIDs)
+}
+
+// SetChannelSetID sets the ChannelSetID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostWarningChannelsDropped) SetChannelSetID(channelSetID string) {
+	p.ChannelSetID = channelSetID
+	p.require(postWarningChannelsDroppedFieldChannelSetID)
+}
+
+// SetChannelSetName sets the ChannelSetName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostWarningChannelsDropped) SetChannelSetName(channelSetName string) {
+	p.ChannelSetName = channelSetName
+	p.require(postWarningChannelsDroppedFieldChannelSetName)
+}
+
+func (p *PostWarningChannelsDropped) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostWarningChannelsDropped
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostWarningChannelsDropped(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostWarningChannelsDropped) MarshalJSON() ([]byte, error) {
+	type embed PostWarningChannelsDropped
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostWarningChannelsDropped) String() string {
 	if p == nil {
 		return "<nil>"
 	}
@@ -11431,6 +12097,124 @@ func (s *ScheduleInPastEncoded) MarshalJSON() ([]byte, error) {
 }
 
 func (s *ScheduleInPastEncoded) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	signatureNotFoundEncodedFieldCode      = big.NewInt(1 << 0)
+	signatureNotFoundEncodedFieldMessage   = big.NewInt(1 << 1)
+	signatureNotFoundEncodedFieldRequestID = big.NewInt(1 << 2)
+)
+
+type SignatureNotFoundEncoded struct {
+	Code      *string `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string `json:"requestId,omitempty" url:"requestId,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SignatureNotFoundEncoded) GetCode() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Code
+}
+
+func (s *SignatureNotFoundEncoded) GetMessage() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Message
+}
+
+func (s *SignatureNotFoundEncoded) GetRequestID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.RequestID
+}
+
+func (s *SignatureNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SignatureNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SignatureNotFoundEncoded) SetCode(code *string) {
+	s.Code = code
+	s.require(signatureNotFoundEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SignatureNotFoundEncoded) SetMessage(message *string) {
+	s.Message = message
+	s.require(signatureNotFoundEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SignatureNotFoundEncoded) SetRequestID(requestID *string) {
+	s.RequestID = requestID
+	s.require(signatureNotFoundEncodedFieldRequestID)
+}
+
+func (s *SignatureNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler SignatureNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SignatureNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SignatureNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed SignatureNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SignatureNotFoundEncoded) String() string {
 	if s == nil {
 		return "<nil>"
 	}
@@ -11985,23 +12769,32 @@ func (u UnconfirmedReason) Ptr() *UnconfirmedReason {
 }
 
 var (
-	unknownChannelsEncodedFieldCode       = big.NewInt(1 << 0)
-	unknownChannelsEncodedFieldMessage    = big.NewInt(1 << 1)
-	unknownChannelsEncodedFieldRequestID  = big.NewInt(1 << 2)
-	unknownChannelsEncodedFieldChannelIDs = big.NewInt(1 << 3)
+	unknownChannelsEncodedFieldTag        = big.NewInt(1 << 0)
+	unknownChannelsEncodedFieldCode       = big.NewInt(1 << 1)
+	unknownChannelsEncodedFieldMessage    = big.NewInt(1 << 2)
+	unknownChannelsEncodedFieldRequestID  = big.NewInt(1 << 3)
+	unknownChannelsEncodedFieldChannelIDs = big.NewInt(1 << 4)
 )
 
 type UnknownChannelsEncoded struct {
-	Code       *string  `json:"code,omitempty" url:"code,omitempty"`
-	Message    *string  `json:"message,omitempty" url:"message,omitempty"`
-	RequestID  *string  `json:"requestId,omitempty" url:"requestId,omitempty"`
-	ChannelIDs []string `json:"channelIds" url:"channelIds"`
+	Tag        UnknownChannelsEncodedTag `json:"_tag" url:"_tag"`
+	Code       *string                   `json:"code,omitempty" url:"code,omitempty"`
+	Message    *string                   `json:"message,omitempty" url:"message,omitempty"`
+	RequestID  *string                   `json:"requestId,omitempty" url:"requestId,omitempty"`
+	ChannelIDs []string                  `json:"channelIds" url:"channelIds"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (u *UnknownChannelsEncoded) GetTag() UnknownChannelsEncodedTag {
+	if u == nil {
+		return ""
+	}
+	return u.Tag
 }
 
 func (u *UnknownChannelsEncoded) GetCode() *string {
@@ -12046,6 +12839,13 @@ func (u *UnknownChannelsEncoded) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	u.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UnknownChannelsEncoded) SetTag(tag UnknownChannelsEncodedTag) {
+	u.Tag = tag
+	u.require(unknownChannelsEncodedFieldTag)
 }
 
 // SetCode sets the Code field and marks it as non-optional;
@@ -12116,6 +12916,25 @@ func (u *UnknownChannelsEncoded) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", u)
+}
+
+type UnknownChannelsEncodedTag string
+
+const (
+	UnknownChannelsEncodedTagUnknownChannels UnknownChannelsEncodedTag = "UnknownChannels"
+)
+
+func NewUnknownChannelsEncodedTagFromString(s string) (UnknownChannelsEncodedTag, error) {
+	switch s {
+	case "UnknownChannels":
+		return UnknownChannelsEncodedTagUnknownChannels, nil
+	}
+	var t UnknownChannelsEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (u UnknownChannelsEncodedTag) Ptr() *UnknownChannelsEncodedTag {
+	return &u
 }
 
 var (
@@ -12253,6 +13072,175 @@ func (u *UnknownMediaEncoded) String() string {
 }
 
 var (
+	unknownTagsEncodedFieldTag       = big.NewInt(1 << 0)
+	unknownTagsEncodedFieldCode      = big.NewInt(1 << 1)
+	unknownTagsEncodedFieldMessage   = big.NewInt(1 << 2)
+	unknownTagsEncodedFieldRequestID = big.NewInt(1 << 3)
+	unknownTagsEncodedFieldTagIDs    = big.NewInt(1 << 4)
+)
+
+type UnknownTagsEncoded struct {
+	Tag       UnknownTagsEncodedTag `json:"_tag" url:"_tag"`
+	Code      *string               `json:"code,omitempty" url:"code,omitempty"`
+	Message   *string               `json:"message,omitempty" url:"message,omitempty"`
+	RequestID *string               `json:"requestId,omitempty" url:"requestId,omitempty"`
+	TagIDs    []string              `json:"tagIds" url:"tagIds"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (u *UnknownTagsEncoded) GetTag() UnknownTagsEncodedTag {
+	if u == nil {
+		return ""
+	}
+	return u.Tag
+}
+
+func (u *UnknownTagsEncoded) GetCode() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Code
+}
+
+func (u *UnknownTagsEncoded) GetMessage() *string {
+	if u == nil {
+		return nil
+	}
+	return u.Message
+}
+
+func (u *UnknownTagsEncoded) GetRequestID() *string {
+	if u == nil {
+		return nil
+	}
+	return u.RequestID
+}
+
+func (u *UnknownTagsEncoded) GetTagIDs() []string {
+	if u == nil {
+		return nil
+	}
+	return u.TagIDs
+}
+
+func (u *UnknownTagsEncoded) GetExtraProperties() map[string]interface{} {
+	if u == nil {
+		return nil
+	}
+	return u.extraProperties
+}
+
+func (u *UnknownTagsEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if u.explicitFields != nil {
+		next.Set(u.explicitFields)
+	}
+	next.Or(next, field)
+	u.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UnknownTagsEncoded) SetTag(tag UnknownTagsEncodedTag) {
+	u.Tag = tag
+	u.require(unknownTagsEncodedFieldTag)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UnknownTagsEncoded) SetCode(code *string) {
+	u.Code = code
+	u.require(unknownTagsEncodedFieldCode)
+}
+
+// SetMessage sets the Message field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UnknownTagsEncoded) SetMessage(message *string) {
+	u.Message = message
+	u.require(unknownTagsEncodedFieldMessage)
+}
+
+// SetRequestID sets the RequestID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UnknownTagsEncoded) SetRequestID(requestID *string) {
+	u.RequestID = requestID
+	u.require(unknownTagsEncodedFieldRequestID)
+}
+
+// SetTagIDs sets the TagIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UnknownTagsEncoded) SetTagIDs(tagIDs []string) {
+	u.TagIDs = tagIDs
+	u.require(unknownTagsEncodedFieldTagIDs)
+}
+
+func (u *UnknownTagsEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler UnknownTagsEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*u = UnknownTagsEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *u)
+	if err != nil {
+		return err
+	}
+	u.extraProperties = extraProperties
+	u.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (u *UnknownTagsEncoded) MarshalJSON() ([]byte, error) {
+	type embed UnknownTagsEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*u),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, u.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (u *UnknownTagsEncoded) String() string {
+	if u == nil {
+		return "<nil>"
+	}
+	if len(u.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(u.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(u); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", u)
+}
+
+type UnknownTagsEncodedTag string
+
+const (
+	UnknownTagsEncodedTagUnknownTags UnknownTagsEncodedTag = "UnknownTags"
+)
+
+func NewUnknownTagsEncodedTagFromString(s string) (UnknownTagsEncodedTag, error) {
+	switch s {
+	case "UnknownTags":
+		return UnknownTagsEncodedTagUnknownTags, nil
+	}
+	var t UnknownTagsEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (u UnknownTagsEncodedTag) Ptr() *UnknownTagsEncodedTag {
+	return &u
+}
+
+var (
 	unschedulePostsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	unschedulePostsRequestFieldPostID      = big.NewInt(1 << 1)
 )
@@ -12339,21 +13327,27 @@ func (u *UpdatePostsRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
-	postToValidateFieldWorkspaceID    = big.NewInt(1 << 0)
-	postToValidateFieldAllowDuplicate = big.NewInt(1 << 1)
-	postToValidateFieldChannelIDs     = big.NewInt(1 << 2)
-	postToValidateFieldContent        = big.NewInt(1 << 3)
-	postToValidateFieldOptions        = big.NewInt(1 << 4)
-	postToValidateFieldWhen           = big.NewInt(1 << 5)
+	postToValidateFieldWorkspaceID       = big.NewInt(1 << 0)
+	postToValidateFieldAllowDuplicate    = big.NewInt(1 << 1)
+	postToValidateFieldChannelIDs        = big.NewInt(1 << 2)
+	postToValidateFieldChannelSets       = big.NewInt(1 << 3)
+	postToValidateFieldContent           = big.NewInt(1 << 4)
+	postToValidateFieldDefaultSignatures = big.NewInt(1 << 5)
+	postToValidateFieldOptions           = big.NewInt(1 << 6)
+	postToValidateFieldSignatureID       = big.NewInt(1 << 7)
+	postToValidateFieldWhen              = big.NewInt(1 << 8)
 )
 
 type PostToValidate struct {
-	WorkspaceID    string            `json:"-" url:"-"`
-	AllowDuplicate *bool             `json:"allowDuplicate,omitempty" url:"-"`
-	ChannelIDs     []string          `json:"channelIds" url:"-"`
-	Content        *PostContent      `json:"content" url:"-"`
-	Options        []*ChannelOptions `json:"options,omitempty" url:"-"`
-	When           *PostTiming       `json:"when,omitempty" url:"-"`
+	WorkspaceID       string            `json:"-" url:"-"`
+	AllowDuplicate    *bool             `json:"allowDuplicate,omitempty" url:"-"`
+	ChannelIDs        []string          `json:"channelIds" url:"-"`
+	ChannelSets       []string          `json:"channelSets,omitempty" url:"-"`
+	Content           *PostContent      `json:"content" url:"-"`
+	DefaultSignatures *bool             `json:"defaultSignatures,omitempty" url:"-"`
+	Options           []*ChannelOptions `json:"options,omitempty" url:"-"`
+	SignatureID       *string           `json:"signatureId,omitempty" url:"-"`
+	When              *PostTiming       `json:"when,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -12389,6 +13383,13 @@ func (p *PostToValidate) SetChannelIDs(channelIDs []string) {
 	p.require(postToValidateFieldChannelIDs)
 }
 
+// SetChannelSets sets the ChannelSets field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostToValidate) SetChannelSets(channelSets []string) {
+	p.ChannelSets = channelSets
+	p.require(postToValidateFieldChannelSets)
+}
+
 // SetContent sets the Content field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *PostToValidate) SetContent(content *PostContent) {
@@ -12396,11 +13397,25 @@ func (p *PostToValidate) SetContent(content *PostContent) {
 	p.require(postToValidateFieldContent)
 }
 
+// SetDefaultSignatures sets the DefaultSignatures field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostToValidate) SetDefaultSignatures(defaultSignatures *bool) {
+	p.DefaultSignatures = defaultSignatures
+	p.require(postToValidateFieldDefaultSignatures)
+}
+
 // SetOptions sets the Options field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *PostToValidate) SetOptions(options []*ChannelOptions) {
 	p.Options = options
 	p.require(postToValidateFieldOptions)
+}
+
+// SetSignatureID sets the SignatureID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostToValidate) SetSignatureID(signatureID *string) {
+	p.SignatureID = signatureID
+	p.require(postToValidateFieldSignatureID)
 }
 
 // SetWhen sets the When field and marks it as non-optional;

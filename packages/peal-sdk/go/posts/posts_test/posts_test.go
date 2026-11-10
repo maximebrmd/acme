@@ -527,6 +527,63 @@ func TestPostsAttemptsWithWireMock(
 	VerifyRequestCount(t, "TestPostsAttemptsWithWireMock", "GET", "/api/workspaces/workspaceId/posts/postId/attempts", nil, 1)
 }
 
+func TestPostsTagWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.PostTags{
+		WorkspaceID: "workspaceId",
+		PostID:      "postId",
+		TagIDs: []string{
+			"tagIds",
+		},
+	}
+	_, invocationErr := client.Posts.Tag(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsTagWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsTagWithWireMock", "PUT", "/api/workspaces/workspaceId/posts/postId/tags", nil, 1)
+}
+
+func TestPostsDuplicateWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.DuplicatePostsRequest{
+		WorkspaceID: "workspaceId",
+		PostID:      "postId",
+	}
+	_, invocationErr := client.Posts.Duplicate(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsDuplicateWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsDuplicateWithWireMock", "POST", "/api/workspaces/workspaceId/posts/postId/duplicate", nil, 1)
+}
+
 func TestPostsScheduleWithWireMock(
 	t *testing.T,
 ) {

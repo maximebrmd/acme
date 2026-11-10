@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class UnknownChannelsEncoded extends JsonSerializableType
 {
     /**
+     * @var value-of<UnknownChannelsEncodedTag> $tag
+     */
+    #[JsonProperty('_tag')]
+    public string $tag;
+
+    /**
      * @var ?string $code
      */
     #[JsonProperty('code')]
@@ -34,6 +40,7 @@ class UnknownChannelsEncoded extends JsonSerializableType
 
     /**
      * @param array{
+     *   tag: value-of<UnknownChannelsEncodedTag>,
      *   channelIds: array<string>,
      *   code?: ?string,
      *   message?: ?string,
@@ -43,6 +50,7 @@ class UnknownChannelsEncoded extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->tag = $values['tag'];
         $this->code = $values['code'] ?? null;
         $this->message = $values['message'] ?? null;
         $this->requestId = $values['requestId'] ?? null;

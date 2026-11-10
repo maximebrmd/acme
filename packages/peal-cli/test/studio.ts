@@ -2506,14 +2506,8 @@ export const studioGroupsLive = (studio: Studio) =>
         disconnect: () => refusing,
         enable: ({ params }) =>
           changingChannel(studio, params, turnedOn, "enable"),
-        list: ({ params }) =>
-          allowed("channel:read").pipe(
-            Effect.andThen(channelsNow(studio, params.workspaceId))
-          ),
-        platforms: () => refusing,
-        reconnect: () => refusing,
-        search: ({ params, query }) =>
-          Effect.gen(function* search() {
+        find: ({ params, query }) =>
+          Effect.gen(function* find() {
             yield* allowed("channel:read");
 
             // The platform and the text narrow the counts; the status
@@ -2555,6 +2549,12 @@ export const studioGroupsLive = (studio: Studio) =>
                   : null,
             };
           }),
+        list: ({ params }) =>
+          allowed("channel:read").pipe(
+            Effect.andThen(channelsNow(studio, params.workspaceId))
+          ),
+        platforms: () => refusing,
+        reconnect: () => refusing,
         update: ({ params, payload }) =>
           changingChannel(
             studio,

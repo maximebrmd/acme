@@ -7,9 +7,13 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .content_violation import ContentViolation
+from .post_content_invalid_encoded_tag import PostContentInvalidEncodedTag
 
 
 class PostContentInvalidEncoded(UniversalBaseModel):
+    tag: typing_extensions.Annotated[
+        PostContentInvalidEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ]
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[

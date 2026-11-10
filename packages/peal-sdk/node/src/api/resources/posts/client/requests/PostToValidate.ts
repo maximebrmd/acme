@@ -24,7 +24,10 @@ export interface PostToValidate {
     workspaceId: string;
     allowDuplicate?: boolean;
     channelIds: string[];
+    channelSets?: string[];
     content: Peal.PostContent;
+    defaultSignatures?: boolean;
     options?: Peal.ChannelOptions[];
+    signatureId?: string;
     when?: Peal.PostTiming;
 }
