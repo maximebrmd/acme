@@ -171,6 +171,11 @@ export class EngagementInbox extends Context.Service<
         function* abilities(actor: Actor, channelId: ChannelId) {
           yield* Effect.fromResult(authorize(actor, "engagement:read"));
 
+          // A channel of another workspace is told as one that is gone.
+          if (!(yield* channels.belongs(channelId, actor.workspaceId))) {
+            return nothing;
+          }
+
           return Option.match(yield* described(channelId), {
             onNone: () => nothing,
             onSome: ({ platform, scopes }) => abilitiesOf(platform, scopes),

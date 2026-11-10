@@ -938,6 +938,27 @@ describe("reading the inbox", () => {
     }
   );
 
+  it.effect("says nothing of what another workspace's channel can do", () => {
+    const world = worldWith([{}]);
+
+    // A channel that works, connected to someone else's workspace.
+    world.state.channelOwners.set(
+      channelId(1),
+      WorkspaceIdSchema.make("33333333-3333-4333-8333-333333333333")
+    );
+
+    return at(
+      Effect.gen(function* asking() {
+        const told = yield* EngagementInbox.use((inbox) =>
+          inbox.abilities(viewer, channelId(1))
+        );
+
+        assert.strictEqual(told.read, "unsupported");
+        assert.strictEqual(told.reply, "unsupported");
+      })
+    ).pipe(Effect.provide(world.layer));
+  });
+
   it.effect("shows a thread whole, with what its channel can do", () => {
     const world = worldWith([{}, {}]);
 

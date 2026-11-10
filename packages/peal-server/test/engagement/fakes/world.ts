@@ -79,6 +79,8 @@ interface Told {
 /** What a test's world holds, and how its platform answers. */
 export interface WorldState {
   readonly cancelled: ReplyId[];
+  /** The workspace of a channel that is not the tests' own. */
+  readonly channelOwners: Map<ChannelId, WorkspaceId>;
   readonly channels: Map<ChannelId, EngagedChannel>;
   /** When a gate claimed each reply's call, by reply. */
   readonly claims: Map<string, DateTime.Utc>;
@@ -140,6 +142,7 @@ const matches = (
 export const makeWorld = () => {
   const state: WorldState = {
     cancelled: [],
+    channelOwners: new Map(),
     channels: new Map(),
     claims: new Map(),
     comments: new Map(),
@@ -523,6 +526,10 @@ export const makeWorld = () => {
     Layer.succeed(
       EngagementChannels,
       EngagementChannels.of({
+        belongs: (channelId, workspace) =>
+          Effect.succeed(
+            (state.channelOwners.get(channelId) ?? workspace) === workspace
+          ),
         describe: (channelId) =>
           Option.match(Option.fromUndefinedOr(state.channels.get(channelId)), {
             onNone: () =>

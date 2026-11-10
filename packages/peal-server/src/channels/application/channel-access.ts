@@ -20,7 +20,7 @@ import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { TokenPolicy } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
-import type { ChannelId } from "#shared/domain/ids.ts";
+import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { isTokenRejected } from "#shared/domain/token-rejected.ts";
@@ -126,6 +126,14 @@ const tokenOf = (channel: Channel, tokens: StoredTokens): ChannelToken => ({
 export class ChannelAccess extends Context.Service<
   ChannelAccess,
   {
+    /**
+     * The workspace a channel is connected to, usable or not; none once it
+     * is disconnected. For a caller that was handed a channel's id by a
+     * member, to check it is their workspace's before saying anything of it.
+     */
+    readonly workspaceOf: (
+      channelId: ChannelId
+    ) => Effect.Effect<Option.Option<WorkspaceId>, DatabaseError>;
     /** Who the channel posts as, and what it allowed, if it can post. */
     readonly account: (
       channelId: ChannelId
@@ -484,7 +492,12 @@ export class ChannelAccess extends Context.Service<
         return found;
       });
 
-      return ChannelAccess.of({ account, withToken });
+      const workspaceOf = (channelId: ChannelId) =>
+        channels
+          .get(channelId)
+          .pipe(Effect.map(Option.map(({ workspaceId }) => workspaceId)));
+
+      return ChannelAccess.of({ account, withToken, workspaceOf });
     })
   );
 }
