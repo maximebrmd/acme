@@ -4,8 +4,9 @@
 // searched in a workspace its partner owns and in none other, and a log of
 // what it asked to change.
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer, Schema } from "effect";
-import { ActivityPageSchema } from "peal-contract";
+import { Effect, Layer, Option, Schema } from "effect";
+import { McpClient, McpProtocol } from "effect/ai";
+import { ActivityPageSchema, PostSchema } from "peal-contract";
 
 import { SqlLive } from "#shared/infrastructure/database.ts";
 import {
@@ -21,6 +22,8 @@ import {
   partnerOf,
 } from "#test/workspace/integration/partner-support.ts";
 import { seedChannel } from "#test/workspace/integration/seed.ts";
+
+import { connect, mcpResource, toolNamed } from "./mcp-support.ts";
 
 const Test = Layer.mergeAll(
   TestApp.layerWith({
@@ -39,6 +42,9 @@ const remainingOf = (headers: Headers) =>
   Number(left.exec(headers.get("ratelimit") ?? "")?.groups?.["remaining"]);
 
 const requestId = /^[\w.:-]{8,}$/u;
+
+const messageOf = (response: Response) =>
+  Effect.promise(async () => await response.text());
 
 const content = (text: string) => ({ media: [], overrides: [], text });
 
@@ -433,6 +439,154 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.strictEqual(denied.status, 403);
         })
+    );
+
+    it.effect(
+      "acts on the MCP endpoint in the workspace it names, one its partner owns",
+      () =>
+        Effect.gen(function* mcp() {
+          const app = yield* TestApp;
+          const { home, owner } = yield* partnerOf("seam-mcp");
+
+          const { key, partnerKey } = yield* keyOf(owner, home, {
+            permissions: [...everyPermission, "activity:read"],
+          });
+
+          const customer = yield* customerOf(key, "Agent", "cus_seam_5");
+          const stranger = yield* partnerOf("seam-mcp-stranger");
+
+          // As an MCP client sends them: with no Origin header.
+          const initialize = (headers: Readonly<Record<string, string>>) =>
+            Effect.promise(
+              async () =>
+                await app.handler(
+                  new Request(mcpResource, {
+                    body: JSON.stringify({
+                      id: 1,
+                      jsonrpc: "2.0",
+                      method: "initialize",
+                      params: {
+                        capabilities: {},
+                        clientInfo: { name: "peal-test", version: "1.0.0" },
+                        protocolVersion: "2025-11-25",
+                      },
+                    }),
+                    headers: {
+                      accept: "application/json, text/event-stream",
+                      "content-type": "application/json",
+                      ...headers,
+                    },
+                    method: "POST",
+                  })
+                )
+            );
+
+          // Its key spans workspaces: it says which one it means.
+          const unnamed = yield* initialize(bearer(key));
+
+          assert.strictEqual(unnamed.status, 400);
+          assert.include(yield* messageOf(unnamed), "Peal-Workspace");
+
+          // Its home workspace, another partner's and no workspace at all
+          // read the same: as no workspace.
+          for (const workspace of [home, stranger.home, "not-a-workspace"]) {
+            const elsewhere = yield* initialize({
+              ...bearer(key),
+              "peal-workspace": workspace,
+            });
+
+            assert.strictEqual(elsewhere.status, 404, workspace);
+          }
+
+          // A key that does not work is led to sign in, as any is.
+          const unknown = yield* initialize({
+            ...bearer("peal_partner_synthetic-key-that-was-never-issued"),
+            "peal-workspace": customer.id,
+          });
+
+          assert.strictEqual(unknown.status, 401);
+          assert.include(
+            unknown.headers.get("www-authenticate") ?? "",
+            "resource_metadata"
+          );
+
+          assert.strictEqual(
+            (yield* initialize({
+              ...bearer(key),
+              "peal-workspace": customer.id,
+            })).status,
+            200
+          );
+
+          // The tools then act there, with the key's permissions.
+          const context = yield* Layer.build(
+            connect(Option.some(key), McpProtocol.v2026_07_28, {
+              "peal-workspace": customer.id,
+            })
+          );
+
+          const client = yield* McpClient.McpClient.pipe(
+            Effect.provide(context)
+          );
+
+          const tools = yield* client.listTools().pipe(Effect.provide(context));
+
+          const who = yield* client
+            .callTool({
+              arguments: {},
+              schema: Schema.Struct({
+                apiKey: Schema.Struct({
+                  id: Schema.String,
+                  name: Schema.String,
+                }),
+                user: Schema.Null,
+                workspace: Schema.Struct({
+                  id: Schema.String,
+                  name: Schema.String,
+                }),
+              }),
+              tool: toolNamed(tools, "whoami"),
+            })
+            .pipe(Effect.provide(context));
+
+          assert.deepStrictEqual(who, {
+            apiKey: { id: partnerKey.id, name: "backend" },
+            user: null,
+            workspace: { id: customer.id, name: "Agent" },
+          });
+
+          const draft = yield* client
+            .callTool({
+              arguments: {
+                channelIds: [],
+                content: content("A synthetic draft from a partner's agent."),
+              },
+              schema: Schema.toCodecJson(PostSchema),
+              tool: toolNamed(tools, "create_draft"),
+            })
+            .pipe(Effect.provide(context));
+
+          assert.strictEqual(draft.status, "draft");
+
+          // Kept in the workspace's log as the tool's call, by the key.
+          const log = yield* app.request(
+            `/api/workspaces/${customer.id}/activity?operation=mcp.create_draft`,
+            { headers: bearer(key) }
+          );
+
+          assert.deepStrictEqual(
+            (yield* bodyOf(PageJsonSchema, log)).items.map(
+              ({ actor, application, via }) => ({ actor, application, via })
+            ),
+            [
+              {
+                actor: { _tag: "apiKey", apiKeyId: partnerKey.id },
+                application: { id: partnerKey.id, name: "backend" },
+                via: "mcp",
+              },
+            ]
+          );
+        }).pipe(Effect.scoped)
     );
   }
 );

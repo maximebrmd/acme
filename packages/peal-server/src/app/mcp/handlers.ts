@@ -64,21 +64,28 @@ const BasicToolsLive = BasicTools.toLayer(
         .workspace(workspaceId)
         .pipe(Effect.catchTag("DirectoryUnavailable", Effect.die));
 
-      if (Option.isNone(workspace) || member.principal._tag !== "apiKey") {
+      // A key of the workspace, or of the partner that owns it.
+      const apiKeyId =
+        member.principal._tag === "partnerKey"
+          ? Option.some(member.principal.partnerKeyId)
+          : Option.liftPredicate(
+              member.principal,
+              (principal) => principal._tag === "apiKey"
+            ).pipe(Option.map(({ apiKeyId: id }) => id));
+
+      if (Option.isNone(workspace) || Option.isNone(apiKeyId)) {
         return yield* new ToolRefused({
           message:
             "The workspace this API key belongs to no longer exists. Use a key of another workspace.",
         });
       }
 
-      const { apiKeyId } = member.principal;
-
       const name = yield* names
-        .apiKey(workspaceId, apiKeyId)
+        .apiKey(workspaceId, apiKeyId.value)
         .pipe(Effect.catchTag("DatabaseError", Effect.die));
 
       return {
-        apiKey: { id: apiKeyId, name: Option.getOrElse(name, () => "") },
+        apiKey: { id: apiKeyId.value, name: Option.getOrElse(name, () => "") },
         workspace: workspace.value,
       };
     });

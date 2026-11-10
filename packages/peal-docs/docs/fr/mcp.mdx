@@ -71,6 +71,17 @@ La façon dont un client lit un en-tête dans son environnement dépend du clien
 - Ce que fait la clé figure dans le [journal d’activité](/settings#activity) de l’espace de travail, sous l’identifiant et le nom de la clé.
 - Révoquer la clé, sous **Clés d’API** dans les paramètres de l’espace de travail, arrête l’agent aussitôt.
 
+Une [clé partenaire](/embedding) se connecte de la même façon, à l’un des espaces de travail que possède son compte partenaire. Sa clé les couvre tous : le client nomme donc l’espace de travail à chaque requête, par son identifiant, dans un en-tête `Peal-Workspace` à côté d’`Authorization` :
+
+```json
+"headers": {
+  "Authorization": "Bearer ${PEAL_PARTNER_KEY}",
+  "Peal-Workspace": "<workspace-id>"
+}
+```
+
+Sans cet en-tête, le point d’accès répond 400, et 404 pour un espace de travail que le compte partenaire ne possède pas, son espace principal compris. Les outils agissent ensuite dans cet espace de travail avec les permissions de la clé, comme pour une clé d’API.
+
 ## Ce que le client peut faire [#scopes]
 
 La page de consentement liste ce que le client demande :

@@ -70,6 +70,17 @@ How a client reads a header from its environment depends on the client: see its 
 - What the key does is in the workspace's [activity log](/settings#activity), under the key's id and name.
 - Revoking the key, under **API keys** in the workspace's settings, stops the agent at once.
 
+A [partner key](/embedding) connects the same way, to one of the workspaces its partner account owns. Its key spans all of them, so the client names the workspace with every request, by its id, in a `Peal-Workspace` header beside `Authorization`:
+
+```json
+"headers": {
+  "Authorization": "Bearer ${PEAL_PARTNER_KEY}",
+  "Peal-Workspace": "<workspace-id>"
+}
+```
+
+Without the header the endpoint answers 400, and 404 for a workspace the partner account does not own, its home workspace included. The tools then act in that workspace with the key's permissions, as for an API key.
+
 ## What the client may do [#scopes]
 
 The consent page lists what the client asks for:

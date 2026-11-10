@@ -1910,6 +1910,11 @@ and no socket, for tests.
   partner keep the unshared layers (`WorkspaceEntitlements.layer`,
   `PlanChannelAllowanceLive`, `PartnerOwnership.layerNone`,
   `EventOrigins.layerNone`).
+- On `/api/mcp`, a partner key names the workspace it acts in with each
+  request, by id, in the `Peal-Workspace` header (`workspaceNamed` in
+  `authenticate.ts`; 400 without it), and is told 404 for any workspace
+  its partner does not own, as on the API. A workspace's API key never
+  reads the header: it acts in its own workspace.
 - A webhook endpoint has a `scope`: `workspace`, or `partner`, in a home
   workspace only (`PartnerNotFound`, 404, elsewhere), which also hears every
   workspace the partner owns (`EventOrigins`, which
