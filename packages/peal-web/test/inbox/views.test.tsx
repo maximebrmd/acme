@@ -214,6 +214,18 @@ describe(CommentView, () => {
     ).toStrictEqual([]);
   });
 
+  it("isolates the direction of a name and a handle from what stands beside them", async () => {
+    const html = await render(
+      "en",
+      <ul>
+        <CommentView comment={comment} />
+      </ul>
+    );
+
+    expect(html).toMatch(/<bdi[^>]*>Ada Example<\/bdi>/u);
+    expect(html).toMatch(/<bdi[^>]*>@ada@social\.example<\/bdi>/u);
+  });
+
   it("renders markup and Markdown in a comment as the text it is", async () => {
     const hostile: InboxComment = {
       ...comment,

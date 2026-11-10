@@ -304,7 +304,9 @@ export const ReplyAbilityNotice = ({
 export const handleOf = ({ handle }: InboxAuthor): string =>
   handle.startsWith("@") ? handle : `@${handle}`;
 
-// Who wrote a comment, as their platform shows them: plain text.
+// Who wrote a comment, as their platform shows them: plain text, each in
+// a `bdi`, so a name written right to left never reorders what stands
+// beside it.
 const AuthorLine = ({ author }: { readonly author: InboxAuthor | null }) => {
   const t = useTranslations("Inbox.comment");
 
@@ -315,11 +317,11 @@ const AuthorLine = ({ author }: { readonly author: InboxAuthor | null }) => {
   return (
     <span className="flex flex-wrap items-baseline gap-x-2">
       {author.displayName === null || author.displayName === "" ? null : (
-        <span className="font-medium break-words">{author.displayName}</span>
+        <bdi className="font-medium break-words">{author.displayName}</bdi>
       )}
-      <span className="text-muted-foreground text-sm break-all">
+      <bdi className="text-muted-foreground text-sm break-all">
         {handleOf(author)}
-      </span>
+      </bdi>
     </span>
   );
 };

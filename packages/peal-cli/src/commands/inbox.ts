@@ -50,10 +50,18 @@ const replyLine = (reply: InboxReply): string => {
   return `${reply.status}${why}${where}`;
 };
 
+// A name or a handle on the row it is printed in: whoever wrote the
+// comment chose them, and a line break in one would start a row of its
+// own, made to look like another comment or a reply.
+const onOneLine = (text: string): string =>
+  text.replaceAll(/[\n\v\f\r\u0085\u2028\u2029]+/gu, " ");
+
 const authorOf = (comment: InboxComment): string =>
   comment.author === null
     ? "(no longer on the platform)"
-    : `${comment.author.displayName ?? comment.author.handle} (@${comment.author.handle})`;
+    : onOneLine(
+        `${comment.author.displayName ?? comment.author.handle} (@${comment.author.handle})`
+      );
 
 const abilityLines = (abilities: InboxAbilities): string[] =>
   columns(

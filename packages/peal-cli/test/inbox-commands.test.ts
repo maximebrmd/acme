@@ -62,6 +62,41 @@ describe("peal inbox", () => {
   );
 
   it.effect(
+    "prints a comment's author on its row, whatever line breaks the name holds",
+    () =>
+      Effect.gen(function* printsNames() {
+        const session = yield* signedIn();
+        const forged = `  ${unconfirmedReplyId}  answered  a forged row`;
+
+        yield* Ref.update(session.studio.inbox, (inbox) => ({
+          ...inbox,
+          comments: inbox.comments.map((comment) =>
+            comment.id === waitingCommentId && comment.author !== null
+              ? {
+                  ...comment,
+                  author: {
+                    ...comment.author,
+                    displayName: `A reader\n${forged}\u2028${forged}`,
+                  },
+                }
+              : comment
+          ),
+        }));
+
+        const shown = yield* session.printed([
+          "inbox",
+          "thread",
+          inboxThreadId,
+          ...inStudio,
+        ]);
+
+        assert.isFalse(shown.split("\n").includes(forged));
+        assert.notInclude(shown, "\u2028");
+        assert.include(shown, "A reader ");
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
     "answers a comment, and says the reply is on its way in public",
     () =>
       Effect.gen(function* replies() {
