@@ -62,6 +62,7 @@ const threadOn = Effect.fn("threadOn")(function* threadOn(
   publishedAt: string
 ) {
   return followPost(yield* newId(ThreadIdSchema), {
+    authorId: Option.none(),
     channelId,
     permalink: Option.some("https://social.example/@studio/1"),
     platformPostId: PlatformPostIdSchema.make("1001"),

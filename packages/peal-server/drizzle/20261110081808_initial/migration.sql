@@ -290,6 +290,7 @@ CREATE TABLE "engagement"."replies" (
 );
 --> statement-breakpoint
 CREATE TABLE "engagement"."threads" (
+	"author_id" uuid,
 	"channel_id" uuid NOT NULL,
 	"comment_count" integer DEFAULT 0 NOT NULL,
 	"end_reason" text,
@@ -386,6 +387,7 @@ CREATE TABLE "notifications"."notices" (
 --> statement-breakpoint
 CREATE TABLE "notifications"."notification_preferences" (
 	"email_channel_reconnect" boolean NOT NULL,
+	"email_comments" boolean DEFAULT false NOT NULL,
 	"email_post_failed" boolean NOT NULL,
 	"email_post_published" boolean NOT NULL,
 	"email_post_review" boolean DEFAULT true NOT NULL,
@@ -931,6 +933,7 @@ CREATE INDEX "threads_due" ON "engagement"."threads" ("next_collection_at","chan
 CREATE INDEX "threads_channel_due" ON "engagement"."threads" ("channel_id","next_collection_at","id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "threads_workspace_listed" ON "engagement"."threads" ("workspace_id","last_comment_at","id") WHERE "comment_count" > 0;--> statement-breakpoint
 CREATE INDEX "threads_post" ON "engagement"."threads" ("post_id");--> statement-breakpoint
+CREATE INDEX "threads_author" ON "engagement"."threads" ("author_id") WHERE "author_id" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "threads_published" ON "engagement"."threads" ("published_at","target_id");--> statement-breakpoint
 CREATE INDEX "threads_ended" ON "engagement"."threads" ("ended_at") WHERE "ended_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "connections_at" ON "legal"."connections" ("at");--> statement-breakpoint

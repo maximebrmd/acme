@@ -324,6 +324,12 @@ export type NoticeEventRecord =
       readonly postId: string;
     }
   | {
+      readonly _tag: "CommentsReceived";
+      readonly count: number;
+      readonly postId: string;
+      readonly threadId: string;
+    }
+  | {
       readonly _tag: "PostCommented";
       readonly by: string;
       readonly postId: string;
@@ -410,6 +416,7 @@ export interface NoticeRecord {
 export interface PreferencesRecord {
   readonly email: {
     readonly channelReconnect: boolean;
+    readonly comments: boolean;
     readonly postFailed: boolean;
     readonly postPublished: boolean;
     readonly postReview: boolean;

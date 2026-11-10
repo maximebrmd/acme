@@ -109,6 +109,7 @@ layer(ListingTest)("the published targets", (it) => {
           ]
         );
         assert.deepStrictEqual(own[1], {
+          authorId: own[1]?.authorId,
           channelId,
           permalink: Option.some(
             "https://mastodon.test/@alice/110000000000000002"

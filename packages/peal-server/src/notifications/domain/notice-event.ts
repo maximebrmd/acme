@@ -1,7 +1,7 @@
 import { Effect, Match, Option, Schema } from "effect";
 
 import type { Permission } from "#shared/domain/access.ts";
-import { PostIdSchema } from "#shared/domain/ids.ts";
+import { Uuid7Schema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
 import { PlatformSchema } from "#shared/domain/platform.ts";
@@ -120,6 +120,14 @@ export const NoticeEventSchema = Schema.Union([
     by: ReviewPartySchema,
     postId: PostIdSchema,
   }),
+  // People commented on the post where it went live: `count` comments
+  // read for the first time, under the thread engagement keeps. A count
+  // and ids: never who wrote, nor what.
+  Schema.TaggedStruct("CommentsReceived", {
+    count: Schema.Int,
+    postId: PostIdSchema,
+    threadId: Uuid7Schema,
+  }),
   // The channel's authorization stopped working: nothing is posted until it
   // is reconnected.
   Schema.TaggedStruct("ChannelReconnectRequired", {
@@ -189,6 +197,7 @@ export type NoticeEvent = typeof NoticeEventSchema.Type;
 /** The kinds of notice a reader chooses to receive by email or not. */
 export type EmailKind =
   | "channelReconnect"
+  | "comments"
   | "postFailed"
   | "postPublished"
   | "postReview"
@@ -204,6 +213,7 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
   Match.valueTags(event, {
     ChannelReconnectRequired: () => Option.some<EmailKind>("channelReconnect"),
     ChannelReconnectSoon: () => Option.some<EmailKind>("channelReconnect"),
+    CommentsReceived: () => Option.some<EmailKind>("comments"),
     PostApprovalRequested: () => Option.some<EmailKind>("postReview"),
     PostApproved: () => Option.some<EmailKind>("postReview"),
     PostChangesRequested: () => Option.some<EmailKind>("postReview"),
@@ -222,6 +232,7 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
 /**
  * Who may act on the event: those who may schedule posts can repost one, or
  * confirm whether it went out, and follow what its review brings; those who
+ * may answer comments can answer the ones a post received; those who
  * may approve posts can decide on one that waits; those who may connect
  * channels can reconnect one; those who manage billing can order, cancel or
  * withdraw; those who manage webhooks can turn an endpoint back on. Who
@@ -231,6 +242,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
   Match.valueTags(event, {
     ChannelReconnectRequired: (): Permission => "channel:connect",
     ChannelReconnectSoon: (): Permission => "channel:connect",
+    CommentsReceived: (): Permission => "engagement:reply",
     PostApprovalRequested: (): Permission => "post:approve",
     PostApproved: (): Permission => "post:schedule",
     PostChangesRequested: (): Permission => "post:schedule",
@@ -251,6 +263,7 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
   Match.valueTags(event, {
     ChannelReconnectRequired: () => false,
     ChannelReconnectSoon: () => false,
+    CommentsReceived: () => true,
     PostApprovalRequested: () => true,
     PostApproved: () => true,
     PostChangesRequested: () => true,
@@ -272,8 +285,14 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
  * role; to act on the channel, for a channel's; to manage billing, for
  * billing's; to manage webhooks, for an endpoint's.
  */
-export const readerPermissionOf = (event: NoticeEvent): Permission =>
-  isAboutPost(event) ? "post:read" : audienceOf(event);
+export const readerPermissionOf = (event: NoticeEvent): Permission => {
+  // Comments are read with a permission of their own.
+  if (event._tag === "CommentsReceived") {
+    return "engagement:read";
+  }
+
+  return isAboutPost(event) ? "post:read" : audienceOf(event);
+};
 
 /** A member who could hear about an event. */
 export interface Candidate {
@@ -360,6 +379,8 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
   Match.valueTags(event, {
     ChannelReconnectRequired: () => `/app/${workspaceId}/channels`,
     ChannelReconnectSoon: () => `/app/${workspaceId}/channels`,
+    CommentsReceived: ({ threadId }) =>
+      `/app/${workspaceId}/comments/${threadId}`,
     PostApprovalRequested: ({ postId }) =>
       `/app/${workspaceId}/posts/${postId}`,
     PostApproved: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,

@@ -5,6 +5,7 @@ import {
   ChannelIdSchema,
   PostIdSchema,
   PostTargetIdSchema,
+  UserIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
@@ -50,6 +51,9 @@ export type ThreadCollection = typeof ThreadCollectionSchema.Type;
 export class Thread extends Schema.Class<Thread>(
   "peal-server/engagement/domain/Thread"
 )({
+  // The member who wrote the post, who hears of its comments; none for an
+  // API key's post, or once their account is closed.
+  authorId: Schema.Option(UserIdSchema),
   channelId: ChannelIdSchema,
   collection: ThreadCollectionSchema,
   id: ThreadIdSchema,
@@ -65,6 +69,7 @@ export class Thread extends Schema.Class<Thread>(
 
 /** A post that went live on a channel, as publishing lists it. */
 export interface FollowedPost {
+  readonly authorId: Thread["authorId"];
   readonly channelId: Thread["channelId"];
   readonly permalink: Option.Option<string>;
   readonly platformPostId: Thread["platformPostId"];
@@ -78,6 +83,7 @@ type Fields = ConstructorParameters<typeof Thread>[0];
 
 const withFields = (thread: Thread, changed: Partial<Fields>): Thread =>
   new Thread({
+    authorId: thread.authorId,
     channelId: thread.channelId,
     collection: thread.collection,
     id: thread.id,
@@ -97,6 +103,7 @@ const withFields = (thread: Thread, changed: Partial<Fields>): Thread =>
  */
 export const followPost = (id: ThreadId, post: FollowedPost): Thread =>
   new Thread({
+    authorId: post.authorId,
     channelId: post.channelId,
     collection: { _tag: "collecting", nextAt: post.publishedAt },
     id,

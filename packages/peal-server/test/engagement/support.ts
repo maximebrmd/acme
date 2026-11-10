@@ -44,6 +44,7 @@ export const followedPost = (
   n: number,
   changed: Partial<FollowedPost> = {}
 ): FollowedPost => ({
+  authorId: Option.some(memberId),
   channelId: channelId(1),
   permalink: Option.some(`https://social.example/@studio/${n}`),
   platformPostId: PlatformPostIdSchema.make(`${1000 + n}`),

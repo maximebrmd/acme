@@ -29,6 +29,13 @@ export const french: EmailCatalog = {
       "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Peal. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Reconnectez {handle} sur {platform} avant le {expiresAt}",
   },
+  commentsReceived: {
+    action: "Lire les commentaires",
+    body: "Une publication de {workspaceName} a reçu de nouveaux commentaires ({count}) là où elle a été publiée.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y répondez aux commentaires, et avez choisi d’être averti des nouveaux commentaires par e-mail. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Nouveaux commentaires sur une publication",
+  },
   contractNumber:
     "Numéro de contrat : {reference}. Indiquez-le dans Résilier votre contrat ou Renoncer au contrat ici, au pied de chaque page, et votre demande est appliquée immédiatement, sans vous connecter.",
   contractRequest: {

@@ -66,6 +66,7 @@ const collectionOf = (row: ThreadRow) =>
 
 const threadOf = (row: ThreadRow) =>
   decodeThread({
+    authorId: Option.fromNullOr(row.authorId),
     channelId: row.channelId,
     collection: collectionOf(row),
     id: row.id,
@@ -162,6 +163,7 @@ const scheduleColumns = (collection: ThreadCollection) =>
 
 const threadRowOf = (thread: Thread) => ({
   ...scheduleColumns(thread.collection),
+  authorId: Option.getOrNull(thread.authorId),
   channelId: thread.channelId,
   id: thread.id,
   lastCollectedAt: thread.lastCollectedAt.pipe(

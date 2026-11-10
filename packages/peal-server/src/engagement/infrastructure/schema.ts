@@ -26,11 +26,14 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * read next (`next_collection_at`), or since when they are not
  * (`ended_at`, `end_reason`), and what its list shows: how many comments
  * the platform still shows, how many wait for an answer, and when the
- * latest was written. One thread per published target.
+ * latest was written. `author_id` is the member who wrote the post, null
+ * for an API key's or once their account is closed. One thread per
+ * published target.
  */
 export const threads = engagement.table(
   "threads",
   {
+    authorId: uuid("author_id"),
     channelId: uuid("channel_id").notNull(),
     commentCount: integer("comment_count").notNull().default(0),
     endReason: text("end_reason"),
@@ -62,6 +65,9 @@ export const threads = engagement.table(
       .on(table.workspaceId, table.lastCommentAt, table.id)
       .where(sql`${table.commentCount} > 0`),
     index("threads_post").on(table.postId),
+    index("threads_author")
+      .on(table.authorId)
+      .where(sql`${table.authorId} IS NOT NULL`),
     index("threads_published").on(table.publishedAt, table.targetId),
     // The retention's read.
     index("threads_ended")

@@ -81,6 +81,12 @@ export const DrizzleEngagementRecords = Layer.effect(
           .set({ authorId: null })
           .where(eq(replies.authorId, userId))
           .pipe(Effect.mapError(failed));
+
+        yield* db
+          .update(threads)
+          .set({ authorId: null })
+          .where(eq(threads.authorId, userId))
+          .pipe(Effect.mapError(failed));
       }
     );
 

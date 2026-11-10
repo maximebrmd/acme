@@ -70,6 +70,8 @@ export const notificationPreferences = notificationsSchema.table(
   "notification_preferences",
   {
     emailChannelReconnect: boolean("email_channel_reconnect").notNull(),
+    // New comments under posts: off unless chosen.
+    emailComments: boolean("email_comments").notNull().default(false),
     emailPostFailed: boolean("email_post_failed").notNull(),
     emailPostPublished: boolean("email_post_published").notNull(),
     // Comments on posts, approvals asked for and decided: on unless chosen.

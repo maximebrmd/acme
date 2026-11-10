@@ -8,6 +8,10 @@ import { ReplyFailureSchema } from "#engagement/domain/reply.ts";
 import type { SendOutcome } from "#engagement/domain/reply.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 
+export { SendOutcomeSchema } from "#engagement/domain/reply.ts";
+
+export type { SendOutcome } from "#engagement/domain/reply.ts";
+
 /** A reply to send, by id: its text stays in the engagement tables. */
 export const SendRequestSchema = Schema.Struct({
   channelId: ChannelIdSchema,

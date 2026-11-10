@@ -5,6 +5,7 @@ import {
   MediaAssetIdSchema,
   PostIdSchema,
   PostTargetIdSchema,
+  Uuid7Schema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import { PlatformSchema } from "#shared/domain/platform.ts";
@@ -61,6 +62,15 @@ const channel = {
 };
 
 const media = { ...workspace, mediaId: MediaAssetIdSchema };
+
+// A comment under a post that went live on a channel, by ids: never what
+// it says, nor who wrote it, which the receiver reads through the API.
+const comment = {
+  ...post,
+  channelId: ChannelIdSchema,
+  commentId: Uuid7Schema,
+  threadId: Uuid7Schema,
+};
 
 /**
  * Something that happened in a workspace, as its webhook endpoints hear
@@ -174,6 +184,22 @@ export const WebhookEventSchema = Schema.Union([
   Schema.Struct({
     data: Schema.Struct({ ...media, reason: Schema.NonEmptyString }),
     type: Schema.Literal("media.failed"),
+  }),
+  // Peal read a comment for the first time under a post that went live.
+  Schema.Struct({
+    data: Schema.Struct({ ...comment, receivedAt: Schema.DateTimeUtc }),
+    type: Schema.Literal("comment.received"),
+  }),
+  // A reply to the comment went out from Peal, as the channel's account.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...comment,
+      // Its address on the platform, when the platform gave one.
+      permalink: Schema.NullOr(Schema.String),
+      repliedAt: Schema.DateTimeUtc,
+      replyId: Uuid7Schema,
+    }),
+    type: Schema.Literal("comment.replied"),
   }),
   // A member asked for a test event on the endpoint.
   Schema.Struct({
