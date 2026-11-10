@@ -426,6 +426,15 @@ const logSuite = (
           })
         );
 
+        // Asked by staff acting as her: hers to read, and told apart.
+        const third = yield* log.record(
+          changeBy(workspaceId, ana, {
+            impersonated: true,
+            operation: "posts.update",
+            status: Option.some(200),
+          })
+        );
+
         yield* log.record(changeBy(workspaceId, ben));
         yield* log.record(
           changeBy(workspaceId, ana, {
@@ -437,6 +446,7 @@ const logSuite = (
         assert.deepStrictEqual(yield* activity.exportUser(ana), [
           {
             at: first.occurredAt,
+            byStaff: false,
             operation: "posts.schedule",
             status: 200,
             via: "session",
@@ -444,10 +454,19 @@ const logSuite = (
           },
           {
             at: second.occurredAt,
+            byStaff: false,
             operation: "mcp.create_draft",
             status: null,
             via: "mcp",
             workspaceId: other,
+          },
+          {
+            at: third.occurredAt,
+            byStaff: true,
+            operation: "posts.update",
+            status: 200,
+            via: "session",
+            workspaceId,
           },
         ]);
       })

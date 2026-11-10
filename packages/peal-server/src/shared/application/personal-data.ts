@@ -112,6 +112,8 @@ export interface WebhookRecord {
  */
 export interface ActivityRecord {
   readonly at: DateTime.Utc;
+  /** Whether staff, acting as the user, asked it rather than the user. */
+  readonly byStaff: boolean;
   readonly operation: string;
   readonly status: number | null;
   readonly via: string;

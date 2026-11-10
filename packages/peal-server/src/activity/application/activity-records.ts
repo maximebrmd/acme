@@ -47,6 +47,7 @@ export class ActivityRecords extends Context.Service<
             Effect.map((made) =>
               made.map((event) => ({
                 at: event.occurredAt,
+                byStaff: event.impersonated,
                 operation: event.operation,
                 status: Option.getOrNull(event.status),
                 via: event.via,
