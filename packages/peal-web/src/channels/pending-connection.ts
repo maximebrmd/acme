@@ -2,6 +2,8 @@ import { Option, Schema } from "effect";
 import { PlatformSchema } from "peal-contract";
 import type { Platform } from "peal-contract";
 
+import { forgetLink } from "#connect-link/pending-link.ts";
+
 // The platform sends the browser back to one callback page for every
 // workspace, so the tab remembers, between leaving for the platform and
 // coming back, which workspace the connection is for. The server checks
@@ -28,8 +30,15 @@ const storage = (): Option.Option<Storage> => {
   }
 };
 
-/** Remembers the connection about to leave for the platform. */
+/**
+ * Remembers the connection about to leave for the platform. The tab is on
+ * a member's own connection from then on, a new account or a channel
+ * reconnected, whatever connect link it opened before: that link is
+ * forgotten, or the callback page would hand the member's sign-in to it.
+ */
 export const rememberConnection = (pending: PendingConnection): void => {
+  forgetLink();
+
   for (const tab of Option.toArray(storage())) {
     tab.setItem(storageKey, JSON.stringify(pending));
   }

@@ -1,11 +1,13 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Duration, Effect, Fiber, Layer, Schema } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
+import { TestClock } from "effect/testing";
 import {
   Api,
-  Forbidden,
+  DuplicatePost,
   PostNotFound,
+  PostSchema,
   PostStatusConflict,
   TargetStatusConflict,
 } from "peal-contract";
@@ -13,11 +15,13 @@ import type { Member, Permission, PostContent } from "peal-contract";
 
 import { PostsHandlers } from "#publishing/api/posts.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
+import { refused as forbiddenFor } from "#shared/api/forbidden.ts";
 import { newId } from "#shared/application/ids.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PostIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
+  callsOn,
   eventually,
   isFinished,
   isSuspended,
@@ -40,9 +44,11 @@ const start = "2026-06-15T07:00:00Z";
 const freshId = newId(WorkspaceIdSchema);
 
 // A client whose every request acts as the user, with the role's rights.
-const clientAs = (userId: string, workspaceId: WorkspaceId, role: Role) => {
-  const permissions: readonly Permission[] = permissionsFor(role);
-
+const clientWith = (
+  userId: string,
+  workspaceId: WorkspaceId,
+  permissions: readonly Permission[]
+) => {
   const member: Member = {
     permissions,
     principal: { _tag: "user", impersonatedBy: null, userId },
@@ -58,6 +64,9 @@ const clientAs = (userId: string, workspaceId: WorkspaceId, role: Role) => {
     )
   );
 };
+
+const clientAs = (userId: string, workspaceId: WorkspaceId, role: Role) =>
+  clientWith(userId, workspaceId, permissionsFor(role));
 
 const text = (body: string): PostContent => ({
   media: [],
@@ -140,7 +149,7 @@ describe("the drafts endpoints", () => {
             yield* colleague.posts
               .discard({ params: { postId: one.id, workspaceId } })
               .pipe(Effect.flip),
-            new Forbidden()
+            forbiddenFor("missingPermission", "post:delete")
           );
 
           const discarded = yield* author.posts.discard({
@@ -218,7 +227,7 @@ describe("the unschedule endpoint", () => {
 
           assert.deepStrictEqual(
             yield* contributor.posts.unschedule({ params }).pipe(Effect.flip),
-            new Forbidden()
+            forbiddenFor("missingPermission", "post:schedule")
           );
 
           const unscheduled = yield* editor.posts.unschedule({ params });
@@ -312,16 +321,20 @@ describe("the outcome endpoints", () => {
           const attempts = yield* viewer.posts.attempts({ params });
 
           assert.deepStrictEqual(
-            attempts.map(({ attempt, result, retryAt, round, targetId }) => [
-              targetId,
-              round,
-              attempt,
-              result,
-              retryAt,
-            ]),
+            attempts.map(
+              ({ attempt, refusalCode, result, retryAt, round, targetId }) => [
+                targetId,
+                round,
+                attempt,
+                result,
+                retryAt,
+                refusalCode,
+              ]
+            ),
             [
-              [onRefused.id, 1, 1, "contentRejected", null],
-              [onLost.id, 1, 1, "unconfirmed", null],
+              // The platform's own code for the refusal, as it gave it.
+              [onRefused.id, 1, 1, "contentRejected", null, "duplicate"],
+              [onLost.id, 1, 1, "unconfirmed", null, null],
             ].toSorted(([a], [b]) => String(a).localeCompare(String(b)))
           );
 
@@ -329,7 +342,7 @@ describe("the outcome endpoints", () => {
             yield* viewer.posts
               .repost({ params: { ...params, targetId: onRefused.id } })
               .pipe(Effect.flip),
-            new Forbidden()
+            forbiddenFor("missingPermission", "post:schedule")
           );
 
           // An editor of another workspace finds nothing of the post there.
@@ -421,6 +434,172 @@ describe("the outcome endpoints", () => {
   );
 });
 
+// The answer a waiting request or use case comes to, with virtual time
+// moved a second at a time until it has one: it sleeps on the clock, and
+// may not have started when this does.
+const answerOf = <A, E>(waiting: Fiber.Fiber<A, E>) =>
+  Effect.gen(function* answering() {
+    for (let round = 0; round < 200; round += 1) {
+      if (waiting.pollUnsafe() !== undefined) {
+        break;
+      }
+
+      yield* TestClock.adjust(Duration.seconds(1));
+      yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+    }
+
+    return yield* Fiber.join(waiting);
+  });
+
+describe("waiting for a post's outcome", () => {
+  it.effect(
+    "answers the post once it went out, when send is asked to wait",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* waits() {
+          const workspaceId = yield* freshId;
+          const editor = yield* clientAs(yield* freshId, workspaceId, "editor");
+          const slow = yield* connect(workspaceId, "mastodon");
+          const params = { workspaceId };
+
+          yield* FakePlatform.use((platform) =>
+            platform.script(slow, [{ _tag: "hang" }])
+          );
+
+          // The request, as a client sends it and, hearing nothing, sends
+          // it again under its key: the same post, awaited each time.
+          const request = (wait: number) =>
+            editor.posts.send({
+              headers: { "idempotency-key": "synthetic-awaited-key" },
+              params,
+              payload: {
+                channelIds: [slow],
+                content: text("A synthetic post that takes its time."),
+                when: { _tag: "now" },
+              },
+              query: { wait },
+              responseMode: "response-only",
+            });
+
+          const decode = Schema.decodeUnknownEffect(
+            Schema.toCodecJson(PostSchema)
+          );
+
+          const made = yield* request(0);
+
+          assert.strictEqual(made.status, 201);
+
+          const sent = yield* decode(yield* made.json);
+
+          yield* eventually(
+            "the call is in flight",
+            callsOn(slow).pipe(Effect.map((calls) => calls.length === 1))
+          );
+
+          // The channel does not answer in time: the post as it stands.
+          const hanging = yield* request(5).pipe(Effect.forkChild);
+
+          const partial = yield* decode(yield* (yield* answerOf(hanging)).json);
+
+          assert.strictEqual(partial.id, sent.id);
+          assert.strictEqual(partial.status, "publishing");
+          assert.isNull(partial.outcome);
+          assert.strictEqual(partial.targets[0]?.status, "publishing");
+
+          // The outcome endpoint waits for the rest.
+          const rest = yield* editor.posts
+            .outcome({
+              params: { ...params, postId: partial.id },
+              query: { wait: 30 },
+            })
+            .pipe(Effect.forkChild);
+
+          yield* FakePlatform.use((platform) => platform.release(slow));
+          yield* eventually(
+            "the post finished",
+            isFinished(PostIdSchema.make(partial.id))
+          );
+
+          assert.strictEqual((yield* answerOf(rest)).outcome, "published");
+
+          // Made, and out: one answer says both, at once now.
+          const done = yield* request(30);
+
+          assert.strictEqual(done.status, 201);
+
+          const finished = yield* decode(yield* done.json);
+
+          assert.strictEqual(finished.status, "finished");
+          assert.strictEqual(finished.outcome, "published");
+          assert.strictEqual(finished.targets[0]?.status, "published");
+
+          // More than a minute is not a wait the contract takes.
+          const tooLong = yield* editor.posts
+            .outcome({
+              params: { ...params, postId: partial.id },
+              query: { wait: 61 },
+            })
+            .pipe(Effect.flip);
+
+          assert.strictEqual(tooLong._tag, "SchemaError");
+
+          const viewer = yield* clientAs(yield* freshId, workspaceId, "viewer");
+
+          const seen = yield* viewer.posts.outcome({
+            params: { ...params, postId: partial.id },
+            query: {},
+          });
+
+          assert.strictEqual(seen.status, "finished");
+        })
+      ),
+    timeout
+  );
+});
+
+describe("a send asked to wait by someone who may not read posts", () => {
+  it.effect(
+    "answers the post it made, as it stood, never an error after making it",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* blind() {
+          const workspaceId = yield* freshId;
+          const channel = yield* connect(workspaceId, "mastodon");
+
+          const sender = yield* clientWith(
+            yield* freshId,
+            workspaceId,
+            permissionsFor("editor").filter(
+              (permission) => permission !== "post:read"
+            )
+          );
+
+          const made = yield* sender.posts.send({
+            headers: { "idempotency-key": "synthetic-blind-key" },
+            params: { workspaceId },
+            payload: {
+              channelIds: [channel],
+              content: text("A synthetic post from a key that only sends."),
+              when: { _tag: "now" },
+            },
+            query: { wait: 5 },
+            responseMode: "response-only",
+          });
+
+          assert.strictEqual(made.status, 201);
+
+          yield* eventually(
+            "the post went out",
+            callsOn(channel).pipe(Effect.map((calls) => calls.length === 1))
+          );
+        })
+      ),
+    timeout
+  );
+});
+
 describe("the send endpoint", () => {
   it.effect(
     "takes a key once with a LinkedIn page's and a Google Business Profile location's options, and refuses it with another page mentioned",
@@ -470,7 +649,12 @@ describe("the send endpoint", () => {
             },
           } as const;
 
-          const sent = yield* editor.posts.send({ headers, params, payload });
+          const sent = yield* editor.posts.send({
+            headers,
+            params,
+            payload,
+            query: {},
+          });
 
           assert.deepStrictEqual(
             sent.targets
@@ -497,6 +681,7 @@ describe("the send endpoint", () => {
                 payload.options[1],
               ],
             },
+            query: {},
           });
 
           assert.strictEqual(again.id, sent.id);
@@ -522,6 +707,7 @@ describe("the send endpoint", () => {
                   payload.options[1],
                 ],
               },
+              query: {},
             })
             .pipe(Effect.flip);
 
@@ -561,7 +747,12 @@ describe("the send endpoint", () => {
             },
           } as const;
 
-          const sent = yield* editor.posts.send({ headers, params, payload });
+          const sent = yield* editor.posts.send({
+            headers,
+            params,
+            payload,
+            query: {},
+          });
 
           assert.strictEqual(sent.status, "scheduled");
           assert.strictEqual(sent.authorId, editorId);
@@ -580,6 +771,7 @@ describe("the send endpoint", () => {
                 timeZone: "Europe/Paris",
               },
             },
+            query: {},
           });
 
           assert.strictEqual(again.id, sent.id);
@@ -589,6 +781,7 @@ describe("the send endpoint", () => {
               headers,
               params,
               payload: { ...payload, content: text("Something else.") },
+              query: {},
             })
             .pipe(Effect.flip);
 
@@ -604,6 +797,7 @@ describe("the send endpoint", () => {
                 content: text("a".repeat(600)),
                 when: { _tag: "now" },
               },
+              query: {},
             })
             .pipe(Effect.flip);
 
@@ -617,13 +811,39 @@ describe("the send endpoint", () => {
                 ...payload,
                 when: { _tag: "now", timeZone: "+01:00" },
               },
+              query: {},
             })
             .pipe(Effect.flip);
 
           assert.strictEqual(zone._tag, "InvalidTimeZone");
 
+          // The same post under no key, as a client that kept none sends
+          // it again: refused, naming the post that has its content.
+          const twice = yield* editor.posts
+            .send({ headers: {}, params, payload, query: {} })
+            .pipe(Effect.flip);
+
+          assert.instanceOf(twice, DuplicatePost);
+          assert.deepStrictEqual(twice.duplicates, [
+            { channelId, postId: sent.id },
+          ]);
+
+          // Unless it is meant.
+          const meant = yield* editor.posts.send({
+            headers: {},
+            params,
+            payload: { ...payload, allowDuplicate: true },
+            query: {},
+          });
+
+          assert.notStrictEqual(meant.id, sent.id);
+
+          yield* editor.posts.cancel({
+            params: { ...params, postId: meant.id },
+          });
+
           const denied = yield* contributor.posts
-            .send({ headers: {}, params, payload })
+            .send({ headers: {}, params, payload, query: {} })
             .pipe(Effect.flip);
 
           assert.strictEqual(denied._tag, "Forbidden");

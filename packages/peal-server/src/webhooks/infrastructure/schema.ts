@@ -30,6 +30,8 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  *   `disabled_at` say why and when it was turned off.
  * - `failing_since` is when its attempts started failing, null since one
  *   succeeded.
+ * - `scope` is `workspace`, or `partner` for an endpoint of a partner's
+ *   home workspace that hears every workspace the partner owns too.
  * - Event types are not checked here, so adding one needs no migration:
  *   the store decodes every row with the domain's schema.
  */
@@ -45,6 +47,7 @@ export const endpoints = webhooksSchema.table(
     id: uuid("id").primaryKey(),
     previousSecret: text("previous_secret"),
     previousSecretExpiresAt: instant("previous_secret_expires_at"),
+    scope: text("scope").notNull().default("workspace"),
     secret: text("secret").notNull(),
     status: text("status").notNull(),
     updatedAt: instant("updated_at").notNull(),
@@ -55,6 +58,7 @@ export const endpoints = webhooksSchema.table(
     // A workspace's endpoints, oldest first: ids are UUIDv7s.
     index("endpoints_workspace").on(table.workspaceId, table.id),
     check("endpoints_status", sql`${table.status} IN ('enabled', 'disabled')`),
+    check("endpoints_scope", sql`${table.scope} IN ('workspace', 'partner')`),
     check(
       "endpoints_disabled",
       sql`(${table.status} = 'disabled') = (${table.disabledReason} IS NOT NULL AND ${table.disabledAt} IS NOT NULL)`
@@ -72,6 +76,8 @@ export const events = webhooksSchema.table(
   "events",
   {
     data: jsonb("data").notNull(),
+    // The id a partner gave the workspace, as it was when this happened.
+    externalId: text("external_id"),
     id: uuid("id").primaryKey(),
     key: text("key").notNull(),
     occurredAt: instant("occurred_at").notNull(),

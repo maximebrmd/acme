@@ -9,6 +9,7 @@ import { BanSchema, isBanned } from "./ban.ts";
 import { BannedUser } from "./banned-user.ts";
 import { NotAMember } from "./not-a-member.ts";
 import { grantedPermissions } from "./oauth-grant.ts";
+import type { PartnerId } from "./partner-id.ts";
 import type { Principal } from "./principal.ts";
 import { permissionsFor } from "./roles.ts";
 import type { UserPrincipal } from "./user-principal.ts";
@@ -25,7 +26,8 @@ export type Membership = typeof MembershipSchema.Type;
 /**
  * What staff impersonating a member may not do in the member's name:
  * schedule, approve or publish, connect accounts, change billing, handle
- * API keys, manage webhooks or delete the workspace, which all outlive the
+ * API keys, manage webhooks, a partner account or delete the workspace,
+ * which all outlive the
  * impersonation or reach outside Peal. They may write and edit drafts, each change recorded in the audit log
  * under their own name (the ImpersonationGuard), while the drafts carry the
  * member's.
@@ -38,6 +40,7 @@ export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
   "billing:manage",
   "channel:connect",
   "organization:delete",
+  "partner:manage",
   "post:approve",
   "post:publish",
   "post:schedule",
@@ -82,16 +85,33 @@ const boundElsewhere = (
 
 /**
  * The actor a principal is in a workspace. An API key acts only in the
- * workspace that owns it, with the permissions it was given. A user acts in a
- * workspace they are a member of, unless banned, with what their roles allow;
- * through an OAuth client bound to a workspace, in that workspace only.
+ * workspace that owns it, with the permissions it was given. A partner key
+ * acts only in the workspaces its partner owns (`ownedBy`), with the
+ * permissions it was given, as a key of that workspace would: any other
+ * workspace, its partner's home workspace included, reads as one that does
+ * not exist. A user acts in a workspace they are a member of, unless
+ * banned, with what their roles allow; through an OAuth client bound to a
+ * workspace, in that workspace only.
  */
 export const actorFor = (
   principal: Principal,
   workspaceId: WorkspaceId,
   membership: Option.Option<Membership>,
-  now: DateTime.Utc
+  now: DateTime.Utc,
+  ownedBy: Option.Option<PartnerId> = Option.none()
 ): Result.Result<Actor, AccessDenied> => {
+  if (principal._tag === "PartnerKeyPrincipal") {
+    return Option.contains(ownedBy, principal.partnerId)
+      ? Result.succeed(
+          new Actor({
+            permissions: principal.permissions,
+            subject: { _tag: "apiKey", apiKeyId: principal.partnerKeyId },
+            workspaceId,
+          })
+        )
+      : Result.fail(new NotAMember({ workspaceId }));
+  }
+
   if (principal._tag === "ApiKeyPrincipal") {
     return principal.workspaceId === workspaceId
       ? Result.succeed(

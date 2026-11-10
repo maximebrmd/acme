@@ -9,23 +9,54 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = PostNotReviewableEncoded.Builder.class)
 public final class PostNotReviewableEncoded {
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final PostNotReviewableEncodedStatus status;
 
     private final Map<String, Object> additionalProperties;
 
-    private PostNotReviewableEncoded(PostNotReviewableEncodedStatus status, Map<String, Object> additionalProperties) {
+    private PostNotReviewableEncoded(
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            PostNotReviewableEncodedStatus status,
+            Map<String, Object> additionalProperties) {
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.status = status;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("status")
@@ -45,12 +76,15 @@ public final class PostNotReviewableEncoded {
     }
 
     private boolean equalTo(PostNotReviewableEncoded other) {
-        return status.equals(other.status);
+        return code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && status.equals(other.status);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.status);
+        return Objects.hash(this.code, this.message, this.requestId, this.status);
     }
 
     @java.lang.Override
@@ -74,11 +108,29 @@ public final class PostNotReviewableEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements StatusStage, _FinalStage {
         private PostNotReviewableEncodedStatus status;
+
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -86,6 +138,9 @@ public final class PostNotReviewableEncoded {
 
         @java.lang.Override
         public Builder from(PostNotReviewableEncoded other) {
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             status(other.getStatus());
             return this;
         }
@@ -98,13 +153,55 @@ public final class PostNotReviewableEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public PostNotReviewableEncoded build() {
-            return new PostNotReviewableEncoded(status, additionalProperties);
+            return new PostNotReviewableEncoded(code, message, requestId, status, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("status")) {
+            if (key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("status")) {
                 return;
             }
             this.additionalProperties.put(key, value);

@@ -6088,63 +6088,6 @@ func TestEnumAccountUnreadReason(t *testing.T) {
 	})
 }
 
-func TestEnumTextUnit(t *testing.T) {
-	t.Run("NewFromString_graphemes", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewTextUnitFromString("graphemes")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, TextUnit("graphemes"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_codePoints", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewTextUnitFromString("codePoints")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, TextUnit("codePoints"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_utf8Bytes", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewTextUnitFromString("utf8Bytes")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, TextUnit("utf8Bytes"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_emojiBytes", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewTextUnitFromString("emojiBytes")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, TextUnit("emojiBytes"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_utf16Units", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewTextUnitFromString("utf16Units")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, TextUnit("utf16Units"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_weighted", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewTextUnitFromString("weighted")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, TextUnit("weighted"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewTextUnitFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewTextUnitFromString("graphemes")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
 func TestExtraPropertiesAccountRestrictionMediaTypesRefused(t *testing.T) {
 	t.Run("GetExtraProperties", func(t *testing.T) {
 		t.Parallel()

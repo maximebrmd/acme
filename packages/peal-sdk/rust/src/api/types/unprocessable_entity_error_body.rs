@@ -5,42 +5,27 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum UnprocessableEntityErrorBody {
     #[non_exhaustive]
-    UnsupportedMediaType {
-        #[serde(rename = "contentType")]
-        #[serde(default)]
-        content_type: String,
-    },
-
-    #[non_exhaustive]
-    MediaTooLarge {
-        #[serde(rename = "byteSize")]
-        #[serde(default)]
-        byte_size: i64,
-        kind: MediaTooLargeEncodedKind,
-        #[serde(rename = "maxByteSize")]
-        #[serde(default)]
-        max_byte_size: i64,
-    },
-
-    #[non_exhaustive]
-    AltTextTooLong {
-        #[serde(rename = "maxLength")]
-        #[serde(default)]
-        max_length: i64,
-    },
-
-    #[non_exhaustive]
-    MediaSourceNotPublic {},
-
-    #[non_exhaustive]
-    MediaSourceUnreachable {
-        reason: MediaSourceFailure,
+    ConnectFailed {
         #[serde(skip_serializing_if = "Option::is_none")]
-        status: Option<i64>,
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+        reason: ConnectFailureReason,
     },
 
     #[non_exhaustive]
-    UploadRejected { reason: RejectionReason },
+    ReturnUrlNotAllowed {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+    },
 
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
@@ -50,45 +35,98 @@ pub enum UnprocessableEntityErrorBody {
 }
 
 impl UnprocessableEntityErrorBody {
-    pub fn unsupported_media_type(content_type: String) -> Self {
-        Self::UnsupportedMediaType { content_type }
+    pub fn connect_failed(reason: ConnectFailureReason) -> Self {
+        Self::ConnectFailed {
+            code: None,
+            message: None,
+            request_id: None,
+            reason,
+        }
     }
 
-    pub fn media_too_large(
-        byte_size: i64,
-        kind: MediaTooLargeEncodedKind,
-        max_byte_size: i64,
+    pub fn return_url_not_allowed() -> Self {
+        Self::ReturnUrlNotAllowed {
+            code: None,
+            message: None,
+            request_id: None,
+        }
+    }
+
+    pub fn connect_failed_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        reason: ConnectFailureReason,
     ) -> Self {
-        Self::MediaTooLarge {
-            byte_size,
-            kind,
-            max_byte_size,
+        Self::ConnectFailed {
+            code: Some(code),
+            message,
+            request_id,
+            reason,
         }
     }
 
-    pub fn alt_text_too_long(max_length: i64) -> Self {
-        Self::AltTextTooLong { max_length }
-    }
-
-    pub fn media_source_not_public() -> Self {
-        Self::MediaSourceNotPublic {}
-    }
-
-    pub fn media_source_unreachable(reason: MediaSourceFailure) -> Self {
-        Self::MediaSourceUnreachable {
+    pub fn connect_failed_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        reason: ConnectFailureReason,
+    ) -> Self {
+        Self::ConnectFailed {
+            code,
+            message: Some(message),
+            request_id,
             reason,
-            status: None,
         }
     }
 
-    pub fn upload_rejected(reason: RejectionReason) -> Self {
-        Self::UploadRejected { reason }
+    pub fn connect_failed_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        reason: ConnectFailureReason,
+    ) -> Self {
+        Self::ConnectFailed {
+            code,
+            message,
+            request_id: Some(request_id),
+            reason,
+        }
     }
 
-    pub fn media_source_unreachable_with_status(reason: MediaSourceFailure, status: i64) -> Self {
-        Self::MediaSourceUnreachable {
-            reason,
-            status: Some(status),
+    pub fn return_url_not_allowed_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::ReturnUrlNotAllowed {
+            code: Some(code),
+            message,
+            request_id,
+        }
+    }
+
+    pub fn return_url_not_allowed_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::ReturnUrlNotAllowed {
+            code,
+            message: Some(message),
+            request_id,
+        }
+    }
+
+    pub fn return_url_not_allowed_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+    ) -> Self {
+        Self::ReturnUrlNotAllowed {
+            code,
+            message,
+            request_id: Some(request_id),
         }
     }
 

@@ -4,6 +4,7 @@ import { TestClock } from "effect/testing";
 
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { MemberDirectory } from "#workspace/application/member-directory.ts";
+import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import type { Membership } from "#workspace/domain/membership.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
@@ -26,7 +27,8 @@ const directoryWith = (membership: Option.Option<Membership>) =>
           membership: () => Effect.succeed(membership),
         })
       )
-    )
+    ),
+    Layer.provide(PartnerOwnership.layerNone)
   );
 
 const resolve = ResolveMember.use((members) =>

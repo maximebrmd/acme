@@ -28,6 +28,7 @@ import {
   user,
   verification,
 } from "./auth-schema.generated.ts";
+import { partnerKeys, partners, partnerWorkspaces } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -294,6 +295,20 @@ export const DrizzleAccountStore = Layer.effect(
           .delete(organization)
           .where(eq(organization.id, workspaceId))
           .pipe(Effect.mapError(failed));
+
+        // A workspace a partner owns is its no more; a partner's home
+        // workspace takes the partner account with it, and its keys, which
+        // the use cases let go only once it owns no workspace: the rows of
+        // those it still owned would hold this back.
+        yield* db
+          .delete(partnerWorkspaces)
+          .where(eq(partnerWorkspaces.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        yield* db
+          .delete(partners)
+          .where(eq(partners.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
       }
     );
 
@@ -343,6 +358,13 @@ export const DrizzleAccountStore = Layer.effect(
               sql`${verification.identifier} LIKE 'reset-password:%'`
             )
           )
+          .pipe(Effect.mapError(failed));
+
+        // The partner keys they created stay their partner's, without them.
+        yield* db
+          .update(partnerKeys)
+          .set({ createdBy: null })
+          .where(eq(partnerKeys.createdBy, userId))
           .pipe(Effect.mapError(failed));
 
         // Sessions, sign-in methods, memberships, the invitations they sent,

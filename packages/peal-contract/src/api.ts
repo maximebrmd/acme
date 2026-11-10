@@ -1,6 +1,7 @@
 import { HttpApi, OpenApi } from "effect/http-api";
 
 import { AccountApi } from "./account.ts";
+import { ActivityApi } from "./activity.ts";
 import { AnalyticsApi } from "./analytics.ts";
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
@@ -11,10 +12,12 @@ import { CaptchaApi } from "./captcha.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
 import { ClientErrorsApi } from "./client-errors.ts";
+import { ConnectLinksApi } from "./connect-links.ts";
 import { ConnectedAppsApi } from "./connected-apps.ts";
 import { ContractRequestsDeskApi } from "./contract-requests-desk.ts";
 import { ContractRequestsApi } from "./contract-requests.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
+import { HostedConnectApi } from "./hosted-connect.ts";
 import { InvitationsApi } from "./invitations.ts";
 import { LegalApi } from "./legal.ts";
 import { LookupsApi } from "./lookups.ts";
@@ -22,6 +25,8 @@ import { MediaApi } from "./media.ts";
 import { MembersApi } from "./members.ts";
 import { NoticesApi } from "./notices.ts";
 import { NotificationPreferencesApi } from "./notification-preferences.ts";
+import { PartnerAccountApi } from "./partner-account.ts";
+import { PartnerApi } from "./partner.ts";
 import { PostsApi } from "./posts.ts";
 import { ReviewLinkApi } from "./review-link.ts";
 import { ReviewApi } from "./review.ts";
@@ -33,6 +38,26 @@ import { WebhooksApi } from "./webhooks.ts";
 import { WorkspacesApi } from "./workspaces.ts";
 
 export { DatabaseUnavailable } from "./database-unavailable.ts";
+
+export {
+  ActivityActorSchema,
+  ActivityApi,
+  ActivityApplicationSchema,
+  ActivityEventSchema,
+  ActivityPageSchema,
+  activityRetentionDays,
+  ActivityViaSchema,
+  defaultActivityPageSize,
+  maxActivityPageSize,
+} from "./activity.ts";
+
+export type {
+  ActivityActor,
+  ActivityApplication,
+  ActivityEvent,
+  ActivityPage,
+  ActivityVia,
+} from "./activity.ts";
 
 export {
   AccountApi,
@@ -464,7 +489,34 @@ export type { Staff } from "./current-staff.ts";
 
 export { CurrentPrincipal } from "./current-principal.ts";
 
-export { Forbidden } from "./forbidden.ts";
+export {
+  apiChangelog,
+  ApiChangelogEntrySchema,
+  ApiChangelogSchema,
+  BreakingChangeSchema,
+} from "./api-changelog.ts";
+
+export type { ApiChangelog, ApiChangelogEntry } from "./api-changelog.ts";
+
+export { deprecated, Deprecation } from "./deprecation.ts";
+
+export type { DeprecationNotice } from "./deprecation.ts";
+
+export { errorCodeOf } from "./error-code.ts";
+
+export { errorEnvelope } from "./error-envelope.ts";
+
+export { Forbidden, ForbiddenReasonSchema } from "./forbidden.ts";
+
+export type { ForbiddenReason } from "./forbidden.ts";
+
+export {
+  InvalidRequest,
+  maxRequestIssues,
+  RequestIssueSchema,
+} from "./invalid-request.ts";
+
+export type { RequestIssue } from "./invalid-request.ts";
 
 export { InvalidDateRange } from "./invalid-date-range.ts";
 
@@ -608,25 +660,85 @@ export type { PostStatus } from "./post-status.ts";
 
 export { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 
+export { ImportProblemSchema, ImportUnreadable } from "./import-unreadable.ts";
+
+export type { ImportProblem } from "./import-unreadable.ts";
+
+export {
+  ImportCellProblemSchema,
+  ImportColumnSchema,
+  importColumns,
+  maxBulkPosts,
+  maxImportLength,
+  maxImportRows,
+  PostRefusalSchema,
+} from "./post-batches.ts";
+
+export type {
+  ImportCellProblem,
+  ImportColumn,
+  PostRefusal,
+} from "./post-batches.ts";
+
+export {
+  DuplicateOnChannelSchema,
+  DuplicatePost,
+  duplicateWindowHours,
+} from "./duplicate-post.ts";
+
+export type { DuplicateOnChannel } from "./duplicate-post.ts";
+
+export {
+  ChannelPreviewSchema,
+  LimitedCountSchema,
+  PlanShortfallSchema,
+  PostValidationSchema,
+  ScheduleCheckSchema,
+  TextCountSchema,
+} from "./post-validation.ts";
+
+export type {
+  ChannelPreview,
+  LimitedCount,
+  PlanShortfall,
+  PostValidation,
+  ScheduleCheck,
+  TextCount,
+} from "./post-validation.ts";
+
 export {
   AttemptResultSchema,
+  BulkPostResultSchema,
+  BulkPostSchema,
+  BulkPostsSchema,
+  BulkResultSchema,
   defaultDraftPageSize,
+  defaultPostPageSize,
   DraftPageSchema,
   FailureReasonSchema,
   idempotencyKeyLifetimeHours,
+  ImportResultSchema,
+  ImportRowResultSchema,
   maxDraftPageSize,
   maxIdempotencyKeyLength,
+  maxOutcomeWaitSeconds,
+  maxPostPageSize,
   MediaAttachmentSchema,
   NewPostSchema,
   PostContentSchema,
   PostDraftSchema,
+  PostImportSchema,
   PostOriginSchema,
   PostOriginViaSchema,
   PostOutcomeSchema,
+  PostChannelSchema,
+  PostPageSchema,
   PostScheduleSchema,
   PostSchema,
+  PostSortSchema,
   PostTargetSchema,
   PostTimingSchema,
+  PostToValidateSchema,
   PublicationAttemptSchema,
   SchedulePostSchema,
   TargetConfirmationSchema,
@@ -636,7 +748,14 @@ export {
 
 export type {
   AttemptResult,
+  BulkPost,
+  BulkPostResult,
+  BulkPosts,
+  BulkResult,
   DraftPage,
+  ImportResult,
+  ImportRowResult,
+  PostImport,
   FailureReason,
   MediaAttachment,
   NewPost,
@@ -645,10 +764,14 @@ export type {
   PostDraft,
   PostOrigin,
   PostOriginVia,
+  PostChannel,
   PostOutcome,
+  PostPage,
   PostSchedule,
+  PostSort,
   PostTarget,
   PostTiming,
+  PostToValidate,
   PublicationAttempt,
   SchedulePost,
   TargetConfirmation,
@@ -770,6 +893,7 @@ export {
   StaffBanPayloadSchema,
   StaffChannelSchema,
   StaffFailureSchema,
+  StaffPartnerSchema,
   StaffPostCountsSchema,
   staffPageSize,
   StaffReasonPayloadSchema,
@@ -792,6 +916,7 @@ export type {
   StaffBanPayload,
   StaffChannel,
   StaffFailure,
+  StaffPartner,
   StaffPostCounts,
   StaffReasonPayload,
   StaffSession,
@@ -838,6 +963,8 @@ export {
 export type { StaffRefusal } from "./staff-action-refused.ts";
 
 export { TooManyClientErrors } from "./too-many-client-errors.ts";
+
+export { TooManyRequests } from "./too-many-requests.ts";
 
 export { Unauthenticated } from "./unauthenticated.ts";
 
@@ -907,6 +1034,7 @@ export {
   WebhookDisabledReasonSchema,
   WebhookEndpointChangeSchema,
   WebhookEndpointSchema,
+  WebhookEndpointScopeSchema,
   WebhookEndpointSecretSchema,
   webhookFailingDays,
   WebhooksApi,
@@ -923,10 +1051,131 @@ export type {
   WebhookDisabledReason,
   WebhookEndpoint,
   WebhookEndpointChange,
+  WebhookEndpointScope,
   WebhookEndpointSecret,
 } from "./webhooks.ts";
 
 export { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
+
+export { ConnectLinkIntake } from "./connect-link-intake.ts";
+
+export { ConnectLinkNotFound } from "./connect-link-not-found.ts";
+
+export {
+  ConnectLinkLocaleSchema,
+  connectLinkRetentionDays,
+  ConnectLinksApi,
+  ConnectLinkSchema,
+  ConnectLinkStatusSchema,
+  CreatedConnectLinkSchema,
+  defaultConnectLinkHours,
+  maxConnectLinkHours,
+  maxConnectLinkStarts,
+  maxPendingConnectLinks,
+  maxReturnUrlLength,
+  minConnectLinkHours,
+  NewConnectLinkSchema,
+} from "./connect-links.ts";
+
+export type {
+  ConnectLink,
+  ConnectLinkStatus,
+  CreatedConnectLink,
+  NewConnectLink,
+} from "./connect-links.ts";
+
+export {
+  connectLinkCookie,
+  HostedAuthorizationSchema,
+  HostedChannelSchema,
+  HostedConnectApi,
+  HostedLinkInputSchema,
+  HostedLinkSchema,
+  HostedOutcomeSchema,
+  HostedStartSchema,
+  connectLinkTokenHeader,
+} from "./hosted-connect.ts";
+
+export type { HostedLink, HostedOutcome } from "./hosted-connect.ts";
+
+export {
+  HostedConnectFailed,
+  HostedConnectFailureSchema,
+} from "./hosted-connect-failed.ts";
+
+export type { HostedConnectFailure } from "./hosted-connect-failed.ts";
+
+export { ReturnUrlNotAllowed } from "./return-url-not-allowed.ts";
+
+export { TooManyConnectAttempts } from "./too-many-connect-attempts.ts";
+
+export { TooManyConnectLinks } from "./too-many-connect-links.ts";
+
+export { ExternalIdTaken } from "./external-id-taken.ts";
+
+export { PartnerAccountsClosed } from "./partner-accounts-closed.ts";
+
+export { PartnerDetailsInvalid } from "./partner-details-invalid.ts";
+
+export { PartnerKeyNotFound } from "./partner-key-not-found.ts";
+
+export { PartnerNotFound } from "./partner-not-found.ts";
+
+export { PartnerOwnsWorkspaces } from "./partner-owns-workspaces.ts";
+
+export { PartnerScopeSchema } from "./partner-scope.ts";
+
+export type { PartnerScope } from "./partner-scope.ts";
+
+export {
+  creationKeyLifetimeHours,
+  CustomerWorkspaceChangeSchema,
+  CustomerWorkspacePageSchema,
+  CustomerWorkspaceSchema,
+  defaultWorkspacePageSize,
+  maxCreationKeyLength,
+  maxExternalIdLength,
+  maxPartnerLogoUrlLength,
+  maxPartnerNameLength,
+  maxReturnOrigins,
+  maxWorkspaceNameLength,
+  maxWorkspacePageSize,
+  NewCustomerWorkspaceSchema,
+  PartnerApi,
+  PartnerOverviewSchema,
+  PartnerSchema,
+  PartnerUsageDaySchema,
+  PartnerUsageSchema,
+} from "./partner.ts";
+
+export type {
+  CustomerWorkspace,
+  CustomerWorkspaceChange,
+  CustomerWorkspacePage,
+  NewCustomerWorkspace,
+  Partner,
+  PartnerOverview,
+  PartnerUsage,
+} from "./partner.ts";
+
+export {
+  CreatedPartnerKeySchema,
+  maxPartnerKeyNameLength,
+  NewPartnerKeySchema,
+  OpenPartnerSchema,
+  PartnerAccountApi,
+  PartnerChangeSchema,
+  PartnerKeySchema,
+  partnerKeyPermissions,
+  PartnerStandingSchema,
+} from "./partner-account.ts";
+
+export type {
+  NewPartnerKey,
+  PartnerChange,
+  PartnerKey,
+  PartnerStanding,
+} from "./partner-account.ts";
 
 export { WorkspaceAccess } from "./workspace-access.ts";
 
@@ -1074,6 +1323,11 @@ export class Api extends HttpApi.make("peal")
   .add(CapabilitiesApi)
   .add(LookupsApi)
   .add(WebhooksApi)
+  .add(ActivityApi)
+  .add(PartnerApi)
+  .add(PartnerAccountApi)
+  .add(ConnectLinksApi)
+  .add(HostedConnectApi)
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)

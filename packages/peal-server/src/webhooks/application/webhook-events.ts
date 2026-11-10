@@ -1,11 +1,11 @@
-import { Context, DateTime, Effect, Layer } from "effect";
+import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { newId } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { RecordedEvent } from "#webhooks/domain/recorded-event.ts";
-import { wants } from "#webhooks/domain/webhook-endpoint.ts";
+import { hearsPartner, wants } from "#webhooks/domain/webhook-endpoint.ts";
 import { WebhookEventIdSchema } from "#webhooks/domain/webhook-event-id.ts";
 import type { WebhookEvent } from "#webhooks/domain/webhook-event.ts";
 
@@ -13,6 +13,7 @@ import { dispatch } from "./dispatch.ts";
 import type { DeliveryJobs } from "./ports/delivery-jobs.ts";
 import { DeliveryStore } from "./ports/delivery-store.ts";
 import { EndpointStore } from "./ports/endpoint-store.ts";
+import { EventOrigins } from "./ports/event-origins.ts";
 
 /** Something that happened in a workspace, for its endpoints to hear. */
 export interface EventToPublish {
@@ -27,7 +28,10 @@ export interface EventToPublish {
 
 /**
  * Sends an event to the endpoints of its workspace that are on and
- * subscribe to its type: one delivery each, once per key.
+ * subscribe to its type: one delivery each, once per key. An event of a
+ * workspace a partner owns goes to the partner's endpoints too, those of
+ * the `partner` scope in its home workspace, and carries the partner's own
+ * id for the workspace (`EventOrigins`).
  *
  * It runs in one transaction, joining the caller's: the event, its
  * deliveries and the start of their jobs commit with the fact they tell,
@@ -47,6 +51,7 @@ export class WebhookEvents extends Context.Service<
     Effect.gen(function* WebhookEventsLive() {
       const endpoints = yield* EndpointStore;
       const deliveries = yield* DeliveryStore;
+      const origins = yield* EventOrigins;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<DeliveryJobs | DeliveryStore | Ids>();
 
@@ -54,8 +59,18 @@ export class WebhookEvents extends Context.Service<
         function* publishOnce({ event, key }: EventToPublish) {
           const { workspaceId } = event.data;
 
-          const listening = (yield* endpoints.list(workspaceId)).filter(
-            (endpoint) => wants(endpoint, event.type)
+          const origin = yield* origins.of(workspaceId);
+
+          const own = yield* endpoints.list(workspaceId);
+
+          const partners = Option.isSome(origin)
+            ? (yield* endpoints.list(origin.value.homeWorkspaceId)).filter(
+                hearsPartner
+              )
+            : [];
+
+          const listening = [...own, ...partners].filter((endpoint) =>
+            wants(endpoint, event.type)
           );
 
           if (listening.length === 0) {
@@ -64,6 +79,9 @@ export class WebhookEvents extends Context.Service<
 
           const recorded = new RecordedEvent({
             event,
+            externalId: origin.pipe(
+              Option.flatMap(({ externalId }) => externalId)
+            ),
             id: yield* newId(WebhookEventIdSchema),
             occurredAt: yield* DateTime.now,
             workspaceId,

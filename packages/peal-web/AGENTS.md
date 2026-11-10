@@ -193,3 +193,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   helpers in `src/i18n/navigation.ts`, not `next/link`.
 - Folders in `peal-web` import each other through `#…` (package.json
   `imports`); `#messages/*` points at the catalogues.
+- The page is `connect/link` (`components/connect-link/`), which reads
+  the token from the fragment, with
+  the partner's name and logo (`PartnerOwnership.presentedAs`), or the
+  workspace's name. `next.config.ts` gives it `Cache-Control: no-store`,
+  `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex, nofollow`,
+  beside the frame headers every page has; `ShellFrame` leaves the app's
+  header out of it. A tab that started from a link marks itself in
+  `sessionStorage` (`#connect-link/pending-link.ts`), so the platforms'
+  one callback page, `connect/[platform]/callback`, finishes the link
+  rather than a member's connection. Its strings are the `ConnectLink`
+  catalogue; the member's flow is unchanged.

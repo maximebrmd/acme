@@ -3030,38 +3030,3 @@ func (t *TextLimit) String() string {
 	}
 	return fmt.Sprintf("%#v", t)
 }
-
-// How a platform measures the length of a post's text.
-type TextUnit string
-
-const (
-	TextUnitGraphemes  TextUnit = "graphemes"
-	TextUnitCodePoints TextUnit = "codePoints"
-	TextUnitUtf8Bytes  TextUnit = "utf8Bytes"
-	TextUnitEmojiBytes TextUnit = "emojiBytes"
-	TextUnitUtf16Units TextUnit = "utf16Units"
-	TextUnitWeighted   TextUnit = "weighted"
-)
-
-func NewTextUnitFromString(s string) (TextUnit, error) {
-	switch s {
-	case "graphemes":
-		return TextUnitGraphemes, nil
-	case "codePoints":
-		return TextUnitCodePoints, nil
-	case "utf8Bytes":
-		return TextUnitUtf8Bytes, nil
-	case "emojiBytes":
-		return TextUnitEmojiBytes, nil
-	case "utf16Units":
-		return TextUnitUtf16Units, nil
-	case "weighted":
-		return TextUnitWeighted, nil
-	}
-	var t TextUnit
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (t TextUnit) Ptr() *TextUnit {
-	return &t
-}

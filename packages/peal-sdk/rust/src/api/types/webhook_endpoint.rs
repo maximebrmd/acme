@@ -1,6 +1,6 @@
 pub use crate::prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct WebhookEndpoint {
     #[serde(rename = "createdAt")]
     #[serde(default)]
@@ -26,6 +26,7 @@ pub struct WebhookEndpoint {
     #[serde(rename = "previousSecretExpiresAt")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub previous_secret_expires_at: Option<String>,
+    pub scope: WebhookEndpointScope,
     #[serde(rename = "updatedAt")]
     #[serde(default)]
     pub updated_at: String,
@@ -51,6 +52,7 @@ pub struct WebhookEndpointBuilder {
     failing_since: Option<String>,
     id: Option<String>,
     previous_secret_expires_at: Option<String>,
+    scope: Option<WebhookEndpointScope>,
     updated_at: Option<String>,
     url: Option<String>,
 }
@@ -101,6 +103,11 @@ impl WebhookEndpointBuilder {
         self
     }
 
+    pub fn scope(mut self, value: WebhookEndpointScope) -> Self {
+        self.scope = Some(value);
+        self
+    }
+
     pub fn updated_at(mut self, value: impl Into<String>) -> Self {
         self.updated_at = Some(value.into());
         self
@@ -118,6 +125,7 @@ impl WebhookEndpointBuilder {
     /// - [`enabled`](WebhookEndpointBuilder::enabled)
     /// - [`event_types`](WebhookEndpointBuilder::event_types)
     /// - [`id`](WebhookEndpointBuilder::id)
+    /// - [`scope`](WebhookEndpointBuilder::scope)
     /// - [`updated_at`](WebhookEndpointBuilder::updated_at)
     /// - [`url`](WebhookEndpointBuilder::url)
     pub fn build(self) -> Result<WebhookEndpoint, BuildError> {
@@ -139,6 +147,9 @@ impl WebhookEndpointBuilder {
             failing_since: self.failing_since,
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             previous_secret_expires_at: self.previous_secret_expires_at,
+            scope: self
+                .scope
+                .ok_or_else(|| BuildError::missing_field("scope"))?,
             updated_at: self
                 .updated_at
                 .ok_or_else(|| BuildError::missing_field("updated_at"))?,

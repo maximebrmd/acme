@@ -2,59 +2,19 @@ import { Effect, Match, Option } from "effect";
 import type { Schema } from "effect";
 import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
+import { duplicateWindowHours, maxImportRows } from "peal-contract";
 import type {
-  AlreadyMember,
-  AltTextTooLong,
-  ApprovalChanged,
-  ApprovalNotPending,
-  ChannelCannotPost,
-  ChannelNotFound,
   CommentInvalid,
-  CommentNotFound,
   ContentViolation,
-  Forbidden,
-  IdempotencyKeyReused,
-  InvalidDateRange,
-  InvalidTimeZone,
-  InvitationNotFound,
-  LookupInputInvalid,
-  LookupNotFound,
-  MediaNotFound,
+  DuplicateOnChannel,
+  ImportUnreadable,
   MediaSourceFailure,
-  MediaImportBusy,
-  MediaSourceNotPublic,
-  MediaSourceUnreachable,
-  MediaStoreUnavailable,
-  MediaTooLarge,
-  PlanLimitReached,
-  PlatformRateLimited,
-  PlatformUnreachable,
-  PostContentInvalid,
-  PostNotFound,
-  PostNotReviewable,
-  PostStatusConflict,
-  ReviewLinkNotFound,
-  ScheduleInPast,
-  TargetStatusConflict,
-  TooManyInvitations,
-  TooManyReviewLinks,
-  TooManyWebhookEndpoints,
-  TooManyWebhookSends,
-  Unauthenticated,
-  UnknownChannels,
-  UnknownMedia,
-  UnsupportedMediaType,
-  UploadIncomplete,
-  UploadRejected,
-  WebhookDeliveryNotFound,
-  WebhookEndpointDisabled,
-  WebhookEndpointNotFound,
-  WebhooksNotConfigured,
   WebhookUrlRefused,
-  WorkspaceNotFound,
 } from "peal-contract";
 import type { TextUnit } from "peal-contract/post-text";
 
+import { apiErrorJson } from "#api-error.ts";
+import type { ApiError } from "#api-error.ts";
 import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";
 import { PealApi } from "#api.ts";
@@ -65,56 +25,10 @@ import { SignInExpired } from "#sign-in-expired.ts";
 
 /** Whatever a signed-in command's request may fail with. */
 export type ApiFailure =
-  | AlreadyMember
-  | AltTextTooLong
-  | ApprovalChanged
-  | ApprovalNotPending
-  | ChannelCannotPost
-  | ChannelNotFound
-  | CommentInvalid
-  | CommentNotFound
-  | Forbidden
+  | ApiError
   | HttpApiError.BadRequest
   | HttpClientError.HttpClientError
-  | IdempotencyKeyReused
-  | InvalidDateRange
-  | InvalidTimeZone
-  | InvitationNotFound
-  | LookupInputInvalid
-  | LookupNotFound
-  | MediaNotFound
-  | MediaImportBusy
-  | MediaSourceNotPublic
-  | MediaSourceUnreachable
-  | MediaStoreUnavailable
-  | MediaTooLarge
-  | PlanLimitReached
-  | PlatformRateLimited
-  | PlatformUnreachable
-  | PostContentInvalid
-  | PostNotFound
-  | PostNotReviewable
-  | PostStatusConflict
-  | ReviewLinkNotFound
-  | ScheduleInPast
-  | Schema.SchemaError
-  | TargetStatusConflict
-  | TooManyInvitations
-  | TooManyReviewLinks
-  | TooManyWebhookEndpoints
-  | TooManyWebhookSends
-  | Unauthenticated
-  | UnknownChannels
-  | UnknownMedia
-  | UnsupportedMediaType
-  | UploadIncomplete
-  | UploadRejected
-  | WebhookDeliveryNotFound
-  | WebhookEndpointDisabled
-  | WebhookEndpointNotFound
-  | WebhooksNotConfigured
-  | WebhookUrlRefused
-  | WorkspaceNotFound;
+  | Schema.SchemaError;
 
 const mebibyte = 1024 * 1024;
 
@@ -124,8 +38,8 @@ const size = (bytes: number): string => `${(bytes / mebibyte).toFixed(1)} MiB`;
 const seconds = (milliseconds: number): string =>
   `${String(milliseconds / 1000)} s`;
 
-// What a platform counts a text in.
-const units: Readonly<Record<TextUnit, string>> = {
+/** What a platform counts a text in. */
+export const units: Readonly<Record<TextUnit, string>> = {
   codePoints: "characters",
   emojiBytes: "characters, an emoji counting for its bytes",
   graphemes: "characters",
@@ -215,12 +129,42 @@ const placeOf = (violation: ContentViolation): string =>
     .flat()
     .join(", ");
 
-// One violation on its line: its name, as the API gives it, where it is,
-// and what it means.
-const violationOf = (violation: ContentViolation): string => {
+/**
+ * One violation: its name, as the API gives it, where it is, and what it
+ * means.
+ */
+export const violationOf = (violation: ContentViolation): string => {
   const place = placeOf(violation);
 
-  return `  ${violation._tag}${place === "" ? "" : ` on ${place}`}: ${brokenRule(violation)}`;
+  return `${violation._tag}${place === "" ? "" : ` on ${place}`}: ${brokenRule(violation)}`;
+};
+
+/** The channels that already have a post's content, each with its post. */
+export const duplicateChannels = (
+  duplicates: readonly DuplicateOnChannel[]
+): string =>
+  duplicates
+    .map(({ channelId, postId }) => `channel ${channelId} (post ${postId})`)
+    .join(", ");
+
+// Why a file is not posts, and what would make it a list of them.
+const unreadableImport = ({ column, problem }: ImportUnreadable): string => {
+  const named = column === null ? "" : `, ${column}`;
+
+  const reasons: Readonly<Record<ImportUnreadable["problem"], string>> = {
+    empty:
+      "The file is empty: its first line names the columns, and each line under it is a post.",
+    missingColumn: `The file's first line lacks a column it needs${named}: text, channels and at are required.`,
+    repeatedColumn: `The file's first line names a column twice${named}.`,
+    strayQuote:
+      'A cell of the file holds a double quote without being written between quotes, or goes on after its closing quote: write such a cell between double quotes, and each quote inside it twice ("").',
+    tooManyRows: `The file has more than ${String(maxImportRows)} rows under its first line, the most one import takes: split it.`,
+    unknownColumn: `The file's first line names a column Peal does not know${named}: it reads text, channels, media, at, time_zone, allow_duplicate and idempotency_key.`,
+    unterminatedQuote:
+      'A quoted cell of the file never ends: close it with a double quote, and write a quote inside a cell twice ("").',
+  };
+
+  return `${reasons[problem]} Nothing was made.`;
 };
 
 const sourceFailures: Readonly<Record<MediaSourceFailure, string>> = {
@@ -245,11 +189,7 @@ const commentProblems: Readonly<Record<CommentInvalid["problem"], string>> = {
 
 const refused = (reason: string) => new Refused({ reason });
 
-/**
- * What a failed request means, as the user reads it: the sign-in to renew,
- * the server to check, or why it refused.
- */
-export const explain =
+const reasonOf =
   (url: string) =>
   (failure: ApiFailure): ApiRequestFailed | Refused | SignInExpired =>
     Match.valueTags(failure, {
@@ -281,18 +221,41 @@ export const explain =
         refused(`Peal refused the comment: ${commentProblems[problem]}.`),
       CommentNotFound: () =>
         refused("The post has no such comment: peal review show lists them."),
-      Forbidden: () =>
+      ConnectFailed: ({ reason }) =>
         refused(
-          "Peal refused: your role in this workspace does not allow it, or your account was suspended."
+          reason === "notConfigured"
+            ? "This server is not set up to connect accounts of this platform: its operator sets the platform's app."
+            : "This server cannot connect accounts of this platform."
+        ),
+      ConnectLinkNotFound: () =>
+        refused(
+          "The workspace has no connect link with that id: peal links list shows them."
+        ),
+      DuplicatePost: ({ duplicates }) =>
+        refused(
+          `The same content already goes to ${duplicateChannels(duplicates)}, less than ${String(duplicateWindowHours)} hours from this post's time: nothing was made. If you mean to post it twice, send it again with --allow-duplicate.`
+        ),
+      // The server says what is missing and how to get it; one older than
+      // that says nothing.
+      Forbidden: ({ message }) =>
+        refused(
+          message === undefined || message === ""
+            ? "Peal refused: your role in this workspace does not allow it, or your account was suspended."
+            : `Peal refused: ${message}`
         ),
       HttpClientError: requestFailed(url),
       IdempotencyKeyReused: () =>
         refused(
           "This idempotency key was sent in the last 24 hours with another post: nothing was made. Send this one under a new --idempotency-key."
         ),
+      ImportUnreadable: (unreadable) => refused(unreadableImport(unreadable)),
       InvalidDateRange: () =>
         refused(
           "The range must end on or after the day it starts, and span 366 days at most."
+        ),
+      InvalidTimeRange: () =>
+        refused(
+          "The range ends before it starts: give a --to later than --from."
         ),
       InvalidTimeZone: ({ timeZone }) =>
         refused(
@@ -331,6 +294,10 @@ export const explain =
         refused(
           `The ${kind} weighs ${size(byteSize)}, and Peal stores ${kind}s up to ${size(maxByteSize)}.`
         ),
+      PartnerNotFound: () =>
+        refused(
+          "The workspace has no partner account: an owner or an admin opens one in the web app's settings, where the server lets them, or its operator does."
+        ),
       PlanLimitReached: (reached) => refused(planLimitReason(reached)),
       PlatformRateLimited: ({ retryAfterSeconds }) =>
         refused(
@@ -346,7 +313,7 @@ export const explain =
         refused(
           [
             "Peal refused the post, and made nothing:",
-            ...violations.map(violationOf),
+            ...violations.map((violation) => `  ${violationOf(violation)}`),
           ].join("\n")
         ),
       PostNotFound: () => refused("The workspace has no such post."),
@@ -358,6 +325,10 @@ export const explain =
         ),
       PostStatusConflict: ({ status }) =>
         refused(`The post is ${status}, which does not allow this.`),
+      ReturnUrlNotAllowed: () =>
+        refused(
+          "The return address was refused: it must be HTTPS, on an origin the workspace's partner account registered (peal partner show lists them). A workspace without a partner account takes none."
+        ),
       ReviewLinkNotFound: () =>
         refused(
           "The workspace has no such review link: peal review links lists a post's."
@@ -369,9 +340,17 @@ export const explain =
         refused(
           `The post is ${status} on that channel: only a failed or unconfirmed post is posted again, and only an unconfirmed one confirmed.`
         ),
+      TooManyConnectLinks: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} connect links waiting, the most it may: revoke some with peal links revoke.`
+        ),
       TooManyInvitations: () =>
         refused(
           "The workspace has 100 invitations pending, the most it may: revoke some first."
+        ),
+      TooManyRequests: ({ limit, retryAfterSeconds, windowSeconds }) =>
+        refused(
+          `Peal takes ${String(limit)} requests every ${String(windowSeconds)} seconds from one sign-in or key, and this one sent more: nothing was done. Try again in ${String(retryAfterSeconds)} seconds.`
         ),
       TooManyReviewLinks: ({ limit }) =>
         refused(
@@ -429,6 +408,31 @@ export const explain =
         refused("You do not belong to this workspace, or it no longer exists."),
     });
 
+// The request a refusal answers, as the API's errors name it.
+const requestOf = (failure: ApiFailure) =>
+  "requestId" in failure
+    ? { code: failure.code, requestId: failure.requestId }
+    : {};
+
+/**
+ * What a failed request means, as the user reads it: the sign-in to renew,
+ * the server to check, or why it refused, with the request's id when the
+ * server gave one.
+ */
+export const explain =
+  (url: string) =>
+  (failure: ApiFailure): ApiRequestFailed | Refused | SignInExpired => {
+    const explained = reasonOf(url)(failure);
+
+    return explained._tag === "Refused"
+      ? new Refused({
+          error: apiErrorJson(failure),
+          reason: explained.reason,
+          ...requestOf(failure),
+        })
+      : explained;
+  };
+
 /** The scope a sign-in needs to schedule, publish, move or cancel posts. */
 export const publishScope = "workspace:publish";
 
@@ -467,9 +471,11 @@ export const explainingPublishing =
           Effect.flatMap((without) =>
             Effect.fail(
               without
-                ? refused(
-                    "This sign-in was made without the permission to schedule and publish posts: run peal login again and approve it."
-                  )
+                ? new Refused({
+                    error: apiErrorJson(forbidden),
+                    reason:
+                      "This sign-in was made without the permission to schedule and publish posts: run peal login again and approve it.",
+                  })
                 : explain(url)(forbidden)
             )
           )

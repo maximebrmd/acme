@@ -7,25 +7,35 @@ import { display } from "#display.ts";
 // Configuring needs no answer from the server, so it does not wait long.
 const discoveryTimeout = Duration.seconds(5);
 
+/**
+ * The MCP endpoint's identifier, which the server's public URL names: what
+ * MCP clients must connect to, whatever URL the command line reaches the
+ * server at. A server that does not answer leaves a guess from that URL.
+ */
+export const mcpEndpoint = Effect.gen(function* mcpEndpoint() {
+  const { baseUrl, oauth } = yield* PealApi;
+
+  const discovered = yield* oauth.discovery.mcpResource().pipe(
+    Effect.timeout(discoveryTimeout),
+    Effect.map(({ resource }) => resource),
+    Effect.option
+  );
+
+  return {
+    discovered: Option.isSome(discovered),
+    endpoint: Option.getOrElse(discovered, () =>
+      new URL("api/mcp", `${display(baseUrl)}/`).toString()
+    ),
+  };
+});
+
 export const mcp = Command.make(
   "mcp",
   {},
   Effect.fn("mcp")(function* mcp() {
     const { baseUrl, oauth } = yield* PealApi;
     const url = display(baseUrl);
-
-    // The endpoint's identifier, which its public URL names: what MCP
-    // clients must connect to, whatever URL the command line reaches the
-    // server at.
-    const discovered = yield* oauth.discovery.mcpResource().pipe(
-      Effect.timeout(discoveryTimeout),
-      Effect.map(({ resource }) => resource),
-      Effect.option
-    );
-
-    const endpoint = Option.getOrElse(discovered, () =>
-      new URL("api/mcp", `${url}/`).toString()
-    );
+    const { discovered, endpoint } = yield* mcpEndpoint;
 
     // MCP clients register themselves before they sign in, which the
     // server must allow.
@@ -50,6 +60,7 @@ export const mcp = Command.make(
         `  URL        ${endpoint}`,
         "  Transport  Streamable HTTP",
         "  Sign-in    OAuth: the MCP client opens a browser, where you sign in and pick the workspace it may use.",
+        "             Or a workspace API key, sent as the bearer token, for a client nobody attends.",
         "",
         "Most MCP clients take a configuration like this one:",
         "",
@@ -57,7 +68,7 @@ export const mcp = Command.make(
       ].join("\n")
     );
 
-    if (Option.isNone(discovered)) {
+    if (!discovered) {
       yield* Console.log(
         `\nThe server did not answer, so this URL is a guess from ${url}. Check it with the server's administrator.`
       );

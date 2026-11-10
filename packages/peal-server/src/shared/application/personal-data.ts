@@ -104,6 +104,22 @@ export interface WebhookRecord {
   readonly url: string;
 }
 
+/**
+ * A change a user asked for in a workspace, as its activity log keeps it:
+ * when, which operation (`posts.schedule`), how they authenticated
+ * (`session`, `apiKey`, `oauth` or `mcp`) and the status answered, null
+ * when there is none. Never what the request carried.
+ */
+export interface ActivityRecord {
+  readonly at: DateTime.Utc;
+  /** Whether staff, acting as the user, asked it rather than the user. */
+  readonly byStaff: boolean;
+  readonly operation: string;
+  readonly status: number | null;
+  readonly via: string;
+  readonly workspaceId: string;
+}
+
 /** A post's counts on a channel as analytics read them at one moment. */
 export interface MetricsSnapshotRecord {
   readonly collectedAt: DateTime.Utc;

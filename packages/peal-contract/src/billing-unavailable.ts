@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * Stripe could not be reached, to expire the workspace's open checkouts
  * before deleting it, or to change its subscription: nothing was deleted or
@@ -8,6 +10,7 @@ import { Schema } from "effect";
 export class BillingUnavailable extends Schema.TaggedError<BillingUnavailable>()(
   "BillingUnavailable",
   {
+    ...errorEnvelope,
     // The workspace whose billing Stripe was asked about.
     workspaceId: Schema.String,
   },

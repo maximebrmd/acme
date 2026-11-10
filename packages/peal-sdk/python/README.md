@@ -44,7 +44,7 @@ client.api_keys.create(
     workspace_id="workspaceId",
     name="name",
     permissions=[
-        "analytics:read"
+        "activity:read"
     ],
 )
 ```
@@ -81,7 +81,7 @@ async def main() -> None:
         workspace_id="workspaceId",
         name="name",
         permissions=[
-            "analytics:read"
+            "activity:read"
         ],
     )
 

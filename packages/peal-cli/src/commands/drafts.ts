@@ -9,7 +9,7 @@ import {
 import type { ChannelOptions, Post, PostDraft } from "peal-contract";
 
 import { explain } from "#explain.ts";
-import { jsonFlag, printJson } from "#json.ts";
+import { jsonFlag, printJson, printNothing } from "#json.ts";
 import { optionsOf } from "#post-flags.ts";
 import { columns, excerpt } from "#print.ts";
 import { Refused } from "#refused.ts";
@@ -225,19 +225,26 @@ const save = Command.make(
 const discard = Command.make(
   "discard",
   {
+    json: jsonFlag,
     postId: Argument.String("post-id").pipe(
       Argument.withDescription("The draft, as peal drafts list shows its id.")
     ),
     workspace: workspaceFlag,
   },
-  Effect.fn("drafts.discard")(function* discard({ postId, workspace: choice }) {
+  Effect.fn("drafts.discard")(function* discard({
+    json,
+    postId,
+    workspace: choice,
+  }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     yield* client.posts
       .discard({ params: { postId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
 
-    yield* Console.log(`Discarded draft ${postId} of ${workspace.name}.`);
+    yield* json
+      ? printNothing
+      : Console.log(`Discarded draft ${postId} of ${workspace.name}.`);
   })
 ).pipe(
   Command.withDescription(

@@ -3,17 +3,12 @@
 import * as Peal from "../index.js";
 
 export interface AssistantQuotaExceededEncoded {
-    _tag: AssistantQuotaExceededEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     billingUrl: string | null;
     dailyLimit: number;
     plan: Peal.Plan | null;
     planWithRoom: Peal.PaidPlan | null;
     resetsAt: string;
-}
-
-export namespace AssistantQuotaExceededEncoded {
-    export const Tag = {
-            AssistantQuotaExceeded: "AssistantQuotaExceeded"
-        } as const;
-    export type Tag = typeof Tag[keyof typeof Tag];
 }

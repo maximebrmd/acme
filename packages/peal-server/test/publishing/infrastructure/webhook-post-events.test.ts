@@ -1,11 +1,12 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer, Option } from "effect";
+import { Context, Effect, Layer, Option, Ref, Schema } from "effect";
 import type { Scope } from "effect";
 import { MessageStorage } from "effect/cluster";
 
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { AccountRules } from "#publishing/application/account-rules.ts";
+import { PostBatches } from "#publishing/application/post-batches.ts";
 import { PostOrigins } from "#publishing/application/post-origins.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
@@ -21,13 +22,14 @@ import {
   WebhookPostEvents,
 } from "#publishing/infrastructure/webhook-post-events.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import type { ChannelId } from "#shared/domain/ids.ts";
+import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import { connect } from "#test/publishing/posts-server.ts";
 import {
   attachableMedia,
+  contentOf,
   postAllowance,
   syntheticContent,
 } from "#test/publishing/support.ts";
@@ -40,7 +42,12 @@ import {
   freshOwner,
   SecretsTest,
 } from "#test/webhooks/support.ts";
+import { DeliveryStore } from "#webhooks/application/ports/delivery-store.ts";
+import { EventOrigins } from "#webhooks/application/ports/event-origins.ts";
+import type { EventOrigin } from "#webhooks/application/ports/event-origins.ts";
+import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 import { webhooksWith } from "#webhooks/container.ts";
+import { bodyOf } from "#webhooks/domain/recorded-event.ts";
 import type { WebhookEvent } from "#webhooks/domain/webhook-event.ts";
 import { DrizzleDeliveryStore } from "#webhooks/infrastructure/drizzle-delivery-store.ts";
 import { DrizzleEndpointStore } from "#webhooks/infrastructure/drizzle-endpoint-store.ts";
@@ -78,6 +85,41 @@ const PublishingTest = publishingWith(
   )
 );
 
+// Whose each workspace is, as a test says: none is a partner's until then.
+class Owned extends Context.Service<
+  Owned,
+  Ref.Ref<ReadonlyMap<WorkspaceId, EventOrigin>>
+>()("test/publishing/Owned") {
+  static readonly layer = Layer.effect(
+    Owned,
+    Ref.make<ReadonlyMap<WorkspaceId, EventOrigin>>(new Map())
+  );
+}
+
+const OriginsTest = Layer.effect(
+  EventOrigins,
+  Effect.gen(function* OriginsTest() {
+    const owned = yield* Owned;
+
+    return EventOrigins.of({
+      isPartnerHome: (workspaceId) =>
+        Ref.get(owned).pipe(
+          Effect.map((origins) =>
+            [...origins.values()].some(
+              ({ homeWorkspaceId }) => homeWorkspaceId === workspaceId
+            )
+          )
+        ),
+      of: (workspaceId) =>
+        Ref.get(owned).pipe(
+          Effect.map((origins) =>
+            Option.fromUndefinedOr(origins.get(workspaceId))
+          )
+        ),
+    });
+  })
+).pipe(Layer.provideMerge(Owned.layer));
+
 // On an in-memory cluster driven by TestClock, with the webhooks' stores in
 // Postgres and deliveries that are recorded, not sent.
 const ServerTest = publishingWorkers(FakePlatformPublisher).pipe(
@@ -90,7 +132,8 @@ const ServerTest = publishingWorkers(FakePlatformPublisher).pipe(
         SecretsTest,
         FakeTransport.layer,
         StartedJobs.layer,
-        ToldNotices.layer
+        ToldNotices.layer,
+        OriginsTest
       )
     )
   ),
@@ -108,6 +151,18 @@ const onServerAt = <A, E>(
 ) => setTime(start).pipe(Effect.andThen(test.pipe(Effect.provide(ServerTest))));
 
 const timeout = 60_000;
+
+// What a receiver reads of an event, as far as these tests look.
+const PayloadSchema = Schema.fromJsonString(
+  Schema.Struct({
+    data: Schema.Struct({
+      postId: Schema.String,
+      workspaceId: Schema.String,
+    }),
+    type: Schema.String,
+    workspaceExternalId: Schema.NullOr(Schema.String),
+  })
+);
 
 // An owner with an endpoint that hears everything about posts.
 const listening = Effect.gen(function* listening() {
@@ -317,6 +372,102 @@ describe("a post's webhook events", () => {
           assert.deepStrictEqual(sent, [expected]);
 
           yield* scheduling.cancel(owner, first.post.id);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "tell a partner each post a batch made in a workspace it owns, once, with its own id for the workspace",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* batches() {
+          const home = yield* freshOwner;
+          const customer = yield* freshOwner;
+          const channel = yield* connect(customer.workspaceId, "mastodon");
+
+          yield* Owned.use((owned) =>
+            Ref.update(owned, (origins) =>
+              new Map(origins).set(customer.workspaceId, {
+                externalId: Option.some("cus_batch"),
+                homeWorkspaceId: home.workspaceId,
+              })
+            )
+          );
+
+          const partnerWide = yield* freshEndpoint(home, {
+            eventTypes: ["post.scheduled"],
+            scope: "partner",
+          });
+
+          const request = (text: string, key: string) => {
+            const { at, timeZone } = scheduleIn("2026-06-16T08:00:00Z");
+
+            return {
+              at: Option.some(at),
+              channelIds: [channel] as const,
+              content: contentOf(text),
+              idempotency: Option.some({ fingerprint: text, key }),
+              timeZone,
+            };
+          };
+
+          const requests = [
+            request("A synthetic post, one of several.", "batch-key-1"),
+            request("Another synthetic post of the batch.", "batch-key-2"),
+            // The first again, under another key: refused as a duplicate.
+            request("A synthetic post, one of several.", "batch-key-3"),
+          ];
+
+          const batchesOf = yield* PostBatches;
+          const first = yield* batchesOf.send(customer, requests);
+          // The same request sent again answers the posts it made.
+          const again = yield* batchesOf.send(customer, requests);
+
+          for (const outcomes of [first, again]) {
+            assert.deepStrictEqual(
+              outcomes.map(({ _tag }) => _tag),
+              ["Success", "Success", "Failure"]
+            );
+          }
+
+          const deliveries = yield* WebhookDeliveries.use((log) =>
+            log.page(home, partnerWide.endpoint.id, {
+              after: Option.none(),
+              limit: 50,
+            })
+          );
+
+          const store = yield* DeliveryStore;
+
+          const payloads = yield* Effect.all(
+            deliveries.items.map(({ eventId }) =>
+              store.event(eventId).pipe(
+                Effect.flatMap(Effect.fromOption),
+                Effect.flatMap((recorded) =>
+                  Schema.decodeUnknownEffect(PayloadSchema)(bodyOf(recorded))
+                )
+              )
+            )
+          );
+
+          // One event a post made, none for the refused one or the replay.
+          const made = first.flatMap((outcome) =>
+            outcome._tag === "Success" ? [outcome.success.post.id] : []
+          );
+
+          assert.lengthOf(made, 2);
+          assert.deepStrictEqual(
+            payloads.map(({ data }) => data.postId).toSorted(),
+            made.map(String).toSorted()
+          );
+
+          for (const payload of payloads) {
+            assert.strictEqual(payload.type, "post.scheduled");
+            assert.strictEqual(payload.workspaceExternalId, "cus_batch");
+            assert.strictEqual(payload.data.workspaceId, customer.workspaceId);
+          }
         })
       ),
     timeout

@@ -20,6 +20,7 @@ import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 import social.peal.types.SubscribableWebhookEventType;
+import social.peal.types.WebhookEndpointScope;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = NewWebhookEndpoint.Builder.class)
@@ -30,6 +31,8 @@ public final class NewWebhookEndpoint {
 
     private final List<SubscribableWebhookEventType> eventTypes;
 
+    private final Optional<WebhookEndpointScope> scope;
+
     private final String url;
 
     private final Map<String, Object> additionalProperties;
@@ -38,11 +41,13 @@ public final class NewWebhookEndpoint {
             Optional<String> description,
             Optional<Boolean> enabled,
             List<SubscribableWebhookEventType> eventTypes,
+            Optional<WebhookEndpointScope> scope,
             String url,
             Map<String, Object> additionalProperties) {
         this.description = description;
         this.enabled = enabled;
         this.eventTypes = eventTypes;
+        this.scope = scope;
         this.url = url;
         this.additionalProperties = additionalProperties;
     }
@@ -60,6 +65,11 @@ public final class NewWebhookEndpoint {
     @JsonProperty("eventTypes")
     public List<SubscribableWebhookEventType> getEventTypes() {
         return eventTypes;
+    }
+
+    @JsonProperty("scope")
+    public Optional<WebhookEndpointScope> getScope() {
+        return scope;
     }
 
     @JsonProperty("url")
@@ -82,12 +92,13 @@ public final class NewWebhookEndpoint {
         return description.equals(other.description)
                 && enabled.equals(other.enabled)
                 && eventTypes.equals(other.eventTypes)
+                && scope.equals(other.scope)
                 && url.equals(other.url);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.description, this.enabled, this.eventTypes, this.url);
+        return Objects.hash(this.description, this.enabled, this.eventTypes, this.scope, this.url);
     }
 
     @java.lang.Override
@@ -125,11 +136,17 @@ public final class NewWebhookEndpoint {
         _FinalStage addEventTypes(SubscribableWebhookEventType eventTypes);
 
         _FinalStage addAllEventTypes(List<SubscribableWebhookEventType> eventTypes);
+
+        _FinalStage scope(Optional<WebhookEndpointScope> scope);
+
+        _FinalStage scope(WebhookEndpointScope scope);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements UrlStage, _FinalStage {
         private String url;
+
+        private Optional<WebhookEndpointScope> scope = Optional.empty();
 
         private List<SubscribableWebhookEventType> eventTypes = new ArrayList<>();
 
@@ -146,6 +163,7 @@ public final class NewWebhookEndpoint {
             description(other.getDescription());
             enabled(other.getEnabled());
             eventTypes(other.getEventTypes());
+            scope(other.getScope());
             url(other.getUrl());
             return this;
         }
@@ -154,6 +172,19 @@ public final class NewWebhookEndpoint {
         @JsonSetter("url")
         public _FinalStage url(@NotNull String url) {
             this.url = Objects.requireNonNull(url, "url must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage scope(WebhookEndpointScope scope) {
+            this.scope = Optional.ofNullable(scope);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "scope", nulls = Nulls.SKIP)
+        public _FinalStage scope(Optional<WebhookEndpointScope> scope) {
+            this.scope = scope;
             return this;
         }
 
@@ -209,7 +240,7 @@ public final class NewWebhookEndpoint {
 
         @java.lang.Override
         public NewWebhookEndpoint build() {
-            return new NewWebhookEndpoint(description, enabled, eventTypes, url, additionalProperties);
+            return new NewWebhookEndpoint(description, enabled, eventTypes, scope, url, additionalProperties);
         }
 
         @JsonAnySetter
@@ -217,6 +248,7 @@ public final class NewWebhookEndpoint {
             if (key.equalsIgnoreCase("description")
                     || key.equalsIgnoreCase("enabled")
                     || key.equalsIgnoreCase("eventTypes")
+                    || key.equalsIgnoreCase("scope")
                     || key.equalsIgnoreCase("url")) {
                 return;
             }

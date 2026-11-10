@@ -2,6 +2,9 @@
 
 export interface WorkspaceNotFoundEncoded {
     _tag: WorkspaceNotFoundEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace WorkspaceNotFoundEncoded {

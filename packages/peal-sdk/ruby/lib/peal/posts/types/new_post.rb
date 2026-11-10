@@ -6,7 +6,11 @@ module Peal
       class NewPost < Internal::Types::Model
         field :workspace_id, -> { String }, optional: false, nullable: false, api_name: "workspaceId"
 
+        field :wait, -> { String }, optional: true, nullable: false
+
         field :idempotency_key, -> { String }, optional: true, nullable: false, api_name: "idempotency-key"
+
+        field :allow_duplicate, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "allowDuplicate"
 
         field :channel_ids, -> { Internal::Types::Array[String] }, optional: false, nullable: false, api_name: "channelIds"
 

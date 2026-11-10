@@ -25,12 +25,14 @@ import {
   TestApp,
   workspaceOf,
 } from "./harness.ts";
+import { bearer, customerOf, keyOf } from "./partner-support.ts";
 import { countOf } from "./seed.ts";
 
 // A ledger of this run's own, and a server French law has keep who held a
 // closed account, so the replay holds it again.
 const settings = {
   PEAL_LEGAL_RETENTION: "true",
+  PEAL_PARTNER_SELF_SERVICE: "true",
   PEAL_S3_KEY_PREFIX: `tests/replay/${randomUUID()}/`,
 };
 
@@ -347,6 +349,117 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
           yield* ledger.expire(
             DateTime.add(yield* DateTime.now, { minutes: 1 })
           );
+        })
+    );
+
+    it.effect(
+      "erases again a customer's workspace its partner offboarded, with its links, its log and its tie to the partner",
+      () =>
+        Effect.gen(function* offboardedAgain() {
+          const app = yield* TestApp;
+          const sql = yield* SqlClient.SqlClient;
+          const replays = yield* ReplayErasures;
+          const owner = yield* signedUp("replay-partner");
+          const home = yield* workspaceOf(owner, "Suite");
+
+          assert.strictEqual(
+            (yield* app.request(`/api/workspaces/${home}/partner`, {
+              body: { name: "Replay Suite" },
+              headers: { cookie: owner.cookies },
+            })).status,
+            201
+          );
+
+          const { key } = yield* keyOf(owner, home);
+          const customer = yield* customerOf(key, "Offboarded", "cus_replay");
+          const base = `/api/workspaces/${customer.id}`;
+
+          // What the partner's key leaves there: a connect link, a draft,
+          // and the workspace's log of both.
+          for (const [path, body] of [
+            ["/connect-links", { platform: "mastodon" }],
+            [
+              "/posts",
+              {
+                channelIds: [],
+                content: { media: [], overrides: [], text: "A draft." },
+              },
+            ],
+          ] as const) {
+            assert.strictEqual(
+              (yield* app.request(`${base}${path}`, {
+                body,
+                headers: bearer(key),
+              })).status,
+              201
+            );
+          }
+
+          // Everything of the workspace the new tables hold.
+          const tables = [
+            ["auth", "organization", "id"],
+            ["workspace", "partner_workspaces", "workspace_id"],
+            ["channels", "connect_links", "workspace_id"],
+            ["activity", "events", "workspace_id"],
+            ["publishing", "posts", "workspace_id"],
+          ] as const;
+
+          const rows = Effect.all(
+            tables.map(([schema, table, column]) =>
+              sql`SELECT count(*)::int AS count FROM ${sql(schema)}.${sql(table)} WHERE ${sql(column)} = ${customer.id}`.pipe(
+                Effect.flatMap(countOf)
+              )
+            )
+          );
+
+          // The workspace, its tie to the partner, a link, three events
+          // (its making, the link, the draft) and a post.
+          assert.deepStrictEqual(yield* rows, [1, 1, 1, 3, 1]);
+
+          // The backup.
+          for (const [schema, table, column] of tables) {
+            yield* sql`CREATE TABLE ${sql(aside(`partner_${table}`))} AS SELECT * FROM ${sql(schema)}.${sql(table)} WHERE ${sql(column)} = ${customer.id}`;
+          }
+
+          assert.strictEqual(
+            (yield* app.request(`/api/partner/workspaces/${customer.id}`, {
+              headers: bearer(key),
+              method: "DELETE",
+            })).status,
+            204
+          );
+          assert.deepStrictEqual(yield* rows, [0, 0, 0, 0, 0]);
+
+          // The restore brings it all back.
+          for (const [schema, table] of tables) {
+            yield* sql`INSERT INTO ${sql(schema)}.${sql(table)} SELECT * FROM ${sql(aside(`partner_${table}`))}`;
+            yield* sql`DROP TABLE ${sql(aside(`partner_${table}`))}`;
+          }
+
+          assert.deepStrictEqual(yield* rows, [1, 1, 1, 3, 1]);
+
+          const report = yield* replays.replay({ applyUnconfirmed: false });
+
+          assert.deepStrictEqual(
+            report.erased
+              .filter(({ workspaces }) =>
+                workspaces.some((workspaceId) => workspaceId === customer.id)
+              )
+              .map(({ account, workspaces }) => ({
+                account,
+                workspaces: workspaces.map(String),
+              })),
+            [{ account: null, workspaces: [customer.id] }]
+          );
+          assert.deepStrictEqual(yield* rows, [0, 0, 0, 0, 0]);
+
+          // The partner account stays, owning nothing.
+          const overview = yield* app.request("/api/partner/workspaces", {
+            headers: bearer(key),
+          });
+
+          assert.strictEqual(overview.status, 200);
+          assert.deepInclude(overview.body, { total: 0 });
         })
     );
   }

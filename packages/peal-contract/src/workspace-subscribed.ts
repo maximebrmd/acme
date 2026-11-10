@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /** A subscription a deletion would cancel. */
 export const SubscriptionToCancelSchema = Schema.Struct({
   // When the period paid for ends, null when billing does not know yet.
@@ -21,6 +23,7 @@ export type SubscriptionToCancel = typeof SubscriptionToCancelSchema.Type;
 export class WorkspaceSubscribed extends Schema.TaggedError<WorkspaceSubscribed>()(
   "WorkspaceSubscribed",
   {
+    ...errorEnvelope,
     // Every subscription the deletion would cancel, in each workspace it
     // would erase.
     subscriptions: Schema.Array(SubscriptionToCancelSchema),

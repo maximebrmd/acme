@@ -1,4 +1,4 @@
-import { and, asc, count, eq, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, lte, or, sql } from "drizzle-orm";
 import {
   DateTime,
   Duration,
@@ -18,6 +18,7 @@ import { tokenKeyIdOf } from "#channels/application/token-cipher.ts";
 import { Channel } from "#channels/domain/channel.ts";
 import type { TokenLifetime } from "#channels/domain/channel.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -194,6 +195,29 @@ export const DrizzleChannelRepository = Layer.effect(
               .pipe(
                 Effect.mapError(failed),
                 Effect.map(([row]) => row?.due ?? 0)
+              ),
+      countIn: (workspaceIds) =>
+        workspaceIds.length === 0
+          ? Effect.succeed(new Map())
+          : db
+              .select({
+                connected: count(),
+                workspaceId: channels.workspaceId,
+              })
+              .from(channels)
+              .where(inArray(channels.workspaceId, [...workspaceIds]))
+              .groupBy(channels.workspaceId)
+              .pipe(
+                Effect.mapError(failed),
+                Effect.map(
+                  (rows) =>
+                    new Map(
+                      rows.map(({ connected, workspaceId }) => [
+                        WorkspaceIdSchema.make(workspaceId),
+                        connected,
+                      ])
+                    )
+                )
               ),
       credentials: (channelId) =>
         db

@@ -4,6 +4,9 @@ import * as Peal from "../index.js";
 
 export interface CommentInvalidEncoded {
     _tag: CommentInvalidEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     problem: Peal.CommentProblem;
 }
 

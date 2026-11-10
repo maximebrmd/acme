@@ -3165,49 +3165,6 @@ func TestStringConnectablePlatforms(t *testing.T) {
 	})
 }
 
-func TestEnumChannelConnection(t *testing.T) {
-	t.Run("NewFromString_instagramLogin", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewChannelConnectionFromString("instagramLogin")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, ChannelConnection("instagramLogin"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_facebookLogin", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewChannelConnectionFromString("facebookLogin")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, ChannelConnection("facebookLogin"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_linkedinProfile", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewChannelConnectionFromString("linkedinProfile")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, ChannelConnection("linkedinProfile"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_linkedinPage", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewChannelConnectionFromString("linkedinPage")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, ChannelConnection("linkedinPage"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewChannelConnectionFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewChannelConnectionFromString("instagramLogin")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
 func TestEnumInstagramConnection(t *testing.T) {
 	t.Run("NewFromString_instagramLogin", func(t *testing.T) {
 		t.Parallel()

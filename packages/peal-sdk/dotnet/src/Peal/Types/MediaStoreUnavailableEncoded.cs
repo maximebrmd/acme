@@ -14,6 +14,15 @@ public record MediaStoreUnavailableEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required MediaStoreUnavailableEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

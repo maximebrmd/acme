@@ -3,16 +3,24 @@ import { Flag } from "effect/cli";
 
 import { Refused } from "#refused.ts";
 
-// The zone a time is chosen in: the flag, then TZ, then this machine's,
-// which Intl answers (UTC where it knows none).
-export const timeZoneFlag = Flag.String("time-zone").pipe(
-  Flag.withAlias("zone"),
-  Flag.withMetavar("<zone>"),
-  Flag.withDescription(
-    "The IANA time zone the time is chosen in, such as Europe/Paris: calendars show the post in it, and an --at without an offset is read in it. Defaults to TZ, then to this machine's zone, which is UTC where it has none."
-  ),
-  Flag.withFallbackConfig(Config.String("TZ")),
-  Flag.withDefault(DateTime.zoneToString(DateTime.zoneMakeLocal()))
+/**
+ * `--time-zone`, with what the command reads in it: the flag, then TZ, then
+ * this machine's zone, which Intl answers (UTC where it knows none).
+ */
+export const zoneFlag = (description: string) =>
+  Flag.String("time-zone").pipe(
+    Flag.withAlias("zone"),
+    Flag.withMetavar("<zone>"),
+    Flag.withDescription(
+      `${description} Defaults to TZ, then to this machine's zone, which is UTC where it has none.`
+    ),
+    Flag.withFallbackConfig(Config.String("TZ")),
+    Flag.withDefault(DateTime.zoneToString(DateTime.zoneMakeLocal()))
+  );
+
+// The zone a post's time is chosen in.
+export const timeZoneFlag = zoneFlag(
+  "The IANA time zone the time is chosen in, such as Europe/Paris: calendars show the post in it, and an --at without an offset is read in it."
 );
 
 const atDescription =
@@ -29,18 +37,19 @@ const withOffset =
 const wallClock = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/u;
 
 /**
- * The instant `--at` names. A local time is read in `zone`; one the clocks
- * skip or repeat there is refused rather than guessed, as a post goes out
- * once, at a time its author chose.
+ * The instant `--at` names, or another `flag` that takes one. A local time
+ * is read in `zone`; one the clocks skip or repeat there is refused rather
+ * than guessed, as a post goes out once, at a time its author chose.
  */
 export const instantOf = (
   given: string,
-  zone: string
+  zone: string,
+  flag = "--at"
 ): Effect.Effect<DateTime.Utc, Refused> => {
   if (withOffset.test(given)) {
     return Option.match(DateTime.make(given), {
       onNone: () =>
-        Effect.fail(new Refused({ reason: `--at ${given} is not a time.` })),
+        Effect.fail(new Refused({ reason: `${flag} ${given} is not a time.` })),
       onSome: (at) => Effect.succeed(DateTime.toUtc(at)),
     });
   }
@@ -48,7 +57,7 @@ export const instantOf = (
   if (!wallClock.test(given)) {
     return Effect.fail(
       new Refused({
-        reason: `--at takes an instant with its offset, such as 2026-11-20T09:00:00Z, or a local time such as 2026-11-20T10:00, read in --time-zone: not ${given}.`,
+        reason: `${flag} takes an instant with its offset, such as 2026-11-20T09:00:00Z, or a local time such as 2026-11-20T10:00, read in --time-zone: not ${given}.`,
       })
     );
   }

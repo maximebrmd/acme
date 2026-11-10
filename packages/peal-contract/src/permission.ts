@@ -6,6 +6,7 @@ import { Schema } from "effect";
  * source; a test keeps the two lists equal.
  */
 export const PermissionSchema = Schema.Literals([
+  "activity:read",
   "analytics:read",
   "apiKey:create",
   "apiKey:read",
@@ -27,6 +28,8 @@ export const PermissionSchema = Schema.Literals([
   "member:delete",
   "organization:update",
   "organization:delete",
+  "partner:read",
+  "partner:manage",
   "post:read",
   "post:create",
   "post:update",

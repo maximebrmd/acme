@@ -2,6 +2,7 @@ import { Console, Duration, Effect, Option, Redacted } from "effect";
 import { Command } from "effect/cli";
 import { cliClientId } from "peal-contract";
 
+import { apiKeyVariable, usesApiKey } from "#api-key.ts";
 import { PealApi } from "#api.ts";
 import { CredentialStore } from "#credentials.ts";
 import { display } from "#display.ts";
@@ -14,7 +15,7 @@ export const logout = Command.make(
   "logout",
   {},
   Effect.fn("logout")(function* logout() {
-    const { baseUrl, oauth } = yield* PealApi;
+    const { baseUrl, oauth, sendingCredentials } = yield* PealApi;
     const store = yield* CredentialStore;
     const url = display(baseUrl);
 
@@ -30,21 +31,32 @@ export const logout = Command.make(
     // renewed last stops working within minutes.
     yield* Option.match(saved.value.refreshToken, {
       onNone: () => Effect.void,
+      // Never in clear: the sign-in is then forgotten here alone.
       onSome: (token) =>
-        oauth.tokens
-          .revoke({
-            payload: {
-              client_id: cliClientId,
-              token: Redacted.value(token),
-              token_type_hint: "refresh_token",
-            },
-          })
-          .pipe(Effect.timeout(revokeTimeout), Effect.ignore),
+        sendingCredentials.pipe(
+          Effect.andThen(
+            oauth.tokens.revoke({
+              payload: {
+                client_id: cliClientId,
+                token: Redacted.value(token),
+                token_type_hint: "refresh_token",
+              },
+            })
+          ),
+          Effect.timeout(revokeTimeout),
+          Effect.ignore
+        ),
     });
 
     yield* store.remove(baseUrl);
 
     yield* Console.log(`Signed out of ${url}.`);
+
+    if (yield* usesApiKey) {
+      yield* Console.log(
+        `${apiKeyVariable} is still set: commands keep using that API key.`
+      );
+    }
   })
 ).pipe(
   Command.withDescription(

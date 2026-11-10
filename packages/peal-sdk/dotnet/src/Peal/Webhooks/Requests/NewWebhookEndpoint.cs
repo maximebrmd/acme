@@ -19,6 +19,9 @@ public record NewWebhookEndpoint
     public IEnumerable<SubscribableWebhookEventType> EventTypes { get; set; } =
         new List<SubscribableWebhookEventType>();
 
+    [JsonPropertyName("scope")]
+    public WebhookEndpointScope? Scope { get; set; }
+
     [JsonPropertyName("url")]
     public required string Url { get; set; }
 

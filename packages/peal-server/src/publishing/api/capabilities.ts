@@ -1,9 +1,10 @@
 import { Effect, Match } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
-import { Api, ChannelNotFound, CurrentMember, Forbidden } from "peal-contract";
+import { Api, ChannelNotFound, CurrentMember } from "peal-contract";
 
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 
 import {
   channelCapabilitiesView,
@@ -27,7 +28,7 @@ export const CapabilitiesHandlers = HttpApiBuilder.group(
               Effect.catch((error) =>
                 Match.valueTags(error, {
                   DatabaseError: Effect.die,
-                  MissingPermission: () => Effect.fail(new Forbidden()),
+                  MissingPermission: forbidden,
                   UnknownChannels: () => Effect.fail(new ChannelNotFound()),
                 })
               )
@@ -41,7 +42,7 @@ export const CapabilitiesHandlers = HttpApiBuilder.group(
 
           const every = yield* capabilities
             .platforms(actor)
-            .pipe(Effect.mapError(() => new Forbidden()));
+            .pipe(Effect.catchTag("MissingPermission", forbidden));
 
           return every.map(platformCapabilitiesView);
         }),

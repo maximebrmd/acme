@@ -114,11 +114,14 @@ const media = { ...workspace, mediaId: Schema.String };
 
 // What every payload holds beside its type and data: the event's id (also
 // the `webhook-id` header, the same on every delivery of the event), when
-// it happened, and the version of its data.
+// it happened, the version of its data, and, for an event of a workspace a
+// partner owns, the partner's own id for that workspace as it was then:
+// null when the partner gave none, and for any other workspace.
 const envelope = {
   id: Schema.String,
   timestamp: Schema.DateTimeUtc,
   version: Schema.Literal(webhookEventVersion),
+  workspaceExternalId: Schema.NullOr(Schema.String),
 };
 
 /**

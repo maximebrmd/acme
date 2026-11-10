@@ -4,6 +4,13 @@ pub use crate::prelude::*;
 pub struct PlanLimitReachedEncoded {
     #[serde(rename = "_tag")]
     pub tag: PlanLimitReachedEncodedTag,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+    #[serde(rename = "requestId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub request_id: Option<String>,
     #[serde(default)]
     pub allowed: i64,
     #[serde(rename = "billingUrl")]
@@ -28,6 +35,9 @@ impl PlanLimitReachedEncoded {
 #[non_exhaustive]
 pub struct PlanLimitReachedEncodedBuilder {
     tag: Option<PlanLimitReachedEncodedTag>,
+    code: Option<String>,
+    message: Option<String>,
+    request_id: Option<String>,
     allowed: Option<i64>,
     billing_url: Option<String>,
     limit: Option<PlanLimit>,
@@ -39,6 +49,21 @@ pub struct PlanLimitReachedEncodedBuilder {
 impl PlanLimitReachedEncodedBuilder {
     pub fn tag(mut self, value: PlanLimitReachedEncodedTag) -> Self {
         self.tag = Some(value);
+        self
+    }
+
+    pub fn code(mut self, value: impl Into<String>) -> Self {
+        self.code = Some(value.into());
+        self
+    }
+
+    pub fn message(mut self, value: impl Into<String>) -> Self {
+        self.message = Some(value.into());
+        self
+    }
+
+    pub fn request_id(mut self, value: impl Into<String>) -> Self {
+        self.request_id = Some(value.into());
         self
     }
 
@@ -83,6 +108,9 @@ impl PlanLimitReachedEncodedBuilder {
     pub fn build(self) -> Result<PlanLimitReachedEncoded, BuildError> {
         Ok(PlanLimitReachedEncoded {
             tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
+            code: self.code,
+            message: self.message,
+            request_id: self.request_id,
             allowed: self
                 .allowed
                 .ok_or_else(|| BuildError::missing_field("allowed"))?,

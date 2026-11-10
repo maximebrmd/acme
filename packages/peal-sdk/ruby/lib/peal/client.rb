@@ -105,6 +105,26 @@ module Peal
       @webhooks ||= Peal::Webhooks::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Activity::Client]
+    def activity
+      @activity ||= Peal::Activity::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::Partner::Client]
+    def partner
+      @partner ||= Peal::Partner::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::PartnerAccount::Client]
+    def partner_account
+      @partner_account ||= Peal::PartnerAccount::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::ConnectLinks::Client]
+    def connect_links
+      @connect_links ||= Peal::ConnectLinks::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::Review::Client]
     def review
       @review ||= Peal::Review::Client.new(client: @raw_client)

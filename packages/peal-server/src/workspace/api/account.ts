@@ -4,10 +4,10 @@ import {
   Api,
   BillingUnavailable,
   DeletionIncomplete,
-  Forbidden,
   IncorrectPassword,
   LastOwner,
   MediaStoreUnavailable,
+  PartnerOwnsWorkspaces,
   NoticeEventSchema,
   StaffActionSchema,
   TargetOptionsSchema,
@@ -17,6 +17,7 @@ import {
 } from "peal-contract";
 import type { AccountExport as AccountExportView } from "peal-contract";
 
+import { forbidden } from "#shared/api/forbidden.ts";
 import type { PostRecord } from "#shared/application/personal-data.ts";
 import { AccountData } from "#workspace/application/account-data.ts";
 import type { AccountExport } from "#workspace/application/account-data.ts";
@@ -25,8 +26,6 @@ import { CloseAccount } from "#workspace/application/close-account.ts";
 import { aboutOf } from "./about.ts";
 import { currentUser } from "./connected-apps.ts";
 import { subscribedOf } from "./subscribed.ts";
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const decodeEvent = Schema.decodeUnknownEffect(NoticeEventSchema);
 
@@ -87,6 +86,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
       legalRetention: exported.legalHold !== null,
       locale: account.user.locale,
     }),
+    activity: exported.activity,
     authoredPosts,
     connectedApps: exported.connectedApps,
     contracts: exported.contracts,
@@ -188,6 +188,8 @@ export const AccountHandlers = HttpApiBuilder.group(
                 LastOwner: ({ workspaces }) =>
                   Effect.fail(new LastOwner({ workspaces })),
                 NotSignedIn: () => Effect.fail(new Unauthenticated()),
+                PartnerOwnsWorkspaces: ({ owned }) =>
+                  Effect.fail(new PartnerOwnsWorkspaces({ owned })),
                 SessionRequired: forbidden,
                 TooManyPasswordAttempts: () =>
                   Effect.fail(new TooManyPasswordAttempts()),

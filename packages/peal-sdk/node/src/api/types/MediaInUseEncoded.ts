@@ -2,6 +2,9 @@
 
 export interface MediaInUseEncoded {
     _tag: MediaInUseEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     postIds: string[];
 }
 

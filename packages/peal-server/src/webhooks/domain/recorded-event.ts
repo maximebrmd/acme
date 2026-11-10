@@ -1,4 +1,4 @@
-import { DateTime, Schema } from "effect";
+import { DateTime, Effect, Option, Schema } from "effect";
 
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 
@@ -7,12 +7,16 @@ import { eventVersion, WebhookEventSchema } from "./webhook-event.ts";
 
 /**
  * An event kept until its deliveries are over and their log expires: what
- * happened, when, and the id receivers know it by.
+ * happened, when, the id receivers know it by, and, for a workspace a
+ * partner owns, the partner's own id for it as it was then.
  */
 export class RecordedEvent extends Schema.Class<RecordedEvent>(
   "peal-server/webhooks/domain/RecordedEvent"
 )({
   event: WebhookEventSchema,
+  externalId: Schema.Option(Schema.String).pipe(
+    Schema.withConstructorDefault(Effect.succeed(Option.none()))
+  ),
   id: WebhookEventIdSchema,
   occurredAt: Schema.DateTimeUtc,
   workspaceId: WorkspaceIdSchema,
@@ -29,8 +33,10 @@ const decodeFields = Schema.decodeUnknownSync(
  * The request body for an event, the same on every attempt: what the
  * Standard Webhooks specification recommends a payload holds (the event's
  * `type`, the `timestamp` it happened at, and its `data`), with its `id`
- * (also the `webhook-id` header) and the `version` of its data. What is
- * signed is this text, byte for byte.
+ * (also the `webhook-id` header), the `version` of its data, and
+ * `workspaceExternalId`, the id a partner gave the workspace it happened
+ * in, null for any other workspace. What is signed is this text, byte for
+ * byte.
  */
 export const bodyOf = (recorded: RecordedEvent): string =>
   JSON.stringify({
@@ -38,4 +44,5 @@ export const bodyOf = (recorded: RecordedEvent): string =>
     id: recorded.id,
     timestamp: DateTime.formatIso(recorded.occurredAt),
     version: eventVersion,
+    workspaceExternalId: Option.getOrNull(recorded.externalId),
   });

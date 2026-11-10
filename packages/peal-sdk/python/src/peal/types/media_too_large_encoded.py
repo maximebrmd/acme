@@ -10,6 +10,11 @@ from .media_too_large_encoded_kind import MediaTooLargeEncodedKind
 
 
 class MediaTooLargeEncoded(UniversalBaseModel):
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     byte_size: typing_extensions.Annotated[int, FieldMetadata(alias="byteSize"), pydantic.Field(alias="byteSize")]
     kind: MediaTooLargeEncodedKind
     max_byte_size: typing_extensions.Annotated[

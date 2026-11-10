@@ -5,7 +5,6 @@ import {
   ChannelNotFound,
   ConnectFailed,
   CurrentMember,
-  Forbidden,
   OAuthClientNotPublished,
   PlatformUnreachable,
 } from "peal-contract";
@@ -14,6 +13,7 @@ import type {
   ConnectCallback,
   ConnectFailureReason,
   ConnectOutcome as ConnectOutcomeView,
+  Forbidden,
 } from "peal-contract";
 
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
@@ -29,13 +29,12 @@ import { ListChannels } from "#channels/application/list-channels.ts";
 import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
 import type { AuthorizationCallback } from "#channels/application/platform-authorizer.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 import type { LimitRefusal } from "#shared/api/limit-reached.ts";
 import { isConnectionOf } from "#shared/domain/channel-connection.ts";
 
 import { toChannelView } from "./channel-view.ts";
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const refused = (reason: ConnectFailureReason) =>
   Effect.fail(new ConnectFailed({ reason }));

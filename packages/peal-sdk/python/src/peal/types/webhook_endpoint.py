@@ -8,6 +8,7 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .subscribable_webhook_event_type import SubscribableWebhookEventType
 from .webhook_disabled_reason import WebhookDisabledReason
+from .webhook_endpoint_scope import WebhookEndpointScope
 
 
 class WebhookEndpoint(UniversalBaseModel):
@@ -34,6 +35,7 @@ class WebhookEndpoint(UniversalBaseModel):
         FieldMetadata(alias="previousSecretExpiresAt"),
         pydantic.Field(alias="previousSecretExpiresAt"),
     ] = None
+    scope: WebhookEndpointScope
     updated_at: typing_extensions.Annotated[str, FieldMetadata(alias="updatedAt"), pydantic.Field(alias="updatedAt")]
     url: str
 

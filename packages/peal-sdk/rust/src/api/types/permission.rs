@@ -4,6 +4,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Permission {
+    ActivityRead,
     AnalyticsRead,
     ApiKeyCreate,
     ApiKeyRead,
@@ -25,6 +26,8 @@ pub enum Permission {
     MemberDelete,
     OrganizationUpdate,
     OrganizationDelete,
+    PartnerRead,
+    PartnerManage,
     PostRead,
     PostCreate,
     PostUpdate,
@@ -42,6 +45,7 @@ pub enum Permission {
 impl Serialize for Permission {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self {
+            Self::ActivityRead => serializer.serialize_str("activity:read"),
             Self::AnalyticsRead => serializer.serialize_str("analytics:read"),
             Self::ApiKeyCreate => serializer.serialize_str("apiKey:create"),
             Self::ApiKeyRead => serializer.serialize_str("apiKey:read"),
@@ -63,6 +67,8 @@ impl Serialize for Permission {
             Self::MemberDelete => serializer.serialize_str("member:delete"),
             Self::OrganizationUpdate => serializer.serialize_str("organization:update"),
             Self::OrganizationDelete => serializer.serialize_str("organization:delete"),
+            Self::PartnerRead => serializer.serialize_str("partner:read"),
+            Self::PartnerManage => serializer.serialize_str("partner:manage"),
             Self::PostRead => serializer.serialize_str("post:read"),
             Self::PostCreate => serializer.serialize_str("post:create"),
             Self::PostUpdate => serializer.serialize_str("post:update"),
@@ -81,6 +87,7 @@ impl<'de> Deserialize<'de> for Permission {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let value = String::deserialize(deserializer)?;
         match value.as_str() {
+            "activity:read" => Ok(Self::ActivityRead),
             "analytics:read" => Ok(Self::AnalyticsRead),
             "apiKey:create" => Ok(Self::ApiKeyCreate),
             "apiKey:read" => Ok(Self::ApiKeyRead),
@@ -102,6 +109,8 @@ impl<'de> Deserialize<'de> for Permission {
             "member:delete" => Ok(Self::MemberDelete),
             "organization:update" => Ok(Self::OrganizationUpdate),
             "organization:delete" => Ok(Self::OrganizationDelete),
+            "partner:read" => Ok(Self::PartnerRead),
+            "partner:manage" => Ok(Self::PartnerManage),
             "post:read" => Ok(Self::PostRead),
             "post:create" => Ok(Self::PostCreate),
             "post:update" => Ok(Self::PostUpdate),
@@ -119,6 +128,7 @@ impl<'de> Deserialize<'de> for Permission {
 impl fmt::Display for Permission {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::ActivityRead => write!(f, "activity:read"),
             Self::AnalyticsRead => write!(f, "analytics:read"),
             Self::ApiKeyCreate => write!(f, "apiKey:create"),
             Self::ApiKeyRead => write!(f, "apiKey:read"),
@@ -140,6 +150,8 @@ impl fmt::Display for Permission {
             Self::MemberDelete => write!(f, "member:delete"),
             Self::OrganizationUpdate => write!(f, "organization:update"),
             Self::OrganizationDelete => write!(f, "organization:delete"),
+            Self::PartnerRead => write!(f, "partner:read"),
+            Self::PartnerManage => write!(f, "partner:manage"),
             Self::PostRead => write!(f, "post:read"),
             Self::PostCreate => write!(f, "post:create"),
             Self::PostUpdate => write!(f, "post:update"),

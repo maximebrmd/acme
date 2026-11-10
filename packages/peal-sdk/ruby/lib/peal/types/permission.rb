@@ -7,6 +7,7 @@ module Peal
     module Permission
       extend Peal::Internal::Types::Enum
 
+      ACTIVITY_READ = "activity:read"
       ANALYTICS_READ = "analytics:read"
       API_KEY_CREATE = "apiKey:create"
       API_KEY_READ = "apiKey:read"
@@ -28,6 +29,8 @@ module Peal
       MEMBER_DELETE = "member:delete"
       ORGANIZATION_UPDATE = "organization:update"
       ORGANIZATION_DELETE = "organization:delete"
+      PARTNER_READ = "partner:read"
+      PARTNER_MANAGE = "partner:manage"
       POST_READ = "post:read"
       POST_CREATE = "post:create"
       POST_UPDATE = "post:update"

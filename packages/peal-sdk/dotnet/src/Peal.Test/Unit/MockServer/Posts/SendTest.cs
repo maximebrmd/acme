@@ -164,6 +164,7 @@ public class SendTest : BaseMockServerTest
             new NewPost
             {
                 WorkspaceId = "workspaceId",
+                AllowDuplicate = null,
                 ChannelIds = new List<string>() { "channelIds", "channelIds" },
                 Content = new PostContent
                 {

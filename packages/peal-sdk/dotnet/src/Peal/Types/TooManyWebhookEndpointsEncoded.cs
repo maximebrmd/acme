@@ -14,6 +14,15 @@ public record TooManyWebhookEndpointsEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required TooManyWebhookEndpointsEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
     [JsonPropertyName("allowed")]
     public required int Allowed { get; set; }
 

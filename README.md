@@ -343,6 +343,7 @@ names itself among the job runners with `HOSTNAME`.
 bun nx run peal-cli:run -- health   # from source, against http://localhost:3000
 bun nx run peal-cli:run -- login    # sign in: approve the code at http://localhost:3001/device
 bun nx run peal-cli:run -- whoami   # who you are signed in as, and your workspaces
+bun nx run peal-cli:run -- doctor   # what a run would use: server, credential, workspace
 bun nx run peal-cli:run -- mcp      # how to connect an MCP client
 bun nx run peal-cli:run -- drafts list --workspace <slug>   # or set PEAL_WORKSPACE
 bun nx run peal-cli:run -- account export                   # your data, in a file only you may read
@@ -356,9 +357,11 @@ with 0 when the API answers, and with 1 when it is unreachable (5-second
 timeout) or answers with an error. `peal login` saves the sign-in in
 `credentials.json`, which only you may read, in `PEAL_CONFIG_DIR`, else
 `$XDG_CONFIG_HOME/peal`, `%APPDATA%\peal` or `~/.config/peal`. `peal --help`
-lists the commands that act in a workspace (`channels`, `drafts`, `posts`,
-`analytics`, `billing`, `members`, `invitations`) and on your account
-(`account`).
+lists the commands that act in a workspace (`channels`, `drafts`, `post`,
+`posts`, `media`, `analytics`, `billing`, `activity`, `members`,
+`invitations`, `webhooks`) and on your account (`account`). For a run nobody
+attends, set `PEAL_API_KEY` to a workspace API key and name the workspace by
+its id; `--json` prints answers, and failures, as JSON.
 
 ### MCP clients
 
@@ -631,6 +634,7 @@ licences:
 | Everything, unless a folder below has a `LICENSE` of its own | [FSL-1.1-ALv2](LICENSE.md): any use but a competing service, and Apache-2.0 two years after each release |
 | [`peal-contract`](packages/peal-contract), the API contract  | [Apache-2.0](packages/peal-contract/LICENSE)                                                             |
 | [`peal-sdk`](packages/peal-sdk), the SDKs                    | [Apache-2.0](packages/peal-sdk/LICENSE)                                                                  |
+| [`skills/peal`](skills/peal), the agent skill                | [Apache-2.0](skills/peal/LICENSE)                                                                        |
 
 The SDKs are generated from the contract's OpenAPI document, so the contract
 is Apache-2.0 with them: what an SDK user installs, and the API description

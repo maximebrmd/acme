@@ -71,8 +71,11 @@ several:
   server's architecture, the HTTP API and its middlewares, the cluster, the
   database, and the list of the contexts' guides.
 - [`packages/peal-web/AGENTS.md`](packages/peal-web/AGENTS.md): the web front.
+- [`packages/peal-contract/AGENTS.md`](packages/peal-contract/AGENTS.md):
+  the API contract, and how it may change.
 - [`packages/peal-cli/AGENTS.md`](packages/peal-cli/AGENTS.md): the command
   line.
+- [`skills/AGENTS.md`](skills/AGENTS.md): the agent skill.
 - [`packages/peal-sdk/AGENTS.md`](packages/peal-sdk/AGENTS.md): the SDKs.
 - [`packages/peal-e2e/AGENTS.md`](packages/peal-e2e/AGENTS.md): the end-to-end
   tests.
@@ -87,7 +90,9 @@ several:
   in the [CI workflow](.github/workflows/ci.yml). Install with
   `bun install --frozen-lockfile`.
 - For code changes, run `bun run check`, `bun run typecheck`, `bun run test`
-  and `bun run build`, as CI does. Fix lint findings without inline
+  and `bun run build`, as CI does. `bun run test` also checks the API
+  against the last released one (`nx run peal-sdk:test`: `bun test` on
+  `packages/peal-sdk/scripts`, then `scripts/compat.ts`). Fix lint findings without inline
   suppressions; `bun run fix` applies what it can. `bun run test` needs the
   development stack's Postgres, Mailpit and SeaweedFS (see
   [Development stack](#development-stack)). It does not run the end-to-end
@@ -192,6 +197,10 @@ self-hoster needs only Postgres and an S3-compatible store:
 - AI: an Anthropic key, or any OpenAI-compatible endpoint that serves
   `/chat/completions`; the writing assistant is off until `PEAL_AI_PROVIDER`
   is set;
+- rate limit: `PEAL_API_REQUESTS_PER_MINUTE` per key and per application
+  (600), on Postgres;
+- documentation links: `PEAL_DOCS_URL`, unset by default, for the links the
+  discovery documents give;
 - telemetry: OTLP export of logs, metrics and traces only when
   `OTEL_EXPORTER_OTLP_ENDPOINT` is set (`src/app/observability.ts` defaults
   each `OTEL_<SIGNAL>_EXPORTER` to `otlp`; set one to `none` to turn that
@@ -282,6 +291,10 @@ The servers' other rules are in
 - Everything committed is published: synthetic data only in tests and
   fixtures; no secrets, tokens or customer content in source, logs or test
   artifacts.
+- A synthetic credential in a test never has the shape of a real one:
+  write `sk_test_synthetic_…`, not a prefix followed by as many letters and
+  digits as a real key has. GitHub's push protection reads every commit
+  pushed, and refuses a branch for one such value, corrected later or not.
 - Never name a competitor or another product in this field, in code,
   comments, docs, commits, pull requests or issues. Describe the behaviour
   instead.

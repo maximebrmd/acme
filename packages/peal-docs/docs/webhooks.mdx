@@ -2,7 +2,7 @@
 title: Webhooks
 description: Have Peal tell your own server what happens in a workspace, without polling. Endpoints and their signing secret, every event with its schema and an example, how deliveries are signed, retried and logged, and how to verify them.
 sidebar:
-  order: 12
+  order: 14
 ---
 
 A webhook is a request Peal sends to an address of yours when something happens in a workspace: a post went out or failed, a channel must be reconnected, a file is ready. A product that publishes through the [API](/api-overview), or an automation, learns it at once, without asking again and again.
@@ -30,6 +30,7 @@ An endpoint is an address, the events it wants, a description, and whether it is
 - **The events** are the [event types](#events) the endpoint subscribes to, one at least. It is sent those, and nothing else.
 - **The description**, up to 200 characters, says what the endpoint is for.
 - **On or off.** While an endpoint is off, Peal sends it nothing, its deliveries still waiting fail, and what happens meanwhile is not kept for it: turning it back on does not replay it.
+- **The scope**, over the API: `workspace`, the default, hears this workspace; `partner`, on the home workspace of a [partner account](/embedding#webhooks) only, hears every workspace the account owns too. Elsewhere `partner` answers 404 `PartnerNotFound`. It is set when the endpoint is created, and stays.
 
 ## The signing secret [#secret]
 
@@ -59,13 +60,14 @@ webhook-signature: v1,Mfm1tWLUX4U95AK/DHjduW4e8bHrj/HztAOACn91BF4=
 
 The body is a JSON object:
 
-| Field       | Type    | What it holds                                                                  |
-| ----------- | ------- | ------------------------------------------------------------------------------ |
-| `id`        | string  | The event's id, as in `webhook-id`                                             |
-| `type`      | string  | What happened, such as `post.published`. It tells what `data` holds.           |
-| `version`   | integer | The version of `data`: 1                                                       |
-| `timestamp` | string  | When it happened, as an ISO 8601 instant in UTC. Not when the request is sent. |
-| `data`      | object  | The event's own fields, [below](#events)                                       |
+| Field                 | Type           | What it holds                                                                                                                                                   |
+| --------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | string         | The event's id, as in `webhook-id`                                                                                                                              |
+| `type`                | string         | What happened, such as `post.published`. It tells what `data` holds.                                                                                            |
+| `version`             | integer        | The version of `data`: 1                                                                                                                                        |
+| `timestamp`           | string         | When it happened, as an ISO 8601 instant in UTC. Not when the request is sent.                                                                                  |
+| `workspaceExternalId` | string or null | For a workspace a partner account owns, the partner's own id for it, as it was when this happened; null when the partner gave none, and for any other workspace |
+| `data`                | object         | The event's own fields, [below](#events)                                                                                                                        |
 
 The order of the fields in the body is not part of the contract.
 
@@ -128,6 +130,7 @@ A post was scheduled, or moved to another time. A post that waits for an [approv
   "type": "post.scheduled",
   "version": 1,
   "timestamp": "2026-11-09T16:42:10.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -164,6 +167,7 @@ A scheduled post, or one that waited for an approval, was taken back to draft: i
   "type": "post.unscheduled",
   "version": 1,
   "timestamp": "2026-11-09T17:05:44.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01"
@@ -192,6 +196,7 @@ The post went live on the channel.
   "type": "post.published",
   "version": 1,
   "timestamp": "2026-11-10T09:00:03.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -245,6 +250,7 @@ The post did not go out on the channel.
   "type": "post.failed",
   "version": 1,
   "timestamp": "2026-11-10T09:00:04.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -286,6 +292,7 @@ Peal cannot tell whether the post went live on the channel, and never sends it a
   "type": "post.unconfirmed",
   "version": 1,
   "timestamp": "2026-11-10T09:00:21.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -316,6 +323,7 @@ The post was cancelled. `targets` are the channels it will not go out on; a chan
   "type": "post.cancelled",
   "version": 1,
   "timestamp": "2026-11-09T18:30:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -356,6 +364,7 @@ What follows tells what became of it, one of:
   "type": "post.approval_requested",
   "version": 1,
   "timestamp": "2026-11-09T16:40:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -381,6 +390,7 @@ The post was approved. Approved in time, it is scheduled, and a `post.scheduled`
   "type": "post.approved",
   "version": 1,
   "timestamp": "2026-11-09T17:00:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -406,6 +416,7 @@ Changes were asked for on a post that waited: it is a draft again. What was aske
   "type": "post.changes_requested",
   "version": 1,
   "timestamp": "2026-11-09T17:00:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -431,6 +442,7 @@ An account was connected to the workspace, or a channel the workspace had was au
   "type": "channel.connected",
   "version": 1,
   "timestamp": "2026-11-08T10:15:30.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
@@ -456,6 +468,7 @@ A channel was disconnected from the workspace.
   "type": "channel.disconnected",
   "version": 1,
   "timestamp": "2026-11-12T14:02:09.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
@@ -480,6 +493,7 @@ The channel's authorization stopped working: nothing is posted there until someo
   "type": "channel.reconnect_needed",
   "version": 1,
   "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
@@ -504,6 +518,7 @@ Peal [read the file](/media#library) once it was stored, and it can go in posts.
   "type": "media.ready",
   "version": 1,
   "timestamp": "2026-11-09T16:30:55.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
@@ -539,6 +554,7 @@ The file was refused, or Peal could not read it. A file that could not be read s
   "type": "media.failed",
   "version": 1,
   "timestamp": "2026-11-09T16:31:20.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
@@ -562,6 +578,7 @@ Someone asked for a test event on the endpoint. It is sent to that endpoint alon
   "type": "webhook.test",
   "version": 1,
   "timestamp": "2026-11-10T08:12:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "endpointId": "019a6e00-77aa-7f12-b0c4-1a2b3c4d5e6f"
@@ -825,6 +842,8 @@ curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
 ```
 
 The answer holds the `endpoint` and its `secret`. Later answers never hold the secret again.
+
+Errors come in the API's format, each with a `code` in snake case beside its name, such as `webhook_url_refused` for `WebhookUrlRefused` ([Errors](/api-conventions#errors)). An API key's requests count towards its [rate limit](/api-conventions#rate-limits).
 
 | Status | Error                     | When                                                                          |
 | ------ | ------------------------- | ----------------------------------------------------------------------------- |

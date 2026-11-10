@@ -29,6 +29,10 @@ import social.peal.types.PostTiming;
 public final class NewPost {
     private final Optional<String> idempotencyKey;
 
+    private final Optional<String> wait;
+
+    private final Optional<Boolean> allowDuplicate;
+
     private final List<String> channelIds;
 
     private final PostContent content;
@@ -41,12 +45,16 @@ public final class NewPost {
 
     private NewPost(
             Optional<String> idempotencyKey,
+            Optional<String> wait,
+            Optional<Boolean> allowDuplicate,
             List<String> channelIds,
             PostContent content,
             Optional<List<ChannelOptions>> options,
             PostTiming when,
             Map<String, Object> additionalProperties) {
         this.idempotencyKey = idempotencyKey;
+        this.wait = wait;
+        this.allowDuplicate = allowDuplicate;
         this.channelIds = channelIds;
         this.content = content;
         this.options = options;
@@ -57,6 +65,16 @@ public final class NewPost {
     @JsonIgnore
     public Optional<String> getIdempotencyKey() {
         return idempotencyKey;
+    }
+
+    @JsonIgnore
+    public Optional<String> getWait() {
+        return wait;
+    }
+
+    @JsonProperty("allowDuplicate")
+    public Optional<Boolean> getAllowDuplicate() {
+        return allowDuplicate;
     }
 
     @JsonProperty("channelIds")
@@ -92,6 +110,8 @@ public final class NewPost {
 
     private boolean equalTo(NewPost other) {
         return idempotencyKey.equals(other.idempotencyKey)
+                && wait.equals(other.wait)
+                && allowDuplicate.equals(other.allowDuplicate)
                 && channelIds.equals(other.channelIds)
                 && content.equals(other.content)
                 && options.equals(other.options)
@@ -100,7 +120,14 @@ public final class NewPost {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.idempotencyKey, this.channelIds, this.content, this.options, this.when);
+        return Objects.hash(
+                this.idempotencyKey,
+                this.wait,
+                this.allowDuplicate,
+                this.channelIds,
+                this.content,
+                this.options,
+                this.when);
     }
 
     @java.lang.Override
@@ -133,6 +160,14 @@ public final class NewPost {
 
         _FinalStage idempotencyKey(String idempotencyKey);
 
+        _FinalStage wait(Optional<String> wait);
+
+        _FinalStage wait(String wait);
+
+        _FinalStage allowDuplicate(Optional<Boolean> allowDuplicate);
+
+        _FinalStage allowDuplicate(Boolean allowDuplicate);
+
         _FinalStage channelIds(List<String> channelIds);
 
         _FinalStage addChannelIds(String channelIds);
@@ -154,6 +189,10 @@ public final class NewPost {
 
         private List<String> channelIds = new ArrayList<>();
 
+        private Optional<Boolean> allowDuplicate = Optional.empty();
+
+        private Optional<String> wait = Optional.empty();
+
         private Optional<String> idempotencyKey = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -163,6 +202,8 @@ public final class NewPost {
         @java.lang.Override
         public Builder from(NewPost other) {
             idempotencyKey(other.getIdempotencyKey());
+            wait(other.getWait());
+            allowDuplicate(other.getAllowDuplicate());
             channelIds(other.getChannelIds());
             content(other.getContent());
             options(other.getOptions());
@@ -222,6 +263,32 @@ public final class NewPost {
         }
 
         @java.lang.Override
+        public _FinalStage allowDuplicate(Boolean allowDuplicate) {
+            this.allowDuplicate = Optional.ofNullable(allowDuplicate);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "allowDuplicate", nulls = Nulls.SKIP)
+        public _FinalStage allowDuplicate(Optional<Boolean> allowDuplicate) {
+            this.allowDuplicate = allowDuplicate;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage wait(String wait) {
+            this.wait = Optional.ofNullable(wait);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "wait", nulls = Nulls.SKIP)
+        public _FinalStage wait(Optional<String> wait) {
+            this.wait = wait;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage idempotencyKey(String idempotencyKey) {
             this.idempotencyKey = Optional.ofNullable(idempotencyKey);
             return this;
@@ -235,12 +302,14 @@ public final class NewPost {
 
         @java.lang.Override
         public NewPost build() {
-            return new NewPost(idempotencyKey, channelIds, content, options, when, additionalProperties);
+            return new NewPost(
+                    idempotencyKey, wait, allowDuplicate, channelIds, content, options, when, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("channelIds")
+            if (key.equalsIgnoreCase("allowDuplicate")
+                    || key.equalsIgnoreCase("channelIds")
                     || key.equalsIgnoreCase("content")
                     || key.equalsIgnoreCase("options")
                     || key.equalsIgnoreCase("when")) {

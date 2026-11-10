@@ -9,6 +9,11 @@ from ..core.serialization import FieldMetadata
 
 
 class UnknownMediaEncoded(UniversalBaseModel):
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     media_ids: typing_extensions.Annotated[
         typing.List[str], FieldMetadata(alias="mediaIds"), pydantic.Field(alias="mediaIds")
     ]

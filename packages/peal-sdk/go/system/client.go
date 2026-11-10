@@ -5,6 +5,7 @@ package system
 import (
 	context "context"
 
+	peal "github.com/peal-social/peal/packages/peal-sdk/go"
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
 	internal "github.com/peal-social/peal/packages/peal-sdk/go/internal"
 	option "github.com/peal-social/peal/packages/peal-sdk/go/option"
@@ -73,4 +74,25 @@ func (c *Client) Ready(
 		return err
 	}
 	return nil
+}
+
+// Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+//
+// Example:
+//
+//	_, err := client.System.Changelog(
+//	    context.TODO(),
+//	)
+func (c *Client) Changelog(
+	ctx context.Context,
+	opts ...option.RequestOption,
+) (*peal.APIChangelog, error) {
+	response, err := c.WithRawResponse.Changelog(
+		ctx,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
 }

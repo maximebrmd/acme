@@ -33,6 +33,10 @@ export const StaffActionSchema = Schema.Literals([
   "applyContractRequest",
   // Closed such a request without applying it.
   "closeContractRequest",
+  // Opened a partner account for a workspace (`workspace` context): the
+  // event's workspace is the account's home workspace, and it names no
+  // account of a person.
+  "grantPartner",
 ]);
 
 export type StaffAction = typeof StaffActionSchema.Type;

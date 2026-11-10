@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 import social.peal.core.ClientOptions;
 import social.peal.core.PealClientHttpResponse;
 import social.peal.core.RequestOptions;
+import social.peal.types.ApiChangelog;
 
 public class AsyncSystemClient {
     protected final ClientOptions clientOptions;
@@ -73,6 +74,34 @@ public class AsyncSystemClient {
     public CompletableFuture<Void> ready(RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<Void>> rawFuture = this.rawClient.ready(requestOptions);
         CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+     */
+    public CompletableFuture<ApiChangelog> changelog() {
+        CompletableFuture<PealClientHttpResponse<ApiChangelog>> rawFuture = this.rawClient.changelog();
+        CompletableFuture<ApiChangelog> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+     */
+    public CompletableFuture<ApiChangelog> changelog(RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<ApiChangelog>> rawFuture = this.rawClient.changelog(requestOptions);
+        CompletableFuture<ApiChangelog> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);

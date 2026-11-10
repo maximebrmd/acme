@@ -27,8 +27,8 @@ public class MeTest : BaseMockServerTest
                   "id": "id",
                   "name": "name",
                   "permissions": [
-                    "analytics:read",
-                    "analytics:read"
+                    "activity:read",
+                    "activity:read"
                   ],
                   "role": "role",
                   "slug": "slug"
@@ -37,8 +37,8 @@ public class MeTest : BaseMockServerTest
                   "id": "id",
                   "name": "name",
                   "permissions": [
-                    "analytics:read",
-                    "analytics:read"
+                    "activity:read",
+                    "activity:read"
                   ],
                   "role": "role",
                   "slug": "slug"
@@ -79,7 +79,7 @@ public class MeTest : BaseMockServerTest
                   "id": "id",
                   "name": "name",
                   "permissions": [
-                    "analytics:read"
+                    "activity:read"
                   ],
                   "role": "role",
                   "slug": "slug"

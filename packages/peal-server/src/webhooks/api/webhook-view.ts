@@ -24,6 +24,7 @@ export const toEndpointView = (
     failingSince: Option.getOrNull(endpoint.failingSince),
     id: endpoint.id,
     previousSecretExpiresAt: Option.getOrNull(endpoint.previousSecretExpiresAt),
+    scope: endpoint.scope,
     updatedAt: endpoint.updatedAt,
     url: endpoint.url,
   };

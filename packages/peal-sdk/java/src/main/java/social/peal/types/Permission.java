@@ -13,6 +13,8 @@ public final class Permission {
 
     public static final Permission POST_PUBLISH = new Permission(Value.POST_PUBLISH, "post:publish");
 
+    public static final Permission ACTIVITY_READ = new Permission(Value.ACTIVITY_READ, "activity:read");
+
     public static final Permission POST_CREATE = new Permission(Value.POST_CREATE, "post:create");
 
     public static final Permission API_KEY_DELETE = new Permission(Value.API_KEY_DELETE, "apiKey:delete");
@@ -52,7 +54,11 @@ public final class Permission {
 
     public static final Permission API_KEY_UPDATE = new Permission(Value.API_KEY_UPDATE, "apiKey:update");
 
+    public static final Permission PARTNER_MANAGE = new Permission(Value.PARTNER_MANAGE, "partner:manage");
+
     public static final Permission POST_APPROVE = new Permission(Value.POST_APPROVE, "post:approve");
+
+    public static final Permission PARTNER_READ = new Permission(Value.PARTNER_READ, "partner:read");
 
     public static final Permission ASSISTANT_USE = new Permission(Value.ASSISTANT_USE, "assistant:use");
 
@@ -106,6 +112,8 @@ public final class Permission {
                 return visitor.visitBillingRead();
             case POST_PUBLISH:
                 return visitor.visitPostPublish();
+            case ACTIVITY_READ:
+                return visitor.visitActivityRead();
             case POST_CREATE:
                 return visitor.visitPostCreate();
             case API_KEY_DELETE:
@@ -144,8 +152,12 @@ public final class Permission {
                 return visitor.visitPostUpdate();
             case API_KEY_UPDATE:
                 return visitor.visitApiKeyUpdate();
+            case PARTNER_MANAGE:
+                return visitor.visitPartnerManage();
             case POST_APPROVE:
                 return visitor.visitPostApprove();
+            case PARTNER_READ:
+                return visitor.visitPartnerRead();
             case ASSISTANT_USE:
                 return visitor.visitAssistantUse();
             case MEDIA_UPLOAD:
@@ -175,6 +187,8 @@ public final class Permission {
                 return BILLING_READ;
             case "post:publish":
                 return POST_PUBLISH;
+            case "activity:read":
+                return ACTIVITY_READ;
             case "post:create":
                 return POST_CREATE;
             case "apiKey:delete":
@@ -213,8 +227,12 @@ public final class Permission {
                 return POST_UPDATE;
             case "apiKey:update":
                 return API_KEY_UPDATE;
+            case "partner:manage":
+                return PARTNER_MANAGE;
             case "post:approve":
                 return POST_APPROVE;
+            case "partner:read":
+                return PARTNER_READ;
             case "assistant:use":
                 return ASSISTANT_USE;
             case "media:upload":
@@ -235,6 +253,8 @@ public final class Permission {
     }
 
     public enum Value {
+        ACTIVITY_READ,
+
         ANALYTICS_READ,
 
         API_KEY_CREATE,
@@ -277,6 +297,10 @@ public final class Permission {
 
         ORGANIZATION_DELETE,
 
+        PARTNER_READ,
+
+        PARTNER_MANAGE,
+
         POST_READ,
 
         POST_CREATE,
@@ -299,6 +323,8 @@ public final class Permission {
     }
 
     public interface Visitor<T> {
+        T visitActivityRead();
+
         T visitAnalyticsRead();
 
         T visitApiKeyCreate();
@@ -340,6 +366,10 @@ public final class Permission {
         T visitOrganizationUpdate();
 
         T visitOrganizationDelete();
+
+        T visitPartnerRead();
+
+        T visitPartnerManage();
 
         T visitPostRead();
 

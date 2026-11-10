@@ -2,6 +2,7 @@ import { Cron, Duration, Effect, Layer } from "effect";
 import { ClusterCron } from "effect/cluster";
 
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
+import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
 
@@ -50,8 +51,29 @@ export const ReconnectWarningsCron = ClusterCron.make({
   skipIfOlderThan: Duration.hours(12),
 });
 
+/**
+ * Every day at 04:31 UTC: forgets the connect links over for a month. A
+ * failed run is logged and the next day's catches up.
+ */
+export const ConnectLinkRetentionCron = ClusterCron.make({
+  cron: Cron.parseUnsafe("31 4 * * *", "UTC"),
+  execute: PurgeConnectLinks.use((purging) => purging.run).pipe(
+    Effect.tap((links) =>
+      Effect.logInfo("Purged connect links past their retention").pipe(
+        Effect.annotateLogs({ links })
+      )
+    ),
+    Effect.catchCause((cause) =>
+      Effect.logWarning("Purging connect links failed", cause)
+    )
+  ),
+  name: "channels.connect-link-retention",
+  skipIfOlderThan: Duration.hours(12),
+});
+
 /** The channels context's crons. */
 export const ChannelsCronsLive = Layer.mergeAll(
   TokenRefreshCron,
-  ReconnectWarningsCron
+  ReconnectWarningsCron,
+  ConnectLinkRetentionCron
 );

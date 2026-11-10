@@ -6,18 +6,22 @@ package social.peal;
 import java.util.function.Supplier;
 import social.peal.core.ClientOptions;
 import social.peal.core.Suppliers;
+import social.peal.resources.activity.AsyncActivityClient;
 import social.peal.resources.analytics.AsyncAnalyticsClient;
 import social.peal.resources.apikeys.AsyncApiKeysClient;
 import social.peal.resources.assistant.AsyncAssistantClient;
 import social.peal.resources.billing.AsyncBillingClient;
 import social.peal.resources.capabilities.AsyncCapabilitiesClient;
 import social.peal.resources.channels.AsyncChannelsClient;
+import social.peal.resources.connectlinks.AsyncConnectLinksClient;
 import social.peal.resources.invitations.AsyncInvitationsClient;
 import social.peal.resources.lookups.AsyncLookupsClient;
 import social.peal.resources.media.AsyncMediaClient;
 import social.peal.resources.members.AsyncMembersClient;
 import social.peal.resources.notices.AsyncNoticesClient;
 import social.peal.resources.notificationpreferences.AsyncNotificationPreferencesClient;
+import social.peal.resources.partner.AsyncPartnerClient;
+import social.peal.resources.partneraccount.AsyncPartnerAccountClient;
 import social.peal.resources.posts.AsyncPostsClient;
 import social.peal.resources.review.AsyncReviewClient;
 import social.peal.resources.session.AsyncSessionClient;
@@ -62,6 +66,14 @@ public class AsyncPealClient implements AutoCloseable {
 
     protected final Supplier<AsyncWebhooksClient> webhooksClient;
 
+    protected final Supplier<AsyncActivityClient> activityClient;
+
+    protected final Supplier<AsyncPartnerClient> partnerClient;
+
+    protected final Supplier<AsyncPartnerAccountClient> partnerAccountClient;
+
+    protected final Supplier<AsyncConnectLinksClient> connectLinksClient;
+
     protected final Supplier<AsyncReviewClient> reviewClient;
 
     public AsyncPealClient(ClientOptions clientOptions) {
@@ -84,6 +96,10 @@ public class AsyncPealClient implements AutoCloseable {
         this.capabilitiesClient = Suppliers.memoize(() -> new AsyncCapabilitiesClient(clientOptions));
         this.lookupsClient = Suppliers.memoize(() -> new AsyncLookupsClient(clientOptions));
         this.webhooksClient = Suppliers.memoize(() -> new AsyncWebhooksClient(clientOptions));
+        this.activityClient = Suppliers.memoize(() -> new AsyncActivityClient(clientOptions));
+        this.partnerClient = Suppliers.memoize(() -> new AsyncPartnerClient(clientOptions));
+        this.partnerAccountClient = Suppliers.memoize(() -> new AsyncPartnerAccountClient(clientOptions));
+        this.connectLinksClient = Suppliers.memoize(() -> new AsyncConnectLinksClient(clientOptions));
         this.reviewClient = Suppliers.memoize(() -> new AsyncReviewClient(clientOptions));
     }
 
@@ -153,6 +169,22 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncWebhooksClient webhooks() {
         return this.webhooksClient.get();
+    }
+
+    public AsyncActivityClient activity() {
+        return this.activityClient.get();
+    }
+
+    public AsyncPartnerClient partner() {
+        return this.partnerClient.get();
+    }
+
+    public AsyncPartnerAccountClient partnerAccount() {
+        return this.partnerAccountClient.get();
+    }
+
+    public AsyncConnectLinksClient connectLinks() {
+        return this.connectLinksClient.get();
     }
 
     public AsyncReviewClient review() {

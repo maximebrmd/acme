@@ -21,6 +21,8 @@ import type { ErasureLedgerUnavailable } from "./erasure-ledger-unavailable.ts";
 import type { ErasureLedger } from "./erasure-ledger.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
+import { PartnerOwnership } from "./partner-ownership.ts";
+import type { PartnerOwnsWorkspaces } from "./partner-owns-workspaces.ts";
 import { PasswordCheck } from "./password-check.ts";
 import type { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
@@ -71,6 +73,7 @@ export class CloseAccount extends Context.Service<
       | IncorrectPassword
       | LastOwner
       | NotSignedIn
+      | PartnerOwnsWorkspaces
       | SessionRequired
       | TooManyPasswordAttempts
       | ErasureIncomplete
@@ -90,6 +93,7 @@ export class CloseAccount extends Context.Service<
       const records = yield* ContextRecords;
       const passwords = yield* PasswordCheck;
       const mail = yield* AccountMail;
+      const ownership = yield* PartnerOwnership;
       const { transaction } = yield* TransactionRunner;
 
       const close = Effect.fn("CloseAccount.close")(function* close(
@@ -117,6 +121,10 @@ export class CloseAccount extends Context.Service<
         const planned = yield* Effect.fromResult(
           planClosure(yield* store.standings(userId))
         );
+
+        // A partner's home workspace goes only once the partner owns no
+        // workspace.
+        yield* ownership.ensureDeletable(planned.deleted);
 
         // In the ledger first, unconfirmed, with the workspaces it plans
         // to delete: one that cannot be written stops here, before Stripe
@@ -154,6 +162,8 @@ export class CloseAccount extends Context.Service<
                   userId,
                   plan.deleted
                 );
+
+                yield* ownership.ensureDeletable(plan.deleted);
 
                 yield* Effect.forEach(plan.deleted, eraseWorkspace, {
                   discard: true,

@@ -263,3 +263,60 @@ The staff context follows these rules too. What the law has a host keep is in
   entries it cannot decode and counts them (`unreadable`); the replay then
   exits non-zero. Replaying an account's erasure runs `planClosure` on what
   the restore brought back, and refuses with `LastOwner`.
+
+## Partner accounts
+
+- A partner account lets a product use Peal for its own customers
+  ([Embedding Peal](packages/peal-docs/docs/embedding.mdx)). It belongs to
+  one **home workspace**, whose owners and admins manage it (`partner:read`,
+  `partner:manage`, the second withheld while impersonating), and owns one
+  workspace per customer: a Better Auth organization with no member, tied
+  to it in `workspace.partner_workspaces` with the partner's own id for it
+  (`externalId`, unique per partner). The workspace context's own tables are
+  in the Postgres schema `workspace` (`workspace/infrastructure/schema.ts`);
+  Better Auth's stay in `auth`.
+- An account is opened by staff (`StaffPartners.grant`, the `grantPartner`
+  audit action, `POST /api/admin/workspaces/:workspaceId/partner`), or by
+  the workspace's owners and admins when `PEAL_PARTNER_SELF_SERVICE` is
+  true (`PartnerSettings`); otherwise opening answers `PartnerAccountsClosed`.
+  It prices nothing: `MeterPartnerUsage` (the `workspace.partner-usage`
+  cron) keeps each day's workspaces and channels in
+  `workspace.partner_usage_days`, which `GET /api/partner` answers.
+- A partner key is `peal_partner_` and 32 random bytes, kept as its SHA-256
+  (`partner_keys`), created by a person in their own session only
+  (`PersonRequired` otherwise), shown once. It carries scopes
+  (`workspaces:read`, `:write`, `:delete`) for `/api/partner`, and the
+  permissions it holds in each workspace, out of `partnerKeyPermissions`
+  (`workspace/domain/partner-key.ts`): never members, invitations, API keys
+  or billing changes. `Authentication` answers it as a
+  `PartnerKeyPrincipal`; `WorkspaceAccess` lets it into a workspace its
+  partner owns and answers 404 for every other, the home workspace
+  included (`PartnerOwnership.ownerOf`). `/api/me` and the groups for
+  people answer it 403, and `/api/partner` answers 403 to anything else.
+  `test/workspace/integration/partners.test.ts` holds the matrix: add a
+  new workspace group to it.
+- `PartnerWorkspaces` creates, lists (counts, `externalId`, `name`,
+  `before`), changes and offboards. Creation is idempotent twice over:
+  `externalId` taken answers `ExternalIdTaken` with the workspace's id, and
+  an `Idempotency-Key` answers its first workspace for 24 hours
+  (`partner_idempotency_keys`; another body is `IdempotencyKeyReused`).
+  `OffboardWorkspace` erases through the same erasure as `DeleteWorkspace`
+  (`ContextRecords`), never beside it. A home workspace is not deleted, its
+  owner's account not closed and the partner account not closed while it
+  owns a workspace (`PartnerOwnership.ensureDeletable`,
+  `PartnerOwnsWorkspaces`, 409).
+- A workspace a partner owns takes the home workspace's plan (`PlanHolders`,
+  `WorkspaceEntitlements.layerShared`). Channels are counted across the
+  home workspace and every workspace the partner owns, under the partner's
+  advisory lock (`CustomerWorkspaces.hold`, `ChannelAllowance.sharedWith`,
+  `SharedChannelAllowanceLive`); the other limits apply per workspace.
+  Locks are taken in one order, never the other way: a connect link's row
+  (`ConnectLinkStore.lock`), then the workspace's channel additions
+  (`ChannelRepository.addingTo`), then the partner's hold, which
+  `ChannelAllowance.sharedWith` takes inside `addingTo`; scheduling takes
+  the partner's hold inside its own transaction, and holds no channel
+  lock. Creating a customer's workspace and closing the account take the
+  partner's hold alone. Tests that need no
+  partner keep the unshared layers (`WorkspaceEntitlements.layer`,
+  `PlanChannelAllowanceLive`, `PartnerOwnership.layerNone`,
+  `EventOrigins.layerNone`).

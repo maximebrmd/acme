@@ -16,8 +16,8 @@ public class CreateTest : BaseMockServerTest
             {
               "name": "x",
               "permissions": [
-                "analytics:read",
-                "analytics:read"
+                "activity:read",
+                "activity:read"
               ]
             }
             """;
@@ -30,8 +30,8 @@ public class CreateTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "permissions": [
-                  "analytics:read",
-                  "analytics:read"
+                  "activity:read",
+                  "activity:read"
                 ],
                 "start": "start"
               },
@@ -63,8 +63,8 @@ public class CreateTest : BaseMockServerTest
                 Name = "x",
                 Permissions = new List<Permission>()
                 {
-                    Permission.AnalyticsRead,
-                    Permission.AnalyticsRead,
+                    Permission.ActivityRead,
+                    Permission.ActivityRead,
                 },
             }
         );
@@ -78,7 +78,7 @@ public class CreateTest : BaseMockServerTest
             {
               "name": "name",
               "permissions": [
-                "analytics:read"
+                "activity:read"
               ]
             }
             """;
@@ -91,7 +91,7 @@ public class CreateTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "permissions": [
-                  "analytics:read"
+                  "activity:read"
                 ],
                 "start": "start"
               },
@@ -120,7 +120,7 @@ public class CreateTest : BaseMockServerTest
             {
                 WorkspaceId = "workspaceId",
                 Name = "name",
-                Permissions = new List<Permission>() { Permission.AnalyticsRead },
+                Permissions = new List<Permission>() { Permission.ActivityRead },
             }
         );
         JsonAssert.AreEqual(response, mockResponse);

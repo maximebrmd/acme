@@ -161,6 +161,7 @@ export const ComposerErrors = ({
     PostNotFound: () => t("errors.notFound"),
     PostStatusConflict: ({ status }) => t("errors.conflict", { status }),
     ScheduleInPast: () => t("errors.inPast"),
+    TooManyRequests: generic,
     Unauthenticated: generic,
     Unexpected: generic,
     UnknownChannels: () => t("errors.unknownChannels"),

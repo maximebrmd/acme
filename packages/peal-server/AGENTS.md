@@ -17,6 +17,7 @@ change crosses several:
 | `analytics`          | [`src/analytics/AGENTS.md`](src/analytics/AGENTS.md)         |
 | `webhooks`           | [`src/webhooks/AGENTS.md`](src/webhooks/AGENTS.md)           |
 | `review`             | [`src/review/AGENTS.md`](src/review/AGENTS.md)               |
+| `activity`           | [`src/activity/AGENTS.md`](src/activity/AGENTS.md)           |
 | the MCP endpoint     | [`src/app/mcp/AGENTS.md`](src/app/mcp/AGENTS.md)             |
 
 The shared kernel's rules are below.
@@ -32,13 +33,14 @@ them:
 | `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters |
 | `channels`      | connected accounts, connect flows, encrypted tokens and their renewal       |
 | `media`         | uploads, storage, probing, alt text, files handed to platforms              |
-| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth                       |
+| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth, partner accounts     |
 | `notifications` | account emails, in-app notices, their emails, notification preferences      |
 | `assistant`     | the writing assistant: prompts, language models, the daily quota            |
 | `shared`        | the kernel the others build on                                              |
 | `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
 | `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
 | `staff`         | the staff console: what staff read and do, and the audit log of it          |
+| `activity`      | each workspace's activity log, and the requests counted for the rate limit  |
 | `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log   |
 | `legal`         | what French law has a host keep, and the legal requests that read it        |
 | `review`        | approval policies, requests and decisions, review links, comments           |
@@ -107,10 +109,75 @@ and no socket, for tests.
 
 ### HTTP API and middlewares
 
-- Every route the server answers starts with `/api`, apart from `/openapi.json`
-  and the OAuth discovery documents under `/.well-known/oauth-*`. The web app
-  forwards `/api/*` and `/.well-known/oauth-*` unchanged, so Peal has one
-  public origin; `/openapi.json` is reachable on the server only.
+- Every route the server answers starts with `/api`, apart from `/openapi.json`,
+  the OAuth discovery documents under `/.well-known/oauth-*`, the API
+  catalogue `/.well-known/api-catalog` and `/llms.txt`. The web app forwards
+  `/api/*` and those documents unchanged (`servedByApi`, and the matcher of
+  `src/proxy.ts`: add a path to both), so Peal has one public origin;
+  `/openapi.json` is reachable on the server only, and `/api/openapi.json` is
+  the same document for everyone.
+- `ApiAnswersLive` (`src/app/answers.ts`), a global router middleware in
+  `RoutesLive`, shapes every answer, a failure's included (it changes the
+  response a cause would get and fails with the same cause, so logging,
+  counting and tracing stay as they were: `mapFailureResponse`): the request
+  id (`X-Request-Id`: the caller's when it is 8 to 128 of `[\w.:-]`, a UUIDv7
+  otherwise; `peal.request_id` on log lines and the span; `RequestId` from
+  `#shared/api/request-id.ts` for handlers), the headers handlers and
+  middlewares left for it (`setAnswerHeader`, `#shared/api/answer-headers.ts`:
+  an error is encoded after they ran), a deprecated endpoint's headers, and
+  the error envelope.
+- Every error of the API is one envelope: its own fields, then `code`,
+  `message` and `requestId` (`errorEnvelope`, which every contract error
+  spreads first; `enveloped` in `src/app/error-envelope.ts` fills them). A
+  code is the tag in snake case (`errorCodeOf`), `message` the error's own
+  words or its description. An answer without a body gets the general error
+  of its status (`generalErrors`: `not_found`, `internal_error`…, never more
+  than the status says, so the staff console's 404 and a missing route stay
+  alike), and a request the API could not decode `InvalidRequest` with its
+  `issues`. Better Auth's routes and the MCP endpoint keep their own shapes.
+  `errorCatalogue()` (`peal-contract/errors`) reads the list from the
+  contract: `test/app/fixtures/error-codes.json` freezes the published codes
+  (`UPDATE_ERROR_CODES=1` adds new ones; never remove or rename one), and the
+  docs' "API conventions" page lists them all, in both languages, which
+  `test/app/error-catalogue.test.ts` checks.
+- Handlers answer a use case's refusal with `forbidden` from
+  `#shared/api/forbidden.ts` (`MissingPermission: forbidden`,
+  `personRequired()`): it gives `Forbidden` its `reason` and `permission`.
+  `WorkspaceAccess` then tells it to the member (`#workspace/api/refusal.ts`):
+  an OAuth client without the scope gets `missingScope`, the scope and the
+  RFC 6750 `insufficient_scope` challenge; a key or a role, who gives the
+  permission. Never answer a bare `new Forbidden()`.
+- Bearer credentials are rate limited (`RequestLimits`, backed by the
+  activity context's `RequestLimiter`): `PEAL_API_REQUESTS_PER_MINUTE` (600)
+  per API key, and per OAuth client and user (`limitSubjectOf`: a key counts
+  by its id, whatever it belongs to), in fixed one-minute windows, one upsert
+  per request on `activity.request_counts` under the subject's SHA-256, the
+  same count for the API and the MCP endpoint; sessions are not counted. Every
+  such answer carries `RateLimit-Policy` and `RateLimit` (the IETF draft's
+  structured fields); past the limit `Authentication` answers
+  `TooManyRequests` (429, `Retry-After`) as a response, not a failure, which
+  its next security scheme would turn into a 401. A count that cannot be
+  kept lets the request through. Better Auth's own per-key limit stays off.
+- A workspace write (any method but GET, HEAD, OPTIONS) is kept in the
+  workspace's activity log by `WorkspaceAccess`, done, refused or failed
+  (`recorded`, `#workspace/api/activity-recording.ts`, through
+  `ActivityJournal`), and so is each call of an MCP tool that changes
+  something (`recordToolCall`, as `mcp.<tool>`, without a status), by the
+  MCP middleware around the tool (`recordedCalls`, `src/app/mcp/`): only a
+  call that ran is kept, with `tool_refused` when the tool answered an
+  error and `tool_failed` when the call gave no answer, never what a
+  request's body names. Better Auth's routes that change a workspace
+  (`changesWorkspace`: `/organization/*` and `/subscription/*` but those
+  that read) are kept by its after hook (`recordWorkspaceChange`), as
+  `auth:/path`, for requests browsers send: a refusal only for a member,
+  as anyone can name a workspace. Keeping it never changes an answer.
+- The discovery documents (`src/app/discovery/`) need no credentials and are
+  written from `PUBLIC_URL`, `PEAL_DOCS_URL` and the contract: the API
+  catalogue (RFC 9727, a Linkset), `/api/openapi.json`, the MCP server card
+  at `/api/mcp/server-card` (SEP-2127: `application/mcp-server-card+json`,
+  CORS for any origin, an ETag) and `/llms.txt`. Implement a discovery
+  document only where a specification gives its path and format, and read
+  the specification first.
 - `GET /api/health` is liveness: keep it free of the database.
   `GET /api/ready` is readiness: `SELECT 1` within 2 seconds, otherwise
   `DatabaseUnavailable` (503).

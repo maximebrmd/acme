@@ -14,6 +14,15 @@ public record MediaInUseEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required MediaInUseEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
     [JsonPropertyName("postIds")]
     public IEnumerable<string> PostIds { get; set; } = new List<string>();
 

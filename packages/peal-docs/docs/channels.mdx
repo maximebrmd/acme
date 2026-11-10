@@ -105,6 +105,20 @@ A channel keeps the account its location was reached through. If the location mo
 
 The Peal server must be set up for Google Business Profile, with a Google project Google gave access to its Business Profile APIs: on a self-hosted instance, see [Google Business Profile](/self-hosting#google-business). Until then, **Channels** does not offer it.
 
+## Let someone else connect their account [#connect-links]
+
+The account to connect is not always yours: a client's, a colleague's, a customer's. A **connect link** opens a hosted page where its owner signs in on the platform and connects the account to the workspace, without a Peal account and without seeing the workspace.
+
+Members who may connect channels, and API keys with `channel:connect`, create one for a platform with `POST /api/workspaces/{workspaceId}/connect-links`, with [`peal links create`](/cli#links) or with the [MCP](/mcp#tools) tool `create_connect_link`. Its address is shown once; hand it over a channel you trust.
+
+- A link works once, for a week unless you say otherwise (1 hour to 30 days), and can be revoked. Opening it uses nothing up; a sign-in that connects an account does.
+- Whoever holds the address can connect an account of theirs to the workspace while the link waits, and nothing else: it reads no channel and no post.
+- With `channelId`, the link reconnects that channel, and only a sign-in to the same account completes.
+- The page is in English or French, and names the workspace's [partner account](/embedding) when it has one, the workspace otherwise.
+- The link's `status` says where it stands (`pending`, `completed` with the channels it connected, `revoked` or `expired`), and [`channel.connected`](/webhooks#channel-connected) tells your server.
+
+[Embedding Peal](/embedding#connect) tells how a product sends its own customers through such a page and back.
+
 ## Statuses [#statuses]
 
 Each channel shows one of these:

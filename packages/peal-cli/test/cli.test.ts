@@ -114,6 +114,48 @@ describe("the API URL", () => {
     })
   );
 
+  it.effect(
+    "is sent no API key in clear, unless it is this machine or its operator says so",
+    () =>
+      Effect.gen(function* inClear() {
+        const { transport, urls } = recordRequests();
+
+        const run = (args: readonly string[]) =>
+          runWith([
+            "drafts",
+            "list",
+            "--workspace",
+            "5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60",
+            ...args,
+          ]).pipe(
+            Effect.provide(
+              Layer.mergeAll(
+                cliEnvironment({ PEAL_API_KEY: "peal_test_synthetic_key" }),
+                transport
+              )
+            ),
+            Effect.exit
+          );
+
+        yield* run(["--api-url", "http://api.example.test"]);
+
+        assert.deepStrictEqual(urls, []);
+
+        yield* run(["--api-url", "http://api.example.test", "--insecure-http"]);
+        yield* run(["--api-url", "https://api.example.test"]);
+        yield* run(["--api-url", "http://127.0.0.1:4000"]);
+
+        assert.deepStrictEqual(
+          urls.map((url) => new URL(url).origin),
+          [
+            "http://api.example.test",
+            "https://api.example.test",
+            "http://127.0.0.1:4000",
+          ]
+        );
+      })
+  );
+
   it.effect("comes from PEAL_API_URL when no flag is given", () =>
     Effect.gen(function* environmentUrl() {
       const urls = yield* healthUrls(["health"], {

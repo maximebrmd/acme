@@ -1,11 +1,13 @@
-import { Effect, Option } from "effect";
+import { Duration, Effect, Match, Option, Result } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
   CurrentMember,
   defaultDraftPageSize,
-  Forbidden,
+  DuplicatePost,
+  duplicateWindowHours,
   IdempotencyKeyReused,
+  ImportUnreadable,
   InvalidTimeRange,
   PostContentInvalid,
   PostNotFound,
@@ -15,18 +17,35 @@ import {
   UnknownChannels,
   UnknownMedia,
 } from "peal-contract";
+import type {
+  BulkPostResult,
+  ImportRowResult,
+  PostRefusal,
+} from "peal-contract";
 
+import { PostBatches } from "#publishing/application/post-batches.ts";
+import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import type { Confirmation } from "#publishing/application/post-follow-up.ts";
+import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostSearch } from "#publishing/application/post-search.ts";
+import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
+import { readImport } from "#publishing/domain/post-import.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { changesNothing } from "#shared/api/change-mark.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 
+import { keyAt, newPostOf, readPost, sendRead } from "./post-batch.ts";
+import type { ReadPost } from "./post-batch.ts";
+import { checkRequestFrom } from "./post-check-input.ts";
+import { validationOf } from "./post-check-view.ts";
 import {
   channelIdsFrom,
   contentFrom,
@@ -37,11 +56,11 @@ import {
   sendRequestFrom,
   targetIdFrom,
 } from "./post-input.ts";
+import { refusalOfCheck, toldRefusal } from "./post-refusal.ts";
+import { pageView, searchRequestFrom } from "./post-search.ts";
 import { attemptView, postView } from "./post-view.ts";
 
 // How the use cases' failures answer. A database failure is a server error.
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const notFound = () => Effect.fail(new PostNotFound());
 
@@ -62,6 +81,16 @@ const unknownMedia = ({ mediaIds }: { readonly mediaIds: readonly string[] }) =>
 
 const inPast = () => Effect.fail(new ScheduleInPast());
 
+const duplicate = ({ duplicates }: DuplicateContent) =>
+  Effect.fail(
+    new DuplicatePost({
+      duplicates: duplicates.map(({ channelId, postId }) => ({
+        channelId,
+        postId,
+      })),
+    })
+  );
+
 const targetConflict = ({ from }: InvalidTargetTransition) =>
   Effect.fail(new TargetStatusConflict({ status: from }));
 
@@ -77,11 +106,17 @@ export const PostsHandlers = HttpApiBuilder.group(
   Api,
   "posts",
   Effect.fn(function* postsHandlers(handlers) {
+    const batches = yield* PostBatches;
+    const checks = yield* PostChecks;
     const drafts = yield* PostDrafts;
     const followUp = yield* PostFollowUp;
+    const outcomes = yield* PostOutcomes;
     const queries = yield* PostQueries;
     const scheduling = yield* PostScheduling;
+    const searching = yield* PostSearch;
     const limitReached = yield* limitRefusal;
+
+    const toValidation = validationOf(limitReached);
 
     return handlers.handleAll({
       attempts: ({ params }) =>
@@ -98,6 +133,52 @@ export const PostsHandlers = HttpApiBuilder.group(
           );
 
           return made.map(attemptView);
+        }),
+      bulk: ({ headers, payload }) =>
+        Effect.gen(function* bulk() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const read = yield* Effect.all(
+            payload.posts.map(({ idempotencyKey, ...post }, index) =>
+              readPost(
+                post,
+                keyAt(idempotencyKey, headers["idempotency-key"], "bulk", index)
+              )
+            )
+          );
+
+          const answered = yield* sendRead(
+            batches,
+            limitReached,
+            actor,
+            read
+          ).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+            })
+          );
+
+          // A refused item reads as the error `send` would have answered.
+          const items = yield* Effect.all(
+            answered.map((outcome, index) =>
+              toldRefusal<BulkPostResult>(
+                Result.match(outcome, {
+                  onFailure: (refusal) => ({ _tag: "refused", index, refusal }),
+                  onSuccess: (sent) => ({
+                    _tag: "created",
+                    index,
+                    post: postView(sent),
+                    replayed: sent.replayed,
+                  }),
+                })
+              )
+            )
+          );
+
+          const created = items.filter(({ _tag }) => _tag === "created").length;
+
+          return { created, items, refused: items.length - created };
         }),
       cancel: ({ params }) =>
         Effect.gen(function* cancel() {
@@ -215,6 +296,175 @@ export const PostsHandlers = HttpApiBuilder.group(
 
           return postView(found);
         }),
+      import: ({ headers, payload }) =>
+        Effect.gen(function* importPosts() {
+          // A dry run reads and checks: it is no change to keep a record of.
+          if (payload.dryRun === true) {
+            yield* changesNothing;
+          }
+
+          const actor = actorOf(yield* CurrentMember);
+
+          const rows = yield* Effect.fromResult(readImport(payload.csv)).pipe(
+            Effect.mapError(
+              ({ column, problem }) =>
+                new ImportUnreadable({
+                  column: Option.getOrNull(column),
+                  problem,
+                })
+            )
+          );
+
+          // Each row that could be read, as a post to send or the reason it
+          // cannot be; none for a row that could not.
+          const read = yield* Effect.all(
+            rows.map(({ post, row }) =>
+              Result.match(post, {
+                onFailure: () => Effect.succeed(Option.none<ReadPost>()),
+                onSuccess: (written) =>
+                  readPost(
+                    newPostOf(written),
+                    keyAt(
+                      Option.getOrUndefined(written.idempotencyKey),
+                      headers["idempotency-key"],
+                      "import",
+                      row
+                    )
+                  ).pipe(Effect.asSome),
+              })
+            )
+          );
+
+          const sendable = read.flatMap((post) =>
+            Option.isSome(post) && Result.isSuccess(post.value)
+              ? [post.value.success]
+              : []
+          );
+
+          // The rows those are, in the same order.
+          const sendableRows = read.flatMap((post, at) =>
+            Option.isSome(post) && Result.isSuccess(post.value)
+              ? [rows[at]?.row ?? at + 1]
+              : []
+          );
+
+          const failures = {
+            DatabaseError: Effect.die,
+            MissingPermission: forbidden,
+          } as const;
+
+          // The whole file is checked before its first post is made.
+          const checked = yield* batches
+            .check(actor, sendable)
+            .pipe(Effect.catchTags(failures));
+
+          // A row its key already made has nothing to check, and one
+          // whose key came with another row is refused as `send` would.
+          const toRefusal = refusalOfCheck(limitReached);
+
+          const refusals = yield* Effect.all(
+            checked.map((found) =>
+              Match.valueTags(found, {
+                checked: ({ check }) => toRefusal(check),
+                keyReused: () =>
+                  Effect.succeed(
+                    Option.some<PostRefusal>(new IdempotencyKeyReused())
+                  ),
+                made: () => Effect.succeed(Option.none<PostRefusal>()),
+                // What an earlier row of the file says: there is no post
+                // to name yet, so the refusal names the row.
+                repeats: ({ channelIds, earlier }) =>
+                  Effect.succeed(
+                    Option.some<PostRefusal>(
+                      new DuplicatePost({
+                        duplicates: [],
+                        message: `Row ${String(sendableRows[earlier] ?? earlier + 1)} of the file sends the same content to ${channelIds.length === 1 ? "channel" : "channels"} ${channelIds.join(", ")}, less than ${String(duplicateWindowHours)} hours from this row's time: nothing was made. Change one of them, or give this row allow_duplicate true when it is meant.`,
+                      })
+                    )
+                  ),
+              })
+            )
+          );
+
+          const allValid =
+            sendable.length === rows.length && refusals.every(Option.isNone);
+
+          if (payload.dryRun === true || !allValid) {
+            let next = 0;
+
+            const results = rows.map(
+              ({ cellCount, post, row }, at): ImportRowResult => {
+                const decoded = read[at] ?? Option.none();
+
+                if (Result.isFailure(post) || Option.isNone(decoded)) {
+                  return {
+                    _tag: "unreadable",
+                    ...Option.match(cellCount, {
+                      onNone: () => ({}),
+                      onSome: (cells) => ({ cells }),
+                    }),
+                    problems: Result.isFailure(post) ? [...post.failure] : [],
+                    row,
+                  };
+                }
+
+                if (Result.isFailure(decoded.value)) {
+                  return {
+                    _tag: "refused",
+                    refusal: decoded.value.failure,
+                    row,
+                  };
+                }
+
+                const refusal = refusals[next] ?? Option.none();
+
+                next += 1;
+
+                return Option.match(refusal, {
+                  onNone: () => ({ _tag: "valid", row }),
+                  onSome: (found) => ({ _tag: "refused", refusal: found, row }),
+                });
+              }
+            );
+
+            return {
+              created: 0,
+              dryRun: payload.dryRun === true,
+              rows: yield* Effect.all(
+                results.map((result) => toldRefusal(result))
+              ),
+            };
+          }
+
+          const answered = yield* sendRead(
+            batches,
+            limitReached,
+            actor,
+            sendable.map((request) => Result.succeed(request))
+          ).pipe(Effect.catchTags(failures));
+
+          const results = answered.map((outcome, at): ImportRowResult => {
+            const row = rows[at]?.row ?? at + 1;
+
+            return Result.match(outcome, {
+              onFailure: (refusal) => ({ _tag: "refused", refusal, row }),
+              onSuccess: (sent) => ({
+                _tag: "created",
+                post: postView(sent),
+                replayed: sent.replayed,
+                row,
+              }),
+            });
+          });
+
+          return {
+            created: results.filter(({ _tag }) => _tag === "created").length,
+            dryRun: false,
+            rows: yield* Effect.all(
+              results.map((result) => toldRefusal(result))
+            ),
+          };
+        }),
       list: ({ query }) =>
         Effect.gen(function* list() {
           const actor = actorOf(yield* CurrentMember);
@@ -228,6 +478,23 @@ export const PostsHandlers = HttpApiBuilder.group(
           );
 
           return listed.map(postView);
+        }),
+      outcome: ({ params, query }) =>
+        Effect.gen(function* outcome() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+
+          const awaited = yield* outcomes
+            .await(actor, postId, Duration.seconds(query.wait ?? 0))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+                PostNotFound: notFound,
+              })
+            );
+
+          return postView(awaited);
         }),
       repost: ({ params }) =>
         Effect.gen(function* repost() {
@@ -288,7 +555,23 @@ export const PostsHandlers = HttpApiBuilder.group(
 
           return postView(scheduled);
         }),
-      send: ({ headers, payload }) =>
+      search: ({ query }) =>
+        Effect.gen(function* search() {
+          const actor = actorOf(yield* CurrentMember);
+          const request = searchRequestFrom(query);
+
+          const page = yield* searching.search(actor, request).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              InvalidCursor: () => Effect.fail(new HttpApiError.BadRequest()),
+              InvalidTimeRange: () => Effect.fail(new InvalidTimeRange()),
+              MissingPermission: forbidden,
+            })
+          );
+
+          return pageView(page);
+        }),
+      send: ({ headers, payload, query }) =>
         Effect.gen(function* send() {
           const actor = actorOf(yield* CurrentMember);
 
@@ -300,6 +583,7 @@ export const PostsHandlers = HttpApiBuilder.group(
           const sent = yield* scheduling.send(actor, request).pipe(
             Effect.catchTags({
               DatabaseError: Effect.die,
+              DuplicateContent: duplicate,
               IdempotencyKeyReused: () =>
                 Effect.fail(new IdempotencyKeyReused()),
               MissingPermission: forbidden,
@@ -312,7 +596,14 @@ export const PostsHandlers = HttpApiBuilder.group(
             })
           );
 
-          return postView(sent);
+          // Asked to wait, it answers once the post went out, or with what
+          // it has when the time runs out; never an error, now that the
+          // post is made.
+          const awaited = yield* outcomes
+            .afterSending(actor, sent, Duration.seconds(query.wait ?? 0))
+            .pipe(Effect.orDie);
+
+          return postView(awaited);
         }),
       unschedule: ({ params }) =>
         Effect.gen(function* unschedule() {
@@ -353,6 +644,20 @@ export const PostsHandlers = HttpApiBuilder.group(
             );
 
           return postView(updated);
+        }),
+      validate: ({ payload }) =>
+        Effect.gen(function* validate() {
+          const actor = actorOf(yield* CurrentMember);
+          const read = yield* checkRequestFrom(payload);
+
+          const check = yield* checks.check(actor, read.request).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+            })
+          );
+
+          return yield* toValidation(check, read);
         }),
     });
   })

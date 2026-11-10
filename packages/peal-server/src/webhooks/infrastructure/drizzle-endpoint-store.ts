@@ -36,6 +36,7 @@ const toEndpoint = (row: Row) =>
     failingSince: utc(row.failingSince),
     id: row.id,
     previousSecretExpiresAt: utc(row.previousSecretExpiresAt),
+    scope: row.scope,
     status:
       row.status === "disabled"
         ? {
@@ -153,6 +154,7 @@ export const DrizzleEndpointStore = Layer.effect(
             ...settingsOf(endpoint),
             createdAt: date(endpoint.createdAt),
             id: endpoint.id,
+            scope: endpoint.scope,
             secret,
             workspaceId: endpoint.workspaceId,
           })

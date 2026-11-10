@@ -1,7 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Exit, Schema } from "effect";
+import { Duration, Exit, Schema } from "effect";
 import {
   ContentViolationSchema,
+  duplicateWindowHours as contractDuplicateWindowHours,
+  maxOutcomeWaitSeconds as contractMaxOutcomeWaitSeconds,
   googleBusinessLocalTimePattern as contractLocalTimePattern,
   maxGoogleBusinessTitleLength as contractMaxBusinessTitleLength,
   maxYouTubeTagsLength as contractMaxTagsLength,
@@ -15,7 +17,9 @@ import * as contractOptions from "peal-contract";
 import type { ContentViolation as ContractViolation } from "peal-contract";
 import * as ContractText from "peal-contract/post-text";
 
+import { maxOutcomeWait } from "#publishing/application/post-outcomes.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import { duplicateWindow } from "#publishing/domain/duplicate-window.ts";
 import {
   googleBusinessLocalTimePattern,
   maxGoogleBusinessTitleLength,
@@ -483,6 +487,22 @@ const options: readonly unknown[] = [
   { platform: "mastodon" },
   { platform: "youtube", title: "A title", unknownOption: true },
 ];
+
+describe("the contract's longest wait for an outcome", () => {
+  it("is the server's", () => {
+    expect(Duration.seconds(contractMaxOutcomeWaitSeconds)).toStrictEqual(
+      maxOutcomeWait
+    );
+  });
+});
+
+describe("the contract's duplicate window", () => {
+  it("is the server's", () => {
+    expect(Duration.hours(contractDuplicateWindowHours)).toStrictEqual(
+      duplicateWindow
+    );
+  });
+});
 
 describe("the contract's target options", () => {
   it("are the server's, on the same platforms", () => {

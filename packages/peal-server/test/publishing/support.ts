@@ -79,7 +79,10 @@ export const postAllowance = (
     Layer.provide(
       Layer.succeed(
         ChannelUsage,
-        ChannelUsage.of({ connected: () => Effect.succeed(connected) })
+        ChannelUsage.of({
+          connected: () => Effect.succeed(connected),
+          connectedIn: () => Effect.succeed(new Map()),
+        })
       )
     ),
     Layer.provide(

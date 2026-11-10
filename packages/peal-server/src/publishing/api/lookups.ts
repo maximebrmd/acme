@@ -5,7 +5,6 @@ import {
   ChannelCannotPost,
   ChannelNotFound,
   CurrentMember,
-  Forbidden,
   LookupInputInvalid,
   LookupNotFound,
   PlatformRateLimited,
@@ -15,6 +14,7 @@ import {
 import { ChannelLookups } from "#publishing/application/channel-lookups.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import type { RateLimited } from "#shared/domain/rate-limited.ts";
 
 import { lookupDescriptionView } from "./capabilities-view.ts";
@@ -45,7 +45,7 @@ export const LookupsHandlers = HttpApiBuilder.group(
             Effect.catch((error) =>
               Match.valueTags(error, {
                 DatabaseError: Effect.die,
-                MissingPermission: () => Effect.fail(new Forbidden()),
+                MissingPermission: forbidden,
                 UnknownChannels: () => Effect.fail(new ChannelNotFound()),
               })
             )
@@ -71,7 +71,7 @@ export const LookupsHandlers = HttpApiBuilder.group(
                   DatabaseError: Effect.die,
                   LookupInputRejected: () =>
                     Effect.fail(new LookupInputInvalid()),
-                  MissingPermission: () => Effect.fail(new Forbidden()),
+                  MissingPermission: forbidden,
                   PlatformUnavailable: unreachable,
                   RateLimited: (limited) =>
                     Effect.logWarning("A platform rate limited a lookup").pipe(

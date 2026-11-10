@@ -28,7 +28,15 @@ export const actorOf = (member: Member): Actor => {
             ),
             userId: UserIdSchema.make(principal.userId),
           }
-        : { _tag: "apiKey", apiKeyId: principal.apiKeyId },
+        : {
+            _tag: "apiKey",
+            // A partner key acts in a workspace its partner owns as a key
+            // of that workspace would.
+            apiKeyId:
+              principal._tag === "apiKey"
+                ? principal.apiKeyId
+                : principal.partnerKeyId,
+          },
     workspaceId: WorkspaceIdSchema.make(member.workspaceId),
   });
 };

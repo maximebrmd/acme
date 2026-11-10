@@ -2,6 +2,9 @@
 
 export interface AssistantUnavailableEncoded {
     _tag: AssistantUnavailableEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace AssistantUnavailableEncoded {

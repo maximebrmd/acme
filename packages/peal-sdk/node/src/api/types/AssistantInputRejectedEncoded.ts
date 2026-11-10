@@ -2,6 +2,9 @@
 
 export interface AssistantInputRejectedEncoded {
     _tag: AssistantInputRejectedEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     maxLength: number;
     reason: AssistantInputRejectedEncoded.Reason;
 }

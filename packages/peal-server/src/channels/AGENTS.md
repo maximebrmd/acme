@@ -248,3 +248,42 @@
   after where it stopped, then come back to the channels before (in this
   process): channels whose platform hangs never take every run.
   `CollectMetrics` does the same between channels.
+
+## Connect links
+
+- A connect link (`ConnectLinks`, `channels.connect_links`) lets whoever
+  holds its address connect an account of one platform to a workspace
+  (those they pick, when the sign-in reached several, as a member's
+  picker lets them), and nothing else, without a session: `POST …/connect-links`
+  (channel:connect) answers the address once, and only the SHA-256 of its
+  token is kept. It works once, for a sign-in that connects an account;
+  opening it uses nothing. It lasts 7 days unless told (1 to 720 hours),
+  starts 20 sign-ins at most, and a workspace has 100 pending at most; the
+  `channels.connect-link-retention` cron deletes those ended 30 days ago.
+  With `channelId` it reconnects that channel only. Its actor holds
+  `channel:connect` alone (`linkActor`).
+- A `returnUrl` is refused at creation unless its origin is one the
+  workspace's partner registered, exactly (`ReturnOrigin`, which refuses
+  wildcards; `PartnerOwnership.allowsReturnTo`; `ReturnUrlNotAllowed`), so
+  a link is never an open redirect; a workspace without a partner takes
+  none. The page returns with `peal_link` and `peal_status`, which anyone
+  can write: the partner reads the link with its key, and
+  `channel.connected` tells its server.
+- The hosted steps (`HostedConnectApi`, `/api/connect-links`, with
+  `/start`, `/complete` and `/accounts`) need no credentials but the
+  link's token, in the `x-connect-link-token` header. A token never goes
+  in an address: the server logs and traces every path it answers, and
+  the page's address is `connect/link#<token>`, the fragment a browser
+  keeps to itself. `test/app/secrets-in-logs.test.ts` runs the app as
+  production does and searches what it logs and traces for each kind of
+  credential: add a new one there.
+  `ConnectLinkIntake` (`src/app/connect-links/`) counts 120 opens and 60
+  steps an hour per address and asks a trusted `Origin` of every step that
+  is not a GET. `start` binds the platform's state to the link and to a
+  nonce in the `peal_connect_link` cookie (HttpOnly, SameSite=Lax, path
+  `/api/connect-links`, Secure on HTTPS), set on the reply, never declared
+  in the contract: `complete` and `accounts` refuse another browser. Never
+  log a link's token or address.
+- Erasure covers the new tables (`erasure.test.ts`): a workspace's links,
+  its partner row and keys go with it; usage days name no person and go
+  with the partner.

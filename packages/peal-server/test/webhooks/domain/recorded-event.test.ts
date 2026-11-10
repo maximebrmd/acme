@@ -56,6 +56,7 @@ describe(bodyOf, () => {
       timestamp: "2026-11-10T09:00:03.000Z",
       type: "post.published",
       version: 1,
+      workspaceExternalId: null,
     });
     expect(bodyOf(recorded)).toBe(bodyOf(recorded));
   });

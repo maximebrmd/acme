@@ -2,6 +2,9 @@
 
 export interface ChannelCannotPostEncoded {
     _tag: ChannelCannotPostEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     reason: ChannelCannotPostEncoded.Reason;
 }
 

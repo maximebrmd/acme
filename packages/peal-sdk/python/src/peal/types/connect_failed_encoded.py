@@ -12,6 +12,11 @@ from .connect_failure_reason import ConnectFailureReason
 
 class ConnectFailedEncoded(UniversalBaseModel):
     tag: typing_extensions.Annotated[ConnectFailedEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")]
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     reason: ConnectFailureReason
 
     if IS_PYDANTIC_V2:

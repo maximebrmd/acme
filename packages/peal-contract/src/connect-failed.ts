@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * Why connecting an account did not go through, for clients to explain:
  *
@@ -38,7 +40,7 @@ export type ConnectFailureReason = typeof ConnectFailureReasonSchema.Type;
 /** Connecting or reconnecting an account did not go through. */
 export class ConnectFailed extends Schema.TaggedError<ConnectFailed>()(
   "ConnectFailed",
-  { reason: ConnectFailureReasonSchema },
+  { ...errorEnvelope, reason: ConnectFailureReasonSchema },
   {
     description:
       "The account was not connected; `reason` says why. Nothing was saved.",

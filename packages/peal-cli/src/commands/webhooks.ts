@@ -4,6 +4,10 @@ import {
   maxWebhookDeliveryPageSize,
   maxWebhookEndpoints,
   SubscribableWebhookEventTypeSchema,
+  WebhookDeliveryPageSchema,
+  WebhookDeliverySchema,
+  WebhookEndpointSchema,
+  WebhookEndpointSecretSchema,
   webhookFailingDays,
   webhookSecretOverlapHours,
 } from "peal-contract";
@@ -18,6 +22,7 @@ import type {
 } from "peal-contract";
 
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson, printNothing } from "#json.ts";
 import { columns, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
@@ -152,13 +157,19 @@ const deliveryRow = (delivery: WebhookDelivery): string[] => [
 
 const list = Command.make(
   "list",
-  { workspace: workspaceFlag },
-  Effect.fn("webhooks.list")(function* list({ workspace: choice }) {
+  { json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("webhooks.list")(function* list({ json, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const endpoints = yield* client.webhooks
       .list({ params: { workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(Schema.Array(WebhookEndpointSchema), endpoints);
+
+      return;
+    }
 
     if (endpoints.length === 0) {
       yield* Console.log(
@@ -199,6 +210,7 @@ const create = Command.make(
       Flag.withDefault(false)
     ),
     events: eventsFlag,
+    json: jsonFlag,
     url: urlFlag,
     workspace: workspaceFlag,
   },
@@ -206,7 +218,7 @@ const create = Command.make(
     const eventTypes = yield* eventsOf(input.events);
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
 
-    const { endpoint, secret } = yield* client.webhooks
+    const created = yield* client.webhooks
       .create({
         params: { workspaceId: workspace.id },
         payload: {
@@ -220,6 +232,14 @@ const create = Command.make(
         },
       })
       .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(WebhookEndpointSecretSchema, created);
+
+      return;
+    }
+
+    const { endpoint, secret } = created;
 
     yield* Console.log(
       `Created webhook endpoint ${endpoint.id} in ${workspace.name}: Peal sends ${eventsOn(endpoint)} to ${endpoint.url}.`
@@ -244,13 +264,23 @@ const create = Command.make(
 
 const show = Command.make(
   "show",
-  { endpointId: endpointArgument, workspace: workspaceFlag },
-  Effect.fn("webhooks.show")(function* show({ endpointId, workspace: choice }) {
+  { endpointId: endpointArgument, json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("webhooks.show")(function* show({
+    endpointId,
+    json,
+    workspace: choice,
+  }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const endpoint = yield* client.webhooks
       .get({ params: { endpointId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(WebhookEndpointSchema, endpoint);
+
+      return;
+    }
 
     yield* Console.log(`Webhook endpoint ${endpoint.id} of ${workspace.name}:`);
 
@@ -282,6 +312,7 @@ const update = Command.make(
     ),
     endpointId: endpointArgument,
     events: eventsFlag.pipe(Flag.optional),
+    json: jsonFlag,
     url: urlFlag.pipe(Flag.optional),
     workspace: workspaceFlag,
   },
@@ -333,6 +364,12 @@ const update = Command.make(
       })
       .pipe(Effect.mapError(explain(url)));
 
+    if (input.json) {
+      yield* printJson(WebhookEndpointSchema, endpoint);
+
+      return;
+    }
+
     yield* Console.log(
       `Updated webhook endpoint ${endpoint.id} of ${workspace.name}.`
     );
@@ -349,9 +386,10 @@ const update = Command.make(
 
 const remove = Command.make(
   "delete",
-  { endpointId: endpointArgument, workspace: workspaceFlag },
+  { endpointId: endpointArgument, json: jsonFlag, workspace: workspaceFlag },
   Effect.fn("webhooks.delete")(function* remove({
     endpointId,
+    json,
     workspace: choice,
   }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
@@ -360,9 +398,11 @@ const remove = Command.make(
       .delete({ params: { endpointId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
 
-    yield* Console.log(
-      `Deleted webhook endpoint ${endpointId} of ${workspace.name}, with its secret and its delivery log: nothing more is sent to it.`
-    );
+    yield* json
+      ? printNothing
+      : Console.log(
+          `Deleted webhook endpoint ${endpointId} of ${workspace.name}, with its secret and its delivery log: nothing more is sent to it.`
+        );
   })
 ).pipe(
   Command.withDescription(
@@ -372,16 +412,25 @@ const remove = Command.make(
 
 const rotateSecret = Command.make(
   "rotate-secret",
-  { endpointId: endpointArgument, workspace: workspaceFlag },
+  { endpointId: endpointArgument, json: jsonFlag, workspace: workspaceFlag },
   Effect.fn("webhooks.rotateSecret")(function* rotateSecret({
     endpointId,
+    json,
     workspace: choice,
   }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
-    const { endpoint, secret } = yield* client.webhooks
+    const rotated = yield* client.webhooks
       .rotateSecret({ params: { endpointId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(WebhookEndpointSecretSchema, rotated);
+
+      return;
+    }
+
+    const { endpoint, secret } = rotated;
 
     const overlap = `${String(webhookSecretOverlapHours)} hours`;
 
@@ -403,13 +452,23 @@ const rotateSecret = Command.make(
 
 const test = Command.make(
   "test",
-  { endpointId: endpointArgument, workspace: workspaceFlag },
-  Effect.fn("webhooks.test")(function* test({ endpointId, workspace: choice }) {
+  { endpointId: endpointArgument, json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("webhooks.test")(function* test({
+    endpointId,
+    json,
+    workspace: choice,
+  }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const delivery = yield* client.webhooks
       .sendTest({ params: { endpointId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(WebhookDeliverySchema, delivery);
+
+      return;
+    }
 
     yield* Console.log(
       `Sent a ${delivery.eventType} event to endpoint ${endpointId}: delivery ${delivery.id} is ${delivery.status}.`
@@ -433,6 +492,7 @@ const deliveries = Command.make(
       Flag.optional
     ),
     endpointId: endpointArgument,
+    json: jsonFlag,
     limit: Flag.Int("limit").pipe(
       Flag.withDescription(
         `How many deliveries a page holds, at most ${String(maxWebhookDeliveryPageSize)}.`
@@ -444,6 +504,7 @@ const deliveries = Command.make(
   Effect.fn("webhooks.deliveries")(function* deliveries({
     cursor,
     endpointId,
+    json,
     limit,
     workspace: choice,
   }) {
@@ -466,6 +527,12 @@ const deliveries = Command.make(
         },
       })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(WebhookDeliveryPageSchema, page);
+
+      return;
+    }
 
     if (page.items.length === 0) {
       yield* Console.log(`Endpoint ${endpointId} has no deliveries.`);
@@ -497,6 +564,7 @@ const redeliver = Command.make(
   "redeliver",
   {
     endpointId: endpointArgument,
+    json: jsonFlag,
     pastDeliveryId: Argument.String("delivery-id").pipe(
       Argument.withDescription(
         "The delivery, as peal webhooks deliveries shows its id."
@@ -506,6 +574,7 @@ const redeliver = Command.make(
   },
   Effect.fn("webhooks.redeliver")(function* redeliver({
     endpointId,
+    json,
     pastDeliveryId,
     workspace: choice,
   }) {
@@ -520,6 +589,12 @@ const redeliver = Command.make(
         },
       })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(WebhookDeliverySchema, delivery);
+
+      return;
+    }
 
     yield* Console.log(
       `Sending the ${delivery.eventType} event of delivery ${pastDeliveryId} to endpoint ${endpointId} again: delivery ${delivery.id} is ${delivery.status}.`

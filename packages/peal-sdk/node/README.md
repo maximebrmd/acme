@@ -46,7 +46,7 @@ const client = new PealClient({ token: "YOUR_TOKEN" });
 await client.apiKeys.create({
     workspaceId: "workspaceId",
     name: "name",
-    permissions: ["analytics:read"]
+    permissions: ["activity:read"]
 });
 ```
 

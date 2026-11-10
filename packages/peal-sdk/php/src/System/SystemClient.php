@@ -10,6 +10,8 @@ use Peal\Core\Json\JsonApiRequest;
 use Peal\Environments;
 use Peal\Core\Client\HttpMethod;
 use Psr\Http\Client\ClientExceptionInterface;
+use Peal\Types\ApiChangelog;
+use JsonException;
 
 class SystemClient
 {
@@ -127,6 +129,58 @@ class SystemClient
             if ($statusCode >= 200 && $statusCode < 400) {
                 return;
             }
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+     *
+     * Example:
+     * ```php
+     * $client->system->changelog();
+     * ```
+     *
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?ApiChangelog
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function changelog(?array $options = null): ?ApiChangelog
+    {
+        $options = array_merge($this->options, $options ?? []);
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/changelog",
+                    method: HttpMethod::GET,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return ApiChangelog::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
         } catch (ClientExceptionInterface $e) {
             throw new PealException(message: $e->getMessage(), previous: $e);
         }

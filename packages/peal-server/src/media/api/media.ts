@@ -5,7 +5,6 @@ import {
   Api,
   CurrentMember,
   defaultMediaPageSize,
-  Forbidden,
   MediaImportBusy,
   MediaInUse,
   MediaNotFound,
@@ -23,13 +22,12 @@ import { MediaLibrary } from "#media/application/media-library.ts";
 import type { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 
 import { itemView, toView } from "./media-view.ts";
 
 const decodeAssetId = Schema.decodeUnknownOption(MediaAssetIdSchema);
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const notFound = () => Effect.fail(new MediaNotFound());
 

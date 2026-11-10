@@ -24,6 +24,12 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = MediaSourceUnreachableEncoded.Builder.class)
 public final class MediaSourceUnreachableEncoded {
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final MediaSourceFailure reason;
 
     private final Optional<Integer> status;
@@ -31,10 +37,33 @@ public final class MediaSourceUnreachableEncoded {
     private final Map<String, Object> additionalProperties;
 
     private MediaSourceUnreachableEncoded(
-            MediaSourceFailure reason, Optional<Integer> status, Map<String, Object> additionalProperties) {
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            MediaSourceFailure reason,
+            Optional<Integer> status,
+            Map<String, Object> additionalProperties) {
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.reason = reason;
         this.status = status;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("reason")
@@ -68,12 +97,16 @@ public final class MediaSourceUnreachableEncoded {
     }
 
     private boolean equalTo(MediaSourceUnreachableEncoded other) {
-        return reason.equals(other.reason) && status.equals(other.status);
+        return code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && reason.equals(other.reason)
+                && status.equals(other.status);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.reason, this.status);
+        return Objects.hash(this.code, this.message, this.requestId, this.reason, this.status);
     }
 
     @java.lang.Override
@@ -98,6 +131,18 @@ public final class MediaSourceUnreachableEncoded {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
+
         _FinalStage status(Optional<Integer> status);
 
         _FinalStage status(Integer status);
@@ -111,12 +156,21 @@ public final class MediaSourceUnreachableEncoded {
 
         private Optional<Integer> status = Optional.empty();
 
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(MediaSourceUnreachableEncoded other) {
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             reason(other.getReason());
             status(other.getStatus());
             return this;
@@ -155,13 +209,56 @@ public final class MediaSourceUnreachableEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public MediaSourceUnreachableEncoded build() {
-            return new MediaSourceUnreachableEncoded(reason, status, additionalProperties);
+            return new MediaSourceUnreachableEncoded(code, message, requestId, reason, status, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("reason") || key.equalsIgnoreCase("status")) {
+            if (key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("reason")
+                    || key.equalsIgnoreCase("status")) {
                 return;
             }
             this.additionalProperties.put(key, value);

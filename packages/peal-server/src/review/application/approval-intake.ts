@@ -64,6 +64,11 @@ export class ApprovalIntake extends Context.Service<
   {
     readonly maySubmit: (actor: Actor) => Effect.Effect<boolean, DatabaseError>;
     /**
+     * Whether the workspace's policy has a post the actor asks to send
+     * wait for an approval. Nothing is recorded.
+     */
+    readonly holds: (actor: Actor) => Effect.Effect<boolean, DatabaseError>;
+    /**
      * Admits the post, or holds it: the request that waits for it is made,
      * or renewed for what it now says and when it now goes, and those who
      * may approve are told, once per request.
@@ -214,6 +219,10 @@ export class ApprovalIntake extends Context.Service<
         approved: requests.approved,
         consider,
         forgotten: archive.deletePost,
+        holds: (actor) =>
+          policyOf(actor.workspaceId).pipe(
+            Effect.map((policy) => needsApproval(policy, actor))
+          ),
         maySubmit: (actor) =>
           policyOf(actor.workspaceId).pipe(
             Effect.map((policy) => mayActorSubmit(policy, actor))

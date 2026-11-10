@@ -1,0 +1,562 @@
+---
+title: API conventions
+description: What every endpoint of the Peal API has in common, from request ids, authentication, the format of errors and every error code to ids and instants, paging, idempotency, rate limits, versioning, deprecations, the changelog and the discovery documents.
+sidebar:
+  order: 12
+---
+
+Every endpoint of the [API](/api-overview) follows the rules on this page, so a client written for one handles them all. The [API reference](/reference) says what each endpoint takes and answers; this page says what they share.
+
+## Requests and answers [#requests]
+
+Requests go to the address you open Peal at, under `/api`. Bodies are JSON, sent with `Content-Type: application/json`, and so are answers, apart from those with no body (204).
+
+Every answer carries an `X-Request-Id` header, whatever answered it and whether or not it succeeded. Send your own `X-Request-Id` and Peal keeps it, when it is 8 to 128 characters out of letters, digits, `.`, `_`, `:` and `-`; otherwise the server issues one, a UUIDv7. The id is on every line the server logs for the request (`peal.request_id`), in the body of every error (`requestId`) and in the workspace's [activity log](/settings#activity). Log it on your side, and quote it when you ask for help.
+
+```bash
+curl -i https://api.example.com/api/workspaces/$WORKSPACE_ID/channels \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "X-Request-Id: nightly-sync:2026-11-16:0042"
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Request-Id: nightly-sync:2026-11-16:0042
+RateLimit-Policy: "default";q=600;w=60
+RateLimit: "default";r=599;t=42
+```
+
+The API only adds to what it answers ([Versioning](#versioning)): ignore the fields, the values and the errors your client does not know.
+
+## Authentication [#authentication]
+
+Apart from the health checks, the changelog and the [discovery documents](#discovery), every endpoint of the API needs a credential, sent as `Authorization: Bearer …`. The exceptions answer someone who is no member, by other means: the pages of a [connect link](/embedding) or a [review link](/review), which answer the link's token; the platforms' data deletion callbacks, which the platform signs; and what the web app's own pages send before anyone signs in (its error reports, the captcha's site key, the sign-in routes under `/api/auth`). The credentials:
+
+| Credential            | Acts as                                            | Allowed                                                                                                             |
+| --------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| An API key, `peal_…`  | The key itself, in the one workspace it belongs to | The permissions chosen when it was created, such as `post:read` or `post:schedule` ([API keys](/settings#api-keys)) |
+| An OAuth access token | The member who signed the application in           | What the member's role allows, within the scopes they granted ([What each permission allows](/agents#scopes))       |
+
+The web app's session cookie is for the web app. [Authentication](/api-overview#authentication), in the overview, describes each credential.
+
+Each endpoint's reference names the permission it needs. An OAuth token needs the scope that carries it too: `workspace:read` to read, `workspace:write` to change something, and `workspace:publish` for whatever needs `post:schedule`.
+
+| Status | Code              | When                                                                                          |
+| ------ | ----------------- | --------------------------------------------------------------------------------------------- |
+| 401    | `unauthenticated` | No credential, or one that no longer works: a key revoked or expired, a token past its time.  |
+| 403    | `forbidden`       | The credential works but does not allow the request. `reason` says why ([below](#forbidden)). |
+| 404    | `not_found`       | No such resource, or a workspace the caller does not belong to.                               |
+
+## Errors [#errors]
+
+Every error is a JSON object with the same four fields, then the error's own:
+
+| Field       | What it holds                                                                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `code`      | The error's name for programs, in snake case, such as `post_not_found`. It never changes once published: branch on it.                           |
+| `_tag`      | The same name as clients generated from the contract match on it, such as `PostNotFound`. It never changes either.                               |
+| `message`   | One or two sentences in English, for the person reading a log or a terminal. Its wording may change: never parse it.                             |
+| `requestId` | The request's id, as its `X-Request-Id` header gives it.                                                                                         |
+| others      | What the error says of itself, as the reference lists for each: the `status` a post has, the `limit` a plan reached, the `violations` of a post. |
+
+Two families of routes answer differently, as their own clients expect: the sign-in service's routes under `/api/auth`, and the [MCP endpoint](/mcp), which answers JSON-RPC errors. Their answers carry `X-Request-Id` too.
+
+### A request that cannot be read [#invalid-request]
+
+A request that does not match what its endpoint takes answers 400 `invalid_request`, and nothing was done. `issues` lists what was found wrong, 20 problems at most: each has a `path`, which starts with the part of the request (`path`, `query`, `headers` or `body`) and goes down to the value, and a `message`. `field` is the first problem's path, dotted. Reading may stop at the first problem, so fixing what is listed can show another.
+
+```bash
+curl -i "https://api.example.com/api/workspaces/$WORKSPACE_ID/media?limit=500" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+X-Request-Id: 019a7b2e-5c1d-7f3a-9e42-8b6d0c1a2f37
+```
+
+```json
+{
+  "_tag": "InvalidRequest",
+  "code": "invalid_request",
+  "message": "The request does not match what the endpoint takes: `issues` says what and where. Nothing was done.",
+  "requestId": "019a7b2e-5c1d-7f3a-9e42-8b6d0c1a2f37",
+  "field": "query.limit",
+  "issues": [
+    {
+      "path": ["query", "limit"],
+      "message": "Expected a value between 1 and 100"
+    }
+  ]
+}
+```
+
+A value of the right shape that cannot be used where it was sent, such as a cursor taken from another list, answers 400 `bad_request`.
+
+### A request that is not allowed [#forbidden]
+
+A 403 says why in `reason`, names the `permission` the request takes when one is missing, and the `scope` to ask for when an OAuth application lacks it. Its `message` says how to get what is missing.
+
+| `reason`            | Why                                                                                    | What to do                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `missingScope`      | The member may do this, but did not give the application the scope it takes (`scope`). | The member connects the application again and allows it; `peal login` for the command line. |
+| `missingPermission` | The member's role, or the API key, lacks `permission`.                                 | An owner or an admin changes the role, or creates a key that has it.                        |
+| `personRequired`    | Only a person in their own session does this, in the web app.                          | Nothing a key or an application can do.                                                     |
+| `wrongWorkspace`    | The key or the token belongs to another workspace.                                     | Use it there, or use a credential of this workspace.                                        |
+| `suspended`         | The account is suspended.                                                              | Write to the people who run the server.                                                     |
+| `untrustedOrigin`   | A browser sent the session's cookie from another site.                                 | Send an API key or an OAuth token instead.                                                  |
+
+A token that lacks a scope also gets the challenge OAuth clients read, in `WWW-Authenticate`:
+
+```bash
+curl -i -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02/cancel \
+  -H "Authorization: Bearer $PEAL_ACCESS_TOKEN"
+```
+
+```http
+HTTP/1.1 403 Forbidden
+Content-Type: application/json
+WWW-Authenticate: Bearer error="insufficient_scope", scope="workspace:publish"
+X-Request-Id: 019a7b2f-9a04-7b61-8c3d-2e5f7a1b4c68
+```
+
+```json
+{
+  "_tag": "Forbidden",
+  "code": "forbidden",
+  "message": "This application was not given the scope workspace:publish (schedule and publish posts), which this request takes (permission post:schedule). Its user connects it to Peal again and allows it; for Peal's command line, run peal login again and approve it.",
+  "requestId": "019a7b2f-9a04-7b61-8c3d-2e5f7a1b4c68",
+  "reason": "missingScope",
+  "permission": "post:schedule",
+  "scope": "workspace:publish"
+}
+```
+
+### What to do with an error [#handling]
+
+| Answer                   | What it means                                                           | What a client does                                                                                                                                            |
+| ------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400                      | The request is wrong.                                                   | Fix it as `issues` or `message` say. Sending it again unchanged fails again.                                                                                  |
+| 401                      | The credential does not work.                                           | Renew the access token with the refresh token, or use a key that works.                                                                                       |
+| 402 `plan_limit_reached` | The workspace's plan has no room.                                       | Tell the person: `planWithRoom` and `billingUrl` say where to go. Do not retry.                                                                               |
+| 403                      | The credential does not allow it.                                       | Read `reason`. Do not retry until the scope or the permission is given.                                                                                       |
+| 404                      | Nothing there for this caller.                                          | Check the ids and the workspace. Do not retry.                                                                                                                |
+| 409                      | What the request acts on is not in a state that allows it.              | Read it again, then decide: a post already scheduled needs no second request.                                                                                 |
+| 413, 422                 | The content was refused.                                                | Fix it as the error's fields say: `violations`, `channelIds`, `mediaIds`, `reason`.                                                                           |
+| 429 `too_many_requests`  | The credential passed its [rate limit](#rate-limits). Nothing was done. | Wait as `Retry-After` says, then send the request again.                                                                                                      |
+| 429, another code        | A limit of one feature, such as the assistant's daily requests.         | Wait as the error says (`resetsAt`), or a moment for `media_import_busy`.                                                                                     |
+| 500 `internal_error`     | The server failed, and recorded it.                                     | Retry a read. For a write, read what it acts on first: it may have been applied. Resend `posts.send` only with the same `Idempotency-Key`. Quote `requestId`. |
+| 502, 503                 | The server, or a service it needs, cannot answer for now.               | Retry with a growing delay, a few times, under the same `Idempotency-Key` where the endpoint takes one.                                                       |
+
+## Error codes [#error-codes]
+
+Every code the API answers, with the status it comes with. The reference lists, for each endpoint, the errors it declares and their fields. Any endpoint can also answer the general ones: `invalid_request`, `bad_request`, `unauthenticated`, `forbidden`, `not_found`, `method_not_allowed`, `payload_too_large`, `internal_error` and `service_unavailable`. An answer of any other status that carries no error of its own has the code `http_` followed by the status, such as `http_415`.
+
+| Code                         | Status | Meaning                                                                                                                                                                          |
+| ---------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `already_member`             | 409    | The address invited already belongs to a member of the workspace.                                                                                                                |
+| `alt_text_too_long`          | 422    | The media's description is longer than Peal keeps.                                                                                                                               |
+| `api_key_not_found`          | 404    | The workspace has no API key with this id.                                                                                                                                       |
+| `approval_changed`           | 409    | The post waits for an approval, but not the one this decision names: read it again, then decide.                                                                                 |
+| `approval_not_pending`       | 409    | The post does not wait for an approval.                                                                                                                                          |
+| `assistant_failed`           | 502    | The language model gave no answer the writing assistant can offer; `reason` says why.                                                                                            |
+| `assistant_input_rejected`   | 422    | The text sent to the assistant is blank, or longer than `maxLength`.                                                                                                             |
+| `assistant_quota_exceeded`   | 429    | The workspace used all its assistant requests for the day; `resetsAt` says when they come back.                                                                                  |
+| `assistant_unavailable`      | 503    | The writing assistant is off on this server.                                                                                                                                     |
+| `bad_request`                | 400    | A value cannot be used here, such as a cursor taken from another list.                                                                                                           |
+| `billing_not_enabled`        | 404    | This server does not bill: it has no plans to order or cancel.                                                                                                                   |
+| `billing_unavailable`        | 503    | Stripe could not be reached, so nothing was changed or deleted.                                                                                                                  |
+| `captcha_refused`            | 403    | The Turnstile token in `x-captcha-response` is missing or did not pass.                                                                                                          |
+| `channel_cannot_post`        | 409    | The channel is turned off, or its account must be reconnected.                                                                                                                   |
+| `channel_not_found`          | 404    | The workspace has no channel with this id.                                                                                                                                       |
+| `client_error_too_large`     | 413    | The web app's error report is longer than 16 KiB.                                                                                                                                |
+| `comment_invalid`            | 422    | The comment cannot be kept as it was sent; `problem` says what is wrong with it.                                                                                                 |
+| `comment_not_found`          | 404    | The post has no such comment.                                                                                                                                                    |
+| `connect_failed`             | 422    | The account was not connected; `reason` says why.                                                                                                                                |
+| `connect_link_not_found`     | 404    | The workspace has no connect link with this id, or no link answers at this address.                                                                                              |
+| `connected_app_not_found`    | 404    | No application with this client id has access to the account.                                                                                                                    |
+| `contract_request_not_found` | 404    | No request to cancel or withdraw waits behind this link or id.                                                                                                                   |
+| `contract_request_settled`   | 409    | The request to cancel or withdraw was already applied, refused or closed.                                                                                                        |
+| `data_deletion_not_found`    | 404    | No data deletion request has this confirmation code.                                                                                                                             |
+| `database_unavailable`       | 503    | The server cannot reach its database.                                                                                                                                            |
+| `deletion_incomplete`        | 500    | Subscriptions were cancelled at Stripe, then the deletion failed: nothing was deleted. Send it again.                                                                            |
+| `desired_day_too_far`        | 400    | The day asked for the contract to end is more than 400 days ahead.                                                                                                               |
+| `duplicate_post`             | 409    | Another post sends the same content to some of the same channels less than 23 hours from this one's time; `duplicates` names them. Send `allowDuplicate: true` when it is meant. |
+| `external_id_taken`          | 409    | Another workspace of the partner has this external id; `workspaceId` is that workspace.                                                                                          |
+| `forbidden`                  | 403    | The credentials work but do not allow this request; `reason` says why.                                                                                                           |
+| `hosted_connect_failed`      | 422    | A connect link's page connected nothing; `reason` says why.                                                                                                                      |
+| `idempotency_key_reused`     | 409    | The `Idempotency-Key` was sent in the last 24 hours with another body.                                                                                                           |
+| `import_unreadable`          | 422    | The CSV file cannot be read as posts; `problem` says why, and `column` which column.                                                                                             |
+| `incorrect_password`         | 400    | The password is not the account's.                                                                                                                                               |
+| `internal_error`             | 500    | The server failed. A write may or may not have been applied: read before sending it again.                                                                                       |
+| `invalid_date_range`         | 400    | The range of days ends before it starts, or spans more than 366 days.                                                                                                            |
+| `invalid_request`            | 400    | The request does not match what the endpoint takes; `issues` says what and where.                                                                                                |
+| `invalid_time_range`         | 400    | The range of instants ends before it starts, or spans more than 62 days.                                                                                                         |
+| `invalid_time_zone`          | 422    | The time zone is not an IANA zone such as `Europe/Paris`.                                                                                                                        |
+| `invitation_not_found`       | 404    | The workspace has no pending invitation with this id.                                                                                                                            |
+| `last_owner`                 | 409    | The account alone owns workspaces that other members use; `workspaces` lists them.                                                                                               |
+| `lookup_input_invalid`       | 422    | The lookup refused its input: a field it does not take, or a value outside what its description allows.                                                                          |
+| `lookup_not_found`           | 404    | The channel's platform has no lookup of this name.                                                                                                                               |
+| `media_import_busy`          | 429    | Too many imports are running at once. Ask again in a moment.                                                                                                                     |
+| `media_in_use`               | 409    | Scheduled or publishing posts show the media; `postIds` lists them.                                                                                                              |
+| `media_not_found`            | 404    | The workspace has no media with this id.                                                                                                                                         |
+| `media_source_not_public`    | 422    | Peal does not fetch this address: it is not public HTTPS on the default port.                                                                                                    |
+| `media_source_unreachable`   | 422    | The file could not be fetched from its address; `reason` says why.                                                                                                               |
+| `media_store_unavailable`    | 503    | The server cannot reach its media store for now.                                                                                                                                 |
+| `media_too_large`            | 422    | The file is larger than Peal stores: 16 MiB for an image, 1 GiB for a video.                                                                                                     |
+| `meta_app_not_configured`    | 404    | This server has no settings for this Meta app.                                                                                                                                   |
+| `method_not_allowed`         | 405    | This address does not take this method.                                                                                                                                          |
+| `not_found`                  | 404    | Nothing answers at this address for this caller.                                                                                                                                 |
+| `nothing_to_cancel`          | 409    | The workspace has no subscription to cancel, or it is already set to end.                                                                                                        |
+| `oauth_client_not_published` | 404    | This server publishes no OAuth client for the platform.                                                                                                                          |
+| `partner_accounts_closed`    | 403    | This server opens partner accounts through its staff only.                                                                                                                       |
+| `partner_details_invalid`    | 422    | The partner account's name, logo address or return origins cannot be used.                                                                                                       |
+| `partner_key_not_found`      | 404    | The partner account has no key with this id.                                                                                                                                     |
+| `partner_not_found`          | 404    | The workspace has no partner account.                                                                                                                                            |
+| `partner_owns_workspaces`    | 409    | The workspace's partner account still owns `owned` workspaces: delete each through the partner API first.                                                                        |
+| `payload_too_large`          | 413    | The request's body is larger than the endpoint takes.                                                                                                                            |
+| `plan_limit_reached`         | 402    | The workspace's plan has no room for this; `limit`, `allowed` and `used` say which limit.                                                                                        |
+| `plan_too_small`             | 409    | The plan ordered is too small for what the workspace holds; `over` lists what exceeds it.                                                                                        |
+| `platform_rate_limited`      | 429    | The platform asked to slow down, or an allowance of the day is spent; `retryAfterSeconds` says how long to wait, when it said.                                                   |
+| `platform_unreachable`       | 502    | The platform did not answer, or failed, while an account was being connected.                                                                                                    |
+| `post_content_invalid`       | 422    | The post breaks the rules of its channels' platforms; `violations` lists every one.                                                                                              |
+| `post_not_found`             | 404    | The workspace has no post with this id.                                                                                                                                          |
+| `post_not_reviewable`        | 409    | The post is past reviewing: it went out, is going out, or was cancelled.                                                                                                         |
+| `post_status_conflict`       | 409    | The post's status does not allow this; `status` is the one it has.                                                                                                               |
+| `reduction_refused`          | 409    | The choice of the channels and members to keep under a smaller plan was refused.                                                                                                 |
+| `return_url_not_allowed`     | 422    | The return address is not on an origin the workspace's partner account registered.                                                                                               |
+| `review_access_denied`       | 403    | The review link does not let its holders do this; `needed` is the access it takes.                                                                                               |
+| `review_captcha_required`    | 403    | The server asks for a captcha before it takes this.                                                                                                                              |
+| `review_link_closed`         | 410    | The review link no longer shows its post; `reason` says why.                                                                                                                     |
+| `review_link_not_found`      | 404    | No review link has this token, or the workspace has no such review link.                                                                                                         |
+| `review_request_too_large`   | 413    | The request's body is larger than the server reads from a review link.                                                                                                           |
+| `schedule_in_past`           | 422    | The time asked for passed more than a minute ago.                                                                                                                                |
+| `service_unavailable`        | 503    | The server cannot answer for now. Try again shortly.                                                                                                                             |
+| `signed_request_refused`     | 400    | The platform's signed request does not match the app's secret, or cannot be read.                                                                                                |
+| `staff_action_refused`       | 409    | The staff action does not apply to this account.                                                                                                                                 |
+| `target_status_conflict`     | 409    | The post's status on that channel does not allow this; `status` is the one it has.                                                                                               |
+| `too_many_client_errors`     | 429    | The address sent too many error reports in the last minute.                                                                                                                      |
+| `too_many_connect_attempts`  | 429    | This address opened or used connect links too often for now.                                                                                                                     |
+| `too_many_connect_links`     | 429    | The workspace has as many pending connect links as it may have.                                                                                                                  |
+| `too_many_contract_requests` | 429    | The address sent too many requests to cancel or withdraw in the last hour.                                                                                                       |
+| `too_many_invitations`       | 409    | The workspace has 100 pending invitations, the most it may.                                                                                                                      |
+| `too_many_password_attempts` | 429    | The account's password was tried three times within 10 seconds.                                                                                                                  |
+| `too_many_requests`          | 429    | The key or the application sent more requests than the [rate limit](#rate-limits) allows.                                                                                        |
+| `too_many_review_links`      | 409    | The post has as many working review links as it may; `limit` is how many.                                                                                                        |
+| `too_many_review_requests`   | 429    | Too many comments or decisions came from this address, or through this link, lately.                                                                                             |
+| `too_many_webhook_endpoints` | 409    | The workspace has as many webhook endpoints as it may.                                                                                                                           |
+| `too_many_webhook_sends`     | 429    | The workspace sent as many test events and resends as it may in an hour.                                                                                                         |
+| `trial_unavailable`          | 409    | No trial for this workspace: one was used before, or none is offered for this plan.                                                                                              |
+| `unauthenticated`            | 401    | The request has no credentials, or credentials that no longer work.                                                                                                              |
+| `unknown_channels`           | 422    | Some channels asked for are not the workspace's; `channelIds` lists them.                                                                                                        |
+| `unknown_media`              | 422    | Some media attached are not the workspace's, or not ready; `mediaIds` lists them.                                                                                                |
+| `unsupported_media_type`     | 422    | Peal does not store files of this type.                                                                                                                                          |
+| `upload_incomplete`          | 409    | The file, or one of its parts, has not reached the store yet.                                                                                                                    |
+| `upload_rejected`            | 422    | The stored file does not have the declared size or type, and was deleted.                                                                                                        |
+| `user_not_found`             | 404    | No account has this id.                                                                                                                                                          |
+| `webhook_delivery_not_found` | 404    | The endpoint has no delivery with this id, or its log no longer keeps it.                                                                                                        |
+| `webhook_endpoint_disabled`  | 409    | The webhook endpoint is off, so nothing is sent to it.                                                                                                                           |
+| `webhook_endpoint_not_found` | 404    | The workspace has no webhook endpoint with this id.                                                                                                                              |
+| `webhook_url_refused`        | 422    | Peal does not deliver to this address; `reason` says why.                                                                                                                        |
+| `webhooks_not_configured`    | 503    | This server cannot keep a signing secret: `PEAL_TOKEN_KEYS` is not set.                                                                                                          |
+| `withdrawal_unavailable`     | 409    | The subscription cannot be withdrawn from; `reason` says why.                                                                                                                    |
+| `workspace_busy`             | 409    | A post of the workspace is being published. Try again in a few minutes.                                                                                                          |
+| `workspace_name_mismatch`    | 400    | The name sent to confirm the deletion is not the workspace's.                                                                                                                    |
+| `workspace_not_found`        | 404    | No workspace with this id is open to the caller.                                                                                                                                 |
+| `workspace_over_plan`        | 409    | The workspace holds more than its plan allows, and schedules nothing until it is back within it: nothing was approved.                                                           |
+| `workspace_subscribed`       | 409    | A workspace the deletion would erase has a subscription that may still bill, and the request did not agree to cancel it.                                                         |
+
+## Ids and instants [#ids]
+
+Ids are strings. Posts, their targets, channels and media have UUIDv7 ids, such as `019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02`; workspaces and users have random UUIDs; API keys and applications have ids of another shape. Treat every id as an opaque string: compare it, store it, send it back, and read nothing from it. Ids are written in lowercase.
+
+### Instants and time zones [#instants]
+
+- Answers give instants in ISO 8601, in UTC, such as `2026-11-16T08:00:00.000Z`. Send them the same way.
+- Scheduling takes an instant and the IANA time zone it was chosen in, such as `Europe/Paris`, which Peal keeps with the post. An offset such as `+01:00` is not a time zone, and answers 422 `invalid_time_zone`.
+- A time up to a minute in the past counts as now; an earlier one answers 422 `schedule_in_past`.
+- Analytics take calendar days, such as `2026-11-16`, with the time zone the days run in.
+
+## Paging [#paging]
+
+Lists that can grow without end are read a page at a time, newest first. The query takes `limit`, the size of a page, and `cursor`; the answer is an object with the page's `items` and a `nextCursor`. Pass `nextCursor` as `cursor` to read the next page, and stop when it is `null`. A cursor is an opaque string, good for the list it came from, with the same filters: elsewhere it answers 400 `bad_request`.
+
+| List                                     | A page holds | At most |
+| ---------------------------------------- | ------------ | ------- |
+| `GET …/posts/drafts`                     | 20           | 50      |
+| `GET …/media`                            | 30           | 100     |
+| `GET …/webhooks/{endpointId}/deliveries` | 30           | 100     |
+| `GET …/activity`                         | 30           | 100     |
+| `GET /api/me/notices`                    | 20           | 100     |
+
+Paths starting with `…` are under `/api/workspaces/{workspaceId}`.
+
+```bash
+curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/activity?limit=2" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```json
+{
+  "items": [
+    {
+      "id": "019a7b31-0d4e-7c22-b8a1-3f5e6d7c8b90",
+      "occurredAt": "2026-11-16T08:00:02.412Z",
+      "operation": "posts.send",
+      "status": 201,
+      "errorCode": null,
+      "actor": { "_tag": "apiKey", "apiKeyId": "k7Qp2mXvT9aLw3ZsB4nE" },
+      "via": "apiKey",
+      "application": {
+        "id": "k7Qp2mXvT9aLw3ZsB4nE",
+        "name": "Newsletter script"
+      },
+      "impersonated": false,
+      "objectIds": {},
+      "requestId": "nightly-sync:2026-11-16:0042"
+    },
+    {
+      "id": "019a7b30-6f18-7a95-9d07-1c2b3a4d5e6f",
+      "occurredAt": "2026-11-16T07:58:47.036Z",
+      "operation": "posts.discard",
+      "status": 404,
+      "errorCode": "post_not_found",
+      "actor": { "_tag": "apiKey", "apiKeyId": "k7Qp2mXvT9aLw3ZsB4nE" },
+      "via": "apiKey",
+      "application": {
+        "id": "k7Qp2mXvT9aLw3ZsB4nE",
+        "name": "Newsletter script"
+      },
+      "impersonated": false,
+      "objectIds": { "postId": "019a6c3f-1b72-7d3c-8e90-4f5a6b7c8d02" },
+      "requestId": "019a7b30-6f17-7e02-b6a4-9f8e7d6c5b4a"
+    }
+  ],
+  "nextCursor": "MDE5YTdiMzAtNmYxOC03YTk1LTlkMDctMWMyYjNhNGQ1ZTZm"
+}
+```
+
+```bash
+curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/activity?limit=2&cursor=MDE5YTdiMzAtNmYxOC03YTk1LTlkMDctMWMyYjNhNGQ1ZTZm" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+Two lists take a range instead, and answer everything in it at once:
+
+- `GET …/posts?from=…&to=…` lists the posts scheduled between two instants, `from` included and `to` excluded, at most 62 days apart (`invalid_time_range` otherwise);
+- `GET …/analytics/summary?from=…&to=…&timeZone=…` sums up the posts published over a range of days, both included, 366 days at most (`invalid_date_range` otherwise).
+
+The lists a workspace keeps short answer whole, as an array: its channels, members, pending invitations, API keys and webhook endpoints.
+
+## Idempotency [#idempotency]
+
+A request whose answer was lost, to a timeout or a dropped connection, may or may not have been applied. Sending it again must not post twice.
+
+`POST …/posts/send`, which creates a post and sends it, takes an `Idempotency-Key` header: any text of your choosing, 255 characters at most, such as a UUID, new for each post.
+
+- Within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other.
+- The same key with another body answers 409 `idempotency_key_reused`, and makes nothing.
+- Once that post was deleted, the key answers 404 `post_not_found`.
+
+Keys are kept per workspace. [Posting from an AI agent](/agents#api) shows a whole request.
+
+`POST …/posts/bulk` and `POST …/posts/import` take the same header, for the whole request, and each of their items or rows may carry a key of its own ([Posting through the API](/posting-api)); creating a customer's workspace through the partner API takes one too ([Embedding Peal](/embedding)).
+
+The other writes take no key. Whether one is safe to send again depends on what it does:
+
+| Request                                                                           | Sent again                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Reads (`GET`)                                                                     | Safe.                                                                                                                                                                                             |
+| `PUT`, `PATCH` and `DELETE`                                                       | Safe: they set a resource to what the request says, or remove it. A second `DELETE` answers 404.                                                                                                  |
+| Scheduling, moving, unscheduling or cancelling a post, confirming a target        | Safe: they act on one post, by its id, which goes out once however often it is scheduled. A repeat changes nothing more, or answers 409 with the `status` the post has.                           |
+| Creating a draft, importing media, adding a webhook endpoint, creating an API key | Makes another one. None of them puts anything out: list what the workspace has before sending again, and delete a duplicate.                                                                      |
+| Inviting someone                                                                  | Replaces the pending invitation to that address, and emails it again.                                                                                                                             |
+| Reposting a target (`POST …/posts/{postId}/targets/{targetId}/repost`)            | Not safe: each repost sends the post again on that channel. Read the post first: only a target that failed or is unconfirmed can be reposted, and any other answers 409 `target_status_conflict`. |
+
+### Unconfirmed outcomes [#unconfirmed]
+
+Peal has the same problem with the platforms. When a platform's answer is lost, Peal looks the post up there where the platform allows it; when it cannot tell whether the post went out, the target is `unconfirmed` rather than sent again, since a second attempt could show the post twice. Do the same: never repost an unconfirmed target blindly. Have someone look on the platform, then record what they found with `…/targets/{targetId}/confirm`, or repost ([Follow up on a post](/scheduling#follow-up)).
+
+Each publishing attempt, in `GET …/posts/{postId}/attempts`, says how it ended in `result`, and carries in `refusalCode` the code behind a refusal: the platform's own, as it gave it, or Peal's when Peal refused before calling the platform; `null` when there is none. The platforms' codes are theirs and change with them: show them, log them, and branch on `result`.
+
+## Rate limits [#rate-limits]
+
+Each API key may send 600 requests a minute, a [partner key](/embedding) too, across every workspace it acts in, and so may each application for each member it acts for, whichever of its access tokens it sends. The count is shared between the API and the [MCP endpoint](/mcp), and kept in fixed windows of one minute that start on the minute. Sessions of the web app are not counted. On your own server, `PEAL_API_REQUESTS_PER_MINUTE` sets another number ([Environment variables](/environment-variables#core)).
+
+Every answer to a counted credential says where it stands, in the headers of the IETF draft "RateLimit header fields for HTTP":
+
+| Header             | Example                | What it says                                                                          |
+| ------------------ | ---------------------- | ------------------------------------------------------------------------------------- |
+| `RateLimit-Policy` | `"default";q=600;w=60` | The policy: `q` requests every `w` seconds.                                           |
+| `RateLimit`        | `"default";r=412;t=23` | What is left: `r` requests, for `t` more seconds, after which the count starts again. |
+| `Retry-After`      | `23`                   | On a 429 only: how many seconds to wait.                                              |
+
+A 429 `platform_rate_limited` is another thing: a platform asked Peal to slow down, as a [lookup](/api-overview) can find, and this count is untouched. The hosted pages of connect links and review links, which take no key, have limits of their own by address.
+
+Past the limit, the request answers 429 `too_many_requests`, and nothing was done:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+RateLimit-Policy: "default";q=600;w=60
+RateLimit: "default";r=0;t=17
+Retry-After: 17
+X-Request-Id: 019a7b33-41c7-7d50-a2e9-6b8c0d1e2f3a
+```
+
+```json
+{
+  "_tag": "TooManyRequests",
+  "code": "too_many_requests",
+  "message": "This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left.",
+  "requestId": "019a7b33-41c7-7d50-a2e9-6b8c0d1e2f3a",
+  "limit": 600,
+  "windowSeconds": 60,
+  "retryAfterSeconds": 17
+}
+```
+
+Wait `retryAfterSeconds`, then send the request again. A client that reads `RateLimit` slows down before it is refused. The MCP endpoint answers the same status and headers, with a JSON-RPC error. When the server cannot keep the count, it lets the request through.
+
+Some features have a limit of their own, which this one does not replace:
+
+| Limit                                                  | Error                      | See                                                |
+| ------------------------------------------------------ | -------------------------- | -------------------------------------------------- |
+| The writing assistant's requests per workspace and day | `assistant_quota_exceeded` | [Ask the writing assistant](/scheduling#assistant) |
+| Imports running at once                                | `media_import_busy`        | [Media](/media)                                    |
+| Test events and resends of webhooks per hour           | `too_many_webhook_sends`   | [The delivery log](/webhooks#log)                  |
+| Pending invitations of a workspace                     | `too_many_invitations`     | [Invitations](/settings#invitations)               |
+| What a plan allows, on a server that bills             | `plan_limit_reached`       | [Plans and billing](/billing#limits)               |
+
+## Versioning [#versioning]
+
+The API has no version in its path, and one version: it only grows. Fields, operations, values of an enumeration and errors are added; none is renamed, removed or made stricter. A client written today keeps working, provided that it ignores what it does not know:
+
+- a field it does not read, in any answer or webhook payload;
+- a value it does not know where a field lists its values, such as a new post status or failure reason: treat it as "something else", never as a failure to decode;
+- an error code it does not know: fall back on the HTTP status, and show `message`.
+
+A check holds the API to this. Every change to the contract is compared with the last released OpenAPI document, the one the SDKs were generated from (their release 0.3.0 today), and the project's tests fail on any change that could break a client: an operation, a field or a value removed or renamed, a parameter that became required, a type that changed.
+
+A break is made only when decided on. It is then recorded with its reason, listed in the [changelog](#changelog) under `breaking`, and announced by a [deprecation](#deprecations) first wherever an endpoint goes away.
+
+Webhook payloads follow the same rule, with a `version` of their own ([Versions](/webhooks#versions)).
+
+## Deprecations [#deprecations]
+
+An endpoint that is deprecated keeps answering as it always did. It says so in three places:
+
+- the OpenAPI document marks its operation `deprecated`, which generated clients and editors show;
+- every answer from it carries the headers below;
+- the [changelog](#changelog) lists it, by operation, in the release that deprecated it.
+
+| Header        | What it says                                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `Deprecation` | Since when the endpoint is deprecated, as RFC 9745 writes it: `@` followed by seconds since 1970, such as `@1803859200`. |
+| `Sunset`      | When it stops answering, once that is decided, as an HTTP date (RFC 8594), such as `Wed, 01 Sep 2027 00:00:00 GMT`.      |
+| `Link`        | Where the deprecation is explained, with what to call instead, when there is such a page: `rel="deprecation"`.           |
+
+`Sunset` and `Link` are there only when there is something to say: a deprecated endpoint without `Sunset` has no end decided. Have your client log any answer that carries `Deprecation`.
+
+No endpoint is deprecated today.
+
+## Changelog [#changelog]
+
+`GET /api/changelog` lists the releases of the API, newest first, and needs no credential: a client reads it to learn what the server it found can do.
+
+```bash
+curl https://api.example.com/api/changelog
+```
+
+```json
+{
+  "entries": [
+    {
+      "date": "2026-11-09",
+      "title": "The API as the SDKs' release 0.3.0 calls it: 49 operations. Later entries list what each release adds to it.",
+      "operations": [],
+      "deprecations": [],
+      "breaking": [],
+      "additions": 0
+    }
+  ]
+}
+```
+
+| Field          | What it holds                                                                                        |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
+| `date`         | The day of the release.                                                                              |
+| `title`        | What the release is, in a sentence.                                                                  |
+| `operations`   | The operations it added, by operation id, such as `activity.list`.                                   |
+| `deprecations` | The operations it deprecated, by operation id.                                                       |
+| `breaking`     | The changes that could break a client, each with the `change` and its `reason`. Almost always empty. |
+| `additions`    | How many additions it made in all: operations, fields, values and errors.                            |
+
+## Discovery [#discovery]
+
+A program that knows only the address of a Peal server finds the rest from these documents. None needs a credential.
+
+| Address                                     | What it is                                                                                                                                                                    |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/.well-known/api-catalog`                  | The API catalogue (RFC 9727), as `application/linkset+json`: the API and the MCP endpoint, each with its description, its documentation and where to get a credential for it. |
+| `/api/openapi.json`                         | The OpenAPI 3.1 document of the API: every endpoint, its parameters, answers and errors.                                                                                      |
+| `/api/mcp/server-card`                      | The MCP endpoint's server card, as `application/mcp-server-card+json`: its address, the protocol revisions it speaks and the header that carries the credential.              |
+| `/llms.txt`                                 | The same places as Markdown, for a language model.                                                                                                                            |
+| `/.well-known/oauth-protected-resource/api` | Where an OAuth client gets a token for the API, and the scopes (RFC 9728). `…/api/mcp` is the MCP endpoint's.                                                                 |
+| `/api/changelog`                            | What each release of the API added ([Changelog](#changelog)).                                                                                                                 |
+| `/api/health`                               | Answers 204 while the server is up.                                                                                                                                           |
+
+```bash
+curl https://api.example.com/.well-known/api-catalog
+```
+
+```json
+{
+  "linkset": [
+    {
+      "anchor": "https://api.example.com/api",
+      "service-desc": [
+        {
+          "href": "https://api.example.com/api/openapi.json",
+          "type": "application/openapi+json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://docs.example.com/api-overview",
+          "type": "text/html"
+        }
+      ],
+      "service-meta": [
+        {
+          "href": "https://api.example.com/.well-known/oauth-protected-resource/api",
+          "type": "application/json"
+        }
+      ],
+      "status": [{ "href": "https://api.example.com/api/health" }]
+    },
+    {
+      "anchor": "https://api.example.com/api/mcp",
+      "service-desc": [
+        {
+          "href": "https://api.example.com/api/mcp/server-card",
+          "type": "application/mcp-server-card+json"
+        }
+      ],
+      "service-doc": [
+        { "href": "https://docs.example.com/mcp", "type": "text/html" }
+      ],
+      "service-meta": [
+        {
+          "href": "https://api.example.com/.well-known/oauth-protected-resource/api/mcp",
+          "type": "application/json"
+        }
+      ]
+    }
+  ]
+}
+```
+
+The links to the documentation (`service-doc`, and a section of `llms.txt`) are there only on a server that knows where its documentation is: `PEAL_DOCS_URL` ([Environment variables](/environment-variables#core)). This documentation has an `llms.txt` of its own, at its root, with every page as Markdown.

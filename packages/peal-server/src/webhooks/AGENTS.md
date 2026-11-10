@@ -80,3 +80,10 @@
   workflow sleeps `recoveryDelay` and makes the same attempt again
   (`attempt/<n>/again/<k>`, `recover/<n>/<k>`, persisted contract),
   `maxRecoveries` times.
+- A webhook endpoint has a `scope`: `workspace`, or `partner`, in a home
+  workspace only (`PartnerNotFound`, 404, elsewhere), which also hears every
+  workspace the partner owns (`EventOrigins`, which
+  `PartnerEventOrigins` backs). Every payload carries
+  `workspaceExternalId` beside `data`, as it was when the event happened
+  (`events.external_id`). A partner key never acts in the home workspace,
+  so that endpoint is made by a member or the home workspace's API key.

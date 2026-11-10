@@ -65,6 +65,22 @@ const words = "Launch day is here. Join us on Friday.";
 
 const content: PostContent = { media: [], overrides: [], text: words };
 
+// What a refused request was told: the reason, and the permission it takes.
+const refusalOf = <A, R>(request: Effect.Effect<A, unknown, R>) =>
+  request.pipe(
+    Effect.flip,
+    Effect.map((error) =>
+      error instanceof Forbidden
+        ? { permission: error.permission, reason: error.reason }
+        : error
+    )
+  );
+
+const missing = (permission: Permission) => ({
+  permission,
+  reason: "missingPermission",
+});
+
 describe("the review endpoints", () => {
   it.effect(
     "take a post from a contributor's draft to a client's approval",
@@ -91,13 +107,13 @@ describe("the review endpoints", () => {
             approvalPolicy: "never",
           });
           assert.deepStrictEqual(
-            yield* Effect.flip(
+            yield* refusalOf(
               editor.review.updateSettings({
                 params,
                 payload: { approvalPolicy: "always" },
               })
             ),
-            new Forbidden()
+            missing("organization:update")
           );
 
           yield* owner.review.updateSettings({
@@ -148,13 +164,13 @@ describe("the review endpoints", () => {
           // The contributor may not make a link; the editor makes one that
           // lets the client approve.
           assert.deepStrictEqual(
-            yield* Effect.flip(
+            yield* refusalOf(
               contributor.review.createLink({
                 params: post,
                 payload: { access: "approve" },
               })
             ),
-            new Forbidden()
+            missing("post:approve")
           );
 
           const made = yield* editor.review.createLink({
@@ -237,7 +253,7 @@ describe("the review endpoints", () => {
           // An approval of something else than the page showed is for
           // nothing: the reviewer looks again.
           assert.deepStrictEqual(
-            yield* Effect.flip(
+            yield* refusalOf(
               editor.reviewLink.approve({
                 headers,
                 payload: { ...decision, subjectHash: "0".repeat(64) },
@@ -414,13 +430,13 @@ describe("the review endpoints", () => {
             2
           );
           assert.deepStrictEqual(
-            yield* Effect.flip(
+            yield* refusalOf(
               viewer.review.comment({
                 params: post,
                 payload: { text: "May I?" },
               })
             ),
-            new Forbidden()
+            missing("post:create")
           );
 
           // Another workspace's owner, naming the post in their own.

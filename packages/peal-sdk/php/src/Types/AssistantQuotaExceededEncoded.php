@@ -8,10 +8,22 @@ use Peal\Core\Json\JsonProperty;
 class AssistantQuotaExceededEncoded extends JsonSerializableType
 {
     /**
-     * @var value-of<AssistantQuotaExceededEncodedTag> $tag
+     * @var ?string $code
      */
-    #[JsonProperty('_tag')]
-    public string $tag;
+    #[JsonProperty('code')]
+    public ?string $code;
+
+    /**
+     * @var ?string $message
+     */
+    #[JsonProperty('message')]
+    public ?string $message;
+
+    /**
+     * @var ?string $requestId
+     */
+    #[JsonProperty('requestId')]
+    public ?string $requestId;
 
     /**
      * @var ?string $billingUrl
@@ -45,9 +57,11 @@ class AssistantQuotaExceededEncoded extends JsonSerializableType
 
     /**
      * @param array{
-     *   tag: value-of<AssistantQuotaExceededEncodedTag>,
      *   dailyLimit: int,
      *   resetsAt: string,
+     *   code?: ?string,
+     *   message?: ?string,
+     *   requestId?: ?string,
      *   billingUrl?: ?string,
      *   plan?: ?value-of<Plan>,
      *   planWithRoom?: ?value-of<PaidPlan>,
@@ -56,7 +70,9 @@ class AssistantQuotaExceededEncoded extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
-        $this->tag = $values['tag'];
+        $this->code = $values['code'] ?? null;
+        $this->message = $values['message'] ?? null;
+        $this->requestId = $values['requestId'] ?? null;
         $this->billingUrl = $values['billingUrl'] ?? null;
         $this->dailyLimit = $values['dailyLimit'];
         $this->plan = $values['plan'] ?? null;

@@ -39,7 +39,7 @@ client = Peal::Client.new(token: "<token>")
 client.api_keys.create(
   workspace_id: "workspaceId",
   name: "name",
-  permissions: ["analytics:read"]
+  permissions: ["activity:read"]
 )
 ```
 

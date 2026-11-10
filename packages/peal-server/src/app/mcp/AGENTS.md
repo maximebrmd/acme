@@ -5,15 +5,29 @@
   sessions live in memory and end with `DELETE`).
 - Tools are `Tool.make` with Effect Schema inputs and outputs, declare
   `CurrentMember`, and reach contexts through their use cases.
-  `McpAuthenticationLive` (`#workspace/api/mcp-authentication.ts`) provides
+  `mcpAuthentication` (`#workspace/api/mcp-authentication.ts`) provides
   the member from the request's OAuth token: 401 with an RFC 9728 challenge
-  without a working token, 403 without a workspace scope or membership.
+  without a working token, 403 without a workspace scope or membership. It
+  also takes a workspace's API key as the bearer token (never in the URL),
+  for agents that run with nobody to sign in: the key's permissions apply,
+  as on the API, `whoami` answers `apiKey` with a null `user` and role, and
+  what only a person does refuses it in words about keys. A key acts in its
+  own workspace (`workspaceOfKey` in `Authenticate`: the one place to
+  change if a key ever spans several). Past the rate limit it answers a
+  JSON-RPC error with 429.
 - The use cases' permission checks refuse a client the user let read only.
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
   `media-tools.ts`, `reports-tools.ts`, `people-tools.ts`, `webhooks-tools.ts`)
   and its handlers beside it, merged
-  into `PealTools`. Annotate every tool with `reading`, or
+  into `PealTools`. Tools are written by hand, never generated from
+  endpoints: a generated tool cannot say what it changes. `find_tools`
+  lists them by area from `catalogue.ts` (`toolAreas`: one toolkit an
+  area), with the scope each takes (`publishingTools` names those that
+  take `workspace:publish`; a test calls each without it) and whether the
+  connection holds it: a new toolkit joins `toolAreas`, `ToolAreaSchema`
+  and `PealTools` together, and tools/list stays whole, as the protocol
+  has no filter. Annotate every tool with `reading`, or
   `changing({ destructive, idempotent, openWorld })` from `annotations.ts`,
   and say in its description what it changes. `list_members` answers
   members' email addresses only with `includeEmails`: hand an AI model no
@@ -48,3 +62,8 @@
   schedule|publish|reschedule|cancel`, `peal post`), for a sign-in that
   holds `workspace:publish`: `peal post` takes `--at` or `--now`, never a
   default.
+- On `/api/mcp`, a partner key names the workspace it acts in with each
+  request, by id, in the `Peal-Workspace` header (`workspaceNamed` in
+  `authenticate.ts`; 400 without it), and is told 404 for any workspace
+  its partner does not own, as on the API. A workspace's API key never
+  reads the header: it acts in its own workspace.

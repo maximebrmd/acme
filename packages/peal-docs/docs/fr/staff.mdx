@@ -2,7 +2,7 @@
 title: Console de l’équipe
 description: Donnez le rôle d’équipe à celles et ceux qui font tourner votre serveur, puis trouvez des comptes et des espaces de travail, bannissez, déconnectez ou agissez à la place d’un compte, et lisez le journal d’audit de chaque action et de chaque modification faite à la place d’un compte, depuis /admin.
 sidebar:
-  order: 16
+  order: 19
 ---
 
 La console de l’équipe est destinée à celles et ceux qui font tourner un serveur Peal : elle trouve un compte ou un espace de travail, dit comment va le serveur, et permet à l’équipe d’agir sur les comptes. Elle se trouve à `/admin` sur votre adresse Peal (`/fr/admin` en français), et son API sous `/api/admin`.
@@ -49,6 +49,14 @@ Pendant qu’elle agit à la place d’un compte, l’équipe voit ses publicati
 L’équipe ne bannit, ne déconnecte ni n’agit jamais à sa propre place, et n’agit jamais à la place d’autres membres de l’équipe. Personne ne supprime un compte, sauf son titulaire, depuis [ses paramètres de compte](/settings#delete-account).
 
 Les points d’accès d’administration de Better Auth sous `/api/auth/admin/` sont désactivés, afin que rien de ce que fait l’équipe n’échappe au journal d’audit ; seul `POST /api/auth/admin/stop-impersonating` reste, que le bandeau appelle.
+
+## Comptes partenaires [#partners]
+
+Un compte partenaire laisse un produit utiliser Peal pour ses propres clients, un espace de travail chacun, par l’API ([Intégrer Peal](/embedding)). La page d’un espace de travail dit où il en est : s’il a un compte partenaire, avec le nombre d’espaces de travail que ce compte possède, ou si un partenaire le possède, avec l’espace de travail principal du partenaire et l’identifiant que le partenaire lui a donné.
+
+**Accorder un compte partenaire** en ouvre un pour l’espace de travail, à son nom, et demande pourquoi, comme chaque action. Les propriétaires et administrateurs de l’espace le nomment ensuite, créent ses clés et enregistrent où les pages hébergées renvoient leurs clients, sous **Paramètres**, puis **Partenaire**. Avec [`PEAL_PARTNER_SELF_SERVICE`](/environment-variables#sign-in) à `true`, ils en ouvrent un eux-mêmes. Le journal d’audit garde chaque octroi avec l’espace de travail.
+
+Un espace de travail que possède un partenaire n’a pas de membres : l’équipe le lit comme tout autre espace de travail, et personne ne peut agir comme l’un de ses membres.
 
 ## Demandes sur les contrats [#contract-requests]
 

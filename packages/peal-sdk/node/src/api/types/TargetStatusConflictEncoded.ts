@@ -3,5 +3,8 @@
 import * as Peal from "../index.js";
 
 export interface TargetStatusConflictEncoded {
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     status: Peal.PostTargetStatus;
 }

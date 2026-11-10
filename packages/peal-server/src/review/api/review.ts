@@ -7,7 +7,6 @@ import {
   CommentInvalid,
   CommentNotFound,
   CurrentMember,
-  Forbidden,
   PostNotFound,
   PostNotReviewable,
   ReviewLinkNotFound,
@@ -18,6 +17,7 @@ import { PostReview } from "#review/application/post-review.ts";
 import { ReviewLinks } from "#review/application/review-links.ts";
 import { ReviewSettings } from "#review/application/review-settings.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 
 import {
@@ -31,8 +31,6 @@ import {
 import { approvalView, linkView, threadView } from "./review-view.ts";
 
 // How the use cases' failures answer. A database failure is a server error.
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const postNotFound = () => Effect.fail(new PostNotFound());
 

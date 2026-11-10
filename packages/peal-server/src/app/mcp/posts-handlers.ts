@@ -1,9 +1,19 @@
-import { DateTime, Effect, Option } from "effect";
-import { CurrentMember, defaultDraftPageSize } from "peal-contract";
-import type { ChannelOptions as ChannelOptionsInput } from "peal-contract";
+import { DateTime, Duration, Effect, Option, Result } from "effect";
+import {
+  CurrentMember,
+  defaultDraftPageSize,
+  duplicateWindowHours,
+} from "peal-contract";
+import type {
+  BulkPostResult,
+  ChannelOptions as ChannelOptionsInput,
+} from "peal-contract";
 
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { notAllowed, planRefusal, refuse } from "#app/mcp/refusals.ts";
+import { keyAt, readPost, sendRead } from "#publishing/api/post-batch.ts";
+import { checkRequestFrom } from "#publishing/api/post-check-input.ts";
+import { validationOf } from "#publishing/api/post-check-view.ts";
 import {
   channelIdsFrom,
   contentFrom,
@@ -14,17 +24,24 @@ import {
   sendRequestFrom,
   targetIdFrom,
 } from "#publishing/api/post-input.ts";
+import { toldRefusal } from "#publishing/api/post-refusal.ts";
+import { pageView, searchRequestFrom } from "#publishing/api/post-search.ts";
 import { attemptView, postView } from "#publishing/api/post-view.ts";
 import { tiktokAccountView } from "#publishing/api/tiktok-account-view.ts";
+import { PostBatches } from "#publishing/application/post-batches.ts";
+import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import type { Confirmation } from "#publishing/application/post-follow-up.ts";
+import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostSearch } from "#publishing/application/post-search.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { limitRefusal } from "#shared/api/limit-reached.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
@@ -109,6 +126,12 @@ export const PostToolsLive = PostTools.toLayer(
     const followUp = yield* PostFollowUp;
     const queries = yield* PostQueries;
     const scheduling = yield* PostScheduling;
+    const batches = yield* PostBatches;
+    const checks = yield* PostChecks;
+    const outcomes = yield* PostOutcomes;
+    const searching = yield* PostSearch;
+    const limitReached = yield* limitRefusal;
+    const toValidation = validationOf(limitReached);
     const refusedByPlan = yield* planRefusal;
     const tiktok = yield* TikTokCreatorInfo;
 
@@ -193,7 +216,25 @@ export const PostToolsLive = PostTools.toLayer(
 
     const badZone = { InvalidTimeZone: invalidTimeZone } as const;
 
+    const awaitFailures = {
+      DatabaseError: Effect.die,
+      MissingPermission: notAllowed("read posts"),
+      PostNotFound: notFound,
+    } as const;
+
     return PostTools.of({
+      await_post: ({ postId, waitSeconds = 0 }) =>
+        Effect.gen(function* awaitPost() {
+          const awaited = yield* outcomes
+            .await(
+              yield* actor,
+              yield* postIdFrom(postId),
+              Duration.seconds(waitSeconds)
+            )
+            .pipe(Effect.catchTags(awaitFailures));
+
+          return postView(awaited);
+        }).pipe(Effect.catchTags(malformedPost)),
       cancel_post: ({ postId }) =>
         Effect.gen(function* cancel() {
           const cancelled = yield* scheduling
@@ -250,13 +291,24 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(created);
         }).pipe(Effect.catchTags(malformedContent)),
-      create_post: ({ idempotencyKey, ...post }) =>
+      create_post: ({ idempotencyKey, waitSeconds = 0, ...post }) =>
         Effect.gen(function* createPost() {
           const request = yield* sendRequestFrom(post, idempotencyKey);
 
           const sent = yield* scheduling.send(yield* actor, request).pipe(
             Effect.catchTags({
               ...newPostFailures,
+              DuplicateContent: ({ duplicates }) =>
+                refuse(
+                  `The same content already goes to ${duplicates
+                    .map(
+                      ({ channelId, postId }) =>
+                        `channel ${channelId} (post ${postId})`
+                    )
+                    .join(
+                      ", "
+                    )}, less than ${String(duplicateWindowHours)} hours from this post's time: nothing was made. If the first call's answer was lost, that post is the one it made: read it with get_post. Call again with allowDuplicate: true only when the user means to post the same content twice.`
+                ),
               IdempotencyKeyReused: () =>
                 refuse(
                   "This idempotencyKey was used in the last 24 hours with other arguments: nothing was made. Call again with the first call's exact arguments to get its post, or with a new key for a new post."
@@ -268,8 +320,54 @@ export const PostToolsLive = PostTools.toLayer(
             })
           );
 
-          return postView(sent);
+          // Never a refusal, now that the post is made.
+          const awaited = yield* outcomes
+            .afterSending(yield* actor, sent, Duration.seconds(waitSeconds))
+            .pipe(Effect.orDie);
+
+          return postView(awaited);
         }).pipe(Effect.catchTags({ ...malformedContent, ...badZone })),
+      create_posts: ({ idempotencyKey, posts }) =>
+        Effect.gen(function* createPosts() {
+          const read = yield* Effect.all(
+            posts.map(({ idempotencyKey: own, ...post }, index) =>
+              readPost(post, keyAt(own, idempotencyKey, "bulk", index))
+            )
+          );
+
+          const answered = yield* sendRead(
+            batches,
+            limitReached,
+            yield* actor,
+            read
+          ).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("schedule or publish posts"),
+            })
+          );
+
+          // A refused item carries the code the API's error has.
+          const items = yield* Effect.all(
+            answered.map((outcome, index) =>
+              toldRefusal<BulkPostResult>(
+                Result.match(outcome, {
+                  onFailure: (refusal) => ({ _tag: "refused", index, refusal }),
+                  onSuccess: (made) => ({
+                    _tag: "created",
+                    index,
+                    post: postView(made),
+                    replayed: made.replayed,
+                  }),
+                })
+              )
+            )
+          );
+
+          const created = items.filter(({ _tag }) => _tag === "created").length;
+
+          return { created, items, refused: items.length - created };
+        }),
       discard_draft: ({ postId }) =>
         Effect.gen(function* discard() {
           yield* drafts.discard(yield* actor, yield* postIdFrom(postId)).pipe(
@@ -363,20 +461,25 @@ export const PostToolsLive = PostTools.toLayer(
 
           return { attempts: made.map(attemptView) };
         }).pipe(Effect.catchTags(malformedPost)),
-      list_posts: (range) =>
+      list_posts: (query) =>
         Effect.gen(function* listPosts() {
-          const listed = yield* queries.listScheduled(yield* actor, range).pipe(
-            Effect.catchTags({
-              DatabaseError: Effect.die,
-              InvalidTimeRange: () =>
-                refuse(
-                  "`from` must be before `to`, and at most 62 days apart: ask for a shorter range."
-                ),
-              MissingPermission: notAllowed("read posts"),
-            })
-          );
+          const page = yield* searching
+            .search(yield* actor, searchRequestFrom(query))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                InvalidCursor: () =>
+                  refuse(
+                    "This cursor is none a page of this list gave: pass a page's nextCursor with the same filters and sort, or leave it out for the first page."
+                  ),
+                InvalidTimeRange: () => refuse("`from` must be before `to`."),
+                MissingPermission: notAllowed("read posts"),
+              })
+            );
 
-          return { posts: listed.map(postView) };
+          const { channels, items, nextCursor } = pageView(page);
+
+          return { channels, nextCursor, posts: items };
         }),
       publish_post: ({ postId }) =>
         Effect.gen(function* publish() {
@@ -527,6 +630,19 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(updated);
         }).pipe(Effect.catchTags({ ...malformedPost, ...malformedContent })),
+      validate_post: (post) =>
+        Effect.gen(function* validatePost() {
+          const read = yield* checkRequestFrom(post);
+
+          const check = yield* checks.check(yield* actor, read.request).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read posts"),
+            })
+          );
+
+          return yield* toValidation(check, read);
+        }),
     });
   })
 );

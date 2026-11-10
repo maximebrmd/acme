@@ -12,6 +12,7 @@ export default defineConfig({
   ignorePatterns: [
     ...(root.ignorePatterns ?? []),
     "openapi.json",
+    "released/**",
     "node/**",
     "python/**",
     "go/**",

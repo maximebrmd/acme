@@ -2,6 +2,9 @@
 
 export interface InvalidTimeZoneEncoded {
     _tag: InvalidTimeZoneEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     timeZone: string;
 }
 

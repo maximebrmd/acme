@@ -16,18 +16,48 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = UnknownChannelsEncoded.Builder.class)
 public final class UnknownChannelsEncoded {
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final List<String> channelIds;
 
     private final Map<String, Object> additionalProperties;
 
-    private UnknownChannelsEncoded(List<String> channelIds, Map<String, Object> additionalProperties) {
+    private UnknownChannelsEncoded(
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            List<String> channelIds,
+            Map<String, Object> additionalProperties) {
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.channelIds = channelIds;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("channelIds")
@@ -47,12 +77,15 @@ public final class UnknownChannelsEncoded {
     }
 
     private boolean equalTo(UnknownChannelsEncoded other) {
-        return channelIds.equals(other.channelIds);
+        return code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && channelIds.equals(other.channelIds);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelIds);
+        return Objects.hash(this.code, this.message, this.requestId, this.channelIds);
     }
 
     @java.lang.Override
@@ -66,6 +99,12 @@ public final class UnknownChannelsEncoded {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<String> code = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> requestId = Optional.empty();
+
         private List<String> channelIds = new ArrayList<>();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -73,7 +112,43 @@ public final class UnknownChannelsEncoded {
         private Builder() {}
 
         public Builder from(UnknownChannelsEncoded other) {
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             channelIds(other.getChannelIds());
+            return this;
+        }
+
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public Builder code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public Builder message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        public Builder message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public Builder requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        public Builder requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
             return this;
         }
 
@@ -99,12 +174,15 @@ public final class UnknownChannelsEncoded {
         }
 
         public UnknownChannelsEncoded build() {
-            return new UnknownChannelsEncoded(channelIds, additionalProperties);
+            return new UnknownChannelsEncoded(code, message, requestId, channelIds, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("channelIds")) {
+            if (key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("channelIds")) {
                 return;
             }
             this.additionalProperties.put(key, value);

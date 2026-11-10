@@ -8,18 +8,19 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
-from .media_source_failure import MediaSourceFailure
-from .media_too_large_encoded_kind import MediaTooLargeEncodedKind
-from .rejection_reason import RejectionReason
+from .connect_failure_reason import ConnectFailureReason
 
 
-class UnprocessableEntityErrorBody_UnsupportedMediaType(UniversalBaseModel):
+class UnprocessableEntityErrorBody_ConnectFailed(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["UnsupportedMediaType"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "UnsupportedMediaType"
-    content_type: typing_extensions.Annotated[
-        str, FieldMetadata(alias="contentType"), pydantic.Field(alias="contentType")
-    ]
+        typing.Literal["ConnectFailed"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "ConnectFailed"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+    reason: ConnectFailureReason
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -31,79 +32,15 @@ class UnprocessableEntityErrorBody_UnsupportedMediaType(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class UnprocessableEntityErrorBody_MediaTooLarge(UniversalBaseModel):
+class UnprocessableEntityErrorBody_ReturnUrlNotAllowed(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["MediaTooLarge"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "MediaTooLarge"
-    byte_size: typing_extensions.Annotated[int, FieldMetadata(alias="byteSize"), pydantic.Field(alias="byteSize")]
-    kind: MediaTooLargeEncodedKind
-    max_byte_size: typing_extensions.Annotated[
-        int, FieldMetadata(alias="maxByteSize"), pydantic.Field(alias="maxByteSize")
-    ]
-
-    if IS_PYDANTIC_V2:
-        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
-    else:
-
-        class Config:
-            frozen = True
-            smart_union = True
-            extra = pydantic.Extra.allow
-
-
-class UnprocessableEntityErrorBody_AltTextTooLong(UniversalBaseModel):
-    type: typing_extensions.Annotated[
-        typing.Literal["AltTextTooLong"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "AltTextTooLong"
-    max_length: typing_extensions.Annotated[int, FieldMetadata(alias="maxLength"), pydantic.Field(alias="maxLength")]
-
-    if IS_PYDANTIC_V2:
-        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
-    else:
-
-        class Config:
-            frozen = True
-            smart_union = True
-            extra = pydantic.Extra.allow
-
-
-class UnprocessableEntityErrorBody_MediaSourceNotPublic(UniversalBaseModel):
-    type: typing_extensions.Annotated[
-        typing.Literal["MediaSourceNotPublic"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "MediaSourceNotPublic"
-
-    if IS_PYDANTIC_V2:
-        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
-    else:
-
-        class Config:
-            frozen = True
-            smart_union = True
-            extra = pydantic.Extra.allow
-
-
-class UnprocessableEntityErrorBody_MediaSourceUnreachable(UniversalBaseModel):
-    type: typing_extensions.Annotated[
-        typing.Literal["MediaSourceUnreachable"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "MediaSourceUnreachable"
-    reason: MediaSourceFailure
-    status: typing.Optional[int] = None
-
-    if IS_PYDANTIC_V2:
-        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
-    else:
-
-        class Config:
-            frozen = True
-            smart_union = True
-            extra = pydantic.Extra.allow
-
-
-class UnprocessableEntityErrorBody_UploadRejected(UniversalBaseModel):
-    type: typing_extensions.Annotated[
-        typing.Literal["UploadRejected"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "UploadRejected"
-    reason: RejectionReason
+        typing.Literal["ReturnUrlNotAllowed"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "ReturnUrlNotAllowed"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -116,13 +53,6 @@ class UnprocessableEntityErrorBody_UploadRejected(UniversalBaseModel):
 
 
 UnprocessableEntityErrorBody = typing_extensions.Annotated[
-    typing.Union[
-        UnprocessableEntityErrorBody_UnsupportedMediaType,
-        UnprocessableEntityErrorBody_MediaTooLarge,
-        UnprocessableEntityErrorBody_AltTextTooLong,
-        UnprocessableEntityErrorBody_MediaSourceNotPublic,
-        UnprocessableEntityErrorBody_MediaSourceUnreachable,
-        UnprocessableEntityErrorBody_UploadRejected,
-    ],
+    typing.Union[UnprocessableEntityErrorBody_ConnectFailed, UnprocessableEntityErrorBody_ReturnUrlNotAllowed],
     pydantic.Field(discriminator="type"),
 ]

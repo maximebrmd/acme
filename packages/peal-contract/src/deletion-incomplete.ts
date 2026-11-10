@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * The deletion cancelled subscriptions at Stripe, then failed: nothing was
  * deleted, and the cancellations stand.
@@ -7,6 +9,7 @@ import { Schema } from "effect";
 export class DeletionIncomplete extends Schema.TaggedError<DeletionIncomplete>()(
   "DeletionIncomplete",
   {
+    ...errorEnvelope,
     // How many subscriptions were cancelled at Stripe before it failed.
     subscriptionsCancelled: Schema.Int,
   },

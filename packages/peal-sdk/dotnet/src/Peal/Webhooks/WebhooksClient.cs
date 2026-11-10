@@ -102,7 +102,7 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -114,6 +114,18 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 404:
                         throw new NotFoundError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 429:
+                        throw new TooManyRequestsError(
                             JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
@@ -235,7 +247,7 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -271,6 +283,18 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 422:
                         throw new UnprocessableEntityError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 429:
+                        throw new TooManyRequestsError(
                             JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
@@ -402,7 +426,7 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -414,6 +438,18 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 404:
                         throw new NotFoundError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 429:
+                        throw new TooManyRequestsError(
                             JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
@@ -507,7 +543,7 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -519,6 +555,18 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 404:
                         throw new NotFoundError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 429:
+                        throw new TooManyRequestsError(
                             JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
@@ -641,7 +689,7 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -665,6 +713,18 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 422:
                         throw new UnprocessableEntityError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 429:
+                        throw new TooManyRequestsError(
                             JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
@@ -785,7 +845,7 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -797,6 +857,18 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 404:
                         throw new NotFoundError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 429:
+                        throw new TooManyRequestsError(
                             JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
@@ -929,7 +1001,7 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -1098,7 +1170,7 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -1110,6 +1182,18 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 404:
                         throw new NotFoundError(
+                            JsonUtils.Deserialize<object>(responseBody),
+                            rawResponse: new Peal.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 429:
+                        throw new TooManyRequestsError(
                             JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
@@ -1231,7 +1315,7 @@ public partial class WebhooksClient : IWebhooksClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -1315,7 +1399,7 @@ public partial class WebhooksClient : IWebhooksClient
     }
 
     /// <summary>
-    /// Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+    /// Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. Needs webhook:manage.
     /// </summary>
     /// <example><code>
     /// await client.Webhooks.CreateAsync(

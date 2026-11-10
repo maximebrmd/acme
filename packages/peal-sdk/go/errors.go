@@ -69,7 +69,7 @@ func (b *BadRequestError) GetBody() any {
 	return b.Body
 }
 
-// The `Idempotency-Key` was sent before, within the last 24 hours, with another request: nothing was made. Send a new request under a new key.
+// The `Idempotency-Key` was sent before, within the last 24 hours, with another request: nothing was made. Send a new request under a new key. | Another post of the workspace sends the same content (the text the channel receives and the same media, in the same order) to some of the same channels, less than 23 hours from this one's time: nothing was made. `duplicates` names each such channel and that post. Only posts that go out or went out count, those that wait for an approval among them: not drafts, cancelled posts, nor a channel where the post failed. When it is meant, send the request again with `allowDuplicate: true`.
 type ConflictError struct {
 	*core.APIError
 	Body any
@@ -100,14 +100,14 @@ func (c *ConflictError) GetBody() any {
 	return c.Body
 }
 
-// The credentials are valid but do not allow this request.
+// The credentials are valid but do not allow this request. `reason` says why: the OAuth client was not given the scope the request takes (`missingScope`, with `scope` and `permission`: the user connects the client again and allows it), the member's role or the API key lacks a permission (`missingPermission`, with `permission`: an owner or an admin changes the role, or creates a key with it), only a person in their own session may do it (`personRequired`), the key or token belongs to another workspace (`wrongWorkspace`), the account is suspended (`suspended`), or a browser sent the cookie from another site (`untrustedOrigin`).
 type ForbiddenError struct {
 	*core.APIError
-	Body *ForbiddenEncoded
+	Body any
 }
 
 func (f *ForbiddenError) UnmarshalJSON(data []byte) error {
-	var body *ForbiddenEncoded
+	var body any
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -124,11 +124,42 @@ func (f *ForbiddenError) Unwrap() error {
 	return f.APIError
 }
 
-func (f *ForbiddenError) GetBody() *ForbiddenEncoded {
+func (f *ForbiddenError) GetBody() any {
 	if f == nil {
 		return nil
 	}
 	return f.Body
+}
+
+// The deletion cancelled `subscriptionsCancelled` subscriptions at Stripe, at once and for good, then failed: nothing was deleted. The workspaces stay, on the free plan once Stripe confirms, with everything in them. Tell the person their subscriptions were cancelled, then send the deletion again: it cancels nothing more.
+type InternalServerError struct {
+	*core.APIError
+	Body *DeletionIncompleteEncoded
+}
+
+func (i *InternalServerError) UnmarshalJSON(data []byte) error {
+	var body *DeletionIncompleteEncoded
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	i.StatusCode = 500
+	i.Body = body
+	return nil
+}
+
+func (i *InternalServerError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(i.Body)
+}
+
+func (i *InternalServerError) Unwrap() error {
+	return i.APIError
+}
+
+func (i *InternalServerError) GetBody() *DeletionIncompleteEncoded {
+	if i == nil {
+		return nil
+	}
+	return i.Body
 }
 
 // No workspace with this id is open to the caller.
@@ -224,7 +255,7 @@ func (s *ServiceUnavailableError) GetBody() any {
 	return s.Body
 }
 
-// The workspace already imports two files at once, or the server as many as it runs together: nothing was fetched or stored. Ask again in a moment, once one has finished.
+// This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left.
 type TooManyRequestsError struct {
 	*core.APIError
 	Body any
