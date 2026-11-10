@@ -182,6 +182,7 @@ export type StaffChannel = typeof StaffChannelSchema.Type;
 
 /** How many of a workspace's posts are where, drafts included. */
 export const StaffPostCountsSchema = Schema.Struct({
+  awaitingApproval: Schema.Int,
   cancelled: Schema.Int,
   draft: Schema.Int,
   finished: Schema.Int,

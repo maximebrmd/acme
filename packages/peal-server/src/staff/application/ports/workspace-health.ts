@@ -46,6 +46,7 @@ export interface ChannelHealth {
 
 /** How many of a workspace's posts are in each status. */
 export interface PostCounts {
+  readonly awaitingApproval: number;
   readonly cancelled: number;
   readonly draft: number;
   readonly finished: number;

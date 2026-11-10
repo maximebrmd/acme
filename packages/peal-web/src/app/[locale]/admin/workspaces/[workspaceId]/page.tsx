@@ -22,6 +22,7 @@ import { staffRead } from "#staff/server.ts";
 
 const postStatuses = [
   "draft",
+  "awaitingApproval",
   "scheduled",
   "publishing",
   "finished",

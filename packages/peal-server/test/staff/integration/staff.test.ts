@@ -431,6 +431,7 @@ layer(StaffedLive, { excludeTestServices: true, timeout: "180 seconds" })(
           ]
         );
         assert.deepStrictEqual(workspace.posts, {
+          awaitingApproval: 0,
           cancelled: 0,
           draft: 3,
           finished: 0,
