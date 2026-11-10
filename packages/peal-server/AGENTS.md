@@ -18,6 +18,7 @@ change crosses several:
 | `webhooks`           | [`src/webhooks/AGENTS.md`](src/webhooks/AGENTS.md)           |
 | `review`             | [`src/review/AGENTS.md`](src/review/AGENTS.md)               |
 | `activity`           | [`src/activity/AGENTS.md`](src/activity/AGENTS.md)           |
+| `ads`                | [`src/ads/AGENTS.md`](src/ads/AGENTS.md)                     |
 | the MCP endpoint     | [`src/app/mcp/AGENTS.md`](src/app/mcp/AGENTS.md)             |
 
 The shared kernel's rules are below.
@@ -44,6 +45,7 @@ them:
 | `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log   |
 | `legal`         | what French law has a host keep, and the legal requests that read it        |
 | `review`        | approval policies, requests and decisions, review links, comments           |
+| `ads`           | ad accounts, what they may spend, what is read of them, boosts              |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -263,7 +265,7 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`; the
+  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`, `ads`; the
   workspace context's are Better Auth's, in `auth`). Effect creates its
   `cluster_*` tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then

@@ -193,6 +193,9 @@ self-hoster needs only Postgres and an S3-compatible store:
   upload CORS rule that `media-cors` writes;
 - email: Resend or SMTP (Mailpit in development);
 - billing: Stripe, off when no key is set (no plan limits);
+- ads: off until `PEAL_ADS` is `read` or `spend`, with the operator's own
+  Meta app holding the ads permissions (see
+  [`src/ads/AGENTS.md`](packages/peal-server/src/ads/AGENTS.md));
 - captcha: Turnstile, off when no key is set;
 - AI: an Anthropic key, or any OpenAI-compatible endpoint that serves
   `/chat/completions`; the writing assistant is off until `PEAL_AI_PROVIDER`

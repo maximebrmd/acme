@@ -67,3 +67,11 @@
   `authenticate.ts`; 400 without it), and is told 404 for any workspace
   its partner does not own, as on the API. A workspace's API key never
   reads the header: it acts in its own workspace.
+- The ads toolkit (`ads-tools.ts`) reads ad accounts, campaigns, daily
+  numbers and boosts; `boost_post` and `resume_boost` spend the user's
+  money: they are `destructive` and `openWorld`, say so first in their
+  description with when to call them, take the scope `workspace:ads`
+  (`adsTools`, beside `workspace:publish`; a test calls each without it),
+  and `boost_post` takes an `idempotencyKey`. No tool signs in to an ad
+  network, connects an account or sets a ceiling: those are a person's.
+  Instants in parameters are text (`boostFields`).

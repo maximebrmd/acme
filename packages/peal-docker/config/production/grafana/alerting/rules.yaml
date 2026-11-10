@@ -309,6 +309,38 @@ groups:
                     type: gt
                     params: [1.5]
 
+      - uid: peal-ads-sync-behind
+        title: The sync of ad accounts falls behind
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two or more of the last three hourly syncs of ad accounts stopped at their budget with accounts still due (peal.ads.sync.unfinished). Campaigns, spend and the check of boosts against their budget are read later than their schedule says. Read the server's warnings for the ad network that does not answer; peal.ads.sync.left says how many accounts wait.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A run an hour: three in the window.
+              expr: sum(increase(peal_ads_sync_unfinished_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1.5]
+
       - uid: peal-uploads-waiting
         title: Uploads to platforms wait for a slot
         condition: B
