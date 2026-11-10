@@ -1,19 +1,18 @@
 ---
 title: Connecter des canaux
-description: Connectez les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok, les Pages Facebook et les chaînes YouTube sur lesquels publie un espace de travail, reconnectez-les quand une plateforme le demande, et déconnectez-les.
+description: Connectez les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok et Pinterest, les Pages Facebook et les chaînes YouTube sur lesquels publie un espace de travail, reconnectez-les quand une plateforme le demande, et déconnectez-les.
 sidebar:
   order: 2
 ---
 
-Un canal est un compte social connecté à un espace de travail : un compte Mastodon, Bluesky, LinkedIn, X, Threads, Instagram ou TikTok, une Page Facebook ou une chaîne YouTube, aujourd’hui. Les publications partent sur des canaux : connectez-en au moins un avant de programmer quoi que ce soit.
+Un canal est un compte social connecté à un espace de travail : un compte Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok ou Pinterest, une Page Facebook ou une chaîne YouTube, aujourd’hui. Les publications partent sur des canaux : connectez-en au moins un avant de programmer quoi que ce soit.
 
 Ouvrez un espace de travail depuis **Espaces de travail**, puis **Canaux**. Chaque membre voit les canaux de l’espace de travail ; seuls les propriétaires et les administrateurs les connectent, les reconnectent et les déconnectent.
 
-<Callout type="note" title="Neuf plateformes pour l’instant">
-  Peal connecte les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram
-  et TikTok, les Pages Facebook et les chaînes YouTube. L’autre plateforme qu’il
-  connaît, Pinterest, ne peut pas encore être connectée. **Canaux** ne propose
-  que les plateformes pour lesquelles le serveur Peal est configuré.
+<Callout type="note" title="Dix plateformes pour l’instant">
+  Peal connecte les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram,
+  TikTok et Pinterest, les Pages Facebook et les chaînes YouTube. **Canaux** ne
+  propose que les plateformes pour lesquelles le serveur Peal est configuré.
 </Callout>
 
 ## Connecter un compte [#connect]
@@ -91,6 +90,12 @@ Sous **YouTube**, choisissez **Connecter YouTube**, connectez-vous avec Google, 
 
 Le serveur Peal doit être configuré pour YouTube : sur une instance auto-hébergée, voyez [YouTube](/self-hosting#youtube). D’ici là, **Canaux** ne le propose pas.
 
+### Pinterest [#pinterest]
+
+Sous **Pinterest**, choisissez **Connecter Pinterest**, connectez-vous sur Pinterest, et autorisez Peal à voir vos tableaux et vos épingles, à créer des épingles, et à lire le nom et l’image de votre compte. Peal ne demande rien sur les tableaux secrets : il ne les liste donc jamais, et ne peut pas y épingler.
+
+Le serveur Peal doit être configuré pour Pinterest : sur une instance auto-hébergée, voyez [Pinterest](/self-hosting#pinterest). D’ici là, **Canaux** ne le propose pas.
+
 ## États [#statuses]
 
 Chaque canal affiche l’un de ces états :
@@ -105,7 +110,7 @@ Un canal dont l’accès ne peut pas être renouvelé affiche aussi la date avan
 
 ## Garder les canaux connectés [#keep-connected]
 
-Peal renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire : il rafraîchit une session Bluesky un mois avant qu’elle ne tombe, l’accès à X, qui dure deux heures, chaque fois qu’il publie, et au moins une fois par mois pour un compte qui ne publie pas, pour que X ne le perde jamais, l’accès à Threads et celui d’un compte Instagram connecté avec Instagram, qui durent 60 jours, une semaine avant, l’accès à TikTok, qui dure un jour ou moins, une demi-heure avant sa fin, et l’accès à YouTube, qui dure une heure, toutes les heures. TikTok laisse Peal le renouveler pendant 180 jours après la connexion du compte : le canal demande ensuite à être reconnecté. Google met fin à l’accès à YouTube quand le titulaire retire Peal de son compte Google, ou six mois après le dernier usage de Peal ; sur un serveur auto-hébergé dont le projet Google est en test, sept jours après la connexion de la chaîne. L’accès à Mastodon, et l’accès de Page avec lequel publient les Pages Facebook et les comptes Instagram connectés via une Page, n’expirent pas tant que personne ne les révoque ; Facebook retire aussi l’accès d’une Page quand la personne qui l’a connectée change de mot de passe ou perd son rôle sur la Page. L’accès à LinkedIn ne peut pas être renouvelé : reconnectez le canal tous les 60 jours, comme ci-dessus. Quand quelqu’un retire Peal de son compte Facebook, Instagram ou Threads, Meta en avertit Peal, qui marque à reconnecter les canaux que cette personne a connectés, dans chaque espace de travail, et prévient les membres qui les gèrent, avant qu’une publication n’y échoue.
+Peal renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire : il rafraîchit une session Bluesky un mois avant qu’elle ne tombe, l’accès à X, qui dure deux heures, chaque fois qu’il publie, et au moins une fois par mois pour un compte qui ne publie pas, pour que X ne le perde jamais, l’accès à Threads et celui d’un compte Instagram connecté avec Instagram, qui durent 60 jours, une semaine avant, l’accès à TikTok, qui dure un jour ou moins, une demi-heure avant sa fin, l’accès à YouTube, qui dure une heure, toutes les heures, et l’accès à Pinterest, qui dure 30 jours, une semaine avant. Pinterest laisse Peal le renouveler aussi longtemps qu’il continue de le faire, chaque renouvellement dans les 60 jours du précédent. TikTok laisse Peal le renouveler pendant 180 jours après la connexion du compte : le canal demande ensuite à être reconnecté. Google met fin à l’accès à YouTube quand le titulaire retire Peal de son compte Google, ou six mois après le dernier usage de Peal ; sur un serveur auto-hébergé dont le projet Google est en test, sept jours après la connexion de la chaîne. L’accès à Mastodon, et l’accès de Page avec lequel publient les Pages Facebook et les comptes Instagram connectés via une Page, n’expirent pas tant que personne ne les révoque ; Facebook retire aussi l’accès d’une Page quand la personne qui l’a connectée change de mot de passe ou perd son rôle sur la Page. L’accès à LinkedIn ne peut pas être renouvelé : reconnectez le canal tous les 60 jours, comme ci-dessus. Quand quelqu’un retire Peal de son compte Facebook, Instagram ou Threads, Meta en avertit Peal, qui marque à reconnecter les canaux que cette personne a connectés, dans chaque espace de travail, et prévient les membres qui les gèrent, avant qu’une publication n’y échoue.
 
 Quand une plateforme refuse l’accès de Peal pendant qu’il publie, Peal renouvelle l’accès quand la plateforme le permet, et réessaie une fois. Quand la plateforme refuse encore, ou que l’accès ne peut pas être renouvelé, par exemple parce que le titulaire du compte l’a révoqué, le canal passe à **À reconnecter**, et les propriétaires et administrateurs de l’espace de travail en sont prévenus une fois, sous la cloche et par e-mail, sauf s’ils ont désactivé cet e-mail (voir [Notifications](/notifications)). Quand une plateforme ne répond pas, Peal réessaie plus tard et laisse le canal tel quel.
 
@@ -121,6 +126,8 @@ Quand une plateforme refuse l’accès de Peal pendant qu’il publie, Peal reno
 - **Pages Facebook** : Peal publie le texte sur la Page, une photo avec, plusieurs photos en une publication, ou une vidéo, que Facebook va chercher dans le stockage des médias.
 - **TikTok** : Peal publie une vidéo, avec le texte de la publication comme légende, ou jusqu’à 35 photos, avec le texte comme description, comme vous l’avez choisi dans les [options TikTok](/scheduling#options) de la publication. Juste avant, il relit les réglages du compte sur TikTok, et la publication échoue s’ils ne la permettent plus. Une vidéo part en morceaux depuis le stockage des médias, sauf si TikTok peut aller la chercher lui-même (voyez [TikTok](/self-hosting#tiktok)) ; TikTok va toujours chercher les photos. TikTok traite ensuite la publication, que Peal suit jusqu’à sa mise en ligne : une publication que d’autres voient affiche un lien une fois validée par la modération de TikTok, une publication que vous seul voyez n’en a pas. TikTok autorise environ 15 publications par jour et par compte, toutes applications confondues.
 - **YouTube** : Peal met en ligne la vidéo de la publication sur la chaîne, avec le texte de la publication comme description et le titre, la visibilité, la réponse « conçue pour les enfants », les tags et la catégorie de ses [options](/scheduling#options), puis attend que YouTube la traite. Une vidéo que YouTube ne parvient pas à traiter ou refuse, comme doublon ou pour sa durée, échoue avec la raison de YouTube. Quand YouTube garde privée une vidéo que vous vouliez publique ou non répertoriée, la page de la publication le dit : changez sa visibilité dans YouTube Studio. Un serveur Peal met en ligne un nombre limité de vidéos par jour, sur toutes ses chaînes : au-delà, une vidéo attend minuit, heure du Pacifique, quand les quotas de YouTube repartent, et la page de la publication montre l’attente.
+
+- **Pinterest** : Peal crée une épingle sur le tableau, et la section du tableau, des [options de la plateforme](/scheduling#options) de la publication, avec le texte de la publication pour description, le texte alternatif du premier fichier pour texte alternatif, et le titre et le lien que vous avez donnés. Une image donne une épingle image, deux à cinq un carrousel, que Pinterest va chercher dans le stockage des médias ; une vidéo part du stockage des médias en une seule requête, Pinterest la traite, et sa couverture est l’image à la seconde que vous avez choisie, la première sinon. Pinterest ne donne à Peal aucun moyen de distinguer une épingle déjà créée d’une épingle qui ne l’a pas été : quand sa réponse se perd, Peal cherche l’épingle sur le tableau, et ne l’envoie jamais deux fois.
 
 ## Reconnecter [#reconnect]
 
