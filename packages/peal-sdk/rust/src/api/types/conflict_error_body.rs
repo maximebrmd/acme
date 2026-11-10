@@ -5,10 +5,14 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum ConflictErrorBody {
     #[non_exhaustive]
-    AlreadyMember {},
+    ExternalIdTaken {
+        #[serde(rename = "workspaceId")]
+        #[serde(default)]
+        workspace_id: String,
+    },
 
     #[non_exhaustive]
-    TooManyInvitations {},
+    IdempotencyKeyReused {},
 
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
@@ -18,12 +22,12 @@ pub enum ConflictErrorBody {
 }
 
 impl ConflictErrorBody {
-    pub fn already_member() -> Self {
-        Self::AlreadyMember {}
+    pub fn external_id_taken(workspace_id: String) -> Self {
+        Self::ExternalIdTaken { workspace_id }
     }
 
-    pub fn too_many_invitations() -> Self {
-        Self::TooManyInvitations {}
+    pub fn idempotency_key_reused() -> Self {
+        Self::IdempotencyKeyReused {}
     }
 
     pub fn unknown(value: serde_json::Value) -> Self {

@@ -19,20 +19,20 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.AlreadyMember"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.ExternalIdTaken"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.AlreadyMember value)
+    public ConflictErrorBody(ConflictErrorBody.ExternalIdTaken value)
     {
-        Type = "AlreadyMember";
+        Type = "ExternalIdTaken";
         Value = value.Value;
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyInvitations"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.IdempotencyKeyReused"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.TooManyInvitations value)
+    public ConflictErrorBody(ConflictErrorBody.IdempotencyKeyReused value)
     {
-        Type = "TooManyInvitations";
+        Type = "IdempotencyKeyReused";
         Value = value.Value;
     }
 
@@ -48,62 +48,62 @@ public record ConflictErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "AlreadyMember"
+    /// Returns true if <see cref="Type"/> is "ExternalIdTaken"
     /// </summary>
-    public bool IsAlreadyMember => Type == "AlreadyMember";
+    public bool IsExternalIdTaken => Type == "ExternalIdTaken";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "TooManyInvitations"
+    /// Returns true if <see cref="Type"/> is "IdempotencyKeyReused"
     /// </summary>
-    public bool IsTooManyInvitations => Type == "TooManyInvitations";
+    public bool IsIdempotencyKeyReused => Type == "IdempotencyKeyReused";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.AlreadyMemberEncoded"/> if <see cref="Type"/> is 'AlreadyMember', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.ExternalIdTakenEncoded"/> if <see cref="Type"/> is 'ExternalIdTaken', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'AlreadyMember'.</exception>
-    public Peal.AlreadyMemberEncoded AsAlreadyMember() =>
-        IsAlreadyMember
-            ? (Peal.AlreadyMemberEncoded)Value!
-            : throw new global::System.Exception("ConflictErrorBody.Type is not 'AlreadyMember'");
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ExternalIdTaken'.</exception>
+    public Peal.ExternalIdTakenEncoded AsExternalIdTaken() =>
+        IsExternalIdTaken
+            ? (Peal.ExternalIdTakenEncoded)Value!
+            : throw new global::System.Exception("ConflictErrorBody.Type is not 'ExternalIdTaken'");
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.TooManyInvitationsEncoded"/> if <see cref="Type"/> is 'TooManyInvitations', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.IdempotencyKeyReusedEncoded"/> if <see cref="Type"/> is 'IdempotencyKeyReused', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyInvitations'.</exception>
-    public Peal.TooManyInvitationsEncoded AsTooManyInvitations() =>
-        IsTooManyInvitations
-            ? (Peal.TooManyInvitationsEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'IdempotencyKeyReused'.</exception>
+    public Peal.IdempotencyKeyReusedEncoded AsIdempotencyKeyReused() =>
+        IsIdempotencyKeyReused
+            ? (Peal.IdempotencyKeyReusedEncoded)Value!
             : throw new global::System.Exception(
-                "ConflictErrorBody.Type is not 'TooManyInvitations'"
+                "ConflictErrorBody.Type is not 'IdempotencyKeyReused'"
             );
 
     public T Match<T>(
-        Func<Peal.AlreadyMemberEncoded, T> onAlreadyMember,
-        Func<Peal.TooManyInvitationsEncoded, T> onTooManyInvitations,
+        Func<Peal.ExternalIdTakenEncoded, T> onExternalIdTaken,
+        Func<Peal.IdempotencyKeyReusedEncoded, T> onIdempotencyKeyReused,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "AlreadyMember" => onAlreadyMember(AsAlreadyMember()),
-            "TooManyInvitations" => onTooManyInvitations(AsTooManyInvitations()),
+            "ExternalIdTaken" => onExternalIdTaken(AsExternalIdTaken()),
+            "IdempotencyKeyReused" => onIdempotencyKeyReused(AsIdempotencyKeyReused()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.AlreadyMemberEncoded> onAlreadyMember,
-        Action<Peal.TooManyInvitationsEncoded> onTooManyInvitations,
+        Action<Peal.ExternalIdTakenEncoded> onExternalIdTaken,
+        Action<Peal.IdempotencyKeyReusedEncoded> onIdempotencyKeyReused,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "AlreadyMember":
-                onAlreadyMember(AsAlreadyMember());
+            case "ExternalIdTaken":
+                onExternalIdTaken(AsExternalIdTaken());
                 break;
-            case "TooManyInvitations":
-                onTooManyInvitations(AsTooManyInvitations());
+            case "IdempotencyKeyReused":
+                onIdempotencyKeyReused(AsIdempotencyKeyReused());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -112,13 +112,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.AlreadyMemberEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.ExternalIdTakenEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsAlreadyMember(out Peal.AlreadyMemberEncoded? value)
+    public bool TryAsExternalIdTaken(out Peal.ExternalIdTakenEncoded? value)
     {
-        if (Type == "AlreadyMember")
+        if (Type == "ExternalIdTaken")
         {
-            value = (Peal.AlreadyMemberEncoded)Value!;
+            value = (Peal.ExternalIdTakenEncoded)Value!;
             return true;
         }
         value = null;
@@ -126,13 +126,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.TooManyInvitationsEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.IdempotencyKeyReusedEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsTooManyInvitations(out Peal.TooManyInvitationsEncoded? value)
+    public bool TryAsIdempotencyKeyReused(out Peal.IdempotencyKeyReusedEncoded? value)
     {
-        if (Type == "TooManyInvitations")
+        if (Type == "IdempotencyKeyReused")
         {
-            value = (Peal.TooManyInvitationsEncoded)Value!;
+            value = (Peal.IdempotencyKeyReusedEncoded)Value!;
             return true;
         }
         value = null;
@@ -141,11 +141,12 @@ public record ConflictErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.AlreadyMember value) =>
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.ExternalIdTaken value) =>
         new(value);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.TooManyInvitations value) =>
-        new(value);
+    public static implicit operator ConflictErrorBody(
+        ConflictErrorBody.IdempotencyKeyReused value
+    ) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<ConflictErrorBody>
@@ -180,22 +181,16 @@ public record ConflictErrorBody
                 discriminatorElement.GetString()
                 ?? throw new JsonException("Discriminator property '_tag' is null");
 
-            // Strip the discriminant property to prevent it from leaking into AdditionalProperties
-            var jsonObject = System.Text.Json.Nodes.JsonObject.Create(json);
-            jsonObject?.Remove("_tag");
-            var jsonWithoutDiscriminator =
-                jsonObject != null ? JsonSerializer.SerializeToElement(jsonObject, options) : json;
-
             var value = discriminator switch
             {
-                "AlreadyMember" => jsonWithoutDiscriminator.Deserialize<Peal.AlreadyMemberEncoded?>(
+                "ExternalIdTaken" => json.Deserialize<Peal.ExternalIdTakenEncoded?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.ExternalIdTakenEncoded"),
+                "IdempotencyKeyReused" => json.Deserialize<Peal.IdempotencyKeyReusedEncoded?>(
                     options
-                ) ?? throw new JsonException("Failed to deserialize Peal.AlreadyMemberEncoded"),
-                "TooManyInvitations" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyInvitationsEncoded?>(options)
-                        ?? throw new JsonException(
-                            "Failed to deserialize Peal.TooManyInvitationsEncoded"
-                        ),
+                )
+                    ?? throw new JsonException(
+                        "Failed to deserialize Peal.IdempotencyKeyReusedEncoded"
+                    ),
                 _ => json.Deserialize<object?>(options),
             };
             return new ConflictErrorBody(discriminator, value);
@@ -210,8 +205,8 @@ public record ConflictErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "AlreadyMember" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "TooManyInvitations" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "ExternalIdTaken" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "IdempotencyKeyReused" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -241,42 +236,42 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for AlreadyMember
+    /// Discriminated union type for ExternalIdTaken
     /// </summary>
     [Serializable]
-    public struct AlreadyMember
+    public struct ExternalIdTaken
     {
-        public AlreadyMember(Peal.AlreadyMemberEncoded value)
+        public ExternalIdTaken(Peal.ExternalIdTakenEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.AlreadyMemberEncoded Value { get; set; }
+        internal Peal.ExternalIdTakenEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.AlreadyMember(
-            Peal.AlreadyMemberEncoded value
+        public static implicit operator ConflictErrorBody.ExternalIdTaken(
+            Peal.ExternalIdTakenEncoded value
         ) => new(value);
     }
 
     /// <summary>
-    /// Discriminated union type for TooManyInvitations
+    /// Discriminated union type for IdempotencyKeyReused
     /// </summary>
     [Serializable]
-    public struct TooManyInvitations
+    public struct IdempotencyKeyReused
     {
-        public TooManyInvitations(Peal.TooManyInvitationsEncoded value)
+        public IdempotencyKeyReused(Peal.IdempotencyKeyReusedEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.TooManyInvitationsEncoded Value { get; set; }
+        internal Peal.IdempotencyKeyReusedEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.TooManyInvitations(
-            Peal.TooManyInvitationsEncoded value
+        public static implicit operator ConflictErrorBody.IdempotencyKeyReused(
+            Peal.IdempotencyKeyReusedEncoded value
         ) => new(value);
     }
 }

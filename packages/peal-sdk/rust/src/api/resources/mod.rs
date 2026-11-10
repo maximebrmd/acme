@@ -17,6 +17,9 @@
 //! - **analytics**
 //! - **tiktok**
 //! - **webhooks**
+//! - **partner**
+//! - **partnerAccount**
+//! - **connectLinks**
 
 use crate::{ApiError, ClientConfig};
 
@@ -25,11 +28,14 @@ pub mod api_keys;
 pub mod assistant;
 pub mod billing;
 pub mod channels;
+pub mod connect_links;
 pub mod invitations;
 pub mod media;
 pub mod members;
 pub mod notices;
 pub mod notification_preferences;
+pub mod partner;
+pub mod partner_account;
 pub mod posts;
 pub mod session;
 pub mod system;
@@ -52,6 +58,9 @@ pub struct PealClient {
     pub analytics: AnalyticsClient,
     pub tiktok: TiktokClient,
     pub webhooks: WebhooksClient,
+    pub partner: PartnerClient,
+    pub partner_account: PartnerAccountClient,
+    pub connect_links: ConnectLinksClient,
 }
 
 impl PealClient {
@@ -73,6 +82,9 @@ impl PealClient {
             analytics: AnalyticsClient::new(config.clone())?,
             tiktok: TiktokClient::new(config.clone())?,
             webhooks: WebhooksClient::new(config.clone())?,
+            partner: PartnerClient::new(config.clone())?,
+            partner_account: PartnerAccountClient::new(config.clone())?,
+            connect_links: ConnectLinksClient::new(config.clone())?,
         })
     }
 }
@@ -82,11 +94,14 @@ pub use api_keys::ApiKeysClient;
 pub use assistant::AssistantClient;
 pub use billing::BillingClient;
 pub use channels::ChannelsClient;
+pub use connect_links::ConnectLinksClient;
 pub use invitations::InvitationsClient;
 pub use media::MediaClient;
 pub use members::MembersClient;
 pub use notices::NoticesClient;
 pub use notification_preferences::NotificationPreferencesClient;
+pub use partner::PartnerClient;
+pub use partner_account::PartnerAccountClient;
 pub use posts::PostsClient;
 pub use session::SessionClient;
 pub use system::SystemClient;

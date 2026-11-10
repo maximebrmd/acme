@@ -114,7 +114,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -258,7 +258,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -391,7 +391,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -549,7 +549,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -704,7 +704,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -837,7 +837,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -966,7 +966,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -1111,7 +1111,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -1257,7 +1257,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -1427,7 +1427,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -1583,7 +1583,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -1728,7 +1728,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -1875,7 +1875,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,
@@ -2019,7 +2019,7 @@ public partial class PostsClient : IPostsClient
                         );
                     case 403:
                         throw new ForbiddenError(
-                            JsonUtils.Deserialize<ForbiddenEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,

@@ -30,6 +30,7 @@ public class UpdateTest : BaseMockServerTest
               "failingSince": "failingSince",
               "id": "id",
               "previousSecretExpiresAt": "previousSecretExpiresAt",
+              "scope": "workspace",
               "updatedAt": "updatedAt",
               "url": "url"
             }
@@ -85,6 +86,7 @@ public class UpdateTest : BaseMockServerTest
               "failingSince": "failingSince",
               "id": "id",
               "previousSecretExpiresAt": "previousSecretExpiresAt",
+              "scope": "workspace",
               "updatedAt": "updatedAt",
               "url": "url"
             }

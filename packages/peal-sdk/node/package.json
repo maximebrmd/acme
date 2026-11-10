@@ -183,6 +183,39 @@
       },
       "default": "./dist/cjs/api/resources/webhooks/exports.js"
     },
+    "./partner": {
+      "import": {
+        "types": "./dist/esm/api/resources/partner/exports.d.mts",
+        "default": "./dist/esm/api/resources/partner/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/partner/exports.d.ts",
+        "default": "./dist/cjs/api/resources/partner/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/partner/exports.js"
+    },
+    "./partnerAccount": {
+      "import": {
+        "types": "./dist/esm/api/resources/partnerAccount/exports.d.mts",
+        "default": "./dist/esm/api/resources/partnerAccount/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/partnerAccount/exports.d.ts",
+        "default": "./dist/cjs/api/resources/partnerAccount/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/partnerAccount/exports.js"
+    },
+    "./connectLinks": {
+      "import": {
+        "types": "./dist/esm/api/resources/connectLinks/exports.d.mts",
+        "default": "./dist/esm/api/resources/connectLinks/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/connectLinks/exports.d.ts",
+        "default": "./dist/cjs/api/resources/connectLinks/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/connectLinks/exports.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

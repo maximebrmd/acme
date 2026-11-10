@@ -63,6 +63,12 @@ class WebhookEndpoint extends JsonSerializableType
     public ?string $previousSecretExpiresAt;
 
     /**
+     * @var value-of<WebhookEndpointScope> $scope
+     */
+    #[JsonProperty('scope')]
+    public string $scope;
+
+    /**
      * @var string $updatedAt
      */
     #[JsonProperty('updatedAt')]
@@ -81,6 +87,7 @@ class WebhookEndpoint extends JsonSerializableType
      *   enabled: bool,
      *   eventTypes: array<value-of<SubscribableWebhookEventType>>,
      *   id: string,
+     *   scope: value-of<WebhookEndpointScope>,
      *   updatedAt: string,
      *   url: string,
      *   disabledAt?: ?string,
@@ -101,6 +108,7 @@ class WebhookEndpoint extends JsonSerializableType
         $this->failingSince = $values['failingSince'] ?? null;
         $this->id = $values['id'];
         $this->previousSecretExpiresAt = $values['previousSecretExpiresAt'] ?? null;
+        $this->scope = $values['scope'];
         $this->updatedAt = $values['updatedAt'];
         $this->url = $values['url'];
     }

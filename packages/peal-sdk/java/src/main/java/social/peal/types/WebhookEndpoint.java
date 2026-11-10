@@ -44,6 +44,8 @@ public final class WebhookEndpoint {
 
     private final Optional<String> previousSecretExpiresAt;
 
+    private final WebhookEndpointScope scope;
+
     private final String updatedAt;
 
     private final String url;
@@ -60,6 +62,7 @@ public final class WebhookEndpoint {
             Optional<String> failingSince,
             String id,
             Optional<String> previousSecretExpiresAt,
+            WebhookEndpointScope scope,
             String updatedAt,
             String url,
             Map<String, Object> additionalProperties) {
@@ -72,6 +75,7 @@ public final class WebhookEndpoint {
         this.failingSince = failingSince;
         this.id = id;
         this.previousSecretExpiresAt = previousSecretExpiresAt;
+        this.scope = scope;
         this.updatedAt = updatedAt;
         this.url = url;
         this.additionalProperties = additionalProperties;
@@ -134,6 +138,11 @@ public final class WebhookEndpoint {
         return previousSecretExpiresAt;
     }
 
+    @JsonProperty("scope")
+    public WebhookEndpointScope getScope() {
+        return scope;
+    }
+
     @JsonProperty("updatedAt")
     public String getUpdatedAt() {
         return updatedAt;
@@ -189,6 +198,7 @@ public final class WebhookEndpoint {
                 && failingSince.equals(other.failingSince)
                 && id.equals(other.id)
                 && previousSecretExpiresAt.equals(other.previousSecretExpiresAt)
+                && scope.equals(other.scope)
                 && updatedAt.equals(other.updatedAt)
                 && url.equals(other.url);
     }
@@ -205,6 +215,7 @@ public final class WebhookEndpoint {
                 this.failingSince,
                 this.id,
                 this.previousSecretExpiresAt,
+                this.scope,
                 this.updatedAt,
                 this.url);
     }
@@ -233,7 +244,11 @@ public final class WebhookEndpoint {
     }
 
     public interface IdStage {
-        UpdatedAtStage id(@NotNull String id);
+        ScopeStage id(@NotNull String id);
+    }
+
+    public interface ScopeStage {
+        UpdatedAtStage scope(@NotNull WebhookEndpointScope scope);
     }
 
     public interface UpdatedAtStage {
@@ -284,7 +299,14 @@ public final class WebhookEndpoint {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements CreatedAtStage, DescriptionStage, EnabledStage, IdStage, UpdatedAtStage, UrlStage, _FinalStage {
+            implements CreatedAtStage,
+                    DescriptionStage,
+                    EnabledStage,
+                    IdStage,
+                    ScopeStage,
+                    UpdatedAtStage,
+                    UrlStage,
+                    _FinalStage {
         private String createdAt;
 
         private String description;
@@ -292,6 +314,8 @@ public final class WebhookEndpoint {
         private boolean enabled;
 
         private String id;
+
+        private WebhookEndpointScope scope;
 
         private String updatedAt;
 
@@ -322,6 +346,7 @@ public final class WebhookEndpoint {
             failingSince(other.getFailingSince());
             id(other.getId());
             previousSecretExpiresAt(other.getPreviousSecretExpiresAt());
+            scope(other.getScope());
             updatedAt(other.getUpdatedAt());
             url(other.getUrl());
             return this;
@@ -350,8 +375,15 @@ public final class WebhookEndpoint {
 
         @java.lang.Override
         @JsonSetter("id")
-        public UpdatedAtStage id(@NotNull String id) {
+        public ScopeStage id(@NotNull String id) {
             this.id = Objects.requireNonNull(id, "id must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("scope")
+        public UpdatedAtStage scope(@NotNull WebhookEndpointScope scope) {
+            this.scope = Objects.requireNonNull(scope, "scope must not be null");
             return this;
         }
 
@@ -505,6 +537,7 @@ public final class WebhookEndpoint {
                     failingSince,
                     id,
                     previousSecretExpiresAt,
+                    scope,
                     updatedAt,
                     url,
                     additionalProperties);
@@ -521,6 +554,7 @@ public final class WebhookEndpoint {
                     || key.equalsIgnoreCase("failingSince")
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("previousSecretExpiresAt")
+                    || key.equalsIgnoreCase("scope")
                     || key.equalsIgnoreCase("updatedAt")
                     || key.equalsIgnoreCase("url")) {
                 return;

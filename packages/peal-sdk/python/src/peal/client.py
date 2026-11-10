@@ -15,11 +15,14 @@ if typing.TYPE_CHECKING:
     from .assistant.client import AssistantClient, AsyncAssistantClient
     from .billing.client import AsyncBillingClient, BillingClient
     from .channels.client import AsyncChannelsClient, ChannelsClient
+    from .connect_links.client import AsyncConnectLinksClient, ConnectLinksClient
     from .invitations.client import AsyncInvitationsClient, InvitationsClient
     from .media.client import AsyncMediaClient, MediaClient
     from .members.client import AsyncMembersClient, MembersClient
     from .notices.client import AsyncNoticesClient, NoticesClient
     from .notification_preferences.client import AsyncNotificationPreferencesClient, NotificationPreferencesClient
+    from .partner.client import AsyncPartnerClient, PartnerClient
+    from .partner_account.client import AsyncPartnerAccountClient, PartnerAccountClient
     from .posts.client import AsyncPostsClient, PostsClient
     from .session.client import AsyncSessionClient, SessionClient
     from .system.client import AsyncSystemClient, SystemClient
@@ -126,6 +129,9 @@ class Peal:
         self._analytics: typing.Optional[AnalyticsClient] = None
         self._tiktok: typing.Optional[TiktokClient] = None
         self._webhooks: typing.Optional[WebhooksClient] = None
+        self._partner: typing.Optional[PartnerClient] = None
+        self._partner_account: typing.Optional[PartnerAccountClient] = None
+        self._connect_links: typing.Optional[ConnectLinksClient] = None
 
     @property
     def system(self):
@@ -246,6 +252,30 @@ class Peal:
 
             self._webhooks = WebhooksClient(client_wrapper=self._client_wrapper)
         return self._webhooks
+
+    @property
+    def partner(self):
+        if self._partner is None:
+            from .partner.client import PartnerClient  # noqa: E402
+
+            self._partner = PartnerClient(client_wrapper=self._client_wrapper)
+        return self._partner
+
+    @property
+    def partner_account(self):
+        if self._partner_account is None:
+            from .partner_account.client import PartnerAccountClient  # noqa: E402
+
+            self._partner_account = PartnerAccountClient(client_wrapper=self._client_wrapper)
+        return self._partner_account
+
+    @property
+    def connect_links(self):
+        if self._connect_links is None:
+            from .connect_links.client import ConnectLinksClient  # noqa: E402
+
+            self._connect_links = ConnectLinksClient(client_wrapper=self._client_wrapper)
+        return self._connect_links
 
 
 def _make_default_async_client(
@@ -368,6 +398,9 @@ class AsyncPeal:
         self._analytics: typing.Optional[AsyncAnalyticsClient] = None
         self._tiktok: typing.Optional[AsyncTiktokClient] = None
         self._webhooks: typing.Optional[AsyncWebhooksClient] = None
+        self._partner: typing.Optional[AsyncPartnerClient] = None
+        self._partner_account: typing.Optional[AsyncPartnerAccountClient] = None
+        self._connect_links: typing.Optional[AsyncConnectLinksClient] = None
 
     @property
     def system(self):
@@ -488,6 +521,30 @@ class AsyncPeal:
 
             self._webhooks = AsyncWebhooksClient(client_wrapper=self._client_wrapper)
         return self._webhooks
+
+    @property
+    def partner(self):
+        if self._partner is None:
+            from .partner.client import AsyncPartnerClient  # noqa: E402
+
+            self._partner = AsyncPartnerClient(client_wrapper=self._client_wrapper)
+        return self._partner
+
+    @property
+    def partner_account(self):
+        if self._partner_account is None:
+            from .partner_account.client import AsyncPartnerAccountClient  # noqa: E402
+
+            self._partner_account = AsyncPartnerAccountClient(client_wrapper=self._client_wrapper)
+        return self._partner_account
+
+    @property
+    def connect_links(self):
+        if self._connect_links is None:
+            from .connect_links.client import AsyncConnectLinksClient  # noqa: E402
+
+            self._connect_links = AsyncConnectLinksClient(client_wrapper=self._client_wrapper)
+        return self._connect_links
 
 
 def _get_base_url(*, base_url: typing.Optional[str] = None, environment: PealEnvironment) -> str:

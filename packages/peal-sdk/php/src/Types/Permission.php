@@ -25,6 +25,8 @@ enum Permission: string
     case MemberDelete = "member:delete";
     case OrganizationUpdate = "organization:update";
     case OrganizationDelete = "organization:delete";
+    case PartnerRead = "partner:read";
+    case PartnerManage = "partner:manage";
     case PostRead = "post:read";
     case PostCreate = "post:create";
     case PostUpdate = "post:update";

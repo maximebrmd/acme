@@ -11,11 +11,14 @@ import social.peal.resources.apikeys.ApiKeysClient;
 import social.peal.resources.assistant.AssistantClient;
 import social.peal.resources.billing.BillingClient;
 import social.peal.resources.channels.ChannelsClient;
+import social.peal.resources.connectlinks.ConnectLinksClient;
 import social.peal.resources.invitations.InvitationsClient;
 import social.peal.resources.media.MediaClient;
 import social.peal.resources.members.MembersClient;
 import social.peal.resources.notices.NoticesClient;
 import social.peal.resources.notificationpreferences.NotificationPreferencesClient;
+import social.peal.resources.partner.PartnerClient;
+import social.peal.resources.partneraccount.PartnerAccountClient;
 import social.peal.resources.posts.PostsClient;
 import social.peal.resources.session.SessionClient;
 import social.peal.resources.system.SystemClient;
@@ -55,6 +58,12 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<WebhooksClient> webhooksClient;
 
+    protected final Supplier<PartnerClient> partnerClient;
+
+    protected final Supplier<PartnerAccountClient> partnerAccountClient;
+
+    protected final Supplier<ConnectLinksClient> connectLinksClient;
+
     public PealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new SystemClient(clientOptions));
@@ -72,6 +81,9 @@ public class PealClient implements AutoCloseable {
         this.analyticsClient = Suppliers.memoize(() -> new AnalyticsClient(clientOptions));
         this.tiktokClient = Suppliers.memoize(() -> new TiktokClient(clientOptions));
         this.webhooksClient = Suppliers.memoize(() -> new WebhooksClient(clientOptions));
+        this.partnerClient = Suppliers.memoize(() -> new PartnerClient(clientOptions));
+        this.partnerAccountClient = Suppliers.memoize(() -> new PartnerAccountClient(clientOptions));
+        this.connectLinksClient = Suppliers.memoize(() -> new ConnectLinksClient(clientOptions));
     }
 
     public SystemClient system() {
@@ -132,6 +144,18 @@ public class PealClient implements AutoCloseable {
 
     public WebhooksClient webhooks() {
         return this.webhooksClient.get();
+    }
+
+    public PartnerClient partner() {
+        return this.partnerClient.get();
+    }
+
+    public PartnerAccountClient partnerAccount() {
+        return this.partnerAccountClient.get();
+    }
+
+    public ConnectLinksClient connectLinks() {
+        return this.connectLinksClient.get();
     }
 
     /**

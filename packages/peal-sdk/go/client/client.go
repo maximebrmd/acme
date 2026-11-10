@@ -8,6 +8,7 @@ import (
 	assistant "github.com/peal-social/peal/packages/peal-sdk/go/assistant"
 	billing "github.com/peal-social/peal/packages/peal-sdk/go/billing"
 	channels "github.com/peal-social/peal/packages/peal-sdk/go/channels"
+	connectlinks "github.com/peal-social/peal/packages/peal-sdk/go/connectlinks"
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
 	internal "github.com/peal-social/peal/packages/peal-sdk/go/internal"
 	invitations "github.com/peal-social/peal/packages/peal-sdk/go/invitations"
@@ -16,6 +17,8 @@ import (
 	notices "github.com/peal-social/peal/packages/peal-sdk/go/notices"
 	notificationpreferences "github.com/peal-social/peal/packages/peal-sdk/go/notificationpreferences"
 	option "github.com/peal-social/peal/packages/peal-sdk/go/option"
+	partner "github.com/peal-social/peal/packages/peal-sdk/go/partner"
+	partneraccount "github.com/peal-social/peal/packages/peal-sdk/go/partneraccount"
 	posts "github.com/peal-social/peal/packages/peal-sdk/go/posts"
 	session "github.com/peal-social/peal/packages/peal-sdk/go/session"
 	system "github.com/peal-social/peal/packages/peal-sdk/go/system"
@@ -39,6 +42,9 @@ type Client struct {
 	Analytics               *analytics.Client
 	Tiktok                  *tiktok.Client
 	Webhooks                *webhooks.Client
+	Partner                 *partner.Client
+	PartnerAccount          *partneraccount.Client
+	ConnectLinks            *connectlinks.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -63,6 +69,9 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Analytics:               analytics.NewClient(options),
 		Tiktok:                  tiktok.NewClient(options),
 		Webhooks:                webhooks.NewClient(options),
+		Partner:                 partner.NewClient(options),
+		PartnerAccount:          partneraccount.NewClient(options),
+		ConnectLinks:            connectlinks.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,
 		caller: internal.NewCaller(

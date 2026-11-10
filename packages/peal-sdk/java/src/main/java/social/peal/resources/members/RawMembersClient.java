@@ -25,7 +25,6 @@ import social.peal.errors.ForbiddenError;
 import social.peal.errors.NotFoundError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.resources.members.requests.ListMembersRequest;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.UnauthenticatedEncoded;
 import social.peal.types.WorkspaceMember;
 
@@ -108,8 +107,7 @@ public class RawMembersClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

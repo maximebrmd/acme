@@ -3,15 +3,15 @@
 import * as Peal from "../index.js";
 
 export type ConflictErrorBody = 
-    | Peal.ConflictErrorBody.AlreadyMember
-    | Peal.ConflictErrorBody.TooManyInvitations;
+    | Peal.ConflictErrorBody.ExternalIdTaken
+    | Peal.ConflictErrorBody.IdempotencyKeyReused;
 
 export namespace ConflictErrorBody {
-    export interface AlreadyMember extends Peal.AlreadyMemberEncoded {
-        _tag: "AlreadyMember";
+    export interface ExternalIdTaken extends Peal.ExternalIdTakenEncoded {
+        _tag: "ExternalIdTaken";
     }
 
-    export interface TooManyInvitations extends Peal.TooManyInvitationsEncoded {
-        _tag: "TooManyInvitations";
+    export interface IdempotencyKeyReused extends Peal.IdempotencyKeyReusedEncoded {
+        _tag: "IdempotencyKeyReused";
     }
 }

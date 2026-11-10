@@ -31,7 +31,6 @@ import social.peal.errors.ForbiddenError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.resources.notices.requests.ListNoticesRequest;
 import social.peal.resources.notices.requests.MarkNoticesRead;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.NoticePage;
 import social.peal.types.UnauthenticatedEncoded;
 import social.peal.types.UnreadNotices;
@@ -131,7 +130,7 @@ public class AsyncRawNoticesClient {
                                 return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
-                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                         }
@@ -224,7 +223,7 @@ public class AsyncRawNoticesClient {
                                 return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
-                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                         }
@@ -323,7 +322,7 @@ public class AsyncRawNoticesClient {
                                 return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
-                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                         }
@@ -415,7 +414,7 @@ public class AsyncRawNoticesClient {
                                 return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
-                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                         }

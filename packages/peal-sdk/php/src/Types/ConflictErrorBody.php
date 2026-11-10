@@ -9,8 +9,8 @@ class ConflictErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'AlreadyMember'
-     *   |'TooManyInvitations'
+     *    'ExternalIdTaken'
+     *   |'IdempotencyKeyReused'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +18,8 @@ class ConflictErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    AlreadyMemberEncoded
-     *   |TooManyInvitationsEncoded
+     *    ExternalIdTakenEncoded
+     *   |IdempotencyKeyReusedEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +28,13 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'AlreadyMember'
-     *   |'TooManyInvitations'
+     *    'ExternalIdTaken'
+     *   |'IdempotencyKeyReused'
      *   |'_unknown'
      * ),
      *   value: (
-     *    AlreadyMemberEncoded
-     *   |TooManyInvitationsEncoded
+     *    ExternalIdTakenEncoded
+     *   |IdempotencyKeyReusedEncoded
      *   |mixed
      * ),
      * } $values
@@ -47,45 +47,45 @@ class ConflictErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param AlreadyMemberEncoded $alreadyMember
+     * @param ExternalIdTakenEncoded $externalIdTaken
      * @return ConflictErrorBody
      */
-    public static function alreadyMember(AlreadyMemberEncoded $alreadyMember): ConflictErrorBody
+    public static function externalIdTaken(ExternalIdTakenEncoded $externalIdTaken): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'AlreadyMember',
-            'value' => $alreadyMember,
+            'type' => 'ExternalIdTaken',
+            'value' => $externalIdTaken,
         ]);
     }
 
     /**
-     * @param TooManyInvitationsEncoded $tooManyInvitations
+     * @param IdempotencyKeyReusedEncoded $idempotencyKeyReused
      * @return ConflictErrorBody
      */
-    public static function tooManyInvitations(TooManyInvitationsEncoded $tooManyInvitations): ConflictErrorBody
+    public static function idempotencyKeyReused(IdempotencyKeyReusedEncoded $idempotencyKeyReused): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'TooManyInvitations',
-            'value' => $tooManyInvitations,
+            'type' => 'IdempotencyKeyReused',
+            'value' => $idempotencyKeyReused,
         ]);
     }
 
     /**
      * @return bool
      */
-    public function isAlreadyMember(): bool
+    public function isExternalIdTaken(): bool
     {
-        return $this->value instanceof AlreadyMemberEncoded && $this->type === 'AlreadyMember';
+        return $this->value instanceof ExternalIdTakenEncoded && $this->type === 'ExternalIdTaken';
     }
 
     /**
-     * @return AlreadyMemberEncoded
+     * @return ExternalIdTakenEncoded
      */
-    public function asAlreadyMember(): AlreadyMemberEncoded
+    public function asExternalIdTaken(): ExternalIdTakenEncoded
     {
-        if (!($this->value instanceof AlreadyMemberEncoded && $this->type === 'AlreadyMember')) {
+        if (!($this->value instanceof ExternalIdTakenEncoded && $this->type === 'ExternalIdTaken')) {
             throw new Exception(
-                "Expected AlreadyMember; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected ExternalIdTaken; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -95,19 +95,19 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isTooManyInvitations(): bool
+    public function isIdempotencyKeyReused(): bool
     {
-        return $this->value instanceof TooManyInvitationsEncoded && $this->type === 'TooManyInvitations';
+        return $this->value instanceof IdempotencyKeyReusedEncoded && $this->type === 'IdempotencyKeyReused';
     }
 
     /**
-     * @return TooManyInvitationsEncoded
+     * @return IdempotencyKeyReusedEncoded
      */
-    public function asTooManyInvitations(): TooManyInvitationsEncoded
+    public function asIdempotencyKeyReused(): IdempotencyKeyReusedEncoded
     {
-        if (!($this->value instanceof TooManyInvitationsEncoded && $this->type === 'TooManyInvitations')) {
+        if (!($this->value instanceof IdempotencyKeyReusedEncoded && $this->type === 'IdempotencyKeyReused')) {
             throw new Exception(
-                "Expected TooManyInvitations; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected IdempotencyKeyReused; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +134,12 @@ class ConflictErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'AlreadyMember':
-                $value = $this->asAlreadyMember()->jsonSerialize();
+            case 'ExternalIdTaken':
+                $value = $this->asExternalIdTaken()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'TooManyInvitations':
-                $value = $this->asTooManyInvitations()->jsonSerialize();
+            case 'IdempotencyKeyReused':
+                $value = $this->asIdempotencyKeyReused()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +178,11 @@ class ConflictErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'AlreadyMember':
-                $args['value'] = AlreadyMemberEncoded::jsonDeserialize($data);
+            case 'ExternalIdTaken':
+                $args['value'] = ExternalIdTakenEncoded::jsonDeserialize($data);
                 break;
-            case 'TooManyInvitations':
-                $args['value'] = TooManyInvitationsEncoded::jsonDeserialize($data);
+            case 'IdempotencyKeyReused':
+                $args['value'] = IdempotencyKeyReusedEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

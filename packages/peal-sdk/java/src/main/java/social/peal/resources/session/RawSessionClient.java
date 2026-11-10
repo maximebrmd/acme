@@ -20,7 +20,6 @@ import social.peal.core.RequestOptions;
 import social.peal.core.RetryInterceptor;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.UnauthorizedError;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.Me;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -84,8 +83,7 @@ public class RawSessionClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
                 // unable to map error response, throwing generic error

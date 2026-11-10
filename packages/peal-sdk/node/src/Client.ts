@@ -5,11 +5,14 @@ import { ApiKeysClient } from "./api/resources/apiKeys/client/Client.js";
 import { AssistantClient } from "./api/resources/assistant/client/Client.js";
 import { BillingClient } from "./api/resources/billing/client/Client.js";
 import { ChannelsClient } from "./api/resources/channels/client/Client.js";
+import { ConnectLinksClient } from "./api/resources/connectLinks/client/Client.js";
 import { InvitationsClient } from "./api/resources/invitations/client/Client.js";
 import { MediaClient } from "./api/resources/media/client/Client.js";
 import { MembersClient } from "./api/resources/members/client/Client.js";
 import { NoticesClient } from "./api/resources/notices/client/Client.js";
 import { NotificationPreferencesClient } from "./api/resources/notificationPreferences/client/Client.js";
+import { PartnerClient } from "./api/resources/partner/client/Client.js";
+import { PartnerAccountClient } from "./api/resources/partnerAccount/client/Client.js";
 import { PostsClient } from "./api/resources/posts/client/Client.js";
 import { SessionClient } from "./api/resources/session/client/Client.js";
 import { SystemClient } from "./api/resources/system/client/Client.js";
@@ -44,6 +47,9 @@ export class PealClient {
     protected _analytics: AnalyticsClient | undefined;
     protected _tiktok: TiktokClient | undefined;
     protected _webhooks: WebhooksClient | undefined;
+    protected _partner: PartnerClient | undefined;
+    protected _partnerAccount: PartnerAccountClient | undefined;
+    protected _connectLinks: ConnectLinksClient | undefined;
 
     constructor(options: PealClient.Options = {}) {
 
@@ -108,6 +114,18 @@ export class PealClient {
 
     public get webhooks(): WebhooksClient {
         return (this._webhooks ??= new WebhooksClient(this._options));
+    }
+
+    public get partner(): PartnerClient {
+        return (this._partner ??= new PartnerClient(this._options));
+    }
+
+    public get partnerAccount(): PartnerAccountClient {
+        return (this._partnerAccount ??= new PartnerAccountClient(this._options));
+    }
+
+    public get connectLinks(): ConnectLinksClient {
+        return (this._connectLinks ??= new ConnectLinksClient(this._options));
     }
 
     /**

@@ -9,9 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::AlreadyMemberEncoded }, key: "ALREADY_MEMBER"
+      member -> { Peal::Types::ExternalIDTakenEncoded }, key: "EXTERNAL_ID_TAKEN"
 
-      member -> { Peal::Types::TooManyInvitationsEncoded }, key: "TOO_MANY_INVITATIONS"
+      member -> { Peal::Types::IdempotencyKeyReusedEncoded }, key: "IDEMPOTENCY_KEY_REUSED"
     end
   end
 end

@@ -50,6 +50,10 @@ public readonly record struct Permission : IStringEnum
 
     public static readonly Permission OrganizationDelete = new(Values.OrganizationDelete);
 
+    public static readonly Permission PartnerRead = new(Values.PartnerRead);
+
+    public static readonly Permission PartnerManage = new(Values.PartnerManage);
+
     public static readonly Permission PostRead = new(Values.PostRead);
 
     public static readonly Permission PostCreate = new(Values.PostCreate);
@@ -204,6 +208,10 @@ public readonly record struct Permission : IStringEnum
         public const string OrganizationUpdate = "organization:update";
 
         public const string OrganizationDelete = "organization:delete";
+
+        public const string PartnerRead = "partner:read";
+
+        public const string PartnerManage = "partner:manage";
 
         public const string PostRead = "post:read";
 

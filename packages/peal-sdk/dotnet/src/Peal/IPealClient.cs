@@ -17,4 +17,7 @@ public partial interface IPealClient
     public IAnalyticsClient Analytics { get; }
     public ITiktokClient Tiktok { get; }
     public IWebhooksClient Webhooks { get; }
+    public IPartnerClient Partner { get; }
+    public IPartnerAccountClient PartnerAccount { get; }
+    public IConnectLinksClient ConnectLinks { get; }
 }

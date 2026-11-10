@@ -103,11 +103,11 @@ func (c *ConflictError) GetBody() any {
 // The credentials are valid but do not allow this request.
 type ForbiddenError struct {
 	*core.APIError
-	Body *ForbiddenEncoded
+	Body any
 }
 
 func (f *ForbiddenError) UnmarshalJSON(data []byte) error {
-	var body *ForbiddenEncoded
+	var body any
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -124,11 +124,42 @@ func (f *ForbiddenError) Unwrap() error {
 	return f.APIError
 }
 
-func (f *ForbiddenError) GetBody() *ForbiddenEncoded {
+func (f *ForbiddenError) GetBody() any {
 	if f == nil {
 		return nil
 	}
 	return f.Body
+}
+
+// The deletion cancelled `subscriptionsCancelled` subscriptions at Stripe, at once and for good, then failed: nothing was deleted. The workspaces stay, on the free plan once Stripe confirms, with everything in them. Tell the person their subscriptions were cancelled, then send the deletion again: it cancels nothing more.
+type InternalServerError struct {
+	*core.APIError
+	Body *DeletionIncompleteEncoded
+}
+
+func (i *InternalServerError) UnmarshalJSON(data []byte) error {
+	var body *DeletionIncompleteEncoded
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	i.StatusCode = 500
+	i.Body = body
+	return nil
+}
+
+func (i *InternalServerError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(i.Body)
+}
+
+func (i *InternalServerError) Unwrap() error {
+	return i.APIError
+}
+
+func (i *InternalServerError) GetBody() *DeletionIncompleteEncoded {
+	if i == nil {
+		return nil
+	}
+	return i.Body
 }
 
 // No workspace with this id is open to the caller.

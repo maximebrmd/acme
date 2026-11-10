@@ -899,6 +899,92 @@ func (b BillingInterval) Ptr() *BillingInterval {
 }
 
 var (
+	billingUnavailableEncodedFieldWorkspaceID = big.NewInt(1 << 0)
+)
+
+type BillingUnavailableEncoded struct {
+	WorkspaceID string `json:"workspaceId" url:"workspaceId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BillingUnavailableEncoded) GetWorkspaceID() string {
+	if b == nil {
+		return ""
+	}
+	return b.WorkspaceID
+}
+
+func (b *BillingUnavailableEncoded) GetExtraProperties() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
+	return b.extraProperties
+}
+
+func (b *BillingUnavailableEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if b.explicitFields != nil {
+		next.Set(b.explicitFields)
+	}
+	next.Or(next, field)
+	b.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingUnavailableEncoded) SetWorkspaceID(workspaceID string) {
+	b.WorkspaceID = workspaceID
+	b.require(billingUnavailableEncodedFieldWorkspaceID)
+}
+
+func (b *BillingUnavailableEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler BillingUnavailableEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BillingUnavailableEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BillingUnavailableEncoded) MarshalJSON() ([]byte, error) {
+	type embed BillingUnavailableEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*b),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (b *BillingUnavailableEncoded) String() string {
+	if b == nil {
+		return "<nil>"
+	}
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
+var (
 	channelCannotPostEncodedFieldTag    = big.NewInt(1 << 0)
 	channelCannotPostEncodedFieldReason = big.NewInt(1 << 1)
 )
@@ -1109,9 +1195,9 @@ func (c *ChannelNotFoundEncoded) String() string {
 }
 
 type ConflictErrorBody struct {
-	Type               string
-	AlreadyMember      *AlreadyMemberEncoded
-	TooManyInvitations *TooManyInvitationsEncoded
+	Type                 string
+	ExternalIDTaken      *ExternalIDTakenEncoded
+	IdempotencyKeyReused *IdempotencyKeyReusedEncoded
 
 	rawJSON json.RawMessage
 }
@@ -1123,18 +1209,18 @@ func (c *ConflictErrorBody) GetType() string {
 	return c.Type
 }
 
-func (c *ConflictErrorBody) GetAlreadyMember() *AlreadyMemberEncoded {
+func (c *ConflictErrorBody) GetExternalIDTaken() *ExternalIDTakenEncoded {
 	if c == nil {
 		return nil
 	}
-	return c.AlreadyMember
+	return c.ExternalIDTaken
 }
 
-func (c *ConflictErrorBody) GetTooManyInvitations() *TooManyInvitationsEncoded {
+func (c *ConflictErrorBody) GetIdempotencyKeyReused() *IdempotencyKeyReusedEncoded {
 	if c == nil {
 		return nil
 	}
-	return c.TooManyInvitations
+	return c.IdempotencyKeyReused
 }
 
 func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
@@ -1149,18 +1235,18 @@ func (c *ConflictErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", c)
 	}
 	switch unmarshaler.Type {
-	case "AlreadyMember":
-		value := new(AlreadyMemberEncoded)
+	case "ExternalIdTaken":
+		value := new(ExternalIDTakenEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		c.AlreadyMember = value
-	case "TooManyInvitations":
-		value := new(TooManyInvitationsEncoded)
+		c.ExternalIDTaken = value
+	case "IdempotencyKeyReused":
+		value := new(IdempotencyKeyReusedEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		c.TooManyInvitations = value
+		c.IdempotencyKeyReused = value
 	}
 	c.rawJSON = json.RawMessage(data)
 	return nil
@@ -1170,11 +1256,11 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
-	if c.AlreadyMember != nil {
-		return internal.MarshalJSONWithExtraProperty(c.AlreadyMember, "_tag", "AlreadyMember")
+	if c.ExternalIDTaken != nil {
+		return internal.MarshalJSONWithExtraProperty(c.ExternalIDTaken, "_tag", "ExternalIdTaken")
 	}
-	if c.TooManyInvitations != nil {
-		return internal.MarshalJSONWithExtraProperty(c.TooManyInvitations, "_tag", "TooManyInvitations")
+	if c.IdempotencyKeyReused != nil {
+		return internal.MarshalJSONWithExtraProperty(c.IdempotencyKeyReused, "_tag", "IdempotencyKeyReused")
 	}
 	if len(c.rawJSON) > 0 {
 		return c.rawJSON, nil
@@ -1183,16 +1269,16 @@ func (c ConflictErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type ConflictErrorBodyVisitor interface {
-	VisitAlreadyMember(*AlreadyMemberEncoded) error
-	VisitTooManyInvitations(*TooManyInvitationsEncoded) error
+	VisitExternalIDTaken(*ExternalIDTakenEncoded) error
+	VisitIdempotencyKeyReused(*IdempotencyKeyReusedEncoded) error
 }
 
 func (c *ConflictErrorBody) Accept(visitor ConflictErrorBodyVisitor) error {
-	if c.AlreadyMember != nil {
-		return visitor.VisitAlreadyMember(c.AlreadyMember)
+	if c.ExternalIDTaken != nil {
+		return visitor.VisitExternalIDTaken(c.ExternalIDTaken)
 	}
-	if c.TooManyInvitations != nil {
-		return visitor.VisitTooManyInvitations(c.TooManyInvitations)
+	if c.IdempotencyKeyReused != nil {
+		return visitor.VisitIdempotencyKeyReused(c.IdempotencyKeyReused)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", c)
 }
@@ -1202,11 +1288,11 @@ func (c *ConflictErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", c)
 	}
 	var fields []string
-	if c.AlreadyMember != nil {
-		fields = append(fields, "AlreadyMember")
+	if c.ExternalIDTaken != nil {
+		fields = append(fields, "ExternalIdTaken")
 	}
-	if c.TooManyInvitations != nil {
-		fields = append(fields, "TooManyInvitations")
+	if c.IdempotencyKeyReused != nil {
+		fields = append(fields, "IdempotencyKeyReused")
 	}
 	if len(fields) == 0 {
 		if c.Type != "" {
@@ -1399,6 +1485,73 @@ func NewConnectFailureReasonFromString(s string) (ConnectFailureReason, error) {
 
 func (c ConnectFailureReason) Ptr() *ConnectFailureReason {
 	return &c
+}
+
+type ConnectLinkNotFoundEncoded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ConnectLinkNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ConnectLinkNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+func (c *ConnectLinkNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ConnectLinkNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ConnectLinkNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ConnectLinkNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed ConnectLinkNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ConnectLinkNotFoundEncoded) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
 }
 
 type ContentViolation struct {
@@ -5629,6 +5782,298 @@ func (c *ContentViolationVideoTooShort) String() string {
 }
 
 var (
+	customerWorkspaceFieldChannels   = big.NewInt(1 << 0)
+	customerWorkspaceFieldCreatedAt  = big.NewInt(1 << 1)
+	customerWorkspaceFieldExternalID = big.NewInt(1 << 2)
+	customerWorkspaceFieldID         = big.NewInt(1 << 3)
+	customerWorkspaceFieldName       = big.NewInt(1 << 4)
+)
+
+// customerWorkspaceNullableFields maps the wire names of CustomerWorkspace's nullable fields (required or optional) to their field bits.
+var customerWorkspaceNullableFields = map[string]*big.Int{
+	"externalId": customerWorkspaceFieldExternalID,
+}
+
+type CustomerWorkspace struct {
+	Channels   int     `json:"channels" url:"channels"`
+	CreatedAt  string  `json:"createdAt" url:"createdAt"`
+	ExternalID *string `json:"externalId,omitempty" url:"externalId,omitempty"`
+	ID         string  `json:"id" url:"id"`
+	Name       string  `json:"name" url:"name"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CustomerWorkspace) GetChannels() int {
+	if c == nil {
+		return 0
+	}
+	return c.Channels
+}
+
+func (c *CustomerWorkspace) GetCreatedAt() string {
+	if c == nil {
+		return ""
+	}
+	return c.CreatedAt
+}
+
+func (c *CustomerWorkspace) GetExternalID() *string {
+	if c == nil {
+		return nil
+	}
+	return c.ExternalID
+}
+
+func (c *CustomerWorkspace) GetID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ID
+}
+
+func (c *CustomerWorkspace) GetName() string {
+	if c == nil {
+		return ""
+	}
+	return c.Name
+}
+
+func (c *CustomerWorkspace) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CustomerWorkspace) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannels sets the Channels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerWorkspace) SetChannels(channels int) {
+	c.Channels = channels
+	c.require(customerWorkspaceFieldChannels)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerWorkspace) SetCreatedAt(createdAt string) {
+	c.CreatedAt = createdAt
+	c.require(customerWorkspaceFieldCreatedAt)
+}
+
+// SetExternalID sets the ExternalID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerWorkspace) SetExternalID(externalID *string) {
+	c.ExternalID = externalID
+	c.require(customerWorkspaceFieldExternalID)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerWorkspace) SetID(id string) {
+	c.ID = id
+	c.require(customerWorkspaceFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerWorkspace) SetName(name string) {
+	c.Name = name
+	c.require(customerWorkspaceFieldName)
+}
+
+func (c *CustomerWorkspace) UnmarshalJSON(data []byte) error {
+	type unmarshaler CustomerWorkspace
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CustomerWorkspace(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, customerWorkspaceNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CustomerWorkspace) MarshalJSON() ([]byte, error) {
+	type embed CustomerWorkspace
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CustomerWorkspace) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	customerWorkspacePageFieldNext       = big.NewInt(1 << 0)
+	customerWorkspacePageFieldTotal      = big.NewInt(1 << 1)
+	customerWorkspacePageFieldWorkspaces = big.NewInt(1 << 2)
+)
+
+// customerWorkspacePageNullableFields maps the wire names of CustomerWorkspacePage's nullable fields (required or optional) to their field bits.
+var customerWorkspacePageNullableFields = map[string]*big.Int{
+	"next": customerWorkspacePageFieldNext,
+}
+
+type CustomerWorkspacePage struct {
+	Next       *string              `json:"next,omitempty" url:"next,omitempty"`
+	Total      int                  `json:"total" url:"total"`
+	Workspaces []*CustomerWorkspace `json:"workspaces" url:"workspaces"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *CustomerWorkspacePage) GetNext() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Next
+}
+
+func (c *CustomerWorkspacePage) GetTotal() int {
+	if c == nil {
+		return 0
+	}
+	return c.Total
+}
+
+func (c *CustomerWorkspacePage) GetWorkspaces() []*CustomerWorkspace {
+	if c == nil {
+		return nil
+	}
+	return c.Workspaces
+}
+
+func (c *CustomerWorkspacePage) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *CustomerWorkspacePage) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetNext sets the Next field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerWorkspacePage) SetNext(next *string) {
+	c.Next = next
+	c.require(customerWorkspacePageFieldNext)
+}
+
+// SetTotal sets the Total field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerWorkspacePage) SetTotal(total int) {
+	c.Total = total
+	c.require(customerWorkspacePageFieldTotal)
+}
+
+// SetWorkspaces sets the Workspaces field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CustomerWorkspacePage) SetWorkspaces(workspaces []*CustomerWorkspace) {
+	c.Workspaces = workspaces
+	c.require(customerWorkspacePageFieldWorkspaces)
+}
+
+func (c *CustomerWorkspacePage) UnmarshalJSON(data []byte) error {
+	type unmarshaler CustomerWorkspacePage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = CustomerWorkspacePage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, customerWorkspacePageNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *CustomerWorkspacePage) MarshalJSON() ([]byte, error) {
+	type embed CustomerWorkspacePage
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *CustomerWorkspacePage) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
 	databaseUnavailableEncodedFieldTag = big.NewInt(1 << 0)
 )
 
@@ -5730,6 +6175,127 @@ func NewDatabaseUnavailableEncodedTagFromString(s string) (DatabaseUnavailableEn
 }
 
 func (d DatabaseUnavailableEncodedTag) Ptr() *DatabaseUnavailableEncodedTag {
+	return &d
+}
+
+var (
+	deletionIncompleteEncodedFieldTag                    = big.NewInt(1 << 0)
+	deletionIncompleteEncodedFieldSubscriptionsCancelled = big.NewInt(1 << 1)
+)
+
+type DeletionIncompleteEncoded struct {
+	Tag                    DeletionIncompleteEncodedTag `json:"_tag" url:"_tag"`
+	SubscriptionsCancelled int                          `json:"subscriptionsCancelled" url:"subscriptionsCancelled"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DeletionIncompleteEncoded) GetTag() DeletionIncompleteEncodedTag {
+	if d == nil {
+		return ""
+	}
+	return d.Tag
+}
+
+func (d *DeletionIncompleteEncoded) GetSubscriptionsCancelled() int {
+	if d == nil {
+		return 0
+	}
+	return d.SubscriptionsCancelled
+}
+
+func (d *DeletionIncompleteEncoded) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DeletionIncompleteEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletionIncompleteEncoded) SetTag(tag DeletionIncompleteEncodedTag) {
+	d.Tag = tag
+	d.require(deletionIncompleteEncodedFieldTag)
+}
+
+// SetSubscriptionsCancelled sets the SubscriptionsCancelled field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DeletionIncompleteEncoded) SetSubscriptionsCancelled(subscriptionsCancelled int) {
+	d.SubscriptionsCancelled = subscriptionsCancelled
+	d.require(deletionIncompleteEncodedFieldSubscriptionsCancelled)
+}
+
+func (d *DeletionIncompleteEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler DeletionIncompleteEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DeletionIncompleteEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DeletionIncompleteEncoded) MarshalJSON() ([]byte, error) {
+	type embed DeletionIncompleteEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DeletionIncompleteEncoded) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+type DeletionIncompleteEncodedTag string
+
+const (
+	DeletionIncompleteEncodedTagDeletionIncomplete DeletionIncompleteEncodedTag = "DeletionIncomplete"
+)
+
+func NewDeletionIncompleteEncodedTagFromString(s string) (DeletionIncompleteEncodedTag, error) {
+	switch s {
+	case "DeletionIncomplete":
+		return DeletionIncompleteEncodedTagDeletionIncomplete, nil
+	}
+	var t DeletionIncompleteEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (d DeletionIncompleteEncodedTag) Ptr() *DeletionIncompleteEncodedTag {
 	return &d
 }
 
@@ -5956,6 +6522,127 @@ func (e *Excess) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
+var (
+	externalIDTakenEncodedFieldTag         = big.NewInt(1 << 0)
+	externalIDTakenEncodedFieldWorkspaceID = big.NewInt(1 << 1)
+)
+
+type ExternalIDTakenEncoded struct {
+	Tag         ExternalIDTakenEncodedTag `json:"_tag" url:"_tag"`
+	WorkspaceID string                    `json:"workspaceId" url:"workspaceId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (e *ExternalIDTakenEncoded) GetTag() ExternalIDTakenEncodedTag {
+	if e == nil {
+		return ""
+	}
+	return e.Tag
+}
+
+func (e *ExternalIDTakenEncoded) GetWorkspaceID() string {
+	if e == nil {
+		return ""
+	}
+	return e.WorkspaceID
+}
+
+func (e *ExternalIDTakenEncoded) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
+	return e.extraProperties
+}
+
+func (e *ExternalIDTakenEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if e.explicitFields != nil {
+		next.Set(e.explicitFields)
+	}
+	next.Or(next, field)
+	e.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExternalIDTakenEncoded) SetTag(tag ExternalIDTakenEncodedTag) {
+	e.Tag = tag
+	e.require(externalIDTakenEncodedFieldTag)
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExternalIDTakenEncoded) SetWorkspaceID(workspaceID string) {
+	e.WorkspaceID = workspaceID
+	e.require(externalIDTakenEncodedFieldWorkspaceID)
+}
+
+func (e *ExternalIDTakenEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ExternalIDTakenEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*e = ExternalIDTakenEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *e)
+	if err != nil {
+		return err
+	}
+	e.extraProperties = extraProperties
+	e.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (e *ExternalIDTakenEncoded) MarshalJSON() ([]byte, error) {
+	type embed ExternalIDTakenEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*e),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, e.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (e *ExternalIDTakenEncoded) String() string {
+	if e == nil {
+		return "<nil>"
+	}
+	if len(e.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(e); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", e)
+}
+
+type ExternalIDTakenEncodedTag string
+
+const (
+	ExternalIDTakenEncodedTagExternalIDTaken ExternalIDTakenEncodedTag = "ExternalIdTaken"
+)
+
+func NewExternalIDTakenEncodedTagFromString(s string) (ExternalIDTakenEncodedTag, error) {
+	switch s {
+	case "ExternalIdTaken":
+		return ExternalIDTakenEncodedTagExternalIDTaken, nil
+	}
+	var t ExternalIDTakenEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (e ExternalIDTakenEncodedTag) Ptr() *ExternalIDTakenEncodedTag {
+	return &e
+}
+
 type FailureReason string
 
 const (
@@ -6119,6 +6806,132 @@ func (f ForbiddenEncodedTag) Ptr() *ForbiddenEncodedTag {
 	return &f
 }
 
+type ForbiddenErrorBody struct {
+	Type                  string
+	Forbidden             *ForbiddenEncoded
+	PartnerAccountsClosed *PartnerAccountsClosedEncoded
+
+	rawJSON json.RawMessage
+}
+
+func (f *ForbiddenErrorBody) GetType() string {
+	if f == nil {
+		return ""
+	}
+	return f.Type
+}
+
+func (f *ForbiddenErrorBody) GetForbidden() *ForbiddenEncoded {
+	if f == nil {
+		return nil
+	}
+	return f.Forbidden
+}
+
+func (f *ForbiddenErrorBody) GetPartnerAccountsClosed() *PartnerAccountsClosedEncoded {
+	if f == nil {
+		return nil
+	}
+	return f.PartnerAccountsClosed
+}
+
+func (f *ForbiddenErrorBody) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"_tag"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	f.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant _tag", f)
+	}
+	switch unmarshaler.Type {
+	case "Forbidden":
+		value := new(ForbiddenEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.Forbidden = value
+	case "PartnerAccountsClosed":
+		value := new(PartnerAccountsClosedEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		f.PartnerAccountsClosed = value
+	}
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f ForbiddenErrorBody) MarshalJSON() ([]byte, error) {
+	if err := f.validate(); err != nil {
+		return nil, err
+	}
+	if f.Forbidden != nil {
+		return internal.MarshalJSONWithExtraProperty(f.Forbidden, "_tag", "Forbidden")
+	}
+	if f.PartnerAccountsClosed != nil {
+		return internal.MarshalJSONWithExtraProperty(f.PartnerAccountsClosed, "_tag", "PartnerAccountsClosed")
+	}
+	if len(f.rawJSON) > 0 {
+		return f.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", f)
+}
+
+type ForbiddenErrorBodyVisitor interface {
+	VisitForbidden(*ForbiddenEncoded) error
+	VisitPartnerAccountsClosed(*PartnerAccountsClosedEncoded) error
+}
+
+func (f *ForbiddenErrorBody) Accept(visitor ForbiddenErrorBodyVisitor) error {
+	if f.Forbidden != nil {
+		return visitor.VisitForbidden(f.Forbidden)
+	}
+	if f.PartnerAccountsClosed != nil {
+		return visitor.VisitPartnerAccountsClosed(f.PartnerAccountsClosed)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", f)
+}
+
+func (f *ForbiddenErrorBody) validate() error {
+	if f == nil {
+		return fmt.Errorf("type %T is nil", f)
+	}
+	var fields []string
+	if f.Forbidden != nil {
+		fields = append(fields, "Forbidden")
+	}
+	if f.PartnerAccountsClosed != nil {
+		fields = append(fields, "PartnerAccountsClosed")
+	}
+	if len(fields) == 0 {
+		if f.Type != "" {
+			if len(f.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", f, f.Type)
+		}
+		return fmt.Errorf("type %T is empty", f)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", f, fields)
+	}
+	if f.Type != "" {
+		field := fields[0]
+		if f.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				f,
+				f.Type,
+				f,
+			)
+		}
+	}
+	return nil
+}
+
 type HeldLimit string
 
 const (
@@ -6246,6 +7059,29 @@ func NewIdempotencyKeyReusedEncodedTagFromString(s string) (IdempotencyKeyReused
 }
 
 func (i IdempotencyKeyReusedEncodedTag) Ptr() *IdempotencyKeyReusedEncodedTag {
+	return &i
+}
+
+// How an Instagram channel reaches its account.
+type InstagramConnection string
+
+const (
+	InstagramConnectionInstagramLogin InstagramConnection = "instagramLogin"
+	InstagramConnectionFacebookLogin  InstagramConnection = "facebookLogin"
+)
+
+func NewInstagramConnectionFromString(s string) (InstagramConnection, error) {
+	switch s {
+	case "instagramLogin":
+		return InstagramConnectionInstagramLogin, nil
+	case "facebookLogin":
+		return InstagramConnectionFacebookLogin, nil
+	}
+	var t InstagramConnection
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i InstagramConnection) Ptr() *InstagramConnection {
 	return &i
 }
 
@@ -7421,10 +8257,9 @@ func (n NonFiniteNumber) Ptr() *NonFiniteNumber {
 }
 
 type NotFoundErrorBody struct {
-	Type                    string
-	WebhookEndpointNotFound *WebhookEndpointNotFoundEncoded
-	WebhookDeliveryNotFound *WebhookDeliveryNotFoundEncoded
-	WorkspaceNotFound       *WorkspaceNotFoundEncoded
+	Type                string
+	ConnectLinkNotFound *ConnectLinkNotFoundEncoded
+	WorkspaceNotFound   *WorkspaceNotFoundEncoded
 
 	rawJSON json.RawMessage
 }
@@ -7436,18 +8271,11 @@ func (n *NotFoundErrorBody) GetType() string {
 	return n.Type
 }
 
-func (n *NotFoundErrorBody) GetWebhookEndpointNotFound() *WebhookEndpointNotFoundEncoded {
+func (n *NotFoundErrorBody) GetConnectLinkNotFound() *ConnectLinkNotFoundEncoded {
 	if n == nil {
 		return nil
 	}
-	return n.WebhookEndpointNotFound
-}
-
-func (n *NotFoundErrorBody) GetWebhookDeliveryNotFound() *WebhookDeliveryNotFoundEncoded {
-	if n == nil {
-		return nil
-	}
-	return n.WebhookDeliveryNotFound
+	return n.ConnectLinkNotFound
 }
 
 func (n *NotFoundErrorBody) GetWorkspaceNotFound() *WorkspaceNotFoundEncoded {
@@ -7469,18 +8297,12 @@ func (n *NotFoundErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", n)
 	}
 	switch unmarshaler.Type {
-	case "WebhookEndpointNotFound":
-		value := new(WebhookEndpointNotFoundEncoded)
+	case "ConnectLinkNotFound":
+		value := new(ConnectLinkNotFoundEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		n.WebhookEndpointNotFound = value
-	case "WebhookDeliveryNotFound":
-		value := new(WebhookDeliveryNotFoundEncoded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		n.WebhookDeliveryNotFound = value
+		n.ConnectLinkNotFound = value
 	case "WorkspaceNotFound":
 		value := new(WorkspaceNotFoundEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -7496,11 +8318,8 @@ func (n NotFoundErrorBody) MarshalJSON() ([]byte, error) {
 	if err := n.validate(); err != nil {
 		return nil, err
 	}
-	if n.WebhookEndpointNotFound != nil {
-		return internal.MarshalJSONWithExtraProperty(n.WebhookEndpointNotFound, "_tag", "WebhookEndpointNotFound")
-	}
-	if n.WebhookDeliveryNotFound != nil {
-		return internal.MarshalJSONWithExtraProperty(n.WebhookDeliveryNotFound, "_tag", "WebhookDeliveryNotFound")
+	if n.ConnectLinkNotFound != nil {
+		return internal.MarshalJSONWithExtraProperty(n.ConnectLinkNotFound, "_tag", "ConnectLinkNotFound")
 	}
 	if n.WorkspaceNotFound != nil {
 		return internal.MarshalJSONWithExtraProperty(n.WorkspaceNotFound, "_tag", "WorkspaceNotFound")
@@ -7512,17 +8331,13 @@ func (n NotFoundErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type NotFoundErrorBodyVisitor interface {
-	VisitWebhookEndpointNotFound(*WebhookEndpointNotFoundEncoded) error
-	VisitWebhookDeliveryNotFound(*WebhookDeliveryNotFoundEncoded) error
+	VisitConnectLinkNotFound(*ConnectLinkNotFoundEncoded) error
 	VisitWorkspaceNotFound(*WorkspaceNotFoundEncoded) error
 }
 
 func (n *NotFoundErrorBody) Accept(visitor NotFoundErrorBodyVisitor) error {
-	if n.WebhookEndpointNotFound != nil {
-		return visitor.VisitWebhookEndpointNotFound(n.WebhookEndpointNotFound)
-	}
-	if n.WebhookDeliveryNotFound != nil {
-		return visitor.VisitWebhookDeliveryNotFound(n.WebhookDeliveryNotFound)
+	if n.ConnectLinkNotFound != nil {
+		return visitor.VisitConnectLinkNotFound(n.ConnectLinkNotFound)
 	}
 	if n.WorkspaceNotFound != nil {
 		return visitor.VisitWorkspaceNotFound(n.WorkspaceNotFound)
@@ -7535,11 +8350,8 @@ func (n *NotFoundErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", n)
 	}
 	var fields []string
-	if n.WebhookEndpointNotFound != nil {
-		fields = append(fields, "WebhookEndpointNotFound")
-	}
-	if n.WebhookDeliveryNotFound != nil {
-		fields = append(fields, "WebhookDeliveryNotFound")
+	if n.ConnectLinkNotFound != nil {
+		fields = append(fields, "ConnectLinkNotFound")
 	}
 	if n.WorkspaceNotFound != nil {
 		fields = append(fields, "WorkspaceNotFound")
@@ -7598,6 +8410,894 @@ func (p PaidPlan) Ptr() *PaidPlan {
 	return &p
 }
 
+var (
+	partnerFieldCreatedAt     = big.NewInt(1 << 0)
+	partnerFieldID            = big.NewInt(1 << 1)
+	partnerFieldLogoURL       = big.NewInt(1 << 2)
+	partnerFieldName          = big.NewInt(1 << 3)
+	partnerFieldReturnOrigins = big.NewInt(1 << 4)
+	partnerFieldWorkspaceID   = big.NewInt(1 << 5)
+)
+
+// partnerNullableFields maps the wire names of Partner's nullable fields (required or optional) to their field bits.
+var partnerNullableFields = map[string]*big.Int{
+	"logoUrl": partnerFieldLogoURL,
+}
+
+type Partner struct {
+	CreatedAt     string   `json:"createdAt" url:"createdAt"`
+	ID            string   `json:"id" url:"id"`
+	LogoURL       *string  `json:"logoUrl,omitempty" url:"logoUrl,omitempty"`
+	Name          string   `json:"name" url:"name"`
+	ReturnOrigins []string `json:"returnOrigins" url:"returnOrigins"`
+	WorkspaceID   string   `json:"workspaceId" url:"workspaceId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *Partner) GetCreatedAt() string {
+	if p == nil {
+		return ""
+	}
+	return p.CreatedAt
+}
+
+func (p *Partner) GetID() string {
+	if p == nil {
+		return ""
+	}
+	return p.ID
+}
+
+func (p *Partner) GetLogoURL() *string {
+	if p == nil {
+		return nil
+	}
+	return p.LogoURL
+}
+
+func (p *Partner) GetName() string {
+	if p == nil {
+		return ""
+	}
+	return p.Name
+}
+
+func (p *Partner) GetReturnOrigins() []string {
+	if p == nil {
+		return nil
+	}
+	return p.ReturnOrigins
+}
+
+func (p *Partner) GetWorkspaceID() string {
+	if p == nil {
+		return ""
+	}
+	return p.WorkspaceID
+}
+
+func (p *Partner) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *Partner) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Partner) SetCreatedAt(createdAt string) {
+	p.CreatedAt = createdAt
+	p.require(partnerFieldCreatedAt)
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Partner) SetID(id string) {
+	p.ID = id
+	p.require(partnerFieldID)
+}
+
+// SetLogoURL sets the LogoURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Partner) SetLogoURL(logoURL *string) {
+	p.LogoURL = logoURL
+	p.require(partnerFieldLogoURL)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Partner) SetName(name string) {
+	p.Name = name
+	p.require(partnerFieldName)
+}
+
+// SetReturnOrigins sets the ReturnOrigins field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Partner) SetReturnOrigins(returnOrigins []string) {
+	p.ReturnOrigins = returnOrigins
+	p.require(partnerFieldReturnOrigins)
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Partner) SetWorkspaceID(workspaceID string) {
+	p.WorkspaceID = workspaceID
+	p.require(partnerFieldWorkspaceID)
+}
+
+func (p *Partner) UnmarshalJSON(data []byte) error {
+	type unmarshaler Partner
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = Partner(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, partnerNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *Partner) MarshalJSON() ([]byte, error) {
+	type embed Partner
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *Partner) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PartnerAccountsClosedEncoded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PartnerAccountsClosedEncoded) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PartnerAccountsClosedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+func (p *PartnerAccountsClosedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler PartnerAccountsClosedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PartnerAccountsClosedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PartnerAccountsClosedEncoded) MarshalJSON() ([]byte, error) {
+	type embed PartnerAccountsClosedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PartnerAccountsClosedEncoded) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PartnerDetailField string
+
+const (
+	PartnerDetailFieldName          PartnerDetailField = "name"
+	PartnerDetailFieldLogoURL       PartnerDetailField = "logoUrl"
+	PartnerDetailFieldReturnOrigins PartnerDetailField = "returnOrigins"
+	PartnerDetailFieldExternalID    PartnerDetailField = "externalId"
+	PartnerDetailFieldPermissions   PartnerDetailField = "permissions"
+)
+
+func NewPartnerDetailFieldFromString(s string) (PartnerDetailField, error) {
+	switch s {
+	case "name":
+		return PartnerDetailFieldName, nil
+	case "logoUrl":
+		return PartnerDetailFieldLogoURL, nil
+	case "returnOrigins":
+		return PartnerDetailFieldReturnOrigins, nil
+	case "externalId":
+		return PartnerDetailFieldExternalID, nil
+	case "permissions":
+		return PartnerDetailFieldPermissions, nil
+	}
+	var t PartnerDetailField
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PartnerDetailField) Ptr() *PartnerDetailField {
+	return &p
+}
+
+var (
+	partnerDetailsInvalidEncodedFieldTag   = big.NewInt(1 << 0)
+	partnerDetailsInvalidEncodedFieldField = big.NewInt(1 << 1)
+)
+
+type PartnerDetailsInvalidEncoded struct {
+	Tag   PartnerDetailsInvalidEncodedTag `json:"_tag" url:"_tag"`
+	Field PartnerDetailField              `json:"field" url:"field"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PartnerDetailsInvalidEncoded) GetTag() PartnerDetailsInvalidEncodedTag {
+	if p == nil {
+		return ""
+	}
+	return p.Tag
+}
+
+func (p *PartnerDetailsInvalidEncoded) GetField() PartnerDetailField {
+	if p == nil {
+		return ""
+	}
+	return p.Field
+}
+
+func (p *PartnerDetailsInvalidEncoded) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PartnerDetailsInvalidEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerDetailsInvalidEncoded) SetTag(tag PartnerDetailsInvalidEncodedTag) {
+	p.Tag = tag
+	p.require(partnerDetailsInvalidEncodedFieldTag)
+}
+
+// SetField sets the Field field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerDetailsInvalidEncoded) SetField(field PartnerDetailField) {
+	p.Field = field
+	p.require(partnerDetailsInvalidEncodedFieldField)
+}
+
+func (p *PartnerDetailsInvalidEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler PartnerDetailsInvalidEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PartnerDetailsInvalidEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PartnerDetailsInvalidEncoded) MarshalJSON() ([]byte, error) {
+	type embed PartnerDetailsInvalidEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PartnerDetailsInvalidEncoded) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PartnerDetailsInvalidEncodedTag string
+
+const (
+	PartnerDetailsInvalidEncodedTagPartnerDetailsInvalid PartnerDetailsInvalidEncodedTag = "PartnerDetailsInvalid"
+)
+
+func NewPartnerDetailsInvalidEncodedTagFromString(s string) (PartnerDetailsInvalidEncodedTag, error) {
+	switch s {
+	case "PartnerDetailsInvalid":
+		return PartnerDetailsInvalidEncodedTagPartnerDetailsInvalid, nil
+	}
+	var t PartnerDetailsInvalidEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PartnerDetailsInvalidEncodedTag) Ptr() *PartnerDetailsInvalidEncodedTag {
+	return &p
+}
+
+type PartnerKeyNotFoundEncoded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PartnerKeyNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PartnerKeyNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+func (p *PartnerKeyNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler PartnerKeyNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PartnerKeyNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PartnerKeyNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed PartnerKeyNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PartnerKeyNotFoundEncoded) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PartnerNotFoundEncoded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PartnerNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PartnerNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+func (p *PartnerNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler PartnerNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PartnerNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PartnerNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed PartnerNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PartnerNotFoundEncoded) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	partnerOwnsWorkspacesEncodedFieldTag   = big.NewInt(1 << 0)
+	partnerOwnsWorkspacesEncodedFieldOwned = big.NewInt(1 << 1)
+)
+
+type PartnerOwnsWorkspacesEncoded struct {
+	Tag   PartnerOwnsWorkspacesEncodedTag `json:"_tag" url:"_tag"`
+	Owned int                             `json:"owned" url:"owned"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PartnerOwnsWorkspacesEncoded) GetTag() PartnerOwnsWorkspacesEncodedTag {
+	if p == nil {
+		return ""
+	}
+	return p.Tag
+}
+
+func (p *PartnerOwnsWorkspacesEncoded) GetOwned() int {
+	if p == nil {
+		return 0
+	}
+	return p.Owned
+}
+
+func (p *PartnerOwnsWorkspacesEncoded) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PartnerOwnsWorkspacesEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerOwnsWorkspacesEncoded) SetTag(tag PartnerOwnsWorkspacesEncodedTag) {
+	p.Tag = tag
+	p.require(partnerOwnsWorkspacesEncodedFieldTag)
+}
+
+// SetOwned sets the Owned field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerOwnsWorkspacesEncoded) SetOwned(owned int) {
+	p.Owned = owned
+	p.require(partnerOwnsWorkspacesEncodedFieldOwned)
+}
+
+func (p *PartnerOwnsWorkspacesEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler PartnerOwnsWorkspacesEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PartnerOwnsWorkspacesEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PartnerOwnsWorkspacesEncoded) MarshalJSON() ([]byte, error) {
+	type embed PartnerOwnsWorkspacesEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PartnerOwnsWorkspacesEncoded) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PartnerOwnsWorkspacesEncodedTag string
+
+const (
+	PartnerOwnsWorkspacesEncodedTagPartnerOwnsWorkspaces PartnerOwnsWorkspacesEncodedTag = "PartnerOwnsWorkspaces"
+)
+
+func NewPartnerOwnsWorkspacesEncodedTagFromString(s string) (PartnerOwnsWorkspacesEncodedTag, error) {
+	switch s {
+	case "PartnerOwnsWorkspaces":
+		return PartnerOwnsWorkspacesEncodedTagPartnerOwnsWorkspaces, nil
+	}
+	var t PartnerOwnsWorkspacesEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PartnerOwnsWorkspacesEncodedTag) Ptr() *PartnerOwnsWorkspacesEncodedTag {
+	return &p
+}
+
+var (
+	partnerUsageFieldChannels   = big.NewInt(1 << 0)
+	partnerUsageFieldDays       = big.NewInt(1 << 1)
+	partnerUsageFieldWorkspaces = big.NewInt(1 << 2)
+)
+
+type PartnerUsage struct {
+	Channels   int                `json:"channels" url:"channels"`
+	Days       []*PartnerUsageDay `json:"days" url:"days"`
+	Workspaces int                `json:"workspaces" url:"workspaces"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PartnerUsage) GetChannels() int {
+	if p == nil {
+		return 0
+	}
+	return p.Channels
+}
+
+func (p *PartnerUsage) GetDays() []*PartnerUsageDay {
+	if p == nil {
+		return nil
+	}
+	return p.Days
+}
+
+func (p *PartnerUsage) GetWorkspaces() int {
+	if p == nil {
+		return 0
+	}
+	return p.Workspaces
+}
+
+func (p *PartnerUsage) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PartnerUsage) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetChannels sets the Channels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerUsage) SetChannels(channels int) {
+	p.Channels = channels
+	p.require(partnerUsageFieldChannels)
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerUsage) SetDays(days []*PartnerUsageDay) {
+	p.Days = days
+	p.require(partnerUsageFieldDays)
+}
+
+// SetWorkspaces sets the Workspaces field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerUsage) SetWorkspaces(workspaces int) {
+	p.Workspaces = workspaces
+	p.require(partnerUsageFieldWorkspaces)
+}
+
+func (p *PartnerUsage) UnmarshalJSON(data []byte) error {
+	type unmarshaler PartnerUsage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PartnerUsage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PartnerUsage) MarshalJSON() ([]byte, error) {
+	type embed PartnerUsage
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PartnerUsage) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	partnerUsageDayFieldChannels   = big.NewInt(1 << 0)
+	partnerUsageDayFieldDay        = big.NewInt(1 << 1)
+	partnerUsageDayFieldWorkspaces = big.NewInt(1 << 2)
+)
+
+type PartnerUsageDay struct {
+	Channels   int    `json:"channels" url:"channels"`
+	Day        string `json:"day" url:"day"`
+	Workspaces int    `json:"workspaces" url:"workspaces"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PartnerUsageDay) GetChannels() int {
+	if p == nil {
+		return 0
+	}
+	return p.Channels
+}
+
+func (p *PartnerUsageDay) GetDay() string {
+	if p == nil {
+		return ""
+	}
+	return p.Day
+}
+
+func (p *PartnerUsageDay) GetWorkspaces() int {
+	if p == nil {
+		return 0
+	}
+	return p.Workspaces
+}
+
+func (p *PartnerUsageDay) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PartnerUsageDay) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetChannels sets the Channels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerUsageDay) SetChannels(channels int) {
+	p.Channels = channels
+	p.require(partnerUsageDayFieldChannels)
+}
+
+// SetDay sets the Day field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerUsageDay) SetDay(day string) {
+	p.Day = day
+	p.require(partnerUsageDayFieldDay)
+}
+
+// SetWorkspaces sets the Workspaces field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartnerUsageDay) SetWorkspaces(workspaces int) {
+	p.Workspaces = workspaces
+	p.require(partnerUsageDayFieldWorkspaces)
+}
+
+func (p *PartnerUsageDay) UnmarshalJSON(data []byte) error {
+	type unmarshaler PartnerUsageDay
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PartnerUsageDay(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PartnerUsageDay) MarshalJSON() ([]byte, error) {
+	type embed PartnerUsageDay
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PartnerUsageDay) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
 // One action on one resource of a workspace.
 type Permission string
 
@@ -7623,6 +9323,8 @@ const (
 	PermissionMemberDelete       Permission = "member:delete"
 	PermissionOrganizationUpdate Permission = "organization:update"
 	PermissionOrganizationDelete Permission = "organization:delete"
+	PermissionPartnerRead        Permission = "partner:read"
+	PermissionPartnerManage      Permission = "partner:manage"
 	PermissionPostRead           Permission = "post:read"
 	PermissionPostCreate         Permission = "post:create"
 	PermissionPostUpdate         Permission = "post:update"
@@ -7678,6 +9380,10 @@ func NewPermissionFromString(s string) (Permission, error) {
 		return PermissionOrganizationUpdate, nil
 	case "organization:delete":
 		return PermissionOrganizationDelete, nil
+	case "partner:read":
+		return PermissionPartnerRead, nil
+	case "partner:manage":
+		return PermissionPartnerManage, nil
 	case "post:read":
 		return PermissionPostRead, nil
 	case "post:create":
@@ -8375,6 +10081,73 @@ func (p PostStatusConflictEncodedTag) Ptr() *PostStatusConflictEncodedTag {
 	return &p
 }
 
+type ReturnURLNotAllowedEncoded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *ReturnURLNotAllowedEncoded) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *ReturnURLNotAllowedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+func (r *ReturnURLNotAllowedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ReturnURLNotAllowedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = ReturnURLNotAllowedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *ReturnURLNotAllowedEncoded) MarshalJSON() ([]byte, error) {
+	type embed ReturnURLNotAllowedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *ReturnURLNotAllowedEncoded) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
 type ScheduleInPastEncoded struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -8440,6 +10213,132 @@ func (s *ScheduleInPastEncoded) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", s)
+}
+
+type ServiceUnavailableErrorBody struct {
+	Type                  string
+	BillingUnavailable    *BillingUnavailableEncoded
+	MediaStoreUnavailable *MediaStoreUnavailableEncoded
+
+	rawJSON json.RawMessage
+}
+
+func (s *ServiceUnavailableErrorBody) GetType() string {
+	if s == nil {
+		return ""
+	}
+	return s.Type
+}
+
+func (s *ServiceUnavailableErrorBody) GetBillingUnavailable() *BillingUnavailableEncoded {
+	if s == nil {
+		return nil
+	}
+	return s.BillingUnavailable
+}
+
+func (s *ServiceUnavailableErrorBody) GetMediaStoreUnavailable() *MediaStoreUnavailableEncoded {
+	if s == nil {
+		return nil
+	}
+	return s.MediaStoreUnavailable
+}
+
+func (s *ServiceUnavailableErrorBody) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"_tag"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	s.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant _tag", s)
+	}
+	switch unmarshaler.Type {
+	case "BillingUnavailable":
+		value := new(BillingUnavailableEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.BillingUnavailable = value
+	case "MediaStoreUnavailable":
+		value := new(MediaStoreUnavailableEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		s.MediaStoreUnavailable = value
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s ServiceUnavailableErrorBody) MarshalJSON() ([]byte, error) {
+	if err := s.validate(); err != nil {
+		return nil, err
+	}
+	if s.BillingUnavailable != nil {
+		return internal.MarshalJSONWithExtraProperty(s.BillingUnavailable, "_tag", "BillingUnavailable")
+	}
+	if s.MediaStoreUnavailable != nil {
+		return internal.MarshalJSONWithExtraProperty(s.MediaStoreUnavailable, "_tag", "MediaStoreUnavailable")
+	}
+	if len(s.rawJSON) > 0 {
+		return s.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", s)
+}
+
+type ServiceUnavailableErrorBodyVisitor interface {
+	VisitBillingUnavailable(*BillingUnavailableEncoded) error
+	VisitMediaStoreUnavailable(*MediaStoreUnavailableEncoded) error
+}
+
+func (s *ServiceUnavailableErrorBody) Accept(visitor ServiceUnavailableErrorBodyVisitor) error {
+	if s.BillingUnavailable != nil {
+		return visitor.VisitBillingUnavailable(s.BillingUnavailable)
+	}
+	if s.MediaStoreUnavailable != nil {
+		return visitor.VisitMediaStoreUnavailable(s.MediaStoreUnavailable)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", s)
+}
+
+func (s *ServiceUnavailableErrorBody) validate() error {
+	if s == nil {
+		return fmt.Errorf("type %T is nil", s)
+	}
+	var fields []string
+	if s.BillingUnavailable != nil {
+		fields = append(fields, "BillingUnavailable")
+	}
+	if s.MediaStoreUnavailable != nil {
+		fields = append(fields, "MediaStoreUnavailable")
+	}
+	if len(fields) == 0 {
+		if s.Type != "" {
+			if len(s.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", s, s.Type)
+		}
+		return fmt.Errorf("type %T is empty", s)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", s, fields)
+	}
+	if s.Type != "" {
+		field := fields[0]
+		if s.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				s,
+				s.Type,
+				s,
+			)
+		}
+	}
+	return nil
 }
 
 var (
@@ -8588,6 +10487,127 @@ func NewTikTokPrivacyLevelFromString(s string) (TikTokPrivacyLevel, error) {
 }
 
 func (t TikTokPrivacyLevel) Ptr() *TikTokPrivacyLevel {
+	return &t
+}
+
+var (
+	tooManyConnectLinksEncodedFieldTag     = big.NewInt(1 << 0)
+	tooManyConnectLinksEncodedFieldAllowed = big.NewInt(1 << 1)
+)
+
+type TooManyConnectLinksEncoded struct {
+	Tag     TooManyConnectLinksEncodedTag `json:"_tag" url:"_tag"`
+	Allowed int                           `json:"allowed" url:"allowed"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TooManyConnectLinksEncoded) GetTag() TooManyConnectLinksEncodedTag {
+	if t == nil {
+		return ""
+	}
+	return t.Tag
+}
+
+func (t *TooManyConnectLinksEncoded) GetAllowed() int {
+	if t == nil {
+		return 0
+	}
+	return t.Allowed
+}
+
+func (t *TooManyConnectLinksEncoded) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TooManyConnectLinksEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyConnectLinksEncoded) SetTag(tag TooManyConnectLinksEncodedTag) {
+	t.Tag = tag
+	t.require(tooManyConnectLinksEncodedFieldTag)
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyConnectLinksEncoded) SetAllowed(allowed int) {
+	t.Allowed = allowed
+	t.require(tooManyConnectLinksEncodedFieldAllowed)
+}
+
+func (t *TooManyConnectLinksEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler TooManyConnectLinksEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TooManyConnectLinksEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TooManyConnectLinksEncoded) MarshalJSON() ([]byte, error) {
+	type embed TooManyConnectLinksEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TooManyConnectLinksEncoded) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TooManyConnectLinksEncodedTag string
+
+const (
+	TooManyConnectLinksEncodedTagTooManyConnectLinks TooManyConnectLinksEncodedTag = "TooManyConnectLinks"
+)
+
+func NewTooManyConnectLinksEncodedTagFromString(s string) (TooManyConnectLinksEncodedTag, error) {
+	switch s {
+	case "TooManyConnectLinks":
+		return TooManyConnectLinksEncodedTagTooManyConnectLinks, nil
+	}
+	var t TooManyConnectLinksEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (t TooManyConnectLinksEncodedTag) Ptr() *TooManyConnectLinksEncodedTag {
 	return &t
 }
 
@@ -9178,13 +11198,9 @@ func (u *UnknownMediaEncoded) String() string {
 }
 
 type UnprocessableEntityErrorBody struct {
-	Type                   string
-	UnsupportedMediaType   *UnsupportedMediaTypeEncoded
-	MediaTooLarge          *MediaTooLargeEncoded
-	AltTextTooLong         *AltTextTooLongEncoded
-	MediaSourceNotPublic   *MediaSourceNotPublicEncoded
-	MediaSourceUnreachable *MediaSourceUnreachableEncoded
-	UploadRejected         *UploadRejectedEncoded
+	Type                string
+	ConnectFailed       *ConnectFailedEncoded
+	ReturnURLNotAllowed *ReturnURLNotAllowedEncoded
 
 	rawJSON json.RawMessage
 }
@@ -9196,46 +11212,18 @@ func (u *UnprocessableEntityErrorBody) GetType() string {
 	return u.Type
 }
 
-func (u *UnprocessableEntityErrorBody) GetUnsupportedMediaType() *UnsupportedMediaTypeEncoded {
+func (u *UnprocessableEntityErrorBody) GetConnectFailed() *ConnectFailedEncoded {
 	if u == nil {
 		return nil
 	}
-	return u.UnsupportedMediaType
+	return u.ConnectFailed
 }
 
-func (u *UnprocessableEntityErrorBody) GetMediaTooLarge() *MediaTooLargeEncoded {
+func (u *UnprocessableEntityErrorBody) GetReturnURLNotAllowed() *ReturnURLNotAllowedEncoded {
 	if u == nil {
 		return nil
 	}
-	return u.MediaTooLarge
-}
-
-func (u *UnprocessableEntityErrorBody) GetAltTextTooLong() *AltTextTooLongEncoded {
-	if u == nil {
-		return nil
-	}
-	return u.AltTextTooLong
-}
-
-func (u *UnprocessableEntityErrorBody) GetMediaSourceNotPublic() *MediaSourceNotPublicEncoded {
-	if u == nil {
-		return nil
-	}
-	return u.MediaSourceNotPublic
-}
-
-func (u *UnprocessableEntityErrorBody) GetMediaSourceUnreachable() *MediaSourceUnreachableEncoded {
-	if u == nil {
-		return nil
-	}
-	return u.MediaSourceUnreachable
-}
-
-func (u *UnprocessableEntityErrorBody) GetUploadRejected() *UploadRejectedEncoded {
-	if u == nil {
-		return nil
-	}
-	return u.UploadRejected
+	return u.ReturnURLNotAllowed
 }
 
 func (u *UnprocessableEntityErrorBody) UnmarshalJSON(data []byte) error {
@@ -9250,42 +11238,18 @@ func (u *UnprocessableEntityErrorBody) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("%T did not include discriminant _tag", u)
 	}
 	switch unmarshaler.Type {
-	case "UnsupportedMediaType":
-		value := new(UnsupportedMediaTypeEncoded)
+	case "ConnectFailed":
+		value := new(ConnectFailedEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		u.UnsupportedMediaType = value
-	case "MediaTooLarge":
-		value := new(MediaTooLargeEncoded)
+		u.ConnectFailed = value
+	case "ReturnUrlNotAllowed":
+		value := new(ReturnURLNotAllowedEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
 			return err
 		}
-		u.MediaTooLarge = value
-	case "AltTextTooLong":
-		value := new(AltTextTooLongEncoded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.AltTextTooLong = value
-	case "MediaSourceNotPublic":
-		value := new(MediaSourceNotPublicEncoded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.MediaSourceNotPublic = value
-	case "MediaSourceUnreachable":
-		value := new(MediaSourceUnreachableEncoded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.MediaSourceUnreachable = value
-	case "UploadRejected":
-		value := new(UploadRejectedEncoded)
-		if err := json.Unmarshal(data, &value); err != nil {
-			return err
-		}
-		u.UploadRejected = value
+		u.ReturnURLNotAllowed = value
 	}
 	u.rawJSON = json.RawMessage(data)
 	return nil
@@ -9295,23 +11259,11 @@ func (u UnprocessableEntityErrorBody) MarshalJSON() ([]byte, error) {
 	if err := u.validate(); err != nil {
 		return nil, err
 	}
-	if u.UnsupportedMediaType != nil {
-		return internal.MarshalJSONWithExtraProperty(u.UnsupportedMediaType, "_tag", "UnsupportedMediaType")
+	if u.ConnectFailed != nil {
+		return internal.MarshalJSONWithExtraProperty(u.ConnectFailed, "_tag", "ConnectFailed")
 	}
-	if u.MediaTooLarge != nil {
-		return internal.MarshalJSONWithExtraProperty(u.MediaTooLarge, "_tag", "MediaTooLarge")
-	}
-	if u.AltTextTooLong != nil {
-		return internal.MarshalJSONWithExtraProperty(u.AltTextTooLong, "_tag", "AltTextTooLong")
-	}
-	if u.MediaSourceNotPublic != nil {
-		return internal.MarshalJSONWithExtraProperty(u.MediaSourceNotPublic, "_tag", "MediaSourceNotPublic")
-	}
-	if u.MediaSourceUnreachable != nil {
-		return internal.MarshalJSONWithExtraProperty(u.MediaSourceUnreachable, "_tag", "MediaSourceUnreachable")
-	}
-	if u.UploadRejected != nil {
-		return internal.MarshalJSONWithExtraProperty(u.UploadRejected, "_tag", "UploadRejected")
+	if u.ReturnURLNotAllowed != nil {
+		return internal.MarshalJSONWithExtraProperty(u.ReturnURLNotAllowed, "_tag", "ReturnUrlNotAllowed")
 	}
 	if len(u.rawJSON) > 0 {
 		return u.rawJSON, nil
@@ -9320,32 +11272,16 @@ func (u UnprocessableEntityErrorBody) MarshalJSON() ([]byte, error) {
 }
 
 type UnprocessableEntityErrorBodyVisitor interface {
-	VisitUnsupportedMediaType(*UnsupportedMediaTypeEncoded) error
-	VisitMediaTooLarge(*MediaTooLargeEncoded) error
-	VisitAltTextTooLong(*AltTextTooLongEncoded) error
-	VisitMediaSourceNotPublic(*MediaSourceNotPublicEncoded) error
-	VisitMediaSourceUnreachable(*MediaSourceUnreachableEncoded) error
-	VisitUploadRejected(*UploadRejectedEncoded) error
+	VisitConnectFailed(*ConnectFailedEncoded) error
+	VisitReturnURLNotAllowed(*ReturnURLNotAllowedEncoded) error
 }
 
 func (u *UnprocessableEntityErrorBody) Accept(visitor UnprocessableEntityErrorBodyVisitor) error {
-	if u.UnsupportedMediaType != nil {
-		return visitor.VisitUnsupportedMediaType(u.UnsupportedMediaType)
+	if u.ConnectFailed != nil {
+		return visitor.VisitConnectFailed(u.ConnectFailed)
 	}
-	if u.MediaTooLarge != nil {
-		return visitor.VisitMediaTooLarge(u.MediaTooLarge)
-	}
-	if u.AltTextTooLong != nil {
-		return visitor.VisitAltTextTooLong(u.AltTextTooLong)
-	}
-	if u.MediaSourceNotPublic != nil {
-		return visitor.VisitMediaSourceNotPublic(u.MediaSourceNotPublic)
-	}
-	if u.MediaSourceUnreachable != nil {
-		return visitor.VisitMediaSourceUnreachable(u.MediaSourceUnreachable)
-	}
-	if u.UploadRejected != nil {
-		return visitor.VisitUploadRejected(u.UploadRejected)
+	if u.ReturnURLNotAllowed != nil {
+		return visitor.VisitReturnURLNotAllowed(u.ReturnURLNotAllowed)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", u)
 }
@@ -9355,23 +11291,11 @@ func (u *UnprocessableEntityErrorBody) validate() error {
 		return fmt.Errorf("type %T is nil", u)
 	}
 	var fields []string
-	if u.UnsupportedMediaType != nil {
-		fields = append(fields, "UnsupportedMediaType")
+	if u.ConnectFailed != nil {
+		fields = append(fields, "ConnectFailed")
 	}
-	if u.MediaTooLarge != nil {
-		fields = append(fields, "MediaTooLarge")
-	}
-	if u.AltTextTooLong != nil {
-		fields = append(fields, "AltTextTooLong")
-	}
-	if u.MediaSourceNotPublic != nil {
-		fields = append(fields, "MediaSourceNotPublic")
-	}
-	if u.MediaSourceUnreachable != nil {
-		fields = append(fields, "MediaSourceUnreachable")
-	}
-	if u.UploadRejected != nil {
-		fields = append(fields, "UploadRejected")
+	if u.ReturnURLNotAllowed != nil {
+		fields = append(fields, "ReturnUrlNotAllowed")
 	}
 	if len(fields) == 0 {
 		if u.Type != "" {
@@ -10207,6 +12131,127 @@ func NewWebhooksNotConfiguredEncodedTagFromString(s string) (WebhooksNotConfigur
 }
 
 func (w WebhooksNotConfiguredEncodedTag) Ptr() *WebhooksNotConfiguredEncodedTag {
+	return &w
+}
+
+var (
+	workspaceBusyEncodedFieldTag         = big.NewInt(1 << 0)
+	workspaceBusyEncodedFieldWorkspaceID = big.NewInt(1 << 1)
+)
+
+type WorkspaceBusyEncoded struct {
+	Tag         WorkspaceBusyEncodedTag `json:"_tag" url:"_tag"`
+	WorkspaceID string                  `json:"workspaceId" url:"workspaceId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (w *WorkspaceBusyEncoded) GetTag() WorkspaceBusyEncodedTag {
+	if w == nil {
+		return ""
+	}
+	return w.Tag
+}
+
+func (w *WorkspaceBusyEncoded) GetWorkspaceID() string {
+	if w == nil {
+		return ""
+	}
+	return w.WorkspaceID
+}
+
+func (w *WorkspaceBusyEncoded) GetExtraProperties() map[string]interface{} {
+	if w == nil {
+		return nil
+	}
+	return w.extraProperties
+}
+
+func (w *WorkspaceBusyEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if w.explicitFields != nil {
+		next.Set(w.explicitFields)
+	}
+	next.Or(next, field)
+	w.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceBusyEncoded) SetTag(tag WorkspaceBusyEncodedTag) {
+	w.Tag = tag
+	w.require(workspaceBusyEncodedFieldTag)
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (w *WorkspaceBusyEncoded) SetWorkspaceID(workspaceID string) {
+	w.WorkspaceID = workspaceID
+	w.require(workspaceBusyEncodedFieldWorkspaceID)
+}
+
+func (w *WorkspaceBusyEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler WorkspaceBusyEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*w = WorkspaceBusyEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *w)
+	if err != nil {
+		return err
+	}
+	w.extraProperties = extraProperties
+	w.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (w *WorkspaceBusyEncoded) MarshalJSON() ([]byte, error) {
+	type embed WorkspaceBusyEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*w),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, w.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (w *WorkspaceBusyEncoded) String() string {
+	if w == nil {
+		return "<nil>"
+	}
+	if len(w.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(w.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(w); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", w)
+}
+
+type WorkspaceBusyEncodedTag string
+
+const (
+	WorkspaceBusyEncodedTagWorkspaceBusy WorkspaceBusyEncodedTag = "WorkspaceBusy"
+)
+
+func NewWorkspaceBusyEncodedTagFromString(s string) (WorkspaceBusyEncodedTag, error) {
+	switch s {
+	case "WorkspaceBusy":
+		return WorkspaceBusyEncodedTagWorkspaceBusy, nil
+	}
+	var t WorkspaceBusyEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (w WorkspaceBusyEncodedTag) Ptr() *WorkspaceBusyEncodedTag {
 	return &w
 }
 

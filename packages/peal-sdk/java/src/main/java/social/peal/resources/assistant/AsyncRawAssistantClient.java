@@ -36,7 +36,6 @@ import social.peal.errors.UnprocessableEntityError;
 import social.peal.resources.assistant.requests.StatusAssistantRequest;
 import social.peal.resources.assistant.requests.SuggestionRequest;
 import social.peal.types.AssistantStatus;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.Suggestion;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -127,7 +126,7 @@ public class AsyncRawAssistantClient {
                                 return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
-                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 404:
@@ -234,7 +233,7 @@ public class AsyncRawAssistantClient {
                                 return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
-                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 404:

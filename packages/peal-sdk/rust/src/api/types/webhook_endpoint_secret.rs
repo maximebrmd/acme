@@ -1,8 +1,7 @@
 pub use crate::prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct WebhookEndpointSecret {
-    #[serde(default)]
     pub endpoint: WebhookEndpoint,
     #[serde(default)]
     pub secret: String,

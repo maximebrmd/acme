@@ -13,7 +13,8 @@ pub enum ApiError {
     #[error("ForbiddenError: Access forbidden - {message}")]
     ForbiddenError {
         message: String,
-        tag: Option<ForbiddenEncodedTag>,
+        resource: Option<String>,
+        required_permission: Option<String>,
     },
     #[error("NotFoundError: Resource not found - {message}")]
     NotFoundError {
@@ -56,6 +57,12 @@ pub enum ApiError {
         message: String,
         retry_after_seconds: Option<u64>,
         limit_type: Option<String>,
+    },
+    #[error("InternalServerError: Internal server error - {message}")]
+    InternalServerError {
+        message: String,
+        tag: Option<DeletionIncompleteEncodedTag>,
+        subscriptions_cancelled: Option<i64>,
     },
     #[error("HTTP error {status}: {message}")]
     Http { status: u16, message: String },
@@ -130,15 +137,19 @@ impl ApiError {
                                 .and_then(|v| v.as_str())
                                 .unwrap_or("Unknown error")
                                 .to_string(),
-                            tag: parsed.get("_tag").and_then(|v| {
-                                serde_json::from_value::<ForbiddenEncodedTag>(v.clone()).ok()
-                            }),
+                            resource: parsed
+                                .get("resource")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            required_permission: parsed
+                                .get("requiredPermission")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
                         };
                     }
                 }
                 return Self::ForbiddenError {
                     message: body.unwrap_or("Unknown error").to_string(),
-                    tag: None,
+                    resource: None,
+                    required_permission: None,
                 };
             }
             404 => {
@@ -322,6 +333,32 @@ impl ApiError {
                     message: body.unwrap_or("Unknown error").to_string(),
                     retry_after_seconds: None,
                     limit_type: None,
+                };
+            }
+            500 => {
+                // Parse error body for InternalServerError;
+                if let Some(body_str) = body {
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(body_str) {
+                        return Self::InternalServerError {
+                            message: parsed
+                                .get("message")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("Unknown error")
+                                .to_string(),
+                            tag: parsed.get("_tag").and_then(|v| {
+                                serde_json::from_value::<DeletionIncompleteEncodedTag>(v.clone())
+                                    .ok()
+                            }),
+                            subscriptions_cancelled: parsed
+                                .get("subscriptionsCancelled")
+                                .and_then(|v| serde_json::from_value::<i64>(v.clone()).ok()),
+                        };
+                    }
+                }
+                return Self::InternalServerError {
+                    message: body.unwrap_or("Unknown error").to_string(),
+                    tag: None,
+                    subscriptions_cancelled: None,
                 };
             }
             _ => Self::Http {

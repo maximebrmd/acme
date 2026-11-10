@@ -10,10 +10,13 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 
 
-class ConflictErrorBody_AlreadyMember(UniversalBaseModel):
+class ConflictErrorBody_ExternalIdTaken(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["AlreadyMember"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "AlreadyMember"
+        typing.Literal["ExternalIdTaken"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "ExternalIdTaken"
+    workspace_id: typing_extensions.Annotated[
+        str, FieldMetadata(alias="workspaceId"), pydantic.Field(alias="workspaceId")
+    ]
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -25,10 +28,10 @@ class ConflictErrorBody_AlreadyMember(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class ConflictErrorBody_TooManyInvitations(UniversalBaseModel):
+class ConflictErrorBody_IdempotencyKeyReused(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["TooManyInvitations"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "TooManyInvitations"
+        typing.Literal["IdempotencyKeyReused"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "IdempotencyKeyReused"
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -41,6 +44,6 @@ class ConflictErrorBody_TooManyInvitations(UniversalBaseModel):
 
 
 ConflictErrorBody = typing_extensions.Annotated[
-    typing.Union[ConflictErrorBody_AlreadyMember, ConflictErrorBody_TooManyInvitations],
+    typing.Union[ConflictErrorBody_ExternalIdTaken, ConflictErrorBody_IdempotencyKeyReused],
     pydantic.Field(discriminator="type"),
 ]

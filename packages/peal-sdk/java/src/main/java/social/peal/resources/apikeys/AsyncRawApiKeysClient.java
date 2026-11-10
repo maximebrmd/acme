@@ -36,7 +36,6 @@ import social.peal.resources.apikeys.requests.NewApiKey;
 import social.peal.resources.apikeys.requests.RevokeApiKeysRequest;
 import social.peal.types.ApiKey;
 import social.peal.types.CreatedApiKey;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.UnauthenticatedEncoded;
 
 public class AsyncRawApiKeysClient {
@@ -127,7 +126,7 @@ public class AsyncRawApiKeysClient {
                                 return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
-                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 404:
@@ -233,7 +232,7 @@ public class AsyncRawApiKeysClient {
                                 return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
-                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 404:
@@ -352,7 +351,7 @@ public class AsyncRawApiKeysClient {
                                 return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
-                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 404:

@@ -26,36 +26,36 @@ public final class ConflictErrorBody {
         return value.visit(visitor);
     }
 
-    public static ConflictErrorBody alreadyMember(AlreadyMemberEncoded value) {
-        return new ConflictErrorBody(new AlreadyMemberValue(value));
+    public static ConflictErrorBody externalIdTaken(ExternalIdTakenEncoded value) {
+        return new ConflictErrorBody(new ExternalIdTakenValue(value));
     }
 
-    public static ConflictErrorBody tooManyInvitations(TooManyInvitationsEncoded value) {
-        return new ConflictErrorBody(new TooManyInvitationsValue(value));
+    public static ConflictErrorBody idempotencyKeyReused(IdempotencyKeyReusedEncoded value) {
+        return new ConflictErrorBody(new IdempotencyKeyReusedValue(value));
     }
 
-    public boolean isAlreadyMember() {
-        return value instanceof AlreadyMemberValue;
+    public boolean isExternalIdTaken() {
+        return value instanceof ExternalIdTakenValue;
     }
 
-    public boolean isTooManyInvitations() {
-        return value instanceof TooManyInvitationsValue;
+    public boolean isIdempotencyKeyReused() {
+        return value instanceof IdempotencyKeyReusedValue;
     }
 
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<AlreadyMemberEncoded> getAlreadyMember() {
-        if (isAlreadyMember()) {
-            return Optional.of(((AlreadyMemberValue) value).value);
+    public Optional<ExternalIdTakenEncoded> getExternalIdTaken() {
+        if (isExternalIdTaken()) {
+            return Optional.of(((ExternalIdTakenValue) value).value);
         }
         return Optional.empty();
     }
 
-    public Optional<TooManyInvitationsEncoded> getTooManyInvitations() {
-        if (isTooManyInvitations()) {
-            return Optional.of(((TooManyInvitationsValue) value).value);
+    public Optional<IdempotencyKeyReusedEncoded> getIdempotencyKeyReused() {
+        if (isIdempotencyKeyReused()) {
+            return Optional.of(((IdempotencyKeyReusedValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,46 +89,46 @@ public final class ConflictErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitAlreadyMember(AlreadyMemberEncoded alreadyMember);
+        T visitExternalIdTaken(ExternalIdTakenEncoded externalIdTaken);
 
-        T visitTooManyInvitations(TooManyInvitationsEncoded tooManyInvitations);
+        T visitIdempotencyKeyReused(IdempotencyKeyReusedEncoded idempotencyKeyReused);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(AlreadyMemberValue.class), @JsonSubTypes.Type(TooManyInvitationsValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(ExternalIdTakenValue.class), @JsonSubTypes.Type(IdempotencyKeyReusedValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("AlreadyMember")
+    @JsonTypeName("ExternalIdTaken")
     @JsonIgnoreProperties("_tag")
-    private static final class AlreadyMemberValue implements Value {
+    private static final class ExternalIdTakenValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private AlreadyMemberEncoded value;
+        private ExternalIdTakenEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private AlreadyMemberValue() {}
+        private ExternalIdTakenValue() {}
 
-        private AlreadyMemberValue(AlreadyMemberEncoded value) {
+        private ExternalIdTakenValue(ExternalIdTakenEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitAlreadyMember(value);
+            return visitor.visitExternalIdTaken(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof AlreadyMemberValue && equalTo((AlreadyMemberValue) other);
+            return other instanceof ExternalIdTakenValue && equalTo((ExternalIdTakenValue) other);
         }
 
-        private boolean equalTo(AlreadyMemberValue other) {
+        private boolean equalTo(ExternalIdTakenValue other) {
             return value.equals(other.value);
         }
 
@@ -143,32 +143,32 @@ public final class ConflictErrorBody {
         }
     }
 
-    @JsonTypeName("TooManyInvitations")
+    @JsonTypeName("IdempotencyKeyReused")
     @JsonIgnoreProperties("_tag")
-    private static final class TooManyInvitationsValue implements Value {
+    private static final class IdempotencyKeyReusedValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private TooManyInvitationsEncoded value;
+        private IdempotencyKeyReusedEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private TooManyInvitationsValue() {}
+        private IdempotencyKeyReusedValue() {}
 
-        private TooManyInvitationsValue(TooManyInvitationsEncoded value) {
+        private IdempotencyKeyReusedValue(IdempotencyKeyReusedEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitTooManyInvitations(value);
+            return visitor.visitIdempotencyKeyReused(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof TooManyInvitationsValue && equalTo((TooManyInvitationsValue) other);
+            return other instanceof IdempotencyKeyReusedValue && equalTo((IdempotencyKeyReusedValue) other);
         }
 
-        private boolean equalTo(TooManyInvitationsValue other) {
+        private boolean equalTo(IdempotencyKeyReusedValue other) {
             return value.equals(other.value);
         }
 
