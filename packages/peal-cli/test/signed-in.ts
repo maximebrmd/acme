@@ -6,7 +6,7 @@ import { TestClock } from "effect/testing";
 
 import { runWith } from "#cli.ts";
 
-import { makeAuthorizationServer } from "./authorization-server.ts";
+import { adsScope, makeAuthorizationServer } from "./authorization-server.ts";
 import { makeStudio, studioId, studioMe } from "./studio.ts";
 import type { Studio, StudioKey } from "./studio.ts";
 import { cliEnvironment, inMemoryServer, output } from "./support.ts";
@@ -33,6 +33,8 @@ export interface Runs {
 }
 
 export interface SignedIn extends Runs {
+  /** The same command line at a terminal, where someone types these lines. */
+  readonly answering: (answers: readonly string[]) => Runs;
   /** The folder the test may write in. */
   readonly directory: string;
   readonly studio: Studio;
@@ -64,14 +66,20 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
     /** The scopes the user approves at sign-in: all of them, unless told. */
     readonly scope?: string;
     readonly signIn?: boolean;
+    /** Whether the sign-in asks to work with ads too (peal login --ads). */
+    readonly withAds?: boolean;
   } = {}
 ) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const directory = yield* fs.makeTempDirectoryScoped();
 
+  // The user approves what a sign-in with --ads asks, unless told.
+  const approved =
+    options.scope ?? (options.withAds === true ? adsScope : undefined);
+
   const authorization = yield* makeAuthorizationServer(
-    options.scope === undefined ? {} : { scope: options.scope }
+    approved === undefined ? {} : { scope: approved }
   );
 
   const studio = yield* makeStudio(options.me ?? studioMe, options.keys ?? []);
@@ -80,7 +88,10 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
 
   const server = inMemoryServer(Effect.void, authorization, studio);
 
-  const runs = (extra: Readonly<Record<string, string>>): Runs => {
+  const runs = (
+    extra: Readonly<Record<string, string>>,
+    answers?: readonly string[]
+  ): Runs => {
     const environment = Layer.mergeAll(
       cliEnvironment(
         {
@@ -89,7 +100,8 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
           ...options.env,
           ...extra,
         },
-        NodeFileSystem.layer
+        NodeFileSystem.layer,
+        answers
       ),
       server
     );
@@ -136,7 +148,9 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
     // The sign-in waits five seconds before asking for its tokens: the
     // in-memory server answers on the event loop, which the test clock does
     // not drive.
-    const login = yield* printed(["login"]).pipe(Effect.forkChild);
+    const login = yield* printed(
+      options.withAds === true ? ["login", "--ads"] : ["login"]
+    ).pipe(Effect.forkChild);
 
     yield* Effect.promise(async () => {
       await delay(10);
@@ -146,11 +160,12 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
   }
 
   return {
+    answering: (answers) => runs({}, answers),
     directory,
     printed,
     refused,
     refusedAfter,
     studio,
-    withEnv: runs,
+    withEnv: (env) => runs(env),
   } satisfies SignedIn;
 });

@@ -430,6 +430,52 @@ peal partner workspaces --external-id cus_42
 
 For the owners and admins of a workspace with a [partner account](/embedding): `show` prints what its customers see, the origins hosted pages may send them back to, and what it holds; `keys` lists its keys, never the keys themselves; `workspaces` lists the workspaces it owns, newest first, with their external ids and channels, `--external-id` finding one exactly and `--name` searching. Creating and deleting those workspaces is for the partner API, with a partner key, and creating a key for the workspace's **Settings**.
 
+## Ads [#ads]
+
+These commands follow the [ads](/ads) page: read it first, as boosting
+spends money. No command signs in to an ad network, connects an ad account,
+turns spending on or sets the monthly ceiling: a person does that in the web
+app. Boosting from a sign-in takes the `workspace:ads` scope, which
+`peal login --ads` asks for and which is never asked without the flag;
+`peal doctor` says whether the sign-in holds it.
+
+| Command                                                                     | What it does                                                                                                                                           |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `peal ads status`                                                           | Says what the server offers of ads: nothing, reading ad accounts, or boosting too.                                                                     |
+| `peal ads accounts`                                                         | Lists the connected ad accounts: network, currency, status, whether an owner allowed each to spend, and its monthly ceiling.                           |
+| `peal ads account <account-id>`                                             | Shows one ad account, its ceiling and what its boosts commit this month.                                                                               |
+| `peal ads campaigns <account-id> [--from <YYYY-MM-DD>] [--to <YYYY-MM-DD>]` | Lists the account's campaigns as last read, with what their ads did over the days (the last 30 by default, 366 at most).                               |
+| `peal ads list <account-id> [--campaign <campaign-id>] [--from …] [--to …]` | Lists the account's ads, those of one campaign with `--campaign`, each with the workspace's post it promotes.                                          |
+| `peal ads insights <account-id> [--from …] [--to …]`                        | Sums what the account's ads did each day: spend, impressions, reach, clicks, results.                                                                  |
+| `peal ads post <post-id>`                                                   | Shows a published post's organic counts beside its paid numbers, by ad account, and its boosts: side by side, never summed.                            |
+| `peal ads boosts [--post <post-id>] [--cursor <cursor>]`                    | Lists the workspace's boosts, newest first.                                                                                                            |
+| `peal ads boost show <boost-id>`                                            | Shows one boost, where it stands, and the requests Peal sent the ad network for it.                                                                    |
+| `peal ads boost quote …`                                                    | Checks a boost and makes nothing: the most it can cost, its days, and the room under the monthly ceiling.                                              |
+| `peal ads boost create … [--idempotency-key <key>] [--yes]`                 | **Spends money.** Quotes, prints what it will spend and for how long, asks, then boosts the post.                                                      |
+| `peal ads boost pause <boost-id>`                                           | Pauses a boost; it spends nothing while paused. Safe to run twice.                                                                                     |
+| `peal ads boost resume <boost-id> [--yes]`                                  | **Spends money.** Runs a paused boost again until its end, after asking.                                                                               |
+| `peal ads boost stop <boost-id> [--yes]`                                    | Stops a boost for good, after asking.                                                                                                                  |
+| `peal ads audit [--cursor <cursor>]`                                        | Lists the ads audit trail, which answers to owners alone (`ads:authorize`): with an API key an owner gave that permission, as no application holds it. |
+
+`boost quote` and `boost create` take the same flags:
+
+| Flag                                     | Meaning                                                                                                                                                                    |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--account <account-id>`                 | The ad account that pays. Required.                                                                                                                                        |
+| `--post <post-id>`                       | The published post to boost. Required.                                                                                                                                     |
+| `--channel <channel-id>`                 | The channel it is boosted on: a Facebook Page, or an Instagram account connected through its Page. Required.                                                               |
+| `--total <amount>` or `--daily <amount>` | The budget for the whole run, or for each day, in the currency's units (`50`, `50.00`). Exactly one. More decimals than the currency has are refused.                      |
+| `--currency <EUR>`                       | The budget's currency. Required, never defaulted: it must be the ad account's, and nothing is ever converted.                                                              |
+| `--ends <instant>`                       | When the run ends. Required: at least a day after the start, 90 days at most.                                                                                              |
+| `--starts <instant>`                     | When it starts. Now when left out.                                                                                                                                         |
+| `--time-zone <zone>`                     | The zone `--starts` and `--ends` are read in when written without an offset.                                                                                               |
+| `--countries <FR,BE>`                    | ISO alpha-2 country codes, 25 at most. Required.                                                                                                                           |
+| `--age-min <n>`, `--age-max <n>`         | 18 to 65 (65 means 65 and over). 18 and 65 when left out.                                                                                                                  |
+| `--not-special-category`                 | A required declaration: Peal does not boost ads about housing, employment, financial products or services, or social issues, elections or politics.                        |
+| `--beneficiary <name>`, `--payer <name>` | Who benefits from the ad and who pays for it: required when a country is in the European Union.                                                                            |
+| `--idempotency-key <key>` (create)       | Makes the command safe to run again: the same key never makes a second boost. Made up and printed when left out.                                                           |
+| `--yes` (create, resume, stop)           | Answers the confirmation beforehand. Required with `--json`, and where the input is not a terminal: the command then refuses with `confirmation_required` rather than ask. |
+
 ## Your data [#account]
 
 ```sh

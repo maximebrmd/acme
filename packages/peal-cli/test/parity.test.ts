@@ -27,8 +27,43 @@ const partnerSettings =
 const inbox =
   "A person's own notices, which the web app shows them; an API key has none.";
 
+const adSignIn =
+  "Signing in to an ad network and choosing the ad accounts it connects is a person's, in the web app, in their own session: the server refuses an API key and an application, the command line included.";
+
+const adSignIns =
+  "Sign-ins to an ad network are listed and removed where they are made, in the web app; peal ads accounts lists the ad accounts they connect.";
+
 const coverage = {
   "activity.list": by("activity list"),
+  "ads.auditTrail": by("ads audit"),
+  "ads.completeConnect": exempt(adSignIn),
+  "ads.connect": exempt(adSignIn),
+  "ads.connectAccounts": exempt(adSignIn),
+  "ads.createBoost": by("ads boost create"),
+  "ads.disconnect": exempt(
+    "Removing a sign-in deletes its ad accounts, what was read of them and their boosts' records: a person does it, in the web app."
+  ),
+  "ads.getAccount": by("ads account"),
+  "ads.getBoost": by("ads boost show"),
+  "ads.listAccounts": by("ads accounts"),
+  "ads.listAds": by("ads list"),
+  "ads.listBoosts": by("ads boosts"),
+  "ads.listCampaigns": by("ads campaigns"),
+  "ads.listConnections": exempt(adSignIns),
+  "ads.listInsights": by("ads insights"),
+  "ads.pauseBoost": by("ads boost pause"),
+  "ads.postPerformance": by("ads post"),
+  "ads.quoteBoost": by("ads boost quote"),
+  "ads.reachableAccounts": exempt(adSignIn),
+  "ads.removeAccount": exempt(
+    "Disconnecting an ad account deletes what was read of it and its boosts' records: a person does it, in the web app."
+  ),
+  "ads.resumeBoost": by("ads boost resume"),
+  "ads.setSpending": exempt(
+    "Allowing an ad account to spend, and its monthly ceiling, is an owner's decision, in the web app, in their own session: the server refuses an API key and an application, the command line included."
+  ),
+  "ads.status": by("ads status"),
+  "ads.stopBoost": by("ads boost stop"),
   "analytics.post": by("analytics post"),
   "analytics.summary": by("analytics summary"),
   "apiKeys.create": exempt(

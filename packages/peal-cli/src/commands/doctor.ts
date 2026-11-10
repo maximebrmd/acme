@@ -8,7 +8,7 @@ import { mcpEndpoint } from "#commands/mcp.ts";
 import { CredentialStore } from "#credentials.ts";
 import { display } from "#display.ts";
 import { DoctorFailed } from "#doctor-failed.ts";
-import { publishScope } from "#explain.ts";
+import { adsScope, publishScope } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns } from "#print.ts";
 import {
@@ -235,6 +235,30 @@ const scopeCheck = (scope: string): Check => {
       );
 };
 
+// Whether the saved sign-in may work with ads, which is asked on purpose
+// (peal login --ads): without it the sign-in reads ads, and spends nothing.
+const adsScopeCheck = (scope: string): Check => {
+  const scopes = scope.split(/\s+/u).filter((name) => name !== "");
+
+  if (scopes.length === 0) {
+    return skipped("ads-scope", "The saved sign-in does not say its scopes.");
+  }
+
+  if (!scopes.includes(adsScope)) {
+    return ok(
+      "ads-scope",
+      `The sign-in was made without ${adsScope}, as every sign-in is unless asked: it reads ads, and cannot boost a post or pause, resume or stop a boost. peal login --ads asks for it, when the person wants this command line to spend on ads.`
+    );
+  }
+
+  return ok(
+    "ads-scope",
+    scopes.includes(publishScope)
+      ? `The sign-in has ${adsScope} and ${publishScope}: it can boost posts, which spends money, where your role and an owner's monthly ceiling allow it.`
+      : `The sign-in has ${adsScope} without ${publishScope}: it can pause and stop boosts; it cannot boost a post or resume one.`
+  );
+};
+
 // A person's checks: the sign-in works, what it may do, and where.
 const personChecks = (choice: Option.Option<string>, up: boolean) =>
   Effect.gen(function* checkingPerson() {
@@ -257,6 +281,7 @@ const personChecks = (choice: Option.Option<string>, up: boolean) =>
         ),
         skipped("access", why),
         skipped("publish-scope", why),
+        skipped("ads-scope", why),
         skipped("workspace", why),
       ];
     }
@@ -267,12 +292,14 @@ const personChecks = (choice: Option.Option<string>, up: boolean) =>
     );
 
     const scope = scopeCheck(saved.value.scope);
+    const ads = adsScopeCheck(saved.value.scope);
 
     if (!up) {
       return [
         credential,
         skipped("access", unanswered),
         scope,
+        ads,
         skipped("workspace", unanswered),
       ];
     }
@@ -282,6 +309,7 @@ const personChecks = (choice: Option.Option<string>, up: boolean) =>
         credential,
         skipped("access", inClear),
         scope,
+        ads,
         skipped("workspace", inClear),
       ];
     }
@@ -303,6 +331,7 @@ const personChecks = (choice: Option.Option<string>, up: boolean) =>
           "Run peal login again."
         ),
         scope,
+        ads,
         skipped("workspace", "the sign-in does not work"),
       ];
     }
@@ -319,6 +348,7 @@ const personChecks = (choice: Option.Option<string>, up: boolean) =>
         `Signed in as ${me.value.user.name} <${me.value.user.email}>, in ${String(me.value.workspaces.length)} ${me.value.workspaces.length === 1 ? "workspace" : "workspaces"}: ${me.value.workspaces.map(membershipLine).join("; ")}.`
       ),
       scope,
+      ads,
       personWorkspace(me.value, choice, source),
     ];
   });
@@ -339,6 +369,11 @@ const keyChecks = (choice: Option.Option<string>, up: boolean) =>
       "an API key has permissions, not scopes: it schedules and publishes with post:schedule"
     );
 
+    const ads = skipped(
+      "ads-scope",
+      "an API key has permissions, not scopes: it reads ads with ads:read, and boosts with ads:spend"
+    );
+
     const workspaceId = choice.pipe(Option.filter(isWorkspaceId));
 
     if (Option.isNone(workspaceId) || Option.isNone(key)) {
@@ -346,6 +381,7 @@ const keyChecks = (choice: Option.Option<string>, up: boolean) =>
         credential,
         skipped("access", "the workspace's id is needed to try the key"),
         scope,
+        ads,
         failing(
           "workspace",
           Option.match(choice, {
@@ -364,11 +400,11 @@ const keyChecks = (choice: Option.Option<string>, up: boolean) =>
     );
 
     if (!up) {
-      return [credential, skipped("access", unanswered), scope, workspace];
+      return [credential, skipped("access", unanswered), scope, ads, workspace];
     }
 
     if (!(yield* api.sendingCredentials.pipe(Effect.isSuccess))) {
-      return [credential, skipped("access", inClear), scope, workspace];
+      return [credential, skipped("access", inClear), scope, ads, workspace];
     }
 
     const client = yield* api.signedIn(key.value).pipe(Effect.orDie);
@@ -424,7 +460,7 @@ const keyChecks = (choice: Option.Option<string>, up: boolean) =>
         )
       );
 
-    return [credential, access, scope, workspace];
+    return [credential, access, scope, ads, workspace];
   });
 
 const mcpCheck = mcpEndpoint.pipe(
@@ -497,6 +533,6 @@ export const doctor = Command.make(
     "Check what this command line runs with: the server, the credential and the workspace. It changes nothing."
   ),
   Command.withDescription(
-    `Check what this command line runs with, and change nothing: the API URL and where it came from, that the server answers and is ready, its API's latest release, which credential is used (${apiKeyVariable} or the saved sign-in, never printed), that it works, whether it may schedule and publish, which workspace commands act in, and the MCP endpoint. Each check is ok, failing or skipped, with what to do. Exits with 1 when one fails. With --json: {"checks": [{"name", "status", "detail", "fix"}], "ok"}.`
+    `Check what this command line runs with, and change nothing: the API URL and where it came from, that the server answers and is ready, its API's latest release, which credential is used (${apiKeyVariable} or the saved sign-in, never printed), that it works, whether it may schedule and publish, whether it may work with ads, which workspace commands act in, and the MCP endpoint. Each check is ok, failing or skipped, with what to do. Exits with 1 when one fails. With --json: {"checks": [{"name", "status", "detail", "fix"}], "ok"}.`
   )
 );

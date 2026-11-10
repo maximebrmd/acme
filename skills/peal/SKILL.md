@@ -1,6 +1,6 @@
 ---
 name: peal
-description: Draft, schedule and publish social media posts through a Peal server, with the peal command line or its HTTP API, and read how they went. Use when a task writes, schedules, publishes, moves, cancels or checks posts in Peal, uploads media to it, reads its analytics or activity log, or sets up a script or an agent that does. Covers signing in or using a workspace API key, finding channel and media ids, idempotent sending, reading outcomes, errors and rate limits.
+description: Draft, schedule and publish social media posts through a Peal server, with the peal command line or its HTTP API, and read how they went. Use when a task writes, schedules, publishes, moves, cancels or checks posts in Peal, uploads media to it, reads its analytics, ad accounts or activity log, boosts a published post as an ad, or sets up a script or an agent that does. Covers signing in or using a workspace API key, finding channel and media ids, idempotent sending, reading outcomes, errors and rate limits.
 license: Apache-2.0
 compatibility: Needs the peal command line or curl, and network access to a Peal server. Reads PEAL_API_URL, PEAL_API_KEY and PEAL_WORKSPACE from the environment.
 metadata:
@@ -56,6 +56,7 @@ page they decide what the command line may do:
 | `workspace:read`    | Reading.                                                     |
 | `workspace:write`   | What their role allows that puts nothing out: drafts, media. |
 | `workspace:publish` | Scheduling, publishing, moving, cancelling, reposting.       |
+| `workspace:ads`     | Boosting posts, which spends money. Only `peal login --ads`. |
 
 A sign-in without `workspace:publish` writes drafts and cannot schedule or
 publish. That is a choice, not an error.
@@ -89,6 +90,8 @@ Ask for the least a task needs.
 | Schedule, publish | the above, and `post:schedule`                              |
 | Discard a draft   | `post:delete`                                               |
 | Activity log      | `activity:read`                                             |
+| Read ads          | `ads:read`                                                  |
+| Boost a post      | `ads:read`, `ads:spend`: this key can spend money           |
 
 ## Check first
 
@@ -101,7 +104,8 @@ peal doctor --json
 It changes nothing. It prints `{"checks": [{"name", "status", "detail", "fix"}], "ok"}`
 and exits with 1 when a check fails. Each `status` is `ok`, `failing` or
 `skipped`; `fix` says what to do. The checks: `api-url`, `health`, `ready`,
-`changelog`, `credential`, `access`, `publish-scope`, `workspace`, `mcp`.
+`changelog`, `credential`, `access`, `publish-scope`, `ads-scope`,
+`workspace`, `mcp`.
 
 Read `publish-scope` before planning to schedule. When it says the sign-in
 cannot schedule or publish, plan for drafts.
@@ -319,6 +323,44 @@ peal analytics post <post-id> --json
 peal analytics summary --from 2026-11-01 --to 2026-11-30 --json
 ```
 
+## Ads and boosts
+
+A boost promotes a published post as an ad. **BOOSTING SPENDS THE USER'S
+MONEY**: the ad network charges the ad account's payment method, up to the
+budget, until the end date. These rules come before everything else here.
+
+1. Never create or resume a boost unless the user asked, in this
+   conversation, for that exact post, budget, currency and end date. A
+   general wish ("promote our posts") is not that: ask.
+2. Always run the quote first, and show the user its summary: the most it
+   can cost, the budget, start, end and days, the audience, and the ad
+   account that is charged. Then wait for their answer.
+3. Never pass `--yes` on a guess. It stands for the user's agreement to
+   exactly what the quote said. Never guess `--currency`, a budget or an
+   end date, and never pass `--not-special-category` to get past a refusal.
+4. Pausing and stopping spend nothing: they are always safe to offer, and
+   to do when the user asks or a boost is `unconfirmed`.
+5. Never retry `boost create` under a NEW idempotency key after a failure
+   whose outcome is unclear (a timeout, a dropped connection, a 5xx). Reuse
+   the key that was sent or printed, or read `peal ads boosts` first.
+6. Never work around a missing ceiling, scope or permission. Connecting an
+   ad account, turning its spending on and setting its monthly ceiling are
+   an owner's, in the web app.
+
+```sh
+peal ads accounts --json
+peal ads boost quote --account <account-id> --post <post-id> --channel <channel-id> --total 50 --currency EUR --ends 2026-11-20T09:00:00Z --countries FR --beneficiary "Studio" --payer "Studio" --not-special-category --json
+peal ads boost create --account <account-id> --post <post-id> --channel <channel-id> --total 50 --currency EUR --ends 2026-11-20T09:00:00Z --countries FR --beneficiary "Studio" --payer "Studio" --not-special-category --idempotency-key <key> --yes --json
+peal ads boost show <boost-id> --json
+peal ads boost pause <boost-id> --json
+peal ads boost stop <boost-id> --yes --json
+```
+
+`--total 50 --currency EUR` is 50.00 EUR; the API's answers count in minor
+units (5000). A sign-in spends only when made with `peal login --ads`.
+Everything else, the states of a boost, reading what ads did, and what to
+do with each error: [references/ads.md](references/ads.md).
+
 ## What did I do
 
 The activity log lists the requests that asked to change something: when,
@@ -373,13 +415,19 @@ Every error of the API carries:
 | `duplicate_post`         | 409    | `duplicates` names the post that already sends this. Nothing was made.   |
 | `import_unreadable`      | 422    | Fix what `problem` and `column` say of the CSV file. Nothing was made.   |
 | `plan_limit_reached`     | 402    | The workspace's plan has no room. Tell the user.                         |
+| `spend_ceiling_exceeded` | 409    | The ad account's monthly ceiling has no room. Tell the user.             |
+| `boost_invalid`          | 422    | Fix every entry of `violations`. Nothing was reserved or sent.           |
+| `boost_key_reused`       | 409    | The key names another boost. Nothing was made.                           |
+| `ad_network_unavailable` | 503    | Nothing is known to have changed. Wait, then read the boost.             |
 | `too_many_requests`      | 429    | Wait `retryAfterSeconds`, then send again.                               |
 | `internal_error`         | 500    | Retry a read. For `peal post`, retry only with the same idempotency key. |
 
 The command line adds codes of its own, without a `requestId`: `unreachable`,
 `unexpected_answer`, `not_signed_in`, `sign_in_expired`, `api_key_refused`,
 `workspace_required`, `workspace_id_required`, `person_required`,
-`invalid_usage`, `refused`.
+`confirmation_required`, `not_confirmed`, `invalid_usage`, `refused`.
+
+The codes of ads are listed in [references/ads.md](references/ads.md).
 
 ## Rate limits
 

@@ -13,7 +13,7 @@
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
   `post`, `media`, `approvals`, `review`, `analytics`, `billing`,
-  `members`, `invitations` and `webhooks`, which act in the
+  `members`, `invitations`, `webhooks` and `ads`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read
@@ -75,3 +75,32 @@
   key's. Partner settings are `settings/partner`
   (`components/settings/partner-settings.tsx`), and the staff console's
   workspace page shows where a workspace stands (`PartnerDesk`).
+- `peal ads` reads ad accounts, campaigns, ads, insights and boosts, and
+  `peal ads boost` quotes, creates, shows, pauses, resumes and stops one.
+  No command signs in to an ad network, connects an ad account or sets a
+  ceiling: those are a person's, in the web app, and the commands that
+  would need them say so. Amounts are typed in the currency's units and
+  turned into minor units from their digits (`minorUnits`,
+  `src/ads-money.ts`), with the `minorUnitDigits` of the account read
+  first; never through a float, never rounded or converted, and `--currency`
+  is never defaulted. `money` writes them back, and `explain(url, digits)`
+  words a refusal's amounts with it.
+- What spends asks first: `boost create` quotes, prints what it will spend
+  and for how long, then `confirmed` (`src/confirm.ts`) takes `--yes` or
+  `yes` typed at a terminal (`Stdio.stdinIsTerminal`, `Terminal.readLine`);
+  `neverAsksInJson` refuses `--json` without `--yes` before any request.
+  `boost resume` and `boost stop` follow the same rule. `boost create`
+  refuses without `--not-special-category` before any request, sends an
+  `Idempotency-Key` always (made up and printed before the request when
+  left out), and a request without a usable answer names the key to send
+  again. Boost states and failure reasons have their words in
+  `src/ads-print.ts`, typed by the contract.
+- `peal login` asks for `workspace:ads` only with `--ads`, never by
+  default: a person opts in to an application that can spend. `peal doctor`
+  says which the sign-in holds (`ads-scope`), and `explain` sends a sign-in
+  refused over an ads permission back to `peal login --ads`.
+- Tests type answers at a terminal with `signedIn`'s `answering([...])`;
+  without it stdin is no terminal. The studio's ads are in
+  `test/studio-ads.ts` (`StudioState.ads`: the server's mode, two ad
+  accounts, the boosts), whose handlers refuse a bearer credential what
+  only a person does.

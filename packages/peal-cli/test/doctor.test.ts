@@ -51,6 +51,7 @@ describe("peal doctor", () => {
       assert.isTrue(diagnosis.ok);
       assert.deepStrictEqual(statuses(text), {
         access: "ok",
+        "ads-scope": "ok",
         "api-url": "ok",
         changelog: "ok",
         credential: "ok",
