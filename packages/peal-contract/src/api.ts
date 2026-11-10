@@ -436,6 +436,8 @@ export { deprecated, Deprecation } from "./deprecation.ts";
 
 export type { DeprecationNotice } from "./deprecation.ts";
 
+export { errorCodeOf } from "./error-code.ts";
+
 export { errorEnvelope } from "./error-envelope.ts";
 
 export { Forbidden, ForbiddenReasonSchema } from "./forbidden.ts";

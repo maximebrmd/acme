@@ -158,19 +158,20 @@ export const PostsHandlers = HttpApiBuilder.group(
           );
 
           // A refused item reads as the error `send` would have answered.
-          const items = yield* Effect.forEach(
-            answered.map((outcome, index): BulkPostResult =>
-              Result.match(outcome, {
-                onFailure: (refusal) => ({ _tag: "refused", index, refusal }),
-                onSuccess: (sent) => ({
-                  _tag: "created",
-                  index,
-                  post: postView(sent),
-                  replayed: sent.replayed,
-                }),
-              })
-            ),
-            toldRefusal
+          const items = yield* Effect.all(
+            answered.map((outcome, index) =>
+              toldRefusal<BulkPostResult>(
+                Result.match(outcome, {
+                  onFailure: (refusal) => ({ _tag: "refused", index, refusal }),
+                  onSuccess: (sent) => ({
+                    _tag: "created",
+                    index,
+                    post: postView(sent),
+                    replayed: sent.replayed,
+                  }),
+                })
+              )
+            )
           );
 
           const created = items.filter(({ _tag }) => _tag === "created").length;
@@ -398,7 +399,9 @@ export const PostsHandlers = HttpApiBuilder.group(
             return {
               created: 0,
               dryRun: payload.dryRun === true,
-              rows: yield* Effect.forEach(results, toldRefusal),
+              rows: yield* Effect.all(
+                results.map((result) => toldRefusal(result))
+              ),
             };
           }
 
@@ -426,7 +429,9 @@ export const PostsHandlers = HttpApiBuilder.group(
           return {
             created: results.filter(({ _tag }) => _tag === "created").length,
             dryRun: false,
-            rows: yield* Effect.forEach(results, toldRefusal),
+            rows: yield* Effect.all(
+              results.map((result) => toldRefusal(result))
+            ),
           };
         }),
       list: ({ query }) =>

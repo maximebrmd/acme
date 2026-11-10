@@ -1,6 +1,7 @@
 import { Array as Arr, Effect, Match, Option, Schema } from "effect";
 import {
   DuplicatePost,
+  errorCodeOf,
   IdempotencyKeyReused,
   PostContentInvalid,
   PostNotFound,
@@ -10,7 +11,6 @@ import {
   UnknownMedia,
 } from "peal-contract";
 import type { CurrentMember, PostRefusal } from "peal-contract";
-import { errorsByTag } from "peal-contract/errors";
 
 import type { SendRefusal } from "#publishing/application/post-batches.ts";
 import type { PostCheck } from "#publishing/application/post-checks.ts";
@@ -21,7 +21,25 @@ import { RequestId } from "#shared/api/request-id.ts";
 // One post of several is answered what `send` would have answered for it
 // alone, as data: the same errors, with the same fields.
 
-const catalogue = errorsByTag();
+const DeclaredSchema = Schema.Struct({
+  description: Schema.String,
+  identifier: Schema.String,
+});
+
+const decodeDeclared = Schema.decodeUnknownOption(DeclaredSchema);
+
+// What each refusal means, in the words the contract describes it with: a
+// refusal that has none of its own is told these, as an error is.
+const words = new Map(
+  PostRefusalSchema.members.flatMap((member) =>
+    Option.match(decodeDeclared(member.ast.annotations), {
+      onNone: () => [],
+      onSome: ({ description, identifier }) => [
+        [identifier, description] as const,
+      ],
+    })
+  )
+);
 
 const encodeRefusal = Schema.encodeEffect(PostRefusalSchema);
 
@@ -30,27 +48,29 @@ const decodeRefusal = Schema.decodeUnknownEffect(PostRefusalSchema);
 /**
  * A refusal answered as data, inside an answer that is not an error, in
  * the envelope every error of the API comes in: its `code`, words for a
- * person (its own, or the catalogue's) and the request's id. The server
+ * person (its own, or the contract's) and the request's id. The server
  * fills these on an error it answers; nothing does for one inside a 200.
  */
 export const inEnvelope = (refusal: PostRefusal): Effect.Effect<PostRefusal> =>
-  Effect.gen(function* inEnvelope() {
+  Effect.gen(function* filled() {
     const requestId = yield* Effect.serviceOption(RequestId);
-    const known = catalogue.get(refusal._tag);
     const own = yield* encodeRefusal(refusal);
 
-    return yield* decodeRefusal({
+    const told = {
       ...own,
-      ...(known === undefined ? {} : { code: known.code }),
+      code: errorCodeOf(refusal._tag),
       message:
         own.message === undefined || own.message === ""
-          ? (known?.message ?? "The post was refused.")
+          ? (words.get(refusal._tag) ?? "The post was refused.")
           : own.message,
-      ...Option.match(requestId, {
-        onNone: () => ({}),
-        onSome: (id) => ({ requestId: id }),
-      }),
-    });
+    };
+
+    return yield* decodeRefusal(
+      Option.match(requestId, {
+        onNone: () => told,
+        onSome: (id) => ({ ...told, requestId: id }),
+      })
+    );
   }).pipe(Effect.orDie);
 
 /** A post of several, its refusal in the envelope if it was refused. */

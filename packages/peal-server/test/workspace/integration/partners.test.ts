@@ -14,16 +14,16 @@ import {
   unconfirmedEmails,
   workspaceOf,
 } from "./harness.ts";
-import type { Person } from "./harness.ts";
+import {
+  bearer,
+  customerOf,
+  everyScope,
+  keyOf,
+  partnerOf,
+  PartnerSchema,
+  WorkspaceSchema,
+} from "./partner-support.ts";
 import { seedChannel, seedPost } from "./seed.ts";
-
-const PartnerSchema = Schema.Struct({
-  id: Schema.String,
-  logoUrl: Schema.NullOr(Schema.String),
-  name: Schema.String,
-  returnOrigins: Schema.Array(Schema.String),
-  workspaceId: Schema.String,
-});
 
 const UsageSchema = Schema.Struct({
   channels: Schema.Number,
@@ -34,23 +34,6 @@ const StandingSchema = Schema.Struct({
   canOpen: Schema.Boolean,
   partner: Schema.NullOr(PartnerSchema),
   usage: Schema.NullOr(UsageSchema),
-});
-
-const CreatedKeySchema = Schema.Struct({
-  key: Schema.String,
-  partnerKey: Schema.Struct({
-    id: Schema.String,
-    permissions: Schema.Array(Schema.String),
-    scopes: Schema.Array(Schema.String),
-    start: Schema.String,
-  }),
-});
-
-const WorkspaceSchema = Schema.Struct({
-  channels: Schema.Number,
-  externalId: Schema.NullOr(Schema.String),
-  id: Schema.String,
-  name: Schema.String,
 });
 
 const PageSchema = Schema.Struct({
@@ -116,89 +99,6 @@ const AuditSchema = Schema.Struct({
 });
 
 const CountSchema = Schema.Array(Schema.Struct({ rows: Schema.Number }));
-
-const bearer = (key: string) => ({ authorization: `Bearer ${key}` });
-
-const everyScope = ["workspaces:read", "workspaces:write", "workspaces:delete"];
-
-const everyPermission = [
-  "analytics:read",
-  "assistant:use",
-  "billing:read",
-  "channel:read",
-  "channel:connect",
-  "channel:disconnect",
-  "media:read",
-  "media:upload",
-  "media:delete",
-  "post:read",
-  "post:create",
-  "post:update",
-  "post:delete",
-  "post:schedule",
-  "post:approve",
-  "post:publish",
-  "webhook:read",
-  "webhook:manage",
-];
-
-/** A partner account its owner opened for a new workspace. */
-const partnerOf = Effect.fn("partnerOf")(function* partnerOf(label: string) {
-  const app = yield* TestApp;
-  const owner = yield* signedUpUnconfirmed(label);
-  const home = yield* workspaceOf(owner, label);
-
-  const opened = yield* app.request(`/api/workspaces/${home}/partner`, {
-    body: { name: `${label} Suite` },
-    headers: { cookie: owner.cookies },
-  });
-
-  assert.strictEqual(opened.status, 201);
-
-  return { home, owner, partner: yield* bodyOf(PartnerSchema, opened) };
-});
-
-/** A partner key the owner creates. */
-const keyOf = Effect.fn("keyOf")(function* keyOf(
-  owner: Person,
-  home: string,
-  {
-    permissions = everyPermission,
-    scopes = everyScope,
-  }: {
-    readonly permissions?: readonly string[];
-    readonly scopes?: readonly string[];
-  } = {}
-) {
-  const app = yield* TestApp;
-
-  const reply = yield* app.request(`/api/workspaces/${home}/partner/keys`, {
-    body: { name: "backend", permissions, scopes },
-    headers: { cookie: owner.cookies },
-  });
-
-  assert.strictEqual(reply.status, 201);
-
-  return yield* bodyOf(CreatedKeySchema, reply);
-});
-
-/** A workspace the partner creates for a customer. */
-const customerOf = Effect.fn("customerOf")(function* customerOf(
-  key: string,
-  name: string,
-  externalId?: string
-) {
-  const app = yield* TestApp;
-
-  const reply = yield* app.request("/api/partner/workspaces", {
-    body: { externalId, name },
-    headers: bearer(key),
-  });
-
-  assert.strictEqual(reply.status, 201);
-
-  return yield* bodyOf(WorkspaceSchema, reply);
-});
 
 // What a credential may reach: each workspace endpoint a key calls, read
 // with every kind of credential, in every kind of workspace.

@@ -354,19 +354,20 @@ export const PostToolsLive = PostTools.toLayer(
           );
 
           // A refused item carries the code the API's error has.
-          const items = yield* Effect.forEach(
-            answered.map((outcome, index): BulkPostResult =>
-              Result.match(outcome, {
-                onFailure: (refusal) => ({ _tag: "refused", index, refusal }),
-                onSuccess: (made) => ({
-                  _tag: "created",
-                  index,
-                  post: postView(made),
-                  replayed: made.replayed,
-                }),
-              })
-            ),
-            toldRefusal
+          const items = yield* Effect.all(
+            answered.map((outcome, index) =>
+              toldRefusal<BulkPostResult>(
+                Result.match(outcome, {
+                  onFailure: (refusal) => ({ _tag: "refused", index, refusal }),
+                  onSuccess: (made) => ({
+                    _tag: "created",
+                    index,
+                    post: postView(made),
+                    replayed: made.replayed,
+                  }),
+                })
+              )
+            )
           );
 
           const created = items.filter(({ _tag }) => _tag === "created").length;
