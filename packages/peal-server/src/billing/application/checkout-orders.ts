@@ -11,7 +11,8 @@ import {
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { OrderRequired } from "#billing/domain/order-required.ts";
 import { orderLifetimeMinutes, OrderIdSchema } from "#billing/domain/order.ts";
-import { trialDays } from "#billing/domain/plans.ts";
+import { planAllowances, trialDays } from "#billing/domain/plans.ts";
+import { excessesOf } from "#billing/domain/standing.ts";
 import { TrialUnavailable } from "#billing/domain/trial-unavailable.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Pseudonyms } from "#shared/application/pseudonyms.ts";
@@ -22,6 +23,7 @@ import { holdsSince, trialOpen } from "./place-order.ts";
 import { Orders } from "./ports/orders.ts";
 import type { Subscriptions } from "./ports/subscriptions.ts";
 import { Trials } from "./ports/trials.ts";
+import { UsageAtCheckout } from "./ports/usage-at-checkout.ts";
 
 const decodeOrderId = Schema.decodeUnknownOption(OrderIdSchema);
 
@@ -46,6 +48,7 @@ export interface CheckoutTerms {
  * Lets a checkout start only for an order the same member placed on the
  * billing page for the same workspace, plan and interval, within 30
  * minutes, once: the order records their consent and what they were shown.
+ * A workspace that has outgrown the plan since the order starts none.
  * An order for the trial starts the checkout with its days, if the
  * workspace and the account still have it, and holds the trial for them
  * until the checkout expires (`Trials.reserve`); an account closed with the
@@ -67,6 +70,7 @@ export class CheckoutOrders extends Context.Service<
     CheckoutOrders,
     Effect.gen(function* CheckoutOrdersLive() {
       const orders = yield* Orders;
+      const usage = yield* UsageAtCheckout;
       const pseudonyms = yield* Pseudonyms;
       const context = yield* Effect.context<Subscriptions | Trials>();
 
@@ -99,6 +103,19 @@ export class CheckoutOrders extends Context.Service<
         );
 
         if (Option.isNone(order)) {
+          return yield* new OrderRequired();
+        }
+
+        // Never above the plan ordered: what the workspace holds is
+        // counted again, as it may have grown since the order, in a trial
+        // of a larger plan. The order no longer stands; placed again, it
+        // says what to remove first.
+        const counted = yield* usage.of(request.workspaceId);
+
+        if (
+          Option.isNone(counted) ||
+          excessesOf(planAllowances[request.plan], counted.value).length > 0
+        ) {
           return yield* new OrderRequired();
         }
 

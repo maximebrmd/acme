@@ -1,4 +1,4 @@
-import { Layer } from "effect";
+import { Effect, Layer } from "effect";
 
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
@@ -8,6 +8,8 @@ import { ConfirmContractRequest } from "#billing/application/confirm-contract-re
 import { ContractRequestDesk } from "#billing/application/contract-request-desk.ts";
 import { MeteredPosts } from "#billing/application/metered-posts.ts";
 import { PlaceOrder } from "#billing/application/place-order.ts";
+import { UsageAtCheckout } from "#billing/application/ports/usage-at-checkout.ts";
+import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { PurgeContractRecords } from "#billing/application/purge-contract-records.ts";
 import { ReceiveContractRequest } from "#billing/application/receive-contract-request.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
@@ -78,9 +80,24 @@ export const BillingLive = Layer.mergeAll(
   PlanUpgradePathsLive.pipe(Layer.provide(WorkspaceEntitlements.layer))
 ).pipe(
   Layer.provide(
-    Layer.mergeAll(RecordsLive, StripeContractsLive, KeyedPseudonymsLive)
+    Layer.mergeAll(
+      RecordsLive,
+      StripeContractsLive,
+      KeyedPseudonymsLive,
+      UsageAtCheckout.layer
+    )
   )
 );
+
+// Hands the checkout the counts of what each workspace holds, once the
+// contexts that count are built (see UsageAtCheckout).
+const UsageAtCheckoutBound = Layer.effectDiscard(
+  Effect.gen(function* bindUsage() {
+    const atCheckout = yield* UsageAtCheckout;
+
+    yield* atCheckout.bind(yield* WorkspaceUsage);
+  })
+).pipe(Layer.provide(UsageAtCheckout.layer));
 
 /**
  * The billing page's use cases: a workspace's plan and what it uses of
@@ -101,7 +118,8 @@ export const BillingOverviewLive = Layer.mergeAll(
   PlaceOrder.layer,
   CancelSubscription.layer,
   Withdraw.layer,
-  SendBillingReminders.layer
+  SendBillingReminders.layer,
+  UsageAtCheckoutBound
 ).pipe(
   Layer.provide(
     Layer.mergeAll(

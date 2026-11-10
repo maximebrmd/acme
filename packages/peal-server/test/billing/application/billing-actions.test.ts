@@ -27,6 +27,7 @@ import type { PaidInvoice } from "#billing/application/ports/stripe-contracts.ts
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
 import type { StartedTrial } from "#billing/application/ports/trials.ts";
+import { UsageAtCheckout } from "#billing/application/ports/usage-at-checkout.ts";
 import { Withdrawals } from "#billing/application/ports/withdrawals.ts";
 import type { Withdrawal } from "#billing/application/ports/withdrawals.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
@@ -340,6 +341,19 @@ const ActionsTest = Layer.mergeAll(
   Layer.provideMerge(PortsInMemory),
   Layer.provide(Ids.layerTest),
   Layer.provide(PlainPseudonymsTest),
+  Layer.provide(
+    Layer.effect(
+      UsageAtCheckout,
+      WorkspaceUsage.use((usage) =>
+        Effect.succeed(
+          UsageAtCheckout.of({
+            bind: () => Effect.void,
+            of: (id) => usage.of(id).pipe(Effect.map(Option.some)),
+          })
+        )
+      )
+    )
+  ),
   Layer.provide(UsageTest),
   Layer.provide(AddressesTest),
   Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))),
@@ -510,6 +524,38 @@ layer(ActionsTest)("billing's actions", (it) => {
         });
 
         assert.deepStrictEqual(yield* askedOfStripe, []);
+      })
+  );
+
+  it.effect(
+    "starts no checkout for an order the workspace has outgrown since it was placed",
+    () =>
+      Effect.gen(function* outgrown() {
+        yield* setNow("2026-11-09T10:00:00Z");
+
+        const order = yield* (yield* PlaceOrder).place(actorAs(), {
+          interval: "month",
+          plan: "starter",
+          trial: false,
+        });
+
+        // Channels connected between the order and the checkout, as during
+        // a trial of a larger plan: the starter plan no longer holds them.
+        yield* holds({ channels: 9, mediaStorage: 0, members: 1 });
+
+        const refused = yield* (yield* CheckoutOrders)
+          .take({
+            email: "member@example.com",
+            interval: "month",
+            orderId: order.id,
+            plan: "starter",
+            userId,
+            workspaceId,
+          })
+          .pipe(Effect.flip);
+
+        // Ordered again, the billing page says what to remove first.
+        assert.strictEqual(refused._tag, "OrderRequired");
       })
   );
 
