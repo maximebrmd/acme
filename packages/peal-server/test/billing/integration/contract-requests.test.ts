@@ -21,8 +21,10 @@ import {
   bodyOf,
   emailTo,
   linkIn,
+  makeAdmin,
   newEmail,
   signedUp,
+  signIn,
   TestApp,
   workspaceOf,
 } from "#test/workspace/integration/harness.ts";
@@ -38,6 +40,15 @@ const BillingApp = Layer.mergeAll(
 const ReceiptSchema = Schema.Struct({ receivedAt: Schema.String });
 
 const TaggedSchema = Schema.Struct({ _tag: Schema.String });
+
+const OpenRequestsSchema = Schema.Array(
+  Schema.Struct({
+    email: Schema.NullOr(Schema.String),
+    id: Schema.String,
+    name: Schema.NullOr(Schema.String),
+    status: Schema.String,
+  })
+);
 
 const PreviewSchema = Schema.Struct({
   contracts: Schema.Array(
@@ -185,6 +196,80 @@ layer(BillingApp, { excludeTestServices: true, timeout: "180 seconds" })(
           );
 
           assert.strictEqual(wrong.status, 404);
+        })
+    );
+
+    it.effect(
+      "shows staff alone the requests that wait, and records what they do with one, by its id",
+      () =>
+        Effect.gen(function* staff() {
+          const app = yield* TestApp;
+          const sql = yield* SqlClient.SqlClient;
+          const stranger = newEmail("unmatched");
+
+          yield* send(newAddress(), { email: stranger });
+          yield* lookedAt(stranger, "unmatched");
+
+          const member = yield* signedUp("requests-member");
+
+          const hidden = yield* app.request("/api/admin/contract-requests", {
+            headers: { cookie: member.cookies },
+          });
+
+          assert.strictEqual(hidden.status, 404);
+
+          const account = yield* signedUp("requests-staff");
+
+          yield* makeAdmin(account.id);
+
+          const cookie = yield* signIn(account.email);
+
+          const listed = yield* app.request("/api/admin/contract-requests", {
+            headers: { cookie },
+          });
+
+          const found = (yield* bodyOf(OpenRequestsSchema, listed)).find(
+            ({ email }) => email === stranger
+          );
+
+          if (found === undefined) {
+            return yield* Effect.die(new Error("The request is not listed"));
+          }
+
+          const waiting = found;
+
+          assert.strictEqual(waiting.status, "unmatched");
+          assert.strictEqual(waiting.name, "Camille Synthetic");
+
+          const closed = yield* app.request(
+            `/api/admin/contract-requests/${waiting.id}/close`,
+            { body: { reason: "Holds no contract here" }, headers: { cookie } }
+          );
+
+          assert.strictEqual(closed.status, 200);
+          assert.deepStrictEqual(yield* statusOf(stranger), ["closed"]);
+
+          // The audit log names the request, never who sent it.
+          const events = yield* sql<{
+            readonly action: string;
+            readonly object_ids: unknown;
+            readonly reason: string | null;
+          }>`SELECT action, object_ids, reason FROM staff.audit_events WHERE staff_id = ${account.id}`;
+
+          assert.deepStrictEqual(events, [
+            {
+              action: "closeContractRequest",
+              object_ids: { requestId: waiting.id },
+              reason: "Holds no contract here",
+            },
+          ]);
+
+          const again = yield* app.request(
+            `/api/admin/contract-requests/${waiting.id}/close`,
+            { body: { reason: "Again" }, headers: { cookie } }
+          );
+
+          assert.strictEqual(again.status, 409);
         })
     );
 
