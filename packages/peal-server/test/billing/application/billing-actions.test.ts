@@ -297,9 +297,9 @@ const PortsInMemory = Layer.mergeAll(
     BillingLog.use(({ requests }) =>
       Effect.succeed(
         ContractRequests.of({
-          claimAcknowledgement: () => Effect.succeed(true),
           byConfirmation: () => Effect.succeedNone,
           byId: () => Effect.succeedNone,
+          claimAcknowledgement: () => Effect.succeed(true),
           eraseWorkspace: () => Effect.void,
           forgetUser: () => Effect.void,
           ofUser: () => Effect.succeed([]),

@@ -220,10 +220,7 @@ layer(StoreTest, { timeout: 60_000 })("contract requests in Postgres", (it) => {
           concurrency: "unbounded",
         });
 
-        assert.lengthOf(
-          given.filter((taken) => taken),
-          2
-        );
+        assert.lengthOf(given.filter(Boolean), 2);
 
         // The day after, the address has them again.
         assert.isTrue(

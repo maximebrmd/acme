@@ -125,10 +125,6 @@ describe(renderAuthEmail, () => {
       outcome: "withdrawn",
     }).text;
 
-    expect(unpaid).toContain("Nothing had been charged");
-    expect(unpaid).not.toContain("is refunded to");
-    expect(unpaid).not.toContain("and  is");
-
     const later = renderAuthEmail({
       ...base,
       desiredAt: at("2027-02-15T00:00:00.000Z"),
@@ -137,10 +133,7 @@ describe(renderAuthEmail, () => {
       outcome: "cancelled",
     }).text;
 
-    expect(later).toContain("it renews until then");
-    expect(later).not.toContain("nothing more is charged");
-
-    const french = renderAuthEmail({
+    const laterInFrench = renderAuthEmail({
       ...base,
       desiredAt: at("2027-02-15T00:00:00.000Z"),
       effectiveAt: at("2027-02-15T00:00:00.000Z"),
@@ -149,8 +142,20 @@ describe(renderAuthEmail, () => {
       outcome: "cancelled",
     }).text;
 
-    expect(french).toContain("il se renouvelle jusque-là");
-    expect(french).not.toContain("plus rien n’est prélevé");
+    expect([
+      unpaid.includes("Nothing had been charged"),
+      later.includes("it renews until then"),
+      laterInFrench.includes("il se renouvelle jusque-là"),
+    ]).toStrictEqual([true, true, true]);
+    // Neither a refund of nothing, nor a promise the renewals break.
+    expect(
+      [
+        unpaid.includes("is refunded to"),
+        unpaid.includes("and  is"),
+        later.includes("nothing more is charged"),
+        laterInFrench.includes("plus rien n’est prélevé"),
+      ].filter(Boolean)
+    ).toStrictEqual([]);
   });
 
   it("acknowledges a cancellation with when it came and what it said, in the reader's language", () => {
