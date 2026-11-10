@@ -154,6 +154,15 @@ more; read what it takes first:
 peal channels tiktok <channel-id> --json
 ```
 
+What any channel takes is read, never guessed: the limits on its text and
+media, the options its platform asks for, and the lookups that answer their
+values (a board, a playlist, a category).
+
+```sh
+peal channels capabilities <channel-id> --json
+peal channels lookup <channel-id> <lookup> --json
+```
+
 ## Draft
 
 The safe default.
@@ -205,6 +214,12 @@ The same text and media already going to one of the channels less than 23
 hours from the post's time is refused with `duplicate_post`, which names
 that post: read it before deciding. Only when the user means to post the
 same twice, send it again with `--allow-duplicate`.
+
+A workspace may ask that a person approve posts first. A post it holds
+answers with the `status` `awaitingApproval`: it was made, keeps its time,
+and goes out only once approved. Tell the user it waits; do not send it
+again. `--dry-run` says beforehand (`awaitsApproval`), and
+`peal approvals list --json` lists the posts that wait.
 
 Several posts come from a CSV file (columns `text`, `channels`, `at`, and
 `media`, `time_zone`, `allow_duplicate`, `idempotency_key` when needed).
