@@ -117,6 +117,7 @@ const render = async (locale: "en" | "fr", canAct: boolean) => {
         canAct={canAct}
         channels={channels}
         post={post}
+        viewerId={null}
         onRequest={() => {
           // Nothing is asked while rendering to markup.
         }}
@@ -138,6 +139,7 @@ const renderPost = async (locale: "en" | "fr", shown: Post) =>
         canAct
         channels={[channel("c4", "@pealexample")]}
         post={shown}
+        viewerId={null}
         onRequest={() => {
           // Nothing is asked while rendering to markup.
         }}
