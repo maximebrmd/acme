@@ -2,6 +2,7 @@ import { Console, Duration, Effect, Option, Redacted } from "effect";
 import { Command } from "effect/cli";
 import { cliClientId } from "peal-contract";
 
+import { apiKeyVariable, usesApiKey } from "#api-key.ts";
 import { PealApi } from "#api.ts";
 import { CredentialStore } from "#credentials.ts";
 import { display } from "#display.ts";
@@ -45,6 +46,12 @@ export const logout = Command.make(
     yield* store.remove(baseUrl);
 
     yield* Console.log(`Signed out of ${url}.`);
+
+    if (yield* usesApiKey) {
+      yield* Console.log(
+        `${apiKeyVariable} is still set: commands keep using that API key.`
+      );
+    }
   })
 ).pipe(
   Command.withDescription(

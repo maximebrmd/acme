@@ -1,7 +1,8 @@
-import { Config, Effect, Option } from "effect";
+import { Config, Effect, Option, Schema } from "effect";
 import { Flag } from "effect/cli";
 import type { Membership } from "peal-contract";
 
+import { apiKey, apiKeyVariable } from "#api-key.ts";
 import { PealApi } from "#api.ts";
 import { display } from "#display.ts";
 import { explain } from "#explain.ts";
@@ -14,7 +15,7 @@ import { SignInExpired } from "#sign-in-expired.ts";
 export const workspaceFlag = Flag.String("workspace").pipe(
   Flag.withAlias("w"),
   Flag.withDescription(
-    "The workspace to act in, by its slug or id. Defaults to PEAL_WORKSPACE, then to your only workspace."
+    "The workspace to act in, by its slug or id. Defaults to PEAL_WORKSPACE, then to your only workspace. With an API key in PEAL_API_KEY, it must be the workspace's id."
   ),
   Flag.withMetavar("<slug>"),
   Flag.withFallbackConfig(Config.String("PEAL_WORKSPACE")),
@@ -22,15 +23,59 @@ export const workspaceFlag = Flag.String("workspace").pipe(
 );
 
 /**
- * The HTTP API's client, signed in as the user, for the server the command
- * line points at.
+ * The HTTP API's client for the server the command line points at, sending
+ * the API key in PEAL_API_KEY when there is one, which wins, and otherwise
+ * the user's saved sign-in.
  */
 export const signedIn = Effect.gen(function* signedIn() {
   const api = yield* PealApi;
   const url = display(api.baseUrl);
+  const key = yield* apiKey;
 
-  return { client: yield* api.signedIn(yield* accessToken), url };
+  return {
+    client: yield* api.signedIn(
+      Option.isSome(key) ? key.value : yield* accessToken
+    ),
+    url,
+    withKey: Option.isSome(key),
+  };
 });
+
+/** The workspace a command acts in, as it names it in what it prints. */
+export type Workspace = Pick<Membership, "id" | "name" | "slug">;
+
+const isUuid = Schema.is(Schema.String.check(Schema.isUUID()));
+
+/** Whether a value has the shape of a workspace's id. */
+export const isWorkspaceId = (value: string): boolean => isUuid(value);
+
+/** Where a person finds a workspace's id. */
+export const whereTheIdIs =
+  "The id is in the address of the workspace's pages in the web app (/app/<id>/settings), and peal whoami, signed in as a person, lists it.";
+
+// A key is nobody: it cannot read whose workspaces these are, so the
+// workspace is known by its id alone, which stands for its name.
+const keyWorkspace = (
+  choice: Option.Option<string>
+): Effect.Effect<Workspace, Refused> =>
+  Option.match(choice, {
+    onNone: () =>
+      Effect.fail(
+        new Refused({
+          code: "workspace_id_required",
+          reason: `With an API key (${apiKeyVariable}), name the workspace by its id, with --workspace or PEAL_WORKSPACE: a key cannot look workspaces up. ${whereTheIdIs}`,
+        })
+      ),
+    onSome: (wanted) =>
+      isWorkspaceId(wanted)
+        ? Effect.succeed({ id: wanted, name: wanted, slug: wanted })
+        : Effect.fail(
+            new Refused({
+              code: "workspace_id_required",
+              reason: `With an API key (${apiKeyVariable}), --workspace and PEAL_WORKSPACE take the workspace's id, not its slug (${wanted}): a key cannot look workspaces up. ${whereTheIdIs}`,
+            })
+          ),
+  });
 
 const pick = (
   workspaces: readonly Membership[],
@@ -46,6 +91,7 @@ const pick = (
 
       return Effect.fail(
         new Refused({
+          code: only === undefined ? "no_workspace" : "workspace_required",
           reason:
             only === undefined
               ? "You do not belong to any workspace yet."
@@ -62,6 +108,7 @@ const pick = (
           onNone: () =>
             Effect.fail(
               new Refused({
+                code: "workspace_unknown",
                 reason: `You belong to no workspace ${wanted}. peal whoami lists yours.`,
               })
             ),
@@ -72,11 +119,16 @@ const pick = (
 
 /**
  * The signed-in client, and the workspace a command acts in: the one the
- * user named, by slug or id, or their only one.
+ * user named, by slug or id, or their only one. With an API key, the one
+ * whose id was given.
  */
 export const inWorkspace = (choice: Option.Option<string>) =>
   Effect.gen(function* signedInWorkspace() {
-    const { client, url } = yield* signedIn;
+    const { client, url, withKey } = yield* signedIn;
+
+    if (withKey) {
+      return { client, url, workspace: yield* keyWorkspace(choice) };
+    }
 
     const me = yield* client.session.me().pipe(
       Effect.mapError((failure) =>
@@ -87,7 +139,7 @@ export const inWorkspace = (choice: Option.Option<string>) =>
       )
     );
 
-    const workspace = yield* pick(me.workspaces, choice);
+    const workspace: Workspace = yield* pick(me.workspaces, choice);
 
     return { client, url, workspace };
   });

@@ -9,10 +9,12 @@ import {
   Schema,
 } from "effect";
 import { Command, Flag } from "effect/cli";
-import { AccountExportSchema } from "peal-contract";
+import { AccountExportSchema, ConnectedAppSchema } from "peal-contract";
 import type { ConnectedApp } from "peal-contract";
 
+import { personOnly } from "#api-key.ts";
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { signedIn } from "#workspace.ts";
@@ -65,6 +67,8 @@ const exportData = Command.make(
     ),
   },
   Effect.fn("account.export")(function* exportData({ force, output }) {
+    yield* personOnly("export an account's data");
+
     const { client, url } = yield* signedIn;
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
@@ -177,8 +181,10 @@ const whereOf = (app: ConnectedApp): string =>
 
 const apps = Command.make(
   "apps",
-  {},
-  Effect.fn("account.apps")(function* listApps() {
+  { json: jsonFlag },
+  Effect.fn("account.apps")(function* listApps({ json }) {
+    yield* personOnly("list an account's applications");
+
     const { client, url } = yield* signedIn;
 
     const found = yield* client.connectedApps
@@ -190,6 +196,12 @@ const apps = Command.make(
             : explain(url)(failure)
         )
       );
+
+    if (json) {
+      yield* printJson(Schema.Array(ConnectedAppSchema), found);
+
+      return;
+    }
 
     if (found.length === 0) {
       yield* Console.log(`No application acts for you on ${url}.`);

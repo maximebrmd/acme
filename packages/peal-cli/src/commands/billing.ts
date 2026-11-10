@@ -1,8 +1,10 @@
-import { Console, Effect } from "effect";
+import { Console, Effect, Schema } from "effect";
 import { Command } from "effect/cli";
+import { BillingSchema, StandingSchema } from "peal-contract";
 import type { Billing, Excess, PeriodUsage, Standing } from "peal-contract";
 
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
@@ -101,10 +103,17 @@ const standingLines = (standing: Standing): string[] => {
   ];
 };
 
+// What --json prints: the two answers the command reads, each as the API
+// gave it.
+const BillingStateSchema = Schema.Struct({
+  billing: BillingSchema,
+  standing: StandingSchema,
+});
+
 export const billing = Command.make(
   "billing",
-  { workspace: workspaceFlag },
-  Effect.fn("billing")(function* showBilling({ workspace: choice }) {
+  { json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("billing")(function* showBilling({ json, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const found = yield* client.billing
@@ -114,6 +123,12 @@ export const billing = Command.make(
     const standing = yield* client.billing
       .standing({ params: { workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(BillingStateSchema, { billing: found, standing });
+
+      return;
+    }
 
     yield* Console.log(`Billing of ${workspace.name}:`);
     yield* Console.log(planLine(found));
@@ -142,6 +157,6 @@ export const billing = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Show the workspace's plan, what it allows, how much of it the workspace uses, and what it holds beyond the plan, as after a trial. It changes nothing."
+    "Show the workspace's plan, what it allows, how much of it the workspace uses, and what it holds beyond the plan, as after a trial. It changes nothing. With --json, one document holds the API's two answers, under billing and standing."
   )
 );

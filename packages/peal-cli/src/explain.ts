@@ -3,49 +3,14 @@ import type { Schema } from "effect";
 import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
 import type {
-  AlreadyMember,
-  AltTextTooLong,
-  ChannelCannotPost,
-  ChannelNotFound,
   ContentViolation,
-  Forbidden,
-  IdempotencyKeyReused,
-  InvalidDateRange,
-  InvalidTimeZone,
-  InvitationNotFound,
-  MediaNotFound,
   MediaSourceFailure,
-  MediaImportBusy,
-  MediaSourceNotPublic,
-  MediaSourceUnreachable,
-  MediaStoreUnavailable,
-  MediaTooLarge,
-  PlanLimitReached,
-  PlatformUnreachable,
-  PostContentInvalid,
-  PostNotFound,
-  PostStatusConflict,
-  ScheduleInPast,
-  TargetStatusConflict,
-  TooManyInvitations,
-  TooManyRequests,
-  TooManyWebhookEndpoints,
-  TooManyWebhookSends,
-  Unauthenticated,
-  UnknownChannels,
-  UnknownMedia,
-  UnsupportedMediaType,
-  UploadIncomplete,
-  UploadRejected,
-  WebhookDeliveryNotFound,
-  WebhookEndpointDisabled,
-  WebhookEndpointNotFound,
-  WebhooksNotConfigured,
   WebhookUrlRefused,
-  WorkspaceNotFound,
 } from "peal-contract";
 import type { TextUnit } from "peal-contract/post-text";
 
+import { apiErrorJson } from "#api-error.ts";
+import type { ApiError } from "#api-error.ts";
 import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";
 import { PealApi } from "#api.ts";
@@ -56,47 +21,10 @@ import { SignInExpired } from "#sign-in-expired.ts";
 
 /** Whatever a signed-in command's request may fail with. */
 export type ApiFailure =
-  | AlreadyMember
-  | AltTextTooLong
-  | ChannelCannotPost
-  | ChannelNotFound
-  | Forbidden
+  | ApiError
   | HttpApiError.BadRequest
   | HttpClientError.HttpClientError
-  | IdempotencyKeyReused
-  | InvalidDateRange
-  | InvalidTimeZone
-  | InvitationNotFound
-  | MediaNotFound
-  | MediaImportBusy
-  | MediaSourceNotPublic
-  | MediaSourceUnreachable
-  | MediaStoreUnavailable
-  | MediaTooLarge
-  | PlanLimitReached
-  | PlatformUnreachable
-  | PostContentInvalid
-  | PostNotFound
-  | PostStatusConflict
-  | ScheduleInPast
-  | Schema.SchemaError
-  | TargetStatusConflict
-  | TooManyInvitations
-  | TooManyRequests
-  | TooManyWebhookEndpoints
-  | TooManyWebhookSends
-  | Unauthenticated
-  | UnknownChannels
-  | UnknownMedia
-  | UnsupportedMediaType
-  | UploadIncomplete
-  | UploadRejected
-  | WebhookDeliveryNotFound
-  | WebhookEndpointDisabled
-  | WebhookEndpointNotFound
-  | WebhooksNotConfigured
-  | WebhookUrlRefused
-  | WorkspaceNotFound;
+  | Schema.SchemaError;
 
 const mebibyte = 1024 * 1024;
 
@@ -253,6 +181,10 @@ const reasonOf =
         refused(
           "The range must end on or after the day it starts, and span 366 days at most."
         ),
+      InvalidTimeRange: () =>
+        refused(
+          "The range must end after it starts, and span 62 days at most."
+        ),
       InvalidTimeZone: ({ timeZone }) =>
         refused(
           `${timeZone} is not a time zone Peal knows: give an IANA zone, such as Europe/Paris.`
@@ -381,7 +313,11 @@ export const explain =
     const explained = reasonOf(url)(failure);
 
     return explained._tag === "Refused"
-      ? new Refused({ reason: explained.reason, ...requestOf(failure) })
+      ? new Refused({
+          error: apiErrorJson(failure),
+          reason: explained.reason,
+          ...requestOf(failure),
+        })
       : explained;
   };
 
@@ -423,9 +359,11 @@ export const explainingPublishing =
           Effect.flatMap((without) =>
             Effect.fail(
               without
-                ? refused(
-                    "This sign-in was made without the permission to schedule and publish posts: run peal login again and approve it."
-                  )
+                ? new Refused({
+                    error: apiErrorJson(forbidden),
+                    reason:
+                      "This sign-in was made without the permission to schedule and publish posts: run peal login again and approve it.",
+                  })
                 : explain(url)(forbidden)
             )
           )

@@ -7,7 +7,11 @@ import {
   Schema,
 } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
-import { PostSchema, TargetConfirmationSchema } from "peal-contract";
+import {
+  PostSchema,
+  PublicationAttemptSchema,
+  TargetConfirmationSchema,
+} from "peal-contract";
 import type { FailureReason, Post, PostTarget } from "peal-contract";
 
 import { explain, explainingPublishing } from "#explain.ts";
@@ -145,6 +149,130 @@ const show = Command.make(
 ).pipe(
   Command.withDescription(
     "Show a post: its status and time, how it went on each channel, with the target ids repost and confirm take, and its options on the platforms that ask for more."
+  )
+);
+
+const instantFlag = (name: string, description: string) =>
+  Flag.String(name).pipe(
+    Flag.withSchema(Schema.DateTimeUtcFromString),
+    Flag.withMetavar("<instant>"),
+    Flag.withDescription(description),
+    Flag.optional
+  );
+
+// How far ahead the list looks unless told: a month.
+const defaultListDays = 31;
+
+const list = Command.make(
+  "list",
+  {
+    from: instantFlag(
+      "from",
+      "The first instant, included, with its offset, such as 2026-11-20T00:00:00Z. Defaults to now."
+    ),
+    json: jsonFlag,
+    to: instantFlag(
+      "to",
+      `The last instant, excluded, at most 62 days after --from. Defaults to ${String(defaultListDays)} days after it.`
+    ),
+    workspace: workspaceFlag,
+  },
+  Effect.fn("posts.list")(function* list(input) {
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+    const now = yield* DateTime.now;
+    const from = Option.getOrElse(input.from, () => now);
+
+    const to = Option.getOrElse(input.to, () =>
+      DateTime.add(from, { days: defaultListDays })
+    );
+
+    const found = yield* client.posts
+      .list({ params: { workspaceId: workspace.id }, query: { from, to } })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(Schema.Array(PostSchema), found);
+
+      return;
+    }
+
+    if (found.length === 0) {
+      yield* Console.log(
+        `${workspace.name} has no post scheduled from ${instant(from)} to ${instant(to)}.`
+      );
+
+      return;
+    }
+
+    yield* Console.log(
+      `Posts of ${workspace.name} scheduled from ${instant(from)} to ${instant(to)}:`
+    );
+
+    for (const line of columns(
+      found.map((post) => [
+        `  ${post.id}`,
+        post.outcome === null
+          ? post.status
+          : `${post.status} (${post.outcome})`,
+        timeOf(post),
+        excerpt(post.content.text),
+      ])
+    )) {
+      yield* Console.log(line);
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "List the posts scheduled over a range of time, by scheduled instant, cancelled ones included. Drafts have no time: peal drafts list shows them."
+  )
+);
+
+const attempts = Command.make(
+  "attempts",
+  { json: jsonFlag, postId: postArgument, workspace: workspaceFlag },
+  Effect.fn("posts.attempts")(function* attempts({
+    json,
+    postId,
+    workspace: choice,
+  }) {
+    const { client, url, workspace } = yield* inWorkspace(choice);
+
+    const found = yield* client.posts
+      .attempts({ params: { postId, workspaceId: workspace.id } })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(Schema.Array(PublicationAttemptSchema), found);
+
+      return;
+    }
+
+    if (found.length === 0) {
+      yield* Console.log(`Peal has made no attempt at post ${postId} yet.`);
+
+      return;
+    }
+
+    yield* Console.log(`Attempts at post ${postId} of ${workspace.name}:`);
+
+    for (const line of columns(
+      found.map((attempt) => [
+        `  ${attempt.targetId}`,
+        `round ${String(attempt.round)}`,
+        `attempt ${String(attempt.attempt)}`,
+        instant(attempt.startedAt),
+        attempt.refusalCode === null
+          ? attempt.result
+          : `${attempt.result} (${attempt.refusalCode})`,
+        attempt.retryAt === null ? "" : `retried ${instant(attempt.retryAt)}`,
+      ])
+    )) {
+      yield* Console.log(line);
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "List every attempt Peal made at publishing a post, by channel, round and attempt: how each ended, and the code behind a refusal, the platform's own or Peal's."
   )
 );
 
@@ -444,7 +572,9 @@ export const posts = Command.make("posts").pipe(
     "A workspace's posts: scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, and following up where it failed. peal post writes and sends one in a single command."
   ),
   Command.withSubcommands([
+    list,
     show,
+    attempts,
     schedule,
     publish,
     reschedule,

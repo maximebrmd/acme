@@ -1,7 +1,9 @@
 import { Data, Option, Schema } from "effect";
 import { CliError } from "effect/cli";
 import type { HttpClientError } from "effect/http";
+import { generalErrorOf } from "peal-contract/errors";
 
+import type { JsonObject } from "#api-error.ts";
 import { requestLine } from "#refused.ts";
 
 // The request did not get an answer the command could use: the server is
@@ -11,6 +13,10 @@ import { requestLine } from "#refused.ts";
 // Data.TaggedError rather than Schema.TaggedError: this error is printed,
 // never encoded, so it needs no schema.
 export class ApiRequestFailed extends Data.TaggedError("ApiRequestFailed")<{
+  // What --json names it: `unreachable` when no answer came,
+  // `unexpected_answer` for one the contract does not describe, and the
+  // API's general code for an error status (`internal_error`).
+  readonly code: string;
   readonly detail: string;
   // The id the server gave the request, when it answered.
   readonly requestId?: string | undefined;
@@ -22,6 +28,18 @@ export class ApiRequestFailed extends Data.TaggedError("ApiRequestFailed")<{
       "  Check that the server is running, or point --api-url or PEAL_API_URL at it.",
       ...requestLine(this.requestId),
     ].join("\n");
+  }
+
+  /** What --json prints for it, under a code of the command line's own. */
+  get jsonFailure(): JsonObject {
+    const failure = {
+      code: this.code,
+      message: `The Peal API at ${this.url} did not answer as expected (${this.detail}).`,
+    };
+
+    return this.requestId === undefined
+      ? failure
+      : { ...failure, requestId: this.requestId };
   }
 }
 
@@ -35,6 +53,7 @@ export const requestFailed =
   (error: HttpClientError.HttpClientError | Schema.SchemaError) => {
     if (error._tag === "SchemaError") {
       return new ApiRequestFailed({
+        code: "unexpected_answer",
         detail: `unexpected answer: ${error.message}`,
         url,
       });
@@ -51,6 +70,10 @@ export const requestFailed =
         : `HTTP ${String(error.response.status)}`;
 
     return new ApiRequestFailed({
+      code:
+        error.response === undefined
+          ? "unreachable"
+          : generalErrorOf(error.response.status).code,
       detail,
       requestId: error.response?.headers["x-request-id"],
       url,

@@ -137,8 +137,23 @@ const securityLive = (authorization: AuthorizationServer, studio: Studio) =>
         bearer: (httpEffect, { credential }) =>
           Effect.gen(function* bearer() {
             const accepted = yield* authorization.acceptedToken;
+            const sent = Redacted.value(credential);
+            const key = studio.keys.find((known) => known.key === sent);
 
-            if (!Option.contains(accepted, Redacted.value(credential))) {
+            // A workspace API key is nobody: it acts in its workspace,
+            // with its own permissions.
+            if (key !== undefined) {
+              return yield* httpEffect.pipe(
+                Effect.provideService(CurrentPrincipal, {
+                  _tag: "apiKey",
+                  apiKeyId: key.id,
+                  permissions: key.permissions,
+                  workspaceId: key.workspaceId,
+                })
+              );
+            }
+
+            if (!Option.contains(accepted, sent)) {
               return yield* new Unauthenticated();
             }
 

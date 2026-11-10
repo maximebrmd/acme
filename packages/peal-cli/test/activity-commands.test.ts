@@ -135,15 +135,34 @@ describe("peal activity", () => {
     Effect.gen(function* viewer() {
       const session = yield* signedIn();
 
-      for (const args of [
-        ["activity", "list"],
-        ["activity", "list", "--json"],
-      ]) {
-        assert.include(
-          yield* session.refused([...args, "--workspace", "shop"]),
-          "Peal refused: Your role in this workspace does not have the permission activity:read. An owner or an admin of the workspace changes roles, in its settings."
-        );
-      }
+      const words =
+        "Your role in this workspace does not have the permission activity:read. An owner or an admin of the workspace changes roles, in its settings.";
+
+      assert.include(
+        yield* session.refused(["activity", "list", "--workspace", "shop"]),
+        `Peal refused: ${words}`
+      );
+      // With --json, the error as the server sent it, for a program.
+      assert.deepStrictEqual(
+        JSON.parse(
+          yield* session.refused([
+            "activity",
+            "list",
+            "--json",
+            "--workspace",
+            "shop",
+          ])
+        ),
+        {
+          error: {
+            _tag: "Forbidden",
+            code: "forbidden",
+            message: words,
+            permission: "activity:read",
+            reason: "missingPermission",
+          },
+        }
+      );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });
