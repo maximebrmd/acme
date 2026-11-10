@@ -197,6 +197,7 @@ them:
 | `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
 | `staff`         | the staff console: what staff read and do, and the audit log of it          |
 | `legal`         | what French law has a host keep, and the legal requests that read it        |
+| `review`        | approval policies, requests and decisions, review links, comments           |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -1265,6 +1266,63 @@ and no socket, for tests.
   a workspace of their own, at instants no other suite uses, and delete it
   after (`forgetWorkspace`): the collection reads every row that is due.
 
+### Review and approval
+
+- A post that needs an approval is `awaitingApproval` in publishing: it has
+  its time, counts in its month and keeps its media (`MediaInPosts`), and
+  has no job. Every use case that schedules passes the `ApprovalGate`
+  (`publishing/application/approval-gate.ts`) in the transaction that saves
+  the post (`throughGate`, in `PostScheduling`): a new way of scheduling
+  calls it too, never `schedulePost` and `startJob` alone. The review
+  context backs the gate (`ReviewApprovalGate` over `ApprovalIntake`);
+  `ApprovalGate.open` is for tests. `HeldPosts` is publishing's side of a
+  decision (`release`, `sendBack`), for the review context only: `release`
+  starts the job, and dies unless the gate says an approval stands.
+- The policy is per workspace (`review/domain/approval-policy.ts`): `never`,
+  `contributorsAndApplications`, `always`. An application is an API key or
+  an OAuth client (`Actor.subject.clientId`). Where posts wait, whoever has
+  post:create may ask (`maySubmit`), and acts on drafts and waiting posts
+  only (`mayChange`); staff acting as a member neither ask nor approve
+  (`post:approve` is withheld).
+- An approval covers a subject, publishing's `approvalSubject`: the text,
+  the media in order with their alt text, the per-channel texts, the
+  channels and their options. Never the time. The review context keeps its
+  SHA-256 only (`subject_hash`). Add what a new kind of content says to the
+  subject, or an approval would cover a post that changed.
+- An approval after the post's time (beyond `scheduleGrace`) publishes
+  nothing: `releasePost` takes the post back to draft, still approved.
+- `review.approval_requests` is the record of who approved what: a decided
+  row never changes. An application approves only what a member asked for
+  in person (`takesApplicationApproval`), or the policy that holds
+  applications would hold nothing.
+- Review links: 256 random bits (`LinkTokens`), of which only the SHA-256
+  is stored; the address is `PUBLIC_URL/review#<token>`, so the token
+  reaches no server's address logs, and clients send it in the
+  `x-review-token` header. Never put it in a path, a query, a log or an
+  error. A link shows one post through `ReviewedPosts` and nothing else of
+  its workspace, and closes with the post (`LinkClosed` says why).
+- `VisitorReview` is the only use case without an actor: the link's token
+  is the credential. Its writes pass the `VisitorGuard` (per address and
+  per link, in this process, then Turnstile when the server has keys) after
+  the `ReviewVisitor` middleware (16 KiB bodies). What anyone types goes
+  through `review/domain/plain-text.ts` and is stored and served as plain
+  text: clients render it as text, never as markup.
+- A comment's selection is kept as its quote and where it started
+  (`comment-anchor.ts`); views find it again in the current text
+  (`locate`), and say when it is gone.
+- Tell the rest of Peal what a review did through `ReviewOutcomes`, in the
+  transaction that did it. It is the seam for other listeners (outgoing
+  webhooks): add them beside `NotifiedReviewOutcomes`, not in the use
+  cases. Notices name who acted by kind (`ReviewParty`), never by name.
+- A visitor's name is kept 24 months, their email until 30 days after their
+  link ended (`review-retention.ts`, the `review.retention` cron): the
+  privacy policy and the docs' guide say so, change them together. The
+  email that tells a visitor of an answer holds no link, as none is kept.
+- The contract copies the domain's lists and limits, kept equal by
+  `test/review/api/contract.test.ts`. Test use cases on
+  `test/review/support.ts` (the real gate and stores over
+  `posts-server.ts`).
+
 ### MCP endpoint
 
 - `src/app/mcp/` serves effect/ai's `McpServer.layerHttp` at `/api/mcp`
@@ -1306,7 +1364,7 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`, `legal`; the workspace context's are Better
+  `analytics`, `billing`, `staff`, `legal`, `review`; the workspace context's are Better
   Auth's, in `auth`). Effect creates its `cluster_*` tables in `public`; drizzle-kit
   never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
@@ -1363,13 +1421,15 @@ self-hoster needs only Postgres and an S3-compatible store:
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
   platforms' redirect URI `connect/[platform]/callback` (which shows the
   account picker when a sign-in reached several accounts), Meta's data
-  deletion status `data-deletion/[code]`, and the signed-in
+  deletion status `data-deletion/[code]`, the page behind a review link
+  `review` (no sign-in, noindex; the token is the address's fragment, read
+  in the browser), and the signed-in
   app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
   `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
   `…/analytics`, `…/drafts`, `…/posts/new`, `…/posts/[postId]`, which opens
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
-  repost and confirm, and its analytics), `…/settings` (with `members`,
+  repost and confirm, and its analytics), `…/approvals` (the posts that wait), `…/settings` (with `members`,
   `invitations` and `api-keys`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]` and `admin/audit`:
@@ -1503,7 +1563,8 @@ self-hoster needs only Postgres and an S3-compatible store:
   `http://localhost:3000`.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `analytics`, `billing`, `members` and `invitations`, which act in the
+  `approvals`, `review`, `analytics`, `billing`, `members` and
+  `invitations`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read
