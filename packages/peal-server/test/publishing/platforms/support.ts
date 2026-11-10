@@ -28,6 +28,7 @@ import { UploadSessions } from "#publishing/application/upload-sessions.ts";
 import type { UploadSession } from "#publishing/application/upload-sessions.ts";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { blueskyClient } from "#publishing/infrastructure/platforms/bluesky/bluesky-client.ts";
+import { googleBusinessClient } from "#publishing/infrastructure/platforms/google-business/google-business-client.ts";
 import { linkedinClient } from "#publishing/infrastructure/platforms/linkedin/linkedin-client.ts";
 import { mastodonClient } from "#publishing/infrastructure/platforms/mastodon/mastodon-client.ts";
 import { facebookClient } from "#publishing/infrastructure/platforms/meta/facebook-client.ts";
@@ -321,6 +322,27 @@ export const xClientWith = Effect.fn("test.xClient")(
       apiUrl: new URL(options.api),
       timing: testTiming,
       uploads: api,
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(options.credentials, mediaOf(options.files ?? []))
+      )
+    );
+  }
+);
+
+/** The Google Business Profile client, with the fake as API. */
+export const googleBusinessClientWith = Effect.fn("test.googleBusinessClient")(
+  function* googleBusinessClientWith(options: {
+    readonly api: string;
+    readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly files?: readonly TestFile[];
+  }) {
+    const api = yield* httpClient;
+
+    return yield* googleBusinessClient({
+      api,
+      apiUrl: new URL(options.api),
+      timing: testTiming,
     }).pipe(
       Effect.provide(
         Layer.mergeAll(options.credentials, mediaOf(options.files ?? []))

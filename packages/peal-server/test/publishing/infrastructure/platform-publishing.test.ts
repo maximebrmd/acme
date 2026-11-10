@@ -47,6 +47,7 @@ const platformsOn = (instanceUrl: string) =>
   RoutedPlatformPublisher.pipe(
     Layer.provide(
       platformClientsWith({
+        googleBusinessApi: new URL(instanceUrl),
         linkedinApi: new URL(instanceUrl),
         mastodonScheme: "http:",
         metaAppSecret: Option.none(),
