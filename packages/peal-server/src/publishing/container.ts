@@ -9,6 +9,7 @@ import type { AttachableMedia } from "#publishing/application/attachable-media.t
 import { ChannelLookups } from "#publishing/application/channel-lookups.ts";
 import { HeldPosts } from "#publishing/application/held-posts.ts";
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
+import { pacedLookups } from "#publishing/application/paced-lookups.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
@@ -197,7 +198,9 @@ export const PublishingLive = publishingOver(
       ),
       ChannelLookups.layer.pipe(
         Layer.provide(
-          PlatformLookupsLive.pipe(Layer.provide(ChannelAccessCredentials))
+          pacedLookups(
+            PlatformLookupsLive.pipe(Layer.provide(ChannelAccessCredentials))
+          )
         )
       )
     ).pipe(

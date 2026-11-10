@@ -1,4 +1,4 @@
-import { Option, Schema } from "effect";
+import { Duration, Option, Schema } from "effect";
 
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { Platform } from "#shared/domain/platform.ts";
@@ -391,6 +391,19 @@ export interface LookupDescription {
   readonly paged: boolean;
   readonly platform: Platform;
 }
+
+/**
+ * How often a channel's lookups reach its platform: each run spends some
+ * of what the platform allows this server, which publishing needs too.
+ */
+export const lookupRunsPerMinute = 30;
+
+/**
+ * How long an answer is given again to the same query on the same channel
+ * without asking the platform: a composer that opens twice, or an agent
+ * that asks again, costs one run.
+ */
+export const lookupAnswerLifetime = Duration.minutes(1);
 
 /** The names of every lookup, in their order. */
 export const lookupNames: readonly LookupName[] = LookupNameSchema.literals;

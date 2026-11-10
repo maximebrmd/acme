@@ -1215,6 +1215,13 @@ and no socket, for tests.
   a LinkedIn profile's posts are not counted while `countedPlatforms`
   lists LinkedIn. A lookup that cannot run without a field says so
   (`required`).
+- Lookups spend the platforms' allowance: `pacedLookups`
+  (`publishing/application/paced-lookups.ts`) lets a channel's reach its
+  platform `lookupRunsPerMinute` times a minute (30), failing past it as
+  `RateLimited` (`lookupPace`, 429 with `retryAfterSeconds`), and answers
+  the same query on the same channel from its last answer for
+  `lookupAnswerLifetime` (a minute), in this process; a failure is never
+  kept. An adapter added to `PlatformLookupsLive` is paced with the rest.
 - Nothing in a description is written twice. A field's type and values come
   from its schema (`describeFields`), `required` from what `problems()`
   misses in options with nothing chosen, and the rest (`maxLength`,
