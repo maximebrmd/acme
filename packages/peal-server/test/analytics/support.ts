@@ -74,12 +74,16 @@ export const newChannelId = newId(ChannelIdSchema);
  */
 export const readersWith = ({
   appView = "http://127.0.0.1:9",
+  linkedinApi = "http://127.0.0.1:9",
+  linkedinVersion = "202610",
   metaAppSecret = "meta-app-secret-synthetic",
   metaGraph = "http://127.0.0.1:9",
   tiktokApi = "http://127.0.0.1:9",
   youtubeApi = "http://127.0.0.1:9",
 }: {
   readonly appView?: string | undefined;
+  readonly linkedinApi?: string | undefined;
+  readonly linkedinVersion?: string | undefined;
   readonly metaAppSecret?: string | undefined;
   readonly metaGraph?: string | undefined;
   readonly tiktokApi?: string | undefined;
@@ -99,6 +103,8 @@ export const readersWith = ({
 
   return platformMetricsReaderWith({
     blueskyAppView: new URL(appView),
+    linkedinApi: new URL(linkedinApi),
+    linkedinVersion,
     mastodonScheme: "http:",
     metaAppSecret: Option.some(Redacted.make(metaAppSecret)),
     metaHosts,
