@@ -63,7 +63,7 @@ you change before you change it. The ones contributors meet first:
   package reads is listed on the environment variables page, in both
   languages.
 - **Dependencies are pinned** to the exact latest release, and `bun.lock` (or
-  `packages/peal-infra/uv.lock`) is committed with them.
+  `packages/peal-infra/ansible/uv.lock`) is committed with them.
 - **Lint findings are fixed, not suppressed.** `bun run fix` applies what it
   can.
 - **Tests come with the change.** A fix has a test that failed before it; a
@@ -131,7 +131,7 @@ SDKs derive their clients from it.
 | [`peal-site`](../packages/peal-site)         | The marketing site (Astro), with the legal pages                             |
 | [`peal-docker`](../packages/peal-docker)     | The development, production and self-hosting stacks, and the images          |
 | [`peal-e2e`](../packages/peal-e2e)           | End-to-end browser tests against the server and the web app's build          |
-| [`peal-infra`](../packages/peal-infra)       | Ansible for Peal's own servers and their releases                            |
+| [`peal-infra`](../packages/peal-infra)       | Peal's own infrastructure: Ansible for its servers and their releases        |
 
 The data lives in Postgres, one schema per bounded context, with Drizzle;
 media in any S3 API; and logs, metrics and traces go out over OpenTelemetry.
@@ -153,7 +153,7 @@ when an agent wrote a large part of it.
 You need Git, Bun (the version in [`.bun-version`](../.bun-version)), Node 26.13
 or later, Docker (Engine 28 or later with Compose 2.35 or later, because the
 stacks use image mounts), and [uv](https://docs.astral.sh/uv/), which installs
-the Ansible toolchain that `bun run test` checks `packages/peal-infra` with.
+the Ansible toolchain that `bun run test` checks `packages/peal-infra/ansible` with.
 
 ```sh
 bun install --frozen-lockfile
@@ -650,13 +650,13 @@ server, linked to neither, at another provider and in another city, checks
 their public endpoints from outside with
 Gatus, alerts when production's Grafana stops sending its heartbeat, and
 serves the public status page, [status.peal.social](https://status.peal.social).
-Ansible in [`packages/peal-infra`](../packages/peal-infra/README.md) sets the
+Ansible in [`packages/peal-infra/ansible`](../packages/peal-infra/ansible/README.md) sets the
 servers up and releases a commit: it builds the images on the machine running
 it, uploads them over SSH, and starts the new server, which migrates the
 database.
 
 ```sh
-cd packages/peal-infra
+cd packages/peal-infra/ansible
 uv sync --locked
 uv run ansible-galaxy collection install --requirements-file requirements.yml
 uv run ansible-playbook playbooks/site.yml --limit sandbox --check --diff
@@ -667,7 +667,7 @@ uv run ansible-playbook playbooks/uptime.yml --check --diff
 Nothing has been applied yet: the inventory holds placeholders, and every
 playbook stops until they are replaced. Its README says what to set up at
 Cloudflare first, and
-[`runbooks/restore-database.md`](../packages/peal-infra/runbooks/restore-database.md)
+[`runbooks/restore-database.md`](../packages/peal-infra/ansible/runbooks/restore-database.md)
 how to restore the database.
 
 ### Self-hosting, behind Caddy

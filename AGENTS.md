@@ -19,7 +19,8 @@ one `acme` left is Caddy's ACME certificate issuer, a protocol, in the uptime
 role's `Caddyfile.j2`.
 
 Nx projects live directly under `packages/`, but for the SDKs, which have one
-per language under `packages/peal-sdk/`:
+per language under `packages/peal-sdk/`, and the infrastructure, which has
+one per tool under `packages/peal-infra/`:
 
 - `peal-contract`: the HTTP API definition (`Api`: Effect `HttpApi` groups,
   Schemas and the `Authentication` and `WorkspaceAccess` middlewares),
@@ -49,8 +50,9 @@ per language under `packages/peal-sdk/`:
 - `peal-e2e`: end-to-end browser tests with the e2e runner (`e2e`,
   `@e2e-dev/web`). Each run starts the server and the web app's production
   build itself (`scripts/serve.ts`).
-- `peal-infra`: Ansible for Peal's servers, production and the sandbox, and
-  their releases. Python, managed with uv.
+- `peal-infra`: Peal's own infrastructure, one Nx project per tool:
+  `ansible` (`peal-infra-ansible`) configures Peal's servers, production and
+  the sandbox, and releases to them. Python, managed with uv.
 - `peal-sdk`: the API's clients in eight languages (`node`, `python`, `go`,
   `ruby`, `java`, `php`, `dotnet`, `rust`), generated from the contract by
   Fern's open-source generators and committed. Each language's folder is an Nx project
@@ -82,7 +84,9 @@ several:
 - [`packages/peal-docker/AGENTS.md`](packages/peal-docker/AGENTS.md): the
   compose files, telemetry and alerting.
 - [`packages/peal-infra/AGENTS.md`](packages/peal-infra/AGENTS.md): the
-  servers.
+  infrastructure's layers, and
+  [`packages/peal-infra/ansible/AGENTS.md`](packages/peal-infra/ansible/AGENTS.md):
+  the servers.
 
 ## Work and verify
 
@@ -127,14 +131,14 @@ several:
   Compile through a script that deletes it, like
   `packages/peal-cli/scripts/build.ts`.
 - Pin every dependency to the exact latest release, and commit `bun.lock` with
-  dependency changes, `packages/peal-infra/uv.lock` with Python ones. The
+  dependency changes, `packages/peal-infra/ansible/uv.lock` with Python ones. The
   SDKs' manifests are the exception (see [SDKs](packages/peal-sdk/AGENTS.md)).
 - A change to the contract regenerates the SDKs in the same change:
   `bun run sdk:generate` (Docker), then `bun run sdk:build`. CI's `sdks` job
   fails while they are stale.
 - `bun run test` also runs ansible-lint (production profile),
   `ansible-playbook --syntax-check` and the pytest suite in `tests/` on
-  `packages/peal-infra`, through uv (`nx run peal-infra:test`). Its release
+  `packages/peal-infra/ansible`, through uv (`nx run peal-infra-ansible:test`). Its release
   and uptime tests run images in Docker (Postgres's base image, Gatus, Caddy,
   BusyBox), and skip without Docker. Each of its commands reads stdin from
   `/dev/null`: Nx gives every task the same stdin, a Node task reading it
@@ -276,9 +280,9 @@ self-hoster needs only Postgres and an S3-compatible store:
 ## Infrastructure
 
 The servers' other rules are in
-[`packages/peal-infra/AGENTS.md`](packages/peal-infra/AGENTS.md).
+[`packages/peal-infra/ansible/AGENTS.md`](packages/peal-infra/ansible/AGENTS.md).
 
-- Change the servers only through the playbooks in `packages/peal-infra`; SSH
+- Change the servers only through the playbooks in `packages/peal-infra/ansible`; SSH
   is for reading (`sudo peal-compose ps`). Run `site.yml` with `--check
   --diff` before applying it, and keep every task idempotent: a second run
   reports no change. The inventory holds placeholders that `peal_preflight`

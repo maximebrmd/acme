@@ -69,7 +69,7 @@ Caddy (`self-host/Caddyfile`) sends `/api/*` and `/.well-known/oauth-*` to the s
 
 Grafana listens on `127.0.0.1:13000` only: reach it through an SSH tunnel, such as `ssh -L 13000:127.0.0.1:13000 you@your-server`, and sign in as `admin` with `GRAFANA_ADMIN_PASSWORD`. Its alert rules come provisioned, and notify no one until you add a contact point.
 
-To back the database up, set `PEAL_POSTGRES_ARCHIVE_MODE=on` and the `PGBACKREST_REPO1_*` settings the example file lists. Postgres then archives its write-ahead log to that bucket with pgBackRest, which the stack's Postgres image ships. Create the backup repository once with `docker compose … exec --user postgres postgres pgbackrest stanza-create`, then take backups on a schedule with `… pgbackrest backup --type=full`. Peal's own servers do so with the Ansible in `packages/peal-infra`, whose README and restore runbook show every command. [Environment variables](/environment-variables#compose) lists the stack's settings.
+To back the database up, set `PEAL_POSTGRES_ARCHIVE_MODE=on` and the `PGBACKREST_REPO1_*` settings the example file lists. Postgres then archives its write-ahead log to that bucket with pgBackRest, which the stack's Postgres image ships. Create the backup repository once with `docker compose … exec --user postgres postgres pgbackrest stanza-create`, then take backups on a schedule with `… pgbackrest backup --type=full`. Peal's own servers do so with the Ansible in `packages/peal-infra/ansible`, whose README and restore runbook show every command. [Environment variables](/environment-variables#compose) lists the stack's settings.
 
 ## Watching it from outside [#uptime]
 
@@ -78,7 +78,7 @@ Grafana's alerts come from the server they watch: when that server, its network 
 - Check what people reach, through your edge: `GET /api/ready`, which answers `204 No Content` when the server and its database do, a page of the web app such as `/sign-in`, which answers `200`, and how long the certificate has left. Count a redirect as a failure, so a sign-in page in front of the instance never passes for it.
 - Have Grafana show that its alerting works. With `PEAL_GRAFANA_HEARTBEAT=./config/production/grafana/alerting/heartbeat.yaml`, `PEAL_HEARTBEAT_URL` and `PEAL_HEARTBEAT_TOKEN` set, a rule that always fires posts to that address every 5 minutes or so, with the token as a bearer token. When the posts stop, Grafana, Prometheus or the way out is down, and the other alerts may not reach you either: the checker says so. With [Gatus](https://github.com/TwiN/gatus), make it an external endpoint with a heartbeat interval of 15 minutes, and set `PEAL_HEARTBEAT_URL` to its push address, `https://<gatus>/api/v1/endpoints/<group>_<name>/external?success=true`.
 
-Peal's own servers are watched this way: [Deployment](/deployment#uptime) describes the uptime server, whose Ansible and Gatus configuration are in `packages/peal-infra`.
+Peal's own servers are watched this way: [Deployment](/deployment#uptime) describes the uptime server, whose Ansible and Gatus configuration are in `packages/peal-infra/ansible`.
 
 ## In front of Peal [#reverse-proxy]
 
