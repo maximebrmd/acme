@@ -289,7 +289,7 @@
       "forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
       "notFound": "Ce canal n’est plus connecté.",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne."
+      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne ; sur Google Business Profile, il ne gère aucun établissement validé."
     }
   },
   "PlatformConnect": {
@@ -314,6 +314,11 @@
       "title": "YouTube",
       "description": "Votre chaîne YouTube. Vous vous connectez avec Google, choisissez la chaîne si votre compte en a plusieurs, et autorisez Peal à mettre en ligne des vidéos et à lire la chaîne.",
       "connect": "Connecter YouTube"
+    },
+    "googleBusiness": {
+      "title": "Google Business Profile",
+      "description": "Votre établissement dans la recherche Google et sur Maps. Vous vous connectez avec Google, autorisez Peal à gérer votre fiche d’établissement, puis choisissez les établissements validés où cet espace de travail publie.",
+      "connect": "Connecter Google Business Profile"
     }
   },
   "ConnectCallbackPage": {
@@ -331,15 +336,15 @@
     "description": "{platform, select, facebook {Connectez-vous avec Facebook, puis choisissez les Pages où cet espace de travail publie.} instagram {Comptes professionnels liés à une Page Facebook : connectez-vous avec Facebook, puis choisissez les comptes.} threads {Connectez-vous avec votre compte Threads.} other {Connectez-vous sur la plateforme.}}",
     "connect": "{platform, select, facebook {Connecter des Pages Facebook} instagram {Connecter Instagram} threads {Connecter Threads} other {Connecter}}",
     "connecting": "Ouverture…",
-    "chooseTitle": "{platform, select, facebook {Les Pages à connecter} instagram {Les comptes Instagram à connecter} other {Les comptes à connecter}}",
-    "chooseDescription": "{platform, select, facebook {Votre connexion a atteint ces Pages.} instagram {Votre connexion a atteint ces comptes Instagram.} other {Votre connexion a atteint ces comptes.}} Choisissez ceux où cet espace de travail publie, dans le quart d’heure.",
+    "chooseTitle": "{platform, select, facebook {Les Pages à connecter} instagram {Les comptes Instagram à connecter} googleBusiness {Les établissements à connecter} other {Les comptes à connecter}}",
+    "chooseDescription": "{platform, select, facebook {Votre connexion a atteint ces Pages.} instagram {Votre connexion a atteint ces comptes Instagram.} googleBusiness {Votre connexion a atteint ces établissements validés.} other {Votre connexion a atteint ces comptes.}} Choisissez ceux où cet espace de travail publie, dans le quart d’heure.",
     "alreadyConnected": "Connecté : le choisir le reconnecte",
     "connectChosen": "{count, plural, =0 {Connecter} one {Connecter # compte} other {Connecter # comptes}}",
     "connectingChosen": "Connexion…",
     "connected": "{count, plural, one {# compte est connecté.} other {# comptes sont connectés.}}",
     "cancel": "Retour aux canaux",
-    "retry": "Choisissez à nouveau, ou reconnectez-vous avec Facebook pour une nouvelle liste.",
-    "startOver": "Se reconnecter avec Facebook"
+    "retry": "Choisissez à nouveau, ou reconnectez-vous avec {platform, select, youtube {Google} googleBusiness {Google} other {Facebook}} pour une nouvelle liste.",
+    "startOver": "Se reconnecter avec {platform, select, youtube {Google} googleBusiness {Google} other {Facebook}}"
   },
   "InstagramChannels": {
     "title": "Instagram",

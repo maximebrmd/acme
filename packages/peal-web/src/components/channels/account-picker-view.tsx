@@ -85,7 +85,7 @@ export const AccountPickerView = ({
         <Alert variant="destructive">
           <AlertDescription>
             <p>{errorText(error)}</p>
-            {spent ? null : <p>{t("retry")}</p>}
+            {spent ? null : <p>{t("retry", { platform })}</p>}
           </AlertDescription>
         </Alert>
       )}
