@@ -329,13 +329,19 @@ const StepPanel = ({
 // A workspace whose plan ended keeps its invoices at Stripe: the way to
 // them stays.
 const PastInvoices = ({
+  billing,
   busy,
+  canManage,
   onManage,
   pending,
-}: Pick<BillingViewProps, "onManage" | "pending"> & {
+}: Pick<BillingViewProps, "billing" | "canManage" | "onManage" | "pending"> & {
   readonly busy: boolean;
 }) => {
   const t = useTranslations("Billing.current");
+
+  if (!canManage || billing.subscription !== null) {
+    return null;
+  }
 
   return (
     <CardFooter>
@@ -415,9 +421,13 @@ const CurrentPlan = ({
           ) : null}
         </div>
       </CardContent>
-      {canManage && subscription === null ? (
-        <PastInvoices busy={busy} pending={pending} onManage={onManage} />
-      ) : null}
+      <PastInvoices
+        billing={billing}
+        busy={busy}
+        canManage={canManage}
+        pending={pending}
+        onManage={onManage}
+      />
       {canManage && subscription !== null ? (
         <CardFooter>
           <div className="flex flex-col items-start gap-3">
