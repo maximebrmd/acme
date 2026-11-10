@@ -341,7 +341,7 @@ describe("a LinkedIn post's options", () => {
             mentions: [
               {
                 name: "Example Bikes (UK)",
-                urn: "urn:li:organization:5515715",
+                urn: "urn:li:organization:9000000002",
               },
             ],
           }),
@@ -351,7 +351,7 @@ describe("a LinkedIn post's options", () => {
 
       assert.strictEqual(
         linkedin.posts()[0]?.body.commentary,
-        "With @[Example Bikes \\(UK\\)](urn:li:organization:5515715) and \\@someone"
+        "With @[Example Bikes \\(UK\\)](urn:li:organization:9000000002) and \\@someone"
       );
     }).pipe(Effect.scoped)
   );

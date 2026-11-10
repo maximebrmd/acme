@@ -66,7 +66,7 @@ describe("the options fields", () => {
         linkDescription: "What ships",
         linkTitle: "Launch day",
         linkUrl: "https://example.test/launch",
-        mentions: "Example Bakery <urn:li:organization:2414183>",
+        mentions: "Example Bakery <urn:li:organization:9000000001>",
         visibility: "loggedIn",
       },
     ],
@@ -460,8 +460,12 @@ describe(violationsByField, () => {
 });
 
 describe("LinkedIn's mentions", () => {
-  const bakery = { name: "Example Bakery", urn: "urn:li:organization:2414183" };
-  const bikes = { name: "Example (UK)", urn: "urn:li:organization:5515715" };
+  const bakery = {
+    name: "Example Bakery",
+    urn: "urn:li:organization:9000000001",
+  };
+
+  const bikes = { name: "Example (UK)", urn: "urn:li:organization:9000000002" };
 
   it("show as names and URNs, and come back as the API takes them", () => {
     const values = valuesOf("linkedin", {
@@ -470,7 +474,7 @@ describe("LinkedIn's mentions", () => {
     });
 
     expect(values["mentions"]).toBe(
-      "Example Bakery <urn:li:organization:2414183>; Example (UK) <urn:li:organization:5515715>"
+      "Example Bakery <urn:li:organization:9000000001>; Example (UK) <urn:li:organization:9000000002>"
     );
     expect(optionsOf("linkedin", values)).toStrictEqual(
       Option.some({

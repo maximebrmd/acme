@@ -13,8 +13,12 @@ import {
   takesOptions,
 } from "#publishing/domain/target-options.ts";
 
-const bakery = { name: "Example Bakery", urn: "urn:li:organization:2414183" };
-const bikes = { name: "Example", urn: "urn:li:organization:5515715" };
+const bakery = {
+  name: "Example Bakery",
+  urn: "urn:li:organization:9000000001",
+};
+
+const bikes = { name: "Example", urn: "urn:li:organization:9000000002" };
 
 const decode = Schema.decodeUnknownOption(LinkedInOptions);
 

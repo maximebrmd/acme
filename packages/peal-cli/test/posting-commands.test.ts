@@ -31,7 +31,7 @@ const changes = (studio: Studio) =>
 
 const inStudio = ["--workspace", "studio"];
 
-const mastodon = `${mastodonId} (mastodon @studio@example.social)`;
+const mastodon = `${mastodonId} (mastodon @studio@social.example.test)`;
 
 // A sign-in approved before scheduling and publishing had a scope.
 const withoutPublishing = "offline_access workspace:read workspace:write";

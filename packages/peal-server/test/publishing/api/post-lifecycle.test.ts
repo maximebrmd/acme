@@ -437,7 +437,7 @@ describe("the send endpoint", () => {
 
           const bakery = {
             name: "Example Bakery",
-            urn: "urn:li:organization:2414183",
+            urn: "urn:li:organization:9000000001",
           };
 
           const payload = {

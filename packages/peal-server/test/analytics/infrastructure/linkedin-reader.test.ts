@@ -18,7 +18,7 @@ import {
 import type { PlatformAnswer } from "#test/publishing/fakes/platform-server.ts";
 
 const channelId = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c1");
-const pageUrn = "urn:li:organization:2414183";
+const pageUrn = "urn:li:organization:9000000001";
 
 const page: ChannelAccount = {
   accountId: pageUrn,
@@ -195,7 +195,7 @@ describe("reading counts on a LinkedIn page", () => {
         assert.strictEqual(server.requests().length, 1);
         assert.strictEqual(
           server.requests()[0]?.search,
-          "q=organizationalEntity&organizationalEntity=urn%3Ali%3Aorganization%3A2414183&shares=List(urn%3Ali%3Ashare%3A7200000000000000001,urn%3Ali%3Ashare%3A7200000000000000003)&ugcPosts=List(urn%3Ali%3AugcPost%3A7200000000000000002)"
+          "q=organizationalEntity&organizationalEntity=urn%3Ali%3Aorganization%3A9000000001&shares=List(urn%3Ali%3Ashare%3A7200000000000000001,urn%3Ali%3Ashare%3A7200000000000000003)&ugcPosts=List(urn%3Ali%3AugcPost%3A7200000000000000002)"
         );
       })
   );

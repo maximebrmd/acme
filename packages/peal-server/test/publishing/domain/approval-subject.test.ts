@@ -35,7 +35,10 @@ const content = contentOf("Launch day, with @Example Bakery");
 const subjectWith = (options: TargetOptions) =>
   approvalSubject(content, [target("1", Option.some(options))]);
 
-const bakery = { name: "Example Bakery", urn: "urn:li:organization:2414183" };
+const bakery = {
+  name: "Example Bakery",
+  urn: "urn:li:organization:9000000001",
+};
 
 describe("what an approval of a post covers", () => {
   it.each([

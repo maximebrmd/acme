@@ -415,7 +415,9 @@ const options: readonly unknown[] = [
     linkDescription: "What ships",
     linkTitle: "Launch day",
     linkUrl: "https://example.test/launch",
-    mentions: [{ name: "Example Bakery", urn: "urn:li:organization:2414183" }],
+    mentions: [
+      { name: "Example Bakery", urn: "urn:li:organization:9000000001" },
+    ],
     platform: "linkedin",
     visibility: "loggedIn",
   },
@@ -434,7 +436,7 @@ const options: readonly unknown[] = [
   {
     mentions: Array.from({ length: 31 }, () => ({
       name: "Example Bakery",
-      urn: "urn:li:organization:2414183",
+      urn: "urn:li:organization:9000000001",
     })),
     platform: "linkedin",
   },

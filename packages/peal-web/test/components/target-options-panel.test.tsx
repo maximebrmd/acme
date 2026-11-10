@@ -236,7 +236,10 @@ describe(TargetOptionsPanel, () => {
 
     const filled = new Map<string, OptionValues>([
       [location.id, { postType: "event" }],
-      [page.id, { mentions: "Example Bakery <urn:li:organization:2414183>" }],
+      [
+        page.id,
+        { mentions: "Example Bakery <urn:li:organization:9000000001>" },
+      ],
     ]);
 
     const [english, french] = await Promise.all(
@@ -270,7 +273,7 @@ describe(TargetOptionsPanel, () => {
       "Who can view this post (required)",
       "Who can see this post",
       "Pages to mention",
-      "Example Bakery &lt;urn:li:organization:2414183&gt;",
+      "Example Bakery &lt;urn:li:organization:9000000001&gt;",
       "Board (required)",
       "Reading the list on the platform…",
       "Video cover, at second",

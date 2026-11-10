@@ -15,12 +15,12 @@ import type { PlatformAnswer, PlatformRequest } from "./platform-server.ts";
 export const linkedinMemberId = "aB3dE5fG7h";
 
 /** The synthetic page a channel posts as, and its URN. */
-export const linkedinPageId = 2_414_183;
+export const linkedinPageId = 9_000_000_001;
 export const linkedinPageUrn = `urn:li:organization:${linkedinPageId}`;
 
 /** A page anyone may look up by the name in its address. */
 export const linkedinOtherPage = {
-  id: 5_515_715,
+  id: 9_000_000_002,
   localizedName: "Example Bikes (UK)",
   vanityName: "example-bikes",
 } as const;

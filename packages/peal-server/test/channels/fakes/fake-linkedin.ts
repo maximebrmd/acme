@@ -48,13 +48,13 @@ export interface LinkedInRole {
 
 /** Synthetic pages. */
 export const linkedinPage: LinkedInOrganization = {
-  id: 2_414_183,
+  id: 9_000_000_001,
   localizedName: "Example Bakery",
   vanityName: "example-bakery",
 };
 
 export const otherLinkedinPage: LinkedInOrganization = {
-  id: 5_515_715,
+  id: 9_000_000_002,
   localizedName: "Example Bikes",
   vanityName: "example-bikes",
 };

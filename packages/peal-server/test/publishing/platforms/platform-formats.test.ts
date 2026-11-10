@@ -37,8 +37,8 @@ describe("LinkedIn's little text format", () => {
 
   it("writes the pages the text names as mentions, their names escaped", () => {
     const mentions = [
-      { name: "Example Bakery", urn: "urn:li:organization:2414183" },
-      { name: "Example (UK)", urn: "urn:li:organization:5515715" },
+      { name: "Example Bakery", urn: "urn:li:organization:9000000001" },
+      { name: "Example (UK)", urn: "urn:li:organization:9000000002" },
     ];
 
     expect(
@@ -47,7 +47,7 @@ describe("LinkedIn's little text format", () => {
         mentions
       )
     ).toBe(
-      "Thanks @[Example Bakery](urn:li:organization:2414183) & @[Example \\(UK\\)](urn:li:organization:5515715)! {hashtag|\\#|launch} \\@someone"
+      "Thanks @[Example Bakery](urn:li:organization:9000000001) & @[Example \\(UK\\)](urn:li:organization:9000000002)! {hashtag|\\#|launch} \\@someone"
     );
     // Without its page among the mentions, a name is plain text.
     expect(littleTextOf("Thanks @Example Bakery", [])).toBe(

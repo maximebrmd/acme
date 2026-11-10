@@ -585,7 +585,7 @@ describe("peal posts", () => {
         `Post ${finishedId} in Studio: finished (failed), for 2026-11-08T09:00:00Z (Europe/Paris).`
       );
       assert.include(shown, failedTargetId);
-      assert.include(shown, "(mastodon @studio@example.social)");
+      assert.include(shown, "(mastodon @studio@social.example.test)");
       assert.include(
         shown,
         "failed: rateLimited (the platform kept limiting Peal, which stopped trying)"
@@ -630,7 +630,7 @@ describe("peal posts", () => {
 
       assert.include(
         yield* session.printed(args),
-        `Posting ${finishedId} again on ${mastodonId} (mastodon @studio@example.social), now: round 2.`
+        `Posting ${finishedId} again on ${mastodonId} (mastodon @studio@social.example.test), now: round 2.`
       );
       assert.include(
         yield* session.refused(args),
@@ -721,7 +721,7 @@ describe("peal analytics", () => {
       assert.match(summary, /Impressions\s+–/u);
       assert.include(
         summary,
-        `${mastodonId} (mastodon @studio@example.social)`
+        `${mastodonId} (mastodon @studio@social.example.test)`
       );
       assert.include(summary, "20 interactions");
       assert.deepStrictEqual(yield* changes(session.studio), [
@@ -766,7 +766,7 @@ describe("peal analytics", () => {
         ...inStudio,
       ]);
 
-      assert.include(shown, "https://example.social/@studio/1");
+      assert.include(shown, "https://social.example.test/@studio/1");
       assert.match(shown, /Reposts\s+4/u);
       assert.include(
         yield* session.printed(["analytics", "post", draftId, ...inStudio]),
@@ -835,7 +835,7 @@ describe("peal billing, members and invitations", () => {
       const session = yield* signedIn();
       const listed = yield* session.printed(["channels", "list", ...inStudio]);
 
-      assert.match(listed, /mastodon\s+@studio@example\.social\s+posts/u);
+      assert.match(listed, /mastodon\s+@studio@social\.example\.test\s+posts/u);
       assert.match(
         listed,
         /bluesky\s+studio\.example\.test\s+must be reconnected/u
