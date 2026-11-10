@@ -5,6 +5,8 @@ import {
   AlreadyMember,
   Api,
   ChannelNotFound,
+  ConnectFailed,
+  ConnectLinkNotFound,
   CurrentMember,
   CurrentPrincipal,
   Forbidden,
@@ -19,6 +21,7 @@ import {
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
+  ReturnUrlNotAllowed,
   ScheduleInPast,
   TargetStatusConflict,
   TooManyWebhookEndpoints,
@@ -41,11 +44,14 @@ import type {
   Channel,
   ChannelOptions,
   ConnectedApp,
+  ConnectLink,
   ContentViolation,
+  CustomerWorkspace,
   Invitation,
   Me,
   Media,
   MediaContentType,
+  Partner,
   Permission,
   Post,
   PostContent,
@@ -78,11 +84,13 @@ const everything: readonly Permission[] = [
   "analytics:read",
   "billing:read",
   "channel:read",
+  "channel:connect",
   "invitation:create",
   "invitation:cancel",
   "media:read",
   "media:upload",
   "media:delete",
+  "partner:read",
   "post:read",
   "post:create",
   "post:update",
@@ -569,6 +577,56 @@ const deliveries: readonly StudioDelivery[] = [
   },
 ];
 
+export const usedLinkId = "0190f3a0-0000-7000-8000-00000000c001";
+
+export const newLinkId = "0190f3a0-0000-7000-8000-00000000c002";
+
+/** The address the studio's new links open, shown once. */
+export const newLinkUrl =
+  "https://peal.example.test/connect/link/synthetic-token-0123456789abcdefghijklmnopq";
+
+// A link used a day ago, which connected one channel.
+const usedLink: ConnectLink = {
+  channelId: null,
+  channelIds: ["0190f3a0-0000-7000-8000-00000000d001"],
+  completedAt: at("2026-11-08T10:00:00Z"),
+  createdAt: at("2026-11-08T09:00:00Z"),
+  expiresAt: at("2026-11-15T09:00:00Z"),
+  failedAt: null,
+  failure: null,
+  id: usedLinkId,
+  platform: "mastodon",
+  returnUrl: "https://app.example.test/social",
+  status: "completed",
+};
+
+/** The studio's partner account, and what it owns. */
+export const studioPartner: Partner = {
+  createdAt: at("2026-10-01T09:00:00Z"),
+  id: "0190f3a0-0000-7000-8000-00000000e001",
+  logoUrl: "https://cdn.example.test/logo.png",
+  name: "Studio Suite",
+  returnOrigins: ["https://app.example.test"],
+  workspaceId: studioId,
+};
+
+const customers: readonly CustomerWorkspace[] = [
+  {
+    channels: 2,
+    createdAt: at("2026-11-02T09:00:00Z"),
+    externalId: "cus_002",
+    id: "8e3f9a97-8a3c-4dab-8d85-6c4f5a7b8293",
+    name: "Garage Dupont",
+  },
+  {
+    channels: 1,
+    createdAt: at("2026-11-01T09:00:00Z"),
+    externalId: "cus_001",
+    id: "7d2e8f86-7f2b-4c9a-9c74-5b3e4f6a7182",
+    name: "Boulangerie Martin",
+  },
+];
+
 /** What the instance holds, and what the commands changed. */
 export interface StudioState {
   readonly changes: readonly string[];
@@ -576,6 +634,8 @@ export interface StudioState {
   /** Whether the studio holds more than its plan allows, as a test sets it. */
   readonly overPlan: boolean;
   readonly invitations: readonly Invitation[];
+  /** The workspace's connect links, newest first. */
+  readonly links: readonly ConnectLink[];
   readonly media: readonly Media[];
   readonly posts: readonly Post[];
   /** The posts made under an idempotency key, with the request's body. */
@@ -603,6 +663,7 @@ export const makeStudio = (me: Me = studioMe) =>
       changes: [],
       deliveries,
       invitations: [invitation],
+      links: [usedLink],
       media: [image(readyMediaId, { altText: "A synthetic catalogue cover" })],
       overPlan: false,
       posts,
@@ -1758,6 +1819,157 @@ export const studioGroupsLive = (studio: Studio) =>
       handlers.handleAll({
         list: () => Effect.succeed([cli]),
         revoke: () => refusing,
+      })
+    ),
+    HttpApiBuilder.group(Api, "connectLinks", (handlers) =>
+      handlers.handleAll({
+        create: ({ params, payload }) =>
+          Effect.gen(function* create() {
+            yield* allowed("channel:connect");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            if (payload.platform === "pinterest") {
+              return yield* new ConnectFailed({
+                reason: "platformNotSupported",
+              });
+            }
+
+            // Only where the studio's partner account said.
+            if (
+              payload.returnUrl !== undefined &&
+              !payload.returnUrl.startsWith("https://app.example.test/")
+            ) {
+              return yield* new ReturnUrlNotAllowed();
+            }
+
+            const now = at("2026-11-09T12:00:00Z");
+
+            const link: ConnectLink = {
+              channelId: payload.channelId ?? null,
+              channelIds: [],
+              completedAt: null,
+              createdAt: now,
+              expiresAt: DateTime.add(now, {
+                hours: payload.expiresInHours ?? 168,
+              }),
+              failedAt: null,
+              failure: null,
+              id: newLinkId,
+              platform: payload.platform,
+              returnUrl: payload.returnUrl ?? null,
+              status: "pending",
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              links: [link, ...current.links],
+            }));
+            yield* record(studio, `link:create:${payload.platform}`);
+
+            return { link, url: newLinkUrl };
+          }),
+        get: ({ params }) =>
+          Effect.gen(function* get() {
+            yield* allowed("channel:read");
+
+            const { links } = yield* Ref.get(studio.state);
+            const found = links.find(({ id }) => id === params.linkId);
+
+            return found ?? (yield* new ConnectLinkNotFound());
+          }),
+        list: ({ params }) =>
+          allowed("channel:read").pipe(
+            Effect.andThen(Ref.get(studio.state)),
+            Effect.map(({ links }) =>
+              params.workspaceId === studioId ? links : []
+            )
+          ),
+        revoke: ({ params }) =>
+          Effect.gen(function* revoke() {
+            yield* allowed("channel:connect");
+
+            const { links } = yield* Ref.get(studio.state);
+            const found = links.find(({ id }) => id === params.linkId);
+
+            if (found === undefined) {
+              return yield* new ConnectLinkNotFound();
+            }
+
+            // One already over stays as it is.
+            if (found.status !== "pending") {
+              return found;
+            }
+
+            const revoked: ConnectLink = {
+              ...found,
+              completedAt: at("2026-11-09T12:00:00Z"),
+              status: "revoked",
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              links: current.links.map((link) =>
+                link.id === revoked.id ? revoked : link
+              ),
+            }));
+            yield* record(studio, `link:revoke:${revoked.id}`);
+
+            return revoked;
+          }),
+      })
+    ),
+    HttpApiBuilder.group(Api, "partnerAccount", (handlers) =>
+      handlers.handleAll({
+        close: () => refusing,
+        createKey: () => refusing,
+        get: ({ params }) =>
+          allowed("partner:read").pipe(
+            Effect.as(
+              params.workspaceId === studioId
+                ? {
+                    canOpen: false,
+                    partner: studioPartner,
+                    usage: { channels: 5, days: [], workspaces: 2 },
+                  }
+                : { canOpen: false, partner: null, usage: null }
+            )
+          ),
+        listKeys: () =>
+          allowed("partner:read").pipe(
+            Effect.as([
+              {
+                createdAt: at("2026-10-02T09:00:00Z"),
+                expiresAt: null,
+                id: "0190f3a0-0000-7000-8000-00000000e101",
+                name: "backend",
+                permissions: ["channel:read", "post:schedule"] as const,
+                scopes: ["workspaces:read", "workspaces:write"] as const,
+                start: "peal_partner_synt",
+              },
+            ])
+          ),
+        listWorkspaces: ({ query }) =>
+          allowed("partner:read").pipe(
+            Effect.map(() => {
+              const found = customers.filter(
+                (customer) =>
+                  (query.externalId === undefined ||
+                    customer.externalId === query.externalId) &&
+                  (query.name === undefined ||
+                    customer.name
+                      .toLowerCase()
+                      .includes(query.name.toLowerCase()))
+              );
+
+              return { next: null, total: found.length, workspaces: found };
+            })
+          ),
+        open: () => refusing,
+        revokeKey: () => refusing,
+        update: () => refusing,
       })
     ),
     HttpApiBuilder.group(Api, "webhooks", (handlers) =>

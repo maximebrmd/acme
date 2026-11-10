@@ -196,14 +196,6 @@ const signedInGroupsLive = (
     HttpApiBuilder.group(Api, "workspaces", (handlers) =>
       handlers.handleAll({ delete: () => refusing })
     ),
-    HttpApiBuilder.group(Api, "connectLinks", (handlers) =>
-      handlers.handleAll({
-        create: () => refusing,
-        get: () => refusing,
-        list: () => refusing,
-        revoke: () => refusing,
-      })
-    ),
     HttpApiBuilder.group(Api, "partner", (handlers) =>
       handlers.handleAll({
         account: () => refusing,
@@ -212,18 +204,6 @@ const signedInGroupsLive = (
         getWorkspace: () => refusing,
         listWorkspaces: () => refusing,
         updateWorkspace: () => refusing,
-      })
-    ),
-    HttpApiBuilder.group(Api, "partnerAccount", (handlers) =>
-      handlers.handleAll({
-        close: () => refusing,
-        createKey: () => refusing,
-        get: () => refusing,
-        listKeys: () => refusing,
-        listWorkspaces: () => refusing,
-        open: () => refusing,
-        revokeKey: () => refusing,
-        update: () => refusing,
       })
     ),
     HttpApiBuilder.group(Api, "billingActions", (handlers) =>

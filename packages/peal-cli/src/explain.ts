@@ -7,6 +7,8 @@ import type {
   AltTextTooLong,
   ChannelCannotPost,
   ChannelNotFound,
+  ConnectFailed,
+  ConnectLinkNotFound,
   ContentViolation,
   Forbidden,
   IdempotencyKeyReused,
@@ -26,8 +28,10 @@ import type {
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
+  ReturnUrlNotAllowed,
   ScheduleInPast,
   TargetStatusConflict,
+  TooManyConnectLinks,
   TooManyInvitations,
   TooManyWebhookEndpoints,
   TooManyWebhookSends,
@@ -60,6 +64,8 @@ export type ApiFailure =
   | AltTextTooLong
   | ChannelCannotPost
   | ChannelNotFound
+  | ConnectFailed
+  | ConnectLinkNotFound
   | Forbidden
   | HttpApiError.BadRequest
   | HttpClientError.HttpClientError
@@ -79,9 +85,11 @@ export type ApiFailure =
   | PostContentInvalid
   | PostNotFound
   | PostStatusConflict
+  | ReturnUrlNotAllowed
   | ScheduleInPast
   | Schema.SchemaError
   | TargetStatusConflict
+  | TooManyConnectLinks
   | TooManyInvitations
   | TooManyWebhookEndpoints
   | TooManyWebhookSends
@@ -240,6 +248,16 @@ export const explain =
         refused(
           "The workspace has no such channel, or it is not of this platform: peal channels list shows them."
         ),
+      ConnectFailed: ({ reason }) =>
+        refused(
+          reason === "notConfigured"
+            ? "This server is not set up to connect accounts of this platform: its operator sets the platform's app."
+            : "This server cannot connect accounts of this platform."
+        ),
+      ConnectLinkNotFound: () =>
+        refused(
+          "The workspace has no connect link with that id: peal links list shows them."
+        ),
       Forbidden: () =>
         refused(
           "Peal refused: your role in this workspace does not allow it, or your account was suspended."
@@ -301,12 +319,20 @@ export const explain =
       PostNotFound: () => refused("The workspace has no such post."),
       PostStatusConflict: ({ status }) =>
         refused(`The post is ${status}, which does not allow this.`),
+      ReturnUrlNotAllowed: () =>
+        refused(
+          "The return address was refused: it must be HTTPS, on an origin the workspace's partner account registered (peal partner show lists them). A workspace without a partner account takes none."
+        ),
       ScheduleInPast: () =>
         refused("That time has passed: give a later --at, or publish it now."),
       SchemaError: requestFailed(url),
       TargetStatusConflict: ({ status }) =>
         refused(
           `The post is ${status} on that channel: only a failed or unconfirmed post is posted again, and only an unconfirmed one confirmed.`
+        ),
+      TooManyConnectLinks: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} connect links waiting, the most it may: revoke some with peal links revoke.`
         ),
       TooManyInvitations: () =>
         refused(
