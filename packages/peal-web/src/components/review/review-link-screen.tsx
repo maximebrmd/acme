@@ -24,6 +24,7 @@ import {
 } from "#review/api.ts";
 import { failureText } from "#review/failure-text.ts";
 import type { ReviewFailure } from "#review/failure-text.ts";
+import { tokenOfFragment } from "#review/link-token.ts";
 
 import { CommentForm } from "./comment-form.tsx";
 import { ReviewBoard } from "./review-board.tsx";
@@ -38,7 +39,7 @@ const subscribeToHash = (onChange: () => void) => {
   };
 };
 
-const tokenInAddress = () => decodeURIComponent(window.location.hash.slice(1));
+const tokenInAddress = () => tokenOfFragment(window.location.hash);
 
 // Before the page runs in the browser, the token is not known yet.
 const noToken = () => null;
