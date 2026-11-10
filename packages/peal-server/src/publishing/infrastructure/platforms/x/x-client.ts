@@ -131,6 +131,18 @@ const LinkEntitySchema = Schema.Struct({
   url: Schema.String,
 });
 
+// A post another refers to, and how: `replied_to`, `quoted`, `retweeted`.
+const ReferenceSchema = Schema.Struct({
+  id: Schema.String,
+  type: Schema.String,
+});
+
+// The text a listed post shows: what follows the mentions X put before it.
+const shownText = (
+  text: string,
+  range: readonly [number, number] | undefined
+) => (range === undefined ? text : text.slice(range[0], range[1]));
+
 const RecentPostsSchema = Schema.Struct({
   data: Schema.optionalKey(
     Schema.Array(
@@ -140,6 +152,11 @@ const RecentPostsSchema = Schema.Struct({
             media_keys: Schema.optionalKey(Schema.Array(Schema.String)),
           })
         ),
+        // Where the text shown starts and ends: a reply's text may begin
+        // with the mentions of the conversation, which it leaves out.
+        display_text_range: Schema.optionalKey(
+          Schema.Tuple([Schema.Int, Schema.Int])
+        ),
         entities: Schema.optionalKey(
           Schema.Struct({
             urls: Schema.optionalKey(Schema.Array(LinkEntitySchema)),
@@ -147,12 +164,10 @@ const RecentPostsSchema = Schema.Struct({
         ),
         id: Schema.NonEmptyString,
         // The posts it answers or quotes: a reply names the one it
-        // replies to as `replied_to`.
-        referenced_tweets: Schema.optionalKey(
-          Schema.Array(
-            Schema.Struct({ id: Schema.String, type: Schema.String })
-          )
-        ),
+        // replies to as `replied_to`. X's data dictionary calls them
+        // `referenced_tweets`, its newer reference `referenced_posts`.
+        referenced_posts: Schema.optionalKey(Schema.Array(ReferenceSchema)),
+        referenced_tweets: Schema.optionalKey(Schema.Array(ReferenceSchema)),
         text: Schema.String,
       })
     )
@@ -617,7 +632,8 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
             start_time: rfc3339(
               DateTime.subtractDuration(post.startedAt, clockSkew)
             ),
-            "tweet.fields": "attachments,entities,referenced_tweets",
+            "tweet.fields":
+              "attachments,display_text_range,entities,referenced_tweets",
           }),
           HttpClientRequest.bearerToken(token)
         ),
@@ -625,13 +641,13 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
     ).pipe(
       Effect.map(({ data = [] }): LookUp => {
         const found = data.find(
-          ({ attachments, entities, referenced_tweets: referenced, text }) =>
+          (listed) =>
             isSamePost(post.text, {
-              linksTo: linksOf(entities?.urls ?? []),
-              text,
+              linksTo: linksOf(listed.entities?.urls ?? []),
+              text: shownText(listed.text, listed.display_text_range),
             }) &&
-            sameFiles(attachments?.media_keys ?? []) &&
-            answers(referenced ?? [])
+            sameFiles(listed.attachments?.media_keys ?? []) &&
+            answers(listed.referenced_tweets ?? listed.referenced_posts ?? [])
         );
 
         return found === undefined

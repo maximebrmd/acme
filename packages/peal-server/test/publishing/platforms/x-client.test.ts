@@ -484,6 +484,51 @@ describe("publishing on X", () => {
   );
 
   it.live(
+    "finds a lost reply whose text X shows after the mentions it inherits, under either name of its references",
+    () =>
+      Effect.gen(function* inherited() {
+        const { client, x } = yield* onX();
+        const first = yield* client.publish(yield* post({ text: "A first" }));
+
+        assert(first._tag === "published");
+
+        const text = "A second";
+        const shown = `@reader.example ${text}`;
+
+        // X's newer reference names the post's references
+        // `referenced_posts`, and its text may begin with the mentions of
+        // the conversation, which `display_text_range` leaves out.
+        x.script("GET /2/users/:id/tweets", [
+          json({
+            data: [
+              {
+                display_text_range: [shown.length - text.length, shown.length],
+                id: "1900000000000000999",
+                referenced_posts: [
+                  { id: first.platformPostId, type: "replied_to" },
+                ],
+                text: shown,
+              },
+            ],
+          }),
+        ]);
+
+        const found = yield* client.resume(
+          yield* post({
+            part: 1,
+            replyTo: Option.some({
+              parent: first.platformPostId,
+              root: first.platformPostId,
+            }),
+            text,
+          })
+        );
+
+        assert.strictEqual(found._tag, "published");
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
     "finds a lost reply among the account's replies, by the post it answers",
     () =>
       Effect.gen(function* lostReply() {
