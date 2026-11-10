@@ -24,6 +24,7 @@ const contexts = [
   "review",
   "webhooks",
   "activity",
+  "ads",
 ] as const;
 
 type Kernel = (typeof contexts)[number] | "shared";
