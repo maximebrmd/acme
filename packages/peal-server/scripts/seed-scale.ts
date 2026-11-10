@@ -13,12 +13,16 @@
 // collection; a day of posts is still scheduled. It refuses a database
 // whose name does not end in "scale", and one that already holds posts.
 
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
+
+import { databaseNameOf } from "#shared/infrastructure/database-name.ts";
 
 const url = process.env["DATABASE_URL"] ?? "";
 const users = Number(process.argv[2] ?? "10000");
 
-if (!/scale(?:\?|$)/u.test(url)) {
+// The name in the URL's path, not anywhere in the URL: a parameter such as
+// `?application_name=scale` names no database.
+if (!Option.exists(databaseNameOf(url), (name) => name.endsWith("scale"))) {
   throw new Error("DATABASE_URL must name a database ending in 'scale'");
 }
 
@@ -29,12 +33,17 @@ if (!Number.isInteger(users) || users < 1) {
 const sql = new Bun.SQL(url);
 
 const decodeExisting = Schema.decodeUnknownSync(
-  Schema.Tuple([Schema.Struct({ posts: Schema.Number })])
+  Schema.Tuple([Schema.Struct({ name: Schema.String, posts: Schema.Number })])
 );
 
 const [existing] = decodeExisting(
-  await sql`SELECT count(*)::int AS posts FROM publishing.posts`
+  await sql`SELECT current_database() AS name, count(*)::int AS posts FROM publishing.posts`
 );
+
+// What the server itself says it is, whatever the URL was read as.
+if (!existing.name.endsWith("scale")) {
+  throw new Error("The database connected to does not end in 'scale'");
+}
 
 if (existing.posts > 0) {
   throw new Error("The database already holds posts");
