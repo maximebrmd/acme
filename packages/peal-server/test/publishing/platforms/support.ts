@@ -33,6 +33,7 @@ import { mastodonClient } from "#publishing/infrastructure/platforms/mastodon/ma
 import { facebookClient } from "#publishing/infrastructure/platforms/meta/facebook-client.ts";
 import { instagramClient } from "#publishing/infrastructure/platforms/meta/instagram-client.ts";
 import { threadsClient } from "#publishing/infrastructure/platforms/meta/threads-client.ts";
+import { pinterestClient } from "#publishing/infrastructure/platforms/pinterest/pinterest-client.ts";
 import { tiktokClient } from "#publishing/infrastructure/platforms/tiktok/tiktok-client.ts";
 import { xClient } from "#publishing/infrastructure/platforms/x/x-client.ts";
 import { youtubeClient } from "#publishing/infrastructure/platforms/youtube/youtube-client.ts";
@@ -604,6 +605,31 @@ export const youtubeClientWith = Effect.fn("test.youtubeClient")(
           options.credentials,
           mediaOf(options.files ?? []),
           uploadLedgerOf(options.ledger)
+        )
+      )
+    );
+  }
+);
+
+/** The Pinterest client, with the fake as API and as the videos' store. */
+export const pinterestClientWith = Effect.fn("test.pinterestClient")(
+  function* pinterestClientWith(options: {
+    readonly api: string;
+    readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly files?: readonly TestFile[];
+  }) {
+    const api = yield* httpClient;
+
+    return yield* pinterestClient({
+      api,
+      apiUrl: new URL(options.api),
+      timing: testTiming,
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(
+          options.credentials,
+          mediaOf(options.files ?? []),
+          OpenOutboundGuard
         )
       )
     );

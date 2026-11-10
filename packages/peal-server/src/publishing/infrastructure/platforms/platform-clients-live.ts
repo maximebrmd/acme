@@ -8,6 +8,7 @@ import type { Platform } from "#shared/domain/platform.ts";
 import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
+import { pinterestHostsConfig } from "#shared/infrastructure/platforms/pinterest-api.ts";
 import {
   publicHttpClient,
   publicHttpClientWith,
@@ -21,6 +22,7 @@ import { mastodonClient } from "./mastodon/mastodon-client.ts";
 import { facebookClient } from "./meta/facebook-client.ts";
 import { instagramClient } from "./meta/instagram-client.ts";
 import { threadsClient } from "./meta/threads-client.ts";
+import { pinterestClient } from "./pinterest/pinterest-client.ts";
 import { tiktokClient } from "./tiktok/tiktok-client.ts";
 import { tiktokMediaUrlConfig } from "./tiktok/tiktok-settings.ts";
 import { xClient } from "./x/x-client.ts";
@@ -40,6 +42,8 @@ export interface PlatformClientSettings {
   readonly metaAppSecret: Option.Option<Redacted.Redacted>;
   /** Where Meta's services are. */
   readonly metaHosts: MetaHosts;
+  /** Pinterest's API: its Sandbox's when the server is set to it. */
+  readonly pinterestApi: URL;
   /** TikTok's API, which takes media uploads too. */
   readonly tiktokApi: URL;
   /**
@@ -63,7 +67,7 @@ const uploadTimeout = Duration.minutes(10);
 
 /**
  * The platforms Peal publishes to: Mastodon, Bluesky, LinkedIn, X, Threads,
- * Instagram, Facebook Pages, TikTok and YouTube. Every request goes through
+ * Instagram, Facebook Pages, TikTok, YouTube and Pinterest. Every request goes through
  * the public HTTP client, so the outbound guard checks the servers users
  * chose. Needs an HttpClient, the OutboundGuard, SecureRandom and Digest
  * (for DPoP proofs), Mac (for Meta's proofs), PlatformCredentials,
@@ -131,6 +135,11 @@ export const platformClientsWith = (settings: PlatformClientSettings) =>
           uploads,
           ...timing,
         }),
+        yield* pinterestClient({
+          api,
+          apiUrl: settings.pinterestApi,
+          ...timing,
+        }),
       ];
 
       const byPlatform: ReadonlyMap<Platform, PlatformClient> = new Map(
@@ -144,8 +153,9 @@ export const platformClientsWith = (settings: PlatformClientSettings) =>
   );
 
 /**
- * The platforms, as production reaches them, with Meta's app secret and
- * TikTok's verified media prefix read when the server starts. Channels
+ * The platforms, as production reaches them, with Meta's app secret,
+ * TikTok's verified media prefix and whether Pinterest's calls go to its
+ * Sandbox read when the server starts. Channels
  * connected while Meta's app was set keep publishing without its proof if
  * it is unset later.
  */
@@ -154,12 +164,14 @@ export const PlatformClientsLive = Layer.unwrap(
     const meta = yield* metaAppConfig;
     const tiktokPullFrom = yield* tiktokMediaUrlConfig;
     const youtubeDailyUploads = yield* youtubeDailyUploadsConfig;
+    const pinterest = yield* pinterestHostsConfig;
 
     return platformClientsWith({
       linkedinApi: new URL("https://api.linkedin.com"),
       mastodonScheme: "https:",
       metaAppSecret: meta.pipe(Option.map(({ appSecret }) => appSecret)),
       metaHosts,
+      pinterestApi: pinterest.api,
       tiktokApi: tiktokHosts.api,
       tiktokPullFrom,
       videoService: new URL("https://video.bsky.app"),
