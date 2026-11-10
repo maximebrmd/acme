@@ -48,9 +48,11 @@ import {
 import { Input } from "peal-ui/components/input";
 import { Label } from "peal-ui/components/label";
 import { useCallback, useId, useState, useTransition } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 
 import { PostOrigins } from "#components/posts/post-origins.tsx";
+import { PostTagsField } from "#components/posts/post-tags-field.tsx";
 import { useRefreshWhileVisible } from "#notices/use-refresh-while-visible.ts";
 import {
   confirmTarget,
@@ -402,6 +404,8 @@ interface PostDetailViewProps {
   readonly channels: readonly Channel[];
   readonly onRequest: (request: TargetRequest) => void;
   readonly post: Post;
+  /** The post's tags, with what changes them for a member who may. */
+  readonly tags?: ReactNode;
   /** The signed-in user, named in how the post came to be. */
   readonly viewerId: string | null;
 }
@@ -418,6 +422,7 @@ export const PostDetailView = ({
   channels,
   onRequest,
   post,
+  tags,
   viewerId,
 }: PostDetailViewProps) => {
   const t = useTranslations("PostDetail");
@@ -463,6 +468,7 @@ export const PostDetailView = ({
               {t("media", { count: post.content.media.length })}
             </p>
           </section>
+          {tags}
           <section
             aria-labelledby="post-channels"
             className="flex flex-col gap-3"
@@ -514,6 +520,11 @@ const failureText = (t: Translate, tag: string | undefined) => {
 
 // While the post goes out, how often the page asks how it is going.
 const refreshEvery = 5000;
+
+// The post is read again once its tags changed: nothing to keep here.
+const noChange = () => {
+  // The posts queries refresh.
+};
 
 /**
  * The detail of a post that went out, with what members with post:schedule
@@ -619,6 +630,16 @@ export const PostDetail = ({
       canAct={permissions.includes("post:schedule")}
       channels={channels}
       post={post}
+      tags={
+        <PostTagsField
+          disabled={false}
+          permissions={permissions}
+          savedOn={post.id}
+          tagIds={post.tagIds}
+          workspaceId={workspaceId}
+          onChange={noChange}
+        />
+      }
       viewerId={userId}
       onRequest={handleRequest}
     />

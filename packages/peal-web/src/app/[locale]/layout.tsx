@@ -7,6 +7,7 @@ import { GeistMono, GeistSans } from "peal-ui/lib/fonts";
 
 import { AppShell } from "#components/app-shell.tsx";
 import { Providers } from "#components/providers.tsx";
+import { ViewerHourCycle } from "#components/viewer-hour-cycle.tsx";
 import { ViewerTimeZone } from "#components/viewer-time-zone.tsx";
 import { releaseMeta } from "#errors/release-meta.ts";
 import { releaseConfig } from "#errors/server.ts";
@@ -53,9 +54,11 @@ const LocaleLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
       <body className="antialiased">
         <NextIntlClientProvider>
           <ViewerTimeZone>
-            <Providers>
-              <AppShell>{children}</AppShell>
-            </Providers>
+            <ViewerHourCycle>
+              <Providers>
+                <AppShell>{children}</AppShell>
+              </Providers>
+            </ViewerHourCycle>
           </ViewerTimeZone>
         </NextIntlClientProvider>
       </body>

@@ -720,7 +720,18 @@
       "moveInPast": "Cette heure est passée : la publication reste où elle était.",
       "moveForbidden": "Votre rôle ne vous permet pas de déplacer des publications.",
       "moveHandle": "Déplacer la publication de {time} : {post}",
-      "hour": "Heure"
+      "hour": "Heure",
+      "tagNames": "{count, plural, =0 {Aucune étiquette.} one {Étiquette : {tags}.} other {Étiquettes : {tags}.}}",
+      "newPostAt": "Nouvelle publication le {date} à {time}",
+      "filterTags": "{count, plural, =0 {Étiquettes} other {Étiquettes (#)}}",
+      "filterTagsLabel": "Afficher les publications qui portent l’une de ces étiquettes",
+      "filterChannels": "{count, plural, =0 {Canaux} other {Canaux (#)}}",
+      "filterChannelsLabel": "Afficher les publications qui vont sur l’un de ces canaux",
+      "clearFilters": "Effacer les filtres",
+      "hiddenByFilters": "{count, plural, =0 {Aucune publication masquée par les filtres} one {# publication masquée par les filtres} other {# publications masquées par les filtres}}"
+    },
+    "Links": {
+      "suspicious": "Ceci ne ressemble pas à un lien qui fonctionne : {link}"
     }
   },
   "Drafts": {
@@ -734,7 +745,8 @@
     "noText": "Pas encore de texte",
     "channels": "{count, plural, =0 {Aucun canal pour l’instant} one {# canal} other {# canaux}}",
     "media": "{count, plural, =0 {Aucune image ni vidéo} one {# image ou vidéo} other {# images ou vidéos}}",
-    "newPost": "Nouvelle publication"
+    "newPost": "Nouvelle publication",
+    "tags": "Étiquettes"
   },
   "PostDetail": {
     "title": "{status, select, publishing {Publication en cours d’envoi} cancelled {Publication annulée} other {Publication}}",
@@ -1392,7 +1404,10 @@
       "invitations": "Invitations",
       "apiKeys": "Clés d’API",
       "webhooks": "Webhooks",
-      "partner": "Partenaire"
+      "partner": "Partenaire",
+      "tags": "Étiquettes",
+      "signatures": "Signatures",
+      "channelSets": "Groupes de canaux"
     },
     "general": {
       "title": "Nom",
@@ -1715,6 +1730,12 @@
       "exported": "Sur ce serveur, il liste aussi les connexions ayant créé du contenu, que la loi française impose à un hébergeur de conserver, avec ce qui reste une fois votre compte fermé.",
       "identification": "Comme la loi française l’impose à un hébergeur, Peal conserve à part, pour les seules autorités judiciaires, vos nom et adresse e-mail pendant {identityYears, plural, one {# an} other {# ans}}, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant {accountYears, plural, one {# an} other {# ans}}, puis les supprime.",
       "connections": "Ce serveur conservait ce que la loi française impose à un hébergeur, et ne le fait plus : les connexions ayant créé du contenu, conservées jusqu’ici, le restent {connectionYears, plural, one {# an} other {# ans}} à compter de chacune, à part, pour les seules autorités judiciaires, puis sont supprimées."
+    },
+    "timeFormat": {
+      "title": "Format de l’heure",
+      "description": "La façon dont ce navigateur écrit les heures, sur le calendrier et partout où une publication a une heure. Le choix reste dans ce navigateur : vos autres appareils gardent le leur.",
+      "legend": "Format de l’heure",
+      "option": "{format, select, auto {Automatique, comme votre langue l’écrit ({example})} h12 {12 heures ({example})} other {24 heures ({example})}}"
     }
   },
   "Staff": {
@@ -2256,5 +2277,116 @@
       "loadFailed": "Le paramètre n’a pas pu être chargé.",
       "readOnly": "Les propriétaires et les administrateurs le choisissent."
     }
+  },
+  "SavedItems": {
+    "delete": "Supprimer",
+    "deleting": "Suppression…",
+    "errors": {
+      "forbidden": "Votre rôle ne le permet pas.",
+      "invalid": "{kind, select, channelSet {Les options gardées pour l’un de ces canaux ne sont pas celles de sa plateforme. Choisissez à nouveau les canaux.} other {Impossible d’enregistrer cela tel quel.}}",
+      "nameTaken": "{kind, select, tag {L’espace de travail a déjà une étiquette de ce nom.} signature {L’espace de travail a déjà une signature de ce nom.} other {L’espace de travail a déjà un groupe de canaux de ce nom.}}",
+      "notFound": "{kind, select, tag {Cette étiquette n’existe plus.} signature {Cette signature n’existe plus.} other {Ce groupe de canaux n’existe plus.}}",
+      "tooMany": "{kind, select, tag {L’espace de travail a {allowed, number} étiquettes, le maximum. Supprimez-en une avant d’en ajouter une autre.} signature {L’espace de travail a {allowed, number} signatures, le maximum. Supprimez-en une avant d’en ajouter une autre.} other {L’espace de travail a {allowed, number} groupes de canaux, le maximum. Supprimez-en un avant d’en ajouter un autre.}}",
+      "unknown": "Une erreur est survenue. Réessayez.",
+      "unknownChannels": "Certains de ces canaux ne sont plus connectés. Choisissez à nouveau les canaux."
+    }
+  },
+  "Tags": {
+    "description": "Les étiquettes classent les publications de l’espace de travail : par campagne, par sujet, par client. Une étiquette a un nom et une couleur, s’affiche sur la publication dans les brouillons et sur le calendrier, et filtre le calendrier.",
+    "rules": "Un espace de travail a au plus {max, number} étiquettes, et une publication en a au plus {perPost, number}.",
+    "readOnly": "Vous pouvez consulter les étiquettes. En ajouter, en renommer ou en supprimer une demande la permission de modifier les publications.",
+    "listTitle": "Étiquettes",
+    "empty": "L’espace de travail n’a pas encore d’étiquette.",
+    "name": "Nom",
+    "nameHint": "{max, number} caractères au plus. Aucune autre étiquette de l’espace de travail ne porte le même nom.",
+    "colour": "Couleur",
+    "colourName": "{colour, select, gray {Gris} red {Rouge} orange {Orange} amber {Ambre} green {Vert} teal {Sarcelle} blue {Bleu} purple {Violet} pink {Rose} other {{colour}}}",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saved": "L’étiquette est enregistrée.",
+    "deleteTitle": "Supprimer l’étiquette « {name} » ?",
+    "deleteDescription": "L’étiquette est retirée de toutes les publications qui la portent. Les publications gardent tout le reste : leur texte, leurs médias, leurs canaux et leur heure. C’est définitif.",
+    "deleted": "L’étiquette est supprimée.",
+    "createTitle": "Ajouter une étiquette",
+    "create": "Ajouter l’étiquette",
+    "creating": "Ajout…",
+    "created": "L’étiquette est ajoutée.",
+    "postTitle": "Étiquettes",
+    "postEmpty": "Aucune étiquette.",
+    "postEdit": "Choisir les étiquettes",
+    "postCreate": "Nouvelle étiquette",
+    "postFull": "Une publication a au plus {max, number} étiquettes. Décochez-en une pour en choisir une autre."
+  },
+  "Signatures": {
+    "description": "Une signature est un texte que l’espace de travail garde pour terminer ses publications : une formule de fin, une mention obligatoire, une série de hashtags. Insérez-en une en écrivant une publication, ou faites-en une signature par défaut : une signature par défaut est ajoutée aux nouvelles publications à leur premier enregistrement. La signature par défaut d’une plateforme ou d’un canal y remplace celle de l’espace de travail.",
+    "rules": "Une fois ajoutée, une signature est du texte de la publication comme un autre : elle compte dans la limite de chaque plateforme, et modifier la signature ensuite laisse telles quelles les publications qui la contiennent. Un espace de travail a au plus {max, number} signatures.",
+    "readOnly": "Vous pouvez consulter les signatures. En ajouter, en modifier ou en supprimer une demande la permission de modifier les publications.",
+    "listTitle": "Signatures",
+    "empty": "L’espace de travail n’a pas encore de signature.",
+    "name": "Nom",
+    "nameHint": "Seuls les membres le voient : il distingue cette signature des autres.",
+    "text": "Texte",
+    "textCount": "{count, number} caractères sur {max, number}",
+    "scope": "À quoi elle sert",
+    "scopeOption": "{scope, select, workspace {Tous les canaux de l’espace de travail} platform {Les canaux d’une plateforme} other {Un seul canal}}",
+    "platform": "Plateforme",
+    "choosePlatform": "Choisissez une plateforme",
+    "channel": "Canal",
+    "chooseChannel": "Choisissez un canal",
+    "noChannels": "L’espace de travail n’a pas encore de canal connecté.",
+    "isDefault": "Ajouter par défaut aux nouvelles publications",
+    "isDefaultHint": "L’espace de travail, chaque plateforme et chaque canal ont une seule signature par défaut : en faire celle-ci remplace celle qui l’était.",
+    "scopeWorkspace": "Pour tous les canaux de l’espace de travail",
+    "scopePlatform": "Pour les canaux {platform}",
+    "scopeChannel": "Pour {handle} sur {platform}",
+    "scopeChannelGone": "Pour un canal qui n’est plus connecté",
+    "defaultBadge": "Par défaut",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saved": "La signature est enregistrée.",
+    "deleteTitle": "Supprimer la signature « {name} » ?",
+    "deleteDescription": "Les publications qui contiennent déjà son texte le gardent. C’est définitif.",
+    "deleted": "La signature est supprimée.",
+    "createTitle": "Ajouter une signature",
+    "create": "Ajouter la signature",
+    "creating": "Ajout…",
+    "created": "La signature est ajoutée.",
+    "menuTrigger": "Signature",
+    "menuAll": "Ajouter sous le texte de tous les canaux",
+    "menuOwn": "Ajouter sous le texte propre à un canal",
+    "addDefault": "{count, plural, one {Ajouter la signature par défaut à l’enregistrement de la publication} other {Ajouter les signatures par défaut à l’enregistrement de la publication}}",
+    "addDefaultHint": "{count, plural, one {{names} est placée sous le texte au premier enregistrement de la publication. Vous voyez alors le texte tel qu’il partira, et pouvez encore le modifier.} other {{names} sont placées sous le texte, chacune sur les canaux auxquels elle est destinée, au premier enregistrement de la publication. Vous voyez alors les textes tels qu’ils partiront, et pouvez encore les modifier.}}"
+  },
+  "ChannelSets": {
+    "description": "Un groupe de canaux est une sélection de canaux de l’espace de travail gardée sous un nom, avec les options que les publications y prennent. Partez d’un groupe pour écrire une publication au lieu de cocher chaque fois les mêmes canaux.",
+    "rules": "Un groupe garde les canaux tels qu’ils ont été choisis : un canal déconnecté depuis est laissé de côté dans les publications qui partent du groupe, et l’éditeur le signale. Un espace de travail a au plus {max, number} groupes.",
+    "readOnly": "Vous pouvez consulter les groupes de canaux. En ajouter, en modifier ou en supprimer un demande la permission de modifier les publications.",
+    "listTitle": "Groupes de canaux",
+    "empty": "L’espace de travail n’a pas encore de groupe de canaux.",
+    "name": "Nom",
+    "channels": "Canaux",
+    "channelsHint": "Un canal au moins, {max, number} au plus.",
+    "channelsOf": "Canaux de {name}",
+    "noChannels": "L’espace de travail n’a pas encore de canal connecté.",
+    "noneLeft": "Plus aucun de ses canaux n’est connecté.",
+    "missing": "{count, plural, one {# canal de ce groupe n’est plus connecté : les publications qui partent du groupe s’en passent.} other {# canaux de ce groupe ne sont plus connectés : les publications qui partent du groupe s’en passent.}}",
+    "editDrops": "{count, plural, one {L’enregistrement retire le canal qui n’est plus connecté.} other {L’enregistrement retire les # canaux qui ne sont plus connectés.}}",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saved": "Le groupe de canaux est enregistré.",
+    "deleteTitle": "Supprimer le groupe de canaux « {name} » ?",
+    "deleteDescription": "Ses canaux restent connectés, et les publications parties de ce groupe gardent leurs canaux. C’est définitif.",
+    "deleted": "Le groupe de canaux est supprimé.",
+    "createTitle": "Ajouter un groupe de canaux",
+    "create": "Ajouter le groupe de canaux",
+    "creating": "Ajout…",
+    "created": "Le groupe de canaux est ajouté.",
+    "pickerTrigger": "Utiliser un groupe de canaux",
+    "pickerLabel": "Sélectionner les canaux d’un groupe",
+    "pickerItem": "{name} ({count, plural, =0 {aucun canal} one {# canal} other {# canaux}})",
+    "pickerDropped": "{count, plural, one {# canal de « {name} » n’est plus connecté et a été laissé de côté.} other {# canaux de « {name} » ne sont plus connectés et ont été laissés de côté.}}",
+    "saveSelection": "Enregistrer la sélection comme groupe",
+    "saveSelectionTitle": "Enregistrer la sélection comme groupe de canaux",
+    "saveSelectionDescription": "{count, plural, one {Le canal coché, avec les options remplies pour lui, est gardé sous ce nom.} other {Les # canaux cochés, avec les options remplies pour eux, sont gardés sous ce nom.}}"
   }
 }

@@ -39,8 +39,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
-  wait), `…/settings` (with `members`, `invitations`, `api-keys` and
-  `webhooks`) and `…/billing`. The staff console is
+  wait), `…/settings` (with `members`, `invitations`, `tags`, `signatures`,
+  `channel-sets`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]`,
   `admin/contract-requests` (through `deskRead`), `admin/audit` and
@@ -128,6 +128,34 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `#posts/api.ts`, as `LookupChoices`): a field shows that its list is being
   read, or why it could not be with a way to ask again, and keeps a value
   the list lacks.
+- Tags, signatures and channel sets each have a settings page (list,
+  create, edit, delete: views in `components/<feature>/*-views.tsx`, state
+  in `*-settings.tsx`, atoms in `#<feature>/atoms.ts`), read with post:read
+  and changed with post:update. Their failures are explained from the one
+  `SavedItems.errors` catalogue (`#settings/saved-item-error.ts`). Draw a
+  tag with peal-ui's `Tag` and `TagDot`, never a colour value.
+- The composer takes them through components of their own, each wired
+  with a few lines: `ChannelSetPicker` (applies a set with `appliedSet`,
+  which leaves out and counts the channels disconnected since),
+  `SignatureMenu` (`withSignature`, the contract's `signedText`),
+  `DefaultSignatures` with `useDefaultSigning` (only the request that
+  first creates a post carries `defaultSignatures`, and the composer then
+  takes its texts from the answer), `LinkWarnings` (`#posts/link-check.ts`,
+  advice that blocks nothing: never flag a working link) and
+  `PostTagsField`, which saves tags with the post while it is written and
+  at once (`posts.tag`, `savedOn`) on a post scheduled or out, as
+  `PostDetail` does.
+- The calendar filters the posts it loaded in the browser
+  (`#posts/calendar-filter.ts`, `CalendarFilters`), and links each day and
+  each hour still to come to `…/posts/new?at=YYYY-MM-DDTHH:mm`
+  (`#posts/start-time.ts`), which the composer reads on the viewer's clock
+  and ignores when malformed or past.
+- Times of day follow the browser's own preference (`#i18n/hour-cycle.ts`,
+  in `localStorage`, chosen on the account page): `ViewerHourCycle`, in the
+  locale layout, gives every message's `{at, time, short}` the clock
+  chosen, and code that formats a time itself adds `useTimeOptions()` to
+  its options. The server renders the language's clock; the preference
+  applies after hydration.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the

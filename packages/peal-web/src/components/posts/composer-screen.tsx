@@ -19,6 +19,11 @@ interface ComposerScreenProps {
   readonly permissions: readonly Permission[];
   /** None for a new post. */
   readonly postId: string | undefined;
+  /**
+   * Where a new post's schedule starts, as the calendar's `?at=` wrote it;
+   * the composer ignores a value that names no time to come.
+   */
+  readonly startAt?: string | undefined;
   /** The signed-in user. */
   readonly userId: string;
   readonly workspaceId: string;
@@ -132,6 +137,7 @@ const ExistingPost = ({
 export const ComposerScreen = ({
   permissions,
   postId,
+  startAt,
   userId,
   workspaceId,
 }: ComposerScreenProps) => {
@@ -157,6 +163,7 @@ export const ComposerScreen = ({
         channels={channels.value}
         permissions={permissions}
         post={undefined}
+        startAt={startAt}
         userId={userId}
         workspaceId={workspaceId}
       />
