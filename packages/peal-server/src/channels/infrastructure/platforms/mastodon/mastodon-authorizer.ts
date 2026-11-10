@@ -25,9 +25,10 @@ import type { MastodonApp } from "./mastodon-apps.ts";
 // own profile; older servers need `read:accounts` for that. Posting needs
 // statuses and media either way, and reading the posts back, for their
 // counts in analytics, `read:statuses`.
-const profileScopes = "profile read:statuses write:statuses write:media";
+export const profileScopes = "profile read:statuses write:statuses write:media";
 
-const legacyScopes = "read:accounts read:statuses write:statuses write:media";
+export const legacyScopes =
+  "read:accounts read:statuses write:statuses write:media";
 
 // An app grants only the scopes it was registered with: one Peal registered
 // before it read statuses is replaced by a new registration.
