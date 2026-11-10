@@ -13,13 +13,16 @@ import { RefreshChannelTokens } from "#channels/application/refresh-channel-toke
 import { renewToken } from "#channels/domain/channel.ts";
 import type { Channel } from "#channels/domain/channel.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { everyWorkspaceOn } from "#test/billing/support.ts";
 import {
   authorizersOf,
   ConnectAdaptersTest,
   connectChannelOver,
   connectedChannel,
   pinterestAuthorizerOn,
+  connectAdaptersOn,
 } from "#test/channels/connect-support.ts";
 import {
   fakePinterest,
@@ -31,6 +34,8 @@ import {
   freshWorkspace,
   RecordedNotices,
   repositoryScopedTo,
+  freshChannel,
+  syntheticCredentials,
 } from "#test/channels/support.ts";
 
 const manager = (workspaceId: WorkspaceId) =>
@@ -400,6 +405,53 @@ layer(AdaptersTest)("connecting a Pinterest account", (it) => {
 
         // Pinterest answered none: the refresh token still works.
         assert.strictEqual(yield* refresh, "refreshed");
+      }).pipe(Effect.scoped)
+  );
+});
+
+// Synthetic channels, connected without the platform.
+const fill = Effect.fn("test.fill")(function* fill(
+  workspaceId: WorkspaceId,
+  count: number
+) {
+  const repository = yield* ChannelRepository;
+
+  for (let added = 0; added < count; added += 1) {
+    const channel = yield* freshChannel(workspaceId, {
+      accountId: `synthetic-${String(added)}`,
+    });
+
+    yield* repository.insert(channel, syntheticCredentials(channel));
+  }
+});
+
+// The free plan, which allows 3 channels.
+const FreePlanTest = Layer.mergeAll(
+  connectAdaptersOn(everyWorkspaceOn("free")),
+  RecordedNotices.layer
+);
+
+layer(FreePlanTest)("connecting a Pinterest account on the free plan", (it) => {
+  it.effect(
+    "refuses a new account once the plan's channels are taken, saying what the plan allows",
+    () =>
+      Effect.gen(function* full() {
+        const on = yield* onPinterest();
+        const workspaceId = yield* freshWorkspace;
+
+        yield* fill(workspaceId, 3);
+
+        assert.deepStrictEqual(
+          yield* Effect.flip(
+            on.connect.start(manager(workspaceId), "pinterest", noHandle)
+          ),
+          new PlanLimitReached({
+            allowed: 3,
+            limit: "channels",
+            needed: 4,
+            used: 3,
+          })
+        );
       }).pipe(Effect.scoped)
   );
 });

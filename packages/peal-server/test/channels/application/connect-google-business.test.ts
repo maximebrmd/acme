@@ -14,12 +14,15 @@ import { renewToken } from "#channels/domain/channel.ts";
 import type { Channel } from "#channels/domain/channel.ts";
 import { googleBusinessReach } from "#channels/infrastructure/platforms/google-business/google-business-authorizer.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
+import { everyWorkspaceOn } from "#test/billing/support.ts";
 import {
   authorizersOf,
   ConnectAdaptersTest,
   connectChannelOver,
   connectedChannel,
   googleBusinessAuthorizerOn,
+  connectAdaptersOn,
 } from "#test/channels/connect-support.ts";
 import {
   businessAccount,
@@ -34,6 +37,8 @@ import {
   freshWorkspace,
   RecordedNotices,
   repositoryScopedTo,
+  freshChannel,
+  syntheticCredentials,
 } from "#test/channels/support.ts";
 
 const manager = (workspaceId: WorkspaceId) =>
@@ -458,3 +463,86 @@ layer(AdaptersTest)("connecting a Google Business Profile location", (it) => {
     }).pipe(Effect.scoped)
   );
 });
+
+// Synthetic channels, connected without the platform.
+const fill = Effect.fn("test.fill")(function* fill(
+  workspaceId: WorkspaceId,
+  count: number
+) {
+  const repository = yield* ChannelRepository;
+
+  for (let added = 0; added < count; added += 1) {
+    const channel = yield* freshChannel(workspaceId, {
+      accountId: `synthetic-${String(added)}`,
+    });
+
+    yield* repository.insert(channel, syntheticCredentials(channel));
+  }
+});
+
+// The free plan, which allows 3 channels.
+const FreePlanTest = Layer.mergeAll(
+  connectAdaptersOn(everyWorkspaceOn("free")),
+  RecordedNotices.layer
+);
+
+layer(FreePlanTest)(
+  "choosing Google Business Profile locations on the free plan",
+  (it) => {
+    it.effect(
+      "connects none of the locations chosen when the plan has no room for all, and lets the member choose fewer",
+      () =>
+        Effect.gen(function* tooMany() {
+          const on = yield* onGoogle();
+          const workspaceId = yield* freshWorkspace;
+          const location = locationOf(workspaceId);
+
+          yield* fill(workspaceId, 2);
+
+          on.google.setBusinessAccounts([
+            { ...businessAccount, locations: [location] },
+            {
+              locations: [otherBusinessLocation],
+              name: `accounts/2${workspaceId.replaceAll(/\D/gu, "").slice(0, 17)}`,
+            },
+          ]);
+
+          const outcome = yield* signedIn(on, workspaceId);
+
+          assert(outcome._tag === "choose");
+
+          const [first, second] = outcome.accounts.map(
+            ({ accountId }) => accountId
+          );
+
+          // Two channels and two locations would make four.
+          assert.deepStrictEqual(
+            yield* Effect.flip(
+              on.connect.choose(manager(workspaceId), "googleBusiness", {
+                accountIds: [first ?? "", second ?? ""],
+                selection: outcome.selection,
+              })
+            ),
+            new PlanLimitReached({
+              allowed: 3,
+              limit: "channels",
+              needed: 4,
+              used: 2,
+            })
+          );
+
+          // The choice is still there, for one location.
+          const chosen = yield* on.connect.choose(
+            manager(workspaceId),
+            "googleBusiness",
+            { accountIds: [first ?? ""], selection: outcome.selection }
+          );
+
+          assert.deepStrictEqual(
+            chosen.map(({ platform }) => platform),
+            ["googleBusiness"]
+          );
+        }).pipe(Effect.scoped)
+    );
+  }
+);

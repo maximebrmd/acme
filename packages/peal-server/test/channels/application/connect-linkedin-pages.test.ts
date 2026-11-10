@@ -13,12 +13,15 @@ import { RefreshChannelTokens } from "#channels/application/refresh-channel-toke
 import { renewToken } from "#channels/domain/channel.ts";
 import type { Channel } from "#channels/domain/channel.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
+import { everyWorkspaceOn } from "#test/billing/support.ts";
 import {
   authorizersOf,
   ConnectAdaptersTest,
   connectChannelOver,
   linkedinAuthorizerOn,
   linkedinPagesAuthorizerOn,
+  connectAdaptersOn,
 } from "#test/channels/connect-support.ts";
 import {
   fakeLinkedIn,
@@ -33,6 +36,8 @@ import {
   freshWorkspace,
   RecordedNotices,
   repositoryScopedTo,
+  freshChannel,
+  syntheticCredentials,
 } from "#test/channels/support.ts";
 
 const manager = (workspaceId: WorkspaceId) =>
@@ -493,5 +498,76 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
         "PlatformUnavailable"
       );
     }).pipe(Effect.scoped)
+  );
+});
+
+// Synthetic channels, connected without the platform.
+const fill = Effect.fn("test.fill")(function* fill(
+  workspaceId: WorkspaceId,
+  count: number
+) {
+  const repository = yield* ChannelRepository;
+
+  for (let added = 0; added < count; added += 1) {
+    const channel = yield* freshChannel(workspaceId, {
+      accountId: `synthetic-${String(added)}`,
+    });
+
+    yield* repository.insert(channel, syntheticCredentials(channel));
+  }
+});
+
+// The free plan, which allows 3 channels.
+const FreePlanTest = Layer.mergeAll(
+  connectAdaptersOn(everyWorkspaceOn("free")),
+  RecordedNotices.layer
+);
+
+layer(FreePlanTest)("choosing LinkedIn pages on the free plan", (it) => {
+  it.effect(
+    "connects none of the pages chosen when the plan has no room for all, and lets the member choose fewer",
+    () =>
+      Effect.gen(function* tooMany() {
+        const on = yield* onLinkedIn();
+        const workspaceId = yield* freshWorkspace;
+
+        yield* fill(workspaceId, 2);
+
+        on.linkedin.grantRoles(linkedinMember.sub, [
+          administrator(linkedinPage),
+          administrator(otherLinkedinPage),
+        ]);
+
+        const outcome = yield* signIn(on, workspaceId);
+
+        assert(outcome._tag === "choose");
+
+        // Two channels and two pages would make four.
+        assert.deepStrictEqual(
+          yield* Effect.flip(
+            on.connect.choose(manager(workspaceId), "linkedin", {
+              accountIds: [urnOf(linkedinPage), urnOf(otherLinkedinPage)],
+              selection: outcome.selection,
+            })
+          ),
+          new PlanLimitReached({
+            allowed: 3,
+            limit: "channels",
+            needed: 4,
+            used: 2,
+          })
+        );
+
+        const chosen = yield* on.connect.choose(
+          manager(workspaceId),
+          "linkedin",
+          { accountIds: [urnOf(linkedinPage)], selection: outcome.selection }
+        );
+
+        assert.deepStrictEqual(
+          chosen.map(({ connection }) => connection),
+          [Option.some("linkedinPage")]
+        );
+      }).pipe(Effect.scoped)
   );
 });

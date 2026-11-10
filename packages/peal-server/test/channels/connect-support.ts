@@ -259,14 +259,17 @@ export const googleBusinessAuthorizerOn = (
  * keyring, plans that limit nothing, and no authorizer: a test builds the
  * use case with its own (`connectChannelOver`), for a fake it started.
  */
-export const ConnectAdaptersTest = Layer.mergeAll(
-  DrizzleChannelRepository,
-  ChannelEvents.none,
-  DrizzleConnectAttempts,
-  DrizzleConnectChoices,
-  SqlChannelLocks,
-  PlanChannelAllowanceLive.pipe(Layer.provide(UnmeteredTest))
-).pipe(Layer.provideMerge(TokenCipherTest), Layer.provideMerge(DatabaseTest));
+export const connectAdaptersOn = (entitlements: typeof UnmeteredTest) =>
+  Layer.mergeAll(
+    DrizzleChannelRepository,
+    ChannelEvents.none,
+    DrizzleConnectAttempts,
+    DrizzleConnectChoices,
+    SqlChannelLocks,
+    PlanChannelAllowanceLive.pipe(Layer.provide(entitlements))
+  ).pipe(Layer.provideMerge(TokenCipherTest), Layer.provideMerge(DatabaseTest));
+
+export const ConnectAdaptersTest = connectAdaptersOn(UnmeteredTest);
 
 /** ConnectChannel with these authorizers, over the adapters in context. */
 export const connectChannelOver = (
