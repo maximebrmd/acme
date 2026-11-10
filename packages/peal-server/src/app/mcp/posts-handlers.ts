@@ -320,16 +320,10 @@ export const PostToolsLive = PostTools.toLayer(
             })
           );
 
-          const awaited =
-            waitSeconds === 0
-              ? sent
-              : yield* outcomes
-                  .await(
-                    yield* actor,
-                    sent.post.id,
-                    Duration.seconds(waitSeconds)
-                  )
-                  .pipe(Effect.catchTags(awaitFailures));
+          // Never a refusal, now that the post is made.
+          const awaited = yield* outcomes
+            .afterSending(yield* actor, sent, Duration.seconds(waitSeconds))
+            .pipe(Effect.orDie);
 
           return postView(awaited);
         }).pipe(Effect.catchTags({ ...malformedContent, ...badZone })),

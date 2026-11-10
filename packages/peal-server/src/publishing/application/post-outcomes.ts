@@ -114,6 +114,18 @@ export class PostOutcomes extends Context.Service<
       AwaitedPost,
       DatabaseError | MissingPermission | PostNotFound
     >;
+    /**
+     * A post just made, waited for as `await` waits, for whoever made it
+     * and asked to wait in the same request. Making it is done and cannot
+     * be answered an error any more: when the wait is refused (someone who
+     * sends posts and may not read them, a post deleted meanwhile), the
+     * post as it was made, and no wait at all for none asked.
+     */
+    readonly afterSending: (
+      actor: Actor,
+      sent: PostWithTargets,
+      wait: Duration.Duration
+    ) => Effect.Effect<PostWithTargets, DatabaseError>;
   }
 >()("peal-server/publishing/application/PostOutcomes") {}
 
@@ -144,7 +156,21 @@ export const makePostOutcomes = (waiters: number) =>
       });
     });
 
-    return PostOutcomes.of({ await: awaitOutcome });
+    const afterSending = (
+      actor: Actor,
+      sent: PostWithTargets,
+      wait: Duration.Duration
+    ): Effect.Effect<PostWithTargets, DatabaseError> =>
+      Duration.isZero(wait)
+        ? Effect.succeed(sent)
+        : awaitOutcome(actor, sent.post.id, wait).pipe(
+            Effect.catchTags({
+              MissingPermission: () => Effect.succeed(sent),
+              PostNotFound: () => Effect.succeed(sent),
+            })
+          );
+
+    return PostOutcomes.of({ afterSending, await: awaitOutcome });
   });
 
 /** The use case as the server runs it. */

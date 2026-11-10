@@ -597,19 +597,11 @@ export const PostsHandlers = HttpApiBuilder.group(
           );
 
           // Asked to wait, it answers once the post went out, or with what
-          // it has when the time runs out.
-          const awaited =
-            query.wait === undefined || query.wait === 0
-              ? sent
-              : yield* outcomes
-                  .await(actor, sent.post.id, Duration.seconds(query.wait))
-                  .pipe(
-                    Effect.catchTags({
-                      DatabaseError: Effect.die,
-                      MissingPermission: forbidden,
-                      PostNotFound: notFound,
-                    })
-                  );
+          // it has when the time runs out; never an error, now that the
+          // post is made.
+          const awaited = yield* outcomes
+            .afterSending(actor, sent, Duration.seconds(query.wait ?? 0))
+            .pipe(Effect.orDie);
 
           return postView(awaited);
         }),

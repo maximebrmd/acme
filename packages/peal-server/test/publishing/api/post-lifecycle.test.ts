@@ -44,9 +44,11 @@ const start = "2026-06-15T07:00:00Z";
 const freshId = newId(WorkspaceIdSchema);
 
 // A client whose every request acts as the user, with the role's rights.
-const clientAs = (userId: string, workspaceId: WorkspaceId, role: Role) => {
-  const permissions: readonly Permission[] = permissionsFor(role);
-
+const clientWith = (
+  userId: string,
+  workspaceId: WorkspaceId,
+  permissions: readonly Permission[]
+) => {
   const member: Member = {
     permissions,
     principal: { _tag: "user", impersonatedBy: null, userId },
@@ -62,6 +64,9 @@ const clientAs = (userId: string, workspaceId: WorkspaceId, role: Role) => {
     )
   );
 };
+
+const clientAs = (userId: string, workspaceId: WorkspaceId, role: Role) =>
+  clientWith(userId, workspaceId, permissionsFor(role));
 
 const text = (body: string): PostContent => ({
   media: [],
@@ -547,6 +552,48 @@ describe("waiting for a post's outcome", () => {
           });
 
           assert.strictEqual(seen.status, "finished");
+        })
+      ),
+    timeout
+  );
+});
+
+describe("a send asked to wait by someone who may not read posts", () => {
+  it.effect(
+    "answers the post it made, as it stood, never an error after making it",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* blind() {
+          const workspaceId = yield* freshId;
+          const channel = yield* connect(workspaceId, "mastodon");
+
+          const sender = yield* clientWith(
+            yield* freshId,
+            workspaceId,
+            permissionsFor("editor").filter(
+              (permission) => permission !== "post:read"
+            )
+          );
+
+          const made = yield* sender.posts.send({
+            headers: { "idempotency-key": "synthetic-blind-key" },
+            params: { workspaceId },
+            payload: {
+              channelIds: [channel],
+              content: text("A synthetic post from a key that only sends."),
+              when: { _tag: "now" },
+            },
+            query: { wait: 5 },
+            responseMode: "response-only",
+          });
+
+          assert.strictEqual(made.status, 201);
+
+          yield* eventually(
+            "the post went out",
+            callsOn(channel).pipe(Effect.map((calls) => calls.length === 1))
+          );
         })
       ),
     timeout
