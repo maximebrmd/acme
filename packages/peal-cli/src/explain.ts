@@ -195,6 +195,16 @@ const reasonOf =
         refused(
           "The workspace has no such channel, or it is not of this platform: peal channels list shows them."
         ),
+      ConnectFailed: ({ reason }) =>
+        refused(
+          reason === "notConfigured"
+            ? "This server is not set up to connect accounts of this platform: its operator sets the platform's app."
+            : "This server cannot connect accounts of this platform."
+        ),
+      ConnectLinkNotFound: () =>
+        refused(
+          "The workspace has no connect link with that id: peal links list shows them."
+        ),
       DuplicatePost: ({ duplicates }) =>
         refused(
           `The same content already goes to ${duplicateChannels(duplicates)}, less than ${String(duplicateWindowHours)} hours from this post's time: nothing was made. If you mean to post it twice, send it again with --allow-duplicate.`
@@ -250,6 +260,10 @@ const reasonOf =
         refused(
           `The ${kind} weighs ${size(byteSize)}, and Peal stores ${kind}s up to ${size(maxByteSize)}.`
         ),
+      PartnerNotFound: () =>
+        refused(
+          "The workspace has no partner account: an owner or an admin opens one in the web app's settings, where the server lets them, or its operator does."
+        ),
       PlanLimitReached: (reached) => refused(planLimitReason(reached)),
       PlatformUnreachable: () =>
         refused(
@@ -265,12 +279,20 @@ const reasonOf =
       PostNotFound: () => refused("The workspace has no such post."),
       PostStatusConflict: ({ status }) =>
         refused(`The post is ${status}, which does not allow this.`),
+      ReturnUrlNotAllowed: () =>
+        refused(
+          "The return address was refused: it must be HTTPS, on an origin the workspace's partner account registered (peal partner show lists them). A workspace without a partner account takes none."
+        ),
       ScheduleInPast: () =>
         refused("That time has passed: give a later --at, or publish it now."),
       SchemaError: requestFailed(url),
       TargetStatusConflict: ({ status }) =>
         refused(
           `The post is ${status} on that channel: only a failed or unconfirmed post is posted again, and only an unconfirmed one confirmed.`
+        ),
+      TooManyConnectLinks: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} connect links waiting, the most it may: revoke some with peal links revoke.`
         ),
       TooManyInvitations: () =>
         refused(

@@ -3,10 +3,14 @@
   "version": "9",
   "dialect": "postgres",
 <<<<<<<< HEAD:packages/peal-server/drizzle/20261110054621_initial/snapshot.json
+<<<<<<<< HEAD:packages/peal-server/drizzle/20261110054621_initial/snapshot.json
   "id": "50164964-d242-4d23-b245-52acb0ed4902",
 ========
   "id": "e3de5b63-112f-4b0f-8dce-ca136251f281",
 >>>>>>>> origin/feat/posting-api:packages/peal-server/drizzle/20261110051209_initial/snapshot.json
+========
+  "id": "d315868f-5960-4c59-ab3c-6e6e8aa010d4",
+>>>>>>>> origin/feat/embedding-kit:packages/peal-server/drizzle/20261110054242_initial/snapshot.json
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -141,6 +145,18 @@
         "s|sch|webhooks",
         "n|sch|webhooks",
         "e|sch|webhooks"
+      ]
+    },
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "workspace"
+      ],
+      "writes": [
+        "s|sch|workspace",
+        "n|sch|workspace",
+        "e|sch|workspace"
       ]
     },
     {
@@ -475,6 +491,26 @@
         "n|rel|channels.connect_choices",
         "n|type|channels.connect_choices",
         "n|rel|channels.connect_choices_pkey"
+      ],
+      "reads": [
+        "n|sch|channels"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "channels",
+        "connect_links"
+      ],
+      "writes": [
+        "s|tbl|channels.connect_links",
+        "n|tbl|channels.connect_links",
+        "e|tbl|channels.connect_links",
+        "n|rel|channels.connect_links",
+        "n|type|channels.connect_links",
+        "n|rel|channels.connect_links_pkey",
+        "n|rel|channels.connect_links_token"
       ],
       "reads": [
         "n|sch|channels"
@@ -864,6 +900,104 @@
       ],
       "reads": [
         "n|sch|webhooks"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "workspace",
+        "partner_idempotency_keys"
+      ],
+      "writes": [
+        "s|tbl|workspace.partner_idempotency_keys",
+        "n|tbl|workspace.partner_idempotency_keys",
+        "e|tbl|workspace.partner_idempotency_keys",
+        "n|rel|workspace.partner_idempotency_keys",
+        "n|type|workspace.partner_idempotency_keys",
+        "n|rel|workspace.partner_idempotency_keys_pkey"
+      ],
+      "reads": [
+        "n|sch|workspace"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "workspace",
+        "partner_keys"
+      ],
+      "writes": [
+        "s|tbl|workspace.partner_keys",
+        "n|tbl|workspace.partner_keys",
+        "e|tbl|workspace.partner_keys",
+        "n|rel|workspace.partner_keys",
+        "n|type|workspace.partner_keys",
+        "n|rel|workspace.partner_keys_pkey",
+        "n|rel|workspace.partner_keys_digest"
+      ],
+      "reads": [
+        "n|sch|workspace"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "workspace",
+        "partner_usage_days"
+      ],
+      "writes": [
+        "s|tbl|workspace.partner_usage_days",
+        "n|tbl|workspace.partner_usage_days",
+        "e|tbl|workspace.partner_usage_days",
+        "n|rel|workspace.partner_usage_days",
+        "n|type|workspace.partner_usage_days",
+        "n|rel|workspace.partner_usage_days_pkey"
+      ],
+      "reads": [
+        "n|sch|workspace"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "workspace",
+        "partner_workspaces"
+      ],
+      "writes": [
+        "s|tbl|workspace.partner_workspaces",
+        "n|tbl|workspace.partner_workspaces",
+        "e|tbl|workspace.partner_workspaces",
+        "n|rel|workspace.partner_workspaces",
+        "n|type|workspace.partner_workspaces",
+        "n|rel|workspace.partner_workspaces_pkey",
+        "n|rel|workspace.partner_workspaces_external_id"
+      ],
+      "reads": [
+        "n|sch|workspace"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "workspace",
+        "partners"
+      ],
+      "writes": [
+        "s|tbl|workspace.partners",
+        "n|tbl|workspace.partners",
+        "e|tbl|workspace.partners",
+        "n|rel|workspace.partners",
+        "n|type|workspace.partners",
+        "n|rel|workspace.partners_pkey",
+        "n|rel|workspace.partners_workspace"
+      ],
+      "reads": [
+        "n|sch|workspace"
       ]
     },
     {
@@ -1908,6 +2042,67 @@
       "statementType": "create_index",
       "statementTarget": [
         "index",
+        "channels",
+        "connect_links",
+        "connect_links_workspace"
+      ],
+      "writes": [
+        "s|idx|channels.connect_links_workspace",
+        "n|idx|channels.connect_links_workspace",
+        "e|idx|channels.connect_links_workspace",
+        "n|rel|channels.connect_links_workspace"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_links",
+        "n|sch|channels",
+        "n|col|channels.connect_links.workspace_id",
+        "n|col|channels.connect_links.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "channels",
+        "connect_links",
+        "connect_links_expires_at"
+      ],
+      "writes": [
+        "s|idx|channels.connect_links_expires_at",
+        "n|idx|channels.connect_links_expires_at",
+        "e|idx|channels.connect_links_expires_at",
+        "n|rel|channels.connect_links_expires_at"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_links",
+        "n|sch|channels",
+        "n|col|channels.connect_links.expires_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "channels",
+        "connect_links",
+        "connect_links_created_by"
+      ],
+      "writes": [
+        "s|idx|channels.connect_links_created_by",
+        "n|idx|channels.connect_links_created_by",
+        "e|idx|channels.connect_links_created_by",
+        "n|rel|channels.connect_links_created_by"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_links",
+        "n|sch|channels",
+        "n|col|channels.connect_links.created_by"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
         "legal",
         "connections",
         "connections_at"
@@ -2456,6 +2651,88 @@
         "n|tbl|webhooks.events",
         "n|sch|webhooks",
         "n|col|webhooks.events.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "workspace",
+        "partner_idempotency_keys",
+        "partner_idempotency_keys_created"
+      ],
+      "writes": [
+        "s|idx|workspace.partner_idempotency_keys_created",
+        "n|idx|workspace.partner_idempotency_keys_created",
+        "e|idx|workspace.partner_idempotency_keys_created",
+        "n|rel|workspace.partner_idempotency_keys_created"
+      ],
+      "reads": [
+        "n|tbl|workspace.partner_idempotency_keys",
+        "n|sch|workspace",
+        "n|col|workspace.partner_idempotency_keys.created_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "workspace",
+        "partner_keys",
+        "partner_keys_partner"
+      ],
+      "writes": [
+        "s|idx|workspace.partner_keys_partner",
+        "n|idx|workspace.partner_keys_partner",
+        "e|idx|workspace.partner_keys_partner",
+        "n|rel|workspace.partner_keys_partner"
+      ],
+      "reads": [
+        "n|tbl|workspace.partner_keys",
+        "n|sch|workspace",
+        "n|col|workspace.partner_keys.partner_id",
+        "n|col|workspace.partner_keys.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "workspace",
+        "partner_keys",
+        "partner_keys_created_by"
+      ],
+      "writes": [
+        "s|idx|workspace.partner_keys_created_by",
+        "n|idx|workspace.partner_keys_created_by",
+        "e|idx|workspace.partner_keys_created_by",
+        "n|rel|workspace.partner_keys_created_by"
+      ],
+      "reads": [
+        "n|tbl|workspace.partner_keys",
+        "n|sch|workspace",
+        "n|col|workspace.partner_keys.created_by"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "workspace",
+        "partner_workspaces",
+        "partner_workspaces_partner"
+      ],
+      "writes": [
+        "s|idx|workspace.partner_workspaces_partner",
+        "n|idx|workspace.partner_workspaces_partner",
+        "e|idx|workspace.partner_workspaces_partner",
+        "n|rel|workspace.partner_workspaces_partner"
+      ],
+      "reads": [
+        "n|tbl|workspace.partner_workspaces",
+        "n|sch|workspace",
+        "n|col|workspace.partner_workspaces.partner_id",
+        "n|col|workspace.partner_workspaces.created_at"
       ]
     },
     {
@@ -3184,6 +3461,98 @@
       "statementType": "create_fk",
       "statementTarget": [
         "table",
+        "workspace",
+        "partner_idempotency_keys"
+      ],
+      "writes": [
+        "s|fk|workspace.partner_idempotency_keys.partner_idempotency_keys_partner_id_partners_id_fkey",
+        "n|fk|workspace.partner_idempotency_keys.partner_idempotency_keys_partner_id_partners_id_fkey",
+        "e|fk|workspace.partner_idempotency_keys.partner_idempotency_keys_partner_id_partners_id_fkey",
+        "n|con|workspace.partner_idempotency_keys.partner_idempotency_keys_partner_id_partners_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|workspace.partner_idempotency_keys",
+        "n|sch|workspace",
+        "n|tbl|workspace.partners",
+        "n|sch|workspace",
+        "n|col|workspace.partner_idempotency_keys.partner_id",
+        "n|col|workspace.partners.id",
+        "e|uniqueness|workspace.partners.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "workspace",
+        "partner_keys"
+      ],
+      "writes": [
+        "s|fk|workspace.partner_keys.partner_keys_partner_id_partners_id_fkey",
+        "n|fk|workspace.partner_keys.partner_keys_partner_id_partners_id_fkey",
+        "e|fk|workspace.partner_keys.partner_keys_partner_id_partners_id_fkey",
+        "n|con|workspace.partner_keys.partner_keys_partner_id_partners_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|workspace.partner_keys",
+        "n|sch|workspace",
+        "n|tbl|workspace.partners",
+        "n|sch|workspace",
+        "n|col|workspace.partner_keys.partner_id",
+        "n|col|workspace.partners.id",
+        "e|uniqueness|workspace.partners.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "workspace",
+        "partner_usage_days"
+      ],
+      "writes": [
+        "s|fk|workspace.partner_usage_days.partner_usage_days_partner_id_partners_id_fkey",
+        "n|fk|workspace.partner_usage_days.partner_usage_days_partner_id_partners_id_fkey",
+        "e|fk|workspace.partner_usage_days.partner_usage_days_partner_id_partners_id_fkey",
+        "n|con|workspace.partner_usage_days.partner_usage_days_partner_id_partners_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|workspace.partner_usage_days",
+        "n|sch|workspace",
+        "n|tbl|workspace.partners",
+        "n|sch|workspace",
+        "n|col|workspace.partner_usage_days.partner_id",
+        "n|col|workspace.partners.id",
+        "e|uniqueness|workspace.partners.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "workspace",
+        "partner_workspaces"
+      ],
+      "writes": [
+        "s|fk|workspace.partner_workspaces.partner_workspaces_partner_id_partners_id_fkey",
+        "n|fk|workspace.partner_workspaces.partner_workspaces_partner_id_partners_id_fkey",
+        "e|fk|workspace.partner_workspaces.partner_workspaces_partner_id_partners_id_fkey",
+        "n|con|workspace.partner_workspaces.partner_workspaces_partner_id_partners_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|workspace.partner_workspaces",
+        "n|sch|workspace",
+        "n|tbl|workspace.partners",
+        "n|sch|workspace",
+        "n|col|workspace.partner_workspaces.partner_id",
+        "n|col|workspace.partners.id",
+        "e|uniqueness|workspace.partners.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
         "auth",
         "account"
       ],
@@ -3641,6 +4010,10 @@
       "entityType": "schemas"
     },
     {
+      "name": "workspace",
+      "entityType": "schemas"
+    },
+    {
       "name": "auth",
       "entityType": "schemas"
     },
@@ -3743,6 +4116,12 @@
     {
       "schema": "channels",
       "name": "connect_choices",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "channels",
+      "name": "connect_links",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -3863,6 +4242,36 @@
     {
       "schema": "webhooks",
       "name": "events",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "workspace",
+      "name": "partner_idempotency_keys",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "workspace",
+      "name": "partner_keys",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "workspace",
+      "name": "partner_usage_days",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "workspace",
+      "name": "partner_workspaces",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "workspace",
+      "name": "partners",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -6076,6 +6485,240 @@
     {
       "schema": "channels",
       "table": "connect_choices",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "browser_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "channel_ids",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connection",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "created_by",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "ended_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "expires_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "failed_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "failure_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "locale",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "platform",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "return_url",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "starts",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "token_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
@@ -8390,6 +9033,19 @@
     {
       "schema": "webhooks",
       "table": "endpoints",
+      "name": "scope",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'workspace'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
       "name": "secret",
       "type": "text",
       "typeSchema": null,
@@ -8468,6 +9124,19 @@
     {
       "schema": "webhooks",
       "table": "events",
+      "name": "external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
       "name": "id",
       "type": "uuid",
       "typeSchema": null,
@@ -8520,6 +9189,396 @@
     {
       "schema": "webhooks",
       "table": "events",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_idempotency_keys",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_idempotency_keys",
+      "name": "key_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_idempotency_keys",
+      "name": "partner_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_idempotency_keys",
+      "name": "request_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_idempotency_keys",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "created_by",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "expires_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "key_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "partner_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "permissions",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "scopes",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "start",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_usage_days",
+      "name": "channels",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_usage_days",
+      "name": "day",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_usage_days",
+      "name": "partner_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_usage_days",
+      "name": "workspaces",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_workspaces",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_workspaces",
+      "name": "external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_workspaces",
+      "name": "partner_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_workspaces",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partners",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partners",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partners",
+      "name": "logo_url",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partners",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partners",
+      "name": "return_origins",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partners",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "workspace",
+      "table": "partners",
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
@@ -12199,6 +13258,76 @@
       "entityType": "indexes"
     },
     {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_expires_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "expires_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_created_by",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_by",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"created_by\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "legal",
       "table": "connections",
       "name": "connections_at",
@@ -12850,6 +13979,104 @@
       "columns": [
         {
           "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_idempotency_keys",
+      "name": "partner_idempotency_keys_created",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "partner_keys_partner",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "partner_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "partner_keys_created_by",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_by",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_workspaces",
+      "name": "partner_workspaces_partner",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "partner_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "created_at",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -13578,6 +14805,74 @@
       "entityType": "fks"
     },
     {
+      "schema": "workspace",
+      "table": "partner_idempotency_keys",
+      "name": "partner_idempotency_keys_partner_id_partners_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "partner_id"
+      ],
+      "schemaTo": "workspace",
+      "tableTo": "partners",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "partner_keys_partner_id_partners_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "partner_id"
+      ],
+      "schemaTo": "workspace",
+      "tableTo": "partners",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_usage_days",
+      "name": "partner_usage_days_partner_id_partners_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "partner_id"
+      ],
+      "schemaTo": "workspace",
+      "tableTo": "partners",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_workspaces",
+      "name": "partner_workspaces_partner_id_partners_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "partner_id"
+      ],
+      "schemaTo": "workspace",
+      "tableTo": "partners",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "entityType": "fks"
+    },
+    {
       "schema": "auth",
       "table": "account",
       "name": "account_user_id_user_id_fkey",
@@ -13974,11 +15269,31 @@
       "entityType": "pks"
     },
     {
+<<<<<<<< HEAD:packages/peal-server/drizzle/20261110054621_initial/snapshot.json
       "schema": "activity",
       "table": "events",
       "name": "events_pkey",
       "columns": [
         "id"
+========
+      "schema": "workspace",
+      "table": "partner_idempotency_keys",
+      "name": "partner_idempotency_keys_pkey",
+      "columns": [
+        "partner_id",
+        "key_digest"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_usage_days",
+      "name": "partner_usage_days_pkey",
+      "columns": [
+        "partner_id",
+        "day"
+>>>>>>>> origin/feat/embedding-kit:packages/peal-server/drizzle/20261110054242_initial/snapshot.json
       ],
       "nameExplicit": false,
       "entityType": "pks"
@@ -14099,6 +15414,16 @@
       "name": "connect_choices_pkey",
       "columns": [
         "selection_hash"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_pkey",
+      "columns": [
+        "id"
       ],
       "nameExplicit": false,
       "entityType": "pks"
@@ -14257,6 +15582,36 @@
       "schema": "webhooks",
       "table": "events",
       "name": "events_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "partner_keys_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_workspaces",
+      "name": "partner_workspaces_pkey",
+      "columns": [
+        "workspace_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "workspace",
+      "table": "partners",
+      "name": "partners_pkey",
       "columns": [
         "id"
       ],
@@ -14468,6 +15823,17 @@
     },
     {
       "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_token",
+      "nameExplicit": true,
+      "columns": [
+        "token_digest"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "channels",
       "table": "data_deletions",
       "name": "data_deletions_request_digest",
       "nameExplicit": true,
@@ -14521,6 +15887,40 @@
       "nameExplicit": true,
       "columns": [
         "key"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_keys",
+      "name": "partner_keys_digest",
+      "nameExplicit": true,
+      "columns": [
+        "key_digest"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_workspaces",
+      "name": "partner_workspaces_external_id",
+      "nameExplicit": true,
+      "columns": [
+        "partner_id",
+        "external_id"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "workspace",
+      "table": "partners",
+      "name": "partners_workspace",
+      "nameExplicit": true,
+      "columns": [
+        "workspace_id"
       ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
@@ -14699,6 +16099,27 @@
       "entityType": "checks"
     },
     {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_status",
+      "value": "\"status\" IN ('pending', 'completed', 'revoked')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_ended",
+      "value": "(\"status\" = 'pending') = (\"ended_at\" IS NULL)",
+      "entityType": "checks"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_starts",
+      "value": "\"starts\" >= 0",
+      "entityType": "checks"
+    },
+    {
       "schema": "media",
       "table": "media_assets",
       "name": "media_assets_status",
@@ -14764,8 +16185,22 @@
     {
       "schema": "webhooks",
       "table": "endpoints",
+      "name": "endpoints_scope",
+      "value": "\"scope\" IN ('workspace', 'partner')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
       "name": "endpoints_disabled",
       "value": "(\"status\" = 'disabled') = (\"disabled_reason\" IS NOT NULL AND \"disabled_at\" IS NOT NULL)",
+      "entityType": "checks"
+    },
+    {
+      "schema": "workspace",
+      "table": "partner_usage_days",
+      "name": "partner_usage_days_counts",
+      "value": "\"channels\" >= 0 AND \"workspaces\" >= 0",
       "entityType": "checks"
     }
   ]

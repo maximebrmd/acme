@@ -12,6 +12,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
+import { PartnerOwnershipLive } from "#workspace/container.ts";
 import {
   BetterAuth,
   BetterAuthLive,
@@ -63,7 +64,9 @@ const authWith = (env: Record<string, string>) =>
     Layer.provide(
       Layer.mergeAll(
         BillingLive.pipe(
-          Layer.provide(StripeCheckoutsLive),
+          Layer.provide(
+            Layer.mergeAll(StripeCheckoutsLive, PartnerOwnershipLive)
+          ),
           // Signing in records no subscription.
           Layer.provide(
             Layer.succeed(

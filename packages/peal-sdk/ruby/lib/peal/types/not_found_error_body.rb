@@ -9,9 +9,7 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::WebhookEndpointNotFoundEncoded }, key: "WEBHOOK_ENDPOINT_NOT_FOUND"
-
-      member -> { Peal::Types::WebhookDeliveryNotFoundEncoded }, key: "WEBHOOK_DELIVERY_NOT_FOUND"
+      member -> { Peal::Types::ConnectLinkNotFoundEncoded }, key: "CONNECT_LINK_NOT_FOUND"
 
       member -> { Peal::Types::WorkspaceNotFoundEncoded }, key: "WORKSPACE_NOT_FOUND"
     end

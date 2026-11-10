@@ -34,7 +34,6 @@ import social.peal.errors.UnauthorizedError;
 import social.peal.resources.invitations.requests.ListInvitationsRequest;
 import social.peal.resources.invitations.requests.NewInvitation;
 import social.peal.resources.invitations.requests.RevokeInvitationsRequest;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.Invitation;
 import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.UnauthenticatedEncoded;
@@ -118,8 +117,7 @@ public class RawInvitationsClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -208,8 +206,7 @@ public class RawInvitationsClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -309,8 +306,7 @@ public class RawInvitationsClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

@@ -9,6 +9,7 @@ import { connectChannel, failureOf } from "#channels/channels-api.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
 import { rememberConnection } from "#channels/pending-connection.ts";
 import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
+import { forgetLink } from "#connect-link/pending-link.ts";
 
 /**
  * Starts a connection, then leaves for the platform's sign-in page: from
@@ -33,6 +34,9 @@ export const useConnect = (workspaceId: string, platform: Platform) => {
 
       if (exit._tag === "Success") {
         setError(null);
+        // This tab is on a member's own connection now, whatever link it
+        // opened before.
+        forgetLink();
         rememberConnection({ platform, workspaceId });
         globalThis.location.assign(exit.value.authorizationUrl);
 

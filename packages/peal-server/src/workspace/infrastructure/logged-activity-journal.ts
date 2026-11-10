@@ -8,21 +8,33 @@ import type { Principal } from "#workspace/domain/principal.ts";
 
 // Who asked, as the log names them: the member staff act as is the actor,
 // and the log says staff asked, never who.
-const whoOf = (principal: Principal) =>
-  principal._tag === "ApiKeyPrincipal"
-    ? {
-        actor: { _tag: "apiKey" as const, apiKeyId: principal.apiKeyId },
-        clientId: Option.none<string>(),
-        impersonated: false,
-      }
-    : {
-        actor: {
-          _tag: "user" as const,
-          userId: Option.some(principal.userId),
-        },
-        clientId: principal.oauth.pipe(Option.map(({ clientId }) => clientId)),
-        impersonated: Option.isSome(principal.impersonatedBy),
-      };
+const whoOf = (principal: Principal) => {
+  if (principal._tag === "ApiKeyPrincipal") {
+    return {
+      actor: { _tag: "apiKey" as const, apiKeyId: principal.apiKeyId },
+      clientId: Option.none<string>(),
+      impersonated: false,
+    };
+  }
+
+  // A partner key, by its own id.
+  if (principal._tag === "PartnerKeyPrincipal") {
+    return {
+      actor: { _tag: "apiKey" as const, apiKeyId: principal.partnerKeyId },
+      clientId: Option.none<string>(),
+      impersonated: false,
+    };
+  }
+
+  return {
+    actor: {
+      _tag: "user" as const,
+      userId: Option.some(principal.userId),
+    },
+    clientId: principal.oauth.pipe(Option.map(({ clientId }) => clientId)),
+    impersonated: Option.isSome(principal.impersonatedBy),
+  };
+};
 
 interface Answer {
   readonly errorCode: Option.Option<string>;

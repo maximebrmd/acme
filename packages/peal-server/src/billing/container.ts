@@ -37,6 +37,7 @@ import { DrizzleWithdrawalsLive } from "#billing/infrastructure/drizzle-withdraw
 import { EmailedRequestMailLive } from "#billing/infrastructure/emailed-request-mail.ts";
 import { KeyedContractReferencesLive } from "#billing/infrastructure/keyed-contract-references.ts";
 import { NotifiedBillingNoticesLive } from "#billing/infrastructure/notified-billing-notices.ts";
+import { PartnerPlanHoldersLive } from "#billing/infrastructure/partner-plan-holders.ts";
 import { PlanUpgradePathsLive } from "#billing/infrastructure/plan-upgrade-paths.ts";
 import { RandomRequestTokensLive } from "#billing/infrastructure/random-request-tokens.ts";
 import { StripeContractsLive } from "#billing/infrastructure/stripe-contracts-live.ts";
@@ -66,25 +67,27 @@ const RecordsLive = Layer.mergeAll(
  * subscription calls Stripe too, to keep trials from charging and to end
  * a trial a paid plan replaces. Billing is on
  * when the server has a Stripe key, read when it starts. Needs the database
- * (Drizzle and SqlClient), migrated, and the Checkouts the sign-in
- * service's Stripe plugin keeps, which the composition root brings from the
- * workspace context.
+ * (Drizzle and SqlClient), migrated, and, from the workspace context, the
+ * Checkouts the sign-in service's Stripe plugin keeps and PartnerOwnership,
+ * which says whose plan a partner's workspace is on: the composition root
+ * brings both.
  */
 export const BillingLive = Layer.mergeAll(
-  WorkspaceEntitlements.layer,
+  WorkspaceEntitlements.layerShared,
   RecordSubscription.layer,
   CheckoutOrders.layer,
   BillingRecords.layer,
   MeteredPosts.layer,
   PurgeContractRecords.layer,
-  PlanUpgradePathsLive.pipe(Layer.provide(WorkspaceEntitlements.layer))
+  PlanUpgradePathsLive.pipe(Layer.provide(WorkspaceEntitlements.layerShared))
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
       RecordsLive,
       StripeContractsLive,
       KeyedPseudonymsLive,
-      UsageAtCheckout.layer
+      UsageAtCheckout.layer,
+      PartnerPlanHoldersLive
     )
   )
 );

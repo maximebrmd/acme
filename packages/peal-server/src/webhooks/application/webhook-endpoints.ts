@@ -22,6 +22,7 @@ import {
   rotateSecret,
 } from "#webhooks/domain/webhook-endpoint.ts";
 import type {
+  EndpointScope,
   EndpointSettings,
   WebhookEndpoint,
 } from "#webhooks/domain/webhook-endpoint.ts";
@@ -31,10 +32,12 @@ import { parseWebhookUrl } from "#webhooks/domain/webhook-url.ts";
 import { dispatch } from "./dispatch.ts";
 import { EndpointDisabled } from "./endpoint-disabled.ts";
 import { EndpointNotFound } from "./endpoint-not-found.ts";
+import { PartnerScopeUnavailable } from "./partner-scope-unavailable.ts";
 import type { DeliveryJobs } from "./ports/delivery-jobs.ts";
 import { DeliveryStore } from "./ports/delivery-store.ts";
 import { EndpointSecrets } from "./ports/endpoint-secrets.ts";
 import { EndpointStore } from "./ports/endpoint-store.ts";
+import { EventOrigins } from "./ports/event-origins.ts";
 import { ManualSends } from "./ports/manual-sends.ts";
 import { WebhookTransport } from "./ports/webhook-transport.ts";
 import type { SecretsNotConfigured } from "./secrets-not-configured.ts";
@@ -44,11 +47,13 @@ import type { UrlNotDeliverable } from "./url-not-deliverable.ts";
 
 /** A new endpoint, as a member asks for one: its address not yet checked. */
 export interface NewEndpoint extends Omit<EndpointSettings, "url"> {
+  /** What it hears: its workspace's events, unless `partner` says more. */
+  readonly scope?: EndpointScope;
   readonly url: string;
 }
 
 /** What to change of an endpoint: what is left out stays. */
-export type EndpointChange = Partial<NewEndpoint>;
+export type EndpointChange = Partial<Omit<NewEndpoint, "scope">>;
 
 /** An endpoint with its signing secret, as it is shown once. */
 export interface EndpointWithSecret {
@@ -98,7 +103,9 @@ export class WebhookEndpoints extends Context.Service<
      * Adds an endpoint, with a new secret, which the answer shows this
      * once. Its address must be one Peal delivers to, and the workspace
      * have fewer than `maxEndpointsPerWorkspace`, counted in turn with its
-     * other additions.
+     * other additions. One of the `partner` scope, which hears every
+     * workspace a partner owns, is added to the partner's home workspace
+     * only.
      */
     readonly create: (
       actor: Actor,
@@ -107,6 +114,7 @@ export class WebhookEndpoints extends Context.Service<
       EndpointWithSecret,
       | DatabaseError
       | MissingPermission
+      | PartnerScopeUnavailable
       | SecretsNotConfigured
       | TooManyEndpoints
       | UrlRefused
@@ -167,6 +175,7 @@ export class WebhookEndpoints extends Context.Service<
       const manual = yield* ManualSends;
       const secrets = yield* EndpointSecrets;
       const transport = yield* WebhookTransport;
+      const origins = yield* EventOrigins;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<DeliveryJobs | DeliveryStore | Ids>();
 
@@ -203,13 +212,25 @@ export class WebhookEndpoints extends Context.Service<
       ) {
         yield* managing(actor);
 
-        const url = yield* deliverable(asked.url);
+        const { scope = "workspace", ...settings } = asked;
+
+        if (
+          scope === "partner" &&
+          !(yield* origins.isPartnerHome(actor.workspaceId))
+        ) {
+          return yield* new PartnerScopeUnavailable({
+            workspaceId: actor.workspaceId,
+          });
+        }
+
+        const url = yield* deliverable(settings.url);
 
         const endpoint = createEndpoint(
           yield* newId(WebhookEndpointIdSchema),
           actor.workspaceId,
-          { ...asked, url },
-          yield* DateTime.now
+          { ...settings, url },
+          yield* DateTime.now,
+          scope
         );
 
         const issued = yield* secrets.issue(endpoint.id);

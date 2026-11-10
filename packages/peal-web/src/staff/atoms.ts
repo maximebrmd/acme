@@ -17,6 +17,9 @@ export const resendVerification = PealApi.mutation(
 
 export const impersonateUser = PealApi.mutation("staff", "impersonate");
 
+// Opens a partner account for a workspace.
+export const grantPartner = PealApi.mutation("staff", "grantPartner");
+
 // Records a legal request, then answers it: for staff who hold the legal
 // role.
 export const answerLegalRequest = PealApi.mutation("legal", "answer");

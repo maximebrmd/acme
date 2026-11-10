@@ -376,6 +376,31 @@ peal activity list --actor <user-id|api-key-id> --json
 - `--operation` ne garde qu’une opération, comme `posts.schedule`, ou `mcp.create_draft` pour un outil du point d’accès MCP ; `--actor` ne garde que ce qu’a demandé un membre, désigné par son identifiant d’utilisateur, ou une clé d’API, désignée par le sien.
 - `--limit` prend 100 au plus. Quand il en reste, la dernière ligne donne la commande de la page suivante, avec son `--cursor`.
 
+## Liens de connexion [#links]
+
+```sh
+peal links create --platform linkedin
+peal links create --platform mastodon --hours 24 --locale fr
+peal links create --platform instagram --channel <channel-id>
+peal links list
+peal links show <link-id>
+peal links revoke <link-id>
+```
+
+- `peal links create` crée un [lien de connexion](/channels#connect-links) : une page hébergée où le propriétaire d’un compte de cette plateforme le connecte à l’espace de travail, sans compte Peal. Elle affiche l’adresse du lien, une seule fois : remettez-la par un canal de confiance. Pour les membres qui peuvent connecter des canaux.
+- `--hours` dit combien de temps il fonctionne, de 1 à 720 (168 par défaut) ; `--locale` la langue dans laquelle sa page s’ouvre ; `--channel` reconnecte ce canal au lieu de connecter un nouveau compte ; `--return-url` où la page renvoie la personne une fois terminé, une adresse sur une origine que le compte partenaire de l’espace de travail a enregistrée.
+- `peal links list` montre ceux qui attendent, et ceux utilisés, révoqués ou expirés depuis moins de 30 jours ; `show` dit quels canaux un lien a connectés, ou comment sa dernière connexion a échoué ; `revoke` en reprend un.
+
+## Compte partenaire [#partner]
+
+```sh
+peal partner show
+peal partner keys
+peal partner workspaces --external-id cus_42
+```
+
+Pour les propriétaires et administrateurs d’un espace de travail qui a un [compte partenaire](/embedding) : `show` affiche ce que voient ses clients, les origines vers lesquelles les pages hébergées peuvent les renvoyer, et ce qu’il détient ; `keys` liste ses clés, jamais les clés elles-mêmes ; `workspaces` liste les espaces de travail qu’il possède, du plus récent au plus ancien, avec leurs identifiants externes et leurs canaux, `--external-id` en trouvant un exactement et `--name` cherchant. Créer et supprimer ces espaces revient à l’API partenaire, avec une clé partenaire, et créer une clé aux **Paramètres** de l’espace de travail.
+
 ## Vos données [#account]
 
 ```sh

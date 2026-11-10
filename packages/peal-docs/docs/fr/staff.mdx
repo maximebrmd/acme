@@ -50,6 +50,14 @@ L’équipe ne bannit, ne déconnecte ni n’agit jamais à sa propre place, et 
 
 Les points d’accès d’administration de Better Auth sous `/api/auth/admin/` sont désactivés, afin que rien de ce que fait l’équipe n’échappe au journal d’audit ; seul `POST /api/auth/admin/stop-impersonating` reste, que le bandeau appelle.
 
+## Comptes partenaires [#partners]
+
+Un compte partenaire laisse un produit utiliser Peal pour ses propres clients, un espace de travail chacun, par l’API ([Intégrer Peal](/embedding)). La page d’un espace de travail dit où il en est : s’il a un compte partenaire, avec le nombre d’espaces de travail que ce compte possède, ou si un partenaire le possède, avec l’espace de travail principal du partenaire et l’identifiant que le partenaire lui a donné.
+
+**Accorder un compte partenaire** en ouvre un pour l’espace de travail, à son nom, et demande pourquoi, comme chaque action. Les propriétaires et administrateurs de l’espace le nomment ensuite, créent ses clés et enregistrent où les pages hébergées renvoient leurs clients, sous **Paramètres**, puis **Partenaire**. Avec [`PEAL_PARTNER_SELF_SERVICE`](/environment-variables#sign-in) à `true`, ils en ouvrent un eux-mêmes. Le journal d’audit garde chaque octroi avec l’espace de travail.
+
+Un espace de travail que possède un partenaire n’a pas de membres : l’équipe le lit comme tout autre espace de travail, et personne ne peut agir comme l’un de ses membres.
+
 ## Demandes sur les contrats [#contract-requests]
 
 Sur un serveur qui facture, chacun peut résilier un contrat ou s’en rétracter sans se connecter ([Abonnements et facturation](/billing#cancelling)). Une demande qui indique son numéro de contrat, ou dont l’auteur suit le lien envoyé à une adresse qui gère un contrat, est appliquée sans intervention. **Demandes sur les contrats** liste les autres : celles pour lesquelles aucun contrat n’a été trouvé, et celles dont l’auteur n’a pas encore suivi son lien. Chacune montre ce que son auteur a indiqué, et rien d’autre : son nom, l’adresse à laquelle l’accusé de réception a été envoyé, le contrat tel qu’il l’a désigné, la date souhaitée, et le compte associé à cette adresse, s’il existe.

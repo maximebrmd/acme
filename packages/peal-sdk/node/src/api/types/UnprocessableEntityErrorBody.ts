@@ -3,35 +3,15 @@
 import * as Peal from "../index.js";
 
 export type UnprocessableEntityErrorBody = 
-    | Peal.UnprocessableEntityErrorBody.UnsupportedMediaType
-    | Peal.UnprocessableEntityErrorBody.MediaTooLarge
-    | Peal.UnprocessableEntityErrorBody.AltTextTooLong
-    | Peal.UnprocessableEntityErrorBody.MediaSourceNotPublic
-    | Peal.UnprocessableEntityErrorBody.MediaSourceUnreachable
-    | Peal.UnprocessableEntityErrorBody.UploadRejected;
+    | Peal.UnprocessableEntityErrorBody.ConnectFailed
+    | Peal.UnprocessableEntityErrorBody.ReturnUrlNotAllowed;
 
 export namespace UnprocessableEntityErrorBody {
-    export interface UnsupportedMediaType extends Peal.UnsupportedMediaTypeEncoded {
-        _tag: "UnsupportedMediaType";
+    export interface ConnectFailed extends Peal.ConnectFailedEncoded {
+        _tag: "ConnectFailed";
     }
 
-    export interface MediaTooLarge extends Peal.MediaTooLargeEncoded {
-        _tag: "MediaTooLarge";
-    }
-
-    export interface AltTextTooLong extends Peal.AltTextTooLongEncoded {
-        _tag: "AltTextTooLong";
-    }
-
-    export interface MediaSourceNotPublic extends Peal.MediaSourceNotPublicEncoded {
-        _tag: "MediaSourceNotPublic";
-    }
-
-    export interface MediaSourceUnreachable extends Peal.MediaSourceUnreachableEncoded {
-        _tag: "MediaSourceUnreachable";
-    }
-
-    export interface UploadRejected extends Peal.UploadRejectedEncoded {
-        _tag: "UploadRejected";
+    export interface ReturnUrlNotAllowed extends Peal.ReturnUrlNotAllowedEncoded {
+        _tag: "ReturnUrlNotAllowed";
     }
 }

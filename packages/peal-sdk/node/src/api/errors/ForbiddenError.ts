@@ -2,12 +2,9 @@
 
 import * as core from "../../core/index.js";
 import * as errors from "../../errors/index.js";
-import * as Peal from "../index.js";
 
 export class ForbiddenError extends errors.PealError {
-    declare public readonly body: Peal.ForbiddenEncoded;
-
-    constructor(body: Peal.ForbiddenEncoded, rawResponse?: core.RawResponse) {
+    constructor(body?: unknown, rawResponse?: core.RawResponse) {
         super({
             message: "ForbiddenError",
             statusCode: 403,

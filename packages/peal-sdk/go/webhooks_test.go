@@ -42,6 +42,14 @@ func TestSettersNewWebhookEndpoint(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetScope", func(t *testing.T) {
+		obj := &NewWebhookEndpoint{}
+		var fernTestValueScope *WebhookEndpointScope
+		obj.SetScope(fernTestValueScope)
+		assert.Equal(t, fernTestValueScope, obj.Scope)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetURL", func(t *testing.T) {
 		obj := &NewWebhookEndpoint{}
 		var fernTestValueURL string
@@ -154,6 +162,37 @@ func TestSettersMarkExplicitNewWebhookEndpoint(t *testing.T) {
 
 		// Act
 		obj.SetEventTypes(fernTestValueEventTypes)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetScope_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &NewWebhookEndpoint{}
+		var fernTestValueScope *WebhookEndpointScope
+
+		// Act
+		obj.SetScope(fernTestValueScope)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -2059,6 +2098,14 @@ func TestSettersWebhookEndpoint(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetScope", func(t *testing.T) {
+		obj := &WebhookEndpoint{}
+		var fernTestValueScope WebhookEndpointScope
+		obj.SetScope(fernTestValueScope)
+		assert.Equal(t, fernTestValueScope, obj.Scope)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetUpdatedAt", func(t *testing.T) {
 		obj := &WebhookEndpoint{}
 		var fernTestValueUpdatedAt string
@@ -2333,6 +2380,29 @@ func TestGettersWebhookEndpoint(t *testing.T) {
 			}
 		}()
 		_ = obj.GetPreviousSecretExpiresAt() // Should return zero value
+	})
+
+	t.Run("GetScope", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookEndpoint{}
+		var expected WebhookEndpointScope
+		obj.Scope = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetScope(), "getter should return the property value")
+	})
+
+	t.Run("GetScope_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookEndpoint
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetScope() // Should return zero value
 	})
 
 	t.Run("GetUpdatedAt", func(t *testing.T) {
@@ -2640,6 +2710,37 @@ func TestSettersMarkExplicitWebhookEndpoint(t *testing.T) {
 
 		// Act
 		obj.SetPreviousSecretExpiresAt(fernTestValuePreviousSecretExpiresAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetScope_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookEndpoint{}
+		var fernTestValueScope WebhookEndpointScope
+
+		// Act
+		obj.SetScope(fernTestValueScope)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -3681,6 +3782,35 @@ func TestEnumWebhookDisabledReason(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewWebhookDisabledReasonFromString("manual")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumWebhookEndpointScope(t *testing.T) {
+	t.Run("NewFromString_workspace", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEndpointScopeFromString("workspace")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEndpointScope("workspace"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_partner", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEndpointScopeFromString("partner")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEndpointScope("partner"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewWebhookEndpointScopeFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewWebhookEndpointScopeFromString("workspace")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)

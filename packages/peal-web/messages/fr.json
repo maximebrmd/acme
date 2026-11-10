@@ -97,7 +97,8 @@
     }
   },
   "AppShell": {
-    "productName": "Peal"
+    "productName": "Peal",
+    "hostedBy": "Connexion sécurisée par {product}"
   },
   "LanguageSwitcher": {
     "label": "Langue",
@@ -326,6 +327,63 @@
     "connected": "{handle} est connecté.",
     "toChannels": "Retour aux canaux",
     "toWorkspaces": "Retour à vos espaces de travail"
+  },
+  "ConnectLink": {
+    "title": "Connecter un compte",
+    "heading": "Connecter votre compte {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "loading": "Ouverture du lien…",
+    "retry": "Réessayer",
+    "asks": "{host} demande à connecter votre compte {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}, pour y publier pour vous.",
+    "asksAgain": "{host} vous demande de vous reconnecter à {handle} sur {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}, pour continuer à y publier pour vous.",
+    "explains": "Vous allez vous connecter chez {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} et voir ce que vous autorisez. {host} ne voit jamais votre mot de passe. La connexion est assurée par Peal, le service avec lequel {host} publie.",
+    "input": {
+      "instance": {
+        "label": "Votre serveur Mastodon",
+        "hint": "L’adresse du serveur où se trouve votre compte, par exemple mastodon.social."
+      },
+      "handle": {
+        "label": "Votre identifiant Bluesky",
+        "hint": "Par exemple nom.bsky.social."
+      }
+    },
+    "continue": "Continuer vers {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "opening": "Ouverture…",
+    "backTo": "Retour à {host}",
+    "back": "Revenir",
+    "over": {
+      "completed": "Ce lien a déjà servi : le compte est connecté. Vous pouvez fermer cette page.",
+      "expired": "Ce lien a expiré. Demandez-en un nouveau à {host}.",
+      "revoked": "Ce lien ne fonctionne plus. Demandez-en un nouveau à {host}."
+    },
+    "connected": "{count, plural, one {{handles} est connecté.} other {Ces comptes sont connectés : {handles}.}}",
+    "mayClose": "Vous pouvez fermer cette page.",
+    "returning": "Retour en cours…",
+    "continueBack": "Continuer",
+    "failedTitle": "Le compte n’a pas été connecté",
+    "finishing": "Finalisation de la connexion…",
+    "tryAgain": "Réessayer",
+    "errors": {
+      "platformNotSupported": "Les comptes de cette plateforme ne peuvent pas encore être connectés ici.",
+      "notConfigured": "Les comptes de cette plateforme ne peuvent pas être connectés ici pour le moment. Prévenez la personne qui vous a envoyé ce lien.",
+      "invalidInstance": "Ce n’est pas l’adresse d’un serveur. Vérifiez-la, par exemple mastodon.social.",
+      "instanceNotAllowed": "Seuls les serveurs publics, en HTTPS, peuvent être connectés.",
+      "invalidHandle": "Aucun compte ne correspond à cet identifiant.",
+      "invalidState": "Cette connexion a expiré, ou a été lancée dans un autre navigateur. Rouvrez le lien, dans ce navigateur.",
+      "denied": "La connexion a été annulée sur la plateforme.",
+      "authorizationFailed": "La plateforme n’a pas confié le compte. Réessayez.",
+      "accountMismatch": "Vous vous êtes connecté à un autre compte que celui à reconnecter. Réessayez avec ce compte.",
+      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages ; sur YouTube, le compte Google choisi n’a pas de chaîne.",
+      "linkExpired": "Ce lien a expiré. Demandez-en un nouveau à la personne qui vous l’a envoyé.",
+      "linkCompleted": "Ce lien a déjà servi.",
+      "linkRevoked": "Ce lien ne fonctionne plus. Demandez-en un nouveau à la personne qui vous l’a envoyé.",
+      "tooManyAttempts": "Ce lien a été essayé trop de fois. Demandez-en un nouveau à la personne qui vous l’a envoyé.",
+      "planLimit": "Aucun compte de plus ne peut être connecté pour le moment. Prévenez la personne qui vous a envoyé ce lien.",
+      "channelGone": "Le compte à reconnecter a été retiré depuis. Demandez un nouveau lien à la personne qui vous l’a envoyé.",
+      "platformUnreachable": "La plateforme n’a pas répondu. Réessayez dans un instant.",
+      "notFound": "Ce lien n’ouvre rien. Vérifiez que l’adresse est complète, ou demandez un nouveau lien.",
+      "tooMany": "Trop d’essais depuis votre réseau pour le moment. Réessayez dans une heure.",
+      "unknown": "Une erreur est survenue. Réessayez."
+    }
   },
   "MetaChannels": {
     "title": "{platform, select, facebook {Pages Facebook} instagram {Instagram} threads {Threads} other {{platform}}}",
@@ -1196,7 +1254,10 @@
       "tooManyRequests": "Trop de tentatives. Patientez une minute, puis réessayez.",
       "unknown": "Une erreur est survenue. Réessayez.",
       "billingUnavailable": "Stripe n’a pas pu être joint pour clore les paiements encore ouverts d’un espace de travail que ceci supprimerait, donc rien n’a été supprimé. Réessayez dans quelques minutes.",
-      "storeUnavailable": "La suppression n’a pas pu être consignée là où les sauvegardes ne peuvent pas la défaire, donc rien n’a été supprimé. Réessayez dans quelques minutes."
+      "storeUnavailable": "La suppression n’a pas pu être consignée là où les sauvegardes ne peuvent pas la défaire, donc rien n’a été supprimé. Réessayez dans quelques minutes.",
+      "partnerClosed": "Ce serveur ouvre les comptes partenaires par son équipe : demandez-en un aux personnes qui l’exploitent.",
+      "partnerInvalid": "Une valeur ne peut pas être conservée. Vérifiez le nom, l’adresse du logo (HTTPS) et les origines : chacune comme https://hôte, sans rien après, 20 au plus.",
+      "partnerOwnsWorkspaces": "Le compte partenaire d’un espace de travail que cela supprimerait possède encore des espaces de travail. Supprimez chacun par l’API partenaire d’abord."
     },
     "cancellation": {
       "title": "{count, plural, one {La suppression résilie un abonnement} other {La suppression résilie # abonnements}}",
@@ -1221,7 +1282,8 @@
       "members": "Membres",
       "invitations": "Invitations",
       "apiKeys": "Clés d’API",
-      "webhooks": "Webhooks"
+      "webhooks": "Webhooks",
+      "partner": "Partenaire"
     },
     "general": {
       "title": "Nom",
@@ -1308,6 +1370,49 @@
       "copied": "Clé copiée.",
       "copyFailed": "La clé n’a pas pu être copiée. Sélectionnez-la et copiez-la vous-même.",
       "done": "Je l’ai enregistrée"
+    },
+    "partner": {
+      "description": "Un compte partenaire permet à l’un de vos produits d’utiliser Peal pour ses propres clients : un espace de travail pour chacun, créé et utilisé par l’API avec une clé partenaire, et des liens hébergés où ils connectent leurs comptes sociaux sans compte Peal.",
+      "askOperator": "Ce serveur ouvre les comptes partenaires par son équipe : demandez-en un aux personnes qui l’exploitent.",
+      "askOwner": "Cet espace de travail n’a pas de compte partenaire. Un propriétaire ou un administrateur peut en ouvrir un.",
+      "openIntro": "Ouvrez un compte partenaire pour cet espace de travail : il devient l’espace de travail principal du compte, et les espaces que le compte crée partagent son offre.",
+      "name": "Nom",
+      "nameHint": "Ce que vos clients lisent sur les pages hébergées, en 80 caractères au plus.",
+      "open": "Ouvrir le compte partenaire",
+      "opening": "Ouverture…",
+      "usage": "{workspaces, plural, =0 {Aucun espace de travail pour l’instant} one {# espace de travail} other {# espaces de travail}}, {channels, plural, =0 {aucun canal connecté} one {# canal connecté} other {# canaux connectés}} en comptant cet espace de travail.",
+      "accountTitle": "Ce que voient vos clients",
+      "logo": "Adresse du logo",
+      "logoHint": "Une adresse HTTPS, affichée depuis là sur les pages hébergées. Laissez vide pour n’afficher que le nom.",
+      "origins": "Origines de retour",
+      "originsHint": "Une par ligne, comme https://app.example.com : schéma, hôte et port, sans rien après. Une page hébergée ne renvoie vos clients qu’à une adresse située sur l’une d’elles, exactement.",
+      "save": "Enregistrer",
+      "saved": "Le compte partenaire est enregistré.",
+      "keysTitle": "Clés partenaires",
+      "keysHint": "Une clé partenaire crée et lit les espaces de travail de ce compte, et agit dans chacun d’eux. Elle n’agit jamais dans cet espace de travail, ni dans un espace que le compte ne possède pas.",
+      "noKeys": "Le compte n’a aucune clé.",
+      "keyName": "Nom",
+      "keyNameHint": "Ce qui l’utilise, en 80 caractères au plus.",
+      "scopes": "Ce qu’elle peut faire des espaces de travail",
+      "scopesHint": "workspaces:read les liste et les lit, workspaces:write les crée et les modifie, workspaces:delete les supprime avec tout ce qu’ils contiennent.",
+      "permissions": "Ce qu’elle peut faire dans chaque espace de travail",
+      "permissionsHint": "Ce qu’un produit fait pour ses clients. Les membres, les invitations, les clés d’API et les changements de facturation restent aux personnes.",
+      "createKey": "Créer la clé",
+      "creatingKey": "Création…",
+      "keyStartsWith": "Commence par {start}",
+      "keyCreated": "Créée le {created}",
+      "revoke": "Révoquer",
+      "revokeKey": "Révoquer la clé {name}",
+      "revokingKey": "Révocation…",
+      "keyRevoked": "La clé {name} est révoquée.",
+      "workspacesTitle": "Espaces de travail",
+      "noWorkspaces": "Le compte ne possède encore aucun espace de travail. Créez-les par l’API, avec une clé partenaire.",
+      "workspaceLine": "{channels, plural, =0 {Aucun canal} one {# canal} other {# canaux}} · {externalId, select, none {sans identifiant externe} other {identifiant externe {externalId}}}",
+      "moreWorkspaces": "Les {shown} plus récents sur {total}. L’API les liste tous.",
+      "closeTitle": "Fermer le compte partenaire",
+      "closeHint": "Ses clés cessent de fonctionner aussitôt. Un compte ne se ferme qu’une fois qu’il ne possède plus aucun espace de travail : supprimez chacun par l’API d’abord.",
+      "close": "Fermer le compte partenaire",
+      "closing": "Fermeture…"
     }
   },
   "Webhooks": {
@@ -1648,7 +1753,8 @@
       "self": "L’équipe ne fait pas cela à son propre compte.",
       "staff": "L’équipe n’agit jamais à la place d’autres membres de l’équipe.",
       "unknown": "Cela n’a pas marché. Réessayez.",
-      "verified": "Cette adresse est déjà confirmée."
+      "verified": "Cette adresse est déjà confirmée.",
+      "workspaceGone": "Cet espace de travail n’existe plus, ou un partenaire le possède."
     },
     "workspaces": {
       "title": "Espaces de travail",
@@ -1726,7 +1832,7 @@
       "noReason": "Non conservé",
       "until": "Jusqu’au",
       "workspace": "Dans un espace de travail",
-      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} other {{action}}}"
+      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} grantPartner {A accordé un compte partenaire} other {{action}}}"
     },
     "channelStatus": {
       "active": "Fonctionne",
@@ -1848,6 +1954,20 @@
         "now": "jour de la réponse",
         "returned": "{held, plural, =0 {Aucun compte fermé} one {# compte fermé} other {# comptes fermés}}, {connections, plural, =0 {aucune connexion} one {# connexion} other {# connexions}}"
       }
+    },
+    "partner": {
+      "title": "Compte partenaire",
+      "none": "Cet espace de travail n’a pas de compte partenaire, et aucun partenaire ne le possède.",
+      "account": "Son compte partenaire",
+      "workspaces": "Espaces de travail qu’il possède",
+      "owned": "Un partenaire possède cet espace de travail.",
+      "home": "L’espace de travail principal du partenaire",
+      "externalId": "L’identifiant que le partenaire lui a donné",
+      "noExternalId": "Aucun",
+      "grantHint": "Ouvre un compte partenaire pour cet espace de travail, à son nom. Ses propriétaires et administrateurs le nomment ensuite, créent ses clés et enregistrent où les pages hébergées renvoient leurs clients.",
+      "grant": "Accorder un compte partenaire",
+      "granting": "Accord en cours…",
+      "granted": "L’espace de travail a un compte partenaire."
     }
   },
   "Impersonation": {

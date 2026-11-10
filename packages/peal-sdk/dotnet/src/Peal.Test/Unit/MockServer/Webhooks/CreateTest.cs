@@ -37,6 +37,7 @@ public class CreateTest : BaseMockServerTest
                 "failingSince": "failingSince",
                 "id": "id",
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
+                "scope": "workspace",
                 "updatedAt": "updatedAt",
                 "url": "url"
               },
@@ -71,6 +72,7 @@ public class CreateTest : BaseMockServerTest
                     SubscribableWebhookEventType.PostScheduled,
                     SubscribableWebhookEventType.PostScheduled,
                 },
+                Scope = null,
                 Url = "x",
             }
         );
@@ -103,6 +105,7 @@ public class CreateTest : BaseMockServerTest
                 "failingSince": "failingSince",
                 "id": "id",
                 "previousSecretExpiresAt": "previousSecretExpiresAt",
+                "scope": "workspace",
                 "updatedAt": "updatedAt",
                 "url": "url"
               },

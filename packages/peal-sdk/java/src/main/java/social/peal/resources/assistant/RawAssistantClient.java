@@ -32,7 +32,6 @@ import social.peal.errors.UnprocessableEntityError;
 import social.peal.resources.assistant.requests.StatusAssistantRequest;
 import social.peal.resources.assistant.requests.SuggestionRequest;
 import social.peal.types.AssistantStatus;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.Suggestion;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -113,8 +112,7 @@ public class RawAssistantClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -197,8 +195,7 @@ public class RawAssistantClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

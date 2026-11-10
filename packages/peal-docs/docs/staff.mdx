@@ -50,6 +50,14 @@ Staff never ban, sign out or act as themselves, and never act as other staff. No
 
 Better Auth's own admin endpoints under `/api/auth/admin/` are off, so nothing staff do bypasses the audit log; only `POST /api/auth/admin/stop-impersonating` stays, which the banner calls.
 
+## Partner accounts [#partners]
+
+A partner account lets a product use Peal for its own customers, one workspace each, through the API ([Embedding Peal](/embedding)). A workspace's page says where it stands: whether it has a partner account, with how many workspaces that account owns, or whether a partner owns it, with the partner's home workspace and the id the partner gave it.
+
+**Grant a partner account** opens one for the workspace, named after it, and asks why, as every action does. The workspace's owners and admins then name it, create its keys and register where hosted pages send their customers back, under **Settings**, then **Partner**. With [`PEAL_PARTNER_SELF_SERVICE`](/environment-variables#sign-in) set to `true`, they open one themselves. The audit log records each grant with the workspace.
+
+A workspace a partner owns has no members: staff read it as any other workspace, and nobody can act as a member of it.
+
 ## Contract requests [#contract-requests]
 
 On a server that bills, anyone cancels a contract or withdraws from one without signing in ([Plans and billing](/billing#cancelling)). A request that gives its contract number, or whose sender follows the link emailed to an address that manages a contract, is applied without anyone's help. **Contract requests** lists the others: those no contract was found for, and those whose sender has not followed their link yet. Each shows what its sender wrote, and nothing else: their name, the address their acknowledgement went to, the contract as they named it, the day wanted, and the account that address signs in to, if any.

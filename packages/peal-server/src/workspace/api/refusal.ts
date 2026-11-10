@@ -29,6 +29,10 @@ const withoutPermission = (member: Member, permission: Permission) => {
     return `This API key does not have the permission ${permission}. An owner or an admin of the workspace gives it to the key, or creates a key that has it.`;
   }
 
+  if (principal._tag === "partnerKey") {
+    return `This partner key does not have the permission ${permission} in the workspaces its partner owns. An owner or an admin of the partner's workspace creates a key that has it.`;
+  }
+
   return principal.impersonatedBy === null
     ? `Your role in this workspace does not have the permission ${permission}. An owner or an admin of the workspace changes roles, in its settings.`
     : `Staff acting as a member may not do this (permission ${permission}): the member does it themselves.`;

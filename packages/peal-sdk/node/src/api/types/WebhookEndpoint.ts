@@ -12,6 +12,7 @@ export interface WebhookEndpoint {
     failingSince: string | null;
     id: string;
     previousSecretExpiresAt: string | null;
+    scope: Peal.WebhookEndpointScope;
     updatedAt: string;
     url: string;
 }

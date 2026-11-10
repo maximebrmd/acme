@@ -60,6 +60,11 @@ export const viaOf = (principal: Principal): "apiKey" | "oauth" | "session" => {
     return "apiKey";
   }
 
+  // A partner key is a key too.
+  if (principal._tag === "PartnerKeyPrincipal") {
+    return "apiKey";
+  }
+
   return Option.isSome(principal.oauth) ? "oauth" : "session";
 };
 

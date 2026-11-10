@@ -1,0 +1,297 @@
+---
+title: Intégrer Peal
+description: Utilisez Peal dans votre propre produit. Donnez à chacun de vos clients un espace de travail par l’API, laissez-les connecter leurs comptes sociaux sur une page hébergée sans compte Peal, publiez pour eux, et apprenez ce qui s’est passé.
+sidebar:
+  order: 13
+---
+
+Un de vos produits peut publier sur les plateformes sociales pour ses propres clients à travers Peal, sans qu’aucun d’eux ait un compte Peal ni voie l’application de Peal. Vous détenez un **compte partenaire** ; chacun de vos clients est un **espace de travail** qu’il possède ; votre serveur agit dans ces espaces avec une **clé partenaire** ; vos clients connectent leurs comptes sociaux sur une **page hébergée** vers laquelle vous les envoyez ; et Peal dit à votre serveur ce qui se passe par des [webhooks](/webhooks).
+
+```
+votre produit ── clé partenaire ──▶ API de Peal ──▶ un espace de travail par client
+votre client ── lien de connexion ─▶ page hébergée ─▶ connexion chez la plateforme ─▶ retour à votre produit
+Peal ── webhooks ──▶ votre serveur          (channel.connected, post.published, post.failed…)
+```
+
+L’espace de travail est l’unité que Peal isole : ses canaux, ses publications, ses médias, ses statistiques et ses webhooks n’appartiennent qu’à lui, et le supprimer les efface tous. En donner un à chaque client tient les comptes et les publications de l’un hors de portée de tous les autres, par construction plutôt que par un filtre dans votre code.
+
+## Obtenir un compte partenaire [#account]
+
+Un compte partenaire appartient à l’un de vos espaces de travail, son **espace de travail principal** : celui avec lequel vous vous êtes inscrit, où se trouvent les membres de votre équipe. Les propriétaires et administrateurs de cet espace gèrent le compte.
+
+- Sur Peal Cloud, les comptes partenaires sont ouverts par l’équipe de Peal : écrivez-nous en disant ce que vous construisez.
+- Sur un Peal auto-hébergé, l’équipe en accorde un depuis la [console d’administration](/staff#partners), sur la page d’un espace de travail. Mettre [`PEAL_PARTNER_SELF_SERVICE`](/environment-variables#sign-in) à `true` laisse les propriétaires et administrateurs de n’importe quel espace de travail en ouvrir un eux-mêmes, sous **Paramètres**, puis **Partenaire**.
+
+Ensuite, sous **Paramètres**, puis **Partenaire**, dans l’application web :
+
+1. **Nom et logo.** Ce que vos clients lisent sur les pages hébergées : un nom de 80 caractères au plus, et l’adresse HTTPS d’un logo, que leur navigateur charge depuis votre serveur.
+2. **Origines de retour.** Les origines vers lesquelles une page hébergée peut renvoyer vos clients, comme `https://app.example.com` : schéma, hôte et port, sans rien après, 20 au plus. Le simple `http://` n’est accepté que pour `localhost`, pour essayer le parcours en développement. Une page hébergée revient à une adresse située sur l’une de ces origines, exactement, et nulle part ailleurs.
+3. **Une clé partenaire.** Son nom, ce qu’elle peut faire de vos espaces de travail et ce qu’elle peut faire dans chacun. La clé est affichée une seule fois : rangez-la dans les secrets de votre serveur.
+
+Une clé partenaire commence par `peal_partner_`, et s’envoie en `Authorization: Bearer peal_partner_…`. Seul un propriétaire ou un administrateur connecté en crée une, dans l’application web : aucune clé ni aucune application ne crée de clés. Révoquez-en une au même endroit, ou avec `DELETE /api/workspaces/{workspaceId}/partner/keys/{partnerKeyId}` ; elle cesse de fonctionner aussitôt.
+
+| Portée d’une clé    | Ce qu’elle permet                                           |
+| ------------------- | ----------------------------------------------------------- |
+| `workspaces:read`   | Lister et lire les espaces de travail que possède le compte |
+| `workspaces:write`  | Les créer, les renommer, changer leur identifiant externe   |
+| `workspaces:delete` | En supprimer un, avec tout ce qu’il contient                |
+
+Dans chaque espace de travail qu’il possède, une clé partenaire détient les [permissions](/scheduling#roles) que vous avez cochées, parmi celles dont un produit a besoin pour ses clients : `channel:*`, `media:*`, `post:*`, `analytics:read`, `assistant:use`, `webhook:*` et `billing:read`. Elle ne détient jamais ce qui revient aux personnes : les membres, les invitations, les clés d’API, les changements de facturation.
+
+### Ce qu’atteint une clé partenaire [#isolation]
+
+| Avec une clé partenaire                                                    | Réponse                           |
+| -------------------------------------------------------------------------- | --------------------------------- |
+| Un espace de travail que possède son compte partenaire                     | Ce que ses permissions autorisent |
+| Un espace de travail que possède un autre partenaire                       | 404, comme s’il n’existait pas    |
+| Tout autre espace de travail, votre espace principal compris               | 404                               |
+| `/api/me`, les membres, invitations et clés d’API de n’importe quel espace | 403                               |
+
+Dans l’autre sens, une clé d’API d’un espace de travail, la session d’un membre ou un jeton OAuth n’appelle jamais `/api/partner` : 403.
+
+## Créer un espace de travail pour chaque client [#workspaces]
+
+Quand un client s’inscrit chez vous, créez son espace de travail, avec **votre propre identifiant pour lui** comme `externalId`. Peal le conserve, retrouve l’espace par lui, et l’écrit dans chaque [webhook](#webhooks) de cet espace : vous ne tenez aucune table de correspondance entre vos identifiants et ceux de Peal.
+
+```bash
+curl -X POST https://api.example.com/api/partner/workspaces \
+  -H "Authorization: Bearer $PEAL_PARTNER_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: signup-cus_42" \
+  -d '{"name": "Boulangerie Martin", "externalId": "cus_42"}'
+```
+
+```typescript
+import { PealClient } from "peal-sdk";
+
+const peal = new PealClient({
+  token: process.env.PEAL_PARTNER_KEY,
+  baseUrl: "https://api.example.com",
+});
+
+const workspace = await peal.partner.createWorkspace({
+  name: "Boulangerie Martin",
+  externalId: "cus_42",
+  "idempotency-key": "signup-cus_42",
+});
+// workspace.id est ce que tous les autres appels prennent comme workspaceId
+```
+
+```python
+import os
+from peal import Peal
+
+peal = Peal(token=os.environ["PEAL_PARTNER_KEY"], base_url="https://api.example.com")
+
+workspace = peal.partner.create_workspace(
+    name="Boulangerie Martin",
+    external_id="cus_42",
+    idempotency_key="signup-cus_42",
+)
+```
+
+Une création peut être renvoyée sans risque, de deux façons :
+
+- **Par `externalId`.** Il est unique parmi vos espaces de travail. Un second espace avec le même répond 409 `ExternalIdTaken`, dont le `workspaceId` est l’espace qui le porte : une inscription relancée n’en crée jamais deux.
+- **Par `Idempotency-Key`.** Pendant 24 heures, la même clé avec le même corps répond l’espace que la première requête a créé, et n’en crée pas d’autre ; la même clé avec un autre corps répond 409 `IdempotencyKeyReused`.
+
+| Requête                                        | Ce qu’elle fait                                                                                                                                                              |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/partner`                             | Le compte partenaire, et ce qu’il détient : espaces de travail et canaux, maintenant et à la fin de chacun des 35 derniers jours                                             |
+| `GET /api/partner/workspaces`                  | Vos espaces de travail, du plus récent au plus ancien, chacun avec son nombre de canaux : `externalId` en trouve un exactement, `name` cherche, `limit` et `before` paginent |
+| `POST /api/partner/workspaces`                 | En crée un                                                                                                                                                                   |
+| `GET /api/partner/workspaces/{workspaceId}`    | En lit un                                                                                                                                                                    |
+| `PATCH /api/partner/workspaces/{workspaceId}`  | Change son nom ou son identifiant externe (`null` le retire)                                                                                                                 |
+| `DELETE /api/partner/workspaces/{workspaceId}` | Le supprime, avec tout ce qu’il contient ([Retirer un client](#offboard))                                                                                                    |
+
+Une liste répond `total`, ce que les filtres trouvent en tout, et `next` : passez-le comme `before` pour la page suivante, jusqu’à ce qu’il soit null.
+
+```typescript
+const { workspaces } = await peal.partner.listWorkspaces({
+  externalId: "cus_42",
+});
+```
+
+Un espace de travail que vous créez n’a pas de membres : personne ne s’y connecte, et seules vos clés y agissent.
+
+## Laisser un client connecter ses comptes [#connect]
+
+Votre client possède ses comptes sociaux, et lui seul peut s’y connecter. Vous créez un **lien de connexion** pour une plateforme, vous y envoyez son navigateur, et il revient dans votre produit une fois le compte connecté. Il ne voit jamais un champ de mot de passe chez vous, et Peal ne voit jamais son mot de passe non plus : c’est la page de connexion de la plateforme qui le demande.
+
+```typescript
+const { link, url } = await peal.connectLinks.create({
+  workspaceId: workspace.id,
+  platform: "linkedin",
+  returnUrl: "https://app.example.com/settings/social",
+  expiresInHours: 24,
+  locale: "fr",
+});
+// Gardez link.id avec votre client ; redirigez son navigateur vers url.
+```
+
+```python
+created = peal.connect_links.create(
+    workspace_id=workspace.id,
+    platform="linkedin",
+    return_url="https://app.example.com/settings/social",
+    expires_in_hours=24,
+    locale="fr",
+)
+# created.link.id, created.url
+```
+
+| Champ            | Ce que c’est                                                                                                                                             |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `platform`       | L’une des plateformes que [l’instance connecte](/channels#connect)                                                                                       |
+| `returnUrl`      | Où la page le renvoie une fois terminé. Son origine doit être l’une de vos [origines de retour](#account), exactement : 422 `ReturnUrlNotAllowed` sinon. |
+| `expiresInHours` | Combien de temps le lien fonctionne, de 1 à 720 (30 jours) : 168 (une semaine) par défaut                                                                |
+| `locale`         | `en` ou `fr` : la langue dans laquelle la page s’ouvre. Sans elle, celle du visiteur.                                                                    |
+| `channelId`      | Reconnecter ce canal au lieu de connecter un nouveau compte ([Reconnecter](#reconnect))                                                                  |
+| `connection`     | Instagram seulement : `instagramLogin` ou `facebookLogin` ([Instagram](/channels#instagram))                                                             |
+
+L’`url` de la réponse est affichée une seule fois : Peal ne garde qu’une empreinte du jeton qu’elle contient. Demande `channel:connect`.
+
+### Ce que voit votre client [#hosted-page]
+
+1. **Votre nom et votre logo**, et une phrase : vous demandez à connecter son compte de cette plateforme, pour y publier pour lui. Pour Mastodon la page demande son serveur, pour Bluesky son identifiant.
+2. **La page de connexion de la plateforme**, où il se connecte et autorise la connexion.
+3. **Un choix**, quand la connexion a atteint plusieurs comptes (les Pages que gère un utilisateur Facebook, les comptes Instagram qui leur sont liés, les chaînes YouTube d’un compte Google) : il coche ceux à connecter.
+4. **Le retour à votre `returnUrl`.**
+
+La page est en anglais ou en français, ne montre rien de l’application de Peal, et dit que la connexion est assurée par Peal. Elle est tenue hors des moteurs de recherche.
+
+### Quand il revient [#return]
+
+Peal ajoute deux paramètres à votre `returnUrl`, à la place de ceux du même nom :
+
+| Paramètre     | Valeur                                                                       |
+| ------------- | ---------------------------------------------------------------------------- |
+| `peal_link`   | L’identifiant du lien                                                        |
+| `peal_status` | `connected`, `cancelled` (il a choisi de revenir sans connecter) ou `failed` |
+
+**N’importe qui peut écrire ces paramètres** : prenez-les comme une invitation à regarder, jamais comme une preuve, et lisez le lien avec votre clé.
+
+```typescript
+const link = await peal.connectLinks.get({ workspaceId, linkId });
+
+if (link.status === "completed") {
+  // link.channelIds : les canaux qu’il a connectés
+}
+```
+
+| `status` d’un lien | Signification                                                                                   |
+| ------------------ | ----------------------------------------------------------------------------------------------- |
+| `pending`          | Il attend d’être utilisé. `failure` dit comment sa dernière connexion a fini, si elle a échoué. |
+| `completed`        | Il a connecté les canaux de `channelIds`, et n’ouvre plus rien                                  |
+| `revoked`          | Vous l’avez repris                                                                              |
+| `expired`          | Son délai est passé                                                                             |
+
+N’attendez pas le seul navigateur : un client peut fermer l’onglet avant de revenir. Abonnez-vous à [`channel.connected`](/webhooks#channel-connected), que Peal envoie quand le compte est connecté, avec le `workspaceExternalId` de l’espace de travail.
+
+`DELETE /api/workspaces/{workspaceId}/connect-links/{linkId}` révoque un lien ; `GET …/connect-links` liste ceux d’un espace de travail, ceux qui attendent et ceux terminés depuis moins de 30 jours.
+
+### Reconnecter [#reconnect]
+
+Quand une plateforme n’accepte plus l’autorisation d’un canal, Peal envoie [`channel.reconnect_needed`](/webhooks#channel-reconnect-needed). Créez un lien avec le `channelId` de ce canal : sa page nomme le compte, et seule une connexion à ce même compte aboutit, si bien que le canal garde son identifiant, ses publications et ses statistiques.
+
+### Ce qu’est un lien, et ce qu’il n’est pas [#link-security]
+
+- **Un lien est un moyen d’accès.** Quiconque détient son adresse peut connecter un compte à lui à cet espace de travail tant qu’il n’est pas utilisé, révoqué ou expiré. Envoyez-y le navigateur de votre client depuis une page où il est connecté, ou par un canal de confiance ; donnez-lui la durée la plus courte qui convienne ; révoquez ceux dont vous n’avez plus besoin.
+- **Il sert une fois**, par une connexion qui connecte un compte. L’ouvrir ne consomme rien : un aperçu de lien ne le dépense pas.
+- **Il ne donne rien d’autre.** Il ne lit aucune publication, aucun canal ni aucun jeton, et n’atteint aucun autre espace de travail.
+- **Seul le navigateur qui a lancé la connexion la termine.** La réponse de la plateforme, rejouée dans un autre navigateur, ne connecte rien.
+- **Il ne revient que là où vous l’avez dit.** Un `returnUrl` sur une origine que vous n’avez pas enregistrée est refusé à la création du lien : un lien n’envoie jamais personne sur le site de quelqu’un d’autre.
+- La connexion d’un lien peut être lancée 20 fois, et un espace de travail a 100 liens en attente au plus.
+
+Après une connexion, montrez à votre client quel compte a été connecté (`GET …/channels` donne son identifiant), pour qu’il voie si ce n’est pas celui qu’il voulait.
+
+## Publier pour eux [#post]
+
+Dans l’espace de travail d’un client, votre clé utilise les mêmes points d’accès que tout autre client : [médias](/media), [publications](/scheduling), [statistiques](/analytics). Pour publier en un appel, maintenant ou à un instant donné :
+
+```typescript
+const post = await peal.posts.send({
+  workspaceId: workspace.id,
+  "idempotency-key": "campaign-881-cus_42",
+  channelIds: [channelId],
+  content: { text: "Pain frais dès 7 h.", media: [], overrides: [] },
+  when: { _tag: "at", at: "2026-11-12T06:00:00Z", timeZone: "Europe/Paris" },
+});
+```
+
+Peal vérifie la publication auprès de la plateforme de chaque canal avant de l’accepter, et répond toutes les violations d’un coup ([Comment se lisent les refus](/agents#refusals)). Ce qui part est public sur les plateformes : Peal ne peut pas le reprendre.
+
+## Apprendre ce qui s’est passé [#webhooks]
+
+Ajoutez un point de terminaison à votre **espace de travail principal** avec `scope: "partner"` : il entend les événements de chaque espace de travail que possède votre compte partenaire, et ceux de votre espace principal.
+
+```bash
+curl -X POST https://api.example.com/api/workspaces/$HOME_WORKSPACE_ID/webhooks \
+  -H "Authorization: Bearer $HOME_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://hooks.example.com/peal", "eventTypes": ["channel.connected", "channel.reconnect_needed", "post.published", "post.failed", "post.unconfirmed"], "scope": "partner"}'
+```
+
+Une clé partenaire n’agit pas dans votre espace de travail principal : créez le point de terminaison avec une [clé d’API](/settings#api-keys) de l’espace principal qui détient `webhook:manage`. Un point de terminaison avec `scope: "partner"` dans un espace de travail sans compte partenaire répond 404 `PartnerNotFound`.
+
+Chaque corps nomme son espace de travail deux fois : `data.workspaceId`, l’identifiant de Peal, et `workspaceExternalId`, le vôtre, tel qu’il était quand l’événement s’est produit (null quand vous n’en avez pas donné).
+
+```json
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e07",
+  "type": "channel.connected",
+  "version": 1,
+  "timestamp": "2026-11-10T09:14:02.000Z",
+  "workspaceExternalId": "cus_42",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a6f40-11aa-7c3d-8e21-9f0b6a5d4c33",
+    "platform": "linkedin",
+    "reconnected": false
+  }
+}
+```
+
+[Webhooks](/webhooks) dit comment les envois sont signés, vérifiés, relancés et journalisés. Un point de terminaison de l’espace de travail d’un client, avec la portée par défaut, n’entend que cet espace.
+
+## Retirer un client [#offboard]
+
+```typescript
+await peal.partner.deleteWorkspace({ workspaceId: workspace.id });
+```
+
+Supprimer un espace de travail efface, définitivement, tout ce qu’il contient : ses canaux et leurs jetons (révoqués chez les plateformes qui le permettent), ses publications, programmées comprises, qui ne partent alors nulle part, ses médias et leurs fichiers, ses statistiques, ses points de terminaison de webhook et ses liens de connexion. La requête répond 409 `WorkspaceBusy` tant qu’une de ses publications est en cours d’envoi : renvoyez-la un instant plus tard. Son identifiant externe redevient libre ensuite.
+
+Votre compte partenaire ne se ferme, et votre espace de travail principal ne se supprime, qu’une fois que le compte ne possède plus aucun espace de travail : les deux répondent 409 `PartnerOwnsWorkspaces` jusque-là.
+
+## Abonnements et limites [#limits]
+
+Sur une instance qui facture, les espaces de travail que possède votre compte partenaire n’ont pas d’abonnement propre : ils ont **celui de votre espace de travail principal**.
+
+- **Les canaux sont comptés ensemble.** Les canaux de l’abonnement couvrent ceux de votre espace principal et de chaque espace que vous possédez. En connecter un de plus quand ils sont tous pris répond 402 `PlanLimitReached`, et une page hébergée dit qu’aucun compte de plus ne peut être connecté pour le moment.
+- **Les autres limites s’appliquent à chaque espace de travail**, telles que l’abonnement les donne : les publications programmées dans le mois, les médias stockés, les demandes à l’assistant de rédaction par jour.
+- **Au-delà de l’abonnement.** Si votre abonnement devient plus petit que ce que vous détenez, rien n’est supprimé, mais tant que les canaux détenus n’y sont pas revenus, en en déconnectant ou en prenant un abonnement plus grand, vos espaces de travail ne programment et ne publient rien ([Un espace de travail au-delà de son abonnement](/billing#over)).
+
+Un Peal auto-hébergé sans facturation ne limite rien. `GET /api/partner` répond ce que le compte détient chaque jour : ce que compterait un prix à l’espace de travail ou au canal connecté.
+
+## Où sont les choses [#surfaces]
+
+| Pour                                                      | Utilisez                                                                                                                     |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Configurer le compte, créer et révoquer des clés          | L’application web : **Paramètres**, puis **Partenaire**                                                                      |
+| Créer, retrouver, modifier et supprimer des espaces       | `/api/partner`, avec une clé partenaire ; `partner` dans les SDK                                                             |
+| Agir dans un espace de travail                            | `/api/workspaces/{workspaceId}/…`, avec la même clé ; `connectLinks`, `channels`, `media`, `posts`, `analytics` dans les SDK |
+| Lire le compte et ses espaces en tant que personne        | `peal partner show`, `peal partner keys`, `peal partner workspaces` ([ligne de commande](/cli#partner))                      |
+| Créer un lien à la main pour un de vos espaces de travail | `peal links create` ([ligne de commande](/cli#links)), ou l’outil MCP `create_connect_link` ([MCP](/mcp#tools))              |
+
+La [référence de l’API](/reference) liste chaque point d’accès avec ses erreurs. Les SDK sont générés depuis le même contrat, dans huit langages.
+
+### Sans compte partenaire [#agencies]
+
+Les liens de connexion fonctionnent dans n’importe quel espace de travail : un membre qui peut connecter des canaux, ou une clé d’API avec `channel:connect`, en crée un à remettre au propriétaire d’un compte, comme le client d’une agence. Un tel lien ne prend pas de `returnUrl` : sa page se termine en disant que le compte est connecté.
+
+## Pas encore là [#later]
+
+- **Votre propre sélecteur de comptes.** Le choix parmi plusieurs comptes se fait sur la page hébergée de Peal.
+- **Vos propres applications de plateforme.** Vos clients autorisent l’application de Peal sur chaque plateforme, dont l’écran de consentement de la plateforme montre le nom.
+- **Votre propre domaine** pour les pages hébergées, et des pages sans le nom de Peal.

@@ -5,20 +5,19 @@ package social.peal.errors;
 
 import okhttp3.Response;
 import social.peal.core.PealClientApiException;
-import social.peal.types.ForbiddenEncoded;
 
 public final class ForbiddenError extends PealClientApiException {
     /**
      * The body of the response that triggered the exception.
      */
-    private final ForbiddenEncoded body;
+    private final Object body;
 
-    public ForbiddenError(ForbiddenEncoded body) {
+    public ForbiddenError(Object body) {
         super("ForbiddenError", 403, body);
         this.body = body;
     }
 
-    public ForbiddenError(ForbiddenEncoded body, Response rawResponse) {
+    public ForbiddenError(Object body, Response rawResponse) {
         super("ForbiddenError", 403, body, rawResponse);
         this.body = body;
     }
@@ -27,7 +26,7 @@ public final class ForbiddenError extends PealClientApiException {
      * @return the body
      */
     @java.lang.Override
-    public ForbiddenEncoded body() {
+    public Object body() {
         return this.body;
     }
 }

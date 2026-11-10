@@ -8,6 +8,7 @@ from ..types.subscribable_webhook_event_type import SubscribableWebhookEventType
 from ..types.webhook_delivery import WebhookDelivery
 from ..types.webhook_delivery_page import WebhookDeliveryPage
 from ..types.webhook_endpoint import WebhookEndpoint
+from ..types.webhook_endpoint_scope import WebhookEndpointScope
 from ..types.webhook_endpoint_secret import WebhookEndpointSecret
 from .raw_client import AsyncRawWebhooksClient, RawWebhooksClient
 
@@ -70,10 +71,11 @@ class WebhooksClient:
         url: str,
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
+        scope: typing.Optional[WebhookEndpointScope] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookEndpointSecret:
         """
-        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. Needs webhook:manage.
 
         Parameters
         ----------
@@ -86,6 +88,8 @@ class WebhooksClient:
         description : typing.Optional[str]
 
         enabled : typing.Optional[bool]
+
+        scope : typing.Optional[WebhookEndpointScope]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -114,6 +118,7 @@ class WebhooksClient:
             url=url,
             description=description,
             enabled=enabled,
+            scope=scope,
             request_options=request_options,
         )
         return _response.data
@@ -470,10 +475,11 @@ class AsyncWebhooksClient:
         url: str,
         description: typing.Optional[str] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
+        scope: typing.Optional[WebhookEndpointScope] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookEndpointSecret:
         """
-        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+        Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With `scope` `partner`, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (`workspaceExternalId`); any other workspace answers 404 `PartnerNotFound`. Needs webhook:manage.
 
         Parameters
         ----------
@@ -486,6 +492,8 @@ class AsyncWebhooksClient:
         description : typing.Optional[str]
 
         enabled : typing.Optional[bool]
+
+        scope : typing.Optional[WebhookEndpointScope]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -522,6 +530,7 @@ class AsyncWebhooksClient:
             url=url,
             description=description,
             enabled=enabled,
+            scope=scope,
             request_options=request_options,
         )
         return _response.data

@@ -33,7 +33,6 @@ import social.peal.resources.apikeys.requests.NewApiKey;
 import social.peal.resources.apikeys.requests.RevokeApiKeysRequest;
 import social.peal.types.ApiKey;
 import social.peal.types.CreatedApiKey;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.UnauthenticatedEncoded;
 
 public class RawApiKeysClient {
@@ -114,8 +113,7 @@ public class RawApiKeysClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -197,8 +195,7 @@ public class RawApiKeysClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -292,8 +289,7 @@ public class RawApiKeysClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

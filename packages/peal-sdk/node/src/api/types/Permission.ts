@@ -24,6 +24,8 @@ export const Permission = {
         MemberDelete: "member:delete",
         OrganizationUpdate: "organization:update",
         OrganizationDelete: "organization:delete",
+        PartnerRead: "partner:read",
+        PartnerManage: "partner:manage",
         PostRead: "post:read",
         PostCreate: "post:create",
         PostUpdate: "post:update",

@@ -12,7 +12,6 @@ from ..core.request_options import RequestOptions
 from ..errors.forbidden_error import ForbiddenError
 from ..errors.too_many_requests_error import TooManyRequestsError
 from ..errors.unauthorized_error import UnauthorizedError
-from ..types.forbidden_encoded import ForbiddenEncoded
 from ..types.me import Me
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
 from pydantic import ValidationError
@@ -66,9 +65,9 @@ class RawSessionClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -142,9 +141,9 @@ class AsyncRawSessionClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

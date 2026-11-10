@@ -410,6 +410,7 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
         timestamp: DateTime.formatIso(yield* DateTime.now),
         type: "webhook.test",
         version: 1,
+        workspaceExternalId: null,
       });
       assert.lengthOf(yield* transport.sentTo(bystander.host), 0);
     })

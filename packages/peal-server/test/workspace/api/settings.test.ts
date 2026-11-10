@@ -39,6 +39,7 @@ import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { ContextRecords } from "#workspace/application/context-records.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { ErasureLedger } from "#workspace/application/erasure-ledger.ts";
+import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
 import { PasswordCheck } from "#workspace/application/password-check.ts";
 import { PrivacyDeclaration } from "#workspace/application/privacy-declaration.ts";
 import { TooManyPasswordAttempts } from "#workspace/application/too-many-password-attempts.ts";
@@ -427,6 +428,7 @@ const PortsLive = Layer.mergeAll(
     })
   ),
   Ids.layerTest,
+  PartnerOwnership.layerNone,
   // A server that bills, whose operator declared who it is.
   Layer.succeed(
     PrivacyDeclaration,

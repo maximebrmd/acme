@@ -29,7 +29,6 @@ import social.peal.errors.UnprocessableEntityError;
 import social.peal.resources.analytics.requests.PostAnalyticsRequest;
 import social.peal.resources.analytics.requests.SummaryAnalyticsRequest;
 import social.peal.types.AnalyticsSummary;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.PostAnalytics;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -103,8 +102,7 @@ public class RawAnalyticsClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -200,8 +198,7 @@ public class RawAnalyticsClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

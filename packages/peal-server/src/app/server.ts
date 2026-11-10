@@ -16,6 +16,7 @@ import {
 import { ApiAnswersLive } from "#app/answers.ts";
 import { ClientErrorsLive } from "#app/client-errors/live.ts";
 import { ClusterLive } from "#app/cluster.ts";
+import { HostedConnectLive } from "#app/connect-links/live.ts";
 import { ContractRequestsLive } from "#app/contract-requests/live.ts";
 import { CronsLive } from "#app/crons.ts";
 import { DiscoveryLive } from "#app/discovery/live.ts";
@@ -37,6 +38,7 @@ import {
   ChannelOAuthApiLive,
   ChannelsApiLive,
   ChannelsLive,
+  ConnectLinksApiLive,
   DataDeletionApiLive,
   TokenCipherLive,
 } from "#channels/container.ts";
@@ -83,6 +85,7 @@ import {
   AuthRoutesLive,
   CredentialNamesLive,
   ErasureReplayLive,
+  PartnerOwnershipLive,
   StripeCheckoutsLive,
   WorkspaceApiLive,
   WorkspaceLive,
@@ -94,6 +97,7 @@ import {
 // StaffAccess middleware that WorkspaceApiLive provides.
 const WorkspaceGroupsLive = Layer.mergeAll(
   ChannelsApiLive,
+  ConnectLinksApiLive,
   PostsApiLive,
   MediaApiLive,
   NoticesApiLive,
@@ -117,6 +121,7 @@ const ApiLive = HttpApiBuilder.layer(Api, {
     SystemHandlers,
     ClientErrorsLive,
     ContractRequestsLive,
+    HostedConnectLive,
     ChannelOAuthApiLive,
     DataDeletionApiLive,
     WorkspaceGroupsLive,
@@ -137,9 +142,9 @@ export const RoutesLive = Layer.mergeAll(
 );
 
 // Billing, which reads the checkouts the workspace context's Stripe plugin
-// keeps.
+// keeps, and whose plan a partner's workspace is on.
 const BillingContextsLive = BillingLive.pipe(
-  Layer.provide(StripeCheckoutsLive)
+  Layer.provide(Layer.mergeAll(StripeCheckoutsLive, PartnerOwnershipLive))
 );
 
 // The request counts and the workspaces' activity logs, which name the

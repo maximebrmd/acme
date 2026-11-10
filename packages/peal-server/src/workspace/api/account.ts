@@ -7,6 +7,7 @@ import {
   IncorrectPassword,
   LastOwner,
   MediaStoreUnavailable,
+  PartnerOwnsWorkspaces,
   NoticeEventSchema,
   StaffActionSchema,
   TargetOptionsSchema,
@@ -185,6 +186,8 @@ export const AccountHandlers = HttpApiBuilder.group(
                 LastOwner: ({ workspaces }) =>
                   Effect.fail(new LastOwner({ workspaces })),
                 NotSignedIn: () => Effect.fail(new Unauthenticated()),
+                PartnerOwnsWorkspaces: ({ owned }) =>
+                  Effect.fail(new PartnerOwnsWorkspaces({ owned })),
                 SessionRequired: forbidden,
                 TooManyPasswordAttempts: () =>
                   Effect.fail(new TooManyPasswordAttempts()),

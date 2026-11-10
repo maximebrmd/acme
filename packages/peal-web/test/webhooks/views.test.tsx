@@ -45,6 +45,7 @@ const on: WebhookEndpoint = {
   failingSince: null,
   id: "00000000-0000-7000-8000-000000000001",
   previousSecretExpiresAt: null,
+  scope: "workspace",
   updatedAt: at("2026-11-01T09:00:00Z"),
   url: "https://hooks.example.com/peal?source=test",
 };

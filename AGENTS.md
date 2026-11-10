@@ -191,7 +191,7 @@ them:
 | `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters |
 | `channels`      | connected accounts, connect flows, encrypted tokens and their renewal       |
 | `media`         | uploads, storage, probing, alt text, files handed to platforms              |
-| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth                       |
+| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth, partner accounts     |
 | `notifications` | account emails, in-app notices, their emails, notification preferences      |
 | `assistant`     | the writing assistant: prompts, language models, the daily quota            |
 | `shared`        | the kernel the others build on                                              |
@@ -1840,6 +1840,110 @@ and no socket, for tests.
   `workspaces.delete` records nothing: its log went with it.
 - Tests set the clock before 1970 when Postgres is in the layer (the pool's
   periodic sleeps run for every second the test clock moves forward).
+### Partner accounts and connect links
+
+- A partner account lets a product use Peal for its own customers
+  ([Embedding Peal](packages/peal-docs/docs/embedding.mdx)). It belongs to
+  one **home workspace**, whose owners and admins manage it (`partner:read`,
+  `partner:manage`, the second withheld while impersonating), and owns one
+  workspace per customer: a Better Auth organization with no member, tied
+  to it in `workspace.partner_workspaces` with the partner's own id for it
+  (`externalId`, unique per partner). The workspace context's own tables are
+  in the Postgres schema `workspace` (`workspace/infrastructure/schema.ts`);
+  Better Auth's stay in `auth`.
+- An account is opened by staff (`StaffPartners.grant`, the `grantPartner`
+  audit action, `POST /api/admin/workspaces/:workspaceId/partner`), or by
+  the workspace's owners and admins when `PEAL_PARTNER_SELF_SERVICE` is
+  true (`PartnerSettings`); otherwise opening answers `PartnerAccountsClosed`.
+  It prices nothing: `MeterPartnerUsage` (the `workspace.partner-usage`
+  cron) keeps each day's workspaces and channels in
+  `workspace.partner_usage_days`, which `GET /api/partner` answers.
+- A partner key is `peal_partner_` and 32 random bytes, kept as its SHA-256
+  (`partner_keys`), created by a person in their own session only
+  (`PersonRequired` otherwise), shown once. It carries scopes
+  (`workspaces:read`, `:write`, `:delete`) for `/api/partner`, and the
+  permissions it holds in each workspace, out of `partnerKeyPermissions`
+  (`workspace/domain/partner-key.ts`): never members, invitations, API keys
+  or billing changes. `Authentication` answers it as a
+  `PartnerKeyPrincipal`; `WorkspaceAccess` lets it into a workspace its
+  partner owns and answers 404 for every other, the home workspace
+  included (`PartnerOwnership.ownerOf`). `/api/me` and the groups for
+  people answer it 403, and `/api/partner` answers 403 to anything else.
+  `test/workspace/integration/partners.test.ts` holds the matrix: add a
+  new workspace group to it.
+- `PartnerWorkspaces` creates, lists (counts, `externalId`, `name`,
+  `before`), changes and offboards. Creation is idempotent twice over:
+  `externalId` taken answers `ExternalIdTaken` with the workspace's id, and
+  an `Idempotency-Key` answers its first workspace for 24 hours
+  (`partner_idempotency_keys`; another body is `IdempotencyKeyReused`).
+  `OffboardWorkspace` erases through the same erasure as `DeleteWorkspace`
+  (`ContextRecords`), never beside it. A home workspace is not deleted, its
+  owner's account not closed and the partner account not closed while it
+  owns a workspace (`PartnerOwnership.ensureDeletable`,
+  `PartnerOwnsWorkspaces`, 409).
+- A workspace a partner owns takes the home workspace's plan (`PlanHolders`,
+  `WorkspaceEntitlements.layerShared`). Channels are counted across the
+  home workspace and every workspace the partner owns, under the partner's
+  advisory lock (`CustomerWorkspaces.hold`, `ChannelAllowance.sharedWith`,
+  `SharedChannelAllowanceLive`); the other limits apply per workspace. Take
+  the partner's lock before a workspace's, never after. Tests that need no
+  partner keep the unshared layers (`WorkspaceEntitlements.layer`,
+  `PlanChannelAllowanceLive`, `PartnerOwnership.layerNone`,
+  `EventOrigins.layerNone`).
+- A webhook endpoint has a `scope`: `workspace`, or `partner`, in a home
+  workspace only (`PartnerNotFound`, 404, elsewhere), which also hears every
+  workspace the partner owns (`EventOrigins`, which
+  `PartnerEventOrigins` backs). Every payload carries
+  `workspaceExternalId` beside `data`, as it was when the event happened
+  (`events.external_id`). A partner key never acts in the home workspace,
+  so that endpoint is made by a member or the home workspace's API key.
+- A connect link (`ConnectLinks`, `channels.connect_links`) lets whoever
+  holds its address connect one account of one platform to a workspace,
+  and nothing else, without a session: `POST …/connect-links`
+  (channel:connect) answers the address once, and only the SHA-256 of its
+  token is kept. It works once, for a sign-in that connects an account;
+  opening it uses nothing. It lasts 7 days unless told (1 to 720 hours),
+  starts 20 sign-ins at most, and a workspace has 100 pending at most; the
+  `channels.connect-link-retention` cron deletes those ended 30 days ago.
+  With `channelId` it reconnects that channel only. Its actor holds
+  `channel:connect` alone (`linkActor`).
+- A `returnUrl` is refused at creation unless its origin is one the
+  workspace's partner registered, exactly (`ReturnOrigin`, which refuses
+  wildcards; `PartnerOwnership.allowsReturnTo`; `ReturnUrlNotAllowed`), so
+  a link is never an open redirect; a workspace without a partner takes
+  none. The page returns with `peal_link` and `peal_status`, which anyone
+  can write: the partner reads the link with its key, and
+  `channel.connected` tells its server.
+- The hosted steps (`HostedConnectApi`, `/api/connect-links/:token`, with
+  `/start`, `/complete` and `/accounts`) need no credentials.
+  `ConnectLinkIntake` (`src/app/connect-links/`) counts 120 opens and 60
+  steps an hour per address and asks a trusted `Origin` of every step that
+  is not a GET. `start` binds the platform's state to the link and to a
+  nonce in the `peal_connect_link` cookie (HttpOnly, SameSite=Lax, path
+  `/api/connect-links`, Secure on HTTPS), set on the reply, never declared
+  in the contract: `complete` and `accounts` refuse another browser. Never
+  log a link's token or address.
+- The page is `connect/link/[token]` (`components/connect-link/`), with
+  the partner's name and logo (`PartnerOwnership.presentedAs`), or the
+  workspace's name. `next.config.ts` gives it `Cache-Control: no-store`,
+  `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex, nofollow`,
+  beside the frame headers every page has; `ShellFrame` leaves the app's
+  header out of it. A tab that started from a link marks itself in
+  `sessionStorage` (`#connect-link/pending-link.ts`), so the platforms'
+  one callback page, `connect/[platform]/callback`, finishes the link
+  rather than a member's connection. Its strings are the `ConnectLink`
+  catalogue; the member's flow is unchanged.
+- The command line has `peal links` (create, list, show, revoke) and
+  `peal partner` (show, keys, workspaces), which read; the MCP toolkit
+  `connect-tools.ts` has the same, `create_connect_link` and
+  `revoke_connect_link` changing. Neither creates a partner key or a
+  customer's workspace: the first is a person's, the second a partner
+  key's. Partner settings are `settings/partner`
+  (`components/settings/partner-settings.tsx`), and the staff console's
+  workspace page shows where a workspace stands (`PartnerDesk`).
+- Erasure covers the new tables (`erasure.test.ts`): a workspace's links,
+  its partner row and keys go with it; usage days name no person and go
+  with the partner.
 
 ### MCP endpoint
 

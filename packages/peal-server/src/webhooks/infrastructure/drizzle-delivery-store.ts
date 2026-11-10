@@ -47,6 +47,7 @@ const toEvent = (row: EventRow) =>
       (event) =>
         new RecordedEvent({
           event,
+          externalId: Option.fromNullOr(row.externalId),
           id: WebhookEventIdSchema.make(row.id),
           occurredAt: DateTime.fromDateUnsafe(row.occurredAt),
           workspaceId: event.data.workspaceId,
@@ -255,6 +256,7 @@ export const DrizzleDeliveryStore = Layer.effect(
             .insert(events)
             .values({
               data,
+              externalId: Option.getOrNull(recorded.externalId),
               id: recorded.id,
               key,
               occurredAt: date(recorded.occurredAt),

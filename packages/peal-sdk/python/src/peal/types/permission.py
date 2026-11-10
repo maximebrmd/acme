@@ -26,6 +26,8 @@ Permission = typing.Union[
         "member:delete",
         "organization:update",
         "organization:delete",
+        "partner:read",
+        "partner:manage",
         "post:read",
         "post:create",
         "post:update",

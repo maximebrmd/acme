@@ -25,7 +25,6 @@ import social.peal.core.RetryInterceptor;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.Me;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -96,7 +95,7 @@ public class AsyncRawSessionClient {
                                 return;
                             case 403:
                                 future.completeExceptionally(new ForbiddenError(
-                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 429:

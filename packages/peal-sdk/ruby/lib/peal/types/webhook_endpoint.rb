@@ -23,6 +23,8 @@ module Peal
 
       field :previous_secret_expires_at, -> { String }, optional: false, nullable: true, api_name: "previousSecretExpiresAt"
 
+      field :scope, -> { Peal::Types::WebhookEndpointScope }, optional: false, nullable: false
+
       field :updated_at, -> { String }, optional: false, nullable: false, api_name: "updatedAt"
 
       field :url, -> { String }, optional: false, nullable: false

@@ -42,7 +42,6 @@ import social.peal.resources.webhooks.requests.RedeliverWebhooksRequest;
 import social.peal.resources.webhooks.requests.RotateSecretWebhooksRequest;
 import social.peal.resources.webhooks.requests.SendTestWebhooksRequest;
 import social.peal.resources.webhooks.requests.WebhookEndpointChange;
-import social.peal.types.ForbiddenEncoded;
 import social.peal.types.UnauthenticatedEncoded;
 import social.peal.types.WebhookDelivery;
 import social.peal.types.WebhookDeliveryPage;
@@ -128,8 +127,7 @@ public class RawWebhooksClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -151,14 +149,14 @@ public class RawWebhooksClient {
     }
 
     /**
-     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With <code>scope</code> <code>partner</code>, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (<code>workspaceExternalId</code>); any other workspace answers 404 <code>PartnerNotFound</code>. Needs webhook:manage.
      */
     public PealClientHttpResponse<WebhookEndpointSecret> create(String workspaceId, NewWebhookEndpoint request) {
         return create(workspaceId, request, null);
     }
 
     /**
-     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+     * Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. With <code>scope</code> <code>partner</code>, in the home workspace of a partner account, the endpoint also hears what happens in every workspace the partner owns, each event naming its workspace and carrying the partner's own id for it (<code>workspaceExternalId</code>); any other workspace answers 404 <code>PartnerNotFound</code>. Needs webhook:manage.
      */
     public PealClientHttpResponse<WebhookEndpointSecret> create(
             String workspaceId, NewWebhookEndpoint request, RequestOptions requestOptions) {
@@ -211,8 +209,7 @@ public class RawWebhooksClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -315,8 +312,7 @@ public class RawWebhooksClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -410,8 +406,7 @@ public class RawWebhooksClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -510,8 +505,7 @@ public class RawWebhooksClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -610,8 +604,7 @@ public class RawWebhooksClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -710,8 +703,7 @@ public class RawWebhooksClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -825,8 +817,7 @@ public class RawWebhooksClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
@@ -935,8 +926,7 @@ public class RawWebhooksClient {
                                 response);
                     case 403:
                         throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);

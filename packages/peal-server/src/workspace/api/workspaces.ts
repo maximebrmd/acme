@@ -6,6 +6,7 @@ import {
   DeletionIncomplete,
   CurrentMember,
   MediaStoreUnavailable,
+  PartnerOwnsWorkspaces,
   WorkspaceBusy,
   WorkspaceNameMismatch,
   WorkspaceNotFound,
@@ -64,6 +65,8 @@ export const WorkspacesHandlers = HttpApiBuilder.group(
                   ),
                 MissingPermission: forbidden,
                 NotAMember: () => Effect.fail(new WorkspaceNotFound()),
+                PartnerOwnsWorkspaces: ({ owned }) =>
+                  Effect.fail(new PartnerOwnsWorkspaces({ owned })),
                 SessionRequired: forbidden,
                 WorkspaceBusy: ({ workspaceId }) =>
                   Effect.fail(new WorkspaceBusy({ workspaceId })),

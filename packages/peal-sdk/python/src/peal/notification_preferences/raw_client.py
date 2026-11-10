@@ -13,7 +13,6 @@ from ..core.serialization import convert_and_respect_annotation_metadata
 from ..errors.forbidden_error import ForbiddenError
 from ..errors.too_many_requests_error import TooManyRequestsError
 from ..errors.unauthorized_error import UnauthorizedError
-from ..types.forbidden_encoded import ForbiddenEncoded
 from ..types.notification_preferences import NotificationPreferences
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
 from .types.notification_preferences_change_email import NotificationPreferencesChangeEmail
@@ -71,9 +70,9 @@ class RawNotificationPreferencesClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -165,9 +164,9 @@ class RawNotificationPreferencesClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -243,9 +242,9 @@ class AsyncRawNotificationPreferencesClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -337,9 +336,9 @@ class AsyncRawNotificationPreferencesClient:
                 raise ForbiddenError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        ForbiddenEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=ForbiddenEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

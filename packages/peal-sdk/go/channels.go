@@ -1650,26 +1650,3 @@ func (c *ConnectablePlatforms) String() string {
 	}
 	return fmt.Sprintf("%#v", c)
 }
-
-// How an Instagram channel reaches its account.
-type InstagramConnection string
-
-const (
-	InstagramConnectionInstagramLogin InstagramConnection = "instagramLogin"
-	InstagramConnectionFacebookLogin  InstagramConnection = "facebookLogin"
-)
-
-func NewInstagramConnectionFromString(s string) (InstagramConnection, error) {
-	switch s {
-	case "instagramLogin":
-		return InstagramConnectionInstagramLogin, nil
-	case "facebookLogin":
-		return InstagramConnectionFacebookLogin, nil
-	}
-	var t InstagramConnection
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (i InstagramConnection) Ptr() *InstagramConnection {
-	return &i
-}

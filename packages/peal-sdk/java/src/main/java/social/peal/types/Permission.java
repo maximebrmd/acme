@@ -54,7 +54,11 @@ public final class Permission {
 
     public static final Permission API_KEY_UPDATE = new Permission(Value.API_KEY_UPDATE, "apiKey:update");
 
+    public static final Permission PARTNER_MANAGE = new Permission(Value.PARTNER_MANAGE, "partner:manage");
+
     public static final Permission POST_APPROVE = new Permission(Value.POST_APPROVE, "post:approve");
+
+    public static final Permission PARTNER_READ = new Permission(Value.PARTNER_READ, "partner:read");
 
     public static final Permission ASSISTANT_USE = new Permission(Value.ASSISTANT_USE, "assistant:use");
 
@@ -148,8 +152,12 @@ public final class Permission {
                 return visitor.visitPostUpdate();
             case API_KEY_UPDATE:
                 return visitor.visitApiKeyUpdate();
+            case PARTNER_MANAGE:
+                return visitor.visitPartnerManage();
             case POST_APPROVE:
                 return visitor.visitPostApprove();
+            case PARTNER_READ:
+                return visitor.visitPartnerRead();
             case ASSISTANT_USE:
                 return visitor.visitAssistantUse();
             case MEDIA_UPLOAD:
@@ -219,8 +227,12 @@ public final class Permission {
                 return POST_UPDATE;
             case "apiKey:update":
                 return API_KEY_UPDATE;
+            case "partner:manage":
+                return PARTNER_MANAGE;
             case "post:approve":
                 return POST_APPROVE;
+            case "partner:read":
+                return PARTNER_READ;
             case "assistant:use":
                 return ASSISTANT_USE;
             case "media:upload":
@@ -284,6 +296,10 @@ public final class Permission {
         ORGANIZATION_UPDATE,
 
         ORGANIZATION_DELETE,
+
+        PARTNER_READ,
+
+        PARTNER_MANAGE,
 
         POST_READ,
 
@@ -350,6 +366,10 @@ public final class Permission {
         T visitOrganizationUpdate();
 
         T visitOrganizationDelete();
+
+        T visitPartnerRead();
+
+        T visitPartnerManage();
 
         T visitPostRead();
 

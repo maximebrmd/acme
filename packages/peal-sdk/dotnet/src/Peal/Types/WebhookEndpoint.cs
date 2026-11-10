@@ -39,6 +39,9 @@ public record WebhookEndpoint : IJsonOnDeserialized
     [JsonPropertyName("previousSecretExpiresAt")]
     public string? PreviousSecretExpiresAt { get; set; }
 
+    [JsonPropertyName("scope")]
+    public required WebhookEndpointScope Scope { get; set; }
+
     [JsonPropertyName("updatedAt")]
     public required string UpdatedAt { get; set; }
 

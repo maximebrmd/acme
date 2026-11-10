@@ -6,24 +6,30 @@ import { ChannelAccess } from "#channels/application/channel-access.ts";
 import { ChannelOversight } from "#channels/application/channel-oversight.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
+import { ConnectLinks } from "#channels/application/connect-links.ts";
 import { DeauthorizePlatformUser } from "#channels/application/deauthorize-platform-user.ts";
 import { DeletePlatformUserData } from "#channels/application/delete-platform-user-data.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
+import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
 import { DrizzleChannelRecords } from "#channels/infrastructure/drizzle-channel-records.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
 import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-choices.ts";
+import { DrizzleConnectLinkStore } from "#channels/infrastructure/drizzle-connect-link-store.ts";
 import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-deletions.ts";
 import { NotifiedChannelNotices } from "#channels/infrastructure/notified-channel-notices.ts";
-import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
+import { PartnerLinkHosts } from "#channels/infrastructure/partner-link-hosts.ts";
+import { SharedChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { ChannelPlatformsLive } from "#channels/infrastructure/platforms/channel-platform-settings.ts";
 import { MetaSignedRequestsLive } from "#channels/infrastructure/platforms/meta/meta-signed-requests.ts";
 import { OAuthClientDocumentsLive } from "#channels/infrastructure/platforms/oauth-client-documents-live.ts";
 import { PlatformAuthorizersLive } from "#channels/infrastructure/platforms/platform-authorizers.ts";
+import { PublicConnectLinkAddresses } from "#channels/infrastructure/public-connect-link-addresses.ts";
 import { PublicDataDeletionLinks } from "#channels/infrastructure/public-data-deletion-links.ts";
+import { RandomConnectLinkTokens } from "#channels/infrastructure/random-connect-link-tokens.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-cipher.ts";
 import {
@@ -61,12 +67,16 @@ const AdaptersLive = Layer.mergeAll(
   DrizzleChannelRepository,
   DrizzleConnectAttempts,
   DrizzleConnectChoices,
+  DrizzleConnectLinkStore,
+  RandomConnectLinkTokens,
+  PublicConnectLinkAddresses,
+  PartnerLinkHosts,
   DrizzleDataDeletions.pipe(Layer.provide(WebhookChannelEvents)),
   PublicDataDeletionLinks,
   SqlChannelLocks,
   webhookChannelNotices(NotifiedChannelNotices),
   WebhookChannelEvents,
-  PlanChannelAllowanceLive,
+  SharedChannelAllowanceLive,
   PlatformsLive
 ).pipe(Layer.provideMerge(TokenCipherLive));
 
@@ -75,7 +85,12 @@ const UseCasesLive = Layer.mergeAll(
   ChannelOversight.layer,
   ListChannels.layer,
   DisconnectChannel.layer,
-  ConnectChannel.layer,
+  // The links' sign-ins are ConnectChannel's, and their retention the
+  // links' own.
+  PurgeConnectLinks.layer.pipe(
+    Layer.provideMerge(ConnectLinks.layer),
+    Layer.provideMerge(ConnectChannel.layer)
+  ),
   ChannelUsage.layer,
   DeletePlatformUserData.layer,
   DeauthorizePlatformUser.layer,
@@ -89,8 +104,9 @@ const UseCasesLive = Layer.mergeAll(
  * workers share, ChannelRecords for the workspace context, and
  * ChannelOversight for the staff console. Needs the
  * database (Drizzle and SqlClient), migrated, Ids, Dns, the notifications
- * context's Notify, the webhooks context's WebhookEvents and the billing
- * context's WorkspaceEntitlements.
+ * context's Notify, the webhooks context's WebhookEvents, the billing
+ * context's WorkspaceEntitlements and the workspace context's
+ * PartnerOwnership.
  */
 export const ChannelsLive = UseCasesLive.pipe(Layer.provideMerge(AdaptersLive));
 
@@ -101,6 +117,16 @@ export {
   ChannelOAuthHandlers as ChannelOAuthApiLive,
   ChannelsHandlers as ChannelsApiLive,
 } from "#channels/api/channels.ts";
+
+/**
+ * The connect links' endpoints: a workspace's own, behind the workspace
+ * context's middleware, and the hosted pages', which anyone holding a
+ * link's token calls, behind the intake the composition root brings.
+ */
+export {
+  ConnectLinksHandlers as ConnectLinksApiLive,
+  HostedConnectHandlers as HostedConnectApiLive,
+} from "#channels/api/connect-links.ts";
 
 /**
  * Meta's data deletion and deauthorization callbacks, which Meta calls

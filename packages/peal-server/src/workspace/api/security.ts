@@ -5,6 +5,7 @@ import { HttpApiError } from "effect/http-api";
 import {
   Authentication,
   ClientErrorIntake,
+  ConnectLinkIntake,
   ContractRequestIntake,
   CurrentMember,
   CurrentPrincipal,
@@ -92,6 +93,17 @@ export const contentChangeOf = (
       origin,
       userId: Option.none(),
       workspaceId: Option.some(principal.workspaceId),
+    };
+  }
+
+  // A partner key, in the workspace of its partner the path names.
+  if (principal._tag === "PartnerKeyPrincipal") {
+    return {
+      access,
+      apiKeyId: Option.some(principal.partnerKeyId),
+      origin,
+      userId: Option.none(),
+      workspaceId: workspaceId.pipe(Option.flatMap(decodeWorkspaceId)),
     };
   }
 
@@ -192,7 +204,7 @@ export const AuthenticationLive = Layer.effect(
               journalled(journal, () =>
                 contentChangeOf(
                   principal,
-                  principal._tag === "ApiKeyPrincipal" ? "apiKey" : "oauth",
+                  principal._tag === "UserPrincipal" ? "oauth" : "apiKey",
                   request,
                   Option.fromNullishOr(params["workspaceId"])
                 )
@@ -393,8 +405,8 @@ export const StaffAccessLive = Layer.effect(
   })
 );
 
-// For tests: nobody is staff, and every error report and every request
-// to cancel or withdraw passes its intake.
+// For tests: nobody is staff, and every error report, every request to
+// cancel or withdraw and every hosted connect page's passes its intake.
 // HttpApiTest serves every group of the API, so tests provide every
 // middleware, whichever groups they exercise.
 const noStaffTest = Layer.succeed(
@@ -410,6 +422,10 @@ const openIntakeTest = Layer.mergeAll(
   Layer.succeed(
     ContractRequestIntake,
     ContractRequestIntake.of((httpEffect) => httpEffect)
+  ),
+  Layer.succeed(
+    ConnectLinkIntake,
+    ConnectLinkIntake.of((httpEffect) => httpEffect)
   )
 );
 

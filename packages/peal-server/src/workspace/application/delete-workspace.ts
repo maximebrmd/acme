@@ -20,6 +20,8 @@ import type { WorkspaceErasureOptions } from "./context-records.ts";
 import type { ErasureIncomplete } from "./erasure-incomplete.ts";
 import type { ErasureLedgerUnavailable } from "./erasure-ledger-unavailable.ts";
 import type { ErasureLedger } from "./erasure-ledger.ts";
+import { PartnerOwnership } from "./partner-ownership.ts";
+import type { PartnerOwnsWorkspaces } from "./partner-owns-workspaces.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import {
   confirmErasure,
@@ -63,6 +65,7 @@ export class DeleteWorkspace extends Context.Service<
       | ErasureLedgerUnavailable
       | MissingPermission
       | NotAMember
+      | PartnerOwnsWorkspaces
       | SessionRequired
       | ErasureIncomplete
       | WorkspaceBusy
@@ -81,6 +84,7 @@ export class DeleteWorkspace extends Context.Service<
       const store = yield* AccountStore;
       const records = yield* ContextRecords;
       const mail = yield* AccountMail;
+      const ownership = yield* PartnerOwnership;
       const { transaction } = yield* TransactionRunner;
 
       // The workspace, locked when in a transaction.
@@ -113,6 +117,11 @@ export class DeleteWorkspace extends Context.Service<
           yield* new WorkspaceNameMismatch({ workspaceId });
         }
 
+        // A partner's home workspace goes only once the partner owns no
+        // workspace: checked before Stripe is asked anything, and again
+        // under the partner's lock when it is deleted.
+        yield* ownership.ensureDeletable([workspaceId]);
+
         // In the ledger first, unconfirmed: one that cannot be written
         // stops here, before Stripe is asked to cancel anything, which
         // cannot be undone.
@@ -135,6 +144,7 @@ export class DeleteWorkspace extends Context.Service<
                 // before erasing them: the two wait for each other, never
                 // deadlock.
                 yield* found(workspaceId);
+                yield* ownership.ensureDeletable([workspaceId]);
                 yield* eraseWorkspace(workspaceId);
               })
             ).pipe(

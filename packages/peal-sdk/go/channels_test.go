@@ -3093,35 +3093,6 @@ func TestStringConnectablePlatforms(t *testing.T) {
 	})
 }
 
-func TestEnumInstagramConnection(t *testing.T) {
-	t.Run("NewFromString_instagramLogin", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewInstagramConnectionFromString("instagramLogin")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, InstagramConnection("instagramLogin"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_facebookLogin", func(t *testing.T) {
-		t.Parallel()
-		val, err := NewInstagramConnectionFromString("facebookLogin")
-		assert.NoError(t, err, "valid enum value should not return error")
-		assert.Equal(t, InstagramConnection("facebookLogin"), val, "enum value should match expected wire value")
-	})
-
-	t.Run("NewFromString_Invalid", func(t *testing.T) {
-		_, err := NewInstagramConnectionFromString("invalid_value_that_does_not_exist")
-		assert.Error(t, err)
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		val, err := NewInstagramConnectionFromString("instagramLogin")
-		assert.NoError(t, err)
-		ptr := val.Ptr()
-		assert.NotNil(t, ptr)
-		assert.Equal(t, val, *ptr)
-	})
-}
-
 func TestExtraPropertiesAuthorization(t *testing.T) {
 	t.Run("GetExtraProperties", func(t *testing.T) {
 		t.Parallel()
