@@ -56,6 +56,27 @@ def test_no_provider_is_declared_before_the_owner_confirms_it(environment: str) 
     assert settings(environment)["peal_privacy_declaration"] == {}
 
 
+def _ledger_exposed(**names: Any) -> bool:
+    """Whether peal_runtime refuses the settings: media served publicly
+    while the erasure ledger sits in the same bucket."""
+    found = task("peal_runtime", "Refuse a public media bucket that holds the erasure ledger")
+    return ansible_render(found["vars"]["peal_runtime_ledger_exposed"], **names)
+
+
+def test_the_erasure_ledger_stays_in_the_media_bucket_while_it_is_private(rendered: Path) -> None:
+    for environment in ENVIRONMENTS:
+        assert "PEAL_ERASURE_LEDGER_BUCKET" not in _host_env(rendered, environment)
+        assert "PEAL_MEDIA_PUBLIC_BASE_URL" not in _host_env(rendered, environment)
+
+
+def test_a_public_media_bucket_needs_a_ledger_bucket_of_its_own() -> None:
+    public = {"PEAL_MEDIA_PUBLIC_BASE_URL": "https://media.example.com"}
+
+    assert _ledger_exposed(peal_runtime_host_settings=public) is True
+    assert _ledger_exposed(peal_runtime_host_settings={**public, "PEAL_ERASURE_LEDGER_BUCKET": "peal-erasures"}) is False
+    assert _ledger_exposed(peal_runtime_host_settings={}) is False
+
+
 def test_production_sends_its_heartbeat(rendered: Path) -> None:
     host_env = _host_env(rendered, "production")
 

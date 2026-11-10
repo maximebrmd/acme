@@ -208,7 +208,18 @@ the owner's approval.
    wrangler r2 bucket create peal-production-media --jurisdiction eu
    wrangler r2 bucket info peal-production-media --jurisdiction eu   # check its jurisdiction
    wrangler r2 bucket lifecycle add peal-production-media abort-incomplete-uploads --abort-multipart-days 1 --jurisdiction eu
+   wrangler r2 bucket lifecycle add peal-production-media expire-erasures erasures/ --expire-days 42 --jurisdiction eu
    ```
+
+   The second rule is for the erasure ledger, which the server keeps under
+   `erasures/` in the media bucket (the id and time of each deleted account
+   and workspace, for [restores](#backups)): entries go after 42 days, a
+   little longer than backups hold deleted data. The server drops them
+   itself each day; the rule is a second guard. Its prefix must be exactly
+   `erasures/`: a rule on another prefix, or on none, would delete media.
+   Check it with `wrangler r2 bucket lifecycle list`. Before the media
+   bucket ever gets a public domain, give the ledger a private bucket of
+   its own (`peal_erasure_ledger_bucket`, with a token that reaches both).
 
    Put the upload CORS rule on the media bucket with
    `bun nx run peal-server:media-cors`, from your machine, with a token that
@@ -318,9 +329,10 @@ hand-kept digests; it releases more often (2.60.0 in October 2026); and its
 
 Deleted data leaves the backups once the oldest backup that holds it expires,
 within five weeks. A restore brings back the accounts and workspaces deleted
-after its point in time, and nothing records them outside the database yet:
+after its point in time. The server records each of those deletions outside
+the database, by id, in the media bucket (`erasures/`, kept 42 days), and
 [the runbook](runbooks/restore-database.md#deletions-since-the-restore-point)
-says what to do until it does.
+applies them again before the server starts.
 
 Media live in R2 and are not backed up again; telemetry is not backed up. The
 secrets are on the server only: [restoring onto a new server](runbooks/restore-database.md#a-new-server)

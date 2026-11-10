@@ -454,8 +454,30 @@ and no socket, for tests.
   failing, leaves the workspaces, on the free plan once Stripe's events
   come, and is logged; deleting them again cancels nothing more. The owner is emailed
   (`AccountMail.workspaceDeleted`, `deleted`), saying what was cancelled,
-  and each erasure is logged by id (`event.name` `peal.erasure`) for the
-  restore runbook. Closing an account leaves the
+  and each erasure is logged by id (`event.name` `peal.erasure`). Each is
+  also written to the erasure ledger (`ErasureLedger`, `S3ErasureLedger`:
+  one JSON object under `erasures/` in the media bucket, or the bucket
+  `PEAL_ERASURE_LEDGER_BUCKET` names; never the backups', whose
+  credentials the server must not hold), as a restore of the database
+  brings erased data back and rewinds whatever the database recorded: ids
+  and the time only (`workspace/domain/erasure-ledger.ts`, persisted
+  contract), unconfirmed as the last step of the erasure's transaction
+  (`recordErasure`: no ledger, no erasure, 503 `MediaStoreUnavailable`),
+  confirmed once it commits (`confirmErasure`), discarded when it fails
+  (`discardOnFailure`), so no entry names what was not erased.
+  `ReplayErasures` (`bun src/replay-erasures.ts`, `nx run
+  peal-server:erasures:replay`, in the image too) applies it again after a
+  restore, before the server starts: what the ledger names and the
+  database still holds, each entry in its own transaction, without
+  settling Stripe or emailing anyone, holding a closed account's identity
+  as closed at the entry's time, leaving unconfirmed entries unless
+  `--apply-unconfirmed`, and failing when one is refused. Run twice, it
+  changes nothing more. A new way to erase a workspace or an account goes
+  through the ledger; an erasure the ledger does not cover (a platform's
+  data deletion callback, a single post) comes back with a restore. The
+  `workspace.erasure-ledger-retention` cron drops entries after 42 days,
+  longer than backups hold deleted data: keep it so
+  (`data-processing.test.ts`). Closing an account leaves the
   posts its user wrote in the workspaces that remain without an author
   (`PostRecords.forgetAuthor`: `author_id` has no foreign key), and drops the
   connections and account choices they had in progress
@@ -1801,8 +1823,11 @@ self-hoster needs only Postgres and an S3-compatible store:
 - Postgres archives its write-ahead log and is backed up to R2 with
   pgBackRest; the backup passphrase is the one secret kept outside the server
   too. R2 buckets are in its EU jurisdiction (`<account>.eu.r2…`). A restore
-  brings back deletions made since its point in time: the runbook lists them
-  from the `peal.erasure` logs, which nothing yet applies again. `runbooks/restore-database.md` restores it. The server migrates when it
+  brings back deletions made since its point in time:
+  `runbooks/restore-database.md` restores the database, then replays the
+  erasure ledger before the stack starts. The ledger stays in the media
+  bucket while nothing serves that bucket publicly; `peal_runtime` refuses
+  `PEAL_MEDIA_PUBLIC_BASE_URL` without `peal_erasure_ledger_bucket`. The server migrates when it
   starts, so write migrations that the previous release can still run
   against, and roll back by releasing the previous commit.
 - Changing a server's size or adding any paid resource needs the owner's

@@ -323,6 +323,22 @@ Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donn�
 
 **La désactiver après l’avoir activée** ne conserve plus rien de nouveau, et ne supprime rien sur-le-champ : ce que le serveur détient déjà reste jusqu’à son terme, puisque la loi vous imposait de le conserver aussi longtemps, et la tâche quotidienne continue de le supprimer. D’ici là, l’équipe dotée du rôle juridique peut encore répondre à une réquisition qui le concerne, et l’export de chaque utilisateur liste encore les connexions conservées à son sujet.
 
+## Suppressions et sauvegardes [#erasure-ledger]
+
+Une sauvegarde contient ce qui a été supprimé après elle. La restaurer fait revenir les comptes et les espaces de travail que leurs utilisateurs ont supprimés depuis, et la loi vous impose de les supprimer de nouveau avant que quiconque puisse s’en servir. Peal conserve ce qu’il faut pour cela hors de la base de données, qu’une restauration ferait reculer elle aussi : à chaque suppression d’un espace de travail ou fermeture d’un compte, le serveur écrit une petite entrée dans le stockage d’objets, sous `erasures/`, avec les identifiants et la date, et rien d’autre (ni nom, ni adresse, ni contenu). L’entrée est écrite avant que la suppression soit définitive, pour qu’aucune ne passe sans trace : si le stockage est injoignable, la suppression est refusée et peut être retentée.
+
+Après toute restauration, et avant de démarrer le serveur, appliquez de nouveau ce registre :
+
+```sh
+docker compose … run --rm --no-deps server packages/peal-server/src/replay-erasures.ts
+```
+
+Depuis une copie du dépôt, `bun nx run peal-server:erasures:replay` fait de même. La commande supprime de nouveau ce que la restauration a fait revenir, affiche ce qu’elle a fait par identifiant, et peut être relancée sans risque : ce qui a disparu reste disparu. Elle ne résilie rien chez Stripe et n’envoie aucun e-mail, puisque c’était fait lors de la suppression d’origine. Une suppression refusée, par exemple à cause d’une publication en cours d’envoi, la fait sortir en erreur : gardez le serveur arrêté tant qu’elle ne passe pas. Une entrée que le serveur n’a jamais confirmée, parce qu’il s’est arrêté au milieu d’une suppression, est listée et laissée telle quelle ; `--apply-unconfirmed` applique aussi celles-là, une fois que vous avez établi que chacune avait bien été demandée.
+
+Le registre se trouve par défaut dans le bucket des médias. Rien n’y est servi : le serveur ne signe aucun lien vers `erasures/`. Si votre bucket des médias est public (`PEAL_MEDIA_PUBLIC_BASE_URL`), nommez un bucket privé avec `PEAL_ERASURE_LEDGER_BUCKET`, sur le même stockage et accessible avec la même clé : le serveur vous en avertit au démarrage tant que ce n’est pas fait. N’utilisez pas le bucket de vos sauvegardes : un serveur qui peut y écrire peut les supprimer.
+
+Les entrées sont conservées {{keep-erasure-ledger-fr}}, un peu plus longtemps que les sauvegardes ne gardent les données supprimées ({{keep-backups-fr}} avec les quatre sauvegardes complètes hebdomadaires de la pile) : une tâche quotidienne (`workspace.erasure-ledger-retention`, à 04 h 17 UTC) retire les plus anciennes. Gardez vos sauvegardes moins longtemps que cela. Si le stockage propose des règles de cycle de vie, ajoutez-en une en seconde protection, sur le bucket du registre ou sur son seul préfixe : avec Cloudflare R2, `wrangler r2 bucket lifecycle add <bucket> expire-erasures erasures/ --expire-days 42`. Une règle qui vise le mauvais préfixe supprimerait vos médias : vérifiez-la avant de l’enregistrer.
+
 ## Déclaration de confidentialité [#privacy-declaration]
 
 Chaque utilisateur peut télécharger une copie de ses données (**Compte**, **Vos données**, ou `peal account export`). Elle s’accompagne de ce que le RGPD, article 15, impose au responsable de traitement d’indiquer : pour chaque catégorie de données, sa finalité, sa base légale, sa durée de conservation et son origine ; qui la reçoit ; et les droits qui s’y attachent. Peal en écrit l’essentiel à partir d’un registre unique dans son code, d’où vient aussi le tableau des durées de sa propre politique de confidentialité : les deux ne peuvent pas diverger.

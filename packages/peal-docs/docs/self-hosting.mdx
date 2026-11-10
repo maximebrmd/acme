@@ -323,6 +323,22 @@ A daily job (`legal.retention`, at 03:47 UTC) deletes each record once its time 
 
 **Turning it off after it was on** keeps nothing more, and deletes nothing at once: what the server already holds stays until its time is up, as the law had you keep it for that long, and the daily job goes on deleting it. Meanwhile staff with the legal role can still answer a request about it, and each user's export still lists the connections kept about them.
 
+## Deletions and backups [#erasure-ledger]
+
+A backup holds what was deleted after it was taken. Restoring one brings back the accounts and workspaces their users deleted since, and the law has you delete them again before anyone can use them. Peal keeps what that takes outside the database, which a restore would rewind too: each time a workspace is deleted or an account closed, the server writes a small entry in the object store, under `erasures/`, with the ids and the time and nothing else (no name, address or content). The entry is written before the deletion is final, so none goes unrecorded: when the store cannot be reached, the deletion is refused and can be tried again.
+
+After any restore, and before you start the server, apply the ledger again:
+
+```sh
+docker compose … run --rm --no-deps server packages/peal-server/src/replay-erasures.ts
+```
+
+From a checkout, `bun nx run peal-server:erasures:replay` does the same. It deletes again whatever the restore brought back, prints what it did by id, and can be run again without harm: what is gone stays gone. It cancels nothing at Stripe and emails no one, as both were done when the deletion first ran. A deletion that was refused, such as a post going out, makes it exit with an error: keep the server stopped until it passes. An entry the server never confirmed, because it stopped in the middle of a deletion, is listed and left alone; `--apply-unconfirmed` applies those too, once you have decided each was asked for.
+
+The ledger lives in the media bucket by default. Nothing there is served: the server signs no link to `erasures/`. If your media bucket is public (`PEAL_MEDIA_PUBLIC_BASE_URL`), name a private bucket with `PEAL_ERASURE_LEDGER_BUCKET`, on the same store and reachable with the same key: the server warns at startup until you do. Do not use your backups' bucket, as a server that can write there can delete the backups.
+
+Entries are kept {{keep-erasure-ledger-en}}, a little longer than the backups hold deleted data ({{keep-backups-en}} with the stack's four weekly full backups): a daily job (`workspace.erasure-ledger-retention`, at 04:17 UTC) drops older ones. Keep your backups shorter than that. Where the store has lifecycle rules, add one as a second guard, on the ledger's bucket or its prefix alone: with Cloudflare R2, `wrangler r2 bucket lifecycle add <bucket> expire-erasures erasures/ --expire-days 42`. A rule that names the wrong prefix would delete your media: check it before you save it.
+
 ## Privacy declaration [#privacy-declaration]
 
 Each user can download a copy of their data (**Account**, **Your data**, or `peal account export`). With it comes what the GDPR, Article 15, has a controller tell: for each category of data, what it is for, on which legal basis, how long it is kept and where it came from; who receives it; and the rights over it. Peal writes most of it from one registry in its code, which its own privacy policy's retention table is written from too, so the two cannot disagree.

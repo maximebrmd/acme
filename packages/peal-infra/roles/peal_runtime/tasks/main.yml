@@ -125,6 +125,20 @@
          + (peal_runtime_host_settings | dict2items | selectattr('value', 'string')
             | selectattr('value', 'search', "['\r\n]") | map(attribute='key') | list) }}
 
+# A public media bucket serves every object to whoever knows its key: the
+# erasure ledger then needs a bucket of its own.
+- name: Refuse a public media bucket that holds the erasure ledger
+  ansible.builtin.assert:
+    that: not peal_runtime_ledger_exposed
+    fail_msg: >-
+      PEAL_MEDIA_PUBLIC_BASE_URL serves the media bucket publicly: name a
+      private bucket for the erasure ledger with peal_erasure_ledger_bucket.
+    quiet: true
+  vars:
+    peal_runtime_ledger_exposed: >-
+      {{ (peal_runtime_host_settings.PEAL_MEDIA_PUBLIC_BASE_URL | default('') | string | length > 0)
+         and (peal_runtime_host_settings.PEAL_ERASURE_LEDGER_BUCKET | default('') | string | length == 0) }}
+
 # Mounted read-only in the server, which runs without privileges: readable
 # by all, as it holds what the privacy policy publishes anyway.
 - name: Write the privacy declaration
