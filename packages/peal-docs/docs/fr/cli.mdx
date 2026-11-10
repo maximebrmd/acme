@@ -545,6 +545,53 @@ peal partner workspaces --external-id cus_42
 
 Pour les propriétaires et administrateurs d’un espace de travail qui a un [compte partenaire](/embedding) : `show` affiche ce que voient ses clients, les origines vers lesquelles les pages hébergées peuvent les renvoyer, et ce qu’il détient ; `keys` liste ses clés, jamais les clés elles-mêmes ; `workspaces` liste les espaces de travail qu’il possède, du plus récent au plus ancien, avec leurs identifiants externes et leurs canaux, `--external-id` en trouvant un exactement et `--name` cherchant. Créer et supprimer ces espaces revient à l’API partenaire, avec une clé partenaire, et créer une clé aux **Paramètres** de l’espace de travail.
 
+## Publicités [#ads]
+
+Ces commandes suivent la page [Publicités](/fr/ads) : lisez-la d’abord, car
+une mise en avant dépense de l’argent. Aucune commande ne se connecte à un
+réseau publicitaire, ne connecte un compte publicitaire, n’active les
+dépenses ni ne fixe le plafond mensuel : une personne le fait dans
+l’application web. Mettre en avant depuis une connexion demande le scope
+`workspace:ads`, que `peal login --ads` demande et qui n’est jamais demandé
+sans cette option ; `peal doctor` dit si la connexion le détient.
+
+| Commande                                                                    | Ce qu’elle fait                                                                                                                                                                                               |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `peal ads status`                                                           | Dit ce que le serveur propose pour les publicités : rien, la lecture des comptes publicitaires, ou aussi les mises en avant.                                                                                  |
+| `peal ads accounts`                                                         | Liste les comptes publicitaires connectés : réseau, devise, état, si un propriétaire a autorisé chacun à dépenser, et son plafond mensuel.                                                                    |
+| `peal ads account <account-id>`                                             | Affiche un compte publicitaire, son plafond et ce que ses mises en avant engagent ce mois-ci.                                                                                                                 |
+| `peal ads campaigns <account-id> [--from <AAAA-MM-JJ>] [--to <AAAA-MM-JJ>]` | Liste les campagnes du compte telles que lues en dernier, avec ce que leurs publicités ont fait sur la période (les 30 derniers jours par défaut, 366 au plus).                                               |
+| `peal ads list <account-id> [--campaign <campaign-id>] [--from …] [--to …]` | Liste les publicités du compte, celles d’une campagne avec `--campaign`, chacune avec la publication de l’espace de travail qu’elle promeut.                                                                  |
+| `peal ads insights <account-id> [--from …] [--to …]`                        | Additionne ce que les publicités du compte ont fait chaque jour : dépense, impressions, couverture, clics, résultats.                                                                                         |
+| `peal ads post <post-id>`                                                   | Affiche les chiffres organiques d’une publication à côté de ses chiffres payants, par compte publicitaire, et ses mises en avant : côte à côte, jamais additionnés.                                           |
+| `peal ads boosts [--post <post-id>] [--cursor <cursor>]`                    | Liste les mises en avant de l’espace de travail, de la plus récente à la plus ancienne.                                                                                                                       |
+| `peal ads boost show <boost-id>`                                            | Affiche une mise en avant, où elle en est, et les requêtes que Peal a envoyées au réseau publicitaire pour elle.                                                                                              |
+| `peal ads boost quote …`                                                    | Vérifie une mise en avant sans rien créer : ce qu’elle peut coûter au plus, ses jours, et la marge sous le plafond mensuel.                                                                                   |
+| `peal ads boost create … [--idempotency-key <key>] [--yes]`                 | **Dépense de l’argent.** Chiffre, affiche ce qui sera dépensé et pendant combien de temps, demande confirmation, puis met la publication en avant.                                                            |
+| `peal ads boost pause <boost-id>`                                           | Met une mise en avant en pause ; elle ne dépense rien pendant ce temps. Sans risque à relancer.                                                                                                               |
+| `peal ads boost resume <boost-id> [--yes]`                                  | **Dépense de l’argent.** Relance une mise en avant en pause jusqu’à sa fin, après confirmation.                                                                                                               |
+| `peal ads boost stop <boost-id> [--yes]`                                    | Arrête une mise en avant définitivement, après confirmation.                                                                                                                                                  |
+| `peal ads audit [--cursor <cursor>]`                                        | Liste le journal d’audit des publicités, qui ne répond qu’aux propriétaires (`ads:authorize`) : avec une clé d’API à laquelle un propriétaire a donné cette permission, car aucune application ne la détient. |
+
+`boost quote` et `boost create` prennent les mêmes options :
+
+| Option                                     | Sens                                                                                                                                                                                    |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--account <account-id>`                   | Le compte publicitaire qui paie. Obligatoire.                                                                                                                                           |
+| `--post <post-id>`                         | La publication publiée à mettre en avant. Obligatoire.                                                                                                                                  |
+| `--channel <channel-id>`                   | Le canal où elle est mise en avant : une Page Facebook, ou un compte Instagram connecté par sa Page. Obligatoire.                                                                       |
+| `--total <montant>` ou `--daily <montant>` | Le budget pour toute la durée, ou par jour, dans l’unité de la devise (`50`, `50.00`). L’un des deux, exactement. Plus de décimales que la devise n’en a : refusé.                      |
+| `--currency <EUR>`                         | La devise du budget. Obligatoire, jamais supposée : ce doit être celle du compte publicitaire, et rien n’est jamais converti.                                                           |
+| `--ends <instant>`                         | La fin. Obligatoire : au moins un jour après le début, 90 jours au plus.                                                                                                                |
+| `--starts <instant>`                       | Le début. Maintenant, si l’option est omise.                                                                                                                                            |
+| `--time-zone <zone>`                       | Le fuseau dans lequel `--starts` et `--ends` sont lus quand ils sont écrits sans décalage.                                                                                              |
+| `--countries <FR,BE>`                      | Codes pays ISO alpha-2, 25 au plus. Obligatoire.                                                                                                                                        |
+| `--age-min <n>`, `--age-max <n>`           | De 18 à 65 (65 veut dire 65 ans et plus). 18 et 65 par défaut.                                                                                                                          |
+| `--not-special-category`                   | Déclaration obligatoire : Peal ne met pas en avant les publicités sur le logement, l’emploi, les produits ou services financiers, ni les enjeux sociaux, les élections ou la politique. |
+| `--beneficiary <nom>`, `--payer <nom>`     | Qui bénéficie de la publicité et qui la paie : obligatoires quand un pays est dans l’Union européenne.                                                                                  |
+| `--idempotency-key <key>` (create)         | Rend la commande sûre à relancer : la même clé ne crée jamais une seconde mise en avant. Générée et affichée si elle est omise.                                                         |
+| `--yes` (create, resume, stop)             | Répond d’avance à la confirmation. Obligatoire avec `--json`, et quand l’entrée n’est pas un terminal : la commande refuse alors avec `confirmation_required` plutôt que de demander.   |
+
 ## Vos données [#account]
 
 ```sh

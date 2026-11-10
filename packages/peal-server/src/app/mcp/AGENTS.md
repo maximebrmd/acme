@@ -101,3 +101,11 @@
   and `list_comment_threads` answers counts, never text. A reply whose
   outcome is unknown is never sent again by a tool: the description sends
   the model to the user, then to `confirm_comment_reply`.
+- The ads toolkit (`ads-tools.ts`) reads ad accounts, campaigns, daily
+  numbers and boosts; `boost_post` and `resume_boost` spend the user's
+  money: they are `destructive` and `openWorld`, say so first in their
+  description with when to call them, take the scope `workspace:ads`
+  (`adsTools`, beside `workspace:publish`; a test calls each without it),
+  and `boost_post` takes an `idempotencyKey`. No tool signs in to an ad
+  network, connects an account or sets a ceiling: those are a person's.
+  Instants in parameters are text (`boostFields`).

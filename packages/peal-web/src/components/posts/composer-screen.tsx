@@ -83,6 +83,7 @@ const ExistingPost = ({
   const result = useAtomValue(query);
   const retry = useAtomRefresh(query);
   const approvalPolicy = useApprovalPolicy(workspaceId);
+  const tAds = useTranslations("Ads.boost");
 
   if (AsyncResult.isSuccess(result)) {
     const post = result.value;
@@ -116,6 +117,15 @@ const ExistingPost = ({
               postId={post.id}
               workspaceId={workspaceId}
             />
+          }
+          adsLink={
+            <Button
+              variant="outline"
+              render={<Link href={`/app/${workspaceId}/ads`} />}
+              nativeButton={false}
+            >
+              {tAds("toAds")}
+            </Button>
           }
           channels={channels}
           permissions={permissions}

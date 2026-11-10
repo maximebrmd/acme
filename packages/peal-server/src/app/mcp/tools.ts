@@ -12,6 +12,7 @@ import {
   PlatformSchema,
 } from "peal-contract";
 
+import { AdsTools } from "#app/mcp/ads-tools.ts";
 import { changing, reading } from "#app/mcp/annotations.ts";
 import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { ConnectTools } from "#app/mcp/connect-tools.ts";
@@ -219,5 +220,6 @@ export const PealTools = Toolkit.merge(
   ReviewTools,
   WebhookTools,
   ConnectTools,
-  InboxTools
+  InboxTools,
+  AdsTools
 );

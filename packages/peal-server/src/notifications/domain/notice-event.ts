@@ -192,6 +192,31 @@ export const NoticeEventSchema = Schema.Union([
     host: Schema.NonEmptyString,
     reason: Schema.Literals(["failing", "gone"]),
   }),
+  // An ad network refused a member's sign-in: the ad accounts it connects
+  // are no longer read until they sign in again.
+  Schema.TaggedStruct("AdConnectionReconnectRequired", {
+    network: Schema.NonEmptyString,
+  }),
+  // What happened to a boost: it started, ended, failed (`reason`, as the
+  // ads context names it), used its whole budget, or Peal could not learn
+  // whether it runs. Ids and amounts only: never who it is shown to.
+  Schema.TaggedStruct("AdBoostChanged", {
+    boostId: Schema.NonEmptyString,
+    // In the ad account's minor units, `budgetDigits` decimal digits
+    // below the currency's unit: 2 for most, 0 where there is none.
+    budget: NoticeMoneySchema,
+    budgetDigits: Schema.Literals([0, 2]),
+    change: Schema.Literals([
+      "started",
+      "ended",
+      "failed",
+      "budgetReached",
+      "unconfirmed",
+    ]),
+    endsAt: Schema.DateTimeUtc,
+    postId: PostIdSchema,
+    reason: Schema.Option(Schema.NonEmptyString),
+  }),
 ]);
 
 export type NoticeEvent = typeof NoticeEventSchema.Type;
@@ -213,6 +238,9 @@ export type EmailKind =
  */
 export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
   Match.valueTags(event, {
+    // Money: always emailed, as an owner answers for what is spent.
+    AdBoostChanged: () => Option.none<EmailKind>(),
+    AdConnectionReconnectRequired: () => Option.none<EmailKind>(),
     ChannelReconnectRequired: () => Option.some<EmailKind>("channelReconnect"),
     ChannelReconnectSoon: () => Option.some<EmailKind>("channelReconnect"),
     CommentsReceived: () => Option.some<EmailKind>("comments"),
@@ -242,6 +270,9 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
  */
 export const audienceOf = (event: NoticeEvent): Permission =>
   Match.valueTags(event, {
+    // What a boost spends answers to the owners, who allowed it.
+    AdBoostChanged: (): Permission => "ads:authorize",
+    AdConnectionReconnectRequired: (): Permission => "ads:manage",
     ChannelReconnectRequired: (): Permission => "channel:connect",
     ChannelReconnectSoon: (): Permission => "channel:connect",
     CommentsReceived: (): Permission => "engagement:reply",
@@ -263,6 +294,8 @@ export const audienceOf = (event: NoticeEvent): Permission =>
 /** Whether the event is about a post rather than a channel or billing. */
 export const isAboutPost = (event: NoticeEvent): boolean =>
   Match.valueTags(event, {
+    AdBoostChanged: () => false,
+    AdConnectionReconnectRequired: () => false,
     ChannelReconnectRequired: () => false,
     ChannelReconnectSoon: () => false,
     CommentsReceived: () => true,
@@ -379,6 +412,8 @@ export const recipientsOf = (
 /** The web app's page for the event, where the reader acts on it. */
 export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
   Match.valueTags(event, {
+    AdBoostChanged: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
+    AdConnectionReconnectRequired: () => `/app/${workspaceId}/ads`,
     ChannelReconnectRequired: () => `/app/${workspaceId}/channels`,
     ChannelReconnectSoon: () => `/app/${workspaceId}/channels`,
     CommentsReceived: ({ threadId }) => `/app/${workspaceId}/inbox/${threadId}`,

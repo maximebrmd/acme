@@ -42,6 +42,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   const settings = await getTranslations("WorkspaceSettings");
   const billing = await getTranslations("Billing");
   const analytics = await getTranslations("Analytics");
+  const ads = await getTranslations("Ads");
   const review = await getTranslations("Review");
   const inbox = await getTranslations("Inbox");
 
@@ -141,6 +142,17 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                         className="underline-offset-4 hover:underline"
                       >
                         {analytics("open")}
+                      </Link>
+                    ) : null}
+                    {workspace.permissions.includes("ads:read") ? (
+                      <Link
+                        href={`/app/${workspace.id}/ads`}
+                        aria-label={ads("openLabel", {
+                          workspace: workspace.name,
+                        })}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {ads("open")}
                       </Link>
                     ) : null}
                     {workspace.permissions.includes("billing:read") ? (

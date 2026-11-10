@@ -13,6 +13,7 @@ from .excess import Excess
 from .failure_reason import FailureReason
 from .money import Money
 from .notice_channel import NoticeChannel
+from .notice_event_ad_boost_changed_change import NoticeEventAdBoostChangedChange
 from .paid_plan import PaidPlan
 from .review_party import ReviewParty
 from .webhook_turn_off_reason import WebhookTurnOffReason
@@ -306,6 +307,46 @@ class NoticeEvent_WebhookEndpointDisabled(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_AdBoostChanged(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["AdBoostChanged"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "AdBoostChanged"
+    boost_id: typing_extensions.Annotated[str, FieldMetadata(alias="boostId"), pydantic.Field(alias="boostId")]
+    budget: Money
+    budget_digits: typing_extensions.Annotated[
+        float, FieldMetadata(alias="budgetDigits"), pydantic.Field(alias="budgetDigits")
+    ]
+    change: NoticeEventAdBoostChangedChange
+    ends_at: typing_extensions.Annotated[str, FieldMetadata(alias="endsAt"), pydantic.Field(alias="endsAt")]
+    post_id: typing_extensions.Annotated[str, FieldMetadata(alias="postId"), pydantic.Field(alias="postId")]
+    reason: typing.Optional[str] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_AdConnectionReconnectRequired(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["AdConnectionReconnectRequired"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "AdConnectionReconnectRequired"
+    network: str
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 NoticeEvent = typing_extensions.Annotated[
     typing.Union[
         NoticeEvent_PostPublished,
@@ -324,6 +365,8 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_SubscriptionCancelled,
         NoticeEvent_SubscriptionWithdrawn,
         NoticeEvent_WebhookEndpointDisabled,
+        NoticeEvent_AdBoostChanged,
+        NoticeEvent_AdConnectionReconnectRequired,
     ],
     pydantic.Field(discriminator="type"),
 ]

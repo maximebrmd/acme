@@ -73,7 +73,7 @@ The order of the fields in the body is not part of the contract.
 
 ### What a payload never holds [#thin]
 
-Payloads carry ids, states, codes, instants and permalinks. They never carry what a post says, in any of its parts, nor its images or videos; nor what a comment or a reply to it says, nor who wrote a comment.
+Payloads carry ids, states, codes, instants and permalinks, and a boost's budget as amounts. They never carry what a post says, in any of its parts, nor its images or videos; nor what a comment or a reply to it says, nor who wrote a comment; nor who a boost is shown to.
 
 The endpoint is a third party to the people who wrote the post: an address someone chose, which Peal cannot check beyond its being public. Keeping payloads thin keeps a workspace's content behind API credentials and their permissions, where each read is checked. When your server needs the post, it reads it through the API with a key of its own: `GET /api/workspaces/{workspaceId}/posts/{postId}`.
 
@@ -100,7 +100,13 @@ Event types and their fields are a public contract. Peal adds event types, and f
 | [`media.ready`](#media-ready)                           | A file was read, and can go in posts                                      |
 | [`media.failed`](#media-failed)                         | A file was refused, or could not be read                                  |
 | [`comment.received`](#comment-received)                 | Someone commented under a post that went live                             |
-| [`comment.replied`](#comment-replied)                   | A reply to a comment went out from Peal                                   |
+| -----------------------------------------------         | ---------------------------------------------------------                 |
+| [`boost.resumed`](#boost-resumed)                       | A member ran a paused boost again                                         |
+| [`boost.stopped`](#boost-stopped)                       | A member stopped a boost for good                                         |
+| [`boost.ended`](#boost-ended)                           | A boost's end date passed                                                 |
+| [`boost.failed`](#boost-failed)                         | A boost could not be made, and nothing ran                                |
+| [`boost.unconfirmed`](#boost-unconfirmed)               | Peal cannot tell whether a boost runs: it may be spending                 |
+| [`boost.budget_reached`](#boost-budget-reached)         | A boost spent its whole total budget                                      |
 | [`webhook.test`](#webhook-test)                         | Someone asked for a test event. Sent whatever the endpoint subscribes to. |
 
 A post goes out on each of its channels separately, so `post.published`, `post.failed` and `post.unconfirmed` name one channel each: a post on three channels brings three events. These fields say which:
@@ -630,6 +636,257 @@ A reply to a comment went out from Peal, as the channel's account. A reply that 
     "replyId": "019a6f57-3e5f-7a6b-8c7d-8e9f0a1b2c3d",
     "permalink": "https://mastodon.example/@peal_example/113000000000000002",
     "repliedAt": "2026-11-10T09:20:41.000Z"
+  }
+}
+```
+
+### Boost events [#boost-events]
+
+A [boost](/ads#boosts) promotes a published post as an ad, on an instance where [ads](/ads) are on. Its eight events carry the same `data`: ids, amounts and where the boost stands. They never carry who the boost is shown to, nor who benefits from the ad or pays for it: read the boost through the API for that, with `GET /api/workspaces/{workspaceId}/ads/boosts/{boostId}`.
+
+| Field         | Type           | What it holds                                                                                                                                       |
+| ------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workspaceId` | string         | The workspace                                                                                                                                       |
+| `postId`      | string         | The post the boost promotes                                                                                                                         |
+| `boostId`     | string         | The boost                                                                                                                                           |
+| `adAccountId` | string         | The ad account that pays for it                                                                                                                     |
+| `budget`      | object         | Its budget: `amount`, an integer in the ad account's [minor units](/ads#money), and `kind`, `total` for the whole run or `daily` for each day of it |
+| `committed`   | integer        | The most it can cost, in minor units: what is counted against the account's [monthly ceiling](/ads#ceiling)                                         |
+| `currency`    | string         | The ad account's currency, as an ISO 4217 code such as `EUR`                                                                                        |
+| `endsAt`      | string         | When its run ends, as an instant in UTC                                                                                                             |
+| `state`       | string         | Where the boost stands, one of the [boost states](/ads#states)                                                                                      |
+| `reason`      | string or null | Why it failed, one of the [failure reasons](/ads#failure-reasons); null unless `state` is `failed`                                                  |
+
+An amount is an integer, never a decimal: `5000` in `EUR` is 50.00 €, and in a currency without a minor unit, such as `JPY`, it is 5,000 ¥. The ad account's `minorUnitDigits`, in the API, says which.
+
+### boost.started [#boost-started]
+
+The boost was made at the ad network and turned on: it may spend up to its budget, until `endsAt`. The network can still review the ad before it shows it.
+
+```json title="boost.started"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e10",
+  "type": "boost.started",
+  "version": 1,
+  "timestamp": "2026-11-12T09:00:41.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a10-5c3e-7d21-8b40-2e6f9a1c3d01",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 5000,
+      "kind": "total"
+    },
+    "committed": 5000,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "active",
+    "reason": null
+  }
+}
+```
+
+### boost.paused [#boost-paused]
+
+A member paused the boost, and the network confirmed it. Its budget stays counted against the ceiling.
+
+```json title="boost.paused"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e11",
+  "type": "boost.paused",
+  "version": 1,
+  "timestamp": "2026-11-13T15:20:07.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a44-0b7d-7e93-a1c5-4f6d8e0a2b17",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 1000,
+      "kind": "daily"
+    },
+    "committed": 8750,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "paused",
+    "reason": null
+  }
+}
+```
+
+### boost.resumed [#boost-resumed]
+
+A member ran a paused boost again: it may spend again, until `endsAt`.
+
+```json title="boost.resumed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e12",
+  "type": "boost.resumed",
+  "version": 1,
+  "timestamp": "2026-11-14T08:02:30.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a44-0b7d-7e93-a1c5-4f6d8e0a2b17",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 1000,
+      "kind": "daily"
+    },
+    "committed": 8750,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "active",
+    "reason": null
+  }
+}
+```
+
+### boost.stopped [#boost-stopped]
+
+A member stopped the boost for good: it does not run again. `committed` is counted down to what it can have cost: nothing if it never ran, the days it ran for a daily budget, its whole budget for a total one.
+
+```json title="boost.stopped"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e13",
+  "type": "boost.stopped",
+  "version": 1,
+  "timestamp": "2026-11-15T11:45:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a44-0b7d-7e93-a1c5-4f6d8e0a2b17",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 1000,
+      "kind": "daily"
+    },
+    "committed": 3750,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "stopped",
+    "reason": null
+  }
+}
+```
+
+### boost.ended [#boost-ended]
+
+The boost's end date passed. The network stops it at that time on its own; Peal records it within about ten minutes.
+
+```json title="boost.ended"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e14",
+  "type": "boost.ended",
+  "version": 1,
+  "timestamp": "2026-11-19T09:10:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a10-5c3e-7d21-8b40-2e6f9a1c3d01",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 5000,
+      "kind": "total"
+    },
+    "committed": 5000,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "ended",
+    "reason": null
+  }
+}
+```
+
+### boost.failed [#boost-failed]
+
+The boost could not be made: nothing ran, and nothing was spent. `reason` says why.
+
+```json title="boost.failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e15",
+  "type": "boost.failed",
+  "version": 1,
+  "timestamp": "2026-11-12T10:30:18.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a61-9e20-7c48-b3d6-0a1c2e4f6a29",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 5000,
+      "kind": "total"
+    },
+    "committed": 3000,
+    "currency": "EUR",
+    "endsAt": "2026-11-20T10:30:00.000Z",
+    "state": "failed",
+    "reason": "budgetTooLow"
+  }
+}
+```
+
+### boost.unconfirmed [#boost-unconfirmed]
+
+Peal told the network to run the boost and could not read back whether it does. **It may be spending.** Its budget stays counted, and Peal sends nothing more on its own: someone checks it, and [stops it](/ads#control) if it must not run.
+
+```json title="boost.unconfirmed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e16",
+  "type": "boost.unconfirmed",
+  "version": 1,
+  "timestamp": "2026-11-12T11:05:52.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a7c-3a15-7f06-95e7-6b8d0f1a3c3b",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 5000,
+      "kind": "total"
+    },
+    "committed": 5000,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T11:00:00.000Z",
+    "state": "unconfirmed",
+    "reason": null
+  }
+}
+```
+
+### boost.budget_reached [#boost-budget-reached]
+
+The ads Peal read show that the boost spent its whole total budget: the network no longer shows it. It is sent once, for a total budget only, after the hourly read that found it; the boost stays `active` until its end date.
+
+```json title="boost.budget_reached"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e17",
+  "type": "boost.budget_reached",
+  "version": 1,
+  "timestamp": "2026-11-17T14:37:26.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a10-5c3e-7d21-8b40-2e6f9a1c3d01",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 5000,
+      "kind": "total"
+    },
+    "committed": 5000,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "active",
+    "reason": null
   }
 }
 ```

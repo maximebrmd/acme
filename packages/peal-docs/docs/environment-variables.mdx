@@ -115,6 +115,14 @@ Better Auth also reads `BETTER_AUTH_TRUSTED_ORIGINS`, which adds origins as `TRU
 
 A provider named without the settings it needs stops the server at startup, and the error names the variable missing. [Writing assistant](/self-hosting#ai) explains the rest.
 
+### Ads [#ads]
+
+| Variable   | Default | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PEAL_ADS` | `off`   | What the server offers of [ads](/ads): `off`, nothing; `read`, workspaces connect Meta ad accounts and read their campaigns and numbers, and nothing spends; `spend`, they also boost published posts, which spends their money at Meta. Unset or empty is `off`. `read` and `spend` need `META_APP_ID` and `META_APP_SECRET`, on an app Meta gave ads access, and `PEAL_TOKEN_KEYS` to encrypt the sign-ins' tokens. Any other value, or `read` or `spend` without Meta's app, stops the server at startup. |
+
+Ads on Meta use Meta's main app, the one Facebook Pages connect with. [What Meta asks of the operator](/ads#operator) lists the permissions and reviews it takes: stay on `read` until Meta granted the app `ads_management`.
+
 ### Billing [#billing]
 
 | Variable                   | Default               | What it does                                                                                                                                                                                                                                         |

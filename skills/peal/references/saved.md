@@ -1,4 +1,4 @@
-# Tags, signatures and channel sets
+# Tags, signatures, channel sets and channels' names
 
 What a workspace saves to file and write its posts with, from the command
 line. Read [SKILL.md](../SKILL.md) first: its rules about drafts,
@@ -44,3 +44,22 @@ twice. A channel without `--options` takes the set's
 options, then its default options. Create or change a signature, a set or
 default options (`peal signatures create`, `peal sets create`, `peal
 channels defaults set`) only when the user asked for it.
+
+## A channel's name, and turning it off
+
+`disabled` means someone turned a channel off, and `peal channels enable`
+turns it back on. A channel's `label` is
+the name the workspace gave it, beside its `handle`; `--search` finds a
+channel by either, and a filter makes `--json` answer a page (`items`,
+`nextCursor`, `counts` by status):
+
+```sh
+peal channels list --platform youtube --status active --search "client a" --json
+peal channels rename <channel-id> "Client A" --json
+peal channels disable <channel-id> --json
+peal channels enable <channel-id> --json
+```
+
+Turn a channel off only when the user asked: nothing is deleted, but a post
+that reaches its time on it meanwhile fails there (`channelDisabled`) and is
+not sent later. Once it is back on, schedule such a post anew.

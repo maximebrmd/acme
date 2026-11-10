@@ -73,7 +73,7 @@ L’ordre des champs dans le corps ne fait pas partie du contrat.
 
 ### Ce qu’un corps ne contient jamais [#thin]
 
-Les corps portent des identifiants, des états, des codes, des instants et des liens permanents. Ils ne portent jamais ce que dit une publication, dans aucune de ses parties, ni ses images ou vidéos ; ni ce que dit un commentaire ou la réponse qui lui est faite, ni qui a écrit un commentaire.
+Les corps portent des identifiants, des états, des codes, des instants et des liens permanents, et le budget d’une mise en avant sous forme de montants. Ils ne portent jamais ce que dit une publication, dans aucune de ses parties, ni ses images ou vidéos ; ni ce que dit un commentaire ou la réponse qui lui est faite, ni qui a écrit un commentaire ; ni l’audience d’une mise en avant.
 
 Le point de terminaison est un tiers pour les personnes qui ont écrit la publication : une adresse que quelqu’un a choisie, et dont Peal ne peut rien vérifier d’autre que son caractère public. Garder les corps légers garde le contenu d’un espace de travail derrière des identifiants d’API et leurs permissions, où chaque lecture est vérifiée. Quand votre serveur a besoin de la publication, il la lit par l’API avec une clé à lui : `GET /api/workspaces/{workspaceId}/posts/{postId}`.
 
@@ -100,7 +100,13 @@ Les types d’événements et leurs champs sont un contrat public. Peal ajoute d
 | [`media.ready`](#media-ready)                           | Un fichier a été lu, et peut aller dans des publications                                                   |
 | [`media.failed`](#media-failed)                         | Un fichier a été refusé, ou n’a pas pu être lu                                                             |
 | [`comment.received`](#comment-received)                 | Quelqu’un a commenté une publication mise en ligne                                                         |
-| [`comment.replied`](#comment-replied)                   | Une réponse à un commentaire est partie depuis Peal                                                        |
+| -----------------------------------------------         | ----------------------------------------------------------------------------------                         |
+| [`boost.resumed`](#boost-resumed)                       | Un membre a relancé une mise en avant en pause                                                             |
+| [`boost.stopped`](#boost-stopped)                       | Un membre a arrêté une mise en avant pour de bon                                                           |
+| [`boost.ended`](#boost-ended)                           | La date de fin d’une mise en avant est passée                                                              |
+| [`boost.failed`](#boost-failed)                         | Une mise en avant n’a pas pu être créée, et rien n’a été diffusé                                           |
+| [`boost.unconfirmed`](#boost-unconfirmed)               | Peal ne peut pas savoir si une mise en avant est diffusée : elle dépense peut-être                         |
+| [`boost.budget_reached`](#boost-budget-reached)         | Une mise en avant a dépensé tout son budget total                                                          |
 | [`webhook.test`](#webhook-test)                         | Quelqu’un a demandé un événement de test. Envoyé quels que soient les abonnements du point de terminaison. |
 
 Une publication part sur chacun de ses canaux séparément : `post.published`, `post.failed` et `post.unconfirmed` nomment donc un canal chacun, et une publication sur trois canaux amène trois événements. Ces champs disent lequel :
@@ -630,6 +636,257 @@ Une réponse à un commentaire est partie depuis Peal, au nom du compte du canal
     "replyId": "019a6f57-3e5f-7a6b-8c7d-8e9f0a1b2c3d",
     "permalink": "https://mastodon.example/@peal_example/113000000000000002",
     "repliedAt": "2026-11-10T09:20:41.000Z"
+  }
+}
+```
+
+### Événements des mises en avant [#boost-events]
+
+Une [mise en avant](/ads#boosts) diffuse une publication parue comme publicité, sur une instance où les [publicités](/ads) sont activées. Ses huit événements portent le même `data` : des identifiants, des montants et l’état de la mise en avant. Ils ne portent jamais l’audience de la mise en avant, ni qui bénéficie de la publicité ou la paie : lisez la mise en avant par l’API pour cela, avec `GET /api/workspaces/{workspaceId}/ads/boosts/{boostId}`.
+
+| Champ         | Type           | Ce qu’il contient                                                                                                                                                        |
+| ------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `workspaceId` | chaîne         | L’espace de travail                                                                                                                                                      |
+| `postId`      | chaîne         | La publication mise en avant                                                                                                                                             |
+| `boostId`     | chaîne         | La mise en avant                                                                                                                                                         |
+| `adAccountId` | chaîne         | Le compte publicitaire qui la paie                                                                                                                                       |
+| `budget`      | objet          | Son budget : `amount`, un entier en [unités mineures](/ads#money) du compte publicitaire, et `kind`, `total` pour toute la diffusion ou `daily` pour chacun de ses jours |
+| `committed`   | entier         | Ce qu’elle peut coûter au plus, en unités mineures : ce qui est compté dans le [plafond mensuel](/ads#ceiling) du compte                                                 |
+| `currency`    | chaîne         | La devise du compte publicitaire, en code ISO 4217, comme `EUR`                                                                                                          |
+| `endsAt`      | chaîne         | La fin de sa diffusion, sous forme d’instant en UTC                                                                                                                      |
+| `state`       | chaîne         | L’état de la mise en avant, l’un des [états](/ads#states)                                                                                                                |
+| `reason`      | chaîne ou null | Pourquoi elle a échoué, l’une des [raisons d’échec](/ads#failure-reasons) ; null sauf si `state` vaut `failed`                                                           |
+
+Un montant est un entier, jamais un nombre décimal : `5000` en `EUR` vaut 50,00 €, et dans une devise sans unité mineure, comme `JPY`, 5 000 ¥. Le `minorUnitDigits` du compte publicitaire, dans l’API, dit lequel.
+
+### boost.started [#boost-started]
+
+La mise en avant a été créée sur le réseau publicitaire et activée : elle peut dépenser jusqu’à son budget, jusqu’à `endsAt`. Le réseau peut encore examiner la publicité avant de la diffuser.
+
+```json title="boost.started"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e10",
+  "type": "boost.started",
+  "version": 1,
+  "timestamp": "2026-11-12T09:00:41.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a10-5c3e-7d21-8b40-2e6f9a1c3d01",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 5000,
+      "kind": "total"
+    },
+    "committed": 5000,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "active",
+    "reason": null
+  }
+}
+```
+
+### boost.paused [#boost-paused]
+
+Un membre a mis la mise en avant en pause, et le réseau l’a confirmé. Son budget reste compté dans le plafond.
+
+```json title="boost.paused"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e11",
+  "type": "boost.paused",
+  "version": 1,
+  "timestamp": "2026-11-13T15:20:07.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a44-0b7d-7e93-a1c5-4f6d8e0a2b17",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 1000,
+      "kind": "daily"
+    },
+    "committed": 8750,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "paused",
+    "reason": null
+  }
+}
+```
+
+### boost.resumed [#boost-resumed]
+
+Un membre a relancé une mise en avant en pause : elle peut de nouveau dépenser, jusqu’à `endsAt`.
+
+```json title="boost.resumed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e12",
+  "type": "boost.resumed",
+  "version": 1,
+  "timestamp": "2026-11-14T08:02:30.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a44-0b7d-7e93-a1c5-4f6d8e0a2b17",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 1000,
+      "kind": "daily"
+    },
+    "committed": 8750,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "active",
+    "reason": null
+  }
+}
+```
+
+### boost.stopped [#boost-stopped]
+
+Un membre a arrêté la mise en avant pour de bon : elle ne reprend pas. `committed` est ramené à ce qu’elle a pu coûter : rien si elle n’a jamais été diffusée, les jours de diffusion pour un budget quotidien, tout son budget pour un budget total.
+
+```json title="boost.stopped"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e13",
+  "type": "boost.stopped",
+  "version": 1,
+  "timestamp": "2026-11-15T11:45:12.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a44-0b7d-7e93-a1c5-4f6d8e0a2b17",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 1000,
+      "kind": "daily"
+    },
+    "committed": 3750,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "stopped",
+    "reason": null
+  }
+}
+```
+
+### boost.ended [#boost-ended]
+
+La date de fin de la mise en avant est passée. Le réseau l’arrête de lui-même à cette heure ; Peal l’enregistre dans les dix minutes environ.
+
+```json title="boost.ended"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e14",
+  "type": "boost.ended",
+  "version": 1,
+  "timestamp": "2026-11-19T09:10:00.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a10-5c3e-7d21-8b40-2e6f9a1c3d01",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 5000,
+      "kind": "total"
+    },
+    "committed": 5000,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "ended",
+    "reason": null
+  }
+}
+```
+
+### boost.failed [#boost-failed]
+
+La mise en avant n’a pas pu être créée : rien n’a été diffusé, et rien n’a été dépensé. `reason` dit pourquoi.
+
+```json title="boost.failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e15",
+  "type": "boost.failed",
+  "version": 1,
+  "timestamp": "2026-11-12T10:30:18.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a61-9e20-7c48-b3d6-0a1c2e4f6a29",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 5000,
+      "kind": "total"
+    },
+    "committed": 3000,
+    "currency": "EUR",
+    "endsAt": "2026-11-20T10:30:00.000Z",
+    "state": "failed",
+    "reason": "budgetTooLow"
+  }
+}
+```
+
+### boost.unconfirmed [#boost-unconfirmed]
+
+Peal a demandé au réseau de diffuser la mise en avant et n’a pas pu relire si elle l’est. **Elle dépense peut-être.** Son budget reste compté, et Peal n’envoie plus rien de lui-même : quelqu’un la vérifie, et [l’arrête](/ads#control) si elle ne doit pas être diffusée.
+
+```json title="boost.unconfirmed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e16",
+  "type": "boost.unconfirmed",
+  "version": 1,
+  "timestamp": "2026-11-12T11:05:52.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a7c-3a15-7f06-95e7-6b8d0f1a3c3b",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 5000,
+      "kind": "total"
+    },
+    "committed": 5000,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T11:00:00.000Z",
+    "state": "unconfirmed",
+    "reason": null
+  }
+}
+```
+
+### boost.budget_reached [#boost-budget-reached]
+
+Les publicités lues par Peal montrent que la mise en avant a dépensé tout son budget total : le réseau ne la diffuse plus. Il est envoyé une fois, pour un budget total seulement, après la lecture horaire qui l’a constaté ; la mise en avant reste `active` jusqu’à sa date de fin.
+
+```json title="boost.budget_reached"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e17",
+  "type": "boost.budget_reached",
+  "version": 1,
+  "timestamp": "2026-11-17T14:37:26.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "boostId": "019a7a10-5c3e-7d21-8b40-2e6f9a1c3d01",
+    "adAccountId": "019a7902-1f4b-7a60-9c12-7d8e0f2a4b55",
+    "budget": {
+      "amount": 5000,
+      "kind": "total"
+    },
+    "committed": 5000,
+    "currency": "EUR",
+    "endsAt": "2026-11-19T09:00:00.000Z",
+    "state": "active",
+    "reason": null
   }
 }
 ```

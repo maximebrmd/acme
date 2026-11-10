@@ -331,6 +331,10 @@ Each workspace may send the assistant `PEAL_AI_DAILY_REQUESTS` requests per UTC 
 
 What members send is the post's text, up to 5,000 characters, and answers are capped at 4,096 tokens. The text is sent as data, with instructions the text cannot change. The server never logs or traces the text or the answer, saves neither, and sends the provider no trace context: its logs and traces name the provider, the model, the token counts and the kind of failure only.
 
+## Ads [#ads]
+
+Ads are off until you set `PEAL_ADS`: `read` lets workspaces connect Meta ad accounts and read their campaigns and numbers, and `spend` also lets them boost published posts, which spends their money at Meta. A self-hosted server brings its own Meta app with ads access: the app in `META_APP_ID` and `META_APP_SECRET`, which also connects [Facebook Pages](#meta), given the ads permissions by Meta, with one more redirect address that [the command](#platform-addresses) prints for ads. [Ads](/ads#operator) lists what Meta asks of you, and why to stay on `read` until it granted `ads_management`.
+
 ## Billing [#billing]
 
 Billing is off until `STRIPE_SECRET_KEY` is set: there are no plans, nothing is limited, and the workspaces' billing page says so. With a key, every workspace starts on the free plan, and a Stripe subscription moves it to Starter, Pro, Business or Agency, monthly or yearly. [Plans and billing](/billing) lists them, with what each limits, the trial, ordering, cancelling and withdrawing.

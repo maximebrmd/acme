@@ -22,6 +22,7 @@ const watched = [
   "peal_analytics_accounts_unfinished_total",
   "peal_engagement_collection_unfinished_total",
   "peal_engagement_collection_thread_failures_total",
+  "peal_ads_sync_unfinished_total",
   "peal_publishing_uploads_waiting",
 ];
 

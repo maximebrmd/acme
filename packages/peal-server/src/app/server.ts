@@ -8,6 +8,14 @@ import { Api } from "peal-contract";
 
 import { ActivityApiLive, ActivityLive } from "#activity/container.ts";
 import {
+  AdsApiLive,
+  adsLive,
+  AdsPlatformUserGrants,
+  AdsWorkersLive,
+  DirectAds,
+  GatedAds,
+} from "#ads/container.ts";
+import {
   AnalyticsApiLive,
   analyticsCollection,
   AnalyticsLive,
@@ -143,7 +151,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   TagsApiLive,
   SignaturesApiLive,
   ChannelSetsApiLive,
-  ChannelDefaultsApiLive
+  ChannelDefaultsApiLive,
+  AdsApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -203,6 +212,9 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
   Layer.provide(ConnectLinkJournalLive),
   // A channel gone or back is told to analytics, in its transaction.
   Layer.provide(AnalyticsRecordsLive),
+  // Meta's requests about a Facebook user reach their sign-ins to its ad
+  // network too, which the ads context holds.
+  Layer.provide(AdsPlatformUserGrants),
   Layer.provideMerge(WebhooksContextLive),
   Layer.provideMerge(NoticesLive),
   Layer.provideMerge(
@@ -286,6 +298,25 @@ const AssistantContextLive = AssistantLive.pipe(
   Layer.provideMerge(BillingContextsLive)
 );
 
+// Ads, on the gate given: with the cluster, each ad account's own gate;
+// without it, as in tests of the routes, the calls run where they are
+// asked. They reach networks with the tokens the channels context
+// encrypts, promote the posts publishing lists, show the counts analytics
+// keeps beside theirs, and tell workspaces through the notices and the
+// webhooks.
+const adsContext = <GOut, GE, GR>(gate: Layer.Layer<GOut, GE, GR>) =>
+  adsLive(gate).pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        ChannelsWithNoticesLive,
+        PublishingContextLive,
+        AnalyticsLive
+      )
+    )
+  );
+
+const AdsRoutesContextLive = adsContext(DirectAds);
+
 // Workspace and account settings, which erase and export what every context
 // keeps, billing's included, which the workspace context brings, the staff
 // audit log's, and the legal records, which keep who held a closed account.
@@ -299,7 +330,8 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       AnalyticsLive,
       EngagementRecordsLive,
       StaffRecordsLive,
-      ReviewGateContextLive
+      ReviewGateContextLive,
+      AdsRoutesContextLive
     )
   )
 );
@@ -313,14 +345,22 @@ const ErasedContextsLive = Layer.mergeAll(
   AnalyticsLive,
   EngagementRecordsLive,
   StaffRecordsLive,
-  ReviewGateContextLive
+  ReviewGateContextLive,
+  AdsRoutesContextLive
 );
 
 // The staff console, which reads accounts and workspaces from the workspace
 // context, and each workspace's plan, channels and posts from billing, the
 // channels context and publishing.
 const StaffContextLive = StaffLive.pipe(
-  Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, PublishingContextLive))
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      PublishingContextLive,
+      // Its ad accounts and boosts, as metadata.
+      AdsRoutesContextLive
+    )
+  )
 );
 
 // Legal requests, for staff holding the legal role, as the workspace
@@ -393,7 +433,8 @@ const ServicesLive = Layer.mergeAll(
   LegalRequestsContextLive,
   ReviewGateContextLive,
   ReviewContextLive,
-  ContractRequestsContextLive
+  ContractRequestsContextLive,
+  AdsRoutesContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -434,6 +475,7 @@ const WorkersLive = Layer.mergeAll(
   NotificationsWorkersLive,
   EngagementWorkersLive,
   WebhooksWorkersLive,
+  AdsWorkersLive,
   CronsLive
 );
 
@@ -462,7 +504,9 @@ const ContextsLive = Layer.mergeAll(
   LegalRequestsContextLive,
   ReviewGateContextLive,
   ReviewContextLive,
-  ContractRequestsContextLive
+  ContractRequestsContextLive,
+  // On the cluster, every call to an ad account goes through its gate.
+  adsContext(GatedAds)
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

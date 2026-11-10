@@ -15,6 +15,9 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
  *   out, and reading: scheduling, moving, publishing and reposting, and
  *   taking a post back, cancelling it or confirming how it went; and
  *   answering the comments under them, as the account, in public.
+ * - `workspace:ads`: nothing alone. Beside `workspace:write`, connecting
+ *   and disconnecting ad accounts; beside `workspace:publish`, spending on
+ *   ads within the ceiling an owner set (`adsPermissions`).
  *
  * Publishing is a grant of its own, which the consent page shows on its own
  * line: a token issued for `workspace:write` before it existed publishes
@@ -24,11 +27,20 @@ export const WorkspaceScopeSchema = Schema.Literals([
   "workspace:read",
   "workspace:write",
   "workspace:publish",
+  "workspace:ads",
 ]);
 
 export type WorkspaceScope = typeof WorkspaceScopeSchema.Type;
 
 const isWorkspaceScope = Schema.is(WorkspaceScopeSchema);
+
+// The scopes that let an application into a workspace at all. The ads
+// scope adds to them, and opens nothing alone.
+const entryScopes: ReadonlySet<string> = new Set([
+  "workspace:read",
+  "workspace:write",
+  "workspace:publish",
+]);
 
 /**
  * An OAuth access token's grant: the client it was issued to, the scopes the
@@ -74,20 +86,64 @@ export const publishingPermissions: ReadonlySet<Permission> = new Set([
   "post:publish",
 ]);
 
-/** The scope an OAuth client needs for a permission its user holds. */
-export const scopeFor = (permission: Permission): WorkspaceScope => {
-  if (publishingPermissions.has(permission)) {
-    return "workspace:publish";
+/**
+ * The permissions that reach an ad network: `workspace:ads` leaves them to
+ * an OAuth client, beside the scope each takes anyway.
+ */
+export const adsPermissions: ReadonlySet<Permission> = new Set([
+  "ads:manage",
+  "ads:spend",
+]);
+
+/**
+ * What no OAuth client does, whatever its scopes: deciding that ads may
+ * spend, and how much, is the owner's, in their own session.
+ */
+export const personOnlyPermissions: ReadonlySet<Permission> = new Set([
+  "ads:authorize",
+]);
+
+/**
+ * Every scope an OAuth client needs for a permission its user holds: one
+ * for most, and `workspace:ads` too for what reaches an ad network, so
+ * that spending takes `workspace:publish` and `workspace:ads` together.
+ */
+export const scopesFor = (
+  permission: Permission
+): readonly WorkspaceScope[] => {
+  // The ads scope first: it is the one a refusal names to a client that
+  // holds neither.
+  if (permission === "ads:spend") {
+    return ["workspace:ads", "workspace:publish"];
   }
 
-  return reads(permission) ? "workspace:read" : "workspace:write";
+  if (publishingPermissions.has(permission)) {
+    return ["workspace:publish"];
+  }
+
+  if (reads(permission)) {
+    return ["workspace:read"];
+  }
+
+  return adsPermissions.has(permission)
+    ? ["workspace:write", "workspace:ads"]
+    : ["workspace:write"];
+};
+
+/** The first scope an OAuth client needs for a permission its user holds. */
+export const scopeFor = (permission: Permission): WorkspaceScope => {
+  const [first = "workspace:write"] = scopesFor(permission);
+
+  return first;
 };
 
 /**
  * The permissions a grant leaves of those the user holds in a workspace:
- * none outside the workspace it is bound to, and none without a workspace
- * scope; reading with any of them, what puts posts out with
- * `workspace:publish` only, and the rest with `workspace:write`.
+ * none outside the workspace it is bound to, and none without a scope that
+ * lets it in (reading, writing or publishing); reading with any of them,
+ * what puts posts out with `workspace:publish` only, what reaches an ad
+ * network with `workspace:ads` too, the rest with `workspace:write`, and
+ * never what is the person's alone (`personOnlyPermissions`).
  */
 export const grantedPermissions = (
   grant: OAuthGrant,
@@ -98,12 +154,14 @@ export const grantedPermissions = (
     return [];
   }
 
-  if (!grant.scopes.some(isWorkspaceScope)) {
+  if (!grant.scopes.some((scope) => entryScopes.has(scope))) {
     return [];
   }
 
   return permissions.filter(
     (permission) =>
-      reads(permission) || grant.scopes.includes(scopeFor(permission))
+      reads(permission) ||
+      (!personOnlyPermissions.has(permission) &&
+        scopesFor(permission).every((scope) => grant.scopes.includes(scope)))
   );
 };

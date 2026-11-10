@@ -58,6 +58,28 @@ const postChannelView = (channel: Option.Option<NoticeChannel>) =>
 
 const eventView = (event: NoticeEvent): NoticeEventView =>
   Match.valueTags(event, {
+    AdBoostChanged: ({
+      boostId,
+      budget,
+      budgetDigits,
+      change,
+      endsAt,
+      postId,
+      reason,
+    }): NoticeEventView => ({
+      _tag: "AdBoostChanged",
+      boostId,
+      budget,
+      budgetDigits,
+      change,
+      endsAt,
+      postId,
+      reason: Option.getOrNull(reason),
+    }),
+    AdConnectionReconnectRequired: ({ network }): NoticeEventView => ({
+      _tag: "AdConnectionReconnectRequired",
+      network,
+    }),
     ChannelReconnectRequired: ({ channel }): NoticeEventView => ({
       _tag: "ChannelReconnectRequired",
       channel: channelView(channel),

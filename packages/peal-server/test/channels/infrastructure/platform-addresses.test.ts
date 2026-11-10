@@ -107,6 +107,10 @@ describe("the addresses to register with each platform", () => {
       "https://peal.example/api/data-deletion/facebook",
       "https://peal.example/api/data-deletion/facebook/deauthorize",
     ]);
+    // The sign-in to Meta's ad network, on the same app.
+    expect(addressesOf("metaAds")).toStrictEqual([
+      "https://peal.example/connect/ads/meta/callback",
+    ]);
     expect(addressesOf("instagramLogin")).toStrictEqual([
       "https://peal.example/connect/instagram/callback",
       "https://peal.example/api/data-deletion/instagram",
@@ -165,6 +169,7 @@ describe("the addresses to register with each platform", () => {
         "LINKEDIN_PAGES_CLIENT_SECRET",
       ],
       mastodon: [],
+      metaAds: ["META_APP_ID", "META_APP_SECRET", "PEAL_ADS"],
       pinterest: ["PINTEREST_APP_ID", "PINTEREST_APP_SECRET"],
       threads: ["THREADS_APP_ID", "THREADS_APP_SECRET"],
       tiktok: ["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET"],

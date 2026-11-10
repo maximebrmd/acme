@@ -1,7 +1,7 @@
 import { Option } from "effect";
 import type { Member, Permission } from "peal-contract";
 
-import { scopeFor } from "#workspace/domain/oauth-grant.ts";
+import { scopesFor } from "#workspace/domain/oauth-grant.ts";
 import type { WorkspaceScope } from "#workspace/domain/oauth-grant.ts";
 
 /**
@@ -19,9 +19,10 @@ export const missingScope = (
     return Option.none();
   }
 
-  const needed = scopeFor(permission);
+  const { scopes } = principal.oauth;
 
-  return principal.oauth.scopes.includes(needed)
-    ? Option.none()
-    : Option.some(needed);
+  // The first of the scopes the permission takes that the user left out.
+  return Option.fromUndefinedOr(
+    scopesFor(permission).find((needed) => !scopes.includes(needed))
+  );
 };

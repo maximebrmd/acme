@@ -567,8 +567,13 @@ layer(DatabaseTest)(
             sent.push(redirect ?? "");
           }
 
-          // Nothing is listed that no sign-in sends.
-          if (registration.registeredBy === "operator") {
+          // Nothing is listed that no sign-in sends. A registration that
+          // connects no channel (the ad network's sign-in) is the ads
+          // context's, whose own test compares its redirect.
+          if (
+            registration.registeredBy === "operator" &&
+            registration.platforms.length > 0
+          ) {
             assert.deepStrictEqual(
               listed.toSorted(),
               sent.slice(-signIns.length).toSorted(),

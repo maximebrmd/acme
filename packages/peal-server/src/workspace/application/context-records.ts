@@ -4,6 +4,7 @@ import type { DateTime, Effect } from "effect";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   AccountSnapshotRecord,
+  AdsRecord,
   ActivityRecord,
   AnalyticsRecord,
   AuthoredPostRecord,
@@ -51,6 +52,8 @@ export interface ErasedWorkspace {
 export interface WorkspaceContent {
   /** Its channels' accounts, day by day. */
   readonly accountAnalytics: readonly AccountSnapshotRecord[];
+  /** Its ad accounts, sign-ins without their tokens, boosts and audit trail. */
+  readonly ads: AdsRecord;
   readonly analytics: readonly AnalyticsRecord[];
   readonly assistantUsage: readonly UsageRecord[];
   readonly billing: BillingRecord;

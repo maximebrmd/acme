@@ -2,6 +2,7 @@ import { Array, Effect, Layer, Option } from "effect";
 import { CurrentMember } from "peal-contract";
 import type { Member } from "peal-contract";
 
+import { AdsToolsLive } from "#app/mcp/ads-handlers.ts";
 import { CapabilityToolsLive } from "#app/mcp/capabilities-handlers.ts";
 import { findTools, summaryOf } from "#app/mcp/catalogue.ts";
 import { ConnectToolsLive } from "#app/mcp/connect-handlers.ts";
@@ -317,5 +318,6 @@ export const PealToolsLive = Layer.mergeAll(
   ReviewToolsLive,
   WebhookToolsLive,
   ConnectToolsLive,
-  InboxToolsLive
+  InboxToolsLive,
+  AdsToolsLive
 );

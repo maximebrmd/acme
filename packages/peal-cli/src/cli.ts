@@ -4,6 +4,7 @@ import { Command } from "effect/cli";
 import { PealApi } from "#api.ts";
 import { account } from "#commands/account.ts";
 import { activity } from "#commands/activity.ts";
+import { ads } from "#commands/ads.ts";
 import { analytics } from "#commands/analytics.ts";
 import { approvals } from "#commands/approvals.ts";
 import { billing } from "#commands/billing.ts";
@@ -57,6 +58,7 @@ export const cli = peal.pipe(
     review,
     media,
     analytics,
+    ads,
     billing,
     inbox,
     members,

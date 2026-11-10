@@ -29,15 +29,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   address),
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
   platforms' redirect URI `connect/[platform]/callback` (which shows the
-  account picker when a sign-in reached several accounts), Meta's data
+  account picker when a sign-in reached several accounts), the ad
+  networks' `connect/ads/[network]/callback`, Meta's data
   deletion status `data-deletion/[code]`, the page behind a review link
   `review` (no sign-in, noindex; the token is the address's fragment, read
   in the browser), and the signed-in
   app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
   `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
   `…/analytics`, `…/inbox` and `…/inbox/[threadId]` (for `engagement:read`:
-  not-found otherwise, as for staff acting as a member), `…/drafts`,
-  `…/posts/new`, `…/posts/[postId]`, which opens
+  not-found otherwise, as for staff acting as a member), `…/ads`,
+  `…/drafts`, `…/posts/new`, `…/posts/[postId]`, which opens
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
@@ -274,3 +275,34 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   one callback page, `connect/[platform]/callback`, finishes the link
   rather than a member's connection. Its strings are the `ConnectLink`
   catalogue; the member's flow is unchanged.
+- Ads (`#ads/*`, `components/ads/`, the `Ads` catalogue; a boost is
+  "boost" and "mise en avant"). The ads page (`AdsScreen`, ads:read) says
+  only that ads are off when `status.mode` is `off`; ads:manage connects
+  and disconnects, and only ads:authorize (owners) sees `SpendingFormView`,
+  which says what a ceiling allows before its button: keep that text.
+  The tab keeps the sign-in's workspace in `sessionStorage`
+  (`#ads/pending-sign-in.ts`) for the callback page (`CompleteAdSignIn`,
+  its view `AdSignInView`).
+- Ad amounts are whole minor units: read what a person types with
+  `parseAmount` and write amounts with `useMoney` or `formatMoney`
+  (`#ads/money.ts`), with the account's `minorUnitDigits`; never multiply
+  or divide an amount. A `Boost` comes without digits: take its account's,
+  else `digitsOfCurrency`.
+- `PostDetail` offers `BoostDialog` on a published Facebook or Instagram
+  channel to members with ads:spend, on a server whose mode is `spend`.
+  `checkBoost` (`#ads/boost-draft.ts`) makes the request: days are the ad
+  account's calendar, `specialAdCategory` is sent only once declared, and
+  an audience in the EU names who benefits and who pays. `quoteBoost`
+  comes first, and `BoostSummaryView` shows what it answers (the most the
+  boost can cost, the ceiling, what is committed) before the one button,
+  which names the amount and the end. `createBoost` carries the
+  `Idempotency-Key` made when the review opened: never make one per
+  click. Explain every refusal with `adsErrorOf` and `useAdsErrorLines`:
+  a new contract error gets its words in `Ads.errors`.
+- `PostPaid` (ads:read) shows a post's boosts and `PaidSectionView`'s two
+  columns, organic and paid: never add them up. Pause and stop take
+  ads:spend or ads:manage, resume ads:spend (`controlsOf`); stopping asks
+  first, and an `unconfirmed` boost says it may be spending.
+- The consent page lets a person leave `workspace:ads` out as it does
+  publishing (`mayLeaveAdsOut`, `consentAnswer` in
+  `#auth/consent-scopes.ts`).

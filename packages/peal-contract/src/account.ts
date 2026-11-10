@@ -13,7 +13,7 @@ import { ConnectedAppSchema } from "./connected-apps.ts";
 import { DeletionIncomplete } from "./deletion-incomplete.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
-import { ByteCountSchema } from "./int64.ts";
+import { Int64Schema, ByteCountSchema } from "./int64.ts";
 import { LastOwner } from "./last-owner.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { NoticeEventSchema } from "./notices.ts";
@@ -560,8 +560,66 @@ const ExportedSavedItemsSchema = Schema.Struct({
   ),
 });
 
+// What ads keep of the workspace: its sign-ins to ad networks without
+// their tokens, its ad accounts with what an owner allowed them to spend,
+// its boosts as they were asked, and the audit trail of every decision
+// about money. Amounts are in each account's minor units. The campaigns
+// and numbers read from the networks are read there.
+const ExportedAdsSchema = Schema.Struct({
+  accounts: Schema.Array(
+    Schema.Struct({
+      connectedAt: instant,
+      currency: Schema.String,
+      externalId: Schema.String,
+      id: Schema.String,
+      monthlyCeiling: nullable(Int64Schema),
+      name: Schema.String,
+      network: Schema.String,
+      spendingEnabled: Schema.Boolean,
+      timeZone: Schema.String,
+    })
+  ),
+  audit: Schema.Array(
+    Schema.Struct({
+      accountId: nullable(Schema.String),
+      action: Schema.String,
+      amounts: Schema.Unknown,
+      at: instant,
+      boostId: nullable(Schema.String),
+      currency: nullable(Schema.String),
+    })
+  ),
+  boosts: Schema.Array(
+    Schema.Struct({
+      accountId: Schema.String,
+      audience: Schema.Unknown,
+      beneficiary: nullable(Schema.String),
+      budgetAmount: Int64Schema,
+      budgetKind: Schema.String,
+      committed: Int64Schema,
+      createdAt: instant,
+      currency: Schema.String,
+      endsAt: instant,
+      id: Schema.String,
+      payer: nullable(Schema.String),
+      postId: Schema.String,
+      startsAt: instant,
+      state: Schema.String,
+    })
+  ),
+  connections: Schema.Array(
+    Schema.Struct({
+      createdAt: instant,
+      id: Schema.String,
+      network: Schema.String,
+      scopes: Schema.Array(Schema.String),
+    })
+  ),
+});
+
 const ExportedWorkspaceSchema = Schema.Struct({
   accountAnalytics: Schema.Array(ExportedAccountDaySchema),
+  ads: ExportedAdsSchema,
   analytics: Schema.Array(ExportedAnalyticsSchema),
   apiKeys: Schema.Array(ApiKeySchema),
   assistantUsage: Schema.Array(ExportedUsageSchema),

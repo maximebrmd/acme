@@ -16,6 +16,9 @@ import { SqlClient } from "effect/sql";
 
 import { ActivityLog } from "#activity/application/activity-log.ts";
 import { RequestLimiter } from "#activity/application/request-limiter.ts";
+import { BoostFollowUp } from "#ads/application/boost-follow-up.ts";
+import { PurgeAdData } from "#ads/application/purge-ad-data.ts";
+import { SyncAdAccounts } from "#ads/application/sync-ad-accounts.ts";
 import { CollectAccounts } from "#analytics/application/collect-accounts.ts";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import { PurgeAnalytics } from "#analytics/application/purge-analytics.ts";
@@ -158,6 +161,34 @@ const ChannelJobsTest = Layer.mergeAll(
           read: 0,
           skipped: 0,
         }),
+    })
+  ),
+  Layer.succeed(
+    SyncAdAccounts,
+    SyncAdAccounts.of({
+      run: () =>
+        Effect.succeed({
+          gone: 0,
+          halted: 0,
+          left: 0,
+          postponed: 0,
+          reconnectNeeded: 0,
+          synced: 0,
+          unread: 0,
+        }),
+    })
+  ),
+  Layer.succeed(
+    BoostFollowUp,
+    BoostFollowUp.of({
+      afterSync: () => Effect.void,
+      endDue: Effect.succeed(0),
+    })
+  ),
+  Layer.succeed(
+    PurgeAdData,
+    PurgeAdData.of({
+      purge: Effect.succeed({ auditLines: 0, days: 0, signIns: 0 }),
     })
   ),
   Layer.succeed(

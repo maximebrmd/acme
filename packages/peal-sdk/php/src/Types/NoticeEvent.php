@@ -25,6 +25,8 @@ class NoticeEvent extends JsonSerializableType
      *   |'SubscriptionCancelled'
      *   |'SubscriptionWithdrawn'
      *   |'WebhookEndpointDisabled'
+     *   |'AdBoostChanged'
+     *   |'AdConnectionReconnectRequired'
      *   |'_unknown'
      * ) $type
      */
@@ -48,6 +50,8 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventSubscriptionCancelled
      *   |NoticeEventSubscriptionWithdrawn
      *   |NoticeEventWebhookEndpointDisabled
+     *   |NoticeEventAdBoostChanged
+     *   |NoticeEventAdConnectionReconnectRequired
      *   |mixed
      * ) $value
      */
@@ -72,6 +76,8 @@ class NoticeEvent extends JsonSerializableType
      *   |'SubscriptionCancelled'
      *   |'SubscriptionWithdrawn'
      *   |'WebhookEndpointDisabled'
+     *   |'AdBoostChanged'
+     *   |'AdConnectionReconnectRequired'
      *   |'_unknown'
      * ),
      *   value: (
@@ -91,6 +97,8 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventSubscriptionCancelled
      *   |NoticeEventSubscriptionWithdrawn
      *   |NoticeEventWebhookEndpointDisabled
+     *   |NoticeEventAdBoostChanged
+     *   |NoticeEventAdConnectionReconnectRequired
      *   |mixed
      * ),
      * } $values
@@ -291,6 +299,30 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'WebhookEndpointDisabled',
             'value' => $webhookEndpointDisabled,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventAdBoostChanged $adBoostChanged
+     * @return NoticeEvent
+     */
+    public static function adBoostChanged(NoticeEventAdBoostChanged $adBoostChanged): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'AdBoostChanged',
+            'value' => $adBoostChanged,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventAdConnectionReconnectRequired $adConnectionReconnectRequired
+     * @return NoticeEvent
+     */
+    public static function adConnectionReconnectRequired(NoticeEventAdConnectionReconnectRequired $adConnectionReconnectRequired): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'AdConnectionReconnectRequired',
+            'value' => $adConnectionReconnectRequired,
         ]);
     }
 
@@ -647,6 +679,50 @@ class NoticeEvent extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isAdBoostChanged(): bool
+    {
+        return $this->value instanceof NoticeEventAdBoostChanged && $this->type === 'AdBoostChanged';
+    }
+
+    /**
+     * @return NoticeEventAdBoostChanged
+     */
+    public function asAdBoostChanged(): NoticeEventAdBoostChanged
+    {
+        if (!($this->value instanceof NoticeEventAdBoostChanged && $this->type === 'AdBoostChanged')) {
+            throw new Exception(
+                "Expected AdBoostChanged; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isAdConnectionReconnectRequired(): bool
+    {
+        return $this->value instanceof NoticeEventAdConnectionReconnectRequired && $this->type === 'AdConnectionReconnectRequired';
+    }
+
+    /**
+     * @return NoticeEventAdConnectionReconnectRequired
+     */
+    public function asAdConnectionReconnectRequired(): NoticeEventAdConnectionReconnectRequired
+    {
+        if (!($this->value instanceof NoticeEventAdConnectionReconnectRequired && $this->type === 'AdConnectionReconnectRequired')) {
+            throw new Exception(
+                "Expected AdConnectionReconnectRequired; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -728,6 +804,14 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'WebhookEndpointDisabled':
                 $value = $this->asWebhookEndpointDisabled()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'AdBoostChanged':
+                $value = $this->asAdBoostChanged()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'AdConnectionReconnectRequired':
+                $value = $this->asAdConnectionReconnectRequired()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -813,6 +897,12 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'WebhookEndpointDisabled':
                 $args['value'] = NoticeEventWebhookEndpointDisabled::jsonDeserialize($data);
+                break;
+            case 'AdBoostChanged':
+                $args['value'] = NoticeEventAdBoostChanged::jsonDeserialize($data);
+                break;
+            case 'AdConnectionReconnectRequired':
+                $args['value'] = NoticeEventAdConnectionReconnectRequired::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

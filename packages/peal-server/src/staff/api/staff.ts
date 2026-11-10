@@ -153,6 +153,13 @@ const workspaceView = Effect.fn("StaffWorkspace.view")(function* workspaceView(
   });
 
   const view: StaffWorkspace = {
+    ads: {
+      accounts: workspace.ads.accounts.map((account) => ({
+        ...account,
+        monthlyCeiling: orNull(account.monthlyCeiling),
+      })),
+      boosts: workspace.ads.boosts,
+    },
     billing: { plan: orNull(workspace.billing.plan), subscription },
     channels: workspace.channels.map(channelView),
     createdAt: workspace.createdAt,

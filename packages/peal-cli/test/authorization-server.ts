@@ -49,6 +49,9 @@ export interface AuthorizationServerOptions {
 export const fullScope =
   "offline_access workspace:read workspace:write workspace:publish";
 
+/** The same, and working with ads, as peal login --ads asks. */
+export const adsScope = `${fullScope} workspace:ads`;
+
 const refused = (error: string) => Effect.fail({ error });
 
 export const makeAuthorizationServer = Effect.fn("makeAuthorizationServer")(

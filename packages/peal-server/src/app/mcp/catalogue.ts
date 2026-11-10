@@ -1,6 +1,7 @@
 import { Context } from "effect";
 import { Tool } from "effect/ai";
 
+import { AdsTools } from "#app/mcp/ads-tools.ts";
 import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { ConnectTools } from "#app/mcp/connect-tools.ts";
 import { ToolAreaSchema } from "#app/mcp/discovery-tools.ts";
@@ -33,6 +34,7 @@ interface ListedTool {
  */
 export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
   account: Object.values(BasicTools.tools),
+  ads: Object.values(AdsTools.tools),
   channels: Object.values(CapabilityTools.tools),
   connect: Object.values(ConnectTools.tools),
   inbox: Object.values(InboxTools.tools),
@@ -87,7 +89,24 @@ export interface CatalogueTool {
   readonly title: string;
 }
 
+/**
+ * The tools that spend on ads, or change what spends: their use cases
+ * check `ads:spend` or `ads:manage`, which the scope `workspace:ads`
+ * leaves to an OAuth client, beside `workspace:publish` for those that
+ * spend. A test calls each with a connection that lacks the scope.
+ */
+export const adsTools: ReadonlySet<string> = new Set([
+  "boost_post",
+  "pause_boost",
+  "resume_boost",
+  "stop_boost",
+]);
+
 const scopeOf = (name: string, changes: boolean): WorkspaceScope => {
+  if (adsTools.has(name)) {
+    return "workspace:ads";
+  }
+
   if (publishingTools.has(name)) {
     return "workspace:publish";
   }

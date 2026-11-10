@@ -120,6 +120,8 @@ import {
   platformRules,
 } from "peal-contract/post-text";
 
+import { adsGroupLive, adsWorld } from "./studio-ads.ts";
+import type { AdsWorld } from "./studio-ads.ts";
 import {
   capabilitiesOn,
   describedPlatforms,
@@ -159,6 +161,10 @@ export const userId = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
 
 const everything: readonly Permission[] = [
   "activity:read",
+  "ads:read",
+  "ads:manage",
+  "ads:spend",
+  "ads:authorize",
   "analytics:read",
   "billing:read",
   "channel:read",
@@ -960,6 +966,8 @@ const customers: readonly CustomerWorkspace[] = [
 
 /** What the instance holds, and what the commands changed. */
 export interface StudioState {
+  /** Its ad accounts and boosts, and what the server offers of ads. */
+  readonly ads: AdsWorld;
   readonly approvals: readonly ApprovalRequest[];
   readonly changes: readonly string[];
   /** The studio's channels as they are now: named, turned off or on. */
@@ -1058,6 +1066,7 @@ export const makeStudio = (
   Effect.all({
     inbox: makeInbox,
     state: Ref.make<StudioState>({
+      ads: adsWorld,
       approvals: [approval],
       changes: [],
       channelSets,
@@ -2527,6 +2536,7 @@ const madeRow = (
 /** The workspace groups and the account's, answered from the studio. */
 export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
+    adsGroupLive(studio),
     HttpApiBuilder.group(Api, "session", (handlers) =>
       handlers.handleAll({
         me: () => inPerson.pipe(Effect.as(studio.me)),
