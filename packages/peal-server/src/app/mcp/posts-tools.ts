@@ -1,15 +1,28 @@
 import { Context, Schema } from "effect";
 import { Tool, Toolkit } from "effect/ai";
 import {
+  BulkResultSchema,
   CurrentMember,
+  defaultPostPageSize,
   DraftPageSchema,
+  duplicateWindowHours,
   idempotencyKeyLifetimeHours,
+  maxBulkPosts,
   maxDraftPageSize,
   maxIdempotencyKeyLength,
+  maxOutcomeWaitSeconds,
+  maxPostPageSize,
   NewPostSchema,
+  PlatformSchema,
+  PostChannelSchema,
   PostContentSchema,
   PostDraftSchema,
+  PostOriginViaSchema,
+  PostOutcomeSchema,
   PostSchema,
+  PostSortSchema,
+  PostStatusSchema,
+  PostValidationSchema,
   PublicationAttemptSchema,
   TargetConfirmationSchema,
   TikTokAccountSchema,
@@ -204,23 +217,50 @@ const refusedWhole =
 const needsPublishing =
   "Needs the scope workspace:publish, which the user grants when they connect this client, and a role that schedules posts (owner, admin or editor).";
 
+const instant = (example: string) =>
+  Schema.DateTimeUtcFromString.annotate({
+    description: `An ISO 8601 timestamp, such as ${example}.`,
+  });
+
+const waitSeconds = Schema.optionalKey(
+  Schema.Int.check(
+    Schema.isBetween({ maximum: maxOutcomeWaitSeconds, minimum: 0 })
+  )
+).annotate({
+  description: `How long to wait for the post to go out before answering, in seconds: ${String(maxOutcomeWaitSeconds)} at most, none unless given.`,
+});
+
+const waitsForOutcome = `It answers while the post publishes, unless \`waitSeconds\` says to wait for the outcome of a post that goes out now: the answer is then the post once every channel has its result (\`status\` finished: each target published, with its \`permalink\`, or failed, with its \`failureReason\`), or as it stands when the time runs out, some targets still pending or publishing: it goes on publishing, and await_post waits for the rest.`;
+
 export const ListPosts = Tool.make("list_posts", {
   dependencies: [CurrentMember],
-  description:
-    "Lists the workspace's posts scheduled from `from` (included) to `to` (excluded), at most 62 days apart, by scheduled instant: those still to go out, those that went out, with how each went on every channel, and cancelled ones with the time they had. Drafts have no time: list_drafts answers them.",
+  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application) and \`authorId\`. \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
-    from: Schema.DateTimeUtcFromString.annotate({
-      description: "An ISO 8601 timestamp, such as 2026-06-01T00:00:00Z.",
-    }),
-    to: Schema.DateTimeUtcFromString.annotate({
-      description: "An ISO 8601 timestamp, such as 2026-07-01T00:00:00Z.",
-    }),
+    authorId: Schema.optionalKey(Schema.String),
+    channelId: Schema.optionalKey(Schema.String),
+    createdVia: Schema.optionalKey(PostOriginViaSchema),
+    cursor: Schema.optionalKey(Schema.String),
+    from: Schema.optionalKey(instant("2026-06-01T00:00:00Z")),
+    limit: Schema.optionalKey(
+      Schema.Int.check(
+        Schema.isBetween({ maximum: maxPostPageSize, minimum: 1 })
+      )
+    ),
+    outcome: Schema.optionalKey(PostOutcomeSchema),
+    platform: Schema.optionalKey(PlatformSchema),
+    sort: Schema.optionalKey(PostSortSchema),
+    status: Schema.optionalKey(PostStatusSchema),
+    to: Schema.optionalKey(instant("2026-07-01T00:00:00Z")),
   }),
-  success: Schema.Struct({ posts: Schema.Array(PostSchema) }),
+  success: Schema.Struct({
+    channels: Schema.Array(PostChannelSchema),
+    nextCursor: Schema.NullOr(Schema.String),
+    posts: Schema.Array(PostSchema),
+  }),
 })
   .annotateMerge(reading)
-  .annotate(Tool.Title, "List scheduled posts");
+  .annotate(Tool.Title, "List posts");
 
 export const ListPostAttempts = Tool.make("list_post_attempts", {
   dependencies: [CurrentMember],
@@ -294,15 +334,17 @@ export const CancelPost = Tool.make("cancel_post", {
 
 export const CreatePost = Tool.make("create_post", {
   dependencies: [CurrentMember],
-  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. ${needsPublishing}`,
+  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. Apart from keys, a post whose content already goes to one of its channels less than ${String(duplicateWindowHours)} hours from its time is refused, naming the post that has it: pass \`allowDuplicate: true\` only when the user means to post the same twice. ${waitsForOutcome} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
+    allowDuplicate: NewPostSchema.fields.allowDuplicate,
     channelIds: NewPostSchema.fields.channelIds,
     content: NewPostSchema.fields.content,
     idempotencyKey: Schema.optionalKey(
       Schema.String.check(Schema.isBetweenLength(1, maxIdempotencyKeyLength))
     ),
     options: NewPostSchema.fields.options,
+    waitSeconds,
     when,
   }),
   success: PostSchema,
@@ -312,6 +354,69 @@ export const CreatePost = Tool.make("create_post", {
     changing({ destructive: false, idempotent: false, openWorld: true })
   )
   .annotate(Tool.Title, "Create and send a post");
+
+const newPost = {
+  allowDuplicate: NewPostSchema.fields.allowDuplicate,
+  channelIds: NewPostSchema.fields.channelIds,
+  content: NewPostSchema.fields.content,
+  idempotencyKey: Schema.optionalKey(
+    Schema.String.check(Schema.isBetweenLength(1, maxIdempotencyKeyLength))
+  ),
+  options: NewPostSchema.fields.options,
+  when,
+};
+
+export const CreatePosts = Tool.make("create_posts", {
+  dependencies: [CurrentMember],
+  description: `Creates and sends up to ${String(maxBulkPosts)} posts in one call, each as create_post would: one post per item, each with its own channels, content, options and \`when\`, so the same content at several times, or at a time of its own on each channel, is several items. ${reachesThePublic} Items are taken in order, each on its own: one refused keeps none of the others from being made, and nothing is undone. The answer says, for each item by its place (\`index\`, from 0), \`created\` with its post, or \`refused\` with why (\`refusal\`: its \`_tag\` and fields, as PostContentInvalid with every violation, UnknownChannels, UnknownMedia, ScheduleInPast, InvalidTimeZone, PlanLimitReached, DuplicatePost, IdempotencyKeyReused): fix those and call again with them alone. Each item is checked against the posts made before it, the call's earlier items included, for the same content on the same channel within ${String(duplicateWindowHours)} hours (allowDuplicate on the item when it is meant). Pass an \`idempotencyKey\` for the whole call so that calling again after a lost answer makes no post twice: each item is kept under the key and its place, and the same call answers the posts it made (\`replayed\`). An item's own \`idempotencyKey\` is used instead for that item. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    idempotencyKey: newPost.idempotencyKey,
+    posts: Schema.Array(Schema.Struct(newPost)).check(
+      Schema.isMinLength(1),
+      Schema.isMaxLength(maxBulkPosts)
+    ),
+  }),
+  success: BulkResultSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Create and send several posts");
+
+export const ValidatePost = Tool.make("validate_post", {
+  dependencies: [CurrentMember],
+  description:
+    "Checks a post without making it, and changes nothing: call it before create_post, create_posts or schedule_post to know what would be refused, and what each channel would receive. It answers `valid`, and everything that would refuse the post, all at once: per channel (`channels`), the text the channel receives, counted as its platform counts it against each of its limits (`textCounts`), its hashtags, mentions, links and media against the platform's maximum, and every violation of the platform's rules and of the account's own; `unknownChannels` and `unknownMedia`, which are not the workspace's; and, when `when` is given, `schedule` (ok, inPast or invalidTimeZone), `planLimit` (the plan's limit it would pass, or null) and `duplicates` (the channels that already have the same content from another post near its time). Leave `when` out to check a draft's content alone. A post valid now can still be refused later: a channel disconnected, a month filled meanwhile.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    allowDuplicate: NewPostSchema.fields.allowDuplicate,
+    channelIds,
+    content: PostContentSchema,
+    options: Schema.optionalKey(options),
+    when: Schema.optionalKey(when),
+  }),
+  success: PostValidationSchema,
+})
+  // It asks a platform what an account takes, where one tells (TikTok).
+  .annotateMerge(
+    Context.make(Tool.Readonly, true).pipe(
+      Context.add(Tool.Destructive, false),
+      Context.add(Tool.Idempotent, true),
+      Context.add(Tool.OpenWorld, true)
+    )
+  )
+  .annotate(Tool.Title, "Validate a post");
+
+export const AwaitPost = Tool.make("await_post", {
+  dependencies: [CurrentMember],
+  description: `Answers with a post once it has gone out: it waits up to \`waitSeconds\` (${String(maxOutcomeWaitSeconds)} at most) until every channel has its result, and answers the post then (\`status\` finished, each target published with its \`permalink\` or failed with its \`failureReason\`), or as it stands when the time runs out: call it again for the rest. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({ postId, waitSeconds }),
+  success: PostSchema,
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "Wait for a post's outcome");
 
 /** The tools that read and change the workspace's posts. */
 export const PostTools = Toolkit.make(
@@ -327,6 +432,9 @@ export const PostTools = Toolkit.make(
   PublishPost,
   ReschedulePost,
   CreatePost,
+  CreatePosts,
+  ValidatePost,
+  AwaitPost,
   UnschedulePost,
   CancelPost,
   RepostTarget,

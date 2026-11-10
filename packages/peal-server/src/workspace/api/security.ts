@@ -59,11 +59,19 @@ const objectIdsOf = (
 // Peal keep each such connection a year (ConnectionJournal).
 const contentGroups: ReadonlySet<string> = new Set(["media", "posts"]);
 
+// The requests sent as writes that make nothing: checking a post reads it
+// and answers, so its connection is not kept.
+const checksOnly: ReadonlySet<string> = new Set(["posts.validate"]);
+
 // Whether the request changes content.
 const changesContent = (
   request: HttpServerRequest.HttpServerRequest,
-  group: { readonly identifier: string }
-) => !safeMethods.has(request.method) && contentGroups.has(group.identifier);
+  group: { readonly identifier: string },
+  endpoint: { readonly identifier: string }
+) =>
+  !safeMethods.has(request.method) &&
+  contentGroups.has(group.identifier) &&
+  !checksOnly.has(`${group.identifier}.${endpoint.identifier}`);
 
 /** Who made a change to content, and how, as the journal keeps it. */
 export const contentChangeOf = (
@@ -147,7 +155,7 @@ export const AuthenticationLive = Layer.effect(
     const limits = yield* RequestLimits;
 
     return Authentication.of({
-      bearer: (httpEffect, { credential, group }) =>
+      bearer: (httpEffect, { credential, endpoint, group }) =>
         Effect.gen(function* bearer() {
           const request = yield* HttpServerRequest.HttpServerRequest;
 
@@ -172,7 +180,7 @@ export const AuthenticationLive = Layer.effect(
             return tooManyRequests(limited.value);
           }
 
-          if (!changesContent(request, group)) {
+          if (!changesContent(request, group, endpoint)) {
             return yield* httpEffect.pipe(as(principal));
           }
 
@@ -244,7 +252,7 @@ export const AuthenticationLive = Layer.effect(
               .pipe(Effect.orDie);
           }
 
-          if (!changesContent(request, group)) {
+          if (!changesContent(request, group, endpoint)) {
             return yield* httpEffect.pipe(as(principal));
           }
 

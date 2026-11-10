@@ -370,6 +370,7 @@ CREATE TABLE "publishing"."idempotency_keys" (
 CREATE TABLE "publishing"."post_targets" (
 	"cancel_requested" boolean DEFAULT false NOT NULL,
 	"channel_id" uuid NOT NULL,
+	"content_digest" text,
 	"failure_code" text,
 	"failure_reason" text,
 	"finished_at" timestamp with time zone,
@@ -837,9 +838,11 @@ CREATE INDEX "media_assets_workspace_id_id_index" ON "media"."media_assets" ("wo
 CREATE INDEX "notices_user" ON "notifications"."notices" ("user_id","id");--> statement-breakpoint
 CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHERE "read_at" IS NULL;--> statement-breakpoint
 CREATE INDEX "idempotency_keys_created_at" ON "publishing"."idempotency_keys" ("created_at");--> statement-breakpoint
+CREATE INDEX "post_targets_channel_content" ON "publishing"."post_targets" ("channel_id","content_digest") WHERE "content_digest" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
 CREATE INDEX "posts_scheduled" ON "publishing"."posts" ("scheduled_at") WHERE "status" = 'scheduled';--> statement-breakpoint
+CREATE INDEX "posts_workspace_id" ON "publishing"."posts" ("workspace_id","id");--> statement-breakpoint
 CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint
 CREATE INDEX "audit_events_pseudonym" ON "staff"."audit_events" ("target_pseudonym");--> statement-breakpoint
 CREATE INDEX "audit_events_at" ON "staff"."audit_events" ("at","id");--> statement-breakpoint

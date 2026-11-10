@@ -1118,6 +1118,62 @@ and no socket, for tests.
   request is opened (`MediaForPublishing.held`), never inside it: a platform
   drops a request left waiting.
 
+- Checking a post (`PostChecks`: `POST …/posts/validate`, `validate_post`,
+  `peal post --dry-run`) and scheduling one share `violationsOf`
+  (`publishing/application/publishability.ts`): add a rule there, never to
+  one of the two. A check writes, claims and locks nothing, and answers
+  everything at once (channels and media that are not the workspace's,
+  violations by channel, the time, the plan's room, duplicates) with what
+  each channel receives (`previewOn`). Its connection is not journaled
+  (`checksOnly` in `#workspace/api/security.ts`).
+- A post made in one call (`PostScheduling.send`: `posts.send`, bulk,
+  import, `create_post`, `peal post`) is refused (`DuplicateContent`, 409
+  `DuplicatePost`) when another post of the workspace sends the same content
+  (`contentOn`: the channel's text, NFC and trimmed, and its media ids) to
+  one of its channels less than `duplicateWindow` from its time: 23 hours,
+  the shortest day, so a post that repeats daily passes (the contract's
+  `duplicateWindowHours`, kept equal by the contract test). `allowDuplicate`
+  lets it through. `admit` (`duplicate-guard.ts`) checks under a transaction
+  advisory lock per channel and digest; `remember` keeps
+  `post_targets.content_digest` (a SHA-256, never content) whenever a post is
+  scheduled or moved. Scheduling a draft, moving a post and reposting are
+  never refused, and only posts that go out or went out count (scheduled,
+  publishing or finished, on a target pending, publishing, published or
+  unconfirmed). It is apart from idempotency keys: a replay answers before
+  it.
+- `PostOutcomes.await` (`posts.send?wait=`, `GET …/posts/:id/outcome`,
+  `await_post`, `create_post`'s `waitSeconds`, `peal post --wait`) only
+  reads the post again every half second, 60 seconds at most
+  (`maxOutcomeWait`): no transaction or lock is held while a request waits,
+  and the durable job stays the only thing that publishes. A process lets
+  `maxWaitingRequests` wait at once, and answers one more as if its time had
+  run out. Keep the bound under what every proxy waits. In tests, never move virtual time while a
+  send is in flight, as a job that is starting can lose its wake-up: wait on
+  a post already sent, and move time until the waiting fiber answers.
+- Several posts in one request (`PostBatches`: `posts.bulk`, 50 at most,
+  `create_posts`; `posts.import`, 100 CSV rows) are each one
+  `PostScheduling.send`, in its own transaction, in order, one at a time:
+  never one transaction for all, so the month's count and the duplicate
+  check hold across them. They answer 200 item by item, a refusal being what
+  `send` answers, as data (`PostRefusalSchema`); only a request without
+  post:schedule, or one that cannot be read, fails whole. An item's key is
+  its own, or the request's with its kind and place joined by NUL (`keyAt`),
+  which no header or cell can hold. The import reads the file in the domain
+  (`csv.ts`, `post-import.ts`: RFC 4180, local times through
+  `fromWallClock`), checks every row (`PostBatches.check`, which skips a row
+  its key already made) and makes nothing unless all are valid. A time of
+  its own on each channel is several items: a post has one schedule. Media
+  of its own on a channel is not built: a post has one media list. The web
+  app has no bulk screen yet: it would call these.
+- `PostSearch` (`posts.search`, `list_posts`, `peal posts list`) pages by
+  keyset on `(scheduled_at, id)` or on `id`, which orders by creation
+  (UUIDv7), never by offset; a cursor is opaque (`PostPositionSchema`) and
+  continues its own sort only. Publishing stores no platform: the platform
+  filter asks `WorkspaceChannels` about `PostRepository.channelsUsed`, so a
+  disconnected channel's posts are not found by platform. `posts.list` (a
+  range of 62 days) stays for calendars. Add a filter to `PostFilter`,
+  `pageConditions`, the contract's query, `list_posts` and the CLI together.
+
 ### Media
 
 - Clients upload straight to the store with presigned PUTs, so files never
@@ -2150,6 +2206,13 @@ self-hoster needs only Postgres and an S3-compatible store:
   with its SHA-256), from copies under `packages/peal-site/public/` that
   `bun packages/peal-site/src/write-agent-skills.ts` writes and a test
   keeps equal.
+- `peal post --dry-run` checks a post through `posts.validate` and takes
+  media ids only, as a file or an address would be stored; `--wait` goes
+  with `--now`. `peal posts list`, `posts wait` and `posts import` follow
+  `posts.search`, `posts.outcome` and `posts.import`; an import that left a
+  row refused or unreadable ends as a refusal, after printing every row, and
+  never prints the file. No command sends `posts.bulk`: a CSV file is the
+  command line's way to several posts.
 - Test commands with `runWith` from `src/cli.ts` against the in-memory server
   in `test/support.ts` (the contract served by test handlers) and the
   authorization server in `test/authorization-server.ts`, never against a

@@ -23,6 +23,13 @@ export interface Runs {
   readonly printed: (args: readonly string[]) => Effect.Effect<string, unknown>;
   /** Runs the command line, and answers with what it printed on stderr. */
   readonly refused: (args: readonly string[]) => Effect.Effect<string, unknown>;
+  /** Runs a command that is refused, and answers with both of them. */
+  readonly refusedAfter: (
+    args: readonly string[]
+  ) => Effect.Effect<
+    { readonly errors: string; readonly logs: string },
+    unknown
+  >;
 }
 
 export interface SignedIn extends Runs {
@@ -107,10 +114,23 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
 
           return (yield* output).errors.slice(before).join("\n");
         }),
+      refusedAfter: (args) =>
+        Effect.gen(function* runRefusedAfter() {
+          const before = yield* output;
+
+          yield* run(args).pipe(Effect.flip);
+
+          const after = yield* output;
+
+          return {
+            errors: after.errors.slice(before.errors.length).join("\n"),
+            logs: after.logs.slice(before.logs.length).join("\n"),
+          };
+        }),
     };
   };
 
-  const { printed, refused } = runs({});
+  const { printed, refused, refusedAfter } = runs({});
 
   if (options.signIn !== false) {
     // The sign-in waits five seconds before asking for its tokens: the
@@ -129,6 +149,7 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
     directory,
     printed,
     refused,
+    refusedAfter,
     studio,
     withEnv: runs,
   } satisfies SignedIn;

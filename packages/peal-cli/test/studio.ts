@@ -1,6 +1,6 @@
 import { DateTime, Effect, Layer, Option, Ref } from "effect";
 import { HttpRouter } from "effect/http";
-import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
+import { HttpApiBuilder, HttpApiError, HttpApiSchema } from "effect/http-api";
 import {
   AlreadyMember,
   Api,
@@ -8,10 +8,14 @@ import {
   CurrentMember,
   CurrentPrincipal,
   Forbidden,
+  DuplicatePost,
   IdempotencyKeyReused,
+  importColumns,
+  ImportUnreadable,
   InvalidTimeRange,
   InvalidTimeZone,
   InvitationNotFound,
+  maxImportRows,
   maxWebhookEndpoints,
   MediaNotFound,
   MediaSourceNotPublic,
@@ -42,19 +46,28 @@ import type {
   Billing,
   Channel,
   ChannelOptions,
+  ChannelPreview,
   ConnectedApp,
   ContentViolation,
+  DuplicateOnChannel,
+  ImportCellProblem,
+  ImportColumn,
+  ImportRowResult,
   Invitation,
   Me,
   Media,
   MediaContentType,
+  NewPost,
   Permission,
   Post,
   PostContent,
   PostDraft,
   PostOrigin,
+  PostSort,
   PostTarget,
+  PostValidation,
   PublicationAttempt,
+  ScheduleCheck,
   SignedRequest,
   Standing,
   TikTokAccount,
@@ -63,6 +76,13 @@ import type {
   WebhookEventType,
   WebhookUrlRefusal,
 } from "peal-contract";
+import {
+  countHashtags,
+  countLinks,
+  countMentions,
+  measureText,
+  platformRules,
+} from "peal-contract/post-text";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
@@ -1156,6 +1176,558 @@ const deliverTo = (
     return delivery;
   });
 
+// The same words to the same channel again, from a post that still goes
+// out, is a mistake unless meant.
+const duplicatesOf = (
+  all: readonly Post[],
+  payload: Pick<NewPost, "allowDuplicate" | "content"> & {
+    readonly channelIds: readonly string[];
+  }
+): DuplicateOnChannel[] =>
+  payload.allowDuplicate === true
+    ? []
+    : payload.channelIds.flatMap((channelId) =>
+        all
+          .filter(
+            (other) =>
+              other.status !== "draft" &&
+              other.status !== "cancelled" &&
+              other.content.text === payload.content.text &&
+              other.targets.some((target) => target.channelId === channelId)
+          )
+          .slice(0, 1)
+          .map((other) => ({ channelId, postId: other.id }))
+      );
+
+// A new post's time: now is the studio's clock.
+const timeOf = ({ when }: Pick<NewPost, "when">) =>
+  when._tag === "now"
+    ? { at: studioNow, timeZone: when.timeZone ?? "UTC" }
+    : { at: when.at, timeZone: when.timeZone };
+
+// Everything sending a post checks before making it, in the order the
+// server answers: its channels, its media, its time, what its platforms
+// refuse, and the posts that already send it.
+const checkNewPost = (studio: Studio, payload: NewPost) =>
+  Effect.gen(function* checkingNewPost() {
+    yield* checkChannels(payload.channelIds);
+    yield* checkMedia(studio, payload.content);
+
+    const when = timeOf(payload);
+    const status = yield* checkTime(when.at, when.timeZone);
+
+    yield* checkContent(
+      payload.channelIds,
+      payload.content,
+      payload.options ?? []
+    );
+
+    const { posts: all } = yield* Ref.get(studio.state);
+    const duplicates = duplicatesOf(all, payload);
+
+    if (duplicates.length > 0) {
+      return yield* new DuplicatePost({ duplicates });
+    }
+
+    return { status, when };
+  });
+
+// The post a first request made under the key, if one did: the same key
+// with another body is refused.
+const madeUnder = (studio: Studio, payload: NewPost, key: string | undefined) =>
+  Effect.gen(function* findingFirst() {
+    const { sent } = yield* Ref.get(studio.state);
+    const first = key === undefined ? undefined : sent[key];
+
+    if (first === undefined) {
+      return Option.none<string>();
+    }
+
+    return first.body === JSON.stringify(payload)
+      ? Option.some(first.postId)
+      : yield* new IdempotencyKeyReused();
+  });
+
+// Makes a post as `send` does, under its idempotency key if it has one:
+// the same key answers the post its first request made, as it now stands,
+// and makes no other.
+const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
+  Effect.gen(function* making() {
+    const first = yield* madeUnder(studio, payload, key);
+
+    if (Option.isSome(first)) {
+      return {
+        post: yield* findPost(studio, studioId, first.value),
+        replayed: true,
+      };
+    }
+
+    const body = JSON.stringify(payload);
+    const before = yield* Ref.get(studio.state);
+    const { status, when } = yield* checkNewPost(studio, payload);
+    const id = nextId("d", before.posts.length);
+
+    yield* Ref.update(studio.state, (current) => ({
+      ...current,
+      sent:
+        key === undefined
+          ? current.sent
+          : { ...current.sent, [key]: { body, postId: id } },
+    }));
+    yield* record(studio, `send:${id}:${payload.when._tag}:${key ?? "no key"}`);
+
+    const post = yield* savePost(studio, {
+      authorId: userId,
+      content: payload.content,
+      createdVia: viaCommandLine,
+      id,
+      outcome: null,
+      schedule: when,
+      scheduledBy: userId,
+      scheduledVia: viaCommandLine,
+      status,
+      targets: targetsOf(id, payload),
+    });
+
+    return { post, replayed: false };
+  });
+
+// How a post ended, by how many of its channels have it.
+const outcomeOf = (targets: readonly PostTarget[]) => {
+  const published = targets.filter(
+    ({ status }) => status === "published"
+  ).length;
+
+  if (published === targets.length) {
+    return "published" as const;
+  }
+
+  return published === 0
+    ? ("failed" as const)
+    : ("partiallyPublished" as const);
+};
+
+// A target once its platform answered: published, with its address, unless
+// its channel must be reconnected, which fails it.
+const settledOn = (target: PostTarget): PostTarget => {
+  const channel = channels.find(({ id }) => id === target.channelId);
+
+  if (target.status !== "pending" && target.status !== "publishing") {
+    return target;
+  }
+
+  return channel === undefined || channel.status._tag !== "active"
+    ? { ...target, failureReason: "tokenExpired", status: "failed" }
+    : {
+        ...target,
+        permalink:
+          channel.platform === "mastodon"
+            ? `https://example.social/@studio/${target.id}`
+            : `https://${channel.platform}.example.test/posts/${target.id}`,
+        publishedAt: studioNow,
+        status: "published",
+      };
+};
+
+// The synthetic platforms answer within a second: a post that is going out
+// has finished for whoever waits that long.
+const afterWaiting = (studio: Studio, post: Post, wait: number | undefined) =>
+  Effect.gen(function* settling() {
+    if (post.status !== "publishing" || wait === undefined || wait < 1) {
+      return post;
+    }
+
+    const targets = post.targets.map(settledOn);
+
+    yield* record(studio, `settle:${post.id}`);
+
+    return yield* savePost(studio, {
+      ...post,
+      outcome: outcomeOf(targets),
+      status: "finished",
+      targets,
+    });
+  });
+
+// Whether a post's time can be kept, as `validate` answers it.
+const scheduleCheck = (payload: Pick<NewPost, "when">) => {
+  const when = timeOf(payload);
+
+  return checkTime(when.at, when.timeZone).pipe(
+    Effect.as<ScheduleCheck>("ok"),
+    Effect.catchTags({
+      InvalidTimeZone: () => Effect.succeed<ScheduleCheck>("invalidTimeZone"),
+      ScheduleInPast: () => Effect.succeed<ScheduleCheck>("inPast"),
+    })
+  );
+};
+
+// What a post would be on one channel, counted as its platform counts it.
+const previewOn = (
+  channel: Channel,
+  postContent: PostContent,
+  options: readonly ChannelOptions[]
+): ChannelPreview => {
+  const rules = platformRules[channel.platform];
+
+  const text =
+    postContent.overrides.find(({ channelId }) => channelId === channel.id)
+      ?.text ?? postContent.text;
+
+  return {
+    channelId: channel.id,
+    hashtags: {
+      count: countHashtags(text),
+      maximum: rules.maxHashtags ?? null,
+    },
+    links: { count: countLinks(text), maximum: rules.maxLinks ?? null },
+    media: {
+      count: postContent.media.length,
+      maximum: rules.maxMedia ?? null,
+    },
+    mentions: {
+      count: countMentions(text),
+      maximum: rules.maxMentions ?? null,
+    },
+    platform: channel.platform,
+    text,
+    textCounts: rules.textLimits.map(({ maximum, unit }) => ({
+      length: measureText(text, unit),
+      maximum,
+      unit,
+    })),
+    violations: violationsOf([channel.id], postContent, options),
+  };
+};
+
+const unknownMediaOf = (studio: Studio, postContent: PostContent) =>
+  checkMedia(studio, postContent).pipe(
+    Effect.as<readonly string[]>([]),
+    Effect.catchTag("UnknownMedia", ({ mediaIds }) => Effect.succeed(mediaIds))
+  );
+
+// A cursor is the id of the last post of the page before.
+const pageFrom = (listed: readonly Post[], cursor: string | undefined) => {
+  if (cursor === undefined) {
+    return Effect.succeed(listed);
+  }
+
+  const index = listed.findIndex(({ id }) => id === cursor);
+
+  return index === -1
+    ? Effect.fail(new HttpApiError.BadRequest())
+    : Effect.succeed(listed.slice(index + 1));
+};
+
+const scheduledAt = (post: Post): number =>
+  post.schedule === null ? 0 : DateTime.toEpochMillis(post.schedule.at);
+
+// The studio keeps its posts newest first.
+const sorted = (all: readonly Post[], sort: PostSort): readonly Post[] => {
+  const timed = all.filter(({ schedule }) => schedule !== null);
+
+  const orders: Readonly<Record<PostSort, () => readonly Post[]>> = {
+    createdAsc: () => all.toReversed(),
+    createdDesc: () => all,
+    scheduledAsc: () =>
+      timed.toSorted((one, other) => scheduledAt(one) - scheduledAt(other)),
+    scheduledDesc: () =>
+      timed.toSorted((one, other) => scheduledAt(other) - scheduledAt(one)),
+  };
+
+  return orders[sort]();
+};
+
+// Whether a post has a target on a channel of the platform.
+const isOnPlatform = (post: Post, platform: string): boolean =>
+  post.targets.some(({ channelId }) =>
+    channels.some(
+      (channel) => channel.id === channelId && channel.platform === platform
+    )
+  );
+
+// Whether a post's time is in the range: one without a time never is.
+const isWithin = (
+  post: Post,
+  from: DateTime.Utc | undefined,
+  to: DateTime.Utc | undefined
+): boolean => {
+  if (from === undefined && to === undefined) {
+    return true;
+  }
+
+  if (post.schedule === null) {
+    return false;
+  }
+
+  const instant = scheduledAt(post);
+
+  return (
+    (from === undefined || instant >= DateTime.toEpochMillis(from)) &&
+    (to === undefined || instant < DateTime.toEpochMillis(to))
+  );
+};
+
+// A cell of a CSV file, bare or between double quotes, and what ends it.
+const cellPattern =
+  /(?:"(?<quoted>(?:[^"]|"")*)"|(?<bare>[^",\r\n]*))(?<end>,|\r?\n|$)/gu;
+
+// The rows of a CSV file, each a list of cells; none when a quoted cell
+// never ends. Empty lines are no rows.
+const csvRows = (csv: string): Option.Option<string[][]> => {
+  const rows: string[][] = [[]];
+  let read = 0;
+
+  for (const match of csv.matchAll(cellPattern)) {
+    // A gap is a quote the pattern could not close.
+    if (match.index !== read) {
+      return Option.none();
+    }
+
+    read += match[0].length;
+
+    const quoted = match.groups?.["quoted"];
+
+    rows
+      .at(-1)
+      ?.push(
+        quoted === undefined
+          ? (match.groups?.["bare"] ?? "")
+          : quoted.replaceAll('""', '"')
+      );
+
+    if (match.groups?.["end"] !== ",") {
+      rows.push([]);
+    }
+  }
+
+  return read === csv.length
+    ? Option.some(rows.filter((row) => row.length > 1 || (row[0] ?? "") !== ""))
+    : Option.none();
+};
+
+const isImportColumn = (name: string): name is ImportColumn =>
+  importColumns.some((column) => column === name);
+
+const requiredColumns: readonly ImportColumn[] = ["text", "channels", "at"];
+
+const unreadable = (
+  problem: ImportUnreadable["problem"],
+  column: string | null = null
+) => Effect.fail(new ImportUnreadable({ column, problem }));
+
+// The columns a file's first line names, in its order.
+const columnsOf = (header: readonly string[]) =>
+  Effect.gen(function* readingHeader() {
+    const names = header.map((name) => name.trim());
+    const unknown = names.find((name) => !isImportColumn(name));
+
+    if (unknown !== undefined) {
+      return yield* unreadable("unknownColumn", unknown);
+    }
+
+    const repeated = names.find((name, index) => names.indexOf(name) < index);
+
+    if (repeated !== undefined) {
+      return yield* unreadable("repeatedColumn", repeated);
+    }
+
+    const missing = requiredColumns.find((column) => !names.includes(column));
+
+    if (missing !== undefined) {
+      return yield* unreadable("missingColumn", missing);
+    }
+
+    return names.filter(isImportColumn);
+  });
+
+// A file's rows, each as its cells by column.
+const importRows = (csv: string) =>
+  Effect.gen(function* readingRows() {
+    const read = csvRows(csv);
+
+    if (Option.isNone(read)) {
+      return yield* unreadable("unterminatedQuote");
+    }
+
+    const [header, ...rows] = read.value;
+
+    if (header === undefined) {
+      return yield* unreadable("empty");
+    }
+
+    const names = yield* columnsOf(header);
+
+    if (rows.length > maxImportRows) {
+      return yield* unreadable("tooManyRows");
+    }
+
+    return rows.map(
+      (cells) =>
+        new Map(names.map((name, index) => [name, (cells[index] ?? "").trim()]))
+    );
+  });
+
+const instantWithOffset =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$/u;
+
+const localTime = /^(?<day>\d{4}-\d{2}-\d{2})[ T](?<time>\d{2}:\d{2})$/u;
+
+// The time a row's `at` names: now, an instant, or a local time read in
+// the row's zone (UTC when the zone is no zone: its check says so).
+const whenOf = (
+  written: string,
+  timeZone: string
+): Option.Option<NewPost["when"]> => {
+  if (written === "now") {
+    return Option.some({ _tag: "now", timeZone });
+  }
+
+  if (instantWithOffset.test(written)) {
+    return DateTime.make(written).pipe(
+      Option.map((instant) => ({
+        _tag: "at" as const,
+        at: DateTime.toUtc(instant),
+        timeZone,
+      }))
+    );
+  }
+
+  const local = localTime.exec(written)?.groups;
+
+  if (local === undefined) {
+    return Option.none();
+  }
+
+  const wallClock = `${local["day"] ?? ""}T${local["time"] ?? ""}:00Z`;
+
+  return DateTime.makeZoned(wallClock, {
+    adjustForTimeZone: true,
+    timeZone,
+  }).pipe(
+    Option.orElse(() => DateTime.make(wallClock)),
+    Option.map((instant) => ({
+      _tag: "at" as const,
+      at: DateTime.toUtc(instant),
+      timeZone,
+    }))
+  );
+};
+
+const idsIn = (cell: string): string[] =>
+  cell.split(/[\s,;]+/u).filter((id) => id !== "");
+
+const problem = (
+  column: ImportColumn,
+  kind: ImportCellProblem["problem"]
+): ImportCellProblem => ({ column, problem: kind });
+
+/** A row of an import, read: its post and key, or the cells at fault. */
+type ImportedRow =
+  | { readonly _tag: "unreadable"; readonly problems: ImportCellProblem[] }
+  | {
+      readonly _tag: "read";
+      readonly key: string | undefined;
+      readonly post: NewPost;
+    };
+
+// A row's post, or the cells that cannot be read, in the columns' order.
+const rowOf = (cells: ReadonlyMap<ImportColumn, string>): ImportedRow => {
+  const cell = (column: ImportColumn) => cells.get(column) ?? "";
+  const channelIds = idsIn(cell("channels"));
+  const media = idsIn(cell("media"));
+  const when = whenOf(cell("at"), cell("time_zone") || "UTC");
+  const duplicate = cell("allow_duplicate");
+  const [first, ...others] = channelIds;
+
+  const problems = [
+    cell("text") === "" && media.length === 0
+      ? [problem("text", "missing")]
+      : [],
+    first === undefined ? [problem("channels", "missing")] : [],
+    cell("at") === "" ? [problem("at", "missing")] : [],
+    cell("at") !== "" && Option.isNone(when) ? [problem("at", "invalid")] : [],
+    ["", "true", "false"].includes(duplicate)
+      ? []
+      : [problem("allow_duplicate", "invalid")],
+  ].flat();
+
+  if (problems.length > 0 || first === undefined || Option.isNone(when)) {
+    return { _tag: "unreadable", problems };
+  }
+
+  return {
+    _tag: "read",
+    key: cell("idempotency_key") || undefined,
+    post: {
+      allowDuplicate: duplicate === "true",
+      channelIds: [first, ...others],
+      content: {
+        media: media.map((mediaId) => ({ altText: "", mediaId })),
+        overrides: [],
+        text: cell("text"),
+      },
+      when: when.value,
+    },
+  };
+};
+
+// The key a row is kept under: its own, or the request's with its place.
+const keyOf = (
+  read: { readonly key: string | undefined },
+  row: number,
+  key: string | undefined
+) => read.key ?? (key === undefined ? undefined : `${key}:${String(row)}`);
+
+// A row as the import's first pass finds it: checked, and not made. One
+// made before under its key is valid: it is answered again.
+const checkedRow = (
+  studio: Studio,
+  read: ImportedRow,
+  row: number,
+  key: string | undefined
+): Effect.Effect<ImportRowResult> =>
+  read._tag === "unreadable"
+    ? Effect.succeed({ _tag: "unreadable", problems: read.problems, row })
+    : madeUnder(studio, read.post, keyOf(read, row, key)).pipe(
+        Effect.flatMap((first) =>
+          Option.isSome(first) ? Effect.void : checkNewPost(studio, read.post)
+        ),
+        Effect.match({
+          onFailure: (refusal): ImportRowResult => ({
+            _tag: "refused",
+            refusal,
+            row,
+          }),
+          onSuccess: (): ImportRowResult => ({ _tag: "valid", row }),
+        })
+      );
+
+// A row as the import's second pass makes it, under its own key or the
+// request's, by its place.
+const madeRow = (
+  studio: Studio,
+  read: ImportedRow,
+  row: number,
+  key: string | undefined
+): Effect.Effect<ImportRowResult> =>
+  read._tag === "unreadable"
+    ? Effect.succeed({ _tag: "unreadable", problems: read.problems, row })
+    : makePost(studio, read.post, keyOf(read, row, key)).pipe(
+        Effect.match({
+          onFailure: (refusal): ImportRowResult => ({
+            _tag: "refused",
+            refusal,
+            row,
+          }),
+          onSuccess: (made): ImportRowResult => ({
+            _tag: "created",
+            ...made,
+            row,
+          }),
+        })
+      );
+
 /** The workspace groups and the account's, answered from the studio. */
 export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
@@ -1185,6 +1757,48 @@ export const studioGroupsLive = (studio: Studio) =>
             Effect.andThen(findPost(studio, params.workspaceId, params.postId)),
             Effect.map(({ id }) => (id === finishedId ? attempts : []))
           ),
+        bulk: ({ headers, params, payload }) =>
+          Effect.gen(function* bulk() {
+            yield* publishing;
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const key = headers["idempotency-key"];
+
+            // One at a time, in order: each is checked against those made
+            // before it.
+            const items = yield* Effect.all(
+              payload.posts.map(({ idempotencyKey, ...written }, index) =>
+                makePost(
+                  studio,
+                  written,
+                  idempotencyKey ??
+                    (key === undefined ? undefined : `${key}:${String(index)}`)
+                ).pipe(
+                  Effect.match({
+                    onFailure: (refusal) => ({
+                      _tag: "refused" as const,
+                      index,
+                      refusal,
+                    }),
+                    onSuccess: (made) => ({
+                      _tag: "created" as const,
+                      index,
+                      ...made,
+                    }),
+                  })
+                )
+              )
+            );
+
+            const created = items.filter(
+              ({ _tag }) => _tag === "created"
+            ).length;
+
+            return { created, items, refused: items.length - created };
+          }),
         cancel: ({ params }) =>
           Effect.gen(function* cancel() {
             yield* publishing;
@@ -1313,6 +1927,39 @@ export const studioGroupsLive = (studio: Studio) =>
           allowed("post:read").pipe(
             Effect.andThen(findPost(studio, params.workspaceId, params.postId))
           ),
+        import: ({ headers, params, payload }) =>
+          Effect.gen(function* importing() {
+            yield* publishing;
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const read = (yield* importRows(payload.csv)).map(rowOf);
+            const key = headers["idempotency-key"];
+
+            // Every row is checked first: nothing is made unless all of
+            // them are valid.
+            const checked = yield* Effect.all(
+              read.map((row, index) => checkedRow(studio, row, index + 1, key))
+            );
+
+            const dryRun = payload.dryRun === true;
+
+            if (dryRun || checked.some(({ _tag }) => _tag !== "valid")) {
+              return { created: 0, dryRun, rows: checked };
+            }
+
+            const rows = yield* Effect.all(
+              read.map((row, index) => madeRow(studio, row, index + 1, key))
+            );
+
+            return {
+              created: rows.filter(({ _tag }) => _tag === "created").length,
+              dryRun,
+              rows,
+            };
+          }),
         list: ({ params, query }) =>
           Effect.gen(function* list() {
             yield* allowed("post:read");
@@ -1332,6 +1979,11 @@ export const studioGroupsLive = (studio: Studio) =>
                 )
               : [];
           }),
+        outcome: ({ params, query }) =>
+          allowed("post:read").pipe(
+            Effect.andThen(findPost(studio, params.workspaceId, params.postId)),
+            Effect.flatMap((post) => afterWaiting(studio, post, query.wait))
+          ),
         repost: ({ params }) =>
           publishing.pipe(
             Effect.andThen(
@@ -1421,7 +2073,63 @@ export const studioGroupsLive = (studio: Studio) =>
               }),
             });
           }),
-        send: ({ headers, params, payload }) =>
+        search: ({ params, query }) =>
+          Effect.gen(function* search() {
+            yield* allowed("post:read");
+            yield* allowed("channel:read");
+
+            if (
+              query.from !== undefined &&
+              query.to !== undefined &&
+              DateTime.toEpochMillis(query.to) <
+                DateTime.toEpochMillis(query.from)
+            ) {
+              return yield* new InvalidTimeRange();
+            }
+
+            const { posts: all } = yield* Ref.get(studio.state);
+
+            const matching = sorted(
+              params.workspaceId === studioId ? all : [],
+              query.sort ?? "createdDesc"
+            ).filter((post) =>
+              [
+                query.status === undefined || post.status === query.status,
+                query.outcome === undefined || post.outcome === query.outcome,
+                query.channelId === undefined ||
+                  post.targets.some(
+                    ({ channelId }) => channelId === query.channelId
+                  ),
+                query.platform === undefined ||
+                  isOnPlatform(post, query.platform),
+                isWithin(post, query.from, query.to),
+                query.createdVia === undefined ||
+                  post.createdVia?.via === query.createdVia,
+                query.authorId === undefined ||
+                  post.authorId === query.authorId,
+              ].every(Boolean)
+            );
+
+            const listed = yield* pageFrom(matching, query.cursor);
+            const limit = query.limit ?? 20;
+            const items = listed.slice(0, limit);
+            const last = items.at(-1);
+
+            return {
+              // The channels the page names that are still connected.
+              channels: channels.flatMap(({ id, platform }) =>
+                items.some(({ targets }) =>
+                  targets.some(({ channelId }) => channelId === id)
+                )
+                  ? [{ channelId: id, platform }]
+                  : []
+              ),
+              items,
+              nextCursor:
+                last !== undefined && limit < listed.length ? last.id : null,
+            };
+          }),
+        send: ({ headers, params, payload, query }) =>
           Effect.gen(function* send() {
             yield* publishing;
 
@@ -1429,61 +2137,13 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new Forbidden();
             }
 
-            const key = headers["idempotency-key"];
-            const body = JSON.stringify(payload);
-            const before = yield* Ref.get(studio.state);
-            const first = key === undefined ? undefined : before.sent[key];
-
-            // The same key answers the post its first request made, as it
-            // now stands, and makes no other.
-            if (first !== undefined) {
-              return first.body === body
-                ? yield* findPost(studio, params.workspaceId, first.postId)
-                : yield* new IdempotencyKeyReused();
-            }
-
-            yield* checkChannels(payload.channelIds);
-            yield* checkMedia(studio, payload.content);
-
-            const when =
-              payload.when._tag === "now"
-                ? { at: studioNow, timeZone: payload.when.timeZone ?? "UTC" }
-                : { at: payload.when.at, timeZone: payload.when.timeZone };
-
-            const status = yield* checkTime(when.at, when.timeZone);
-
-            yield* checkContent(
-              payload.channelIds,
-              payload.content,
-              payload.options ?? []
-            );
-
-            const id = nextId("d", before.posts.length);
-
-            yield* Ref.update(studio.state, (current) => ({
-              ...current,
-              sent:
-                key === undefined
-                  ? current.sent
-                  : { ...current.sent, [key]: { body, postId: id } },
-            }));
-            yield* record(
+            const { post } = yield* makePost(
               studio,
-              `send:${id}:${payload.when._tag}:${key ?? "no key"}`
+              payload,
+              headers["idempotency-key"]
             );
 
-            return yield* savePost(studio, {
-              authorId: userId,
-              content: payload.content,
-              createdVia: viaCommandLine,
-              id,
-              outcome: null,
-              schedule: when,
-              scheduledBy: userId,
-              scheduledVia: viaCommandLine,
-              status,
-              targets: targetsOf(id, payload),
-            });
+            return yield* afterWaiting(studio, post, query.wait);
           }),
         unschedule: ({ params }) =>
           Effect.gen(function* unschedule() {
@@ -1528,6 +2188,58 @@ export const studioGroupsLive = (studio: Studio) =>
               content: payload.content,
               targets: targetsOf(post.id, payload),
             });
+          }),
+        validate: ({ params, payload }) =>
+          Effect.gen(function* validate() {
+            yield* allowed("post:read");
+            yield* allowed("channel:read");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const { when } = payload;
+            const { posts: all } = yield* Ref.get(studio.state);
+
+            const validation: Omit<PostValidation, "valid"> = {
+              channels: payload.channelIds.flatMap((channelId) => {
+                const channel = channels.find(({ id }) => id === channelId);
+
+                return channel === undefined
+                  ? []
+                  : [
+                      previewOn(
+                        channel,
+                        payload.content,
+                        payload.options ?? []
+                      ),
+                    ];
+              }),
+              // Without a time, nothing is near it.
+              duplicates: when === undefined ? [] : duplicatesOf(all, payload),
+              planLimit: null,
+              schedule:
+                when === undefined ? null : yield* scheduleCheck({ when }),
+              unknownChannels: payload.channelIds.filter(
+                (channelId) => !channels.some(({ id }) => id === channelId)
+              ),
+              unknownMedia: yield* unknownMediaOf(studio, payload.content),
+              violations:
+                payload.channelIds.length === 0 ? [{ _tag: "noChannels" }] : [],
+            };
+
+            return {
+              ...validation,
+              valid:
+                validation.channels.every(
+                  ({ violations }) => violations.length === 0
+                ) &&
+                validation.duplicates.length === 0 &&
+                (validation.schedule ?? "ok") === "ok" &&
+                validation.unknownChannels.length === 0 &&
+                validation.unknownMedia.length === 0 &&
+                validation.violations.length === 0,
+            };
           }),
       })
     ),

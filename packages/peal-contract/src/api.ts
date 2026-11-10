@@ -578,25 +578,85 @@ export type { PostStatus } from "./post-status.ts";
 
 export { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 
+export { ImportProblemSchema, ImportUnreadable } from "./import-unreadable.ts";
+
+export type { ImportProblem } from "./import-unreadable.ts";
+
+export {
+  ImportCellProblemSchema,
+  ImportColumnSchema,
+  importColumns,
+  maxBulkPosts,
+  maxImportLength,
+  maxImportRows,
+  PostRefusalSchema,
+} from "./post-batches.ts";
+
+export type {
+  ImportCellProblem,
+  ImportColumn,
+  PostRefusal,
+} from "./post-batches.ts";
+
+export {
+  DuplicateOnChannelSchema,
+  DuplicatePost,
+  duplicateWindowHours,
+} from "./duplicate-post.ts";
+
+export type { DuplicateOnChannel } from "./duplicate-post.ts";
+
+export {
+  ChannelPreviewSchema,
+  LimitedCountSchema,
+  PlanShortfallSchema,
+  PostValidationSchema,
+  ScheduleCheckSchema,
+  TextCountSchema,
+} from "./post-validation.ts";
+
+export type {
+  ChannelPreview,
+  LimitedCount,
+  PlanShortfall,
+  PostValidation,
+  ScheduleCheck,
+  TextCount,
+} from "./post-validation.ts";
+
 export {
   AttemptResultSchema,
+  BulkPostResultSchema,
+  BulkPostSchema,
+  BulkPostsSchema,
+  BulkResultSchema,
   defaultDraftPageSize,
+  defaultPostPageSize,
   DraftPageSchema,
   FailureReasonSchema,
   idempotencyKeyLifetimeHours,
+  ImportResultSchema,
+  ImportRowResultSchema,
   maxDraftPageSize,
   maxIdempotencyKeyLength,
+  maxOutcomeWaitSeconds,
+  maxPostPageSize,
   MediaAttachmentSchema,
   NewPostSchema,
   PostContentSchema,
   PostDraftSchema,
+  PostImportSchema,
   PostOriginSchema,
   PostOriginViaSchema,
   PostOutcomeSchema,
+  PostChannelSchema,
+  PostPageSchema,
   PostScheduleSchema,
   PostSchema,
+  PostSortSchema,
   PostTargetSchema,
   PostTimingSchema,
+  PostToValidateSchema,
   PublicationAttemptSchema,
   SchedulePostSchema,
   TargetConfirmationSchema,
@@ -606,7 +666,14 @@ export {
 
 export type {
   AttemptResult,
+  BulkPost,
+  BulkPostResult,
+  BulkPosts,
+  BulkResult,
   DraftPage,
+  ImportResult,
+  ImportRowResult,
+  PostImport,
   FailureReason,
   MediaAttachment,
   NewPost,
@@ -615,10 +682,14 @@ export type {
   PostDraft,
   PostOrigin,
   PostOriginVia,
+  PostChannel,
   PostOutcome,
+  PostPage,
   PostSchedule,
+  PostSort,
   PostTarget,
   PostTiming,
+  PostToValidate,
   PublicationAttempt,
   SchedulePost,
   TargetConfirmation,

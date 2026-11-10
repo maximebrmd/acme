@@ -7,13 +7,17 @@ import type { AttachableMedia } from "#publishing/application/attachable-media.t
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
+import { PostBatches } from "#publishing/application/post-batches.ts";
+import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostOrigins } from "#publishing/application/post-origins.ts";
+import { PostOutcomesLive } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostSearch } from "#publishing/application/post-search.ts";
 import { PostUsage } from "#publishing/application/post-usage.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
@@ -24,6 +28,7 @@ import {
   GatedPlatformPublisher,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
+import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
 import { DrizzlePostOversight } from "#publishing/infrastructure/drizzle-post-oversight.ts";
@@ -55,7 +60,7 @@ import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publis
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 /**
- * The publishing context's use cases (`PostDrafts`, `PostQueries`,
+ * The publishing context's use cases (`PostBatches`, `PostChecks`, `PostDrafts`, `PostOutcomes`, `PostQueries`, `PostSearch`,
  * `PostScheduling`, `PostFollowUp`, for the handlers; `PostRecords`, for the
  * workspace context's exports and erasures; `PostUsage`, for billing;
  * `PublishedTargets`, which analytics follows; `PostOversight`, for the
@@ -86,15 +91,20 @@ export const publishingWith = <
   events: Layer.Layer<PostEvents, never, R4> = PostEvents.none
 ) =>
   Layer.mergeAll(
+    PostBatches.layer.pipe(
+      Layer.provideMerge(Layer.merge(PostChecks.layer, PostScheduling.layer))
+    ),
     PostDrafts.layer,
+    PostOutcomesLive,
     PostQueries.layer,
     PostRecords.layer,
-    PostScheduling.layer,
+    PostSearch.layer,
     PostFollowUp.layer,
     PostUsage.layer
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzleContentFingerprints,
         DrizzleIdempotencyKeys,
         DrizzlePostOversight,
         DrizzlePostRepository,

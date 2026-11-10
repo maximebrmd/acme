@@ -17,8 +17,11 @@ Un agent IA peut publier par Peal comme le fait un membre : il lit les canaux de
 | Faire entrer une image ou une vidéo depuis une adresse publique                                                       | `import_media`                                             |
 | Rédiger un brouillon, le modifier ou le supprimer                                                                     | `create_draft`, `update_draft`, `discard_draft`            |
 | Programmer un brouillon, publier maintenant, ou créer et envoyer une publication en un seul appel                     | `schedule_post`, `publish_post`, `create_post`             |
+| Vérifier une publication avant de l’envoyer, et voir ce que recevrait chaque canal                                    | `validate_post`                                            |
+| Créer et envoyer jusqu’à 50 publications en un seul appel                                                             | `create_posts`                                             |
 | Déplacer une publication programmée, la repasser en brouillon ou l’annuler                                            | `reschedule_post`, `unschedule_post`, `cancel_post`        |
 | Lire ce qu’une publication est devenue sur chaque canal, et chaque tentative de Peal                                  | `get_post`, `list_post_attempts`                           |
+| Attendre qu’une publication qui part maintenant ait son résultat sur chaque canal                                     | `await_post`                                               |
 | Republier là où une publication a échoué, ou enregistrer ce que vous avez trouvé sur la plateforme                    | `repost_target`, `confirm_target`                          |
 
 [Connecter un client MCP](/mcp#tools) liste chaque outil avec ce qu’il change. Un agent ne connecte aucun canal : vous connectez les comptes dans l’application web, où vous vous identifiez sur chaque plateforme ([Connecter des canaux](/channels)). Il agit dans un seul espace de travail, en votre nom, sans dépasser ce que votre [rôle](/scheduling#roles) permet : propriétaires, administrateurs et éditeurs programment et publient ; les contributeurs rédigent des brouillons.
@@ -132,6 +135,10 @@ Ici, un agent publie une image sur deux canaux. Chaque étape est un appel d’o
    }
    ```
 
+   En dehors des clés, une publication dont le contenu part déjà sur l’un de ses canaux à moins de 23 heures de son heure est refusée, en nommant la publication qui l’a déjà ([Publications en double](/posting-api#duplicates)). `allowDuplicate: true` la laisse passer : un agent ne le passe que si vous voulez vraiment publier deux fois la même chose. Avec `waitSeconds`, 60 au plus, une publication qui part maintenant (`now`) est répondue une fois que chaque canal a son résultat, ou dans son état du moment quand le temps est écoulé ; `await_post` attend la suite.
+
+   `validate_post` prend les mêmes arguments et ne crée rien : il répond ce qui serait refusé, et ce que recevrait chaque canal. `create_posts` envoie jusqu’à 50 publications en un seul appel, chacune comme le ferait `create_post`, et répond pour chacune si elle a été créée ou pourquoi elle a été refusée.
+
 5. `get_post`, une fois son heure passée, pour lire le résultat. Le `status` de la publication est `finished` quand tous les canaux ont fini ; son `outcome` et chacune de ses cibles (`targets`) disent ce qui s’est passé, avec l’adresse de la publication sur la plateforme, ou la raison de l’échec.
 
    ```json
@@ -211,11 +218,13 @@ Faites d’abord lancer `peal doctor --json` à l’agent : il vérifie le serve
 | `list_media`, `import_media`      | `peal media list`, `peal media import <url> --alt "…"` ; `peal media upload <file>` envoie un fichier depuis le disque |
 | `list_drafts`, `create_draft`     | `peal drafts list`, `peal drafts save --text "…" --channel <channel-id>`                                               |
 | `create_post`                     | `peal post "…" --channel <channel-id> --at <instant>`, ou `--now`                                                      |
+| `validate_post`                   | `peal post "…" --channel <channel-id> --at <instant> --dry-run`                                                        |
 | `schedule_post`                   | `peal posts schedule <post-id> --at <instant>`                                                                         |
 | `publish_post`                    | `peal posts publish <post-id>`                                                                                         |
 | `reschedule_post`                 | `peal posts reschedule <post-id> --at <instant>`                                                                       |
 | `unschedule_post`, `cancel_post`  | `peal posts unschedule <post-id>`, `peal posts cancel <post-id>`                                                       |
-| `list_posts`, `get_post`          | `peal posts list`, `peal posts show <post-id>`                                                                         |
+| `get_post`                        | `peal posts show <post-id>`                                                                                            |
+| `list_posts`, `await_post`        | `peal posts list`, `peal posts wait <post-id>`                                                                         |
 | `list_post_attempts`              | `peal posts attempts <post-id>`                                                                                        |
 | `list_activity`                   | `peal activity list`                                                                                                   |
 | `repost_target`, `confirm_target` | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`                        |
@@ -247,13 +256,16 @@ Votre propre agent ou script peut appeler les points d’accès sur lesquels rep
 | --------------------------------- | ---------------------------------------------------------------------------------- |
 | `list_channels`                   | `GET …/channels`                                                                   |
 | `list_media`, `import_media`      | `GET …/media`, `POST …/media/import`                                               |
-| `list_drafts`, `list_posts`       | `GET …/posts/drafts`, `GET …/posts?from=…&to=…`                                    |
+| `list_drafts`, `list_posts`       | `GET …/posts/drafts`, `GET …/posts/search`                                         |
 | `create_draft`, `update_draft`    | `POST …/posts`, `PUT …/posts/{postId}`                                             |
 | `create_post`                     | `POST …/posts/send`                                                                |
+| `create_posts`                    | `POST …/posts/bulk`                                                                |
+| `validate_post`                   | `POST …/posts/validate`                                                            |
 | `schedule_post`                   | `POST …/posts/{postId}/schedule`                                                   |
 | `reschedule_post`, `publish_post` | `POST …/posts/{postId}/reschedule`, avec l’instant présent pour publier maintenant |
 | `unschedule_post`, `cancel_post`  | `POST …/posts/{postId}/unschedule`, `POST …/posts/{postId}/cancel`                 |
 | `get_post`, `list_post_attempts`  | `GET …/posts/{postId}`, `GET …/posts/{postId}/attempts`                            |
+| `await_post`                      | `GET …/posts/{postId}/outcome`                                                     |
 | `repost_target`, `confirm_target` | `POST …/posts/{postId}/targets/{targetId}/repost`, `…/confirm`                     |
 
 `POST …/posts/send` crée une publication et l’envoie en une seule requête. Envoyez un en-tête `Idempotency-Key`, un texte de votre choix de 255 caractères au plus, comme un UUID, pour que la requête puisse être renvoyée sans risque :
@@ -277,6 +289,8 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send \
 - Dans les 24 heures, la même clé avec le même corps répond la publication créée par la première requête, dans son état du moment, sans en faire une autre.
 - La même clé avec un autre corps répond 409 `idempotency_key_reused`, et ne fait rien : envoyez une nouvelle requête sous une nouvelle clé.
 - Une fois cette publication supprimée, la clé répond 404 `post_not_found`. Les clés sont gardées par espace de travail.
+
+[Publier par l’API](/posting-api) montre les autres requêtes avec des exemples : vérifier une publication sans la créer, attendre le résultat d’une publication qui part maintenant, envoyer plusieurs publications d’un coup, les importer depuis un fichier CSV, le refus des doublons, et lister les publications avec des filtres.
 
 `POST …/media/import` prend `{ "url": "https://files.example/printemps/couverture.jpg", "altText": "…" }` et répond le média, comme `import_media`. Il demande `media:upload`.
 

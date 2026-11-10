@@ -1,4 +1,5 @@
 export type { AttemptsPostsRequest } from "./AttemptsPostsRequest.js";
+export type { BulkPosts } from "./BulkPosts.js";
 export type { CancelPostsRequest } from "./CancelPostsRequest.js";
 export type { ConfirmPostsRequest } from "./ConfirmPostsRequest.js";
 export type { CreatePostsRequest } from "./CreatePostsRequest.js";
@@ -7,8 +8,12 @@ export type { DraftsPostsRequest } from "./DraftsPostsRequest.js";
 export type { GetPostsRequest } from "./GetPostsRequest.js";
 export type { ListPostsRequest } from "./ListPostsRequest.js";
 export type { NewPost } from "./NewPost.js";
+export type { OutcomePostsRequest } from "./OutcomePostsRequest.js";
+export type { PostImport } from "./PostImport.js";
+export type { PostToValidate } from "./PostToValidate.js";
 export type { RepostPostsRequest } from "./RepostPostsRequest.js";
 export type { ReschedulePostsRequest } from "./ReschedulePostsRequest.js";
 export type { SchedulePost } from "./SchedulePost.js";
+export type { SearchPostsRequest } from "./SearchPostsRequest.js";
 export type { UnschedulePostsRequest } from "./UnschedulePostsRequest.js";
 export type { UpdatePostsRequest } from "./UpdatePostsRequest.js";

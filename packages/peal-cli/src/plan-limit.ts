@@ -29,6 +29,12 @@ const sizeOf = (bytes: number): string =>
 const amountOf = (limit: Limit, count: number): string =>
   limit === "mediaStorage" ? sizeOf(count) : String(count);
 
+/** A plan's limit, what the workspace holds of it, and the way out. */
+export type PlanShortfallFields = Pick<
+  PlanLimitReached,
+  "allowed" | "billingUrl" | "limit" | "plan" | "planWithRoom" | "used"
+>;
+
 /**
  * What a plan's refusal means, as the user reads it: the plan, what it
  * allows and what the workspace holds, then the way out, which is the
@@ -42,7 +48,7 @@ export const planLimitReason = ({
   plan,
   planWithRoom,
   used,
-}: PlanLimitReached): string => {
+}: PlanShortfallFields): string => {
   const held = `The workspace's ${plans[plan]} plan allows ${amountOf(limit, allowed)} ${limits[limit]}, and it has ${amountOf(limit, used)}.`;
 
   return planWithRoom === null

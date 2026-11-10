@@ -3,7 +3,12 @@ import { Context, Effect, Layer, Option, Schema } from "effect";
 import { McpClient } from "effect/ai";
 import type { McpSchema } from "effect/ai";
 import { SqlClient } from "effect/sql";
-import { InvitationSchema, PostSchema } from "peal-contract";
+import {
+  InvitationSchema,
+  PostChannelSchema,
+  PostSchema,
+  PostValidationSchema,
+} from "peal-contract";
 import type { TargetOptions } from "peal-contract";
 
 import { ListedMemberSchema } from "#app/mcp/people-tools.ts";
@@ -240,10 +245,12 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
         // Read only, destructive, idempotent, open world.
         assert.deepStrictEqual(hints, {
           analytics_summary: [true, false, true, false],
+          await_post: [true, false, true, false],
           cancel_post: [false, true, true, false],
           confirm_target: [false, true, true, false],
           create_draft: [false, false, false, false],
           create_post: [false, false, false, true],
+          create_posts: [false, false, false, true],
           // An endpoint is a server outside Peal, which then hears of the
           // workspace.
           create_webhook: [false, false, false, true],
@@ -274,6 +281,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           server_health: [true, false, true, false],
           unschedule_post: [false, true, true, false],
           update_draft: [false, true, true, false],
+          // It asks TikTok what a creator takes.
+          validate_post: [true, false, true, true],
           whoami: [true, false, true, false],
         });
 
@@ -1114,6 +1123,157 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           );
 
           assert.strictEqual(cancelled.status, "cancelled");
+        })
+    );
+
+    it.effect(
+      "check a post without making it, list posts by filter, and answer several posts one by one",
+      () =>
+        Effect.gen(function* checking() {
+          const fixture = yield* ToolsFixture;
+          const reader = yield* connected(fixture.reading);
+          const writer = yield* connected(fixture.writing);
+          const publisher = yield* connected(fixture.publishing);
+
+          // Reading is enough to check a post: nothing is made.
+          const checked = yield* reader.call(
+            "validate_post",
+            Schema.toCodecJson(PostValidationSchema),
+            {
+              channelIds: [fixture.channelId, fixture.youtubeId, "nowhere"],
+              content: content("a".repeat(600)),
+              when: {
+                _tag: "at",
+                at: "2020-01-01T00:00:00Z",
+                timeZone: "Europe/Paris",
+              },
+            }
+          );
+
+          assert.isFalse(checked.valid);
+          assert.strictEqual(checked.schedule, "inPast");
+          assert.deepStrictEqual(checked.unknownChannels, ["nowhere"]);
+          assert.deepStrictEqual(
+            checked.channels.map(({ channelId, violations }) => [
+              channelId,
+              violations.map(({ _tag }) => _tag).includes("textTooLong") ||
+                violations.map(({ _tag }) => _tag).includes("optionMissing"),
+            ]),
+            [
+              [fixture.channelId, true],
+              [fixture.youtubeId, true],
+            ]
+          );
+          assert.strictEqual(checked.channels[0]?.text.length, 600);
+
+          const fine = yield* reader.call(
+            "validate_post",
+            Schema.toCodecJson(PostValidationSchema),
+            {
+              channelIds: [fixture.channelId],
+              content: content("A synthetic post."),
+            }
+          );
+
+          assert.isTrue(fine.valid);
+          assert.isNull(fine.schedule);
+
+          // Several posts: each answered on its own, by its place.
+          const several = {
+            posts: [
+              {
+                channelIds: [fixture.channelId],
+                content: content("a".repeat(600)),
+                when: { _tag: "now" },
+              },
+              {
+                channelIds: ["nowhere"],
+                content: content("A synthetic post."),
+                when: { _tag: "now" },
+              },
+            ],
+          };
+
+          assert.include(
+            yield* writer.refused("create_posts", several),
+            "scope workspace:publish"
+          );
+
+          const answered = yield* publisher.call(
+            "create_posts",
+            Schema.Struct({
+              created: Schema.Int,
+              items: Schema.Array(
+                Schema.Struct({
+                  _tag: Schema.String,
+                  index: Schema.Int,
+                  refusal: Schema.Struct({ _tag: Schema.String }),
+                })
+              ),
+              refused: Schema.Int,
+            }),
+            several
+          );
+
+          assert.deepStrictEqual(answered, {
+            created: 0,
+            items: [
+              {
+                _tag: "refused",
+                index: 0,
+                refusal: { _tag: "PostContentInvalid" },
+              },
+              {
+                _tag: "refused",
+                index: 1,
+                refusal: { _tag: "UnknownChannels" },
+              },
+            ],
+            refused: 2,
+          });
+
+          // Posts by filter, a page at a time, with their channels' platforms.
+          const draft = yield* writer.call("create_draft", PostJsonSchema, {
+            channelIds: [fixture.youtubeId],
+            content: content("A synthetic draft to find."),
+          });
+
+          const PageSchema = Schema.toCodecJson(
+            Schema.Struct({
+              channels: Schema.Array(PostChannelSchema),
+              nextCursor: Schema.NullOr(Schema.String),
+              posts: Schema.Array(PostSchema),
+            })
+          );
+
+          const found = yield* reader.call("list_posts", PageSchema, {
+            limit: 1,
+            platform: "youtube",
+            status: "draft",
+          });
+
+          assert.strictEqual(found.posts[0]?.id, draft.id);
+          assert.deepStrictEqual(found.channels, [
+            { channelId: fixture.youtubeId, platform: "youtube" },
+          ]);
+          assert.include(
+            yield* reader.refused("list_posts", { cursor: "not a cursor" }),
+            "This cursor is none a page of this list gave"
+          );
+
+          // A draft goes out at no time: nothing to wait for.
+          const awaited = yield* reader.call("await_post", PostJsonSchema, {
+            postId: draft.id,
+            waitSeconds: 30,
+          });
+
+          assert.strictEqual(awaited.status, "draft");
+
+          yield* writer.call(
+            "discard_draft",
+            Schema.Struct({ discarded: Schema.String }),
+            { postId: draft.id }
+          );
         })
     );
 

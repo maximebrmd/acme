@@ -74,6 +74,8 @@ export const posts = publishing.table(
     index("posts_scheduled")
       .on(table.scheduledAt)
       .where(sql`${table.status} = 'scheduled'`),
+    // A workspace's posts by creation, either way: ids are UUIDv7s.
+    index("posts_workspace_id").on(table.workspaceId, table.id),
     // A workspace's drafts, newest first: ids are UUIDv7s.
     index("posts_workspace_drafts")
       .on(table.workspaceId, table.id)
@@ -88,13 +90,18 @@ export const posts = publishing.table(
  * sees a TikTok post), tagged by `platform`, and is null on platforms that
  * take none: rows from before options were kept have none. `kept_private`
  * is true on a published target the platform made private although asked
- * to show it to more people.
+ * to show it to more people. `content_digest` is the SHA-256 of what the
+ * target sends to its channel (its text there and its media ids), written
+ * when its post is scheduled, by which the same content sent to the same
+ * channel again is found; null on a draft never scheduled, and on rows from
+ * before it was kept.
  */
 export const postTargets = publishing.table(
   "post_targets",
   {
     cancelRequested: boolean("cancel_requested").notNull().default(false),
     channelId: uuid("channel_id").notNull(),
+    contentDigest: text("content_digest"),
     failureCode: text("failure_code"),
     failureReason: text("failure_reason"),
     finishedAt: instant("finished_at"),
@@ -113,6 +120,10 @@ export const postTargets = publishing.table(
   },
   (table) => [
     unique("post_targets_post_channel").on(table.postId, table.channelId),
+    // The targets that send the same content to a channel.
+    index("post_targets_channel_content")
+      .on(table.channelId, table.contentDigest)
+      .where(sql`${table.contentDigest} IS NOT NULL`),
     // Targets in the order they went live, which analytics follows.
     index("post_targets_published")
       .on(table.finishedAt, table.id)
