@@ -72,6 +72,7 @@ describe(mediaViolationsOn, () => {
     expect(withRules.toSorted()).toStrictEqual([
       "bluesky",
       "facebook",
+      "googleBusiness",
       "instagram",
       "linkedin",
       "mastodon",
@@ -81,7 +82,10 @@ describe(mediaViolationsOn, () => {
       "youtube",
     ]);
 
-    for (const platform of withRules) {
+    // A Google Business Profile post takes photos only.
+    for (const platform of withRules.filter(
+      (name) => name !== "googleBusiness"
+    )) {
       expect(violations(platform, video(first))).toStrictEqual([]);
     }
 
@@ -418,6 +422,30 @@ describe(mediaViolationsOn, () => {
     for (const platform of ["pinterest"] as const) {
       expect(violations(platform, huge, mediaFile(second))).toStrictEqual([]);
     }
+  });
+
+  it("takes JPEG and PNG photos of 10,240 bytes to 5 MiB on Google Business Profile, and no video", () => {
+    const smallest = mediaFile(first, { byteSize: 10_240 });
+
+    const largest = mediaFile(second, {
+      byteSize: 5 * mebibyte,
+      contentType: "image/png",
+    });
+
+    expect(violations("googleBusiness", smallest, largest)).toStrictEqual([]);
+
+    expect(
+      violations(
+        "googleBusiness",
+        mediaFile(first, { byteSize: 10_239 }),
+        mediaFile(second, { byteSize: 5 * mebibyte + 1 }),
+        mediaFile(third, { contentType: "image/webp" })
+      ).map(({ _tag }) => _tag)
+    ).toStrictEqual(["mediaTooSmall", "mediaTooLarge", "mediaTypeUnsupported"]);
+
+    expect(
+      violations("googleBusiness", video(first)).map(({ _tag }) => _tag)
+    ).toStrictEqual(["mediaTypeUnsupported"]);
   });
 
   it("holds TikTok's photos to JPEG and WebP of 1080p at most", () => {

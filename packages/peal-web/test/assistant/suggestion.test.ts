@@ -47,6 +47,7 @@ describe(shortenablePlatforms, () => {
       "facebook",
       "tiktok",
       "youtube",
+      "googleBusiness",
     ]);
     expect(shortenablePlatforms(["pinterest"])).toStrictEqual(
       shortenablePlatforms([])

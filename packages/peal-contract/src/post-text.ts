@@ -302,6 +302,11 @@ const tiktokVideo: FormatLimits = {
   sideRange: { maximum: 4096, minimum: 360 },
 };
 
+const googleBusinessImage: FormatLimits = {
+  maxByteSize: 5 * mebibyte,
+  minByteSize: 10_240,
+};
+
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   bluesky: {
     maxMedia: 4,
@@ -338,6 +343,18 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     },
     mediaRequired: false,
     textLimits: [{ maximum: 63_206, unit: "codePoints" }],
+  },
+  googleBusiness: {
+    media: {
+      formats: {
+        "image/jpeg": googleBusinessImage,
+        "image/png": googleBusinessImage,
+      },
+      mixesKinds: false,
+      showsAltText: false,
+    },
+    mediaRequired: false,
+    textLimits: [{ maximum: 1500, unit: "codePoints" }],
   },
   instagram: {
     maxHashtags: 30,

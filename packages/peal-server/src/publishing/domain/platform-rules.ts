@@ -100,6 +100,9 @@ const minute = 60 * second;
 // - YouTube: the video's description, at most 5,000 bytes, without "<" or
 //   ">"; no post without its one video.
 // - Pinterest: no limit known yet.
+// - Google Business Profile: a local post's `summary` takes 1,500
+//   characters, the count Google's own editor shows (its reference names
+//   no limit). How many photos one post takes is not stated either.
 //
 // "Characters" with no other word count code points, the stricter reading.
 //
@@ -144,6 +147,12 @@ const minute = 60 * second;
 //   only YouTube knows). A video of 3 minutes or less that is square or
 //   taller than wide becomes a Short.
 // - Pinterest: no media rule known yet.
+// - Google Business Profile: JPEG and PNG photos of 10,240 bytes (the
+//   MediaItem reference) to 5 MB (Business Profile's photo guidelines),
+//   which Google fetches from a public URL. The API takes no video in a
+//   local post ("only photos are supported"), and keeps no alt text. A
+//   photo's shorter side must have 250 pixels at least, which Peal does not
+//   check: Google refuses a smaller one when the post goes out.
 const blueskyImage: FormatLimits = { maxByteSize: 2_000_000 };
 
 const mastodonImage: FormatLimits = {
@@ -202,6 +211,11 @@ const tiktokVideo: FormatLimits = {
   sideRange: { maximum: 4096, minimum: 360 },
 };
 
+const googleBusinessImage: FormatLimits = {
+  maxByteSize: 5 * mebibyte,
+  minByteSize: 10_240,
+};
+
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   bluesky: {
     maxMedia: 4,
@@ -238,6 +252,18 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     },
     mediaRequired: false,
     textLimits: [{ maximum: 63_206, unit: "codePoints" }],
+  },
+  googleBusiness: {
+    media: {
+      formats: {
+        "image/jpeg": googleBusinessImage,
+        "image/png": googleBusinessImage,
+      },
+      mixesKinds: false,
+      showsAltText: false,
+    },
+    mediaRequired: false,
+    textLimits: [{ maximum: 1500, unit: "codePoints" }],
   },
   instagram: {
     maxHashtags: 30,
