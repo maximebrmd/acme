@@ -10,6 +10,7 @@ import {
   readingRows,
   shownKeys,
   summaryTimeZone,
+  trendOf,
 } from "#analytics/report.ts";
 
 const summaryWith = (quotes: number | null, posts = 1): AnalyticsSummary => ({
@@ -135,5 +136,19 @@ describe(readingRows, () => {
         reposts: 1,
       },
     ]);
+  });
+});
+
+describe(trendOf, () => {
+  it("is the difference against the period before, and its share of it", () => {
+    expect(trendOf(12, 8)).toStrictEqual({ change: 4, share: 0.5 });
+    expect(trendOf(6, 8)).toStrictEqual({ change: -2, share: -0.25 });
+    expect(trendOf(8, 8)).toStrictEqual({ change: 0, share: 0 });
+  });
+
+  it("has no share from nothing, and is unknown when either number is", () => {
+    expect(trendOf(5, 0)).toStrictEqual({ change: 5, share: null });
+    expect(trendOf(null, 3)).toBeNull();
+    expect(trendOf(3, null)).toBeNull();
   });
 });

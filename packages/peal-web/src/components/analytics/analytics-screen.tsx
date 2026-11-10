@@ -16,7 +16,11 @@ import {
 import { Skeleton } from "peal-ui/components/skeleton";
 import { useState } from "react";
 
-import { analyticsSummary } from "#analytics/api.ts";
+import {
+  analyticsDashboard,
+  analyticsSummary,
+  exportUrl,
+} from "#analytics/api.ts";
 import {
   rangeEnding,
   ranges,
@@ -25,6 +29,7 @@ import {
   todayIn,
 } from "#analytics/report.ts";
 import type { Range } from "#analytics/report.ts";
+import { AccountNumbers } from "#components/analytics/account-numbers.tsx";
 import { AnalyticsSummaryView } from "#components/analytics/analytics-summary.tsx";
 import { InTimeZone } from "#components/notices/in-time-zone.tsx";
 import { workspaceChannels } from "#posts/api.ts";
@@ -56,14 +61,21 @@ const AnalyticsView = ({
   const [range, setRange] = useState<Range>(initialRange);
   const asked = rangeEnding(todayIn(timeZone), range, timeZone);
   const summaryQuery = analyticsSummary(workspaceId, asked);
+  const dashboardQuery = analyticsDashboard(workspaceId, asked);
   const channelsQuery = workspaceChannels(workspaceId);
   const summary = useAtomValue(summaryQuery);
+  const dashboard = useAtomValue(dashboardQuery);
+  const retryDashboard = useAtomRefresh(dashboardQuery);
   const channels = useAtomValue(channelsQuery);
   const retrySummary = useAtomRefresh(summaryQuery);
   const retryChannels = useAtomRefresh(channelsQuery);
 
   const body = (() => {
-    if (AsyncResult.isFailure(summary) || AsyncResult.isFailure(channels)) {
+    if (
+      AsyncResult.isFailure(summary) ||
+      AsyncResult.isFailure(dashboard) ||
+      AsyncResult.isFailure(channels)
+    ) {
       return (
         <div className="flex flex-col items-start gap-3" role="alert">
           <p className="text-sm">{t("page.loadFailed")}</p>
@@ -72,6 +84,7 @@ const AnalyticsView = ({
             size="sm"
             onClick={() => {
               retrySummary();
+              retryDashboard();
               retryChannels();
             }}
           >
@@ -81,17 +94,31 @@ const AnalyticsView = ({
       );
     }
 
-    if (!AsyncResult.isSuccess(summary) || !AsyncResult.isSuccess(channels)) {
+    if (
+      !AsyncResult.isSuccess(summary) ||
+      !AsyncResult.isSuccess(dashboard) ||
+      !AsyncResult.isSuccess(channels)
+    ) {
       return <Loading label={t("page.loading")} />;
     }
 
     return (
       <InTimeZone timeZone={timeZone}>
-        <AnalyticsSummaryView
-          channels={channels.value}
-          summary={summary.value}
-          workspaceId={workspaceId}
-        />
+        <div className="flex flex-col gap-10">
+          <AccountNumbers
+            channels={channels.value}
+            dashboard={dashboard.value}
+            exports={{
+              accounts: exportUrl(workspaceId, "accounts", asked),
+              posts: exportUrl(workspaceId, "posts", asked),
+            }}
+          />
+          <AnalyticsSummaryView
+            channels={channels.value}
+            summary={summary.value}
+            workspaceId={workspaceId}
+          />
+        </div>
       </InTimeZone>
     );
   })();
