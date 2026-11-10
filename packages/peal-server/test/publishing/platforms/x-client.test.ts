@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Context, DateTime, Duration, Effect, Layer } from "effect";
+import { Context, DateTime, Duration, Effect, Layer, Option } from "effect";
 
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
@@ -389,6 +389,110 @@ describe("publishing on X", () => {
           search.query.get("start_time") ?? "",
           /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/u
         );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("sends a later part as a reply to the part before it", () =>
+    Effect.gen(function* repliesInThread() {
+      const { client, x } = yield* onX();
+      const first = yield* client.publish(yield* post({ text: "A first" }));
+
+      assert(first._tag === "published");
+
+      const second = yield* client.publish(
+        yield* post({
+          part: 1,
+          replyTo: Option.some({
+            parent: first.platformPostId,
+            root: first.platformPostId,
+          }),
+          text: "A second",
+        })
+      );
+
+      assert(second._tag === "published");
+
+      const third = yield* client.publish(
+        yield* post({
+          part: 2,
+          replyTo: Option.some({
+            parent: second.platformPostId,
+            root: first.platformPostId,
+          }),
+          text: "A third",
+        })
+      );
+
+      assert.strictEqual(third._tag, "published");
+      assert.deepStrictEqual(
+        x.posts().map(({ inReplyTo, text }) => [text, inReplyTo]),
+        [
+          ["A first", null],
+          ["A second", first.platformPostId],
+          ["A third", second.platformPostId],
+        ]
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "finds a lost reply among the account's replies, by the post it answers",
+    () =>
+      Effect.gen(function* lostReply() {
+        const { client, x } = yield* onX();
+        const first = yield* client.publish(yield* post({ text: "A first" }));
+
+        assert(first._tag === "published");
+
+        // Another reply with the same words, under another post.
+        const other = yield* client.publish(yield* post({ text: "Another" }));
+
+        assert(other._tag === "published");
+
+        x.script("POST /2/tweets", [{ _tag: "publishThenDrop" }]);
+
+        const reply = yield* post({
+          part: 1,
+          replyTo: Option.some({
+            parent: first.platformPostId,
+            root: first.platformPostId,
+          }),
+          text: "A second",
+        });
+
+        const result = yield* client.publish(reply);
+        const published = x.posts().at(-1);
+
+        assert(published !== undefined);
+        assert.deepStrictEqual(result, {
+          _tag: "published",
+          permalink: `https://x.com/i/status/${published.id}`,
+          platformPostId: PlatformPostIdSchema.make(published.id),
+        });
+
+        // Sent once, and found among the replies.
+        assert.lengthOf(calls(x, "POST", "/2/tweets"), 3);
+
+        const search = calls(x, "GET", `/2/users/${xAccountId}/tweets`).at(-1);
+
+        assert.strictEqual(search?.query.get("exclude"), "retweets");
+
+        // The same words answering another post are not this part.
+        const elsewhere = yield* client.resume(
+          yield* post({
+            part: 1,
+            replyTo: Option.some({
+              parent: other.platformPostId,
+              root: other.platformPostId,
+            }),
+            text: "A second",
+          })
+        );
+
+        assert.deepStrictEqual(elsewhere, {
+          _tag: "unconfirmed",
+          reason: "interrupted",
+        });
       }).pipe(Effect.scoped)
   );
 

@@ -146,6 +146,13 @@ const RecentPostsSchema = Schema.Struct({
           })
         ),
         id: Schema.NonEmptyString,
+        // The posts it answers or quotes: a reply names the one it
+        // replies to as `replied_to`.
+        referenced_tweets: Schema.optionalKey(
+          Schema.Array(
+            Schema.Struct({ id: Schema.String, type: Schema.String })
+          )
+        ),
         text: Schema.String,
       })
     )
@@ -177,6 +184,7 @@ interface XMedia {
 /** What POST /2/tweets takes of a post. */
 interface NewPost {
   media?: { readonly media_ids: readonly string[] };
+  reply?: { readonly in_reply_to_tweet_id: string };
   text?: string;
 }
 
@@ -516,6 +524,11 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
       body.media = { media_ids: prepared.mediaIds };
     }
 
+    // A part after the first replies to the part before it: the thread.
+    if (Option.isSome(post.replyTo)) {
+      body.reply = { in_reply_to_tweet_id: post.replyTo.value.parent };
+    }
+
     return yield* credentials.withToken(post.channelId, ({ accessToken }) =>
       api
         .execute(
@@ -549,7 +562,10 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
 
   // Looks for the attempt's post among the account's recent ones: the same
   // text, as X shows it, linking to the same addresses, with the files this
-  // run uploaded, or as many. Not finding it settles nothing.
+  // run uploaded, or as many. A part after the first is looked for among
+  // the account's replies, and must answer the part before it, so the same
+  // words under another post are never taken for it. Not finding it settles
+  // nothing.
   const lookUp = (
     post: OutgoingPost,
     prepared: Option.Option<XMedia>
@@ -567,6 +583,19 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
       }
     );
 
+    // Whether a listed post answers what this part answers: the part
+    // before it, or nothing for the post itself.
+    const answers = (
+      referenced: readonly { readonly id: string; readonly type: string }[]
+    ) => {
+      const repliedTo = referenced.find(({ type }) => type === "replied_to");
+
+      return Option.match(post.replyTo, {
+        onNone: () => repliedTo === undefined,
+        onSome: ({ parent }) => repliedTo?.id === parent,
+      });
+    };
+
     return mediaCall(
       post,
       api,
@@ -578,12 +607,14 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
           )
         ).pipe(
           HttpClientRequest.setUrlParams({
-            exclude: "replies,retweets",
+            exclude: Option.isSome(post.replyTo)
+              ? "retweets"
+              : "replies,retweets",
             max_results: recentPosts,
             start_time: rfc3339(
               DateTime.subtractDuration(post.startedAt, clockSkew)
             ),
-            "tweet.fields": "attachments,entities",
+            "tweet.fields": "attachments,entities,referenced_tweets",
           }),
           HttpClientRequest.bearerToken(token)
         ),
@@ -591,11 +622,13 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
     ).pipe(
       Effect.map(({ data = [] }): LookUp => {
         const found = data.find(
-          ({ attachments, entities, text }) =>
+          ({ attachments, entities, referenced_tweets: referenced, text }) =>
             isSamePost(post.text, {
               linksTo: linksOf(entities?.urls ?? []),
               text,
-            }) && sameFiles(attachments?.media_keys ?? [])
+            }) &&
+            sameFiles(attachments?.media_keys ?? []) &&
+            answers(referenced ?? [])
         );
 
         return found === undefined

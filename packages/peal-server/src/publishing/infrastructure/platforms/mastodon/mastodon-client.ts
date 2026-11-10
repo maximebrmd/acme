@@ -392,10 +392,21 @@ export const mastodonClient = Effect.fn("MastodonClient.make")(
           HttpClientRequest.post(new URL("/api/v1/statuses", instance)).pipe(
             HttpClientRequest.bearerToken(token),
             HttpClientRequest.setHeader("Idempotency-Key", post.idempotencyKey),
-            HttpClientRequest.bodyJsonUnsafe({
-              media_ids: prepared.mediaIds,
-              status: post.text,
-            })
+            // A part after the first replies to the part before it, which
+            // makes the thread; the key keeps a resent reply a single one.
+            HttpClientRequest.bodyJsonUnsafe(
+              Option.match(post.replyTo, {
+                onNone: () => ({
+                  media_ids: prepared.mediaIds,
+                  status: post.text,
+                }),
+                onSome: ({ parent }) => ({
+                  in_reply_to_id: parent,
+                  media_ids: prepared.mediaIds,
+                  status: post.text,
+                }),
+              })
+            )
           ),
         (response) =>
           response.status === 200

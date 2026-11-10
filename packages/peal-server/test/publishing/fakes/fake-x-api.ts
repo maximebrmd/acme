@@ -29,6 +29,8 @@ export interface FakeXMedia {
 /** A post X published. */
 export interface FakeXPost {
   readonly id: string;
+  /** The post it replies to, when it was sent as a reply. */
+  readonly inReplyTo: string | null;
   readonly mediaIds: readonly string[];
   readonly text: string;
 }
@@ -70,6 +72,9 @@ const postOf = jsonBodyOf(
   Schema.Struct({
     media: Schema.optionalKey(
       Schema.Struct({ media_ids: Schema.Array(Schema.String) })
+    ),
+    reply: Schema.optionalKey(
+      Schema.Struct({ in_reply_to_tweet_id: Schema.String })
     ),
     text: Schema.optionalKey(Schema.String),
   })
@@ -326,8 +331,20 @@ export const fakeXApi = Effect.fnUntraced(function* fakeXApi(
       return problem(400, "invalid-request", "Your media IDs are invalid.");
     }
 
+    const inReplyTo = body.reply?.in_reply_to_tweet_id ?? null;
+
+    // X refuses a reply to a post it does not have.
+    if (inReplyTo !== null && !posts.some(({ id }) => id === inReplyTo)) {
+      return problem(
+        400,
+        "invalid-request",
+        "You attempted to reply to a Tweet that is deleted or not visible to you."
+      );
+    }
+
     const post: FakeXPost = {
       id: `19900000000000${String(posts.length + 1).padStart(5, "0")}`,
+      inReplyTo,
       mediaIds,
       text,
     };
@@ -355,18 +372,34 @@ export const fakeXApi = Effect.fnUntraced(function* fakeXApi(
         ? { ...listing, attachments: { media_keys: keys } }
         : listing;
 
-    return urls.length > 0 && fields.includes("entities")
-      ? { ...attached, entities: { urls } }
-      : attached;
+    const linked =
+      urls.length > 0 && fields.includes("entities")
+        ? { ...attached, entities: { urls } }
+        : attached;
+
+    return post.inReplyTo !== null && fields.includes("referenced_tweets")
+      ? {
+          ...linked,
+          referenced_tweets: [{ id: post.inReplyTo, type: "replied_to" }],
+        }
+      : linked;
   };
 
   const recent = (accountId: string, request: PlatformRequest) => {
     const fields = (request.query.get("tweet.fields") ?? "").split(",");
+    const excluded = (request.query.get("exclude") ?? "").split(",");
+
+    // Replies are listed unless the request leaves them out.
+    const shownPosts = posts
+      .toReversed()
+      .filter(
+        (post) => post.inReplyTo === null || !excluded.includes("replies")
+      );
 
     return accountId === xAccountId
       ? json({
-          data: posts.toReversed().map((post) => listed(post, fields)),
-          meta: { result_count: posts.length },
+          data: shownPosts.map((post) => listed(post, fields)),
+          meta: { result_count: shownPosts.length },
         })
       : problem(404, "resource-not-found", "Could not find user.");
   };
