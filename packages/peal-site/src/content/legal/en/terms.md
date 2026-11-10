@@ -46,13 +46,35 @@ Each organisation is on a plan. The plans, their prices and what each one allows
 
 **Trial.** An organisation that never had a subscription may try the plan the billing page names, once per account and per organisation, for the number of days it states, without giving a payment method. Nothing is charged during the trial, and no contract for a paid plan starts with it. We remind the members who manage billing three days before it ends. At its end, the organisation moves to the free plan, unless a paid plan was ordered.
 
-**Ordering.** An order is placed on the organisation's billing page by an owner or an administrator, who asks for the service to start at once and confirms with the button "Order with obligation to pay"; payment then takes place on Stripe's checkout. The contract is concluded when the payment is accepted. We confirm it by email, with these terms.
+**Ordering.** An order is placed on the organisation's billing page by an owner or an administrator, who asks for the service to start at once and confirms with the button "Order with obligation to pay"; payment then takes place on Stripe's checkout. The contract is concluded when the payment is accepted. We confirm it by email, with what was ordered, its price, the contract number and how to cancel and to withdraw; these terms, which hold the model withdrawal form, apply.
 
-**Billing periods and renewal.** A plan is paid in advance, each month or each year, and renews for the same period until it is cancelled. 45 days before a yearly plan renews, we remind the members who manage billing by email of the renewal date, the price and how to cancel. Moving to a larger plan takes effect at once, the price difference for the current period being prorated.
+**Billing periods and renewal.** A plan is paid in advance, each month or each year, and renews for the same period until it is cancelled. A monthly plan can be cancelled at any moment. For a yearly plan, 45 days before it renews, and never less than a month before, we remind the members who manage billing, in an email of its own, that the contract need not be renewed, with the price and, in a box, the last day to refuse the renewal, which is the day it renews, until the time shown; the articles of the French Consumer Code on this reminder are reproduced below. Moving to a larger plan takes effect at once, the price difference for the current period being prorated.
 
-**Cancelling.** A plan can be cancelled online at any time, from the billing page, with the "Cancel the subscription" button then "Confirm cancellation". The cancellation takes effect at the end of the period already paid for; nothing more is charged, and the period paid for is not refunded, except as below. We confirm the cancellation and its date by email.
+**Cancelling.** A contract can be cancelled online at any time, free of charge, with "Cancel your contract": the link is at the foot of every page of the app and of this site, and on the billing page, and needs no account and no signing in. It asks for your name, the email address the acknowledgement goes to, the contract (its number, which is in the email that confirmed the subscription, or the workspace's name) and, if you wish, the day you want it to end; it shows a summary, then "Notify the cancellation". There is no notice period and no fee. The cancellation takes effect at the end of the period already paid for, which is not refunded, except as below, or on the later day you asked for, the last period then being charged only up to that day; a trial ends at once. We acknowledge the notification by email, with the date and time we received it, and tell you the date the contract ends and what that means: until then the organisation keeps its plan, then it moves to the free plan with its content, and nothing more is charged. Whenever it is applied, a cancellation counts from the moment we received it: a renewal charged after that moment is refunded.
 
-**Right of withdrawal.** A consumer may withdraw from the contract within 14 days of its conclusion, without giving a reason, with the "Withdraw from contract here" button on the billing page then "Confirm withdrawal", or by any other unambiguous statement sent to [Contact email]. As the consumer asked for the service to start at once, a consumer who withdraws pays only for the part of the service supplied until the withdrawal: we refund the rest of what they paid for the period, using the same means of payment, within 14 days of receiving the withdrawal. We acknowledge the withdrawal by email, with its date and time. The right of withdrawal does not apply to a customer acting for business purposes.
+To make sure a stranger who knows your address cannot end your contract, a request that gives the contract number, or is sent by a member who manages billing while signed in, is applied at once; one that gives neither is applied once you follow the link in the acknowledgement we email you, or once we have made sure it comes from the contract's holder.
+
+**Right of withdrawal.** A consumer has the right to withdraw from the contract within 14 days without giving any reason. The withdrawal period expires 14 days after the day of the conclusion of the contract. To exercise the right of withdrawal, you must inform us ([Legal entity name], [Registered address], [Contact email]) of your decision to withdraw from the contract by an unequivocal statement (for example a letter sent by post or an email). You may use the model withdrawal form below, but it is not obligatory. You can also exercise your right of withdrawal online with "Withdraw from contract here", at the foot of every page of the app and of this site and on the billing page, without signing in, then "Confirm withdrawal". If you use this online function, we will send you an acknowledgement of receipt of the withdrawal on a durable medium (by email), including its content and the date and time of its submission, without undue delay. To meet the withdrawal deadline, it is sufficient for you to send your communication before the withdrawal period has expired.
+
+If you withdraw from the contract, we will reimburse all payments received from you, without undue delay and in any event not later than 14 days from the day on which we are informed of your decision to withdraw. We will carry out the reimbursement using the same means of payment as you used for the initial transaction, unless you have expressly agreed otherwise; in any event, you will not incur any fees as a result. As you asked for the service to begin during the withdrawal period, you pay us an amount in proportion to what was provided until you told us of your withdrawal, in comparison with the full coverage of the contract: we refund the rest of what you paid for the period. The right of withdrawal does not apply to a customer acting for business purposes.
+
+Model withdrawal form (complete and return this form only if you wish to withdraw from the contract):
+
+> To [Legal entity name], [Registered address], [Contact email]:
+>
+> I/We (\*) hereby give notice that I/We (\*) withdraw from my/our (\*) contract for the provision of the following service: a Peal subscription.
+>
+> Ordered on:
+>
+> Name of consumer(s):
+>
+> Address of consumer(s):
+>
+> Signature of consumer(s) (only if this form is notified on paper):
+>
+> Date:
+>
+> (\*) Delete as appropriate.
 
 **Price changes.** We announce a change of price by email at least 30 days before it takes effect. It applies from the next renewal after that notice; a customer who does not accept it may cancel before then, at no cost.
 
@@ -61,6 +83,32 @@ Each organisation is on a plan. The plans, their prices and what each one allows
 Deleting an organisation, or closing your account so that an organisation is deleted with it, cancels that organisation's subscription at once, once you agree to it on the confirmation screen: nothing more is charged, and the period already paid for is not refunded, except where the law gives a refund, as to a consumer who withdraws within 14 days of subscribing, who is refunded the unused part. Invoices are kept as accounting law requires.
 
 An organisation with more connected channels than its plan allows, as after a trial or a move to a smaller plan, keeps them but cannot schedule posts until it disconnects some; one over its media storage keeps its files but cannot upload more.
+
+### Renewal and cancellation: the French Consumer Code
+
+Articles L215-1 to L215-3 and L241-3 of the French Consumer Code are reproduced here in French, their only authentic version, as its article L215-4 requires. They apply to consumers and to non-professionals.
+
+> **Article L215-1.** Pour les contrats de prestations de services conclus pour une durée déterminée avec une clause de reconduction tacite, le professionnel prestataire de services informe le consommateur par écrit, par lettre nominative ou courrier électronique dédiés, au plus tôt trois mois et au plus tard un mois avant le terme de la période autorisant le rejet de la reconduction, de la possibilité de ne pas reconduire le contrat qu'il a conclu avec une clause de reconduction tacite. Cette information, délivrée dans des termes clairs et compréhensibles, mentionne, dans un encadré apparent, la date limite de non-reconduction.
+>
+> Lorsque cette information ne lui a pas été adressée conformément aux dispositions du premier alinéa, le consommateur peut mettre gratuitement un terme au contrat, à tout moment à compter de la date de reconduction.
+>
+> Les avances effectuées après la dernière date de reconduction ou, s'agissant des contrats à durée indéterminée, après la date de transformation du contrat initial à durée déterminée, sont dans ce cas remboursées dans un délai de trente jours à compter de la date de résiliation, déduction faite des sommes correspondant, jusqu'à celle-ci, à l'exécution du contrat.
+>
+> Les dispositions du présent article s'appliquent sans préjudice de celles qui soumettent légalement certains contrats à des règles particulières en ce qui concerne l'information du consommateur.
+>
+> Par exception au premier alinéa du présent article, pour les contrats de fourniture de service de télévision au sens de l'article 2 de la loi n° 86-1067 du 30 septembre 1986 relative à la liberté de communication et pour les contrats de fourniture de services de médias audiovisuels à la demande, le consommateur peut mettre gratuitement un terme au contrat, à tout moment à compter de la première reconduction, dès lors qu'il change de domicile ou que son foyer fiscal évolue.
+>
+> **Article L215-1-1.** Lorsqu'un contrat a été conclu par voie électronique ou a été conclu par un autre moyen et que le professionnel, au jour de la résiliation par le consommateur, offre au consommateur la possibilité de conclure des contrats par voie électronique, la résiliation est rendue possible selon cette modalité.
+>
+> A cet effet, le professionnel met à la disposition du consommateur une fonctionnalité gratuite permettant d'accomplir, par voie électronique, la notification et les démarches nécessaires à la résiliation du contrat. Lorsque le consommateur notifie la résiliation du contrat, le professionnel lui confirme la réception de la notification et l'informe, sur un support durable et dans des délais raisonnables, de la date à laquelle le contrat prend fin et des effets de la résiliation.
+>
+> Un décret fixe notamment les modalités techniques de nature à garantir une identification du consommateur et un accès facile, direct et permanent à la fonctionnalité mentionnée au deuxième alinéa, telles que ses modalités de présentation et d'utilisation. Il détermine les informations devant être fournies par le consommateur.
+>
+> **Article L215-2.** Les dispositions du présent chapitre, à l'exception de l'article L. 215-1-1, ne sont pas applicables aux exploitants des services d'eau potable et d'assainissement.
+>
+> **Article L215-3.** Les dispositions du présent chapitre sont également applicables aux contrats conclus entre des professionnels et des non-professionnels.
+>
+> **Article L241-3.** Lorsque le professionnel n'a pas procédé au remboursement dans les conditions prévues à l'article L. 215-1, les sommes dues sont productives d'intérêts au taux légal.
 
 ## Availability and changes to the service
 
