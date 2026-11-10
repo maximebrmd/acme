@@ -252,6 +252,28 @@ The server calls `oauth2.googleapis.com` and `www.googleapis.com`, and uploads e
 
 Until November 2026, Google kept the videos of API projects it had not audited private. It no longer does, but a channel's settings or Google's restrictions can still keep a video private: Peal compares what YouTube answers with the visibility the member chose, and says so on the post's page.
 
+### Google Business Profile [#google-business]
+
+A server connects Business Profile locations once Google has given one of your Google Cloud projects access to the Business Profile APIs, which it does on request:
+
+1. In the Google Cloud console, create a project, or pick one, and note its project number.
+2. Ask Google for access with the [GBP API contact form](https://support.google.com/business/contact/api_default), choosing **Application for Basic API Access**, from an email address that owns or manages a Business Profile. Google asks that the profile be verified and active for 60 days or more, and that the business have a website. It answers by email once it has reviewed the request.
+3. Look at the project's quota for the Business Profile APIs: 300 requests a minute means access is granted, 0 that it is not yet. A quota increase does not replace the request.
+4. Under APIs and services, enable the **Google My Business API**, which makes the posts and shows in the console only once access is granted, the **My Business Account Management API** and the **My Business Business Information API**, which list accounts and locations.
+5. Under **Google Auth Platform**, set up the consent screen for **External** users, and add the scope `https://www.googleapis.com/auth/business.manage`.
+6. Under **Clients**, create a **Web application** client, with `PUBLIC_URL/connect/googleBusiness/callback` as an authorized redirect URI, such as `https://peal.example.com/connect/googleBusiness/callback`.
+7. Put the client id in `GOOGLE_BUSINESS_CLIENT_ID` and its secret in `GOOGLE_BUSINESS_CLIENT_SECRET`.
+
+One of the two settings without the other stops the server at startup; without both, **Channels** does not offer Google Business Profile. The client is its own, apart from YouTube's, as Google gives access, counts quota and reviews apps project by project. A project that has both products serves both: give the same client id and secret under both names, with both redirect URIs on the client.
+
+Members sign in with Google and choose among the verified locations of the accounts they own or manage, 200 at most a sign-in: one connection is one location. Peal lists accounts and locations when a member connects, makes posts, and reads a location's posts back when Google's answer to one was lost. It changes nothing else on a profile, and reads no reviews. It renews its access every hour, and disconnecting a location revokes that access at Google, unless another workspace still connects the same location.
+
+While the project has no access, Google answers every call with 429: connecting fails as the platform not answering, and the server's log says to check the project. While the consent screen is in **Testing**, only its test users sign in, and Google ends their access after seven days, as for YouTube.
+
+The server calls `oauth2.googleapis.com`, `mybusinessaccountmanagement.googleapis.com`, `mybusinessbusinessinformation.googleapis.com` and `mybusiness.googleapis.com`. Google fetches each photo from a link to the media store, valid for two hours: the store must answer Google's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. Every call draws on the project's 300 requests a minute; past them, a post waits and goes out a little later.
+
+Google's [policies for these APIs](https://developers.google.com/my-business/content/policies) bind you as the project's owner. Among them: act only for businesses whose owners or managers signed in themselves, tell them of a change to their profile within 48 hours (Peal tells a post's author in the app once it is live, and by email if they chose so), let a business leave, which disconnecting a channel does, and store what the APIs answer only within the limits Google sets. Of that, Peal keeps a location's name and address, which label its channel, and each post's name and address on Google, until the channel is disconnected or the workspace deleted: read the policies, and decide whether that suits your use.
+
 ## Writing assistant [#ai]
 
 The composer's writing assistant rewrites a post in a tone, shortens it to fit a platform, translates it, or suggests hashtags. It is off until `PEAL_AI_PROVIDER` names a provider: until then, the web app hides it, and its endpoints answer `AssistantUnavailable`.

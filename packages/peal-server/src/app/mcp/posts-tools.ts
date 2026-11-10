@@ -31,7 +31,7 @@ const channelIds = Schema.Array(Schema.String).annotate({
 // The API's draft options, each channel's once.
 const options = PostDraftSchema.fields.options.schema.annotate({
   description:
-    "What the post sets on the platforms that ask for more than text and media, one entry per channel, tagged by the channel's `platform`: YouTube's title (required), madeForKids (required), privacy, tags, categoryId, notifySubscribers and containsSyntheticMedia; TikTok's privacyLevel (required: one of the levels get_tiktok_creator answers), disableComment, disableDuet, disableStitch, commercialContent, brandOrganic, brandContent and aiGenerated. A draft keeps them unfinished; scheduling needs the required ones.",
+    "What the post sets on the platforms that ask for more than text and media, one entry per channel, tagged by the channel's `platform`: YouTube's title (required), madeForKids (required), privacy, tags, categoryId, notifySubscribers and containsSyntheticMedia; TikTok's privacyLevel (required: one of the levels get_tiktok_creator answers), disableComment, disableDuet, disableStitch, commercialContent, brandOrganic, brandContent and aiGenerated; Google Business Profile's postType (standard when left out, event or offer), title, startsAt and endsAt (required for an event or an offer, as 2026-11-27T09:00 on the location's own clock), callToAction (book, order, shop, learnMore, signUp or call) with its callToActionUrl (none for call), and an offer's couponCode, redeemUrl and terms. A draft keeps them unfinished; scheduling needs the required ones.",
 });
 
 export const ListDrafts = Tool.make("list_drafts", {
@@ -65,7 +65,7 @@ export const GetPost = Tool.make("get_post", {
 export const CreateDraft = Tool.make("create_draft", {
   dependencies: [CurrentMember],
   description:
-    "Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the channels it is for, and the options of those whose platform asks for more (YouTube, TikTok). A draft goes out at no time: scheduling it is for the user, in the web app. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.",
+    "Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the channels it is for, and the options of those whose platform asks for more (YouTube, TikTok, Google Business Profile). A draft goes out at no time: scheduling it is for the user, in the web app. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.",
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelIds,

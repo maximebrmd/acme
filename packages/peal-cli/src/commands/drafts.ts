@@ -153,7 +153,7 @@ const save = Command.make(
     options: Flag.String("options").pipe(
       Flag.withMetavar("<channel-id>=<json>"),
       Flag.withDescription(
-        'What the post sets on a channel whose platform asks for more, as JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels. A draft you change keeps the options it has on its other channels. peal channels tiktok shows what a TikTok channel takes.'
+        'What the post sets on a channel whose platform asks for more, as JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels. A draft you change keeps the options it has on its other channels. peal channels tiktok shows what a TikTok channel takes, and peal channels capabilities every option of a channel.'
       ),
       Flag.atLeast(0)
     ),

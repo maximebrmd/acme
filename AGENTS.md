@@ -573,7 +573,10 @@ and no socket, for tests.
   `THREADS_APP_ID`/`THREADS_APP_SECRET`, TikTok with
   `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` (`oauthClientConfig`'s
   `idSuffix`), YouTube with `YOUTUBE_CLIENT_ID` and `_CLIENT_SECRET` (a
-  Google OAuth client). A platform without its settings is in
+  Google OAuth client), Google Business Profile with
+  `GOOGLE_BUSINESS_CLIENT_ID` and `_CLIENT_SECRET` (a client of its own:
+  Google gives access to the Business Profile APIs, quotas and reviews by
+  project). A platform without its settings is in
   `unconfigured`. Each declares its `TokenPolicy`, data in
   `channels/domain/token-policy.ts`, which the refresh sweep and the
   reconnect warnings follow: LinkedIn's tokens are not renewed and expire
@@ -642,6 +645,26 @@ and no socket, for tests.
   Google's chooser (brand accounts too), so `complete` answers the channels
   `channels.list?mine=true` lists as an `AccountChoice`: one connects at
   once, none is `NoAccountsToConnect`.
+- Both Google products build on `googleOAuth`
+  (`infrastructure/platforms/google/google-oauth.ts`): the sign-in, the
+  exchange, the refresh and the revocation, with each product's client,
+  scopes and settings' names. Change the flow there, never in one product.
+- Google Business Profile (platform id `googleBusiness`) connects with the
+  `business.manage` scope
+  (`platforms/google-business/google-business-authorizer.ts`): `complete`
+  lists the accounts the Google user reaches (Account Management API,
+  20 a page), then each account's locations (Business Information API,
+  100 a page, with the required `readMask`), and answers those with
+  `metadata.hasVoiceOfMerchant` as an `AccountChoice`, `googleBusinessReach`
+  at most (100 accounts, 200 locations): one channel per location, and no
+  other location can post. A channel's `accountId` is the location's name
+  in the My Business API v4, `accounts/{account}/locations/{location}`,
+  which its posts are made under: a location reached through another
+  account is another account id, so reconnecting through one answers
+  `ReconnectAccountMismatch`. Its `handle` is the location's address (or
+  store code), its `displayName` its title. A project Google has not given
+  access has a quota of 0: every listing answers 429, which is
+  `PlatformUnavailable`, and the log says to check the project.
 - Meta's data deletion callbacks (`POST /api/data-deletion/:app`, no sign-in)
   check the `signed_request` HMAC with the app's secret (`SignedRequests`),
   delete the channels the user granted or owns in every workspace, and the
@@ -750,8 +773,8 @@ and no socket, for tests.
   publish runs inside the gate: uploads, processing waits, token renewal,
   the post and its confirmation.
 - Platform adapters live in `publishing/infrastructure/platforms/<platform>/`
-  (Mastodon, Bluesky, LinkedIn, X, TikTok and YouTube, and Threads,
-  Instagram and Facebook Pages in `meta/`), beside `ChannelGate`, and implement the steps of
+  (Mastodon, Bluesky, LinkedIn, X, TikTok, YouTube and Google Business
+  Profile, and Threads, Instagram and Facebook Pages in `meta/`), beside `ChannelGate`, and implement the steps of
   `publishing/application/publication-steps.ts`, which `sequenced` runs:
   `prepare` uploads the media (safe to repeat: media alone shows nowhere),
   `poll` waits while the platform processes it (15 minutes at most),
@@ -785,6 +808,29 @@ and no socket, for tests.
   (`dailyLimitCodes`) until Pacific midnight, which the policy ends as
   `quotaExceeded`. A video YouTube made private against the options is
   `Published.keptPrivate`, kept on the target and shown on its page.
+- Google Business Profile's adapter (`platforms/google-business/`) makes a
+  local post with one request, `POST /v4/{location}/localPosts` on
+  `mybusiness.googleapis.com` (the My Business API v4, the one API with
+  local posts): the text as `summary`, the options' `topicType`, `event`,
+  `callToAction` and `offer`, and each photo as a `PHOTO` media item with a
+  public URL (`MediaForPublishing.publicUrl`, two hours); no video.
+  Requests carry `X-GOOG-API-FORMAT-VERSION: 2`, for the detail of
+  validation errors. Google keeps no idempotency key, so `lookUp` lists the
+  location's posts (100 a page, three pages) and takes the one made since
+  the attempt started with its type, its text and its event's title:
+  `found` when exactly one is, `unknown` otherwise, never `absent`. A 5xx
+  on the create call is `OutcomeUnknown`. Once Google answered the post,
+  only its `state` `REJECTED` (`postRejected`) fails the attempt: a post
+  still `PROCESSING` after the confirmation delays is published.
+  `google-business-refusal.ts` reads Google's `status`, `ErrorInfo` reasons
+  and the numeric `ErrorCode` ranges (photos 1000 to 1099, operations 1300
+  to 1399, as a location that may not post), never a message or a `value`;
+  its codes (`googleBusinessRefusalCodes`) are stored in the journal. A 403
+  is `TokenRejected` only for a scope the token lacks: the API not enabled
+  is the operator's (`PlatformUnavailable`, logged as an error), any other
+  the Google user's lost permission (`BadRequest` `permissionDenied`).
+  Reviews, questions and a location's metrics are not built: they would be
+  a context of their own, reaching Google through `ChannelAccess`.
 - Large uploads go in parts read one at a time from the media stream
   (`inParts` in `platforms/byte-parts.ts`): LinkedIn's video parts, X's
   4 MiB appends. LinkedIn calls name `Linkedin-Version`
@@ -863,7 +909,8 @@ and no socket, for tests.
   `platform`, in `publishing.post_targets.options` (JSON the domain decodes;
   null on rows from before options and on platforms that take none). A
   platform's options are one `Schema.Class` in its own file
-  (`youtube-options.ts`, `tiktok-options.ts`): every field optional, so a
+  (`youtube-options.ts`, `tiktok-options.ts`,
+  `google-business-options.ts`): every field optional, so a
   draft holds them unfinished, a `platform: Schema.tag(...)`, and a
   `problems()` method listing what the platform would refuse (`missing`,
   `tooLong`, `invalid`, by field). Adding a platform's options is adding its
@@ -877,6 +924,12 @@ and no socket, for tests.
   from `OutgoingPost.options`, with
   `post.options.pipe(Option.filter(Schema.is(YouTubeOptions)))`; keep stored
   options decoding (`fixtures/persisted/post-targets/options.json`).
+- A field the web composer shows only for some values of another (an
+  event's dates) says so with `shownWith` in `#posts/target-options.ts`:
+  `isShown` hides it and `optionsOf` leaves its value out, as the domain's
+  `problems()` refuse it there. A day and a time on a clock that is not the
+  reader's (Google Business Profile's `startsAt`, on the location's) is a
+  `localTime` field, text as `2026-11-27T09:00`, never an instant.
 - Posts show only ready media of the workspace: `LibraryAttachableMedia`
   reads each asset through the media context's `MediaLibrary`, and anything
   else answers `UnknownMedia` when a draft is saved or scheduled.
@@ -905,7 +958,11 @@ and no socket, for tests.
   misses in options with nothing chosen, and the rest (`maxLength`,
   `ifLeftOut`, `forbiddenCharacters`, `pattern`, `lookup`) from the options
   class's static `notes`, built on the constants `problems()` uses; rules
-  between two options are its static `constraints`. A new option gets its
+  between two options are its static `constraints`
+  (`OptionConstraint`: `needsOneOf` and `notWith` between yes-or-no
+  options, `neededWith` and `onlyWith` for an option that depends on
+  another's value, as Google Business Profile's on its post type; the
+  contract's union and the CLI's `constraintLine` list each kind). A new option gets its
   entry in `notes`, typed by the class's fields;
   `test/publishing/domain/platform-capabilities.test.ts` fails on a field
   left undescribed, and `test/publishing/api/capabilities.test.ts` keeps the
@@ -1262,6 +1319,10 @@ and no socket, for tests.
   halts; any other refusal, the token's included, fails the post and
   halts, so analytics never marks a channel to reconnect for insights it
   may not read.
+- Google Business Profile has no reader and gets none: Google withdrew
+  local posts' insights (`localPosts.reportInsights`, February 2023) with
+  no replacement, and its Performance API counts a location's days, never
+  a post.
 - Platforms without a reader (LinkedIn, X, Threads and Facebook Pages so
   far) answer
   `ChannelUnreadable` `unsupported`: their posts end at their first turn,

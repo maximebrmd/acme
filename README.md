@@ -15,8 +15,8 @@ two years after it ships. The API contract and the SDKs in
 It is not released yet. Today you can:
 
 - create an account and workspaces, and connect Mastodon, Bluesky, LinkedIn,
-  X, Threads, Instagram and TikTok accounts, Facebook Pages and YouTube
-  channels to them;
+  X, Threads, Instagram and TikTok accounts, Facebook Pages, YouTube
+  channels and Google Business Profile locations to them;
 - upload images and videos to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
   with alt text, keep it with the workspace's drafts or discard it, then
@@ -53,7 +53,8 @@ It is not released yet. Today you can:
   counted by the server, with a Grafana alert on a spike.
 
 Analytics on LinkedIn, X and Meta's platforms, and the other platforms Peal
-knows (Pinterest), are still to come.
+knows (Pinterest), are still to come. Google gives no counts for a Business
+Profile post.
 
 ## Set up
 
@@ -214,6 +215,14 @@ be read, and their channels must be reconnected.
   `YOUTUBE_CLIENT_SECRET`; Google takes `http://localhost:3001` there. While
   the project's consent screen is in testing, only its test users sign in,
   and Google ends their access after 7 days: reconnect then.
+
+- **Google Business Profile** needs an OAuth client of the web application
+  type in a Google Cloud project that Google gave access to the Business
+  Profile APIs (ask with Google's API contact form: until then the project's
+  quota is 0), whose redirect is
+  `PUBLIC_URL/connect/googleBusiness/callback`, in
+  `GOOGLE_BUSINESS_CLIENT_ID` and `GOOGLE_BUSINESS_CLIENT_SECRET`. Members
+  connect the verified locations they manage, one channel each.
 
 The server refreshes tokens due for it every 10 minutes and, daily at 08:00
 UTC, tells a workspace's owners and admins about accounts that must be
@@ -382,6 +391,7 @@ In development, these are the ones you may want:
 | `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                |
 | `TIKTOK_CLIENT_KEY`           | unset: TikTok is not offered     | The TikTok app's client key, with `TIKTOK_CLIENT_SECRET`       |
 | `YOUTUBE_CLIENT_ID`           | unset: YouTube is not offered    | The Google OAuth client's id, with `YOUTUBE_CLIENT_SECRET`     |
+| `GOOGLE_BUSINESS_CLIENT_ID`   | unset: no Business Profile       | Its Google client's id, with `GOOGLE_BUSINESS_CLIENT_SECRET`   |
 | `PEAL_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                             |
 | `PEAL_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                     |
 | `PEAL_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server   |
