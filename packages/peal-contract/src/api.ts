@@ -751,6 +751,8 @@ export type { StaffRefusal } from "./staff-action-refused.ts";
 
 export { TooManyClientErrors } from "./too-many-client-errors.ts";
 
+export { TooManyRequests } from "./too-many-requests.ts";
+
 export { Unauthenticated } from "./unauthenticated.ts";
 
 export { UnknownChannels } from "./unknown-channels.ts";

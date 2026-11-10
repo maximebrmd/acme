@@ -42,6 +42,7 @@ import { PasswordCheckLive } from "#workspace/infrastructure/auth/password-check
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
 import { WorkspacePeopleLive } from "#workspace/infrastructure/auth/workspace-people.ts";
 import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts";
+import { CountedRequestLimits } from "#workspace/infrastructure/counted-request-limits.ts";
 import { ErasureLedgerRetentionCron } from "#workspace/infrastructure/crons.ts";
 import { AccountDirectoryLive } from "#workspace/infrastructure/drizzle-account-directory.ts";
 import { DrizzleAccountStore } from "#workspace/infrastructure/drizzle-account-store.ts";
@@ -109,7 +110,9 @@ const ImpersonationGuardLive = ImpersonationGuard.layer.pipe(
  * journal of the connections that change content. It needs the database,
  * migrated, Ids, the notifications context's SendAuthEmail, the billing
  * context's WorkspaceEntitlements and RecordSubscription, the staff
- * context's ImpersonationAudit and the legal context's LegalRecords.
+ * context's ImpersonationAudit, the legal context's LegalRecords and the
+ * activity context's RequestLimiter, which counts requests for the rate
+ * limit.
  */
 export const WorkspaceLive = Layer.mergeAll(
   UseCasesLive,
@@ -121,6 +124,7 @@ export const WorkspaceLive = Layer.mergeAll(
   Layer.provideMerge(BetterAuthLive),
   Layer.provideMerge(ImpersonationGuardLive),
   Layer.provideMerge(LegalConnectionJournal),
+  Layer.provideMerge(CountedRequestLimits),
   Layer.provideMerge(AuthSettings.layer)
 );
 

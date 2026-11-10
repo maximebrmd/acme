@@ -305,6 +305,11 @@
     "tag": "TooManyPasswordAttempts"
   },
   {
+    "code": "too_many_requests",
+    "status": 429,
+    "tag": "TooManyRequests"
+  },
+  {
     "code": "too_many_webhook_endpoints",
     "status": 409,
     "tag": "TooManyWebhookEndpoints"

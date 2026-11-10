@@ -6,6 +6,7 @@ import type {
   PostNotFound,
   PostStatusConflict,
   ScheduleInPast,
+  TooManyRequests,
   Unauthenticated,
   UnknownChannels,
   UnknownMedia,
@@ -21,6 +22,9 @@ export type ComposerFailure =
   | PostNotFound
   | PostStatusConflict
   | ScheduleInPast
+  // Answered to keys and applications only: the web app signs in with a
+  // session, whose requests are not counted.
+  | TooManyRequests
   | Unauthenticated
   | UnknownChannels
   | UnknownMedia

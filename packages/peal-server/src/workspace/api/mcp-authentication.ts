@@ -4,9 +4,11 @@ import { CurrentMember } from "peal-contract";
 
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ConnectionJournal } from "#workspace/application/connection-journal.ts";
+import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 
 import { memberOf } from "./principal.ts";
+import { pastLimit, limitHeaders } from "./rate-limit.ts";
 import { contentChangeOf, journalled } from "./security.ts";
 
 // A JSON-RPC call of a tool, alone or in a batch.
@@ -75,6 +77,7 @@ export const mcpAuthentication = (contentTools: ReadonlySet<string>) =>
       const authenticate = yield* Authenticate;
       const members = yield* ResolveMember;
       const journal = yield* ConnectionJournal;
+      const limits = yield* RequestLimits;
 
       return (httpEffect) =>
         Effect.gen(function* authenticated() {
@@ -88,6 +91,18 @@ export const mcpAuthentication = (contentTools: ReadonlySet<string>) =>
             method: request.method,
             path: request.url,
           });
+
+          // The same count as the API's: a credential has one limit,
+          // wherever it sends its requests.
+          const limited = yield* pastLimit(limits, principal);
+
+          if (Option.isSome(limited)) {
+            return jsonRpcError(
+              429,
+              `Too many requests: this credential may send ${String(limited.value.limit)} every ${String(limited.value.windowSeconds)} seconds. Try again in ${String(limited.value.resetAfterSeconds)} seconds.`,
+              Object.fromEntries(limitHeaders(limited.value))
+            );
+          }
 
           const actor = yield* members.resolve(principal, workspaceId);
 

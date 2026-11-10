@@ -24,11 +24,13 @@ import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ConnectionJournal } from "#workspace/application/connection-journal.ts";
 import type { ContentChange } from "#workspace/application/connection-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
+import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 
 import { memberOf, principalOf, toContractPrincipal } from "./principal.ts";
+import { pastLimit, tooManyRequests } from "./rate-limit.ts";
 import { explaining } from "./refusal.ts";
 
 // Reads change nothing; any other method needs a trusted origin when it
@@ -130,6 +132,9 @@ export const journalled =
  * A write to posts or media that succeeds is kept in the ConnectionJournal,
  * whatever authenticated it: the address and protocol it came over, never
  * what it carried.
+ *
+ * A bearer credential's requests are counted (RequestLimits): each answer
+ * says where it stands, and one past the limit is a 429.
  */
 export const AuthenticationLive = Layer.effect(
   Authentication,
@@ -137,6 +142,7 @@ export const AuthenticationLive = Layer.effect(
     const authenticate = yield* Authenticate;
     const guard = yield* ImpersonationGuard;
     const journal = yield* ConnectionJournal;
+    const limits = yield* RequestLimits;
 
     return Authentication.of({
       bearer: (httpEffect, { credential, group }) =>
@@ -155,6 +161,14 @@ export const AuthenticationLive = Layer.effect(
                 NotSignedIn: unauthenticated,
               })
             );
+
+          // A key or an application past its limit is told so before
+          // anything is handled.
+          const limited = yield* pastLimit(limits, principal);
+
+          if (Option.isSome(limited)) {
+            return tooManyRequests(limited.value);
+          }
 
           if (!changesContent(request, group)) {
             return yield* httpEffect.pipe(as(principal));

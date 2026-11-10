@@ -6,6 +6,7 @@ import { HttpApiBuilder } from "effect/http-api";
 import { WorkflowEngine } from "effect/workflow";
 import { Api } from "peal-contract";
 
+import { ActivityLive } from "#activity/container.ts";
 import {
   AnalyticsApiLive,
   analyticsCollection,
@@ -141,7 +142,8 @@ const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
 
 // The workspace context with the notifications it sends, the plans that
 // limit it, the audit log of staff's impersonations it records and the
-// legal records of the connections that change content, then the
+// legal records of the connections that change content, and the count of
+// the requests each key and application sends, then the
 // notices, which read the workspace's members, then the webhooks, which
 // tell a workspace through them that an endpoint was turned off, then the
 // channels context, which sends notices and webhook events, as publishing
@@ -154,7 +156,8 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
       Layer.provideMerge(NotificationsLive),
       Layer.provideMerge(BillingContextsLive),
       Layer.provide(ImpersonationAuditLive),
-      Layer.provideMerge(LegalLive)
+      Layer.provideMerge(LegalLive),
+      Layer.provideMerge(ActivityLive)
     )
   )
 );

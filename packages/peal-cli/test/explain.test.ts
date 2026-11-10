@@ -1,6 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
 import { CliError } from "effect/cli";
-import { Forbidden, PlanLimitReached, PostNotFound } from "peal-contract";
+import {
+  Forbidden,
+  PlanLimitReached,
+  PostNotFound,
+  TooManyRequests,
+} from "peal-contract";
 
 import { explain } from "#explain.ts";
 
@@ -109,6 +114,20 @@ describe("a refusal, with the request it answers", () => {
         "Peal refused: This token lacks the scope workspace:publish. Run peal login again and approve it.",
         "  Request deploy-42.attempt_3 (forbidden).",
       ].join("\n")
+    );
+  });
+
+  it("says how long to wait once a sign-in sent too many requests", () => {
+    expect(
+      explain(url)(
+        new TooManyRequests({
+          limit: 600,
+          retryAfterSeconds: 42,
+          windowSeconds: 60,
+        })
+      )[CliError.userMessage]
+    ).toBe(
+      "Peal takes 600 requests every 60 seconds from one sign-in or key, and this one sent more: nothing was done. Try again in 42 seconds."
     );
   });
 });

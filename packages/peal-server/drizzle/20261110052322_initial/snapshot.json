@@ -2,11 +2,23 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "d71aabce-402d-4fc6-8c08-067405f0e006",
+  "id": "eeabcf5b-f14d-4bd5-895a-0ce4ee29698e",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
   "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "activity"
+      ],
+      "writes": [
+        "s|sch|activity",
+        "n|sch|activity",
+        "e|sch|activity"
+      ]
+    },
     {
       "statementType": "create_schema",
       "statementTarget": [
@@ -137,6 +149,25 @@
         "s|sch|auth",
         "n|sch|auth",
         "e|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "activity",
+        "request_counts"
+      ],
+      "writes": [
+        "s|tbl|activity.request_counts",
+        "n|tbl|activity.request_counts",
+        "e|tbl|activity.request_counts",
+        "n|rel|activity.request_counts",
+        "n|type|activity.request_counts",
+        "n|rel|activity.request_counts_pkey"
+      ],
+      "reads": [
+        "n|sch|activity"
       ]
     },
     {
@@ -1179,6 +1210,26 @@
       ],
       "reads": [
         "n|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "activity",
+        "request_counts",
+        "request_counts_window_start"
+      ],
+      "writes": [
+        "s|idx|activity.request_counts_window_start",
+        "n|idx|activity.request_counts_window_start",
+        "e|idx|activity.request_counts_window_start",
+        "n|rel|activity.request_counts_window_start"
+      ],
+      "reads": [
+        "n|tbl|activity.request_counts",
+        "n|sch|activity",
+        "n|col|activity.request_counts.window_start"
       ]
     },
     {
@@ -3420,6 +3471,10 @@
   ],
   "ddl": [
     {
+      "name": "activity",
+      "entityType": "schemas"
+    },
+    {
       "name": "analytics",
       "entityType": "schemas"
     },
@@ -3462,6 +3517,12 @@
     {
       "name": "auth",
       "entityType": "schemas"
+    },
+    {
+      "schema": "activity",
+      "name": "request_counts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
     },
     {
       "schema": "analytics",
@@ -3786,6 +3847,45 @@
       "name": "verification",
       "isRlsEnabled": false,
       "entityType": "tables"
+    },
+    {
+      "schema": "activity",
+      "table": "request_counts",
+      "name": "requests",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "request_counts",
+      "name": "subject",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "request_counts",
+      "name": "window_start",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
     },
     {
       "schema": "analytics",
@@ -11003,6 +11103,27 @@
       "entityType": "columns"
     },
     {
+      "schema": "activity",
+      "table": "request_counts",
+      "name": "request_counts_window_start",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "window_start",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "analytics",
       "table": "tracked_posts",
       "name": "tracked_posts_due",
@@ -13297,6 +13418,17 @@
       "entityType": "fks"
     },
     {
+      "schema": "activity",
+      "table": "request_counts",
+      "name": "request_counts_pkey",
+      "columns": [
+        "subject",
+        "window_start"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "analytics",
       "table": "metric_snapshots",
       "name": "metric_snapshots_pkey",
@@ -14026,6 +14158,13 @@
       ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
+    },
+    {
+      "schema": "activity",
+      "table": "request_counts",
+      "name": "request_counts_requests",
+      "value": "\"requests\" > 0",
+      "entityType": "checks"
     },
     {
       "schema": "analytics",

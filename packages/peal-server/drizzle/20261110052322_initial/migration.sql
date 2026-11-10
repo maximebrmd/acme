@@ -1,3 +1,5 @@
+CREATE SCHEMA "activity";
+--> statement-breakpoint
 CREATE SCHEMA "analytics";
 --> statement-breakpoint
 CREATE SCHEMA "assistant";
@@ -19,6 +21,14 @@ CREATE SCHEMA "staff";
 CREATE SCHEMA "webhooks";
 --> statement-breakpoint
 CREATE SCHEMA "auth";
+--> statement-breakpoint
+CREATE TABLE "activity"."request_counts" (
+	"requests" integer NOT NULL,
+	"subject" text,
+	"window_start" timestamp with time zone,
+	CONSTRAINT "request_counts_pkey" PRIMARY KEY("subject","window_start"),
+	CONSTRAINT "request_counts_requests" CHECK ("requests" > 0)
+);
 --> statement-breakpoint
 CREATE TABLE "analytics"."erased_workspaces" (
 	"erased_at" timestamp with time zone NOT NULL,
@@ -766,6 +776,7 @@ CREATE TABLE "auth"."verification" (
 	"updated_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
+CREATE INDEX "request_counts_window_start" ON "activity"."request_counts" ("window_start");--> statement-breakpoint
 CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collection_at","channel_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_channel_due" ON "analytics"."tracked_posts" ("channel_id","next_collection_at","target_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" ("workspace_id","published_at");--> statement-breakpoint

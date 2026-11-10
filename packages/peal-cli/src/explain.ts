@@ -28,6 +28,7 @@ import type {
   ScheduleInPast,
   TargetStatusConflict,
   TooManyInvitations,
+  TooManyRequests,
   TooManyWebhookEndpoints,
   TooManyWebhookSends,
   Unauthenticated,
@@ -81,6 +82,7 @@ export type ApiFailure =
   | Schema.SchemaError
   | TargetStatusConflict
   | TooManyInvitations
+  | TooManyRequests
   | TooManyWebhookEndpoints
   | TooManyWebhookSends
   | Unauthenticated
@@ -305,6 +307,10 @@ const reasonOf =
       TooManyInvitations: () =>
         refused(
           "The workspace has 100 invitations pending, the most it may: revoke some first."
+        ),
+      TooManyRequests: ({ limit, retryAfterSeconds, windowSeconds }) =>
+        refused(
+          `Peal takes ${String(limit)} requests every ${String(windowSeconds)} seconds from one sign-in or key, and this one sent more: nothing was done. Try again in ${String(retryAfterSeconds)} seconds.`
         ),
       TooManyWebhookEndpoints: ({ allowed }) =>
         refused(

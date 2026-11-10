@@ -506,9 +506,12 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         defaultPrefix: "peal_",
         enableMetadata: true,
         keyExpiration: { defaultExpiresIn: null, maxExpiresIn: 365 },
-        // These become the defaults of the apikey table's columns, so they
-        // stay constants: 600 requests a minute per key.
-        rateLimit: { enabled: true, maxRequests: 600, timeWindow: 60_000 },
+        // Peal counts a key's requests itself, with those of OAuth
+        // applications (RequestLimits): the plugin's own limit, which
+        // starts its window again at every request, stays off. These
+        // become the defaults of the apikey table's columns, so they stay
+        // constants.
+        rateLimit: { enabled: false, maxRequests: 600, timeWindow: 60_000 },
         references: "organization",
         requireName: true,
       }),
