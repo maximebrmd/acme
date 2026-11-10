@@ -131,15 +131,37 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
 
           yield* makeAdmin(staff.id);
 
+          const staffCookies = yield* signIn(staff.email);
+
           const impersonation = yield* app.request(
             `/api/admin/users/${owner.id}/impersonate`,
             {
               body: { reason: "Synthetic support ticket 12" },
-              headers: { cookie: yield* signIn(staff.email) },
+              headers: { cookie: staffCookies },
             }
           );
 
           assert.strictEqual(impersonation.status, 204);
+
+          // The requests to cancel or withdraw that wait for staff answer
+          // staff in their own session, and nobody else: not staff acting
+          // as a member, a member, a token or a key, who are all told
+          // there is nothing there.
+          const desk = (headers: Readonly<Record<string, string>>) =>
+            app
+              .request("/api/admin/contract-requests", { headers })
+              .pipe(Effect.map(({ status }) => status));
+
+          assert.deepStrictEqual(
+            yield* Effect.all([
+              desk({ cookie: staffCookies }),
+              desk({ cookie: cookiesOf(impersonation) }),
+              desk({ cookie: owner.cookies }),
+              desk(publisher),
+              desk({ authorization: `Bearer ${key}` }),
+            ]),
+            [200, 404, 404, 404, 404]
+          );
 
           const callers = {
             apiKey: { authorization: `Bearer ${key}` },
