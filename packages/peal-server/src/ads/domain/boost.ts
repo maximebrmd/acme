@@ -111,7 +111,6 @@ export const BoostObjectsSchema = Schema.Struct({
   adId: Schema.Option(NetworkObjectIdSchema),
   adSetId: Schema.Option(NetworkObjectIdSchema),
   campaignId: Schema.Option(NetworkObjectIdSchema),
-  creativeId: Schema.Option(NetworkObjectIdSchema),
 });
 
 export type BoostObjects = typeof BoostObjectsSchema.Type;
@@ -120,7 +119,6 @@ export const noObjects: BoostObjects = {
   adId: Option.none(),
   adSetId: Option.none(),
   campaignId: Option.none(),
-  creativeId: Option.none(),
 };
 
 /** The platforms whose published posts Peal boosts. */

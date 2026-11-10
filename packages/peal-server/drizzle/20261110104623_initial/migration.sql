@@ -1,5 +1,7 @@
 CREATE SCHEMA "activity";
 --> statement-breakpoint
+CREATE SCHEMA "ads";
+--> statement-breakpoint
 CREATE SCHEMA "analytics";
 --> statement-breakpoint
 CREATE SCHEMA "assistant";
@@ -50,6 +52,184 @@ CREATE TABLE "activity"."request_counts" (
 	"window_start" timestamp with time zone,
 	CONSTRAINT "request_counts_pkey" PRIMARY KEY("subject","window_start"),
 	CONSTRAINT "request_counts_requests" CHECK ("requests" > 0)
+);
+--> statement-breakpoint
+CREATE TABLE "ads"."accounts" (
+	"amount_spent" bigint,
+	"authorized_at" timestamp with time zone,
+	"authorized_by" uuid,
+	"connected_at" timestamp with time zone NOT NULL,
+	"connected_by" uuid,
+	"currency" text NOT NULL,
+	"external_id" text NOT NULL,
+	"grant_id" uuid NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"monthly_ceiling" bigint,
+	"name" text NOT NULL,
+	"network" text NOT NULL,
+	"next_sync_at" timestamp with time zone NOT NULL,
+	"spend_cap" bigint,
+	"spending_enabled" boolean DEFAULT false NOT NULL,
+	"status" text NOT NULL,
+	"synced_at" timestamp with time zone,
+	"time_zone" text NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "accounts_external" UNIQUE("workspace_id","network","external_id"),
+	CONSTRAINT "accounts_ceiling" CHECK (("spending_enabled" = false) OR ("monthly_ceiling" IS NOT NULL AND "monthly_ceiling" > 0))
+);
+--> statement-breakpoint
+CREATE TABLE "ads"."ad_sets" (
+	"account_id" uuid,
+	"external_id" text,
+	"name" text NOT NULL,
+	"raw_status" text NOT NULL,
+	"status" text NOT NULL,
+	"synced_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	"daily_budget" bigint,
+	"ends_at" timestamp with time zone,
+	"starts_at" timestamp with time zone,
+	"total_budget" bigint,
+	"campaign_external_id" text NOT NULL,
+	CONSTRAINT "ad_sets_pkey" PRIMARY KEY("account_id","external_id")
+);
+--> statement-breakpoint
+CREATE TABLE "ads"."ads" (
+	"account_id" uuid,
+	"external_id" text,
+	"name" text NOT NULL,
+	"raw_status" text NOT NULL,
+	"status" text NOT NULL,
+	"synced_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	"ad_set_external_id" text NOT NULL,
+	"campaign_external_id" text NOT NULL,
+	"post_id" uuid,
+	"promoted_instagram_media_id" text,
+	"promoted_page_post_id" text,
+	"target_id" uuid,
+	CONSTRAINT "ads_pkey" PRIMARY KEY("account_id","external_id")
+);
+--> statement-breakpoint
+CREATE TABLE "ads"."audit_events" (
+	"account_id" uuid,
+	"action" text NOT NULL,
+	"amounts" jsonb NOT NULL,
+	"at" timestamp with time zone NOT NULL,
+	"boost_id" uuid,
+	"by_client" text,
+	"by_id" text,
+	"by_kind" text,
+	"currency" text,
+	"id" uuid PRIMARY KEY,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "ads"."boosts" (
+	"account_id" uuid NOT NULL,
+	"activated_at" timestamp with time zone,
+	"ad_id" text,
+	"ad_set_id" text,
+	"audience" jsonb NOT NULL,
+	"beneficiary" text,
+	"budget_amount" bigint NOT NULL,
+	"budget_kind" text NOT NULL,
+	"budget_reached_at" timestamp with time zone,
+	"campaign_id" text,
+	"channel_id" uuid NOT NULL,
+	"committed" bigint NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"currency" text NOT NULL,
+	"ends_at" timestamp with time zone NOT NULL,
+	"failure_code" text,
+	"failure_reason" text,
+	"id" uuid PRIMARY KEY,
+	"idempotency_key" text NOT NULL,
+	"objective" text NOT NULL,
+	"payer" text,
+	"platform" text NOT NULL,
+	"post_id" uuid NOT NULL,
+	"requested_by_client" text,
+	"requested_by_id" text,
+	"requested_by_kind" text,
+	"starts_at" timestamp with time zone NOT NULL,
+	"state" text NOT NULL,
+	"state_at" timestamp with time zone NOT NULL,
+	"target_id" uuid NOT NULL,
+	"updated_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "boosts_key" UNIQUE("workspace_id","idempotency_key"),
+	CONSTRAINT "boosts_state" CHECK ("state" IN ('requested', 'active', 'paused', 'ended', 'stopped', 'failed', 'unconfirmed')),
+	CONSTRAINT "boosts_budget_kind" CHECK ("budget_kind" IN ('total', 'daily')),
+	CONSTRAINT "boosts_amounts" CHECK ("budget_amount" > 0 AND "committed" >= 0),
+	CONSTRAINT "boosts_run" CHECK ("ends_at" > "starts_at"),
+	CONSTRAINT "boosts_failure" CHECK (("state" = 'failed') = ("failure_reason" IS NOT NULL))
+);
+--> statement-breakpoint
+CREATE TABLE "ads"."campaigns" (
+	"account_id" uuid,
+	"external_id" text,
+	"name" text NOT NULL,
+	"raw_status" text NOT NULL,
+	"status" text NOT NULL,
+	"synced_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	"daily_budget" bigint,
+	"ends_at" timestamp with time zone,
+	"starts_at" timestamp with time zone,
+	"total_budget" bigint,
+	"objective" text NOT NULL,
+	CONSTRAINT "campaigns_pkey" PRIMARY KEY("account_id","external_id")
+);
+--> statement-breakpoint
+CREATE TABLE "ads"."grants" (
+	"access" text NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"expires_at" timestamp with time zone,
+	"granted_by" uuid,
+	"id" uuid PRIMARY KEY,
+	"network" text NOT NULL,
+	"platform_user_id" text NOT NULL,
+	"scopes" text[] NOT NULL,
+	"token" text NOT NULL,
+	"token_key_id" text NOT NULL,
+	"updated_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "grants_person" UNIQUE("workspace_id","network","platform_user_id"),
+	CONSTRAINT "grants_access" CHECK ("access" IN ('working', 'reconnectNeeded'))
+);
+--> statement-breakpoint
+CREATE TABLE "ads"."insight_days" (
+	"account_id" uuid,
+	"ad_external_id" text,
+	"clicks" integer NOT NULL,
+	"day" date,
+	"impressions" integer NOT NULL,
+	"reach" integer NOT NULL,
+	"results" integer,
+	"spend" bigint NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "insight_days_pkey" PRIMARY KEY("account_id","ad_external_id","day")
+);
+--> statement-breakpoint
+CREATE TABLE "ads"."sign_in_attempts" (
+	"expires_at" timestamp with time zone NOT NULL,
+	"network" text NOT NULL,
+	"started_by" uuid NOT NULL,
+	"state_hash" text PRIMARY KEY,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "ads"."spend_calls" (
+	"boost_id" uuid NOT NULL,
+	"finished_at" timestamp with time zone,
+	"id" uuid PRIMARY KEY,
+	"network_code" text,
+	"object_id" text,
+	"outcome" text,
+	"started_at" timestamp with time zone NOT NULL,
+	"step" text NOT NULL,
+	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "analytics"."erased_workspaces" (
@@ -937,6 +1117,30 @@ CREATE INDEX "events_workspace" ON "activity"."events" ("workspace_id","id");-->
 CREATE INDEX "events_occurred_at" ON "activity"."events" ("occurred_at");--> statement-breakpoint
 CREATE INDEX "events_user" ON "activity"."events" ("user_id");--> statement-breakpoint
 CREATE INDEX "request_counts_window_start" ON "activity"."request_counts" ("window_start");--> statement-breakpoint
+CREATE INDEX "accounts_grant" ON "ads"."accounts" ("grant_id");--> statement-breakpoint
+CREATE INDEX "accounts_due" ON "ads"."accounts" ("next_sync_at","id");--> statement-breakpoint
+CREATE INDEX "ad_sets_campaign" ON "ads"."ad_sets" ("account_id","campaign_external_id");--> statement-breakpoint
+CREATE INDEX "ad_sets_workspace" ON "ads"."ad_sets" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "ads_campaign" ON "ads"."ads" ("account_id","campaign_external_id");--> statement-breakpoint
+CREATE INDEX "ads_post" ON "ads"."ads" ("workspace_id","post_id");--> statement-breakpoint
+CREATE INDEX "ads_workspace" ON "ads"."ads" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "audit_events_workspace" ON "ads"."audit_events" ("workspace_id","id");--> statement-breakpoint
+CREATE INDEX "audit_events_by" ON "ads"."audit_events" ("by_id");--> statement-breakpoint
+CREATE INDEX "audit_events_at" ON "ads"."audit_events" ("at");--> statement-breakpoint
+CREATE INDEX "boosts_workspace" ON "ads"."boosts" ("workspace_id","id");--> statement-breakpoint
+CREATE INDEX "boosts_post" ON "ads"."boosts" ("workspace_id","post_id");--> statement-breakpoint
+CREATE INDEX "boosts_account" ON "ads"."boosts" ("account_id","state");--> statement-breakpoint
+CREATE INDEX "boosts_ending" ON "ads"."boosts" ("ends_at");--> statement-breakpoint
+CREATE INDEX "campaigns_workspace" ON "ads"."campaigns" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "grants_platform_user" ON "ads"."grants" ("network","platform_user_id");--> statement-breakpoint
+CREATE INDEX "grants_granted_by" ON "ads"."grants" ("granted_by");--> statement-breakpoint
+CREATE INDEX "insight_days_workspace_day" ON "ads"."insight_days" ("workspace_id","day");--> statement-breakpoint
+CREATE INDEX "insight_days_day" ON "ads"."insight_days" ("day");--> statement-breakpoint
+CREATE INDEX "sign_in_attempts_expiry" ON "ads"."sign_in_attempts" ("expires_at");--> statement-breakpoint
+CREATE INDEX "sign_in_attempts_workspace" ON "ads"."sign_in_attempts" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "sign_in_attempts_started_by" ON "ads"."sign_in_attempts" ("started_by");--> statement-breakpoint
+CREATE INDEX "spend_calls_boost" ON "ads"."spend_calls" ("boost_id","id");--> statement-breakpoint
+CREATE INDEX "spend_calls_workspace" ON "ads"."spend_calls" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collection_at","channel_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_channel_due" ON "analytics"."tracked_posts" ("channel_id","next_collection_at","target_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" ("workspace_id","published_at");--> statement-breakpoint
@@ -1038,6 +1242,13 @@ CREATE INDEX "oauthRefreshToken_authorizationCodeId_idx" ON "auth"."oauth_refres
 CREATE UNIQUE INDEX "organization_slug_uidx" ON "auth"."organization" ("slug");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "auth"."session" ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "auth"."verification" ("identifier");--> statement-breakpoint
+ALTER TABLE "ads"."accounts" ADD CONSTRAINT "accounts_grant_id_grants_id_fkey" FOREIGN KEY ("grant_id") REFERENCES "ads"."grants"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "ads"."ad_sets" ADD CONSTRAINT "ad_sets_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "ads"."ads" ADD CONSTRAINT "ads_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "ads"."boosts" ADD CONSTRAINT "boosts_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "ads"."campaigns" ADD CONSTRAINT "campaigns_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "ads"."insight_days" ADD CONSTRAINT "insight_days_account_id_accounts_id_fkey" FOREIGN KEY ("account_id") REFERENCES "ads"."accounts"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "ads"."spend_calls" ADD CONSTRAINT "spend_calls_boost_id_boosts_id_fkey" FOREIGN KEY ("boost_id") REFERENCES "ads"."boosts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "analytics"."metric_snapshots" ADD CONSTRAINT "metric_snapshots_target_id_tracked_posts_target_id_fkey" FOREIGN KEY ("target_id") REFERENCES "analytics"."tracked_posts"("target_id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."post_targets" ADD CONSTRAINT "post_targets_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "publishing"."posts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_attempts" ADD CONSTRAINT "publication_attempts_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint

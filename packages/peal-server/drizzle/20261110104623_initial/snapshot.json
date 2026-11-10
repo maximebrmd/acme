@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "28db30a9-efec-4e46-a21b-38efa03a83ff",
+  "id": "3f394a6f-d525-4adf-8b3f-43f324105b52",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -17,6 +17,18 @@
         "s|sch|activity",
         "n|sch|activity",
         "e|sch|activity"
+      ]
+    },
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "ads"
+      ],
+      "writes": [
+        "s|sch|ads",
+        "n|sch|ads",
+        "e|sch|ads"
       ]
     },
     {
@@ -211,6 +223,199 @@
       ],
       "reads": [
         "n|sch|activity"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "accounts"
+      ],
+      "writes": [
+        "s|tbl|ads.accounts",
+        "n|tbl|ads.accounts",
+        "e|tbl|ads.accounts",
+        "n|rel|ads.accounts",
+        "n|type|ads.accounts",
+        "n|rel|ads.accounts_pkey",
+        "n|rel|ads.accounts_external"
+      ],
+      "reads": [
+        "n|sch|ads"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "ad_sets"
+      ],
+      "writes": [
+        "s|tbl|ads.ad_sets",
+        "n|tbl|ads.ad_sets",
+        "e|tbl|ads.ad_sets",
+        "n|rel|ads.ad_sets",
+        "n|type|ads.ad_sets",
+        "n|rel|ads.ad_sets_pkey"
+      ],
+      "reads": [
+        "n|sch|ads"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "ads"
+      ],
+      "writes": [
+        "s|tbl|ads.ads",
+        "n|tbl|ads.ads",
+        "e|tbl|ads.ads",
+        "n|rel|ads.ads",
+        "n|type|ads.ads",
+        "n|rel|ads.ads_pkey"
+      ],
+      "reads": [
+        "n|sch|ads"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "audit_events"
+      ],
+      "writes": [
+        "s|tbl|ads.audit_events",
+        "n|tbl|ads.audit_events",
+        "e|tbl|ads.audit_events",
+        "n|rel|ads.audit_events",
+        "n|type|ads.audit_events",
+        "n|rel|ads.audit_events_pkey"
+      ],
+      "reads": [
+        "n|sch|ads"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "boosts"
+      ],
+      "writes": [
+        "s|tbl|ads.boosts",
+        "n|tbl|ads.boosts",
+        "e|tbl|ads.boosts",
+        "n|rel|ads.boosts",
+        "n|type|ads.boosts",
+        "n|rel|ads.boosts_pkey",
+        "n|rel|ads.boosts_key"
+      ],
+      "reads": [
+        "n|sch|ads"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "campaigns"
+      ],
+      "writes": [
+        "s|tbl|ads.campaigns",
+        "n|tbl|ads.campaigns",
+        "e|tbl|ads.campaigns",
+        "n|rel|ads.campaigns",
+        "n|type|ads.campaigns",
+        "n|rel|ads.campaigns_pkey"
+      ],
+      "reads": [
+        "n|sch|ads"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "grants"
+      ],
+      "writes": [
+        "s|tbl|ads.grants",
+        "n|tbl|ads.grants",
+        "e|tbl|ads.grants",
+        "n|rel|ads.grants",
+        "n|type|ads.grants",
+        "n|rel|ads.grants_pkey",
+        "n|rel|ads.grants_person"
+      ],
+      "reads": [
+        "n|sch|ads"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "insight_days"
+      ],
+      "writes": [
+        "s|tbl|ads.insight_days",
+        "n|tbl|ads.insight_days",
+        "e|tbl|ads.insight_days",
+        "n|rel|ads.insight_days",
+        "n|type|ads.insight_days",
+        "n|rel|ads.insight_days_pkey"
+      ],
+      "reads": [
+        "n|sch|ads"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "sign_in_attempts"
+      ],
+      "writes": [
+        "s|tbl|ads.sign_in_attempts",
+        "n|tbl|ads.sign_in_attempts",
+        "e|tbl|ads.sign_in_attempts",
+        "n|rel|ads.sign_in_attempts",
+        "n|type|ads.sign_in_attempts",
+        "n|rel|ads.sign_in_attempts_pkey"
+      ],
+      "reads": [
+        "n|sch|ads"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ads",
+        "spend_calls"
+      ],
+      "writes": [
+        "s|tbl|ads.spend_calls",
+        "n|tbl|ads.spend_calls",
+        "e|tbl|ads.spend_calls",
+        "n|rel|ads.spend_calls",
+        "n|type|ads.spend_calls",
+        "n|rel|ads.spend_calls_pkey"
+      ],
+      "reads": [
+        "n|sch|ads"
       ]
     },
     {
@@ -1528,6 +1733,497 @@
         "n|tbl|activity.request_counts",
         "n|sch|activity",
         "n|col|activity.request_counts.window_start"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "accounts",
+        "accounts_grant"
+      ],
+      "writes": [
+        "s|idx|ads.accounts_grant",
+        "n|idx|ads.accounts_grant",
+        "e|idx|ads.accounts_grant",
+        "n|rel|ads.accounts_grant"
+      ],
+      "reads": [
+        "n|tbl|ads.accounts",
+        "n|sch|ads",
+        "n|col|ads.accounts.grant_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "accounts",
+        "accounts_due"
+      ],
+      "writes": [
+        "s|idx|ads.accounts_due",
+        "n|idx|ads.accounts_due",
+        "e|idx|ads.accounts_due",
+        "n|rel|ads.accounts_due"
+      ],
+      "reads": [
+        "n|tbl|ads.accounts",
+        "n|sch|ads",
+        "n|col|ads.accounts.next_sync_at",
+        "n|col|ads.accounts.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "ad_sets",
+        "ad_sets_campaign"
+      ],
+      "writes": [
+        "s|idx|ads.ad_sets_campaign",
+        "n|idx|ads.ad_sets_campaign",
+        "e|idx|ads.ad_sets_campaign",
+        "n|rel|ads.ad_sets_campaign"
+      ],
+      "reads": [
+        "n|tbl|ads.ad_sets",
+        "n|sch|ads",
+        "n|col|ads.ad_sets.account_id",
+        "n|col|ads.ad_sets.campaign_external_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "ad_sets",
+        "ad_sets_workspace"
+      ],
+      "writes": [
+        "s|idx|ads.ad_sets_workspace",
+        "n|idx|ads.ad_sets_workspace",
+        "e|idx|ads.ad_sets_workspace",
+        "n|rel|ads.ad_sets_workspace"
+      ],
+      "reads": [
+        "n|tbl|ads.ad_sets",
+        "n|sch|ads",
+        "n|col|ads.ad_sets.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "ads",
+        "ads_campaign"
+      ],
+      "writes": [
+        "s|idx|ads.ads_campaign",
+        "n|idx|ads.ads_campaign",
+        "e|idx|ads.ads_campaign",
+        "n|rel|ads.ads_campaign"
+      ],
+      "reads": [
+        "n|tbl|ads.ads",
+        "n|sch|ads",
+        "n|col|ads.ads.account_id",
+        "n|col|ads.ads.campaign_external_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "ads",
+        "ads_post"
+      ],
+      "writes": [
+        "s|idx|ads.ads_post",
+        "n|idx|ads.ads_post",
+        "e|idx|ads.ads_post",
+        "n|rel|ads.ads_post"
+      ],
+      "reads": [
+        "n|tbl|ads.ads",
+        "n|sch|ads",
+        "n|col|ads.ads.workspace_id",
+        "n|col|ads.ads.post_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "ads",
+        "ads_workspace"
+      ],
+      "writes": [
+        "s|idx|ads.ads_workspace",
+        "n|idx|ads.ads_workspace",
+        "e|idx|ads.ads_workspace",
+        "n|rel|ads.ads_workspace"
+      ],
+      "reads": [
+        "n|tbl|ads.ads",
+        "n|sch|ads",
+        "n|col|ads.ads.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "audit_events",
+        "audit_events_workspace"
+      ],
+      "writes": [
+        "s|idx|ads.audit_events_workspace",
+        "n|idx|ads.audit_events_workspace",
+        "e|idx|ads.audit_events_workspace",
+        "n|rel|ads.audit_events_workspace"
+      ],
+      "reads": [
+        "n|tbl|ads.audit_events",
+        "n|sch|ads",
+        "n|col|ads.audit_events.workspace_id",
+        "n|col|ads.audit_events.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "audit_events",
+        "audit_events_by"
+      ],
+      "writes": [
+        "s|idx|ads.audit_events_by",
+        "n|idx|ads.audit_events_by",
+        "e|idx|ads.audit_events_by",
+        "n|rel|ads.audit_events_by"
+      ],
+      "reads": [
+        "n|tbl|ads.audit_events",
+        "n|sch|ads",
+        "n|col|ads.audit_events.by_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "audit_events",
+        "audit_events_at"
+      ],
+      "writes": [
+        "s|idx|ads.audit_events_at",
+        "n|idx|ads.audit_events_at",
+        "e|idx|ads.audit_events_at",
+        "n|rel|ads.audit_events_at"
+      ],
+      "reads": [
+        "n|tbl|ads.audit_events",
+        "n|sch|ads",
+        "n|col|ads.audit_events.at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "boosts",
+        "boosts_workspace"
+      ],
+      "writes": [
+        "s|idx|ads.boosts_workspace",
+        "n|idx|ads.boosts_workspace",
+        "e|idx|ads.boosts_workspace",
+        "n|rel|ads.boosts_workspace"
+      ],
+      "reads": [
+        "n|tbl|ads.boosts",
+        "n|sch|ads",
+        "n|col|ads.boosts.workspace_id",
+        "n|col|ads.boosts.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "boosts",
+        "boosts_post"
+      ],
+      "writes": [
+        "s|idx|ads.boosts_post",
+        "n|idx|ads.boosts_post",
+        "e|idx|ads.boosts_post",
+        "n|rel|ads.boosts_post"
+      ],
+      "reads": [
+        "n|tbl|ads.boosts",
+        "n|sch|ads",
+        "n|col|ads.boosts.workspace_id",
+        "n|col|ads.boosts.post_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "boosts",
+        "boosts_account"
+      ],
+      "writes": [
+        "s|idx|ads.boosts_account",
+        "n|idx|ads.boosts_account",
+        "e|idx|ads.boosts_account",
+        "n|rel|ads.boosts_account"
+      ],
+      "reads": [
+        "n|tbl|ads.boosts",
+        "n|sch|ads",
+        "n|col|ads.boosts.account_id",
+        "n|col|ads.boosts.state"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "boosts",
+        "boosts_ending"
+      ],
+      "writes": [
+        "s|idx|ads.boosts_ending",
+        "n|idx|ads.boosts_ending",
+        "e|idx|ads.boosts_ending",
+        "n|rel|ads.boosts_ending"
+      ],
+      "reads": [
+        "n|tbl|ads.boosts",
+        "n|sch|ads",
+        "n|col|ads.boosts.ends_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "campaigns",
+        "campaigns_workspace"
+      ],
+      "writes": [
+        "s|idx|ads.campaigns_workspace",
+        "n|idx|ads.campaigns_workspace",
+        "e|idx|ads.campaigns_workspace",
+        "n|rel|ads.campaigns_workspace"
+      ],
+      "reads": [
+        "n|tbl|ads.campaigns",
+        "n|sch|ads",
+        "n|col|ads.campaigns.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "grants",
+        "grants_platform_user"
+      ],
+      "writes": [
+        "s|idx|ads.grants_platform_user",
+        "n|idx|ads.grants_platform_user",
+        "e|idx|ads.grants_platform_user",
+        "n|rel|ads.grants_platform_user"
+      ],
+      "reads": [
+        "n|tbl|ads.grants",
+        "n|sch|ads",
+        "n|col|ads.grants.network",
+        "n|col|ads.grants.platform_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "grants",
+        "grants_granted_by"
+      ],
+      "writes": [
+        "s|idx|ads.grants_granted_by",
+        "n|idx|ads.grants_granted_by",
+        "e|idx|ads.grants_granted_by",
+        "n|rel|ads.grants_granted_by"
+      ],
+      "reads": [
+        "n|tbl|ads.grants",
+        "n|sch|ads",
+        "n|col|ads.grants.granted_by"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "insight_days",
+        "insight_days_workspace_day"
+      ],
+      "writes": [
+        "s|idx|ads.insight_days_workspace_day",
+        "n|idx|ads.insight_days_workspace_day",
+        "e|idx|ads.insight_days_workspace_day",
+        "n|rel|ads.insight_days_workspace_day"
+      ],
+      "reads": [
+        "n|tbl|ads.insight_days",
+        "n|sch|ads",
+        "n|col|ads.insight_days.workspace_id",
+        "n|col|ads.insight_days.day"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "insight_days",
+        "insight_days_day"
+      ],
+      "writes": [
+        "s|idx|ads.insight_days_day",
+        "n|idx|ads.insight_days_day",
+        "e|idx|ads.insight_days_day",
+        "n|rel|ads.insight_days_day"
+      ],
+      "reads": [
+        "n|tbl|ads.insight_days",
+        "n|sch|ads",
+        "n|col|ads.insight_days.day"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "sign_in_attempts",
+        "sign_in_attempts_expiry"
+      ],
+      "writes": [
+        "s|idx|ads.sign_in_attempts_expiry",
+        "n|idx|ads.sign_in_attempts_expiry",
+        "e|idx|ads.sign_in_attempts_expiry",
+        "n|rel|ads.sign_in_attempts_expiry"
+      ],
+      "reads": [
+        "n|tbl|ads.sign_in_attempts",
+        "n|sch|ads",
+        "n|col|ads.sign_in_attempts.expires_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "sign_in_attempts",
+        "sign_in_attempts_workspace"
+      ],
+      "writes": [
+        "s|idx|ads.sign_in_attempts_workspace",
+        "n|idx|ads.sign_in_attempts_workspace",
+        "e|idx|ads.sign_in_attempts_workspace",
+        "n|rel|ads.sign_in_attempts_workspace"
+      ],
+      "reads": [
+        "n|tbl|ads.sign_in_attempts",
+        "n|sch|ads",
+        "n|col|ads.sign_in_attempts.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "sign_in_attempts",
+        "sign_in_attempts_started_by"
+      ],
+      "writes": [
+        "s|idx|ads.sign_in_attempts_started_by",
+        "n|idx|ads.sign_in_attempts_started_by",
+        "e|idx|ads.sign_in_attempts_started_by",
+        "n|rel|ads.sign_in_attempts_started_by"
+      ],
+      "reads": [
+        "n|tbl|ads.sign_in_attempts",
+        "n|sch|ads",
+        "n|col|ads.sign_in_attempts.started_by"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "spend_calls",
+        "spend_calls_boost"
+      ],
+      "writes": [
+        "s|idx|ads.spend_calls_boost",
+        "n|idx|ads.spend_calls_boost",
+        "e|idx|ads.spend_calls_boost",
+        "n|rel|ads.spend_calls_boost"
+      ],
+      "reads": [
+        "n|tbl|ads.spend_calls",
+        "n|sch|ads",
+        "n|col|ads.spend_calls.boost_id",
+        "n|col|ads.spend_calls.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ads",
+        "spend_calls",
+        "spend_calls_workspace"
+      ],
+      "writes": [
+        "s|idx|ads.spend_calls_workspace",
+        "n|idx|ads.spend_calls_workspace",
+        "e|idx|ads.spend_calls_workspace",
+        "n|rel|ads.spend_calls_workspace"
+      ],
+      "reads": [
+        "n|tbl|ads.spend_calls",
+        "n|sch|ads",
+        "n|col|ads.spend_calls.workspace_id"
       ]
     },
     {
@@ -3584,6 +4280,167 @@
       "statementType": "create_fk",
       "statementTarget": [
         "table",
+        "ads",
+        "accounts"
+      ],
+      "writes": [
+        "s|fk|ads.accounts.accounts_grant_id_grants_id_fkey",
+        "n|fk|ads.accounts.accounts_grant_id_grants_id_fkey",
+        "e|fk|ads.accounts.accounts_grant_id_grants_id_fkey",
+        "n|con|ads.accounts.accounts_grant_id_grants_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|ads.accounts",
+        "n|sch|ads",
+        "n|tbl|ads.grants",
+        "n|sch|ads",
+        "n|col|ads.accounts.grant_id",
+        "n|col|ads.grants.id",
+        "e|uniqueness|ads.grants.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "ads",
+        "ad_sets"
+      ],
+      "writes": [
+        "s|fk|ads.ad_sets.ad_sets_account_id_accounts_id_fkey",
+        "n|fk|ads.ad_sets.ad_sets_account_id_accounts_id_fkey",
+        "e|fk|ads.ad_sets.ad_sets_account_id_accounts_id_fkey",
+        "n|con|ads.ad_sets.ad_sets_account_id_accounts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|ads.ad_sets",
+        "n|sch|ads",
+        "n|tbl|ads.accounts",
+        "n|sch|ads",
+        "n|col|ads.ad_sets.account_id",
+        "n|col|ads.accounts.id",
+        "e|uniqueness|ads.accounts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "ads",
+        "ads"
+      ],
+      "writes": [
+        "s|fk|ads.ads.ads_account_id_accounts_id_fkey",
+        "n|fk|ads.ads.ads_account_id_accounts_id_fkey",
+        "e|fk|ads.ads.ads_account_id_accounts_id_fkey",
+        "n|con|ads.ads.ads_account_id_accounts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|ads.ads",
+        "n|sch|ads",
+        "n|tbl|ads.accounts",
+        "n|sch|ads",
+        "n|col|ads.ads.account_id",
+        "n|col|ads.accounts.id",
+        "e|uniqueness|ads.accounts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "ads",
+        "boosts"
+      ],
+      "writes": [
+        "s|fk|ads.boosts.boosts_account_id_accounts_id_fkey",
+        "n|fk|ads.boosts.boosts_account_id_accounts_id_fkey",
+        "e|fk|ads.boosts.boosts_account_id_accounts_id_fkey",
+        "n|con|ads.boosts.boosts_account_id_accounts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|ads.boosts",
+        "n|sch|ads",
+        "n|tbl|ads.accounts",
+        "n|sch|ads",
+        "n|col|ads.boosts.account_id",
+        "n|col|ads.accounts.id",
+        "e|uniqueness|ads.accounts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "ads",
+        "campaigns"
+      ],
+      "writes": [
+        "s|fk|ads.campaigns.campaigns_account_id_accounts_id_fkey",
+        "n|fk|ads.campaigns.campaigns_account_id_accounts_id_fkey",
+        "e|fk|ads.campaigns.campaigns_account_id_accounts_id_fkey",
+        "n|con|ads.campaigns.campaigns_account_id_accounts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|ads.campaigns",
+        "n|sch|ads",
+        "n|tbl|ads.accounts",
+        "n|sch|ads",
+        "n|col|ads.campaigns.account_id",
+        "n|col|ads.accounts.id",
+        "e|uniqueness|ads.accounts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "ads",
+        "insight_days"
+      ],
+      "writes": [
+        "s|fk|ads.insight_days.insight_days_account_id_accounts_id_fkey",
+        "n|fk|ads.insight_days.insight_days_account_id_accounts_id_fkey",
+        "e|fk|ads.insight_days.insight_days_account_id_accounts_id_fkey",
+        "n|con|ads.insight_days.insight_days_account_id_accounts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|ads.insight_days",
+        "n|sch|ads",
+        "n|tbl|ads.accounts",
+        "n|sch|ads",
+        "n|col|ads.insight_days.account_id",
+        "n|col|ads.accounts.id",
+        "e|uniqueness|ads.accounts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "ads",
+        "spend_calls"
+      ],
+      "writes": [
+        "s|fk|ads.spend_calls.spend_calls_boost_id_boosts_id_fkey",
+        "n|fk|ads.spend_calls.spend_calls_boost_id_boosts_id_fkey",
+        "e|fk|ads.spend_calls.spend_calls_boost_id_boosts_id_fkey",
+        "n|con|ads.spend_calls.spend_calls_boost_id_boosts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|ads.spend_calls",
+        "n|sch|ads",
+        "n|tbl|ads.boosts",
+        "n|sch|ads",
+        "n|col|ads.spend_calls.boost_id",
+        "n|col|ads.boosts.id",
+        "e|uniqueness|ads.boosts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
         "analytics",
         "metric_snapshots"
       ],
@@ -4254,6 +5111,10 @@
       "entityType": "schemas"
     },
     {
+      "name": "ads",
+      "entityType": "schemas"
+    },
+    {
       "name": "analytics",
       "entityType": "schemas"
     },
@@ -4314,6 +5175,66 @@
     {
       "schema": "activity",
       "name": "request_counts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "ads",
+      "name": "accounts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "ads",
+      "name": "ad_sets",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "ads",
+      "name": "ads",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "ads",
+      "name": "audit_events",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "ads",
+      "name": "boosts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "ads",
+      "name": "campaigns",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "ads",
+      "name": "grants",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "ads",
+      "name": "insight_days",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "ads",
+      "name": "sign_in_attempts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "ads",
+      "name": "spend_calls",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -4927,6 +5848,1748 @@
       "table": "request_counts",
       "name": "window_start",
       "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "amount_spent",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "authorized_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "authorized_by",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "connected_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "connected_by",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "currency",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "grant_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "monthly_ceiling",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "network",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "next_sync_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "spend_cap",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "spending_enabled",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "synced_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "time_zone",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "account_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "raw_status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "synced_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "daily_budget",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "ends_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "starts_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "total_budget",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "campaign_external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "account_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "raw_status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "synced_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "ad_set_external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "campaign_external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "post_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "promoted_instagram_media_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "promoted_page_post_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "account_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "action",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "amounts",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "boost_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "by_client",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "by_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "by_kind",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "currency",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "account_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "activated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "ad_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "ad_set_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "audience",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "beneficiary",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "budget_amount",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "budget_kind",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "budget_reached_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "campaign_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "committed",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "currency",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "ends_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "failure_code",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "failure_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "idempotency_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "objective",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "payer",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "platform",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "post_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "requested_by_client",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "requested_by_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "requested_by_kind",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "starts_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "state",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "state_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "account_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "raw_status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "synced_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "daily_budget",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "ends_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "starts_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "total_budget",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "objective",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "access",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "expires_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "granted_by",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "network",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "platform_user_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "scopes",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "token",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "token_key_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "account_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "ad_external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "clicks",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "day",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "impressions",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "reach",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "results",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "spend",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "sign_in_attempts",
+      "name": "expires_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "sign_in_attempts",
+      "name": "network",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "sign_in_attempts",
+      "name": "started_by",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "sign_in_attempts",
+      "name": "state_hash",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "sign_in_attempts",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "boost_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "network_code",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "object_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "outcome",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "step",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "workspace_id",
+      "type": "uuid",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -13503,6 +16166,587 @@
       "entityType": "indexes"
     },
     {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "accounts_grant",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "grant_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "accounts_due",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "next_sync_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "ad_sets_campaign",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "account_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "campaign_external_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "ad_sets_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "ads_campaign",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "account_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "campaign_external_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "ads_post",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "post_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "ads_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "audit_events_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "audit_events_by",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "by_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "audit_events_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_post",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "post_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_account",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "account_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "state",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_ending",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "ends_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "campaigns_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "grants_platform_user",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "network",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "platform_user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "grants_granted_by",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "granted_by",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "insight_days_workspace_day",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "day",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "insight_days_day",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "day",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "sign_in_attempts",
+      "name": "sign_in_attempts_expiry",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "expires_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "sign_in_attempts",
+      "name": "sign_in_attempts_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "sign_in_attempts",
+      "name": "sign_in_attempts_started_by",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "started_by",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "spend_calls_boost",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "boost_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "spend_calls_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "analytics",
       "table": "tracked_posts",
       "name": "tracked_posts_due",
@@ -15834,6 +19078,125 @@
       "entityType": "indexes"
     },
     {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "accounts_grant_id_grants_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "grant_id"
+      ],
+      "schemaTo": "ads",
+      "tableTo": "grants",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "ad_sets_account_id_accounts_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "account_id"
+      ],
+      "schemaTo": "ads",
+      "tableTo": "accounts",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "ads_account_id_accounts_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "account_id"
+      ],
+      "schemaTo": "ads",
+      "tableTo": "accounts",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_account_id_accounts_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "account_id"
+      ],
+      "schemaTo": "ads",
+      "tableTo": "accounts",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "campaigns_account_id_accounts_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "account_id"
+      ],
+      "schemaTo": "ads",
+      "tableTo": "accounts",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "insight_days_account_id_accounts_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "account_id"
+      ],
+      "schemaTo": "ads",
+      "tableTo": "accounts",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "spend_calls_boost_id_boosts_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "boost_id"
+      ],
+      "schemaTo": "ads",
+      "tableTo": "boosts",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
       "schema": "analytics",
       "table": "metric_snapshots",
       "name": "metric_snapshots_target_id_tracked_posts_target_id_fkey",
@@ -16338,6 +19701,51 @@
       "entityType": "pks"
     },
     {
+      "schema": "ads",
+      "table": "ad_sets",
+      "name": "ad_sets_pkey",
+      "columns": [
+        "account_id",
+        "external_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "ads",
+      "table": "ads",
+      "name": "ads_pkey",
+      "columns": [
+        "account_id",
+        "external_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "ads",
+      "table": "campaigns",
+      "name": "campaigns_pkey",
+      "columns": [
+        "account_id",
+        "external_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "ads",
+      "table": "insight_days",
+      "name": "insight_days_pkey",
+      "columns": [
+        "account_id",
+        "ad_external_id",
+        "day"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "analytics",
       "table": "metric_snapshots",
       "name": "metric_snapshots_pkey",
@@ -16442,6 +19850,66 @@
       "schema": "activity",
       "table": "events",
       "name": "events_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "accounts_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "ads",
+      "table": "audit_events",
+      "name": "audit_events_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "grants_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "ads",
+      "table": "sign_in_attempts",
+      "name": "sign_in_attempts_pkey",
+      "columns": [
+        "state_hash"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "ads",
+      "table": "spend_calls",
+      "name": "spend_calls_pkey",
       "columns": [
         "id"
       ],
@@ -16999,6 +20467,44 @@
       "entityType": "pks"
     },
     {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "accounts_external",
+      "nameExplicit": true,
+      "columns": [
+        "workspace_id",
+        "network",
+        "external_id"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_key",
+      "nameExplicit": true,
+      "columns": [
+        "workspace_id",
+        "idempotency_key"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "grants_person",
+      "nameExplicit": true,
+      "columns": [
+        "workspace_id",
+        "network",
+        "platform_user_id"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
       "schema": "channels",
       "table": "channels",
       "name": "channels_workspace_platform_account",
@@ -17230,6 +20736,55 @@
       "table": "request_counts",
       "name": "request_counts_requests",
       "value": "\"requests\" > 0",
+      "entityType": "checks"
+    },
+    {
+      "schema": "ads",
+      "table": "accounts",
+      "name": "accounts_ceiling",
+      "value": "(\"spending_enabled\" = false) OR (\"monthly_ceiling\" IS NOT NULL AND \"monthly_ceiling\" > 0)",
+      "entityType": "checks"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_state",
+      "value": "\"state\" IN ('requested', 'active', 'paused', 'ended', 'stopped', 'failed', 'unconfirmed')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_budget_kind",
+      "value": "\"budget_kind\" IN ('total', 'daily')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_amounts",
+      "value": "\"budget_amount\" > 0 AND \"committed\" >= 0",
+      "entityType": "checks"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_run",
+      "value": "\"ends_at\" > \"starts_at\"",
+      "entityType": "checks"
+    },
+    {
+      "schema": "ads",
+      "table": "boosts",
+      "name": "boosts_failure",
+      "value": "(\"state\" = 'failed') = (\"failure_reason\" IS NOT NULL)",
+      "entityType": "checks"
+    },
+    {
+      "schema": "ads",
+      "table": "grants",
+      "name": "grants_access",
+      "value": "\"access\" IN ('working', 'reconnectNeeded')",
       "entityType": "checks"
     },
     {
