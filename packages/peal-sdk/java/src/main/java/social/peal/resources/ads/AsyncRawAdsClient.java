@@ -832,7 +832,7 @@ public class AsyncRawAdsClient {
     }
 
     /**
-     * Removes a sign-in, its token, the ad accounts it connects, what was read of them and their boosts' records. Refused while one of their boosts runs, may run or is being made (<code>AdAccountBusy</code>): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.
+     * Removes a sign-in, its token, the ad accounts it connects and what was read of them; their boosts' records stay with the workspace, and what they committed still counts once the same account is connected again. Refused while one of their boosts runs, may run, is paused or is being made (<code>AdAccountBusy</code>): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> disconnect(String workspaceId, String connectionId) {
         return disconnect(
@@ -840,7 +840,7 @@ public class AsyncRawAdsClient {
     }
 
     /**
-     * Removes a sign-in, its token, the ad accounts it connects, what was read of them and their boosts' records. Refused while one of their boosts runs, may run or is being made (<code>AdAccountBusy</code>): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.
+     * Removes a sign-in, its token, the ad accounts it connects and what was read of them; their boosts' records stay with the workspace, and what they committed still counts once the same account is connected again. Refused while one of their boosts runs, may run, is paused or is being made (<code>AdAccountBusy</code>): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> disconnect(
             String workspaceId, String connectionId, RequestOptions requestOptions) {
@@ -849,7 +849,7 @@ public class AsyncRawAdsClient {
     }
 
     /**
-     * Removes a sign-in, its token, the ad accounts it connects, what was read of them and their boosts' records. Refused while one of their boosts runs, may run or is being made (<code>AdAccountBusy</code>): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.
+     * Removes a sign-in, its token, the ad accounts it connects and what was read of them; their boosts' records stay with the workspace, and what they committed still counts once the same account is connected again. Refused while one of their boosts runs, may run, is paused or is being made (<code>AdAccountBusy</code>): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> disconnect(
             String workspaceId, String connectionId, DisconnectAdsRequest request) {
@@ -857,7 +857,7 @@ public class AsyncRawAdsClient {
     }
 
     /**
-     * Removes a sign-in, its token, the ad accounts it connects, what was read of them and their boosts' records. Refused while one of their boosts runs, may run or is being made (<code>AdAccountBusy</code>): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.
+     * Removes a sign-in, its token, the ad accounts it connects and what was read of them; their boosts' records stay with the workspace, and what they committed still counts once the same account is connected again. Refused while one of their boosts runs, may run, is paused or is being made (<code>AdAccountBusy</code>): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> disconnect(
             String workspaceId, String connectionId, DisconnectAdsRequest request, RequestOptions requestOptions) {
@@ -1209,7 +1209,7 @@ public class AsyncRawAdsClient {
     }
 
     /**
-     * Disconnects an ad account: what was read of it and its boosts' records go with it. Refused while one of its boosts runs, may run or is being made (<code>AdAccountBusy</code>). Needs ads:manage.
+     * Disconnects an ad account: what was read of it goes with it, and its boosts' records stay with the workspace, so what they committed still counts against the ceiling once the same account is connected again. Refused while one of its boosts runs, may run, is paused or is being made (<code>AdAccountBusy</code>), as a paused campaign may run again. Needs ads:manage.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeAccount(String workspaceId, String accountId) {
         return removeAccount(
@@ -1217,7 +1217,7 @@ public class AsyncRawAdsClient {
     }
 
     /**
-     * Disconnects an ad account: what was read of it and its boosts' records go with it. Refused while one of its boosts runs, may run or is being made (<code>AdAccountBusy</code>). Needs ads:manage.
+     * Disconnects an ad account: what was read of it goes with it, and its boosts' records stay with the workspace, so what they committed still counts against the ceiling once the same account is connected again. Refused while one of its boosts runs, may run, is paused or is being made (<code>AdAccountBusy</code>), as a paused campaign may run again. Needs ads:manage.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeAccount(
             String workspaceId, String accountId, RequestOptions requestOptions) {
@@ -1226,7 +1226,7 @@ public class AsyncRawAdsClient {
     }
 
     /**
-     * Disconnects an ad account: what was read of it and its boosts' records go with it. Refused while one of its boosts runs, may run or is being made (<code>AdAccountBusy</code>). Needs ads:manage.
+     * Disconnects an ad account: what was read of it goes with it, and its boosts' records stay with the workspace, so what they committed still counts against the ceiling once the same account is connected again. Refused while one of its boosts runs, may run, is paused or is being made (<code>AdAccountBusy</code>), as a paused campaign may run again. Needs ads:manage.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeAccount(
             String workspaceId, String accountId, RemoveAccountAdsRequest request) {
@@ -1234,7 +1234,7 @@ public class AsyncRawAdsClient {
     }
 
     /**
-     * Disconnects an ad account: what was read of it and its boosts' records go with it. Refused while one of its boosts runs, may run or is being made (<code>AdAccountBusy</code>). Needs ads:manage.
+     * Disconnects an ad account: what was read of it goes with it, and its boosts' records stay with the workspace, so what they committed still counts against the ceiling once the same account is connected again. Refused while one of its boosts runs, may run, is paused or is being made (<code>AdAccountBusy</code>), as a paused campaign may run again. Needs ads:manage.
      */
     public CompletableFuture<PealClientHttpResponse<Void>> removeAccount(
             String workspaceId, String accountId, RemoveAccountAdsRequest request, RequestOptions requestOptions) {
@@ -2011,7 +2011,7 @@ public class AsyncRawAdsClient {
     }
 
     /**
-     * Checks a boost as <code>createBoost</code> would, and says what it would commit and the room it has, without reserving or sending anything: show it before the last step. A total budget commits its amount; a daily budget commits its amount for each calendar day of the account's zone the run touches, and 25% more, which the network may add on any day. Needs ads:spend.
+     * Checks a boost as <code>createBoost</code> would, and says what it would commit and the room it has, without reserving or sending anything: show it before the last step. A total budget commits its amount; a daily budget commits, for each calendar week of the account's zone (Sunday to Saturday) the run touches, its amount and 75% more for each day of the run in that week, which the network may spend on any day, and never more than 7 times its amount, the most the network spends in a week. Needs ads:spend.
      */
     public CompletableFuture<PealClientHttpResponse<BoostQuote>> quoteBoost(
             String workspaceId, QuoteBoostAdsRequest request) {
@@ -2019,7 +2019,7 @@ public class AsyncRawAdsClient {
     }
 
     /**
-     * Checks a boost as <code>createBoost</code> would, and says what it would commit and the room it has, without reserving or sending anything: show it before the last step. A total budget commits its amount; a daily budget commits its amount for each calendar day of the account's zone the run touches, and 25% more, which the network may add on any day. Needs ads:spend.
+     * Checks a boost as <code>createBoost</code> would, and says what it would commit and the room it has, without reserving or sending anything: show it before the last step. A total budget commits its amount; a daily budget commits, for each calendar week of the account's zone (Sunday to Saturday) the run touches, its amount and 75% more for each day of the run in that week, which the network may spend on any day, and never more than 7 times its amount, the most the network spends in a week. Needs ads:spend.
      */
     public CompletableFuture<PealClientHttpResponse<BoostQuote>> quoteBoost(
             String workspaceId, QuoteBoostAdsRequest request, RequestOptions requestOptions) {

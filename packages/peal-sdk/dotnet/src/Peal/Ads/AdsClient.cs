@@ -3648,7 +3648,7 @@ public partial class AdsClient : IAdsClient
     }
 
     /// <summary>
-    /// Removes a sign-in, its token, the ad accounts it connects, what was read of them and their boosts' records. Refused while one of their boosts runs, may run or is being made (`AdAccountBusy`): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.
+    /// Removes a sign-in, its token, the ad accounts it connects and what was read of them; their boosts' records stay with the workspace, and what they committed still counts once the same account is connected again. Refused while one of their boosts runs, may run, is paused or is being made (`AdAccountBusy`): stop them first. What runs at the network that Peal did not make is left as it is. Needs ads:manage.
     /// </summary>
     /// <example><code>
     /// await client.Ads.DisconnectAsync(
@@ -3701,7 +3701,7 @@ public partial class AdsClient : IAdsClient
     }
 
     /// <summary>
-    /// Disconnects an ad account: what was read of it and its boosts' records go with it. Refused while one of its boosts runs, may run or is being made (`AdAccountBusy`). Needs ads:manage.
+    /// Disconnects an ad account: what was read of it goes with it, and its boosts' records stay with the workspace, so what they committed still counts against the ceiling once the same account is connected again. Refused while one of its boosts runs, may run, is paused or is being made (`AdAccountBusy`), as a paused campaign may run again. Needs ads:manage.
     /// </summary>
     /// <example><code>
     /// await client.Ads.RemoveAccountAsync(
@@ -3818,7 +3818,7 @@ public partial class AdsClient : IAdsClient
     }
 
     /// <summary>
-    /// Checks a boost as `createBoost` would, and says what it would commit and the room it has, without reserving or sending anything: show it before the last step. A total budget commits its amount; a daily budget commits its amount for each calendar day of the account's zone the run touches, and 25% more, which the network may add on any day. Needs ads:spend.
+    /// Checks a boost as `createBoost` would, and says what it would commit and the room it has, without reserving or sending anything: show it before the last step. A total budget commits its amount; a daily budget commits, for each calendar week of the account's zone (Sunday to Saturday) the run touches, its amount and 75% more for each day of the run in that week, which the network may spend on any day, and never more than 7 times its amount, the most the network spends in a week. Needs ads:spend.
     /// </summary>
     /// <example><code>
     /// await client.Ads.QuoteBoostAsync(
