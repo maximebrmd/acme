@@ -17,6 +17,10 @@ export const countedPlatforms = [
   "pinterest",
   // Company pages only: a member's profile has no counts Peal may read.
   "linkedin",
+  // Reactions, comments and shares; views once a Page grants its insights.
+  "facebook",
+  // Accounts that granted their insights.
+  "threads",
   // Where the operator turned its reads on, which X bills.
   "x",
 ] as const satisfies readonly Platform[];

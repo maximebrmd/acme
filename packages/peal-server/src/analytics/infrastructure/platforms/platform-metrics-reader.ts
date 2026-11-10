@@ -16,6 +16,8 @@ import {
 import { instagramMetrics } from "#analytics/infrastructure/platforms/instagram/instagram-metrics.ts";
 import { linkedinMetrics } from "#analytics/infrastructure/platforms/linkedin/linkedin-metrics.ts";
 import { mastodonMetrics } from "#analytics/infrastructure/platforms/mastodon/mastodon-metrics.ts";
+import { facebookMetrics } from "#analytics/infrastructure/platforms/meta/facebook-metrics.ts";
+import { threadsMetrics } from "#analytics/infrastructure/platforms/meta/threads-metrics.ts";
 import { pinterestMetrics } from "#analytics/infrastructure/platforms/pinterest/pinterest-metrics.ts";
 import { tiktokMetrics } from "#analytics/infrastructure/platforms/tiktok/tiktok-metrics.ts";
 import { xMetrics } from "#analytics/infrastructure/platforms/x/x-metrics.ts";
@@ -109,6 +111,17 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
         http,
       });
 
+      const facebook = yield* facebookMetrics({
+        hosts: settings.metaHosts,
+        http,
+        metaAppSecret: settings.metaAppSecret,
+      });
+
+      const threads = yield* threadsMetrics({
+        hosts: settings.metaHosts,
+        http,
+      });
+
       const x = yield* xMetrics({
         api: settings.xApi,
         enabled: settings.xReads,
@@ -148,6 +161,14 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
 
         if (account.platform === "youtube") {
           return yield* youtube.read(account, request.posts);
+        }
+
+        if (account.platform === "facebook") {
+          return yield* facebook.read(account, request.posts);
+        }
+
+        if (account.platform === "threads") {
+          return yield* threads.read(account, request.posts);
         }
 
         if (account.platform === "x") {
