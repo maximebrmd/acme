@@ -1816,7 +1816,6 @@
         "userId": "Identifiant du compte",
         "closedAt": "Fermé le",
         "identity": "Titulaire",
-        "createdAt": "Créé le",
         "signIn": "Moyens de connexion",
         "payments": "Références de paiement",
         "columns": {

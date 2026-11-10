@@ -37,7 +37,6 @@ const date = (instant: DateTime.Utc) => DateTime.toDateUtc(instant);
 const utc = (value: Date) => DateTime.makeUnsafe(value);
 
 const heldOf = (row: typeof identificationHolds.$inferSelect): HeldAccount => ({
-  accountCreatedAt: utc(row.accountCreatedAt),
   closedAt: utc(row.closedAt),
   email: row.email,
   id: LegalRecordIdSchema.make(row.id),
@@ -323,7 +322,6 @@ export const DrizzleLegalStore = Layer.effect(
         db
           .insert(identificationHolds)
           .values({
-            accountCreatedAt: date(account.accountCreatedAt),
             closedAt: date(account.closedAt),
             email: account.email,
             id: account.id,

@@ -58,12 +58,6 @@ const HeldAccount = ({ account }: { readonly account: Held }) => {
             <span className="flex flex-col gap-1">
               <span>{account.identity.name}</span>
               <span>{account.identity.email}</span>
-              <span className="text-muted-foreground">
-                {t("createdAt")}{" "}
-                <Instant
-                  value={DateTime.formatIso(account.identity.accountCreatedAt)}
-                />
-              </span>
             </span>
           )}
         </Fact>

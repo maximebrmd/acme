@@ -28,7 +28,6 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
 export const identificationHolds = legalSchema.table(
   "identification_holds",
   {
-    accountCreatedAt: instant("account_created_at").notNull(),
     closedAt: instant("closed_at").notNull(),
     email: text("email").notNull(),
     id: uuid("id").primaryKey(),

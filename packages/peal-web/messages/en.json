@@ -1816,7 +1816,6 @@
         "userId": "Account id",
         "closedAt": "Closed",
         "identity": "Who held it",
-        "createdAt": "Created",
         "signIn": "How it signed in",
         "payments": "Payment references",
         "columns": {

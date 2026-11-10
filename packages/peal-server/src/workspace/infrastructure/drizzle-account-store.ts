@@ -401,7 +401,6 @@ export const DrizzleAccountStore = Layer.effect(
         ].filter((id): id is string => id !== null && id !== "");
 
         return Option.some<IdentificationRecord>({
-          accountCreatedAt: utc(found.createdAt),
           email: found.email,
           name: found.name,
           signInMethods: methods,

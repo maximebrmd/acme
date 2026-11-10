@@ -36,7 +36,6 @@ const answer: LegalAnswer = {
     {
       closedAt: utc("2026-10-05T12:00:00Z"),
       identity: {
-        accountCreatedAt: utc("2025-01-10T09:00:00Z"),
         email: "ana@example.test",
         name: "Ana Synthetic",
       },

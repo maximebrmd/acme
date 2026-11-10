@@ -27,7 +27,7 @@ export interface ContentConnection {
 // What closing an account leaves on a server that keeps these records.
 const keptAfterClosure: LegalHoldRecord["keptAfterClosure"] = [
   {
-    data: ["name", "email", "accountCreatedAt"],
+    data: ["name", "email"],
     years: legalRetention.identity.years,
   },
   {

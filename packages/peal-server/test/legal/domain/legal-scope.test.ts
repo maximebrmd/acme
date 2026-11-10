@@ -6,7 +6,6 @@ import { covering, disclosedOf } from "#legal/domain/legal-scope.ts";
 const at = (iso: string) => DateTime.makeUnsafe(iso);
 
 const held = {
-  accountCreatedAt: at("2025-01-10T09:00:00Z"),
   closedAt: at("2026-06-01T12:00:00Z"),
   email: "ana@example.test",
   name: "Ana Synthetic",
@@ -20,7 +19,6 @@ describe(disclosedOf, () => {
     expect(disclosedOf(held, covering(["identity"]))).toStrictEqual({
       closedAt: held.closedAt,
       identity: {
-        accountCreatedAt: held.accountCreatedAt,
         email: held.email,
         name: held.name,
       },

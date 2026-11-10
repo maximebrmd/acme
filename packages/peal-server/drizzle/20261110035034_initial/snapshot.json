@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "1278723c-7a73-40ab-9039-f128523ebda6",
+  "id": "d71aabce-402d-4fc6-8c08-067405f0e006",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -6069,19 +6069,6 @@
       "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "entityType": "columns"
-    },
-    {
-      "schema": "legal",
-      "table": "identification_holds",
-      "name": "account_created_at",
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,

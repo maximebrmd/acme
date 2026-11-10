@@ -24,7 +24,6 @@ export const covering = (
 
 /** A closed account's record, as the law has it kept. */
 interface Held {
-  readonly accountCreatedAt: DateTime.Utc;
   readonly closedAt: DateTime.Utc;
   readonly email: string;
   readonly name: string;
@@ -44,7 +43,6 @@ interface Held {
 export interface DisclosedAccount {
   readonly closedAt: DateTime.Utc;
   readonly identity: {
-    readonly accountCreatedAt: DateTime.Utc;
     readonly email: string;
     readonly name: string;
   } | null;
@@ -64,7 +62,6 @@ export const disclosedOf = (
   closedAt: held.closedAt,
   identity: covers.has("identity")
     ? {
-        accountCreatedAt: held.accountCreatedAt,
         email: held.email,
         name: held.name,
       }

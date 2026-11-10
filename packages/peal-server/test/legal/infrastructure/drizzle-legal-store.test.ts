@@ -47,7 +47,6 @@ const heldAccount = (
   closedAt: string,
   overrides: Partial<HeldAccount> = {}
 ): HeldAccount => ({
-  accountCreatedAt: at("1880-01-01T00:00:00Z"),
   closedAt: at(closedAt),
   email: `held+${randomUUID()}@example.test`,
   id: uuid7(),
@@ -76,6 +75,34 @@ const connection = (
 const CountSchema = Schema.Array(Schema.Struct({ count: Schema.Number }));
 
 layer(StoreTest)("the legal records", (it) => {
+  it.effect(
+    "hold of a closed account what the decree lists, and nothing it does not",
+    () =>
+      Effect.gen(function* listed() {
+        const sql = yield* SqlClient.SqlClient;
+
+        const columns =
+          yield* sql`SELECT column_name AS name FROM information_schema.columns WHERE table_schema = 'legal' AND table_name = 'identification_holds' ORDER BY 1`;
+
+        // Décret n° 2021-1362, articles 2 to 4: the name and the email
+        // address, the identifiers used, the payments' references. It
+        // lists no date the account was created on: none is kept. The
+        // rest says whose record it is, and when its periods started.
+        assert.deepStrictEqual(
+          columns.map(({ name }) => name),
+          [
+            "closed_at",
+            "email",
+            "id",
+            "name",
+            "sign_in_methods",
+            "stripe_customer_ids",
+            "user_id",
+          ]
+        );
+      })
+  );
+
   it.effect(
     "find a closed account by its address, whatever its case, or by its id, with the connections of the account or its workspace",
     () =>

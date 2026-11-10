@@ -267,7 +267,6 @@ CREATE TABLE "legal"."disclosures" (
 );
 --> statement-breakpoint
 CREATE TABLE "legal"."identification_holds" (
-	"account_created_at" timestamp with time zone NOT NULL,
 	"closed_at" timestamp with time zone NOT NULL,
 	"email" text NOT NULL,
 	"id" uuid PRIMARY KEY,

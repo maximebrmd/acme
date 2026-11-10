@@ -324,7 +324,6 @@ export interface StaffActionRecord {
  * 2023, n° 459724), a session, a token, or content.
  */
 export interface IdentificationRecord {
-  readonly accountCreatedAt: DateTime.Utc;
   readonly email: string;
   readonly name: string;
   /** Each way it signed in: the provider, and the id it knew the account by. */

@@ -158,7 +158,6 @@ const PortsLive = Layer.mergeAll(
             provide,
             Effect.as(
               Option.some({
-                accountCreatedAt: at,
                 email: "ana@example.test",
                 name: "Ana",
                 signInMethods: [{ accountId: id, provider: "credential" }],

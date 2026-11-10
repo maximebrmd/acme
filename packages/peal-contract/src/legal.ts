@@ -86,7 +86,6 @@ export const LegalHeldAccountSchema = Schema.Struct({
   closedAt: Schema.DateTimeUtc,
   identity: Schema.NullOr(
     Schema.Struct({
-      accountCreatedAt: Schema.DateTimeUtc,
       email: Schema.String,
       name: Schema.String,
     })
