@@ -10,6 +10,231 @@ import (
 )
 
 var (
+	channelAnalyticsRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	channelAnalyticsRequestFieldChannelID   = big.NewInt(1 << 1)
+	channelAnalyticsRequestFieldDays        = big.NewInt(1 << 2)
+	channelAnalyticsRequestFieldFrom        = big.NewInt(1 << 3)
+	channelAnalyticsRequestFieldTimeZone    = big.NewInt(1 << 4)
+	channelAnalyticsRequestFieldTo          = big.NewInt(1 << 5)
+)
+
+type ChannelAnalyticsRequest struct {
+	WorkspaceID string       `json:"-" url:"-"`
+	ChannelID   string       `json:"-" url:"-"`
+	Days        *string      `json:"-" url:"days,omitempty"`
+	From        *CalendarDay `json:"-" url:"from,omitempty"`
+	TimeZone    string       `json:"-" url:"timeZone"`
+	To          *CalendarDay `json:"-" url:"to,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (c *ChannelAnalyticsRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelAnalyticsRequest) SetWorkspaceID(workspaceID string) {
+	c.WorkspaceID = workspaceID
+	c.require(channelAnalyticsRequestFieldWorkspaceID)
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelAnalyticsRequest) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(channelAnalyticsRequestFieldChannelID)
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelAnalyticsRequest) SetDays(days *string) {
+	c.Days = days
+	c.require(channelAnalyticsRequestFieldDays)
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelAnalyticsRequest) SetFrom(from *CalendarDay) {
+	c.From = from
+	c.require(channelAnalyticsRequestFieldFrom)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelAnalyticsRequest) SetTimeZone(timeZone string) {
+	c.TimeZone = timeZone
+	c.require(channelAnalyticsRequestFieldTimeZone)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelAnalyticsRequest) SetTo(to *CalendarDay) {
+	c.To = to
+	c.require(channelAnalyticsRequestFieldTo)
+}
+
+var (
+	dashboardAnalyticsRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	dashboardAnalyticsRequestFieldDays        = big.NewInt(1 << 1)
+	dashboardAnalyticsRequestFieldFrom        = big.NewInt(1 << 2)
+	dashboardAnalyticsRequestFieldTimeZone    = big.NewInt(1 << 3)
+	dashboardAnalyticsRequestFieldTo          = big.NewInt(1 << 4)
+	dashboardAnalyticsRequestFieldTopPosts    = big.NewInt(1 << 5)
+)
+
+type DashboardAnalyticsRequest struct {
+	WorkspaceID string       `json:"-" url:"-"`
+	Days        *string      `json:"-" url:"days,omitempty"`
+	From        *CalendarDay `json:"-" url:"from,omitempty"`
+	TimeZone    string       `json:"-" url:"timeZone"`
+	To          *CalendarDay `json:"-" url:"to,omitempty"`
+	TopPosts    *string      `json:"-" url:"topPosts,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (d *DashboardAnalyticsRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardAnalyticsRequest) SetWorkspaceID(workspaceID string) {
+	d.WorkspaceID = workspaceID
+	d.require(dashboardAnalyticsRequestFieldWorkspaceID)
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardAnalyticsRequest) SetDays(days *string) {
+	d.Days = days
+	d.require(dashboardAnalyticsRequestFieldDays)
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardAnalyticsRequest) SetFrom(from *CalendarDay) {
+	d.From = from
+	d.require(dashboardAnalyticsRequestFieldFrom)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardAnalyticsRequest) SetTimeZone(timeZone string) {
+	d.TimeZone = timeZone
+	d.require(dashboardAnalyticsRequestFieldTimeZone)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardAnalyticsRequest) SetTo(to *CalendarDay) {
+	d.To = to
+	d.require(dashboardAnalyticsRequestFieldTo)
+}
+
+// SetTopPosts sets the TopPosts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardAnalyticsRequest) SetTopPosts(topPosts *string) {
+	d.TopPosts = topPosts
+	d.require(dashboardAnalyticsRequestFieldTopPosts)
+}
+
+var (
+	exportAnalyticsRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	exportAnalyticsRequestFieldDays        = big.NewInt(1 << 1)
+	exportAnalyticsRequestFieldFrom        = big.NewInt(1 << 2)
+	exportAnalyticsRequestFieldTimeZone    = big.NewInt(1 << 3)
+	exportAnalyticsRequestFieldTo          = big.NewInt(1 << 4)
+	exportAnalyticsRequestFieldFormat      = big.NewInt(1 << 5)
+	exportAnalyticsRequestFieldKind        = big.NewInt(1 << 6)
+)
+
+type ExportAnalyticsRequest struct {
+	WorkspaceID string                 `json:"-" url:"-"`
+	Days        *string                `json:"-" url:"days,omitempty"`
+	From        *CalendarDay           `json:"-" url:"from,omitempty"`
+	TimeZone    string                 `json:"-" url:"timeZone"`
+	To          *CalendarDay           `json:"-" url:"to,omitempty"`
+	Format      *AnalyticsExportFormat `json:"-" url:"format,omitempty"`
+	Kind        AnalyticsExportKind    `json:"-" url:"kind"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (e *ExportAnalyticsRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if e.explicitFields != nil {
+		next.Set(e.explicitFields)
+	}
+	next.Or(next, field)
+	e.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportAnalyticsRequest) SetWorkspaceID(workspaceID string) {
+	e.WorkspaceID = workspaceID
+	e.require(exportAnalyticsRequestFieldWorkspaceID)
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportAnalyticsRequest) SetDays(days *string) {
+	e.Days = days
+	e.require(exportAnalyticsRequestFieldDays)
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportAnalyticsRequest) SetFrom(from *CalendarDay) {
+	e.From = from
+	e.require(exportAnalyticsRequestFieldFrom)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportAnalyticsRequest) SetTimeZone(timeZone string) {
+	e.TimeZone = timeZone
+	e.require(exportAnalyticsRequestFieldTimeZone)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportAnalyticsRequest) SetTo(to *CalendarDay) {
+	e.To = to
+	e.require(exportAnalyticsRequestFieldTo)
+}
+
+// SetFormat sets the Format field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportAnalyticsRequest) SetFormat(format *AnalyticsExportFormat) {
+	e.Format = format
+	e.require(exportAnalyticsRequestFieldFormat)
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *ExportAnalyticsRequest) SetKind(kind AnalyticsExportKind) {
+	e.Kind = kind
+	e.require(exportAnalyticsRequestFieldKind)
+}
+
+var (
 	postAnalyticsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	postAnalyticsRequestFieldPostID      = big.NewInt(1 << 1)
 )
@@ -97,6 +322,414 @@ func (s *SummaryAnalyticsRequest) SetTimeZone(timeZone string) {
 func (s *SummaryAnalyticsRequest) SetTo(to CalendarDay) {
 	s.To = to
 	s.require(summaryAnalyticsRequestFieldTo)
+}
+
+var (
+	analyticsDashboardFieldFollowers         = big.NewInt(1 << 0)
+	analyticsDashboardFieldPreviousFollowers = big.NewInt(1 << 1)
+	analyticsDashboardFieldPreviousTotals    = big.NewInt(1 << 2)
+	analyticsDashboardFieldTotals            = big.NewInt(1 << 3)
+	analyticsDashboardFieldChannels          = big.NewInt(1 << 4)
+	analyticsDashboardFieldDays              = big.NewInt(1 << 5)
+	analyticsDashboardFieldFrom              = big.NewInt(1 << 6)
+	analyticsDashboardFieldPlatforms         = big.NewInt(1 << 7)
+	analyticsDashboardFieldPrevious          = big.NewInt(1 << 8)
+	analyticsDashboardFieldTimeZone          = big.NewInt(1 << 9)
+	analyticsDashboardFieldTo                = big.NewInt(1 << 10)
+	analyticsDashboardFieldTopPosts          = big.NewInt(1 << 11)
+)
+
+type AnalyticsDashboard struct {
+	Followers         *FollowerChange             `json:"followers" url:"followers"`
+	PreviousFollowers *FollowerChange             `json:"previousFollowers" url:"previousFollowers"`
+	PreviousTotals    *DashboardTotals            `json:"previousTotals" url:"previousTotals"`
+	Totals            *DashboardTotals            `json:"totals" url:"totals"`
+	Channels          []*ChannelDashboard         `json:"channels" url:"channels"`
+	Days              []*DashboardDay             `json:"days" url:"days"`
+	From              CalendarDay                 `json:"from" url:"from"`
+	Platforms         []*PlatformDashboard        `json:"platforms" url:"platforms"`
+	Previous          *AnalyticsDashboardPrevious `json:"previous" url:"previous"`
+	TimeZone          string                      `json:"timeZone" url:"timeZone"`
+	To                CalendarDay                 `json:"to" url:"to"`
+	TopPosts          []*TopPost                  `json:"topPosts" url:"topPosts"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AnalyticsDashboard) GetFollowers() *FollowerChange {
+	if a == nil {
+		return nil
+	}
+	return a.Followers
+}
+
+func (a *AnalyticsDashboard) GetPreviousFollowers() *FollowerChange {
+	if a == nil {
+		return nil
+	}
+	return a.PreviousFollowers
+}
+
+func (a *AnalyticsDashboard) GetPreviousTotals() *DashboardTotals {
+	if a == nil {
+		return nil
+	}
+	return a.PreviousTotals
+}
+
+func (a *AnalyticsDashboard) GetTotals() *DashboardTotals {
+	if a == nil {
+		return nil
+	}
+	return a.Totals
+}
+
+func (a *AnalyticsDashboard) GetChannels() []*ChannelDashboard {
+	if a == nil {
+		return nil
+	}
+	return a.Channels
+}
+
+func (a *AnalyticsDashboard) GetDays() []*DashboardDay {
+	if a == nil {
+		return nil
+	}
+	return a.Days
+}
+
+func (a *AnalyticsDashboard) GetFrom() CalendarDay {
+	if a == nil {
+		return ""
+	}
+	return a.From
+}
+
+func (a *AnalyticsDashboard) GetPlatforms() []*PlatformDashboard {
+	if a == nil {
+		return nil
+	}
+	return a.Platforms
+}
+
+func (a *AnalyticsDashboard) GetPrevious() *AnalyticsDashboardPrevious {
+	if a == nil {
+		return nil
+	}
+	return a.Previous
+}
+
+func (a *AnalyticsDashboard) GetTimeZone() string {
+	if a == nil {
+		return ""
+	}
+	return a.TimeZone
+}
+
+func (a *AnalyticsDashboard) GetTo() CalendarDay {
+	if a == nil {
+		return ""
+	}
+	return a.To
+}
+
+func (a *AnalyticsDashboard) GetTopPosts() []*TopPost {
+	if a == nil {
+		return nil
+	}
+	return a.TopPosts
+}
+
+func (a *AnalyticsDashboard) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *AnalyticsDashboard) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+// SetFollowers sets the Followers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetFollowers(followers *FollowerChange) {
+	a.Followers = followers
+	a.require(analyticsDashboardFieldFollowers)
+}
+
+// SetPreviousFollowers sets the PreviousFollowers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetPreviousFollowers(previousFollowers *FollowerChange) {
+	a.PreviousFollowers = previousFollowers
+	a.require(analyticsDashboardFieldPreviousFollowers)
+}
+
+// SetPreviousTotals sets the PreviousTotals field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetPreviousTotals(previousTotals *DashboardTotals) {
+	a.PreviousTotals = previousTotals
+	a.require(analyticsDashboardFieldPreviousTotals)
+}
+
+// SetTotals sets the Totals field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetTotals(totals *DashboardTotals) {
+	a.Totals = totals
+	a.require(analyticsDashboardFieldTotals)
+}
+
+// SetChannels sets the Channels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetChannels(channels []*ChannelDashboard) {
+	a.Channels = channels
+	a.require(analyticsDashboardFieldChannels)
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetDays(days []*DashboardDay) {
+	a.Days = days
+	a.require(analyticsDashboardFieldDays)
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetFrom(from CalendarDay) {
+	a.From = from
+	a.require(analyticsDashboardFieldFrom)
+}
+
+// SetPlatforms sets the Platforms field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetPlatforms(platforms []*PlatformDashboard) {
+	a.Platforms = platforms
+	a.require(analyticsDashboardFieldPlatforms)
+}
+
+// SetPrevious sets the Previous field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetPrevious(previous *AnalyticsDashboardPrevious) {
+	a.Previous = previous
+	a.require(analyticsDashboardFieldPrevious)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetTimeZone(timeZone string) {
+	a.TimeZone = timeZone
+	a.require(analyticsDashboardFieldTimeZone)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetTo(to CalendarDay) {
+	a.To = to
+	a.require(analyticsDashboardFieldTo)
+}
+
+// SetTopPosts sets the TopPosts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetTopPosts(topPosts []*TopPost) {
+	a.TopPosts = topPosts
+	a.require(analyticsDashboardFieldTopPosts)
+}
+
+func (a *AnalyticsDashboard) UnmarshalJSON(data []byte) error {
+	type unmarshaler AnalyticsDashboard
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AnalyticsDashboard(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AnalyticsDashboard) MarshalJSON() ([]byte, error) {
+	type embed AnalyticsDashboard
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *AnalyticsDashboard) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+var (
+	analyticsDashboardPreviousFieldFrom = big.NewInt(1 << 0)
+	analyticsDashboardPreviousFieldTo   = big.NewInt(1 << 1)
+)
+
+type AnalyticsDashboardPrevious struct {
+	From CalendarDay `json:"from" url:"from"`
+	To   CalendarDay `json:"to" url:"to"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (a *AnalyticsDashboardPrevious) GetFrom() CalendarDay {
+	if a == nil {
+		return ""
+	}
+	return a.From
+}
+
+func (a *AnalyticsDashboardPrevious) GetTo() CalendarDay {
+	if a == nil {
+		return ""
+	}
+	return a.To
+}
+
+func (a *AnalyticsDashboardPrevious) GetExtraProperties() map[string]interface{} {
+	if a == nil {
+		return nil
+	}
+	return a.extraProperties
+}
+
+func (a *AnalyticsDashboardPrevious) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboardPrevious) SetFrom(from CalendarDay) {
+	a.From = from
+	a.require(analyticsDashboardPreviousFieldFrom)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboardPrevious) SetTo(to CalendarDay) {
+	a.To = to
+	a.require(analyticsDashboardPreviousFieldTo)
+}
+
+func (a *AnalyticsDashboardPrevious) UnmarshalJSON(data []byte) error {
+	type unmarshaler AnalyticsDashboardPrevious
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = AnalyticsDashboardPrevious(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *AnalyticsDashboardPrevious) MarshalJSON() ([]byte, error) {
+	type embed AnalyticsDashboardPrevious
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *AnalyticsDashboardPrevious) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type AnalyticsExportFormat string
+
+const (
+	AnalyticsExportFormatCsv  AnalyticsExportFormat = "csv"
+	AnalyticsExportFormatJSON AnalyticsExportFormat = "json"
+)
+
+func NewAnalyticsExportFormatFromString(s string) (AnalyticsExportFormat, error) {
+	switch s {
+	case "csv":
+		return AnalyticsExportFormatCsv, nil
+	case "json":
+		return AnalyticsExportFormatJSON, nil
+	}
+	var t AnalyticsExportFormat
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AnalyticsExportFormat) Ptr() *AnalyticsExportFormat {
+	return &a
+}
+
+type AnalyticsExportKind string
+
+const (
+	AnalyticsExportKindPosts    AnalyticsExportKind = "posts"
+	AnalyticsExportKindAccounts AnalyticsExportKind = "accounts"
+)
+
+func NewAnalyticsExportKindFromString(s string) (AnalyticsExportKind, error) {
+	switch s {
+	case "posts":
+		return AnalyticsExportKindPosts, nil
+	case "accounts":
+		return AnalyticsExportKindAccounts, nil
+	}
+	var t AnalyticsExportKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (a AnalyticsExportKind) Ptr() *AnalyticsExportKind {
+	return &a
 }
 
 var (
@@ -282,6 +915,430 @@ func (a *AnalyticsSummary) String() string {
 }
 
 type CalendarDay = string
+
+var (
+	channelDashboardFieldFollowers         = big.NewInt(1 << 0)
+	channelDashboardFieldPreviousFollowers = big.NewInt(1 << 1)
+	channelDashboardFieldPreviousTotals    = big.NewInt(1 << 2)
+	channelDashboardFieldTotals            = big.NewInt(1 << 3)
+	channelDashboardFieldChannelID         = big.NewInt(1 << 4)
+	channelDashboardFieldPlatform          = big.NewInt(1 << 5)
+)
+
+// channelDashboardNullableFields maps the wire names of ChannelDashboard's nullable fields (required or optional) to their field bits.
+var channelDashboardNullableFields = map[string]*big.Int{
+	"platform": channelDashboardFieldPlatform,
+}
+
+type ChannelDashboard struct {
+	Followers         *FollowerChange  `json:"followers" url:"followers"`
+	PreviousFollowers *FollowerChange  `json:"previousFollowers" url:"previousFollowers"`
+	PreviousTotals    *DashboardTotals `json:"previousTotals" url:"previousTotals"`
+	Totals            *DashboardTotals `json:"totals" url:"totals"`
+	ChannelID         string           `json:"channelId" url:"channelId"`
+	Platform          *Platform        `json:"platform,omitempty" url:"platform,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChannelDashboard) GetFollowers() *FollowerChange {
+	if c == nil {
+		return nil
+	}
+	return c.Followers
+}
+
+func (c *ChannelDashboard) GetPreviousFollowers() *FollowerChange {
+	if c == nil {
+		return nil
+	}
+	return c.PreviousFollowers
+}
+
+func (c *ChannelDashboard) GetPreviousTotals() *DashboardTotals {
+	if c == nil {
+		return nil
+	}
+	return c.PreviousTotals
+}
+
+func (c *ChannelDashboard) GetTotals() *DashboardTotals {
+	if c == nil {
+		return nil
+	}
+	return c.Totals
+}
+
+func (c *ChannelDashboard) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ChannelDashboard) GetPlatform() *Platform {
+	if c == nil {
+		return nil
+	}
+	return c.Platform
+}
+
+func (c *ChannelDashboard) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ChannelDashboard) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetFollowers sets the Followers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDashboard) SetFollowers(followers *FollowerChange) {
+	c.Followers = followers
+	c.require(channelDashboardFieldFollowers)
+}
+
+// SetPreviousFollowers sets the PreviousFollowers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDashboard) SetPreviousFollowers(previousFollowers *FollowerChange) {
+	c.PreviousFollowers = previousFollowers
+	c.require(channelDashboardFieldPreviousFollowers)
+}
+
+// SetPreviousTotals sets the PreviousTotals field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDashboard) SetPreviousTotals(previousTotals *DashboardTotals) {
+	c.PreviousTotals = previousTotals
+	c.require(channelDashboardFieldPreviousTotals)
+}
+
+// SetTotals sets the Totals field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDashboard) SetTotals(totals *DashboardTotals) {
+	c.Totals = totals
+	c.require(channelDashboardFieldTotals)
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDashboard) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(channelDashboardFieldChannelID)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDashboard) SetPlatform(platform *Platform) {
+	c.Platform = platform
+	c.require(channelDashboardFieldPlatform)
+}
+
+func (c *ChannelDashboard) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelDashboard
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChannelDashboard(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, channelDashboardNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChannelDashboard) MarshalJSON() ([]byte, error) {
+	type embed ChannelDashboard
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ChannelDashboard) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	channelDayFieldDate      = big.NewInt(1 << 0)
+	channelDayFieldFollowers = big.NewInt(1 << 1)
+	channelDayFieldFollowing = big.NewInt(1 << 2)
+	channelDayFieldLikes     = big.NewInt(1 << 3)
+	channelDayFieldPosts     = big.NewInt(1 << 4)
+	channelDayFieldQuotes    = big.NewInt(1 << 5)
+	channelDayFieldReach     = big.NewInt(1 << 6)
+	channelDayFieldReplies   = big.NewInt(1 << 7)
+	channelDayFieldReposts   = big.NewInt(1 << 8)
+	channelDayFieldViews     = big.NewInt(1 << 9)
+)
+
+// channelDayNullableFields maps the wire names of ChannelDay's nullable fields (required or optional) to their field bits.
+var channelDayNullableFields = map[string]*big.Int{
+	"followers": channelDayFieldFollowers,
+	"following": channelDayFieldFollowing,
+	"posts":     channelDayFieldPosts,
+	"reach":     channelDayFieldReach,
+	"views":     channelDayFieldViews,
+}
+
+type ChannelDay struct {
+	Date      CalendarDay `json:"date" url:"date"`
+	Followers *int        `json:"followers,omitempty" url:"followers,omitempty"`
+	Following *int        `json:"following,omitempty" url:"following,omitempty"`
+	Likes     int         `json:"likes" url:"likes"`
+	Posts     *int        `json:"posts,omitempty" url:"posts,omitempty"`
+	Quotes    int         `json:"quotes" url:"quotes"`
+	Reach     *int        `json:"reach,omitempty" url:"reach,omitempty"`
+	Replies   int         `json:"replies" url:"replies"`
+	Reposts   int         `json:"reposts" url:"reposts"`
+	Views     *int        `json:"views,omitempty" url:"views,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChannelDay) GetDate() CalendarDay {
+	if c == nil {
+		return ""
+	}
+	return c.Date
+}
+
+func (c *ChannelDay) GetFollowers() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Followers
+}
+
+func (c *ChannelDay) GetFollowing() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Following
+}
+
+func (c *ChannelDay) GetLikes() int {
+	if c == nil {
+		return 0
+	}
+	return c.Likes
+}
+
+func (c *ChannelDay) GetPosts() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Posts
+}
+
+func (c *ChannelDay) GetQuotes() int {
+	if c == nil {
+		return 0
+	}
+	return c.Quotes
+}
+
+func (c *ChannelDay) GetReach() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Reach
+}
+
+func (c *ChannelDay) GetReplies() int {
+	if c == nil {
+		return 0
+	}
+	return c.Replies
+}
+
+func (c *ChannelDay) GetReposts() int {
+	if c == nil {
+		return 0
+	}
+	return c.Reposts
+}
+
+func (c *ChannelDay) GetViews() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Views
+}
+
+func (c *ChannelDay) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ChannelDay) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetDate sets the Date field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDay) SetDate(date CalendarDay) {
+	c.Date = date
+	c.require(channelDayFieldDate)
+}
+
+// SetFollowers sets the Followers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDay) SetFollowers(followers *int) {
+	c.Followers = followers
+	c.require(channelDayFieldFollowers)
+}
+
+// SetFollowing sets the Following field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDay) SetFollowing(following *int) {
+	c.Following = following
+	c.require(channelDayFieldFollowing)
+}
+
+// SetLikes sets the Likes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDay) SetLikes(likes int) {
+	c.Likes = likes
+	c.require(channelDayFieldLikes)
+}
+
+// SetPosts sets the Posts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDay) SetPosts(posts *int) {
+	c.Posts = posts
+	c.require(channelDayFieldPosts)
+}
+
+// SetQuotes sets the Quotes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDay) SetQuotes(quotes int) {
+	c.Quotes = quotes
+	c.require(channelDayFieldQuotes)
+}
+
+// SetReach sets the Reach field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDay) SetReach(reach *int) {
+	c.Reach = reach
+	c.require(channelDayFieldReach)
+}
+
+// SetReplies sets the Replies field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDay) SetReplies(replies int) {
+	c.Replies = replies
+	c.require(channelDayFieldReplies)
+}
+
+// SetReposts sets the Reposts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDay) SetReposts(reposts int) {
+	c.Reposts = reposts
+	c.require(channelDayFieldReposts)
+}
+
+// SetViews sets the Views field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDay) SetViews(views *int) {
+	c.Views = views
+	c.require(channelDayFieldViews)
+}
+
+func (c *ChannelDay) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelDay
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChannelDay(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, channelDayNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChannelDay) MarshalJSON() ([]byte, error) {
+	type embed ChannelDay
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ChannelDay) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
 
 var (
 	channelMetricsFieldImpressions = big.NewInt(1 << 0)
@@ -479,6 +1536,674 @@ func (c *ChannelMetrics) String() string {
 }
 
 var (
+	channelSeriesFieldChannelID = big.NewInt(1 << 0)
+	channelSeriesFieldDays      = big.NewInt(1 << 1)
+	channelSeriesFieldFollowers = big.NewInt(1 << 2)
+	channelSeriesFieldFrom      = big.NewInt(1 << 3)
+	channelSeriesFieldPlatform  = big.NewInt(1 << 4)
+	channelSeriesFieldTimeZone  = big.NewInt(1 << 5)
+	channelSeriesFieldTo        = big.NewInt(1 << 6)
+	channelSeriesFieldTotals    = big.NewInt(1 << 7)
+)
+
+// channelSeriesNullableFields maps the wire names of ChannelSeries's nullable fields (required or optional) to their field bits.
+var channelSeriesNullableFields = map[string]*big.Int{
+	"platform": channelSeriesFieldPlatform,
+}
+
+type ChannelSeries struct {
+	ChannelID string           `json:"channelId" url:"channelId"`
+	Days      []*ChannelDay    `json:"days" url:"days"`
+	Followers *FollowerChange  `json:"followers" url:"followers"`
+	From      CalendarDay      `json:"from" url:"from"`
+	Platform  *Platform        `json:"platform,omitempty" url:"platform,omitempty"`
+	TimeZone  string           `json:"timeZone" url:"timeZone"`
+	To        CalendarDay      `json:"to" url:"to"`
+	Totals    *DashboardTotals `json:"totals" url:"totals"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChannelSeries) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ChannelSeries) GetDays() []*ChannelDay {
+	if c == nil {
+		return nil
+	}
+	return c.Days
+}
+
+func (c *ChannelSeries) GetFollowers() *FollowerChange {
+	if c == nil {
+		return nil
+	}
+	return c.Followers
+}
+
+func (c *ChannelSeries) GetFrom() CalendarDay {
+	if c == nil {
+		return ""
+	}
+	return c.From
+}
+
+func (c *ChannelSeries) GetPlatform() *Platform {
+	if c == nil {
+		return nil
+	}
+	return c.Platform
+}
+
+func (c *ChannelSeries) GetTimeZone() string {
+	if c == nil {
+		return ""
+	}
+	return c.TimeZone
+}
+
+func (c *ChannelSeries) GetTo() CalendarDay {
+	if c == nil {
+		return ""
+	}
+	return c.To
+}
+
+func (c *ChannelSeries) GetTotals() *DashboardTotals {
+	if c == nil {
+		return nil
+	}
+	return c.Totals
+}
+
+func (c *ChannelSeries) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ChannelSeries) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSeries) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(channelSeriesFieldChannelID)
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSeries) SetDays(days []*ChannelDay) {
+	c.Days = days
+	c.require(channelSeriesFieldDays)
+}
+
+// SetFollowers sets the Followers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSeries) SetFollowers(followers *FollowerChange) {
+	c.Followers = followers
+	c.require(channelSeriesFieldFollowers)
+}
+
+// SetFrom sets the From field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSeries) SetFrom(from CalendarDay) {
+	c.From = from
+	c.require(channelSeriesFieldFrom)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSeries) SetPlatform(platform *Platform) {
+	c.Platform = platform
+	c.require(channelSeriesFieldPlatform)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSeries) SetTimeZone(timeZone string) {
+	c.TimeZone = timeZone
+	c.require(channelSeriesFieldTimeZone)
+}
+
+// SetTo sets the To field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSeries) SetTo(to CalendarDay) {
+	c.To = to
+	c.require(channelSeriesFieldTo)
+}
+
+// SetTotals sets the Totals field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelSeries) SetTotals(totals *DashboardTotals) {
+	c.Totals = totals
+	c.require(channelSeriesFieldTotals)
+}
+
+func (c *ChannelSeries) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelSeries
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChannelSeries(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, channelSeriesNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChannelSeries) MarshalJSON() ([]byte, error) {
+	type embed ChannelSeries
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ChannelSeries) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	dashboardDayFieldDate      = big.NewInt(1 << 0)
+	dashboardDayFieldFollowers = big.NewInt(1 << 1)
+	dashboardDayFieldLikes     = big.NewInt(1 << 2)
+	dashboardDayFieldQuotes    = big.NewInt(1 << 3)
+	dashboardDayFieldReach     = big.NewInt(1 << 4)
+	dashboardDayFieldReplies   = big.NewInt(1 << 5)
+	dashboardDayFieldReposts   = big.NewInt(1 << 6)
+	dashboardDayFieldViews     = big.NewInt(1 << 7)
+)
+
+// dashboardDayNullableFields maps the wire names of DashboardDay's nullable fields (required or optional) to their field bits.
+var dashboardDayNullableFields = map[string]*big.Int{
+	"followers": dashboardDayFieldFollowers,
+	"reach":     dashboardDayFieldReach,
+	"views":     dashboardDayFieldViews,
+}
+
+type DashboardDay struct {
+	Date      CalendarDay `json:"date" url:"date"`
+	Followers *int        `json:"followers,omitempty" url:"followers,omitempty"`
+	Likes     int         `json:"likes" url:"likes"`
+	Quotes    int         `json:"quotes" url:"quotes"`
+	Reach     *int        `json:"reach,omitempty" url:"reach,omitempty"`
+	Replies   int         `json:"replies" url:"replies"`
+	Reposts   int         `json:"reposts" url:"reposts"`
+	Views     *int        `json:"views,omitempty" url:"views,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DashboardDay) GetDate() CalendarDay {
+	if d == nil {
+		return ""
+	}
+	return d.Date
+}
+
+func (d *DashboardDay) GetFollowers() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Followers
+}
+
+func (d *DashboardDay) GetLikes() int {
+	if d == nil {
+		return 0
+	}
+	return d.Likes
+}
+
+func (d *DashboardDay) GetQuotes() int {
+	if d == nil {
+		return 0
+	}
+	return d.Quotes
+}
+
+func (d *DashboardDay) GetReach() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Reach
+}
+
+func (d *DashboardDay) GetReplies() int {
+	if d == nil {
+		return 0
+	}
+	return d.Replies
+}
+
+func (d *DashboardDay) GetReposts() int {
+	if d == nil {
+		return 0
+	}
+	return d.Reposts
+}
+
+func (d *DashboardDay) GetViews() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Views
+}
+
+func (d *DashboardDay) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DashboardDay) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetDate sets the Date field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardDay) SetDate(date CalendarDay) {
+	d.Date = date
+	d.require(dashboardDayFieldDate)
+}
+
+// SetFollowers sets the Followers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardDay) SetFollowers(followers *int) {
+	d.Followers = followers
+	d.require(dashboardDayFieldFollowers)
+}
+
+// SetLikes sets the Likes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardDay) SetLikes(likes int) {
+	d.Likes = likes
+	d.require(dashboardDayFieldLikes)
+}
+
+// SetQuotes sets the Quotes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardDay) SetQuotes(quotes int) {
+	d.Quotes = quotes
+	d.require(dashboardDayFieldQuotes)
+}
+
+// SetReach sets the Reach field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardDay) SetReach(reach *int) {
+	d.Reach = reach
+	d.require(dashboardDayFieldReach)
+}
+
+// SetReplies sets the Replies field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardDay) SetReplies(replies int) {
+	d.Replies = replies
+	d.require(dashboardDayFieldReplies)
+}
+
+// SetReposts sets the Reposts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardDay) SetReposts(reposts int) {
+	d.Reposts = reposts
+	d.require(dashboardDayFieldReposts)
+}
+
+// SetViews sets the Views field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardDay) SetViews(views *int) {
+	d.Views = views
+	d.require(dashboardDayFieldViews)
+}
+
+func (d *DashboardDay) UnmarshalJSON(data []byte) error {
+	type unmarshaler DashboardDay
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DashboardDay(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, dashboardDayNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		d.require(presentFields)
+	}
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DashboardDay) MarshalJSON() ([]byte, error) {
+	type embed DashboardDay
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DashboardDay) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+var (
+	dashboardTotalsFieldClicks      = big.NewInt(1 << 0)
+	dashboardTotalsFieldEngagement  = big.NewInt(1 << 1)
+	dashboardTotalsFieldImpressions = big.NewInt(1 << 2)
+	dashboardTotalsFieldLikes       = big.NewInt(1 << 3)
+	dashboardTotalsFieldPosts       = big.NewInt(1 << 4)
+	dashboardTotalsFieldQuotes      = big.NewInt(1 << 5)
+	dashboardTotalsFieldReach       = big.NewInt(1 << 6)
+	dashboardTotalsFieldReplies     = big.NewInt(1 << 7)
+	dashboardTotalsFieldReposts     = big.NewInt(1 << 8)
+	dashboardTotalsFieldSaves       = big.NewInt(1 << 9)
+)
+
+// dashboardTotalsNullableFields maps the wire names of DashboardTotals's nullable fields (required or optional) to their field bits.
+var dashboardTotalsNullableFields = map[string]*big.Int{
+	"clicks":      dashboardTotalsFieldClicks,
+	"impressions": dashboardTotalsFieldImpressions,
+	"quotes":      dashboardTotalsFieldQuotes,
+	"reach":       dashboardTotalsFieldReach,
+	"saves":       dashboardTotalsFieldSaves,
+}
+
+type DashboardTotals struct {
+	Clicks      *int `json:"clicks,omitempty" url:"clicks,omitempty"`
+	Engagement  int  `json:"engagement" url:"engagement"`
+	Impressions *int `json:"impressions,omitempty" url:"impressions,omitempty"`
+	Likes       int  `json:"likes" url:"likes"`
+	Posts       int  `json:"posts" url:"posts"`
+	Quotes      *int `json:"quotes,omitempty" url:"quotes,omitempty"`
+	Reach       *int `json:"reach,omitempty" url:"reach,omitempty"`
+	Replies     int  `json:"replies" url:"replies"`
+	Reposts     int  `json:"reposts" url:"reposts"`
+	Saves       *int `json:"saves,omitempty" url:"saves,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (d *DashboardTotals) GetClicks() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Clicks
+}
+
+func (d *DashboardTotals) GetEngagement() int {
+	if d == nil {
+		return 0
+	}
+	return d.Engagement
+}
+
+func (d *DashboardTotals) GetImpressions() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Impressions
+}
+
+func (d *DashboardTotals) GetLikes() int {
+	if d == nil {
+		return 0
+	}
+	return d.Likes
+}
+
+func (d *DashboardTotals) GetPosts() int {
+	if d == nil {
+		return 0
+	}
+	return d.Posts
+}
+
+func (d *DashboardTotals) GetQuotes() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Quotes
+}
+
+func (d *DashboardTotals) GetReach() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Reach
+}
+
+func (d *DashboardTotals) GetReplies() int {
+	if d == nil {
+		return 0
+	}
+	return d.Replies
+}
+
+func (d *DashboardTotals) GetReposts() int {
+	if d == nil {
+		return 0
+	}
+	return d.Reposts
+}
+
+func (d *DashboardTotals) GetSaves() *int {
+	if d == nil {
+		return nil
+	}
+	return d.Saves
+}
+
+func (d *DashboardTotals) GetExtraProperties() map[string]interface{} {
+	if d == nil {
+		return nil
+	}
+	return d.extraProperties
+}
+
+func (d *DashboardTotals) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetClicks sets the Clicks field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetClicks(clicks *int) {
+	d.Clicks = clicks
+	d.require(dashboardTotalsFieldClicks)
+}
+
+// SetEngagement sets the Engagement field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetEngagement(engagement int) {
+	d.Engagement = engagement
+	d.require(dashboardTotalsFieldEngagement)
+}
+
+// SetImpressions sets the Impressions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetImpressions(impressions *int) {
+	d.Impressions = impressions
+	d.require(dashboardTotalsFieldImpressions)
+}
+
+// SetLikes sets the Likes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetLikes(likes int) {
+	d.Likes = likes
+	d.require(dashboardTotalsFieldLikes)
+}
+
+// SetPosts sets the Posts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetPosts(posts int) {
+	d.Posts = posts
+	d.require(dashboardTotalsFieldPosts)
+}
+
+// SetQuotes sets the Quotes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetQuotes(quotes *int) {
+	d.Quotes = quotes
+	d.require(dashboardTotalsFieldQuotes)
+}
+
+// SetReach sets the Reach field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetReach(reach *int) {
+	d.Reach = reach
+	d.require(dashboardTotalsFieldReach)
+}
+
+// SetReplies sets the Replies field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetReplies(replies int) {
+	d.Replies = replies
+	d.require(dashboardTotalsFieldReplies)
+}
+
+// SetReposts sets the Reposts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetReposts(reposts int) {
+	d.Reposts = reposts
+	d.require(dashboardTotalsFieldReposts)
+}
+
+// SetSaves sets the Saves field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DashboardTotals) SetSaves(saves *int) {
+	d.Saves = saves
+	d.require(dashboardTotalsFieldSaves)
+}
+
+func (d *DashboardTotals) UnmarshalJSON(data []byte) error {
+	type unmarshaler DashboardTotals
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*d = DashboardTotals(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *d)
+	if err != nil {
+		return err
+	}
+	d.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, dashboardTotalsNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		d.require(presentFields)
+	}
+	d.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (d *DashboardTotals) MarshalJSON() ([]byte, error) {
+	type embed DashboardTotals
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*d),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, d.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (d *DashboardTotals) String() string {
+	if d == nil {
+		return "<nil>"
+	}
+	if len(d.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(d.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(d); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", d)
+}
+
+var (
 	engagementDayFieldDate    = big.NewInt(1 << 0)
 	engagementDayFieldLikes   = big.NewInt(1 << 1)
 	engagementDayFieldQuotes  = big.NewInt(1 << 2)
@@ -626,6 +2351,121 @@ func (e *EngagementDay) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", e)
+}
+
+var (
+	followerChangeFieldCurrent = big.NewInt(1 << 0)
+	followerChangeFieldGained  = big.NewInt(1 << 1)
+)
+
+// followerChangeNullableFields maps the wire names of FollowerChange's nullable fields (required or optional) to their field bits.
+var followerChangeNullableFields = map[string]*big.Int{
+	"current": followerChangeFieldCurrent,
+	"gained":  followerChangeFieldGained,
+}
+
+type FollowerChange struct {
+	Current *int `json:"current,omitempty" url:"current,omitempty"`
+	Gained  *int `json:"gained,omitempty" url:"gained,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FollowerChange) GetCurrent() *int {
+	if f == nil {
+		return nil
+	}
+	return f.Current
+}
+
+func (f *FollowerChange) GetGained() *int {
+	if f == nil {
+		return nil
+	}
+	return f.Gained
+}
+
+func (f *FollowerChange) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FollowerChange) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetCurrent sets the Current field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowerChange) SetCurrent(current *int) {
+	f.Current = current
+	f.require(followerChangeFieldCurrent)
+}
+
+// SetGained sets the Gained field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowerChange) SetGained(gained *int) {
+	f.Gained = gained
+	f.require(followerChangeFieldGained)
+}
+
+func (f *FollowerChange) UnmarshalJSON(data []byte) error {
+	type unmarshaler FollowerChange
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FollowerChange(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, followerChangeNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		f.require(presentFields)
+	}
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FollowerChange) MarshalJSON() ([]byte, error) {
+	type embed FollowerChange
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FollowerChange) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
 }
 
 var (
@@ -910,6 +2750,156 @@ func (m *MetricsSnapshot) String() string {
 }
 
 var (
+	platformDashboardFieldFollowers         = big.NewInt(1 << 0)
+	platformDashboardFieldPreviousFollowers = big.NewInt(1 << 1)
+	platformDashboardFieldPreviousTotals    = big.NewInt(1 << 2)
+	platformDashboardFieldTotals            = big.NewInt(1 << 3)
+	platformDashboardFieldPlatform          = big.NewInt(1 << 4)
+)
+
+type PlatformDashboard struct {
+	Followers         *FollowerChange  `json:"followers" url:"followers"`
+	PreviousFollowers *FollowerChange  `json:"previousFollowers" url:"previousFollowers"`
+	PreviousTotals    *DashboardTotals `json:"previousTotals" url:"previousTotals"`
+	Totals            *DashboardTotals `json:"totals" url:"totals"`
+	Platform          Platform         `json:"platform" url:"platform"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PlatformDashboard) GetFollowers() *FollowerChange {
+	if p == nil {
+		return nil
+	}
+	return p.Followers
+}
+
+func (p *PlatformDashboard) GetPreviousFollowers() *FollowerChange {
+	if p == nil {
+		return nil
+	}
+	return p.PreviousFollowers
+}
+
+func (p *PlatformDashboard) GetPreviousTotals() *DashboardTotals {
+	if p == nil {
+		return nil
+	}
+	return p.PreviousTotals
+}
+
+func (p *PlatformDashboard) GetTotals() *DashboardTotals {
+	if p == nil {
+		return nil
+	}
+	return p.Totals
+}
+
+func (p *PlatformDashboard) GetPlatform() Platform {
+	if p == nil {
+		return ""
+	}
+	return p.Platform
+}
+
+func (p *PlatformDashboard) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PlatformDashboard) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetFollowers sets the Followers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformDashboard) SetFollowers(followers *FollowerChange) {
+	p.Followers = followers
+	p.require(platformDashboardFieldFollowers)
+}
+
+// SetPreviousFollowers sets the PreviousFollowers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformDashboard) SetPreviousFollowers(previousFollowers *FollowerChange) {
+	p.PreviousFollowers = previousFollowers
+	p.require(platformDashboardFieldPreviousFollowers)
+}
+
+// SetPreviousTotals sets the PreviousTotals field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformDashboard) SetPreviousTotals(previousTotals *DashboardTotals) {
+	p.PreviousTotals = previousTotals
+	p.require(platformDashboardFieldPreviousTotals)
+}
+
+// SetTotals sets the Totals field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformDashboard) SetTotals(totals *DashboardTotals) {
+	p.Totals = totals
+	p.require(platformDashboardFieldTotals)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformDashboard) SetPlatform(platform Platform) {
+	p.Platform = platform
+	p.require(platformDashboardFieldPlatform)
+}
+
+func (p *PlatformDashboard) UnmarshalJSON(data []byte) error {
+	type unmarshaler PlatformDashboard
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PlatformDashboard(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PlatformDashboard) MarshalJSON() ([]byte, error) {
+	type embed PlatformDashboard
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PlatformDashboard) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
 	postAnalyticsFieldPostID  = big.NewInt(1 << 0)
 	postAnalyticsFieldTargets = big.NewInt(1 << 1)
 )
@@ -1012,31 +3002,47 @@ func (p *PostAnalytics) String() string {
 }
 
 var (
-	postMetricsFieldImpressions = big.NewInt(1 << 0)
-	postMetricsFieldLikes       = big.NewInt(1 << 1)
-	postMetricsFieldQuotes      = big.NewInt(1 << 2)
-	postMetricsFieldReplies     = big.NewInt(1 << 3)
-	postMetricsFieldReposts     = big.NewInt(1 << 4)
+	postMetricsFieldClicks      = big.NewInt(1 << 0)
+	postMetricsFieldImpressions = big.NewInt(1 << 1)
+	postMetricsFieldLikes       = big.NewInt(1 << 2)
+	postMetricsFieldQuotes      = big.NewInt(1 << 3)
+	postMetricsFieldReach       = big.NewInt(1 << 4)
+	postMetricsFieldReplies     = big.NewInt(1 << 5)
+	postMetricsFieldReposts     = big.NewInt(1 << 6)
+	postMetricsFieldSaves       = big.NewInt(1 << 7)
 )
 
 // postMetricsNullableFields maps the wire names of PostMetrics's nullable fields (required or optional) to their field bits.
 var postMetricsNullableFields = map[string]*big.Int{
+	"clicks":      postMetricsFieldClicks,
 	"impressions": postMetricsFieldImpressions,
 	"quotes":      postMetricsFieldQuotes,
+	"reach":       postMetricsFieldReach,
+	"saves":       postMetricsFieldSaves,
 }
 
 type PostMetrics struct {
+	Clicks      *int `json:"clicks,omitempty" url:"clicks,omitempty"`
 	Impressions *int `json:"impressions,omitempty" url:"impressions,omitempty"`
 	Likes       int  `json:"likes" url:"likes"`
 	Quotes      *int `json:"quotes,omitempty" url:"quotes,omitempty"`
+	Reach       *int `json:"reach,omitempty" url:"reach,omitempty"`
 	Replies     int  `json:"replies" url:"replies"`
 	Reposts     int  `json:"reposts" url:"reposts"`
+	Saves       *int `json:"saves,omitempty" url:"saves,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (p *PostMetrics) GetClicks() *int {
+	if p == nil {
+		return nil
+	}
+	return p.Clicks
 }
 
 func (p *PostMetrics) GetImpressions() *int {
@@ -1060,6 +3066,13 @@ func (p *PostMetrics) GetQuotes() *int {
 	return p.Quotes
 }
 
+func (p *PostMetrics) GetReach() *int {
+	if p == nil {
+		return nil
+	}
+	return p.Reach
+}
+
 func (p *PostMetrics) GetReplies() int {
 	if p == nil {
 		return 0
@@ -1072,6 +3085,13 @@ func (p *PostMetrics) GetReposts() int {
 		return 0
 	}
 	return p.Reposts
+}
+
+func (p *PostMetrics) GetSaves() *int {
+	if p == nil {
+		return nil
+	}
+	return p.Saves
 }
 
 func (p *PostMetrics) GetExtraProperties() map[string]interface{} {
@@ -1088,6 +3108,13 @@ func (p *PostMetrics) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	p.explicitFields = next
+}
+
+// SetClicks sets the Clicks field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostMetrics) SetClicks(clicks *int) {
+	p.Clicks = clicks
+	p.require(postMetricsFieldClicks)
 }
 
 // SetImpressions sets the Impressions field and marks it as non-optional;
@@ -1111,6 +3138,13 @@ func (p *PostMetrics) SetQuotes(quotes *int) {
 	p.require(postMetricsFieldQuotes)
 }
 
+// SetReach sets the Reach field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostMetrics) SetReach(reach *int) {
+	p.Reach = reach
+	p.require(postMetricsFieldReach)
+}
+
 // SetReplies sets the Replies field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *PostMetrics) SetReplies(replies int) {
@@ -1123,6 +3157,13 @@ func (p *PostMetrics) SetReplies(replies int) {
 func (p *PostMetrics) SetReposts(reposts int) {
 	p.Reposts = reposts
 	p.require(postMetricsFieldReposts)
+}
+
+// SetSaves sets the Saves field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostMetrics) SetSaves(saves *int) {
+	p.Saves = saves
+	p.require(postMetricsFieldSaves)
 }
 
 func (p *PostMetrics) UnmarshalJSON(data []byte) error {

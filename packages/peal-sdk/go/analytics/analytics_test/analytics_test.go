@@ -5,7 +5,9 @@ package analytics_test
 import (
 	bytes "bytes"
 	context "context"
+	base64 "encoding/base64"
 	json "encoding/json"
+	io "io"
 	http "net/http"
 	os "os"
 	testing "testing"
@@ -104,6 +106,95 @@ func TestAnalyticsSummaryWithWireMock(
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestAnalyticsSummaryWithWireMock", "GET", "/api/workspaces/workspaceId/analytics/summary", map[string]interface{}{"from": "from", "timeZone": "timeZone", "to": "to"}, 1)
+}
+
+func TestAnalyticsDashboardWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.DashboardAnalyticsRequest{
+		WorkspaceID: "workspaceId",
+		TimeZone:    "timeZone",
+	}
+	_, invocationErr := client.Analytics.Dashboard(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAnalyticsDashboardWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestAnalyticsDashboardWithWireMock", "GET", "/api/workspaces/workspaceId/analytics/dashboard", map[string]interface{}{"timeZone": "timeZone"}, 1)
+}
+
+func TestAnalyticsChannelWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.ChannelAnalyticsRequest{
+		WorkspaceID: "workspaceId",
+		ChannelID:   "channelId",
+		TimeZone:    "timeZone",
+	}
+	_, invocationErr := client.Analytics.Channel(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAnalyticsChannelWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestAnalyticsChannelWithWireMock", "GET", "/api/workspaces/workspaceId/analytics/channels/channelId", map[string]interface{}{"timeZone": "timeZone"}, 1)
+}
+
+func TestAnalyticsExportWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.ExportAnalyticsRequest{
+		WorkspaceID: "workspaceId",
+		TimeZone:    "timeZone",
+		Kind:        peal.AnalyticsExportKindPosts,
+	}
+	response, invocationErr := client.Analytics.WithRawResponse.Export(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestAnalyticsExportWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	require.Equal(t, "application/octet-stream", response.Header.Get("Content-Type"), "Response content type should match the served fixture")
+	actualBytes, readErr := io.ReadAll(response.Body)
+	require.NoError(t, readErr, "Response body should be readable to completion")
+	expectedBytes, decodeErr := base64.StdEncoding.DecodeString("JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDE1IDAwMDAwIG4gCjAwMDAwMDAwNjQgMDAwMDAgbiAKMDAwMDAwMDEyMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjE5MgolJUVPRgo=")
+	require.NoError(t, decodeErr, "Fixture bytes should decode")
+	require.Equal(t, expectedBytes, actualBytes, "Response body should match the served fixture bytes")
+	VerifyRequestCount(t, "TestAnalyticsExportWithWireMock", "GET", "/api/workspaces/workspaceId/analytics/export", map[string]interface{}{"timeZone": "timeZone", "kind": "posts"}, 1)
 }
 
 func TestAnalyticsPostWithWireMock(

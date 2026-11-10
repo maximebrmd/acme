@@ -4,8 +4,12 @@ import typing
 
 from ..core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ..core.request_options import RequestOptions
+from ..types.analytics_dashboard import AnalyticsDashboard
+from ..types.analytics_export_format import AnalyticsExportFormat
+from ..types.analytics_export_kind import AnalyticsExportKind
 from ..types.analytics_summary import AnalyticsSummary
 from ..types.calendar_day import CalendarDay
+from ..types.channel_series import ChannelSeries
 from ..types.post_analytics import PostAnalytics
 from .raw_client import AsyncRawAnalyticsClient, RawAnalyticsClient
 
@@ -73,6 +77,189 @@ class AnalyticsClient:
             workspace_id, from_=from_, time_zone=time_zone, to=to, request_options=request_options
         )
         return _response.data
+
+    def dashboard(
+        self,
+        workspace_id: str,
+        *,
+        time_zone: str,
+        days: typing.Optional[str] = None,
+        from_: typing.Optional[CalendarDay] = None,
+        to: typing.Optional[CalendarDay] = None,
+        top_posts: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> AnalyticsDashboard:
+        """
+        Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the `topPosts` (5 unless said, 25 at most) with the most engagement. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        time_zone : str
+
+        days : typing.Optional[str]
+
+        from_ : typing.Optional[CalendarDay]
+
+        to : typing.Optional[CalendarDay]
+
+        top_posts : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        AnalyticsDashboard
+            AnalyticsDashboard
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.analytics.dashboard(
+            workspace_id="workspaceId",
+            time_zone="timeZone",
+        )
+        """
+        _response = self._raw_client.dashboard(
+            workspace_id,
+            time_zone=time_zone,
+            days=days,
+            from_=from_,
+            to=to,
+            top_posts=top_posts,
+            request_options=request_options,
+        )
+        return _response.data
+
+    def channel(
+        self,
+        workspace_id: str,
+        channel_id: str,
+        *,
+        time_zone: str,
+        days: typing.Optional[str] = None,
+        from_: typing.Optional[CalendarDay] = None,
+        to: typing.Optional[CalendarDay] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> ChannelSeries:
+        """
+        Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        time_zone : str
+
+        days : typing.Optional[str]
+
+        from_ : typing.Optional[CalendarDay]
+
+        to : typing.Optional[CalendarDay]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ChannelSeries
+            ChannelSeries
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.analytics.channel(
+            workspace_id="workspaceId",
+            channel_id="channelId",
+            time_zone="timeZone",
+        )
+        """
+        _response = self._raw_client.channel(
+            workspace_id,
+            channel_id,
+            time_zone=time_zone,
+            days=days,
+            from_=from_,
+            to=to,
+            request_options=request_options,
+        )
+        return _response.data
+
+    def export(
+        self,
+        workspace_id: str,
+        *,
+        time_zone: str,
+        kind: AnalyticsExportKind,
+        days: typing.Optional[str] = None,
+        from_: typing.Optional[CalendarDay] = None,
+        to: typing.Optional[CalendarDay] = None,
+        format: typing.Optional[AnalyticsExportFormat] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> typing.Iterator[bytes]:
+        """
+        Streams the workspace's analytics as a file: `kind=posts` lists each post published in the range on each channel with its latest counts, `kind=accounts` each channel's account day by day. `format=csv` (the default) writes a header line then one line a row, as RFC 4180; `format=json` writes one JSON object a line (`application/x-ndjson`). A number a platform does not give is empty in CSV and null in JSON. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Needs analytics:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        time_zone : str
+
+        kind : AnalyticsExportKind
+
+        days : typing.Optional[str]
+
+        from_ : typing.Optional[CalendarDay]
+
+        to : typing.Optional[CalendarDay]
+
+        format : typing.Optional[AnalyticsExportFormat]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration. You can pass in configuration such as `chunk_size`, and more to customize the request and response.
+
+        Returns
+        -------
+        typing.Iterator[bytes]
+            Success
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.analytics.export(
+            workspace_id="workspaceId",
+            time_zone="timeZone",
+            kind="posts",
+        )
+        """
+        with self._raw_client.export(
+            workspace_id,
+            time_zone=time_zone,
+            kind=kind,
+            days=days,
+            from_=from_,
+            to=to,
+            format=format,
+            request_options=request_options,
+        ) as r:
+            yield from r.data
 
     def post(
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
@@ -181,6 +368,214 @@ class AsyncAnalyticsClient:
             workspace_id, from_=from_, time_zone=time_zone, to=to, request_options=request_options
         )
         return _response.data
+
+    async def dashboard(
+        self,
+        workspace_id: str,
+        *,
+        time_zone: str,
+        days: typing.Optional[str] = None,
+        from_: typing.Optional[CalendarDay] = None,
+        to: typing.Optional[CalendarDay] = None,
+        top_posts: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> AnalyticsDashboard:
+        """
+        Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the `topPosts` (5 unless said, 25 at most) with the most engagement. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        time_zone : str
+
+        days : typing.Optional[str]
+
+        from_ : typing.Optional[CalendarDay]
+
+        to : typing.Optional[CalendarDay]
+
+        top_posts : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        AnalyticsDashboard
+            AnalyticsDashboard
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.analytics.dashboard(
+                workspace_id="workspaceId",
+                time_zone="timeZone",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.dashboard(
+            workspace_id,
+            time_zone=time_zone,
+            days=days,
+            from_=from_,
+            to=to,
+            top_posts=top_posts,
+            request_options=request_options,
+        )
+        return _response.data
+
+    async def channel(
+        self,
+        workspace_id: str,
+        channel_id: str,
+        *,
+        time_zone: str,
+        days: typing.Optional[str] = None,
+        from_: typing.Optional[CalendarDay] = None,
+        to: typing.Optional[CalendarDay] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> ChannelSeries:
+        """
+        Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        time_zone : str
+
+        days : typing.Optional[str]
+
+        from_ : typing.Optional[CalendarDay]
+
+        to : typing.Optional[CalendarDay]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ChannelSeries
+            ChannelSeries
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.analytics.channel(
+                workspace_id="workspaceId",
+                channel_id="channelId",
+                time_zone="timeZone",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.channel(
+            workspace_id,
+            channel_id,
+            time_zone=time_zone,
+            days=days,
+            from_=from_,
+            to=to,
+            request_options=request_options,
+        )
+        return _response.data
+
+    async def export(
+        self,
+        workspace_id: str,
+        *,
+        time_zone: str,
+        kind: AnalyticsExportKind,
+        days: typing.Optional[str] = None,
+        from_: typing.Optional[CalendarDay] = None,
+        to: typing.Optional[CalendarDay] = None,
+        format: typing.Optional[AnalyticsExportFormat] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> typing.AsyncIterator[bytes]:
+        """
+        Streams the workspace's analytics as a file: `kind=posts` lists each post published in the range on each channel with its latest counts, `kind=accounts` each channel's account day by day. `format=csv` (the default) writes a header line then one line a row, as RFC 4180; `format=json` writes one JSON object a line (`application/x-ndjson`). A number a platform does not give is empty in CSV and null in JSON. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Needs analytics:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        time_zone : str
+
+        kind : AnalyticsExportKind
+
+        days : typing.Optional[str]
+
+        from_ : typing.Optional[CalendarDay]
+
+        to : typing.Optional[CalendarDay]
+
+        format : typing.Optional[AnalyticsExportFormat]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration. You can pass in configuration such as `chunk_size`, and more to customize the request and response.
+
+        Returns
+        -------
+        typing.AsyncIterator[bytes]
+            Success
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.analytics.export(
+                workspace_id="workspaceId",
+                time_zone="timeZone",
+                kind="posts",
+            )
+
+
+        asyncio.run(main())
+        """
+        async with self._raw_client.export(
+            workspace_id,
+            time_zone=time_zone,
+            kind=kind,
+            days=days,
+            from_=from_,
+            to=to,
+            format=format,
+            request_options=request_options,
+        ) as r:
+            async for _chunk in r.data:
+                yield _chunk
 
     async def post(
         self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None

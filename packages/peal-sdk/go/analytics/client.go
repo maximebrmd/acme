@@ -4,6 +4,7 @@ package analytics
 
 import (
 	context "context"
+	io "io"
 
 	peal "github.com/peal-social/peal/packages/peal-sdk/go"
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
@@ -54,6 +55,92 @@ func (c *Client) Summary(
 	opts ...option.RequestOption,
 ) (*peal.AnalyticsSummary, error) {
 	response, err := c.WithRawResponse.Summary(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the `topPosts` (5 unless said, 25 at most) with the most engagement. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+//
+// Example:
+//
+//	request := &peal.DashboardAnalyticsRequest{
+//	    WorkspaceID: "workspaceId",
+//	    TimeZone: "timeZone",
+//	}
+//	_, err := client.Analytics.Dashboard(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Dashboard(
+	ctx context.Context,
+	request *peal.DashboardAnalyticsRequest,
+	opts ...option.RequestOption,
+) (*peal.AnalyticsDashboard, error) {
+	response, err := c.WithRawResponse.Dashboard(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+//
+// Example:
+//
+//	request := &peal.ChannelAnalyticsRequest{
+//	    WorkspaceID: "workspaceId",
+//	    ChannelID: "channelId",
+//	    TimeZone: "timeZone",
+//	}
+//	_, err := client.Analytics.Channel(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Channel(
+	ctx context.Context,
+	request *peal.ChannelAnalyticsRequest,
+	opts ...option.RequestOption,
+) (*peal.ChannelSeries, error) {
+	response, err := c.WithRawResponse.Channel(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Streams the workspace's analytics as a file: `kind=posts` lists each post published in the range on each channel with its latest counts, `kind=accounts` each channel's account day by day. `format=csv` (the default) writes a header line then one line a row, as RFC 4180; `format=json` writes one JSON object a line (`application/x-ndjson`). A number a platform does not give is empty in CSV and null in JSON. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Needs analytics:read.
+//
+// Example:
+//
+//	request := &peal.ExportAnalyticsRequest{
+//	    WorkspaceID: "workspaceId",
+//	    TimeZone: "timeZone",
+//	    Kind: peal.AnalyticsExportKindPosts,
+//	}
+//	_, err := client.Analytics.Export(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Export(
+	ctx context.Context,
+	request *peal.ExportAnalyticsRequest,
+	opts ...option.RequestOption,
+) (io.Reader, error) {
+	response, err := c.WithRawResponse.Export(
 		ctx,
 		request,
 		opts...,

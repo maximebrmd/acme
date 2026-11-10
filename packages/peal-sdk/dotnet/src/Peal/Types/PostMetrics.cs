@@ -11,6 +11,9 @@ public record PostMetrics : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("clicks")]
+    public int? Clicks { get; set; }
+
     [JsonPropertyName("impressions")]
     public int? Impressions { get; set; }
 
@@ -20,11 +23,17 @@ public record PostMetrics : IJsonOnDeserialized
     [JsonPropertyName("quotes")]
     public int? Quotes { get; set; }
 
+    [JsonPropertyName("reach")]
+    public int? Reach { get; set; }
+
     [JsonPropertyName("replies")]
     public required int Replies { get; set; }
 
     [JsonPropertyName("reposts")]
     public required int Reposts { get; set; }
+
+    [JsonPropertyName("saves")]
+    public int? Saves { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

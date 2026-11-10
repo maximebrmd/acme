@@ -1,0 +1,66 @@
+<?php
+
+namespace Peal\Types;
+
+use Peal\Core\Json\JsonSerializableType;
+use Peal\Core\Json\JsonProperty;
+
+class PlatformDashboard extends JsonSerializableType
+{
+    /**
+     * @var FollowerChange $followers
+     */
+    #[JsonProperty('followers')]
+    public FollowerChange $followers;
+
+    /**
+     * @var FollowerChange $previousFollowers
+     */
+    #[JsonProperty('previousFollowers')]
+    public FollowerChange $previousFollowers;
+
+    /**
+     * @var DashboardTotals $previousTotals
+     */
+    #[JsonProperty('previousTotals')]
+    public DashboardTotals $previousTotals;
+
+    /**
+     * @var DashboardTotals $totals
+     */
+    #[JsonProperty('totals')]
+    public DashboardTotals $totals;
+
+    /**
+     * @var value-of<Platform> $platform
+     */
+    #[JsonProperty('platform')]
+    public string $platform;
+
+    /**
+     * @param array{
+     *   followers: FollowerChange,
+     *   previousFollowers: FollowerChange,
+     *   previousTotals: DashboardTotals,
+     *   totals: DashboardTotals,
+     *   platform: value-of<Platform>,
+     * } $values
+     */
+    public function __construct(
+        array $values,
+    ) {
+        $this->followers = $values['followers'];
+        $this->previousFollowers = $values['previousFollowers'];
+        $this->previousTotals = $values['previousTotals'];
+        $this->totals = $values['totals'];
+        $this->platform = $values['platform'];
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString(): string
+    {
+        return $this->toJson();
+    }
+}

@@ -3976,6 +3976,366 @@ async fn main() {
 </dl>
 </details>
 
+<details><summary><code>client.analytics.<a href="/src/api/resources/analytics/client.rs">dashboard</a>(workspace_id: String, days: Option&lt;Option&lt;String&gt;&gt;, from: Option&lt;Option&lt;CalendarDay&gt;&gt;, time_zone: Option&lt;String&gt;, to: Option&lt;Option&lt;CalendarDay&gt;&gt;, top_posts: Option&lt;Option&lt;String&gt;&gt;) -> Result&lt;AnalyticsDashboard, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the `topPosts` (5 unless said, 25 at most) with the most engagement. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .analytics
+        .dashboard(
+            &"workspaceId".to_string(),
+            &DashboardQueryRequest {
+                time_zone: "timeZone".to_string(),
+                days: None,
+                from: None,
+                to: None,
+                top_posts: None,
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**top_posts:** `Option<String>` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.analytics.<a href="/src/api/resources/analytics/client.rs">channel</a>(workspace_id: String, channel_id: String, days: Option&lt;Option&lt;String&gt;&gt;, from: Option&lt;Option&lt;CalendarDay&gt;&gt;, time_zone: Option&lt;String&gt;, to: Option&lt;Option&lt;CalendarDay&gt;&gt;) -> Result&lt;ChannelSeries, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .analytics
+        .channel(
+            &"workspaceId".to_string(),
+            &"channelId".to_string(),
+            &ChannelQueryRequest {
+                time_zone: "timeZone".to_string(),
+                days: None,
+                from: None,
+                to: None,
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.analytics.<a href="/src/api/resources/analytics/client.rs">export</a>(workspace_id: String, days: Option&lt;Option&lt;String&gt;&gt;, from: Option&lt;Option&lt;CalendarDay&gt;&gt;, time_zone: Option&lt;String&gt;, to: Option&lt;Option&lt;CalendarDay&gt;&gt;, format: Option&lt;Option&lt;AnalyticsExportFormat&gt;&gt;, kind: Option&lt;AnalyticsExportKind&gt;) -> Result&lt;Vec&lt;u8&gt;, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Streams the workspace's analytics as a file: `kind=posts` lists each post published in the range on each channel with its latest counts, `kind=accounts` each channel's account day by day. `format=csv` (the default) writes a header line then one line a row, as RFC 4180; `format=json` writes one JSON object a line (`application/x-ndjson`). A number a platform does not give is empty in CSV and null in JSON. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .analytics
+        .export(
+            &"workspaceId".to_string(),
+            &ExportQueryRequest {
+                time_zone: "timeZone".to_string(),
+                kind: AnalyticsExportKind::Posts,
+                days: None,
+                from: None,
+                to: None,
+                format: None,
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `Option<CalendarDay>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**format:** `Option<AnalyticsExportFormat>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**kind:** `AnalyticsExportKind` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.analytics.<a href="/src/api/resources/analytics/client.rs">post</a>(workspace_id: String, post_id: String) -> Result&lt;PostAnalytics, ApiError&gt;</code></summary>
 <dl>
 <dd>

@@ -93,6 +93,203 @@ export class AnalyticsClient {
     }
 
     /**
+     * Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the `topPosts` (5 unless said, 25 at most) with the most engagement. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+     *
+     * @param {Peal.DashboardAnalyticsRequest} request
+     * @param {AnalyticsClient.RequestOptions} requestOptions - Request-specific configuration.
+     *
+     * @throws {@link Peal.BadRequestError}
+     * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.UnprocessableEntityError}
+     * @throws {@link errors.PealError}
+     * @throws {@link errors.PealTimeoutError}
+     *
+     * @example
+     *     await client.analytics.dashboard({
+     *         workspaceId: "workspaceId",
+     *         timeZone: "timeZone"
+     *     })
+     */
+    public dashboard(request: Peal.DashboardAnalyticsRequest, requestOptions?: AnalyticsClient.RequestOptions): core.HttpResponsePromise<Peal.AnalyticsDashboard> {
+        return core.HttpResponsePromise.fromPromise(this.__dashboard(request, requestOptions));
+    }
+
+    private async __dashboard(request: Peal.DashboardAnalyticsRequest, requestOptions?: AnalyticsClient.RequestOptions): Promise<core.WithRawResponse<Peal.AnalyticsDashboard>> {
+        const { workspaceId, days, "from": from_, timeZone, to, topPosts } = request;
+        const _queryParams: Record<string, unknown> = {
+            days,
+            from: from_,
+            timeZone,
+            to,
+            topPosts
+        };
+        const _authRequest: core.AuthRequest = await this._options.authProvider.getAuthRequest();
+        let _headers: core.Fetcher.Args["headers"] = mergeHeaders(_authRequest.headers, this._options?.headers, requestOptions?.headers);
+        const _response = await core.fetcher({
+            url: core.url.join(await core.Supplier.get(this._options.baseUrl) ?? (await core.Supplier.get(this._options.environment) ?? environments.PealEnvironment.Default), `api/workspaces/${core.url.encodePathParam(workspaceId, errors.PealError)}/analytics/dashboard`),
+            method: "GET",
+            headers: _headers,
+            queryString: core.url.queryBuilder().addMany(_queryParams).mergeAdditional(requestOptions?.queryParams).build(),
+            timeoutMs: (requestOptions?.timeoutInSeconds ?? this._options?.timeoutInSeconds ?? 60) * 1000,
+            maxRetries: requestOptions?.maxRetries ?? this._options?.maxRetries,
+            abortSignal: requestOptions?.abortSignal,
+            fetchFn: this._options?.fetch,
+            logging: this._options.logging
+        });
+        if (_response.ok) {
+            return { data: _response.body as Peal.AnalyticsDashboard, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            switch (_response.error.statusCode) {
+                case 400: throw new Peal.BadRequestError(_response.error.body as unknown, _response.rawResponse);
+                case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 422: throw new Peal.UnprocessableEntityError(_response.error.body as unknown, _response.rawResponse);
+                default: throw new errors.PealError({
+                    statusCode: _response.error.statusCode,
+                    body: _response.error.body,
+                    rawResponse: _response.rawResponse
+                });
+            }
+        }
+
+        return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/api/workspaces/{workspaceId}/analytics/dashboard");
+    }
+
+    /**
+     * Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+     *
+     * @param {Peal.ChannelAnalyticsRequest} request
+     * @param {AnalyticsClient.RequestOptions} requestOptions - Request-specific configuration.
+     *
+     * @throws {@link Peal.BadRequestError}
+     * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.UnprocessableEntityError}
+     * @throws {@link errors.PealError}
+     * @throws {@link errors.PealTimeoutError}
+     *
+     * @example
+     *     await client.analytics.channel({
+     *         workspaceId: "workspaceId",
+     *         channelId: "channelId",
+     *         timeZone: "timeZone"
+     *     })
+     */
+    public channel(request: Peal.ChannelAnalyticsRequest, requestOptions?: AnalyticsClient.RequestOptions): core.HttpResponsePromise<Peal.ChannelSeries> {
+        return core.HttpResponsePromise.fromPromise(this.__channel(request, requestOptions));
+    }
+
+    private async __channel(request: Peal.ChannelAnalyticsRequest, requestOptions?: AnalyticsClient.RequestOptions): Promise<core.WithRawResponse<Peal.ChannelSeries>> {
+        const { workspaceId, channelId, days, "from": from_, timeZone, to } = request;
+        const _queryParams: Record<string, unknown> = {
+            days,
+            from: from_,
+            timeZone,
+            to
+        };
+        const _authRequest: core.AuthRequest = await this._options.authProvider.getAuthRequest();
+        let _headers: core.Fetcher.Args["headers"] = mergeHeaders(_authRequest.headers, this._options?.headers, requestOptions?.headers);
+        const _response = await core.fetcher({
+            url: core.url.join(await core.Supplier.get(this._options.baseUrl) ?? (await core.Supplier.get(this._options.environment) ?? environments.PealEnvironment.Default), `api/workspaces/${core.url.encodePathParam(workspaceId, errors.PealError)}/analytics/channels/${core.url.encodePathParam(channelId, errors.PealError)}`),
+            method: "GET",
+            headers: _headers,
+            queryString: core.url.queryBuilder().addMany(_queryParams).mergeAdditional(requestOptions?.queryParams).build(),
+            timeoutMs: (requestOptions?.timeoutInSeconds ?? this._options?.timeoutInSeconds ?? 60) * 1000,
+            maxRetries: requestOptions?.maxRetries ?? this._options?.maxRetries,
+            abortSignal: requestOptions?.abortSignal,
+            fetchFn: this._options?.fetch,
+            logging: this._options.logging
+        });
+        if (_response.ok) {
+            return { data: _response.body as Peal.ChannelSeries, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            switch (_response.error.statusCode) {
+                case 400: throw new Peal.BadRequestError(_response.error.body as unknown, _response.rawResponse);
+                case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 422: throw new Peal.UnprocessableEntityError(_response.error.body as unknown, _response.rawResponse);
+                default: throw new errors.PealError({
+                    statusCode: _response.error.statusCode,
+                    body: _response.error.body,
+                    rawResponse: _response.rawResponse
+                });
+            }
+        }
+
+        return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/api/workspaces/{workspaceId}/analytics/channels/{channelId}");
+    }
+
+    /**
+     * Streams the workspace's analytics as a file: `kind=posts` lists each post published in the range on each channel with its latest counts, `kind=accounts` each channel's account day by day. `format=csv` (the default) writes a header line then one line a row, as RFC 4180; `format=json` writes one JSON object a line (`application/x-ndjson`). A number a platform does not give is empty in CSV and null in JSON. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Needs analytics:read.
+     *
+     * @throws {@link Peal.BadRequestError}
+     * @throws {@link Peal.UnauthorizedError}
+     * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.UnprocessableEntityError}
+     * @throws {@link errors.PealError}
+     * @throws {@link errors.PealTimeoutError}
+     */
+    public export(request: Peal.ExportAnalyticsRequest, requestOptions?: AnalyticsClient.RequestOptions): core.HttpResponsePromise<core.BinaryResponse> {
+        return core.HttpResponsePromise.fromPromise(this.__export(request, requestOptions));
+    }
+
+    private async __export(request: Peal.ExportAnalyticsRequest, requestOptions?: AnalyticsClient.RequestOptions): Promise<core.WithRawResponse<core.BinaryResponse>> {
+        const { workspaceId, days, "from": from_, timeZone, to, format, kind } = request;
+        const _queryParams: Record<string, unknown> = {
+            days,
+            from: from_,
+            timeZone,
+            to,
+            format: format != null ? format : undefined,
+            kind
+        };
+        const _authRequest: core.AuthRequest = await this._options.authProvider.getAuthRequest();
+        let _headers: core.Fetcher.Args["headers"] = mergeHeaders(_authRequest.headers, this._options?.headers, requestOptions?.headers);
+        const _response = await core.fetcher<core.BinaryResponse>({
+            url: core.url.join(await core.Supplier.get(this._options.baseUrl) ?? (await core.Supplier.get(this._options.environment) ?? environments.PealEnvironment.Default), `api/workspaces/${core.url.encodePathParam(workspaceId, errors.PealError)}/analytics/export`),
+            method: "GET",
+            headers: _headers,
+            queryString: core.url.queryBuilder().addMany(_queryParams).mergeAdditional(requestOptions?.queryParams).build(),
+            responseType: "binary-response",
+            timeoutMs: (requestOptions?.timeoutInSeconds ?? this._options?.timeoutInSeconds ?? 60) * 1000,
+            maxRetries: requestOptions?.maxRetries ?? this._options?.maxRetries,
+            abortSignal: requestOptions?.abortSignal,
+            fetchFn: this._options?.fetch,
+            logging: this._options.logging
+        });
+        if (_response.ok) {
+            return { data: _response.body, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            switch (_response.error.statusCode) {
+                case 400: throw new Peal.BadRequestError(_response.error.body as unknown, _response.rawResponse);
+                case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 422: throw new Peal.UnprocessableEntityError(_response.error.body as unknown, _response.rawResponse);
+                default: throw new errors.PealError({
+                    statusCode: _response.error.statusCode,
+                    body: _response.error.body,
+                    rawResponse: _response.rawResponse
+                });
+            }
+        }
+
+        return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/api/workspaces/{workspaceId}/analytics/export");
+    }
+
+    /**
      * Answers with the counts of a post on each channel it went live on, over time. A post not published yet, or whose counts were not read yet, has no targets. Needs analytics:read.
      *
      * @param {Peal.PostAnalyticsRequest} request

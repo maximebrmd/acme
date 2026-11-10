@@ -4165,7 +4165,7 @@ client.billing.standing(
 </details>
 
 ## analytics
-<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L28-L75">summary</a>(...) -> AnalyticsSummary</code></summary>
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L32-L79">summary</a>(...) -> AnalyticsSummary</code></summary>
 <dl>
 <dd>
 
@@ -4265,7 +4265,359 @@ client.analytics.summary(
 </dl>
 </details>
 
-<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L77-L110">post</a>(...) -> PostAnalytics</code></summary>
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L81-L138">dashboard</a>(...) -> AnalyticsDashboard</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the `topPosts` (5 unless said, 25 at most) with the most engagement. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.analytics.dashboard(
+    workspace_id="workspaceId",
+    time_zone="timeZone",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `typing.Optional[CalendarDay]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `typing.Optional[CalendarDay]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**top_posts:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L140-L198">channel</a>(...) -> ChannelSeries</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.analytics.channel(
+    workspace_id="workspaceId",
+    channel_id="channelId",
+    time_zone="timeZone",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `typing.Optional[CalendarDay]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `typing.Optional[CalendarDay]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L200-L262">export</a>(...) -> typing.Iterator[bytes]</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Streams the workspace's analytics as a file: `kind=posts` lists each post published in the range on each channel with its latest counts, `kind=accounts` each channel's account day by day. `format=csv` (the default) writes a header line then one line a row, as RFC 4180; `format=json` writes one JSON object a line (`application/x-ndjson`). A number a platform does not give is empty in CSV and null in JSON. The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris. Needs analytics:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.analytics.export(
+    workspace_id="workspaceId",
+    time_zone="timeZone",
+    kind="posts",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**kind:** `AnalyticsExportKind` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**days:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from:** `typing.Optional[CalendarDay]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**to:** `typing.Optional[CalendarDay]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**format:** `typing.Optional[AnalyticsExportFormat]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.analytics.<a href="src/peal/analytics/client.py#L264-L297">post</a>(...) -> PostAnalytics</code></summary>
 <dl>
 <dd>
 

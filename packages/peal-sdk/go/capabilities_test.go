@@ -4105,6 +4105,14 @@ func TestSettersMarkExplicitPlatformCapabilities(t *testing.T) {
 }
 
 func TestSettersPlatformCapabilitiesAnalytics(t *testing.T) {
+	t.Run("SetAccountNumbers", func(t *testing.T) {
+		obj := &PlatformCapabilitiesAnalytics{}
+		var fernTestValueAccountNumbers []PlatformCapabilitiesAnalyticsAccountNumbersItem
+		obj.SetAccountNumbers(fernTestValueAccountNumbers)
+		assert.Equal(t, fernTestValueAccountNumbers, obj.AccountNumbers)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetPerPost", func(t *testing.T) {
 		obj := &PlatformCapabilitiesAnalytics{}
 		var fernTestValuePerPost bool
@@ -4113,9 +4121,50 @@ func TestSettersPlatformCapabilitiesAnalytics(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetPostCounts", func(t *testing.T) {
+		obj := &PlatformCapabilitiesAnalytics{}
+		var fernTestValuePostCounts []PlatformCapabilitiesAnalyticsPostCountsItem
+		obj.SetPostCounts(fernTestValuePostCounts)
+		assert.Equal(t, fernTestValuePostCounts, obj.PostCounts)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 }
 
 func TestGettersPlatformCapabilitiesAnalytics(t *testing.T) {
+	t.Run("GetAccountNumbers", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilitiesAnalytics{}
+		var expected []PlatformCapabilitiesAnalyticsAccountNumbersItem
+		obj.AccountNumbers = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAccountNumbers(), "getter should return the property value")
+	})
+
+	t.Run("GetAccountNumbers_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilitiesAnalytics{}
+		obj.AccountNumbers = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAccountNumbers(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetAccountNumbers_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PlatformCapabilitiesAnalytics
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAccountNumbers() // Should return zero value
+	})
+
 	t.Run("GetPerPost", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -4139,9 +4188,73 @@ func TestGettersPlatformCapabilitiesAnalytics(t *testing.T) {
 		_ = obj.GetPerPost() // Should return zero value
 	})
 
+	t.Run("GetPostCounts", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilitiesAnalytics{}
+		var expected []PlatformCapabilitiesAnalyticsPostCountsItem
+		obj.PostCounts = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetPostCounts(), "getter should return the property value")
+	})
+
+	t.Run("GetPostCounts_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilitiesAnalytics{}
+		obj.PostCounts = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetPostCounts(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetPostCounts_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PlatformCapabilitiesAnalytics
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetPostCounts() // Should return zero value
+	})
+
 }
 
 func TestSettersMarkExplicitPlatformCapabilitiesAnalytics(t *testing.T) {
+	t.Run("SetAccountNumbers_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilitiesAnalytics{}
+		var fernTestValueAccountNumbers []PlatformCapabilitiesAnalyticsAccountNumbersItem
+
+		// Act
+		obj.SetAccountNumbers(fernTestValueAccountNumbers)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetPerPost_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -4150,6 +4263,37 @@ func TestSettersMarkExplicitPlatformCapabilitiesAnalytics(t *testing.T) {
 
 		// Act
 		obj.SetPerPost(fernTestValuePerPost)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetPostCounts_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilitiesAnalytics{}
+		var fernTestValuePostCounts []PlatformCapabilitiesAnalyticsPostCountsItem
+
+		// Act
+		obj.SetPostCounts(fernTestValuePostCounts)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -6081,6 +6225,127 @@ func TestEnumAccountUnreadReason(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewAccountUnreadReasonFromString("disabled")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumPlatformCapabilitiesAnalyticsAccountNumbersItem(t *testing.T) {
+	t.Run("NewFromString_followers", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsAccountNumbersItemFromString("followers")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsAccountNumbersItem("followers"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_following", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsAccountNumbersItemFromString("following")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsAccountNumbersItem("following"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_posts", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsAccountNumbersItemFromString("posts")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsAccountNumbersItem("posts"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_views", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsAccountNumbersItemFromString("views")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsAccountNumbersItem("views"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_reach", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsAccountNumbersItemFromString("reach")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsAccountNumbersItem("reach"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewPlatformCapabilitiesAnalyticsAccountNumbersItemFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewPlatformCapabilitiesAnalyticsAccountNumbersItemFromString("followers")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumPlatformCapabilitiesAnalyticsPostCountsItem(t *testing.T) {
+	t.Run("NewFromString_likes", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsPostCountsItemFromString("likes")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsPostCountsItem("likes"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_reposts", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsPostCountsItemFromString("reposts")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsPostCountsItem("reposts"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_replies", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsPostCountsItemFromString("replies")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsPostCountsItem("replies"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_quotes", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsPostCountsItemFromString("quotes")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsPostCountsItem("quotes"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_impressions", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsPostCountsItemFromString("impressions")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsPostCountsItem("impressions"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_clicks", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsPostCountsItemFromString("clicks")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsPostCountsItem("clicks"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_reach", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsPostCountsItemFromString("reach")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsPostCountsItem("reach"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_saves", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformCapabilitiesAnalyticsPostCountsItemFromString("saves")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlatformCapabilitiesAnalyticsPostCountsItem("saves"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewPlatformCapabilitiesAnalyticsPostCountsItemFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewPlatformCapabilitiesAnalyticsPostCountsItemFromString("likes")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)

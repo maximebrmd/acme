@@ -19,7 +19,15 @@ public class ChannelTest : BaseMockServerTest
               },
               "capabilities": {
                 "analytics": {
-                  "perPost": true
+                  "accountNumbers": [
+                    "followers",
+                    "followers"
+                  ],
+                  "perPost": true,
+                  "postCounts": [
+                    "likes",
+                    "likes"
+                  ]
                 },
                 "lookups": [
                   {
@@ -277,7 +285,13 @@ public class ChannelTest : BaseMockServerTest
               },
               "capabilities": {
                 "analytics": {
-                  "perPost": true
+                  "accountNumbers": [
+                    "followers"
+                  ],
+                  "perPost": true,
+                  "postCounts": [
+                    "likes"
+                  ]
                 },
                 "lookups": [
                   {

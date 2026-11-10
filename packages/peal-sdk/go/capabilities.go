@@ -2578,11 +2578,15 @@ func (p *PlatformCapabilities) String() string {
 }
 
 var (
-	platformCapabilitiesAnalyticsFieldPerPost = big.NewInt(1 << 0)
+	platformCapabilitiesAnalyticsFieldAccountNumbers = big.NewInt(1 << 0)
+	platformCapabilitiesAnalyticsFieldPerPost        = big.NewInt(1 << 1)
+	platformCapabilitiesAnalyticsFieldPostCounts     = big.NewInt(1 << 2)
 )
 
 type PlatformCapabilitiesAnalytics struct {
-	PerPost bool `json:"perPost" url:"perPost"`
+	AccountNumbers []PlatformCapabilitiesAnalyticsAccountNumbersItem `json:"accountNumbers" url:"accountNumbers"`
+	PerPost        bool                                              `json:"perPost" url:"perPost"`
+	PostCounts     []PlatformCapabilitiesAnalyticsPostCountsItem     `json:"postCounts" url:"postCounts"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2591,11 +2595,25 @@ type PlatformCapabilitiesAnalytics struct {
 	rawJSON         json.RawMessage
 }
 
+func (p *PlatformCapabilitiesAnalytics) GetAccountNumbers() []PlatformCapabilitiesAnalyticsAccountNumbersItem {
+	if p == nil {
+		return nil
+	}
+	return p.AccountNumbers
+}
+
 func (p *PlatformCapabilitiesAnalytics) GetPerPost() bool {
 	if p == nil {
 		return false
 	}
 	return p.PerPost
+}
+
+func (p *PlatformCapabilitiesAnalytics) GetPostCounts() []PlatformCapabilitiesAnalyticsPostCountsItem {
+	if p == nil {
+		return nil
+	}
+	return p.PostCounts
 }
 
 func (p *PlatformCapabilitiesAnalytics) GetExtraProperties() map[string]interface{} {
@@ -2614,11 +2632,25 @@ func (p *PlatformCapabilitiesAnalytics) require(field *big.Int) {
 	p.explicitFields = next
 }
 
+// SetAccountNumbers sets the AccountNumbers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformCapabilitiesAnalytics) SetAccountNumbers(accountNumbers []PlatformCapabilitiesAnalyticsAccountNumbersItem) {
+	p.AccountNumbers = accountNumbers
+	p.require(platformCapabilitiesAnalyticsFieldAccountNumbers)
+}
+
 // SetPerPost sets the PerPost field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *PlatformCapabilitiesAnalytics) SetPerPost(perPost bool) {
 	p.PerPost = perPost
 	p.require(platformCapabilitiesAnalyticsFieldPerPost)
+}
+
+// SetPostCounts sets the PostCounts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformCapabilitiesAnalytics) SetPostCounts(postCounts []PlatformCapabilitiesAnalyticsPostCountsItem) {
+	p.PostCounts = postCounts
+	p.require(platformCapabilitiesAnalyticsFieldPostCounts)
 }
 
 func (p *PlatformCapabilitiesAnalytics) UnmarshalJSON(data []byte) error {
@@ -2661,6 +2693,77 @@ func (p *PlatformCapabilitiesAnalytics) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", p)
+}
+
+type PlatformCapabilitiesAnalyticsAccountNumbersItem string
+
+const (
+	PlatformCapabilitiesAnalyticsAccountNumbersItemFollowers PlatformCapabilitiesAnalyticsAccountNumbersItem = "followers"
+	PlatformCapabilitiesAnalyticsAccountNumbersItemFollowing PlatformCapabilitiesAnalyticsAccountNumbersItem = "following"
+	PlatformCapabilitiesAnalyticsAccountNumbersItemPosts     PlatformCapabilitiesAnalyticsAccountNumbersItem = "posts"
+	PlatformCapabilitiesAnalyticsAccountNumbersItemViews     PlatformCapabilitiesAnalyticsAccountNumbersItem = "views"
+	PlatformCapabilitiesAnalyticsAccountNumbersItemReach     PlatformCapabilitiesAnalyticsAccountNumbersItem = "reach"
+)
+
+func NewPlatformCapabilitiesAnalyticsAccountNumbersItemFromString(s string) (PlatformCapabilitiesAnalyticsAccountNumbersItem, error) {
+	switch s {
+	case "followers":
+		return PlatformCapabilitiesAnalyticsAccountNumbersItemFollowers, nil
+	case "following":
+		return PlatformCapabilitiesAnalyticsAccountNumbersItemFollowing, nil
+	case "posts":
+		return PlatformCapabilitiesAnalyticsAccountNumbersItemPosts, nil
+	case "views":
+		return PlatformCapabilitiesAnalyticsAccountNumbersItemViews, nil
+	case "reach":
+		return PlatformCapabilitiesAnalyticsAccountNumbersItemReach, nil
+	}
+	var t PlatformCapabilitiesAnalyticsAccountNumbersItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PlatformCapabilitiesAnalyticsAccountNumbersItem) Ptr() *PlatformCapabilitiesAnalyticsAccountNumbersItem {
+	return &p
+}
+
+type PlatformCapabilitiesAnalyticsPostCountsItem string
+
+const (
+	PlatformCapabilitiesAnalyticsPostCountsItemLikes       PlatformCapabilitiesAnalyticsPostCountsItem = "likes"
+	PlatformCapabilitiesAnalyticsPostCountsItemReposts     PlatformCapabilitiesAnalyticsPostCountsItem = "reposts"
+	PlatformCapabilitiesAnalyticsPostCountsItemReplies     PlatformCapabilitiesAnalyticsPostCountsItem = "replies"
+	PlatformCapabilitiesAnalyticsPostCountsItemQuotes      PlatformCapabilitiesAnalyticsPostCountsItem = "quotes"
+	PlatformCapabilitiesAnalyticsPostCountsItemImpressions PlatformCapabilitiesAnalyticsPostCountsItem = "impressions"
+	PlatformCapabilitiesAnalyticsPostCountsItemClicks      PlatformCapabilitiesAnalyticsPostCountsItem = "clicks"
+	PlatformCapabilitiesAnalyticsPostCountsItemReach       PlatformCapabilitiesAnalyticsPostCountsItem = "reach"
+	PlatformCapabilitiesAnalyticsPostCountsItemSaves       PlatformCapabilitiesAnalyticsPostCountsItem = "saves"
+)
+
+func NewPlatformCapabilitiesAnalyticsPostCountsItemFromString(s string) (PlatformCapabilitiesAnalyticsPostCountsItem, error) {
+	switch s {
+	case "likes":
+		return PlatformCapabilitiesAnalyticsPostCountsItemLikes, nil
+	case "reposts":
+		return PlatformCapabilitiesAnalyticsPostCountsItemReposts, nil
+	case "replies":
+		return PlatformCapabilitiesAnalyticsPostCountsItemReplies, nil
+	case "quotes":
+		return PlatformCapabilitiesAnalyticsPostCountsItemQuotes, nil
+	case "impressions":
+		return PlatformCapabilitiesAnalyticsPostCountsItemImpressions, nil
+	case "clicks":
+		return PlatformCapabilitiesAnalyticsPostCountsItemClicks, nil
+	case "reach":
+		return PlatformCapabilitiesAnalyticsPostCountsItemReach, nil
+	case "saves":
+		return PlatformCapabilitiesAnalyticsPostCountsItemSaves, nil
+	}
+	var t PlatformCapabilitiesAnalyticsPostCountsItem
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PlatformCapabilitiesAnalyticsPostCountsItem) Ptr() *PlatformCapabilitiesAnalyticsPostCountsItem {
+	return &p
 }
 
 var (
