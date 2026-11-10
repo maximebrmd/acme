@@ -1319,7 +1319,8 @@
       "system": "Système",
       "users": "Comptes",
       "workspaces": "Espaces de travail",
-      "audit": "Journal d’audit"
+      "audit": "Journal d’audit",
+      "requests": "Demandes sur les contrats"
     },
     "search": {
       "submit": "Rechercher",
@@ -1523,7 +1524,7 @@
       "noReason": "Non conservé",
       "until": "Jusqu’au",
       "workspace": "Dans un espace de travail",
-      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} other {{action}}}"
+      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} legalDisclosure {A répondu à une réquisition judiciaire} applyContractRequest {A appliqué une demande sur un contrat} closeContractRequest {A clos une demande sur un contrat} other {{action}}}"
     },
     "channelStatus": {
       "active": "Fonctionne",
@@ -1532,7 +1533,39 @@
       "disabledToReconnect": "Désactivé, à reconnecter"
     },
     "troubleStatus": "{status, select, failed {Échec} other {Non confirmé}}",
-    "reason": "{reason, select, contentRejected {Contenu refusé} channelDisconnected {Canal déconnecté} channelDisabled {Canal désactivé} mediaRemoved {Média supprimé} mediaRejected {Média refusé} missed {Manquée} notPublished {Introuvable après vérification} rateLimited {Limite de débit} tokenExpired {Autorisation expirée} unavailable {Plateforme injoignable} appNotAudited {Publications privées seulement, application non auditée} quotaExceeded {Allocation quotidienne de mises en ligne épuisée} appBillingLimit {Application du serveur non réglée} planLimit {Limite de l’abonnement atteinte} noResponse {Pas de réponse} unreadableResponse {Réponse illisible} interrupted {Interrompue} adapterFailure {Échec pendant l’appel} other {{reason}}}"
+    "reason": "{reason, select, contentRejected {Contenu refusé} channelDisconnected {Canal déconnecté} channelDisabled {Canal désactivé} mediaRemoved {Média supprimé} mediaRejected {Média refusé} missed {Manquée} notPublished {Introuvable après vérification} rateLimited {Limite de débit} tokenExpired {Autorisation expirée} unavailable {Plateforme injoignable} appNotAudited {Publications privées seulement, application non auditée} quotaExceeded {Allocation quotidienne de mises en ligne épuisée} appBillingLimit {Application du serveur non réglée} planLimit {Limite de l’abonnement atteinte} noResponse {Pas de réponse} unreadableResponse {Réponse illisible} interrupted {Interrompue} adapterFailure {Échec pendant l’appel} other {{reason}}}",
+    "requests": {
+      "title": "Demandes sur les contrats",
+      "description": "Les demandes de résiliation ou de rétractation que le formulaire n’a pas pu appliquer seul : aucun contrat trouvé, ou leur auteur n’a pas suivi le lien reçu par e-mail. N’en appliquez une à un espace de travail qu’une fois certain que son auteur est titulaire de ce contrat ; elle prend effet à la date de sa réception, et son auteur en est informé.",
+      "empty": "Aucune demande en attente.",
+      "kind": "{kind, select, cancellation {Résiliation} other {Rétractation}}",
+      "status": "{status, select, awaitingConfirmation {En attente du lien de son auteur} unmatched {Aucun contrat trouvé} other {{status}}}",
+      "received": "Reçue le",
+      "name": "Nom",
+      "email": "Adresse",
+      "contract": "Contrat, tel qu’indiqué",
+      "desiredOn": "Date souhaitée",
+      "account": "Compte de cette adresse",
+      "noAccount": "Aucun",
+      "notGiven": "Non précisé",
+      "workspaceId": "Identifiant de l’espace de travail",
+      "workspaceHint": "L’identifiant de l’espace de travail dont le contrat est concerné, depuis Espaces de travail.",
+      "reason": "Pourquoi",
+      "reasonHint": "Conservé dans le journal d’audit, avec votre nom : comment vous vous en êtes assuré, jamais ce que dit la demande.",
+      "apply": "Appliquer à cet espace de travail",
+      "applying": "Application…",
+      "close": "Clore sans appliquer",
+      "closing": "Clôture…",
+      "applied": "Appliquée : son auteur est informé de la suite.",
+      "refused": "Le contrat l’a refusée : {refusal, select, nothingToCancel {rien à résilier} notSubscribed {pas d’abonnement} expired {les 14 jours étaient écoulés à sa réception} business {une entreprise n’a pas de droit de rétractation} other {{refusal}}}. Son auteur est informé.",
+      "closed": "Close.",
+      "errors": {
+        "notFound": "Demande ou espace de travail introuvable.",
+        "settled": "Cette demande a déjà été appliquée, refusée ou close.",
+        "unavailable": "Stripe n’a pas pu être joint : rien n’a changé.",
+        "unknown": "Cela n’a pas fonctionné. Réessayez."
+      }
+    }
   },
   "Impersonation": {
     "label": "Vous agissez à la place d’un autre compte",

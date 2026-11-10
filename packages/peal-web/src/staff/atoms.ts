@@ -16,3 +16,13 @@ export const resendVerification = PealApi.mutation(
 );
 
 export const impersonateUser = PealApi.mutation("staff", "impersonate");
+
+export const applyContractRequest = PealApi.mutation(
+  "contractRequestsDesk",
+  "apply"
+);
+
+export const closeContractRequest = PealApi.mutation(
+  "contractRequestsDesk",
+  "close"
+);
