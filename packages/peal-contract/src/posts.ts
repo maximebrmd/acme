@@ -23,6 +23,7 @@ import {
   maxMediaPerPost,
   maxPostTextLength,
 } from "./post-text.ts";
+import { PostValidationSchema } from "./post-validation.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
 import { ChannelOptionsSchema, TargetOptionsSchema } from "./target-options.ts";
 import type { ChannelOptions } from "./target-options.ts";
@@ -307,6 +308,27 @@ export const NewPostSchema = Schema.Struct({
 
 export type NewPost = typeof NewPostSchema.Type;
 
+/**
+ * A post to check without making it: what `send` takes, or a draft, whose
+ * time is left out. Without `when`, neither the time nor the plan's room is
+ * checked.
+ */
+export const PostToValidateSchema = Schema.Struct({
+  channelIds: Schema.Array(Schema.String),
+  content: PostContentSchema,
+  options: Schema.optionalKey(
+    Schema.Array(ChannelOptionsSchema).check(
+      uniqueBy(
+        (chosen: ChannelOptions) => chosen.channelId,
+        "options for each channel once"
+      )
+    )
+  ),
+  when: Schema.optionalKey(PostTimingSchema),
+}).annotate({ identifier: "PostToValidate" });
+
+export type PostToValidate = typeof PostToValidateSchema.Type;
+
 /** The longest `Idempotency-Key` Peal takes. */
 export const maxIdempotencyKeyLength = 255;
 
@@ -493,6 +515,18 @@ export class PostsApi extends HttpApiGroup.make("posts")
       OpenApi.annotations({
         description: `Creates a post and sends it to some of the workspace's channels in one call: \`when\` is \`now\`, which publishes at once, or \`at\` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an \`Idempotency-Key\` header (any text of your choosing, at most ${maxIdempotencyKeyLength} characters, such as a UUID) to make a request safe to send again: within ${idempotencyKeyLifetimeHours} hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.`,
         summary: "Create and send a post",
+      })
+    ),
+    HttpApiEndpoint.post("validate", "/validate", {
+      error: [Forbidden],
+      params: workspace,
+      payload: PostToValidateSchema,
+      success: PostValidationSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Checks a post without making it, and changes nothing: send what `send` takes, or a draft (no `when`). It answers 200 whether or not the post would go through, with `valid` and everything that would refuse it, all at once: per channel, the text the channel receives, counted as its platform counts it against each of its limits, its hashtags, mentions, links and media, and every violation of the platform's rules (text, media formats, sizes, counts and durations, options) and of the account's own where its platform tells them; the channels and media that are not the workspace's; and, when `when` is given, whether the time can be kept and whether the workspace's plan has room. A post that is valid now can still be refused later: a channel disconnected, a plan's month filled meanwhile. Needs post:read and channel:read, and media:read when it shows media.",
+        summary: "Validate a post",
       })
     ),
     HttpApiEndpoint.get("get", "/:postId", {

@@ -1366,6 +1366,8 @@ export const studioGroupsLive = (studio: Studio) =>
               targets: targetsOf(post.id, payload),
             });
           }),
+        // No command checks a post yet.
+        validate: () => Effect.fail(new Forbidden()),
       })
     ),
     HttpApiBuilder.group(Api, "media", (handlers) =>

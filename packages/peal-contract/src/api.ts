@@ -533,6 +533,24 @@ export type { PostStatus } from "./post-status.ts";
 export { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 
 export {
+  ChannelPreviewSchema,
+  LimitedCountSchema,
+  PlanShortfallSchema,
+  PostValidationSchema,
+  ScheduleCheckSchema,
+  TextCountSchema,
+} from "./post-validation.ts";
+
+export type {
+  ChannelPreview,
+  LimitedCount,
+  PlanShortfall,
+  PostValidation,
+  ScheduleCheck,
+  TextCount,
+} from "./post-validation.ts";
+
+export {
   AttemptResultSchema,
   defaultDraftPageSize,
   DraftPageSchema,
@@ -551,6 +569,7 @@ export {
   PostSchema,
   PostTargetSchema,
   PostTimingSchema,
+  PostToValidateSchema,
   PublicationAttemptSchema,
   SchedulePostSchema,
   TargetConfirmationSchema,
@@ -573,6 +592,7 @@ export type {
   PostSchedule,
   PostTarget,
   PostTiming,
+  PostToValidate,
   PublicationAttempt,
   SchedulePost,
   TargetConfirmation,

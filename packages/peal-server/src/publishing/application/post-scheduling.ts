@@ -9,8 +9,6 @@ import {
 } from "effect";
 
 import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
-import { optionsOn } from "#publishing/domain/channel-options.ts";
-import { checkPublishable } from "#publishing/domain/content-rules.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
 import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
@@ -44,7 +42,7 @@ import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 
-import { AccountRules } from "./account-rules.ts";
+import type { AccountRules } from "./account-rules.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
 import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { IdempotencyKeys } from "./idempotency-keys.ts";
@@ -57,6 +55,7 @@ import { channelsFor, mediaFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets, StoredPost } from "./post-repository.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
+import { violationsOf } from "./publishability.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
 import type { WorkspaceChannels } from "./workspace-channels.ts";
@@ -288,32 +287,13 @@ export class PostScheduling extends Context.Service<
           const channels = yield* channelsFor(actor, channelIds);
           const files = yield* mediaFor(actor, content);
 
-          // What the platforms' rules refuse, every violation of them.
-          const againstRules = Result.match(
-            checkPublishable(content, channels, files, options),
-            {
-              onFailure: (rejected) => rejected.violations,
-              onSuccess: () => [],
-            }
-          );
-
-          // And what each account's own settings refuse, which only its
-          // platform tells: both come in one answer, so whoever fixes the
-          // post fixes it once.
-          const rules = yield* AccountRules;
-
-          const refused = yield* Effect.forEach(
+          // What the platforms' rules and each account's own refuse.
+          const violations = yield* violationsOf(
+            content,
             channels,
-            (channel) =>
-              rules.violationsOn({
-                channel,
-                files,
-                options: optionsOn(options, channel.channelId),
-              }),
-            { concurrency: 4 }
+            files,
+            options
           );
-
-          const violations = [...againstRules, ...refused.flat()];
 
           if (Arr.isReadonlyArrayNonEmpty(violations)) {
             return yield* new PostContentRejected({ violations });

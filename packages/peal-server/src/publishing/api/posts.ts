@@ -16,6 +16,7 @@ import {
   UnknownMedia,
 } from "peal-contract";
 
+import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import type { Confirmation } from "#publishing/application/post-follow-up.ts";
@@ -26,7 +27,10 @@ import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
+import type { PlanLimitReached as LimitReached } from "#shared/domain/plan-limit-reached.ts";
 
+import { checkRequestFrom } from "./post-check-input.ts";
+import { validationView } from "./post-check-view.ts";
 import {
   channelIdsFrom,
   contentFrom,
@@ -77,11 +81,28 @@ export const PostsHandlers = HttpApiBuilder.group(
   Api,
   "posts",
   Effect.fn(function* postsHandlers(handlers) {
+    const checks = yield* PostChecks;
     const drafts = yield* PostDrafts;
     const followUp = yield* PostFollowUp;
     const queries = yield* PostQueries;
     const scheduling = yield* PostScheduling;
     const limitReached = yield* limitRefusal;
+
+    // The plan's limit a check found, as PlanLimitReached would tell it.
+    const shortfallOf = (reached: LimitReached) =>
+      limitReached(reached).pipe(
+        Effect.flip,
+        Effect.map(
+          ({ allowed, billingUrl, limit, plan, planWithRoom, used }) => ({
+            allowed,
+            billingUrl,
+            limit,
+            plan,
+            planWithRoom,
+            used,
+          })
+        )
+      );
 
     return handlers.handleAll({
       attempts: ({ params }) =>
@@ -353,6 +374,25 @@ export const PostsHandlers = HttpApiBuilder.group(
             );
 
           return postView(updated);
+        }),
+      validate: ({ payload }) =>
+        Effect.gen(function* validate() {
+          const actor = actorOf(yield* CurrentMember);
+          const read = yield* checkRequestFrom(payload);
+
+          const check = yield* checks.check(actor, read.request).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+            })
+          );
+
+          const shortfall = yield* Option.match(check.planLimit, {
+            onNone: () => Effect.succeed(Option.none()),
+            onSome: (reached) => shortfallOf(reached).pipe(Effect.asSome),
+          });
+
+          return validationView(check, read, shortfall);
         }),
     });
   })
