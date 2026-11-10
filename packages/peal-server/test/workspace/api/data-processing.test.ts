@@ -8,6 +8,12 @@ import {
   retentionPeriods,
 } from "peal-contract";
 
+import {
+  disconnectedKeptFor,
+  keptFor,
+  platformCaps,
+  retentionOf,
+} from "#analytics/domain/analytics-retention.ts";
 import { contractRetention } from "#billing/domain/contract-retention.ts";
 import { trialMemory } from "#billing/domain/trial-memory.ts";
 import { legalRetention } from "#legal/domain/legal-retention.ts";
@@ -20,6 +26,10 @@ import { erasureLedgerRetention } from "#workspace/domain/erasure-ledger.ts";
 
 const categoryOf = (id: string) =>
   processingRegister.find((category) => category.id === id);
+
+const days = (duration: Duration.Duration) => ({
+  days: Duration.toDays(duration),
+});
 
 // How long a category is kept, in English.
 const kept = (id: string) => categoryOf(id)?.retention.en ?? "";
@@ -74,6 +84,33 @@ describe("the data processing registry", () => {
     expect(kept("review")).toContain("24 months after each comment");
   });
 
+  it("keeps the platforms' figures as long as the analytics purge does, each platform's cap included", () => {
+    expect(retentionPeriods.analytics).toStrictEqual(days(keptFor));
+    expect({
+      googleBusiness: retentionPeriods.analyticsGoogleBusiness,
+      linkedin: retentionPeriods.analyticsLinkedIn,
+      pinterest: retentionPeriods.analyticsPinterest,
+    }).toStrictEqual({
+      googleBusiness: days(retentionOf("googleBusiness")),
+      linkedin: days(retentionOf("linkedin")),
+      pinterest: days(retentionOf("pinterest")),
+    });
+    expect(retentionPeriods.analyticsDisconnected).toStrictEqual(
+      days(disconnectedKeptFor)
+    );
+    // Every cap the purge enforces is one the registry states.
+    expect(Object.keys(platformCaps).toSorted()).toStrictEqual([
+      "googleBusiness",
+      "linkedin",
+      "pinterest",
+    ]);
+  });
+
+  it("says how long the platforms' figures are kept", () => {
+    expect(kept("content")).toContain("2 years");
+    expect(kept("content")).toContain("LinkedIn 1 year");
+  });
+
   it("keeps a webhook delivery's log as long as its purge does", () => {
     expect(
       Duration.days(retentionPeriods.webhookDeliveries.days)
@@ -112,9 +149,10 @@ describe("the data processing registry", () => {
 
   it("promises no deletion the software does not make", () => {
     // Only drafts and media files are deleted by members: a post that
-    // left draft, and its figures, stay until the workspace goes.
+    // left draft stays until the workspace goes; its figures, as long as
+    // the analytics purge keeps them.
     expect(kept("content")).toContain(
-      "Posts that were scheduled, published or cancelled, their publication history and their figures: until the workspace is deleted"
+      "Posts that were scheduled, published or cancelled, and their publication history: until the workspace is deleted"
     );
     expect(kept("content")).not.toContain("deletes the post");
     // The daily purges run once a day: a period is its rule's, then at
