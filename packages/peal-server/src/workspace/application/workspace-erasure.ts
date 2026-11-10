@@ -7,8 +7,8 @@ import type { ErasureEntry } from "#workspace/domain/erasure-ledger.ts";
 
 import { AccountStore } from "./account-store.ts";
 import { ContextRecords } from "./context-records.ts";
-import { ErasureLedger } from "./erasure-ledger.ts";
 import { ErasureIncomplete } from "./erasure-incomplete.ts";
+import { ErasureLedger } from "./erasure-ledger.ts";
 
 /**
  * Deletes a workspace and everything every context keeps in it, its media

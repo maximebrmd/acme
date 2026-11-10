@@ -17,9 +17,9 @@ import { AccountStore } from "./account-store.ts";
 import type { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContextRecords } from "./context-records.ts";
 import type { WorkspaceErasureOptions } from "./context-records.ts";
+import type { ErasureIncomplete } from "./erasure-incomplete.ts";
 import type { ErasureLedgerUnavailable } from "./erasure-ledger-unavailable.ts";
 import type { ErasureLedger } from "./erasure-ledger.ts";
-import type { ErasureIncomplete } from "./erasure-incomplete.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import {
   confirmErasure,

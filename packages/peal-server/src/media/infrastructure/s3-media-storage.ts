@@ -41,13 +41,13 @@ import {
 } from "#shared/infrastructure/s3-store.ts";
 import type { S3StorageSettings } from "#shared/infrastructure/s3-store.ts";
 
+import { PartBuffer } from "./part-buffer.ts";
+
 // The store's settings, which the shared kernel reads: the erasure ledger
 // keeps its entries in the same store.
 export { S3StorageConfig } from "#shared/infrastructure/s3-store.ts";
 
 export type { S3StorageSettings } from "#shared/infrastructure/s3-store.ts";
-
-import { PartBuffer } from "./part-buffer.ts";
 
 // The media store, on any S3-compatible API: Cloudflare R2 in production,
 // SeaweedFS in development, or the store a self-hoster runs.

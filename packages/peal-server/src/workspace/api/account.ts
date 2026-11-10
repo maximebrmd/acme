@@ -171,16 +171,16 @@ export const AccountHandlers = HttpApiBuilder.group(
                     )
                   ),
                 DatabaseError: Effect.die,
+                ErasureIncomplete: ({ subscriptionsCancelled }) =>
+                  Effect.fail(
+                    new DeletionIncomplete({ subscriptionsCancelled })
+                  ),
                 ErasureLedgerUnavailable: ({ cause }) =>
                   Effect.logWarning(
                     "The erasure ledger could not be written, so nothing was deleted",
                     cause
                   ).pipe(
                     Effect.andThen(Effect.fail(new MediaStoreUnavailable()))
-                  ),
-                ErasureIncomplete: ({ subscriptionsCancelled }) =>
-                  Effect.fail(
-                    new DeletionIncomplete({ subscriptionsCancelled })
                   ),
                 IncorrectPassword: () => Effect.fail(new IncorrectPassword()),
                 LastOwner: ({ workspaces }) =>
