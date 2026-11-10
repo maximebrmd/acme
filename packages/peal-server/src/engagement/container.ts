@@ -66,6 +66,11 @@ export const engagementLive = <E, R>(
     DrizzleEngagementRecords
   );
 
+// The inbox endpoints. They need the use cases the context provides, and
+// the Authentication and WorkspaceAccess middleware of the workspace
+// context, which the composition root brings.
+export { InboxHandlers as InboxApiLive } from "#engagement/api/inbox.ts";
+
 /** EngagementRecords alone, for the workspace context's exports and erasures. */
 export { DrizzleEngagementRecords as EngagementRecordsLive } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 

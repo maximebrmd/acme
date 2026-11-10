@@ -39,6 +39,7 @@ import {
 } from "#channels/container.ts";
 import {
   engagementLive,
+  InboxApiLive,
   EngagementRecordsLive,
   EngagementWorkersLive,
   PlatformEngagementLive,
@@ -122,6 +123,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   LegalApiLive,
   ReviewApiLive,
   WebhooksApiLive,
+  InboxApiLive,
   ContractRequestsDeskApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 

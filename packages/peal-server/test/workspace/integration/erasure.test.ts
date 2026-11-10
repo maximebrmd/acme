@@ -65,14 +65,6 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM analytics.metric_snapshots s JOIN analytics.tracked_posts t ON t.target_id = s.target_id WHERE t.workspace_id = ${id}`,
   "analytics.tracked_posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM analytics.tracked_posts WHERE workspace_id = ${id}`,
-  // What other people wrote under the workspace's posts goes with it, as
-  // do the replies sent to them.
-  "engagement.comments": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM engagement.comments WHERE workspace_id = ${id}`,
-  "engagement.replies": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM engagement.replies WHERE workspace_id = ${id}`,
-  "engagement.threads": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM engagement.threads WHERE workspace_id = ${id}`,
   "assistant.daily_usage": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM assistant.daily_usage WHERE workspace_id = ${id}`,
   "auth.apikey": (sql, id) =>
@@ -119,6 +111,14 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM channels.connect_attempts WHERE workspace_id = ${id}`,
   "channels.connect_choices": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.connect_choices WHERE workspace_id = ${id}`,
+  // What other people wrote under the workspace's posts goes with it, as
+  // do the replies sent to them.
+  "engagement.comments": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.comments WHERE workspace_id = ${id}`,
+  "engagement.replies": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.replies WHERE workspace_id = ${id}`,
+  "engagement.threads": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.threads WHERE workspace_id = ${id}`,
   "media.media_assets": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM media.media_assets WHERE workspace_id = ${id}`,
   "notifications.notices": (sql, id) =>

@@ -15,6 +15,7 @@ import { ConnectedAppsApi } from "./connected-apps.ts";
 import { ContractRequestsDeskApi } from "./contract-requests-desk.ts";
 import { ContractRequestsApi } from "./contract-requests.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
+import { InboxApi } from "./inbox.ts";
 import { InvitationsApi } from "./invitations.ts";
 import { LegalApi } from "./legal.ts";
 import { LookupsApi } from "./lookups.ts";
@@ -928,6 +929,67 @@ export type {
 
 export { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
 
+export {
+  defaultInboxPageSize,
+  InboxAbilitiesSchema,
+  InboxAbilitySchema,
+  InboxAbilityStandingSchema,
+  InboxApi,
+  InboxAuthorSchema,
+  InboxCollectionEndSchema,
+  InboxCommentSchema,
+  InboxCommentStateSchema,
+  InboxModerationActionSchema,
+  inboxPlatforms,
+  InboxReplyReasonSchema,
+  InboxReplySchema,
+  InboxReplyStatusSchema,
+  inboxRetentionDays,
+  InboxThreadDetailSchema,
+  InboxThreadPageSchema,
+  InboxThreadSchema,
+  inboxWindowDays,
+  maxInboxPageSize,
+  maxInboxReplyLength,
+  NewInboxReplySchema,
+} from "./inbox.ts";
+
+export type {
+  InboxAbilities,
+  InboxAbility,
+  InboxAbilityStanding,
+  InboxAuthor,
+  InboxCollectionEnd,
+  InboxComment,
+  InboxCommentState,
+  InboxModerationAction,
+  InboxReply,
+  InboxReplyReason,
+  InboxReplyStatus,
+  InboxThread,
+  InboxThreadDetail,
+  InboxThreadPage,
+  NewInboxReply,
+} from "./inbox.ts";
+
+export { InboxActionFailed } from "./inbox-action-failed.ts";
+
+export { InboxActionUnavailable } from "./inbox-action-unavailable.ts";
+
+export { InboxCommentGone } from "./inbox-comment-gone.ts";
+
+export { InboxCommentNotFound } from "./inbox-comment-not-found.ts";
+
+export { InboxReplyNotFound } from "./inbox-reply-not-found.ts";
+
+export { InboxThreadNotFound } from "./inbox-thread-not-found.ts";
+
+export { ReplyInvalid } from "./reply-invalid.ts";
+
+export { ReplyPending } from "./reply-pending.ts";
+
+export { ReplyStatusConflict } from "./reply-status-conflict.ts";
+
 export { WorkspaceAccess } from "./workspace-access.ts";
 
 export { ApprovalChanged } from "./approval-changed.ts";
@@ -1074,6 +1136,7 @@ export class Api extends HttpApi.make("peal")
   .add(CapabilitiesApi)
   .add(LookupsApi)
   .add(WebhooksApi)
+  .add(InboxApi)
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)
