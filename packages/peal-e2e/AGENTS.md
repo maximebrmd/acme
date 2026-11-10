@@ -33,6 +33,13 @@
   inserts a synthetic one with `seedChannel` (`tests/support/channels.ts`).
   Update it when `channels.channels` changes. Publish nothing, and cancel any
   post a test schedules, through the UI.
+- Nothing goes live in a run either, so a test that needs a post's counts
+  or its comments seeds them as analytics and the inbox keep them
+  (`seedCountedPost`, `seedComment`, `tests/support/followed.ts`), written
+  as no longer read (`ended_at`): the run's server runs its collections,
+  which would otherwise call a platform for them. Update them when
+  `analytics.tracked_posts` or `engagement.threads` change. Mark a comment
+  answered rather than reply: a reply's job would call the platform.
 - CI's `e2e` job runs after `verify`, with its own Postgres and Mailpit and
   SeaweedFS from `compose.yaml`. After a failure, read the report, traces and
   screenshots under `packages/peal-e2e/.e2e/` (CI uploads it for 7 days), and

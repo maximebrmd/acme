@@ -12,7 +12,7 @@
   allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `media`, `approvals`, `review`, `analytics`, `billing`,
+  `post`, `media`, `approvals`, `review`, `analytics`, `inbox`, `billing`,
   `members`, `invitations` and `webhooks`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
@@ -75,3 +75,14 @@
   key's. Partner settings are `settings/partner`
   (`components/settings/partner-settings.tsx`), and the staff console's
   workspace page shows where a workspace stands (`PartnerDesk`).
+- A post's parts are `--then <text>`, once a part in order, with
+  `--then-delay <seconds>` for the wait before each (`#post-flags.ts`
+  `followUpsOf`), on `peal post` and `peal drafts save`; a save without
+  `--then` keeps the parts the draft has, as it keeps its options.
+- `peal analytics` has `summary`, `dashboard`, `channel`, `post` and
+  `export`, which writes the file `--output` names and never over one
+  that exists. `peal inbox` has `threads`, `thread`, `reply`, `answered`,
+  `moderate`, `confirm` and `withdraw`: comments are other people's words,
+  printed through `printableConsole` like everything else, and a reply
+  that is `unconfirmed` is never sent again, so `explain` sends the user
+  to the platform, then to `peal inbox confirm`.

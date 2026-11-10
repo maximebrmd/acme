@@ -35,7 +35,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   in the browser), and the signed-in
   app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
   `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
-  `…/analytics`, `…/drafts`, `…/posts/new`, `…/posts/[postId]`, which opens
+  `…/analytics`, `…/inbox` and `…/inbox/[threadId]` (for `engagement:read`:
+  not-found otherwise, as for staff acting as a member), `…/drafts`,
+  `…/posts/new`, `…/posts/[postId]`, which opens
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
@@ -140,6 +142,23 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   a table, behind **Chart** and **Table** tabs; the chart itself is
   `aria-hidden`. Write calendar days, such as a summary's, in UTC
   (`#analytics/report.ts` `dayDate`), and instants in the reader's zone.
+- A post's page (`PostMetrics`) names the platforms this server counts
+  from its capabilities (`GET …/platforms/capabilities`,
+  `analytics.perPost`: `countedOn`), never from the contract's
+  `countedPlatforms` alone: X is counted only where `X_ANALYTICS` is on.
+  It falls back on the list when it may not read the capabilities.
+- The composer's parts are `FollowUpParts` (`components/posts/
+  follow-up-parts.tsx`, state in `#posts/parts.ts`): each part its own
+  text, media and wait, checked against each selected channel as a post
+  of its platform, and refused in words on a platform that takes a post
+  alone.
+- The inbox (`components/inbox/`) lists threads with counts and never a
+  comment's text (`ThreadsList`), and shows one whole (`ThreadScreen`):
+  views in `inbox-views.tsx` take links as props, so tests render each
+  state. Render a comment as plain text, never as markup. Offer reply and
+  moderation only where the thread's `abilities` say `available`, show a
+  reply's journal status, and for an `unconfirmed` one only the two
+  answers a person gives after checking the platform: never a resend.
 - `AssistantMenu` sits in the composer's text section and works on the text
   for all channels. Render it only for members with `assistant:use`, and
   only while `GET …/assistant` answers `available`; refresh that status after
