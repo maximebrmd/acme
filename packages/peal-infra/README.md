@@ -405,7 +405,9 @@ cannot change: an EU bucket is reached at
 `<account>.eu.r2.cloudflarestorage.com` alone, and the account's plain
 endpoint does not find it. `site.yml` refuses an R2 endpoint without `.eu.`,
 a media endpoint that is not an `https://` URL, and a backup endpoint with a
-scheme. The account's id is part of the endpoint and no secret; it goes in
+scheme. Nothing in another store's endpoint says where its buckets are: once
+you have checked they are in the EU, list its host in
+`peal_storage_eu_hosts`, or `site.yml` refuses it too. The account's id is part of the endpoint and no secret; it goes in
 each environment's `main.yml`, in place of the placeholder.
 
 ### Telegram

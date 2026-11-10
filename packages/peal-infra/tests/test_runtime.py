@@ -51,6 +51,21 @@ def test_the_server_reads_the_privacy_declaration_the_role_writes(rendered: Path
     assert written["ansible.builtin.copy"]["dest"] == "{{ peal_root }}/privacy-declaration.json"
 
 
+def test_a_changed_declaration_reaches_the_server_that_runs() -> None:
+    """The server reads the file when it starts: written again, it would
+    otherwise keep telling users the old declaration until a release."""
+    written = task("peal_runtime", "Write the privacy declaration")
+    (handler,) = [
+        found
+        for found in role_file("peal_runtime", "handlers")
+        if found.get("listen") == written["notify"] or found["name"] == written["notify"]
+    ]
+
+    assert handler["ansible.builtin.command"]["argv"] == ["{{ peal_compose_bin }}", "restart", "server"]
+    # Nothing to restart before the first release.
+    assert handler["ansible.builtin.command"]["removes"] == "{{ peal_root }}/current"
+
+
 @pytest.mark.parametrize("environment", ENVIRONMENTS)
 def test_no_provider_is_declared_before_the_owner_confirms_it(environment: str) -> None:
     """Each user's export repeats the declaration: a provider guessed here
@@ -77,6 +92,17 @@ def test_a_public_media_bucket_needs_a_ledger_bucket_of_its_own() -> None:
     assert _ledger_exposed(peal_runtime_host_settings=public) is True
     assert _ledger_exposed(peal_runtime_host_settings={**public, "PEAL_ERASURE_LEDGER_BUCKET": "peal-erasures"}) is False
     assert _ledger_exposed(peal_runtime_host_settings={}) is False
+
+
+def test_a_ledger_bucket_that_is_the_media_bucket_is_not_one_of_its_own() -> None:
+    public = {"PEAL_MEDIA_PUBLIC_BASE_URL": "https://media.example.com", "PEAL_S3_BUCKET": "peal-media"}
+
+    assert _ledger_exposed(peal_runtime_host_settings={**public, "PEAL_ERASURE_LEDGER_BUCKET": "peal-media"}) is True
+    assert _ledger_exposed(peal_runtime_host_settings={**public, "PEAL_ERASURE_LEDGER_BUCKET": "peal-erasures"}) is False
+    # Private media: the ledger may sit beside it, named or not.
+    assert _ledger_exposed(
+        peal_runtime_host_settings={"PEAL_S3_BUCKET": "peal-media", "PEAL_ERASURE_LEDGER_BUCKET": "peal-media"}
+    ) is False
 
 
 def test_production_sends_its_heartbeat(rendered: Path) -> None:
@@ -181,14 +207,16 @@ def test_an_empty_credential_written_by_hand_is_unset(tmp_path: Path, empty: str
     assert _unset(tmp_path, credentials) == ["PEAL_S3_ACCESS_KEY_ID", "RESEND_API_KEY or SMTP_URL"]
 
 
-def _misplaced(media: str, backup: str) -> list[str]:
-    """The storage endpoints peal_runtime refuses, by setting."""
+def _misplaced(media: str, backup: str, confirmed: tuple[str, ...] = ()) -> list[str]:
+    """The storage endpoints peal_runtime refuses, by setting, when the
+    owner confirmed these hosts keep their buckets in the EU."""
     found = task("peal_runtime", "Refuse storage endpoints the stack would misread, or outside the EU")
     return ansible_render(
         found["vars"]["peal_runtime_misplaced"],
         **{name: trust_as_template(value) for name, value in found["vars"].items()},
         peal_media_endpoint=media,
         peal_backup_endpoint=backup,
+        peal_storage_eu_hosts=list(confirmed),
     )
 
 
@@ -199,9 +227,48 @@ def test_the_inventory_s_storage_endpoints_are_taken(environment: str) -> None:
     assert _misplaced(chosen["peal_media_endpoint"], chosen["peal_backup_endpoint"]) == []
 
 
-def test_any_s3_store_is_taken() -> None:
-    """The stack asks for the S3 API, not for a provider."""
-    assert _misplaced("https://s3.eu-store.test", "s3.eu-store.test") == []
+STORE = ("s3.eu-store.test",)
+
+
+def test_any_s3_store_is_taken_once_the_owner_confirms_it_is_in_the_eu() -> None:
+    """The stack asks for the S3 API, not for a provider; but nothing in
+    another store's endpoint says where its buckets are, so the inventory
+    does (peal_storage_eu_hosts)."""
+    assert _misplaced("https://s3.eu-store.test", "s3.eu-store.test", STORE) == []
+    assert _misplaced("https://S3.EU-Store.test:443/", "s3.eu-store.test:443", STORE) == []
+    assert _misplaced("https://s3.eu-store.test", "s3.eu-store.test") == [
+        "peal_media_endpoint",
+        "peal_backup_endpoint",
+    ]
+    assert _misplaced("https://s3.us-store.test", "s3.eu-store.test", STORE) == ["peal_media_endpoint"]
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_no_store_is_confirmed_before_the_owner_does(environment: str) -> None:
+    assert settings(environment)["peal_storage_eu_hosts"] == []
+
+
+def test_an_r2_endpoint_is_recognised_however_it_is_written() -> None:
+    """Host names have no case, and a port changes nothing of where the
+    bucket is."""
+    account = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+    assert _misplaced(
+        f"https://{account}.R2.CloudflareStorage.com", f"{account}.R2.CLOUDFLARESTORAGE.COM"
+    ) == ["peal_media_endpoint", "peal_backup_endpoint"]
+    assert _misplaced(
+        f"https://{account}.eu.r2.cloudflarestorage.com:443", f"{account}.eu.r2.cloudflarestorage.com:443"
+    ) == []
+    assert _misplaced(
+        f"https://{account}.EU.R2.cloudflarestorage.com/", f"{account}.eu.r2.cloudflarestorage.com"
+    ) == []
+    # Confirming a host never lets an R2 endpoint outside the EU through.
+    plain = f"{account}.r2.cloudflarestorage.com"
+    assert _misplaced(f"https://{plain}", plain, (plain,)) == ["peal_media_endpoint", "peal_backup_endpoint"]
+    # A name that only holds R2's is another store's.
+    assert _misplaced(
+        "https://eu.r2.cloudflarestorage.com.store.test", "x.eu.r2.cloudflarestorage.com.store.test"
+    ) == ["peal_media_endpoint", "peal_backup_endpoint"]
 
 
 def test_an_r2_endpoint_outside_the_eu_jurisdiction_is_refused() -> None:
@@ -220,6 +287,6 @@ def test_an_r2_endpoint_outside_the_eu_jurisdiction_is_refused() -> None:
 def test_the_media_endpoint_is_a_url_and_the_backup_endpoint_a_host() -> None:
     """The server reads a URL; pgBackRest reads a host, and takes a scheme
     for part of its name."""
-    assert _misplaced("s3.eu-store.test", "s3.eu-store.test") == ["peal_media_endpoint"]
-    assert _misplaced("http://s3.eu-store.test", "s3.eu-store.test") == ["peal_media_endpoint"]
-    assert _misplaced("https://s3.eu-store.test", "https://s3.eu-store.test") == ["peal_backup_endpoint"]
+    assert _misplaced("s3.eu-store.test", "s3.eu-store.test", STORE) == ["peal_media_endpoint"]
+    assert _misplaced("http://s3.eu-store.test", "s3.eu-store.test", STORE) == ["peal_media_endpoint"]
+    assert _misplaced("https://s3.eu-store.test", "https://s3.eu-store.test", STORE) == ["peal_backup_endpoint"]
