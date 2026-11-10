@@ -380,7 +380,7 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     ChannelReconnectRequired: () => `/app/${workspaceId}/channels`,
     ChannelReconnectSoon: () => `/app/${workspaceId}/channels`,
     CommentsReceived: ({ threadId }) =>
-      `/app/${workspaceId}/comments/${threadId}`,
+      `/app/${workspaceId}/inbox/${threadId}`,
     PostApprovalRequested: ({ postId }) =>
       `/app/${workspaceId}/posts/${postId}`,
     PostApproved: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,

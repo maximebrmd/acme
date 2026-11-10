@@ -54,6 +54,8 @@ export const retentionPeriods = {
   erasureLedger: { days: 42 },
   exportLinks: { days: 7 },
   idempotencyKeys: { hours: 24 },
+  inboxAfterCollection: { days: 30 },
+  inboxWindow: { days: 30 },
   invoices: { years: 10 },
   legalAccount: { years: 1 },
   legalConnections: { years: 1 },
@@ -271,6 +273,35 @@ export const processingRegister: readonly ProcessingCategory[] = [
     source: {
       en: "The owners and admins of your workspaces, for the endpoints; the service, from what happens to posts, channels and media; the receiving server, for its answers",
       fr: "Les propriétaires et administrateurs de vos espaces de travail, pour les points de terminaison ; le service, d’après ce qui arrive aux publications, aux canaux et aux médias ; le serveur destinataire, pour ses réponses",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "The comments people leave in public under a workspace’s published posts, on the platforms Peal reads them on: for each, its author’s public handle, display name and identifier on the platform, its text, when it was written and what it answers, and nothing else of its author; whether the workspace answered it; and the replies members send from Peal, with who wrote each and how sending ended",
+      fr: "Les commentaires laissés en public sous les publications mises en ligne d’un espace de travail, sur les plateformes où Peal les lit : pour chacun, l’identifiant public, le nom affiché et l’identifiant sur la plateforme de son auteur, son texte, sa date et ce à quoi il répond, et rien d’autre de son auteur ; si l’espace de travail y a répondu ; et les réponses que les membres envoient depuis Peal, avec leur auteur et l’issue de l’envoi",
+    },
+    id: "inbox",
+    legalBasis: {
+      en: "For members, performance of a contract (GDPR Article 6(1)(b)). For the people who commented, who are not users of the service, legitimate interests (GDPR Article 6(1)(f)): the workspace’s interest in reading and answering what is said in public under its own posts; the service processes their comments for the workspace, and for nothing else",
+      fr: "Pour les membres, exécution d’un contrat (RGPD, article 6, paragraphe 1, point b). Pour les personnes qui ont commenté, qui ne sont pas utilisatrices du service, intérêts légitimes (RGPD, article 6, paragraphe 1, point f) : l’intérêt de l’espace de travail à lire ce qui est dit en public sous ses propres publications et à y répondre ; le service traite leurs commentaires pour l’espace de travail, et pour rien d’autre",
+    },
+    name: {
+      en: "Comments under published posts, and replies to them",
+      fr: "Commentaires sous les publications mises en ligne, et réponses",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Show a workspace’s members the comments its posts receive and let them answer in public, as the connected account. Comments are used for nothing else: no profile of their authors, no advertising, no automated decision, no training of models",
+      fr: "Montrer aux membres d’un espace de travail les commentaires que reçoivent ses publications et leur permettre d’y répondre en public, au nom du compte connecté. Les commentaires ne servent à rien d’autre : ni profil de leurs auteurs, ni publicité, ni décision automatisée, ni entraînement de modèles",
+    },
+    retention: {
+      en: `Comments are read for ${p.inboxWindow.days} days after a post went live, unless the operator set another period (90 days at most). A post’s comments and the replies sent to them: ${p.inboxAfterCollection.days} days after that, then deleted within a day; earlier with the workspace. A comment its platform no longer shows loses its text and its author at the next read. Closing an account removes it as the author of the replies it sent, which stay with their workspace`,
+      fr: `Les commentaires sont lus pendant ${p.inboxWindow.days} jours après la mise en ligne d’une publication, sauf autre durée fixée par l’exploitant (90 jours au plus). Les commentaires d’une publication et les réponses envoyées : ${p.inboxAfterCollection.days} jours de plus, puis supprimés dans la journée ; plus tôt avec l’espace de travail. Un commentaire que sa plateforme ne montre plus perd son texte et son auteur à la lecture suivante. La fermeture d’un compte le retire comme auteur des réponses qu’il a envoyées, qui restent à leur espace de travail`,
+    },
+    source: {
+      en: "The platforms, for the comments, which their authors published there; the members of your workspaces, for the replies",
+      fr: "Les plateformes, pour les commentaires, que leurs auteurs y ont publiés ; les membres de vos espaces de travail, pour les réponses",
     },
   },
   {

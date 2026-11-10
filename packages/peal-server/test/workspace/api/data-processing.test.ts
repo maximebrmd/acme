@@ -10,6 +10,11 @@ import {
 
 import { contractRetention } from "#billing/domain/contract-retention.ts";
 import { trialMemory } from "#billing/domain/trial-memory.ts";
+import {
+  defaultWindow,
+  longestWindow,
+} from "#engagement/domain/collection-schedule.ts";
+import { keptAfterCollection } from "#engagement/domain/engagement-retention.ts";
 import { legalRetention } from "#legal/domain/legal-retention.ts";
 import { downloadLifetime } from "#media/infrastructure/drizzle-media-records.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
@@ -78,6 +83,19 @@ describe("the data processing registry", () => {
     expect(
       Duration.days(retentionPeriods.webhookDeliveries.days)
     ).toStrictEqual(deliveryRetention);
+  });
+
+  it("reads and keeps comments as long as the collection and its purge do", () => {
+    expect(Duration.days(retentionPeriods.inboxWindow.days)).toStrictEqual(
+      defaultWindow
+    );
+    expect(
+      Duration.days(retentionPeriods.inboxAfterCollection.days)
+    ).toStrictEqual(keptAfterCollection);
+    expect(longestWindow).toStrictEqual(Duration.days(90));
+    expect(kept("inbox")).toContain("90 days at most");
+    // Other people wrote them: used to show and answer, nothing else.
+    expect(categoryOf("inbox")?.purposes.en).toContain("used for nothing else");
   });
 
   it("keeps an idempotency key as long as it answers its first post", () => {
