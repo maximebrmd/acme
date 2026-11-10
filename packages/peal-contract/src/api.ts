@@ -271,6 +271,8 @@ export {
   LookupResultSchema,
   LookupsApi,
   maxLookupPageSize,
+  PinterestBoardSchema,
+  PinterestBoardSectionSchema,
   YouTubePlaylistSchema,
   YouTubeVideoCategorySchema,
 } from "./lookups.ts";
@@ -538,9 +540,12 @@ export type {
 
 export {
   ChannelOptionsSchema,
+  maxPinterestLinkLength,
+  maxPinterestTitleLength,
   maxYouTubeTagsLength,
   maxYouTubeTitleLength,
   optionsPlatforms,
+  PinterestOptionsSchema,
   TargetOptionsSchema,
   TikTokOptionsSchema,
   TikTokPrivacyLevelSchema,
@@ -552,6 +557,7 @@ export {
 export type {
   ChannelOptions,
   OptionsPlatform,
+  PinterestOptions,
   TargetOptions,
   TikTokOptions,
   TikTokPrivacyLevel,

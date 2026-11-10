@@ -122,6 +122,43 @@ export const TikTokOptionsSchema = Schema.Struct({
 
 export type TikTokOptions = typeof TikTokOptionsSchema.Type;
 
+/** The longest title Pinterest takes, in characters (code points). */
+export const maxPinterestTitleLength = 100;
+
+/** The longest link Pinterest takes, in characters (code points). */
+export const maxPinterestLinkLength = 2048;
+
+/**
+ * A Pin on a Pinterest account: its description is the post's text there,
+ * and its alt text the first file's.
+ */
+export const PinterestOptionsSchema = Schema.Struct({
+  // Required to schedule: the id of the board the Pin is saved to, from
+  // the `pinterestBoards` lookup. Digits.
+  boardId: Schema.optionalKey(OptionTextSchema),
+  // A section of that board, from the `pinterestBoardSections` lookup.
+  boardSectionId: Schema.optionalKey(OptionTextSchema),
+  // The second of a video its cover is taken at: 0, the first frame, when
+  // left out; the last frame when the video is shorter.
+  coverSecond: Schema.optionalKey(
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
+  ),
+  // The colour Pinterest shows while the image loads, as "#6E7874".
+  dominantColor: Schema.optionalKey(OptionTextSchema),
+  // Where people land when they click the Pin: an http or https address
+  // of at most `maxPinterestLinkLength` characters.
+  link: Schema.optionalKey(OptionTextSchema),
+  platform: Schema.Literal("pinterest"),
+  // At most `maxPinterestTitleLength` characters.
+  title: Schema.optionalKey(OptionTextSchema),
+}).annotate({
+  description:
+    "How a post goes out on a Pinterest account, as a Pin. Scheduling needs `boardId`.",
+  identifier: "PinterestOptions",
+});
+
+export type PinterestOptions = typeof PinterestOptionsSchema.Type;
+
 /**
  * What a post says on a channel that only its platform knows, tagged by
  * `platform`. Platforms without a member here take no options.
@@ -129,6 +166,7 @@ export type TikTokOptions = typeof TikTokOptionsSchema.Type;
 export const TargetOptionsSchema = Schema.Union([
   YouTubeOptionsSchema,
   TikTokOptionsSchema,
+  PinterestOptionsSchema,
 ]).annotate({
   description:
     "What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.",

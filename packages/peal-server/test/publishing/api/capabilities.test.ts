@@ -191,12 +191,43 @@ describe("the platforms' capabilities endpoint", () => {
       assert.deepStrictEqual(
         all.find(({ platform }) => platform === "pinterest")?.media,
         {
-          altText: { maxLength: 5000, shown: null },
-          formats: null,
-          maxCount: 20,
-          maxVideos: null,
-          mixesKinds: null,
-          required: false,
+          altText: { maxLength: 500, shown: true },
+          formats: [
+            ...(["image/jpeg", "image/png"] as const).map((contentType) => ({
+              contentType,
+              kind: "image" as const,
+              maxAspectRatio: null,
+              maxByteSize: 20_971_520,
+              maxDurationMs: null,
+              maxMediaWith: null,
+              maxPixels: null,
+              maxSide: null,
+              minAspectRatio: null,
+              minByteSize: null,
+              minDurationMs: null,
+              minSide: null,
+            })),
+            ...(["video/mp4", "video/quicktime"] as const).map(
+              (contentType) => ({
+                contentType,
+                kind: "video" as const,
+                maxAspectRatio: 1.91,
+                maxByteSize: 2_147_483_648,
+                maxDurationMs: 900_000,
+                maxMediaWith: null,
+                maxPixels: null,
+                maxSide: null,
+                minAspectRatio: 0.5,
+                minByteSize: null,
+                minDurationMs: 4000,
+                minSide: null,
+              })
+            ),
+          ],
+          maxCount: 5,
+          maxVideos: 1,
+          mixesKinds: false,
+          required: true,
         }
       );
     })

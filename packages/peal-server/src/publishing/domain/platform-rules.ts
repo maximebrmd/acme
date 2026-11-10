@@ -99,7 +99,8 @@ const minute = 60 * second;
 //   up to 35 photos. TikTok publishes nothing without media.
 // - YouTube: the video's description, at most 5,000 bytes, without "<" or
 //   ">"; no post without its one video.
-// - Pinterest: no limit known yet.
+// - Pinterest: a Pin's description, at most 800 characters (pins/create);
+//   no Pin without an image or a video; up to 5 images, a carousel.
 //
 // "Characters" with no other word count code points, the stricter reading.
 //
@@ -143,7 +144,12 @@ const minute = 60 * second;
 //   alone (channels Google has not verified take 15 minutes at most, which
 //   only YouTube knows). A video of 3 minutes or less that is square or
 //   taller than wide becomes a Short.
-// - Pinterest: no media rule known yet.
+// - Pinterest (pins/create, and its product specs): JPEG and PNG images of
+//   up to 20 MB, one alone or 2 to 5 as a carousel; or one video, MP4 or
+//   QuickTime, of 4 seconds to 15 minutes and up to 2 GB, taller than
+//   1.91:1 and shorter than 1:2, never with images. A Pin has one alt text
+//   of up to 500 characters, the first file's. Pinterest asks carousel
+//   images to be square or 2:3, which it checks itself.
 const blueskyImage: FormatLimits = { maxByteSize: 2_000_000 };
 
 const mastodonImage: FormatLimits = {
@@ -200,6 +206,15 @@ const tiktokVideo: FormatLimits = {
   maxByteSize: 4096 * mebibyte,
   maxDurationMs: 10 * minute,
   sideRange: { maximum: 4096, minimum: 360 },
+};
+
+const pinterestImage: FormatLimits = { maxByteSize: 20 * mebibyte };
+
+const pinterestVideo: FormatLimits = {
+  aspectRatio: { maximum: 1.91, minimum: 0.5 },
+  maxByteSize: 2048 * mebibyte,
+  maxDurationMs: 15 * minute,
+  minDurationMs: 4 * second,
 };
 
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
@@ -299,7 +314,23 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: false,
     textLimits: [{ maximum: 500, unit: "codePoints" }],
   },
-  pinterest: { mediaRequired: false, textLimits: [] },
+  pinterest: {
+    maxMedia: 5,
+    media: {
+      formats: {
+        "image/jpeg": pinterestImage,
+        "image/png": pinterestImage,
+        "video/mp4": pinterestVideo,
+        "video/quicktime": pinterestVideo,
+      },
+      maxAltTextLength: 500,
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: true,
+    },
+    mediaRequired: true,
+    textLimits: [{ maximum: 800, unit: "codePoints" }],
+  },
   threads: {
     maxLinks: 5,
     maxMedia: 20,

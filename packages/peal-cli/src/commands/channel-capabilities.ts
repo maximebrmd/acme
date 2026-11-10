@@ -161,6 +161,7 @@ const optionLines = ({ options }: PlatformCapabilities): readonly string[] =>
 
 // The flags of `peal channels lookup` that fill each input field.
 const inputFlags: Readonly<Record<keyof LookupInput, string>> = {
+  boardId: "--board",
   cursor: "--cursor",
   language: "--language",
   limit: "--limit",
@@ -350,6 +351,16 @@ const resultLines = (
   creatorLines: CreatorLines
 ): readonly string[] =>
   Match.valueTags(result, {
+    pinterestBoardSections: ({ items }) =>
+      items.length === 0
+        ? ["The board has no sections on this page."]
+        : columns(items.map(({ id, name }) => [id, name])),
+    pinterestBoards: ({ items }) =>
+      items.length === 0
+        ? ["The account has no boards on this page."]
+        : columns(
+            items.map(({ id, name, privacy }) => [id, name, privacy ?? ""])
+          ),
     tiktokCreator: ({ items }) => items.flatMap(creatorLines),
     youtubePlaylists: ({ items }) =>
       items.length === 0
@@ -369,6 +380,13 @@ export const lookupWith = (creatorLines: CreatorLines) =>
   Command.make(
     "lookup",
     {
+      board: Flag.String("board").pipe(
+        Flag.withMetavar("<board-id>"),
+        Flag.withDescription(
+          "The Pinterest board whose sections are listed, by its id."
+        ),
+        Flag.optional
+      ),
       channelId: channelArgument,
       cursor: Flag.String("cursor").pipe(
         Flag.withDescription(
@@ -438,6 +456,10 @@ export const lookupWith = (creatorLines: CreatorLines) =>
       }
 
       const payload: LookupInput = {
+        ...Option.match(given.board, {
+          onNone: () => ({}),
+          onSome: (boardId) => ({ boardId }),
+        }),
         ...Option.match(given.cursor, {
           onNone: () => ({}),
           onSome: (cursor) => ({ cursor }),

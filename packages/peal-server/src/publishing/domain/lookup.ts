@@ -10,11 +10,13 @@ import type { TikTokBlock, TikTokCreator } from "./tiktok-creator.ts";
  * What a platform tells about an account that a post's options refer to,
  * read from the platform when asked: YouTube's video categories, whose ids
  * `categoryId` takes, and the channel's playlists; a TikTok creator's
- * posting settings, whose audiences `privacyLevel` takes.
+ * posting settings, whose audiences `privacyLevel` takes; a Pinterest
+ * account's boards, whose ids `boardId` takes, and a board's sections,
+ * for `boardSectionId`.
  *
  * A lookup is a name, the platform it reads, the input it takes (a struct
- * of optional fields, described to clients from the schema itself) and the
- * items it answers. Adding one is adding its name, its entry in `lookups`,
+ * of optional fields, described to clients from the schema itself, of which
+ * `required` names those it cannot run without) and the items it answers. Adding one is adding its name, its entry in `lookups`,
  * its member in `LookupQuery` and `LookupResult`, an adapter behind
  * `PlatformLookups`, and the contract's copy.
  */
@@ -22,6 +24,8 @@ export const LookupNameSchema = Schema.Literals([
   "youtubeVideoCategories",
   "youtubePlaylists",
   "tiktokCreator",
+  "pinterestBoards",
+  "pinterestBoardSections",
 ]);
 
 export type LookupName = typeof LookupNameSchema.Type;
@@ -68,6 +72,24 @@ export const YouTubePlaylistsInputSchema = Schema.Struct({
   limit: Schema.optionalKey(LimitSchema),
 });
 
+// A board's id: digits, as Pinterest's API gives them.
+const pinterestBoardId = /^\d+$/u;
+
+/** What listing a Pinterest account's boards takes. */
+export const PinterestBoardsInputSchema = Schema.Struct({
+  cursor: Schema.optionalKey(CursorSchema),
+  limit: Schema.optionalKey(LimitSchema),
+});
+
+/** What listing a Pinterest board's sections takes: the board, always. */
+export const PinterestBoardSectionsInputSchema = Schema.Struct({
+  boardId: Schema.optionalKey(
+    Schema.String.check(Schema.isPattern(pinterestBoardId))
+  ),
+  cursor: Schema.optionalKey(CursorSchema),
+  limit: Schema.optionalKey(LimitSchema),
+});
+
 /** Reading a TikTok creator takes nothing. */
 export const TikTokCreatorInputSchema = Schema.Struct({});
 
@@ -103,6 +125,25 @@ export interface TikTokCreatorItem {
   readonly takesPhotos: boolean;
 }
 
+/** A board of a Pinterest account, or a group board it pins to. */
+export interface PinterestBoard {
+  /** What `boardId` takes. */
+  readonly id: string;
+  readonly name: string;
+  /**
+   * Who can see it, as Pinterest says: PUBLIC or PROTECTED; none when
+   * Pinterest does not say.
+   */
+  readonly privacy: Option.Option<string>;
+}
+
+/** A section of a Pinterest board. */
+export interface PinterestBoardSection {
+  /** What `boardSectionId` takes. */
+  readonly id: string;
+  readonly name: string;
+}
+
 /** A lookup to run, with its input decoded. */
 export type LookupQuery =
   | {
@@ -115,7 +156,18 @@ export type LookupQuery =
       readonly cursor: Option.Option<string>;
       readonly limit: number;
     }
-  | { readonly _tag: "tiktokCreator" };
+  | { readonly _tag: "tiktokCreator" }
+  | {
+      readonly _tag: "pinterestBoards";
+      readonly cursor: Option.Option<string>;
+      readonly limit: number;
+    }
+  | {
+      readonly _tag: "pinterestBoardSections";
+      readonly boardId: string;
+      readonly cursor: Option.Option<string>;
+      readonly limit: number;
+    };
 
 interface Page<Tag extends LookupName, Item> {
   readonly _tag: Tag;
@@ -128,7 +180,9 @@ interface Page<Tag extends LookupName, Item> {
 export type LookupResult =
   | Page<"youtubeVideoCategories", YouTubeVideoCategory>
   | Page<"youtubePlaylists", YouTubePlaylist>
-  | Page<"tiktokCreator", TikTokCreatorItem>;
+  | Page<"tiktokCreator", TikTokCreatorItem>
+  | Page<"pinterestBoards", PinterestBoard>
+  | Page<"pinterestBoardSections", PinterestBoardSection>;
 
 /** The result of the lookup named `Name`. */
 export type LookupResultOf<Name extends LookupName> = Extract<
@@ -149,6 +203,8 @@ interface LookupDefinition<Name extends LookupName> {
   /** Its answer comes in pages, each naming the next one's cursor. */
   readonly paged: boolean;
   readonly platform: Platform;
+  /** The input's fields the lookup cannot run without; none when left out. */
+  readonly required?: readonly string[];
   /** The query for an input that decoded; none for one that did not. */
   readonly query: (input: LookupInput) => Option.Option<LookupQueryOf<Name>>;
 }
@@ -163,6 +219,24 @@ const decodePlaylists = Schema.decodeUnknownOption(
   { onExcessProperty: "error" }
 );
 
+const decodeBoards = Schema.decodeUnknownOption(PinterestBoardsInputSchema, {
+  onExcessProperty: "error",
+});
+
+const decodeBoardSections = Schema.decodeUnknownOption(
+  PinterestBoardSectionsInputSchema,
+  { onExcessProperty: "error" }
+);
+
+const pageNotes = {
+  cursor: { maxLength: maxCursorLength },
+  limit: {
+    ifLeftOut: defaultLookupPageSize,
+    maximum: maxLookupPageSize,
+    minimum: 1,
+  },
+} as const;
+
 // An empty struct takes any object: an input without fields is a record
 // that holds nothing.
 const decodeCreator = Schema.decodeUnknownOption(
@@ -171,6 +245,43 @@ const decodeCreator = Schema.decodeUnknownOption(
 
 /** Every lookup, by name. */
 export const lookups = {
+  pinterestBoardSections: {
+    input: PinterestBoardSectionsInputSchema,
+    notes: {
+      ...pageNotes,
+      boardId: { lookup: "pinterestBoards", pattern: pinterestBoardId.source },
+    },
+    paged: true,
+    platform: "pinterest",
+    query: (input) =>
+      decodeBoardSections(input).pipe(
+        Option.flatMap(({ boardId, cursor, limit }) =>
+          Option.fromUndefinedOr(boardId).pipe(
+            Option.map((board) => ({
+              _tag: "pinterestBoardSections" as const,
+              boardId: board,
+              cursor: Option.fromUndefinedOr(cursor),
+              limit: limit ?? defaultLookupPageSize,
+            }))
+          )
+        )
+      ),
+    required: ["boardId"],
+  },
+  pinterestBoards: {
+    input: PinterestBoardsInputSchema,
+    notes: pageNotes,
+    paged: true,
+    platform: "pinterest",
+    query: (input) =>
+      decodeBoards(input).pipe(
+        Option.map(({ cursor, limit }) => ({
+          _tag: "pinterestBoards" as const,
+          cursor: Option.fromUndefinedOr(cursor),
+          limit: limit ?? defaultLookupPageSize,
+        }))
+      ),
+  },
   tiktokCreator: {
     input: TikTokCreatorInputSchema,
     notes: {},
@@ -183,14 +294,7 @@ export const lookups = {
   },
   youtubePlaylists: {
     input: YouTubePlaylistsInputSchema,
-    notes: {
-      cursor: { maxLength: maxCursorLength },
-      limit: {
-        ifLeftOut: defaultLookupPageSize,
-        maximum: maxLookupPageSize,
-        minimum: 1,
-      },
-    },
+    notes: pageNotes,
     paged: true,
     platform: "youtube",
     query: (input) =>
@@ -226,7 +330,7 @@ export const lookups = {
 
 /** A lookup as clients are told of it. */
 export interface LookupDescription {
-  /** The fields its input takes, none of them required. */
+  /** The fields its input takes, and which of them it needs. */
   readonly input: readonly FieldDescription<LookupName>[];
   readonly name: LookupName;
   readonly paged: boolean;
@@ -238,12 +342,13 @@ export const lookupNames: readonly LookupName[] = LookupNameSchema.literals;
 
 /** What clients are told of the lookup. */
 export const describeLookup = (name: LookupName): LookupDescription => {
-  const { input, notes, paged, platform } = lookups[name];
+  const definition: LookupDefinition<LookupName> = lookups[name];
+  const { input, notes, paged, platform } = definition;
 
   return {
     input: describeFields<LookupName>(input.fields, {
       notes,
-      required: [],
+      required: definition.required ?? [],
     }).filter(isDescribed),
     name,
     paged,

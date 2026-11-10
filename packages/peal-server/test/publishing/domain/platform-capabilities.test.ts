@@ -250,10 +250,20 @@ describe("a platform's capabilities", () => {
       { maximum: maxPostTextLength, unit: "utf16Units" },
     ]);
     expect(capabilitiesOf("x", false).maxAltTextLength).toBe(1000);
-    expect(capabilitiesOf("pinterest", false)).toMatchObject({
+    expect(capabilitiesOf("facebook", false)).toMatchObject({
       maxAltTextLength,
       maxMedia: maxMediaPerPost,
-      textLimits: [{ maximum: maxPostTextLength, unit: "utf16Units" }],
+    });
+  });
+
+  it("hold a platform's own limits where they are the stricter", () => {
+    expect(capabilitiesOf("pinterest", true)).toMatchObject({
+      maxAltTextLength: 500,
+      maxMedia: 5,
+      textLimits: [
+        { maximum: 800, unit: "codePoints" },
+        { maximum: maxPostTextLength, unit: "utf16Units" },
+      ],
     });
   });
 

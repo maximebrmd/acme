@@ -18,6 +18,7 @@ import {
   failedTargetId,
   finishedId,
   mastodonId,
+  pinterestId,
   quotaTargetId,
   scheduledId,
   studioMe,
@@ -508,6 +509,36 @@ describe("peal channels lookup", () => {
 
       assert.include(last, "PLsynthetic02  Field notes");
       assert.notInclude(last, "More:");
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("lists a Pinterest account's boards, and a board's sections", () =>
+    Effect.gen(function* pinterest() {
+      const session = yield* signedIn();
+
+      assert.include(
+        yield* session.printed(lookup([pinterestId])),
+        "pinterestBoardSections  fills boardSectionId  takes --board, --cursor, --limit"
+      );
+      assert.include(
+        yield* session.printed(lookup([pinterestId, "pinterestBoards"])),
+        "549755885001  Studio notes  PUBLIC"
+      );
+      assert.include(
+        yield* session.printed(
+          lookup([
+            pinterestId,
+            "pinterestBoardSections",
+            "--board",
+            "549755885001",
+          ])
+        ),
+        "5000000000001  Sketches"
+      );
+      assert.include(
+        yield* session.refused(lookup([pinterestId, "pinterestBoardSections"])),
+        "The lookup refused its input"
+      );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 

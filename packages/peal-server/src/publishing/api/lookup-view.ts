@@ -28,6 +28,22 @@ export const lookupResultView = (result: LookupResult): LookupResultView => {
     };
   }
 
+  if (result._tag === "pinterestBoards") {
+    return {
+      _tag: result._tag,
+      items: result.items.map(({ id, name, privacy }) => ({
+        id,
+        name,
+        privacy: Option.getOrNull(privacy),
+      })),
+      nextCursor,
+    };
+  }
+
+  if (result._tag === "pinterestBoardSections") {
+    return { _tag: result._tag, items: result.items, nextCursor };
+  }
+
   return {
     _tag: result._tag,
     items: result.items.map(tiktokAccountView),
