@@ -195,8 +195,7 @@ export const MediaHandlers = HttpApiBuilder.group(
                     new MediaTooLarge({ byteSize, kind, maxByteSize })
                   ),
                 MissingPermission: forbidden,
-                PlanLimitReached: ({ allowed, limit }) =>
-                  Effect.fail(new PlanLimitReached({ allowed, limit })),
+                PlanLimitReached: limitReached,
                 UnsupportedMediaType: ({ contentType }) =>
                   Effect.fail(new UnsupportedMediaType({ contentType })),
                 UploadRejected: ({ reason }) =>
