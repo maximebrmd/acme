@@ -112,6 +112,14 @@ const outgoing = {
   text: "@reader@social.example Thank you!",
 };
 
+// How a resumed reply ends on a server that answers `answer`.
+const resumed = (answer: PlatformAnswer) =>
+  Effect.gen(function* resuming() {
+    const { account, platform } = yield* onServer(() => answer);
+
+    return yield* platform.resume(account, outgoing);
+  });
+
 describe("Mastodon's comments", () => {
   it.effect(
     "reads a status's public replies as text, with what each answers",
@@ -410,6 +418,60 @@ describe("Mastodon's comments", () => {
           reason: "interrupted",
         });
         assert.lengthOf(server.requests(), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "never says a resumed reply did not go out unless the answer proves it",
+    () =>
+      Effect.gen(function* resumesInDoubt() {
+        // Within Mastodon's window for the key. An earlier run may have
+        // made the status: only an answer that proves it did not is a
+        // failure, and a member is never told to write the reply again
+        // on anything less.
+        yield* TestClock.setTime(
+          DateTime.toEpochMillis(
+            DateTime.makeUnsafe("2026-11-10T09:25:00.000Z")
+          )
+        );
+
+        const unknown = { _tag: "unconfirmed", reason: "interrupted" } as const;
+
+        // The instance asks to slow down; a proxy on the way refuses, or
+        // answers for a page that is not there; the status answered was
+        // deleted since (the reply, if made, is still there); the token
+        // is refused; the instance fails; the connection drops.
+        for (const answer of [
+          json({ error: "Too many requests" }, 429),
+          json({ message: "Forbidden by the gateway" }, 403),
+          empty(404),
+          json({ error: "Record not found" }, 404),
+          json({ error: "The access token is invalid" }, 401),
+          json({ error: "Something went wrong" }, 500),
+          dropped,
+        ]) {
+          assert.strictEqual((yield* resumed(answer))._tag, "unconfirmed");
+        }
+
+        assert.deepStrictEqual(
+          yield* resumed(json({ error: "Too many requests" }, 429)),
+          unknown
+        );
+
+        // Mastodon validates a status only when the key made none: its
+        // own refusal of the text is the one answer that proves it.
+        assert.deepStrictEqual(
+          yield* resumed(
+            json({ error: "Validation failed: Text is too long" }, 422)
+          ),
+          { _tag: "failed", reason: "refused" }
+        );
+
+        // And the status the key made, or makes now, is the reply.
+        assert.strictEqual(
+          (yield* resumed(json({ id: "3001", url: null })))._tag,
+          "sent"
+        );
       }).pipe(Effect.scoped)
   );
 

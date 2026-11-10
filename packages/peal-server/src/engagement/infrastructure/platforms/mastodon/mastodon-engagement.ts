@@ -131,6 +131,12 @@ const failed = (reason: ReplyFailure): ActionOutcome => ({
 
 const done: ActionOutcome = { _tag: "done" };
 
+// A resumed reply nobody can tell the fate of: a person checks.
+const undecided: SendOutcome = { _tag: "unconfirmed", reason: "interrupted" };
+
+// A resumed reply Mastodon refused as it was sent: none was ever made.
+const refusedAsSent: SendOutcome = { _tag: "failed", reason: "refused" };
+
 const statusPath = (id: string, action = "") =>
   `/api/v1/statuses/${encodeURIComponent(id)}${action}`;
 
@@ -368,13 +374,21 @@ export const mastodonEngagement = Effect.fn("MastodonEngagement.make")(
       }
     );
 
+    // A first send knows nothing went out before it, so a refusal is a
+    // failure. A resume follows a run that may have made the status: the
+    // same key answers that status, or makes it, and only Mastodon's own
+    // refusal of what is sent (422, in its JSON) proves none was made, as
+    // a status is validated only when the key made none. Anything else,
+    // a rate limit, a proxy, a refused token, a status answered that was
+    // deleted since, leaves the reply for a person to check.
     const post = (
       account: ChannelAccount,
-      reply: OutgoingReply
+      reply: OutgoingReply,
+      mode: "resume" | "send"
     ): Effect.Effect<SendOutcome> =>
       asAccount<SendOutcome>(
         account,
-        (reason) => ({ _tag: "failed", reason }),
+        (reason) => (mode === "send" ? { _tag: "failed", reason } : undecided),
         Effect.fn("MastodonEngagement.reply")(function* send(instance, token) {
           const sent = yield* HttpClientRequest.post(
             new URL("/api/v1/statuses", instance)
@@ -418,6 +432,12 @@ export const mastodonEngagement = Effect.fn("MastodonEngagement.make")(
             return unanswered;
           }
 
+          if (mode === "resume") {
+            return response.status === 422 && (yield* isMastodonError(response))
+              ? refusedAsSent
+              : undecided;
+          }
+
           const reason = yield* refusalOn(response);
           const outcome: SendOutcome = { _tag: "failed", reason };
 
@@ -439,7 +459,7 @@ export const mastodonEngagement = Effect.fn("MastodonEngagement.make")(
               DateTime.addDuration(reply.createdAt, idempotencyWindow)
             )
           ) {
-            return post(account, reply);
+            return post(account, reply, "resume");
           }
 
           return Effect.succeed<SendOutcome>({
@@ -507,7 +527,7 @@ export const mastodonEngagement = Effect.fn("MastodonEngagement.make")(
       moderate,
       read,
       resume,
-      send: post,
+      send: (account, reply) => post(account, reply, "send"),
       withdraw: (account, platformCommentId) =>
         act(account, "DELETE", statusPath(platformCommentId), true),
     };
