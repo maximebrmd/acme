@@ -207,6 +207,9 @@ const post = Command.make(
           ["  Replies", String(target.latest.replies)],
           ["  Quotes", count(target.latest.quotes)],
           ["  Impressions", count(target.latest.impressions)],
+          ["  Reach", count(target.latest.reach)],
+          ["  Clicks", count(target.latest.clicks)],
+          ["  Saves", count(target.latest.saves)],
         ])) {
           yield* Console.log(line);
         }
