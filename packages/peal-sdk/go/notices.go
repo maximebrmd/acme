@@ -464,6 +464,10 @@ type NoticeEvent struct {
 	PostPublished            *NoticeEventPostPublished
 	PostFailed               *NoticeEventPostFailed
 	PostUnconfirmed          *NoticeEventPostUnconfirmed
+	PostApprovalRequested    *NoticeEventPostApprovalRequested
+	PostApproved             *NoticeEventPostApproved
+	PostChangesRequested     *NoticeEventPostChangesRequested
+	PostCommented            *NoticeEventPostCommented
 	ChannelReconnectRequired *NoticeEventChannelReconnectRequired
 	ChannelReconnectSoon     *NoticeEventChannelReconnectSoon
 	SubscriptionStarted      *NoticeEventSubscriptionStarted
@@ -502,6 +506,34 @@ func (n *NoticeEvent) GetPostUnconfirmed() *NoticeEventPostUnconfirmed {
 		return nil
 	}
 	return n.PostUnconfirmed
+}
+
+func (n *NoticeEvent) GetPostApprovalRequested() *NoticeEventPostApprovalRequested {
+	if n == nil {
+		return nil
+	}
+	return n.PostApprovalRequested
+}
+
+func (n *NoticeEvent) GetPostApproved() *NoticeEventPostApproved {
+	if n == nil {
+		return nil
+	}
+	return n.PostApproved
+}
+
+func (n *NoticeEvent) GetPostChangesRequested() *NoticeEventPostChangesRequested {
+	if n == nil {
+		return nil
+	}
+	return n.PostChangesRequested
+}
+
+func (n *NoticeEvent) GetPostCommented() *NoticeEventPostCommented {
+	if n == nil {
+		return nil
+	}
+	return n.PostCommented
 }
 
 func (n *NoticeEvent) GetChannelReconnectRequired() *NoticeEventChannelReconnectRequired {
@@ -590,6 +622,30 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.PostUnconfirmed = value
+	case "PostApprovalRequested":
+		value := new(NoticeEventPostApprovalRequested)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.PostApprovalRequested = value
+	case "PostApproved":
+		value := new(NoticeEventPostApproved)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.PostApproved = value
+	case "PostChangesRequested":
+		value := new(NoticeEventPostChangesRequested)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.PostChangesRequested = value
+	case "PostCommented":
+		value := new(NoticeEventPostCommented)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.PostCommented = value
 	case "ChannelReconnectRequired":
 		value := new(NoticeEventChannelReconnectRequired)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -656,6 +712,18 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.PostUnconfirmed != nil {
 		return internal.MarshalJSONWithExtraProperty(n.PostUnconfirmed, "_tag", "PostUnconfirmed")
 	}
+	if n.PostApprovalRequested != nil {
+		return internal.MarshalJSONWithExtraProperty(n.PostApprovalRequested, "_tag", "PostApprovalRequested")
+	}
+	if n.PostApproved != nil {
+		return internal.MarshalJSONWithExtraProperty(n.PostApproved, "_tag", "PostApproved")
+	}
+	if n.PostChangesRequested != nil {
+		return internal.MarshalJSONWithExtraProperty(n.PostChangesRequested, "_tag", "PostChangesRequested")
+	}
+	if n.PostCommented != nil {
+		return internal.MarshalJSONWithExtraProperty(n.PostCommented, "_tag", "PostCommented")
+	}
 	if n.ChannelReconnectRequired != nil {
 		return internal.MarshalJSONWithExtraProperty(n.ChannelReconnectRequired, "_tag", "ChannelReconnectRequired")
 	}
@@ -690,6 +758,10 @@ type NoticeEventVisitor interface {
 	VisitPostPublished(*NoticeEventPostPublished) error
 	VisitPostFailed(*NoticeEventPostFailed) error
 	VisitPostUnconfirmed(*NoticeEventPostUnconfirmed) error
+	VisitPostApprovalRequested(*NoticeEventPostApprovalRequested) error
+	VisitPostApproved(*NoticeEventPostApproved) error
+	VisitPostChangesRequested(*NoticeEventPostChangesRequested) error
+	VisitPostCommented(*NoticeEventPostCommented) error
 	VisitChannelReconnectRequired(*NoticeEventChannelReconnectRequired) error
 	VisitChannelReconnectSoon(*NoticeEventChannelReconnectSoon) error
 	VisitSubscriptionStarted(*NoticeEventSubscriptionStarted) error
@@ -709,6 +781,18 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.PostUnconfirmed != nil {
 		return visitor.VisitPostUnconfirmed(n.PostUnconfirmed)
+	}
+	if n.PostApprovalRequested != nil {
+		return visitor.VisitPostApprovalRequested(n.PostApprovalRequested)
+	}
+	if n.PostApproved != nil {
+		return visitor.VisitPostApproved(n.PostApproved)
+	}
+	if n.PostChangesRequested != nil {
+		return visitor.VisitPostChangesRequested(n.PostChangesRequested)
+	}
+	if n.PostCommented != nil {
+		return visitor.VisitPostCommented(n.PostCommented)
 	}
 	if n.ChannelReconnectRequired != nil {
 		return visitor.VisitChannelReconnectRequired(n.ChannelReconnectRequired)
@@ -750,6 +834,18 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.PostUnconfirmed != nil {
 		fields = append(fields, "PostUnconfirmed")
+	}
+	if n.PostApprovalRequested != nil {
+		fields = append(fields, "PostApprovalRequested")
+	}
+	if n.PostApproved != nil {
+		fields = append(fields, "PostApproved")
+	}
+	if n.PostChangesRequested != nil {
+		fields = append(fields, "PostChangesRequested")
+	}
+	if n.PostCommented != nil {
+		fields = append(fields, "PostCommented")
 	}
 	if n.ChannelReconnectRequired != nil {
 		fields = append(fields, "ChannelReconnectRequired")
@@ -975,6 +1071,430 @@ func (n *NoticeEventChannelReconnectSoon) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NoticeEventChannelReconnectSoon) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventPostApprovalRequestedFieldPostID      = big.NewInt(1 << 0)
+	noticeEventPostApprovalRequestedFieldScheduledAt = big.NewInt(1 << 1)
+)
+
+type NoticeEventPostApprovalRequested struct {
+	PostID      string `json:"postId" url:"postId"`
+	ScheduledAt string `json:"scheduledAt" url:"scheduledAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventPostApprovalRequested) GetPostID() string {
+	if n == nil {
+		return ""
+	}
+	return n.PostID
+}
+
+func (n *NoticeEventPostApprovalRequested) GetScheduledAt() string {
+	if n == nil {
+		return ""
+	}
+	return n.ScheduledAt
+}
+
+func (n *NoticeEventPostApprovalRequested) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventPostApprovalRequested) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPostApprovalRequested) SetPostID(postID string) {
+	n.PostID = postID
+	n.require(noticeEventPostApprovalRequestedFieldPostID)
+}
+
+// SetScheduledAt sets the ScheduledAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPostApprovalRequested) SetScheduledAt(scheduledAt string) {
+	n.ScheduledAt = scheduledAt
+	n.require(noticeEventPostApprovalRequestedFieldScheduledAt)
+}
+
+func (n *NoticeEventPostApprovalRequested) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventPostApprovalRequested
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventPostApprovalRequested(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventPostApprovalRequested) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventPostApprovalRequested
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventPostApprovalRequested) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventPostApprovedFieldBy     = big.NewInt(1 << 0)
+	noticeEventPostApprovedFieldLate   = big.NewInt(1 << 1)
+	noticeEventPostApprovedFieldPostID = big.NewInt(1 << 2)
+)
+
+type NoticeEventPostApproved struct {
+	By     ReviewParty `json:"by" url:"by"`
+	Late   bool        `json:"late" url:"late"`
+	PostID string      `json:"postId" url:"postId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventPostApproved) GetBy() ReviewParty {
+	if n == nil {
+		return ""
+	}
+	return n.By
+}
+
+func (n *NoticeEventPostApproved) GetLate() bool {
+	if n == nil {
+		return false
+	}
+	return n.Late
+}
+
+func (n *NoticeEventPostApproved) GetPostID() string {
+	if n == nil {
+		return ""
+	}
+	return n.PostID
+}
+
+func (n *NoticeEventPostApproved) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventPostApproved) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetBy sets the By field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPostApproved) SetBy(by ReviewParty) {
+	n.By = by
+	n.require(noticeEventPostApprovedFieldBy)
+}
+
+// SetLate sets the Late field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPostApproved) SetLate(late bool) {
+	n.Late = late
+	n.require(noticeEventPostApprovedFieldLate)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPostApproved) SetPostID(postID string) {
+	n.PostID = postID
+	n.require(noticeEventPostApprovedFieldPostID)
+}
+
+func (n *NoticeEventPostApproved) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventPostApproved
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventPostApproved(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventPostApproved) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventPostApproved
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventPostApproved) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventPostChangesRequestedFieldBy     = big.NewInt(1 << 0)
+	noticeEventPostChangesRequestedFieldPostID = big.NewInt(1 << 1)
+)
+
+type NoticeEventPostChangesRequested struct {
+	By     ReviewParty `json:"by" url:"by"`
+	PostID string      `json:"postId" url:"postId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventPostChangesRequested) GetBy() ReviewParty {
+	if n == nil {
+		return ""
+	}
+	return n.By
+}
+
+func (n *NoticeEventPostChangesRequested) GetPostID() string {
+	if n == nil {
+		return ""
+	}
+	return n.PostID
+}
+
+func (n *NoticeEventPostChangesRequested) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventPostChangesRequested) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetBy sets the By field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPostChangesRequested) SetBy(by ReviewParty) {
+	n.By = by
+	n.require(noticeEventPostChangesRequestedFieldBy)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPostChangesRequested) SetPostID(postID string) {
+	n.PostID = postID
+	n.require(noticeEventPostChangesRequestedFieldPostID)
+}
+
+func (n *NoticeEventPostChangesRequested) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventPostChangesRequested
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventPostChangesRequested(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventPostChangesRequested) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventPostChangesRequested
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventPostChangesRequested) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventPostCommentedFieldBy     = big.NewInt(1 << 0)
+	noticeEventPostCommentedFieldPostID = big.NewInt(1 << 1)
+)
+
+type NoticeEventPostCommented struct {
+	By     ReviewParty `json:"by" url:"by"`
+	PostID string      `json:"postId" url:"postId"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventPostCommented) GetBy() ReviewParty {
+	if n == nil {
+		return ""
+	}
+	return n.By
+}
+
+func (n *NoticeEventPostCommented) GetPostID() string {
+	if n == nil {
+		return ""
+	}
+	return n.PostID
+}
+
+func (n *NoticeEventPostCommented) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventPostCommented) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetBy sets the By field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPostCommented) SetBy(by ReviewParty) {
+	n.By = by
+	n.require(noticeEventPostCommentedFieldBy)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventPostCommented) SetPostID(postID string) {
+	n.PostID = postID
+	n.require(noticeEventPostCommentedFieldPostID)
+}
+
+func (n *NoticeEventPostCommented) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventPostCommented
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventPostCommented(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventPostCommented) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventPostCommented
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventPostCommented) String() string {
 	if n == nil {
 		return "<nil>"
 	}
@@ -2212,6 +2732,31 @@ func (n *NoticePage) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", n)
+}
+
+type ReviewParty string
+
+const (
+	ReviewPartyMember      ReviewParty = "member"
+	ReviewPartyVisitor     ReviewParty = "visitor"
+	ReviewPartyApplication ReviewParty = "application"
+)
+
+func NewReviewPartyFromString(s string) (ReviewParty, error) {
+	switch s {
+	case "member":
+		return ReviewPartyMember, nil
+	case "visitor":
+		return ReviewPartyVisitor, nil
+	case "application":
+		return ReviewPartyApplication, nil
+	}
+	var t ReviewParty
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (r ReviewParty) Ptr() *ReviewParty {
+	return &r
 }
 
 var (

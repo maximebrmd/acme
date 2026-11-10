@@ -641,11 +641,11 @@ var planAllowancesNullableFields = map[string]*big.Int{
 }
 
 type PlanAllowances struct {
-	AssistantRequests *int `json:"assistantRequests,omitempty" url:"assistantRequests,omitempty"`
-	Channels          *int `json:"channels,omitempty" url:"channels,omitempty"`
-	MediaStorage      *int `json:"mediaStorage,omitempty" url:"mediaStorage,omitempty"`
-	Members           *int `json:"members,omitempty" url:"members,omitempty"`
-	ScheduledPosts    *int `json:"scheduledPosts,omitempty" url:"scheduledPosts,omitempty"`
+	AssistantRequests *int64 `json:"assistantRequests,omitempty" url:"assistantRequests,omitempty"`
+	Channels          *int64 `json:"channels,omitempty" url:"channels,omitempty"`
+	MediaStorage      *int64 `json:"mediaStorage,omitempty" url:"mediaStorage,omitempty"`
+	Members           *int64 `json:"members,omitempty" url:"members,omitempty"`
+	ScheduledPosts    *int64 `json:"scheduledPosts,omitempty" url:"scheduledPosts,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -654,35 +654,35 @@ type PlanAllowances struct {
 	rawJSON         json.RawMessage
 }
 
-func (p *PlanAllowances) GetAssistantRequests() *int {
+func (p *PlanAllowances) GetAssistantRequests() *int64 {
 	if p == nil {
 		return nil
 	}
 	return p.AssistantRequests
 }
 
-func (p *PlanAllowances) GetChannels() *int {
+func (p *PlanAllowances) GetChannels() *int64 {
 	if p == nil {
 		return nil
 	}
 	return p.Channels
 }
 
-func (p *PlanAllowances) GetMediaStorage() *int {
+func (p *PlanAllowances) GetMediaStorage() *int64 {
 	if p == nil {
 		return nil
 	}
 	return p.MediaStorage
 }
 
-func (p *PlanAllowances) GetMembers() *int {
+func (p *PlanAllowances) GetMembers() *int64 {
 	if p == nil {
 		return nil
 	}
 	return p.Members
 }
 
-func (p *PlanAllowances) GetScheduledPosts() *int {
+func (p *PlanAllowances) GetScheduledPosts() *int64 {
 	if p == nil {
 		return nil
 	}
@@ -707,35 +707,35 @@ func (p *PlanAllowances) require(field *big.Int) {
 
 // SetAssistantRequests sets the AssistantRequests field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PlanAllowances) SetAssistantRequests(assistantRequests *int) {
+func (p *PlanAllowances) SetAssistantRequests(assistantRequests *int64) {
 	p.AssistantRequests = assistantRequests
 	p.require(planAllowancesFieldAssistantRequests)
 }
 
 // SetChannels sets the Channels field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PlanAllowances) SetChannels(channels *int) {
+func (p *PlanAllowances) SetChannels(channels *int64) {
 	p.Channels = channels
 	p.require(planAllowancesFieldChannels)
 }
 
 // SetMediaStorage sets the MediaStorage field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PlanAllowances) SetMediaStorage(mediaStorage *int) {
+func (p *PlanAllowances) SetMediaStorage(mediaStorage *int64) {
 	p.MediaStorage = mediaStorage
 	p.require(planAllowancesFieldMediaStorage)
 }
 
 // SetMembers sets the Members field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PlanAllowances) SetMembers(members *int) {
+func (p *PlanAllowances) SetMembers(members *int64) {
 	p.Members = members
 	p.require(planAllowancesFieldMembers)
 }
 
 // SetScheduledPosts sets the ScheduledPosts field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PlanAllowances) SetScheduledPosts(scheduledPosts *int) {
+func (p *PlanAllowances) SetScheduledPosts(scheduledPosts *int64) {
 	p.ScheduledPosts = scheduledPosts
 	p.require(planAllowancesFieldScheduledPosts)
 }
@@ -1353,7 +1353,7 @@ var (
 type Usage struct {
 	AssistantRequests *PeriodUsage `json:"assistantRequests" url:"assistantRequests"`
 	Channels          int          `json:"channels" url:"channels"`
-	MediaStorage      int          `json:"mediaStorage" url:"mediaStorage"`
+	MediaStorage      int64        `json:"mediaStorage" url:"mediaStorage"`
 	Members           int          `json:"members" url:"members"`
 	ScheduledPosts    *PeriodUsage `json:"scheduledPosts" url:"scheduledPosts"`
 
@@ -1378,7 +1378,7 @@ func (u *Usage) GetChannels() int {
 	return u.Channels
 }
 
-func (u *Usage) GetMediaStorage() int {
+func (u *Usage) GetMediaStorage() int64 {
 	if u == nil {
 		return 0
 	}
@@ -1431,7 +1431,7 @@ func (u *Usage) SetChannels(channels int) {
 
 // SetMediaStorage sets the MediaStorage field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *Usage) SetMediaStorage(mediaStorage int) {
+func (u *Usage) SetMediaStorage(mediaStorage int64) {
 	u.MediaStorage = mediaStorage
 	u.require(usageFieldMediaStorage)
 }

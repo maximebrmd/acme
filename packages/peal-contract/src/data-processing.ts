@@ -35,6 +35,9 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  *   `trial-memory.ts`);
  * - `webhookDeliveries`: a webhook endpoint's delivery log
  *   (`webhooks/domain/delivery-policy.ts`);
+ * - `reviewVisitorNames`: what people without an
+ *   account leave on a review link, and the link's own record, which goes
+ *   with the names (`review/domain/review-retention.ts`);
  * - `idempotencyKeys`: the keys of the requests that make a post in one
  *   call (`publishing/domain/idempotency.ts`), and of those that make a
  *   partner's workspace (`workspace/domain/idempotency.ts`);
@@ -64,6 +67,7 @@ export const retentionPeriods = {
   legalDisclosures: { years: 5 },
   legalIdentity: { years: 5 },
   metrics: { days: 30 },
+  reviewVisitorNames: { months: 24 },
   serverLogs: { days: 31 },
   traces: { days: 14 },
   trialMemory: { years: 2 },
@@ -149,8 +153,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The posts, media and schedules of your workspaces, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts; for a post made in one call with an idempotency key, a digest of that key and of its request, never either; and, for each channel a post goes to, a fingerprint of what each channel receives (a digest of its text and media), which keeps the same post from going out twice by mistake",
-      fr: "Les publications, médias et planifications de vos espaces de travail, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre ; et, pour chaque canal où part une publication, une empreinte de ce que le canal reçoit (un condensé de son texte et de ses médias), qui évite qu’une même publication parte deux fois par erreur",
+      en: "The posts, media and schedules of your workspaces, what was read of each file (its type, size, dimensions, duration, or a document’s number of pages), the comments members write on posts and the approvals they ask for and decide, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts; for a post made in one call with an idempotency key, a digest of that key and of its request, never either; and, for each channel a post goes to, a fingerprint of what each channel receives (a digest of its text and media), which keeps the same post from going out twice by mistake",
+      fr: "Les publications, médias et planifications de vos espaces de travail, ce qui a été lu de chaque fichier (son type, sa taille, ses dimensions, sa durée, ou le nombre de pages d’un document), les commentaires que les membres écrivent sur les publications et les approbations qu’ils demandent et décident, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre ; et, pour chaque canal où part une publication, une empreinte de ce que le canal reçoit (un condensé de son texte et de ses médias), qui évite qu’une même publication parte deux fois par erreur",
     },
     id: "content",
     legalBasis: contract,
@@ -175,8 +179,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The social media accounts you connect, their identifiers on each platform, and the access tokens the platforms issue, stored encrypted; the connect links a workspace hands out so that an account’s owner connects it without an account on the service: who created each, when it expires, whether it was used and what it connected, how its last sign-in failed, and digests of its address and of the browser that started its sign-in, never either",
-      fr: "Les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme, et les jetons d’accès que les plateformes délivrent, stockés chiffrés ; les liens de connexion qu’un espace de travail remet pour que le titulaire d’un compte le connecte sans compte sur le service : qui a créé chacun, quand il expire, s’il a servi et ce qu’il a connecté, comment sa dernière connexion a échoué, et des empreintes de son adresse et du navigateur qui a commencé sa connexion, jamais l’une ni l’autre",
+      en: "The social media accounts you connect, their identifiers on each platform, the way each was connected where a platform has several (a LinkedIn profile or company page, either of Instagram’s logins), and the access tokens the platforms issue, stored encrypted; the connect links a workspace hands out so that an account’s owner connects it without an account on the service: who created each, when it expires, whether it was used and what it connected, how its last sign-in failed, and digests of its address and of the browser that started its sign-in, never either",
+      fr: "Les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme, la façon dont chacun a été connecté quand une plateforme en a plusieurs (un profil ou une page d’entreprise LinkedIn, l’une ou l’autre des connexions Instagram), et les jetons d’accès que les plateformes délivrent, stockés chiffrés ; les liens de connexion qu’un espace de travail remet pour que le titulaire d’un compte le connecte sans compte sur le service : qui a créé chacun, quand il expire, s’il a servi et ce qu’il a connecté, comment sa dernière connexion a échoué, et des empreintes de son adresse et du navigateur qui a commencé sa connexion, jamais l’une ni l’autre",
     },
     id: "channels",
     legalBasis: contract,
@@ -387,6 +391,35 @@ export const processingRegister: readonly ProcessingCategory[] = [
     source: {
       en: "You, when you order, start a trial, withdraw, or ask to cancel or withdraw, signed in or through the form that needs no account",
       fr: "Vous, lorsque vous commandez, commencez un essai, vous rétractez, ou demandez une résiliation ou une rétractation, connecté ou par le formulaire accessible sans compte",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "What someone a member sends a review link to writes on its page, without an account: the name they choose, their comments, what they decide (an approval, a request for changes) and when. No email address: Peal sends nothing to someone without an account. Members’ comments and decisions are kept with their account",
+      fr: "Ce qu’une personne à qui un membre envoie un lien de relecture écrit sur sa page, sans compte : le nom qu’elle choisit, ses commentaires, ce qu’elle décide (une approbation, une demande de modifications) et quand. Aucune adresse e-mail : Peal n’envoie rien à une personne sans compte. Les commentaires et décisions des membres sont conservés avec leur compte",
+    },
+    id: "review",
+    legalBasis: {
+      en: "Performance of the contract with the workspace that sends the link (GDPR Article 6(1)(b)), and its legitimate interests (point (f)) in showing who approved a post",
+      fr: "Exécution du contrat avec l’espace de travail qui envoie le lien (RGPD, article 6, paragraphe 1, point b), et son intérêt légitime (point f) à montrer qui a approuvé une publication",
+    },
+    name: {
+      en: "Review data from people without an account",
+      fr: "Données de relecture des personnes sans compte",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Let people outside a workspace review a post before it is published, and keep who approved it",
+      fr: "Permettre à des personnes extérieures à un espace de travail de relire une publication avant sa parution, et garder qui l’a approuvée",
+    },
+    retention: {
+      en: `The name a reviewer gave, with their comments and decisions: ${p.reviewVisitorNames.months} months after each comment or decision, after which these stay without a name. All of it is deleted earlier with the post, or with its workspace. A link’s own record (never the link itself, of which only a hash is kept): ${p.reviewVisitorNames.months} months after it ends`,
+      fr: `Le nom qu’une personne invitée a donné, avec ses commentaires et décisions : ${p.reviewVisitorNames.months} mois après chaque commentaire ou décision, après quoi ceux-ci restent sans nom. Le tout est supprimé plus tôt avec la publication, ou avec son espace de travail. La trace d’un lien (jamais le lien lui-même, dont seule une empreinte est conservée) : ${p.reviewVisitorNames.months} mois après sa fin`,
+    },
+    source: {
+      en: "The person who opens a review link a member sent them",
+      fr: "La personne qui ouvre un lien de relecture qu’un membre lui a envoyé",
     },
   },
   {
@@ -619,6 +652,13 @@ export const recipientCategories: readonly RecipientCategory[] = [
     recipient: {
       en: "The platforms you publish to, which receive what you publish there and process it as controllers, under their own privacy policies",
       fr: "Les plateformes sur lesquelles vous publiez, qui reçoivent ce que vous y publiez et le traitent en tant que responsables de traitement, selon leurs propres politiques de confidentialité",
+    },
+  },
+  {
+    applies: "always",
+    recipient: {
+      en: "The people a member sends a review link to, who see without an account the post it shows, its images and videos, and, when the link lets them comment, the comments on it with the names of those who wrote them",
+      fr: "Les personnes à qui un membre envoie un lien de relecture, qui voient sans compte la publication qu’il montre, ses images et vidéos, et, quand le lien permet de commenter, ses commentaires avec le nom de leurs auteurs",
     },
   },
   {

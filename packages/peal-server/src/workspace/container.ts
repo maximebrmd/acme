@@ -169,6 +169,8 @@ export const WorkspaceLive = Layer.mergeAll(
 ).pipe(
   Layer.provide(AdaptersLive),
   Layer.provideMerge(PartnerOwnershipLive),
+  // The directory other contexts name members with (the review context).
+  Layer.provideMerge(MemberDirectoryLive),
   Layer.provideMerge(StaffToolsLive),
   Layer.provideMerge(BetterAuthLive),
   Layer.provideMerge(ImpersonationGuardLive),

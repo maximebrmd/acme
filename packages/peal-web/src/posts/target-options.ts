@@ -1,9 +1,21 @@
 import { Match, Option, Schema } from "effect";
 import type { useTranslations } from "next-intl";
-import { maxYouTubeTitleLength, TargetOptionsSchema } from "peal-contract";
+import {
+  LinkedInMentionSchema,
+  maxGoogleBusinessTitleLength,
+  maxLinkedInDocumentTitleLength,
+  maxLinkedInLinkDescriptionLength,
+  maxLinkedInLinkTitleLength,
+  maxLinkedInLinkUrlLength,
+  maxPinterestLinkLength,
+  maxPinterestTitleLength,
+  maxYouTubeTitleLength,
+  TargetOptionsSchema,
+} from "peal-contract";
 import type {
   ChannelOptions,
   ContentViolation,
+  LinkedInMention,
   OptionsPlatform,
   Platform,
   Post,
@@ -26,6 +38,16 @@ interface Described {
   readonly hint?: OptionsText;
   /** Why the platform refuses the option's value (`optionInvalid`). */
   readonly invalid?: OptionsText;
+  /**
+   * The field shows, and its value is sent, only while the field named
+   * `name` holds one of `values`, or nothing yet when `unset`: an event's
+   * dates show once the post is an event.
+   */
+  readonly shownWith?: {
+    readonly name: string;
+    readonly unset?: true;
+    readonly values: readonly string[];
+  };
 }
 
 /** One line of text; `maxLength` characters (code points) at most. */
@@ -40,9 +62,22 @@ export interface TagsField extends Described {
   readonly kind: "tags";
 }
 
-/** One of `choices`, with nothing chosen at first. */
+/**
+ * A day and a time on a clock that is not the reader's, to the minute, as
+ * `2026-11-27T09:00`.
+ */
+export interface LocalTimeField extends Described {
+  readonly kind: "localTime";
+  readonly required?: true;
+}
+
+/**
+ * One of `choices`, with nothing chosen at first. With `none`, a first
+ * choice under that label chooses nothing again.
+ */
 export interface ChoiceField extends Described {
   readonly kind: "choice";
+  readonly none?: OptionsText;
   readonly choices: readonly {
     readonly label: OptionsText;
     readonly value: string;
@@ -71,18 +106,251 @@ export interface ToggleField extends Described {
   readonly within?: string;
 }
 
+/**
+ * One of the values the account has, which a lookup reads from the
+ * platform (`#posts/lookup-choices.ts`): a Pinterest account's boards.
+ * Under `under`, it shows only once that field has a value, and is cleared
+ * when that value changes, as a board's sections follow the board.
+ */
+export interface LookupField extends Described {
+  /** What to say when the account has none of them. */
+  readonly empty?: OptionsText;
+  readonly kind: "lookup";
+  readonly required?: true;
+  readonly under?: string;
+}
+
+/** A whole number, `minimum` at least. */
+export interface NumberField extends Described {
+  readonly kind: "number";
+  readonly minimum: number;
+}
+
+/**
+ * The pages a LinkedIn post names, typed as `Name <urn>` and separated by
+ * semicolons: each is linked where the text holds `@` and the name.
+ */
+export interface MentionsField extends Described {
+  readonly kind: "mentions";
+}
+
 export type OptionField =
   | ChoiceField
+  | LocalTimeField
+  | LookupField
+  | NumberField
+  | MentionsField
   | TagsField
   | TextField
   | ToggleField
   | YesNoField;
+
+// A Google Business Profile event or offer, which has a title and dates.
+const scheduled = { name: "postType", values: ["event", "offer"] } as const;
+
+const offered = { name: "postType", values: ["offer"] } as const;
 
 /**
  * The fields of each platform that takes options, in the order the composer
  * shows them. A platform's options added to the contract need an entry here.
  */
 export const optionFields = {
+  googleBusiness: [
+    {
+      choices: [
+        { label: "googleBusiness.postTypeStandard", value: "standard" },
+        { label: "googleBusiness.postTypeEvent", value: "event" },
+        { label: "googleBusiness.postTypeOffer", value: "offer" },
+      ],
+      hint: "googleBusiness.postTypeHint",
+      kind: "choice",
+      label: "googleBusiness.postType",
+      name: "postType",
+    },
+    {
+      hint: "googleBusiness.titleHint",
+      kind: "text",
+      label: "googleBusiness.title",
+      maxLength: maxGoogleBusinessTitleLength,
+      name: "title",
+      required: true,
+      shownWith: scheduled,
+    },
+    {
+      hint: "googleBusiness.startsAtHint",
+      invalid: "googleBusiness.startsAtInvalid",
+      kind: "localTime",
+      label: "googleBusiness.startsAt",
+      name: "startsAt",
+      required: true,
+      shownWith: scheduled,
+    },
+    {
+      invalid: "googleBusiness.endsAtInvalid",
+      kind: "localTime",
+      label: "googleBusiness.endsAt",
+      name: "endsAt",
+      required: true,
+      shownWith: scheduled,
+    },
+    {
+      choices: [
+        { label: "googleBusiness.actionBook", value: "book" },
+        { label: "googleBusiness.actionOrder", value: "order" },
+        { label: "googleBusiness.actionShop", value: "shop" },
+        { label: "googleBusiness.actionLearnMore", value: "learnMore" },
+        { label: "googleBusiness.actionSignUp", value: "signUp" },
+        { label: "googleBusiness.actionCall", value: "call" },
+      ],
+      hint: "googleBusiness.callToActionHint",
+      kind: "choice",
+      label: "googleBusiness.callToAction",
+      name: "callToAction",
+      none: "googleBusiness.actionNone",
+      // An offer shows Google's own button.
+      shownWith: {
+        name: "postType",
+        unset: true,
+        values: ["standard", "event"],
+      },
+    },
+    {
+      hint: "googleBusiness.linkHint",
+      invalid: "googleBusiness.linkInvalid",
+      kind: "text",
+      label: "googleBusiness.callToActionUrl",
+      name: "callToActionUrl",
+      required: true,
+      // The call button rings the location's own number.
+      shownWith: {
+        name: "callToAction",
+        values: ["book", "order", "shop", "learnMore", "signUp"],
+      },
+    },
+    {
+      hint: "googleBusiness.couponCodeHint",
+      kind: "text",
+      label: "googleBusiness.couponCode",
+      name: "couponCode",
+      shownWith: offered,
+    },
+    {
+      hint: "googleBusiness.linkHint",
+      invalid: "googleBusiness.linkInvalid",
+      kind: "text",
+      label: "googleBusiness.redeemUrl",
+      name: "redeemUrl",
+      shownWith: offered,
+    },
+    {
+      kind: "text",
+      label: "googleBusiness.terms",
+      name: "terms",
+      shownWith: offered,
+    },
+  ],
+  linkedin: [
+    {
+      choices: [
+        { label: "linkedin.visibilityPublic", value: "public" },
+        { label: "linkedin.visibilityConnections", value: "connections" },
+        { label: "linkedin.visibilityLoggedIn", value: "loggedIn" },
+      ],
+      hint: "linkedin.visibilityHint",
+      kind: "choice",
+      label: "linkedin.visibility",
+      name: "visibility",
+    },
+    {
+      initial: false,
+      kind: "toggle",
+      label: "linkedin.disableReshare",
+      name: "disableReshare",
+    },
+    {
+      hint: "linkedin.mentionsHint",
+      invalid: "linkedin.mentionsInvalid",
+      kind: "mentions",
+      label: "linkedin.mentions",
+      name: "mentions",
+    },
+    {
+      hint: "linkedin.linkUrlHint",
+      invalid: "linkedin.linkUrlInvalid",
+      kind: "text",
+      label: "linkedin.linkUrl",
+      maxLength: maxLinkedInLinkUrlLength,
+      name: "linkUrl",
+    },
+    {
+      hint: "linkedin.linkTitleHint",
+      kind: "text",
+      label: "linkedin.linkTitle",
+      maxLength: maxLinkedInLinkTitleLength,
+      name: "linkTitle",
+    },
+    {
+      kind: "text",
+      label: "linkedin.linkDescription",
+      maxLength: maxLinkedInLinkDescriptionLength,
+      name: "linkDescription",
+    },
+    {
+      hint: "linkedin.documentTitleHint",
+      invalid: "linkedin.documentTitleInvalid",
+      kind: "text",
+      label: "linkedin.documentTitle",
+      maxLength: maxLinkedInDocumentTitleLength,
+      name: "documentTitle",
+    },
+  ],
+  pinterest: [
+    {
+      empty: "pinterest.boardEmpty",
+      hint: "pinterest.boardHint",
+      invalid: "pinterest.boardInvalid",
+      kind: "lookup",
+      label: "pinterest.board",
+      name: "boardId",
+      required: true,
+    },
+    {
+      invalid: "pinterest.boardSectionInvalid",
+      kind: "lookup",
+      label: "pinterest.boardSection",
+      name: "boardSectionId",
+      under: "boardId",
+    },
+    {
+      hint: "pinterest.titleHint",
+      kind: "text",
+      label: "pinterest.title",
+      maxLength: maxPinterestTitleLength,
+      name: "title",
+    },
+    {
+      hint: "pinterest.linkHint",
+      invalid: "pinterest.linkInvalid",
+      kind: "text",
+      label: "pinterest.link",
+      maxLength: maxPinterestLinkLength,
+      name: "link",
+    },
+    {
+      hint: "pinterest.coverSecondHint",
+      kind: "number",
+      label: "pinterest.coverSecond",
+      minimum: 0,
+      name: "coverSecond",
+    },
+    {
+      hint: "pinterest.dominantColorHint",
+      invalid: "pinterest.dominantColorInvalid",
+      kind: "text",
+      label: "pinterest.dominantColor",
+      name: "dominantColor",
+    },
+  ],
   tiktok: [
     {
       choices: [
@@ -230,8 +498,9 @@ export const fieldOf = (
 
 /**
  * What the member has filled in on one channel: text and tags as typed
- * (tags separated by commas), choices by their value, yes or no and boxes
- * as booleans. A field missing is not filled in.
+ * (tags separated by commas, numbers as their digits), choices by their
+ * value, yes or no and boxes as booleans. A field missing is not filled
+ * in.
  */
 export type OptionValues = Readonly<Record<string, boolean | string>>;
 
@@ -241,10 +510,14 @@ const entry = (
   value: boolean | string
 ): readonly [string, boolean | string] => [name, value];
 
+const MentionsSchema = Schema.Array(LinkedInMentionSchema);
+
 const StoredValueSchema = Schema.Union([
   Schema.String,
   Schema.Boolean,
+  Schema.Number,
   Schema.Array(Schema.String),
+  MentionsSchema,
 ]);
 
 // An option's value as the API holds it.
@@ -260,7 +533,42 @@ const decodeBoolean = Schema.decodeUnknownOption(Schema.Boolean);
 
 const decodeTags = Schema.decodeUnknownOption(Schema.Array(Schema.String));
 
+const decodeNumber = Schema.decodeUnknownOption(Schema.Number);
+
+const wholeNumber = /^\d+$/u;
+
+const decodeMentions = Schema.decodeUnknownOption(MentionsSchema);
+
 const tagSeparator = ", ";
+
+const mentionSeparator = "; ";
+
+// A mention as typed: the page's name, then its URN between angle
+// brackets.
+const typedMention = /^(?<name>.+?)\s*<(?<urn>[^<>\s]+)>$/u;
+
+/** The mentions as the field shows them: `Name <urn>; Name <urn>`. */
+export const mentionsText = (mentions: readonly LinkedInMention[]): string =>
+  mentions.map(({ name, urn }) => `${name} <${urn}>`).join(mentionSeparator);
+
+/**
+ * The mentions typed in the field. An entry without a URN between angle
+ * brackets is kept with an empty one, so scheduling says the field is
+ * wrong rather than dropping what was typed.
+ */
+export const mentionsOf = (typed: string): readonly LinkedInMention[] =>
+  typed
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => part !== "")
+    .map((part) => {
+      const groups = typedMention.exec(part)?.groups;
+
+      return {
+        name: (groups?.["name"] ?? part).trim(),
+        urn: groups?.["urn"] ?? "",
+      };
+    });
 
 // The value a stored option shows in its field.
 const valueOf = (
@@ -270,6 +578,10 @@ const valueOf = (
   Match.value(field).pipe(
     Match.discriminatorsExhaustive("kind")({
       choice: () => decodeText(stored),
+      localTime: () => decodeText(stored),
+      lookup: () => decodeText(stored),
+      mentions: () => decodeMentions(stored).pipe(Option.map(mentionsText)),
+      number: () => decodeNumber(stored).pipe(Option.map(String)),
       tags: () =>
         decodeTags(stored).pipe(Option.map((tags) => tags.join(tagSeparator))),
       text: () => decodeText(stored),
@@ -281,6 +593,36 @@ const valueOf = (
 // What a field holds on a new target: its box as it says, nothing else.
 const initialOf = (field: OptionField): Option.Option<boolean | string> =>
   field.kind === "toggle" ? Option.some(field.initial) : Option.none();
+
+/**
+ * Whether the field shows with these values: always, or while the field it
+ * depends on, itself shown, holds one of the values it shows with.
+ */
+export const isShown = (
+  platform: Platform,
+  field: OptionField,
+  values: OptionValues
+): boolean => {
+  const { shownWith } = field;
+
+  if (shownWith === undefined) {
+    return true;
+  }
+
+  const governing = fieldsOf(platform).find(
+    ({ name }) => name === shownWith.name
+  );
+
+  if (governing !== undefined && !isShown(platform, governing, values)) {
+    return false;
+  }
+
+  const held = values[shownWith.name];
+
+  return held === undefined || held === ""
+    ? shownWith.unset === true
+    : shownWith.values.some((value) => value === held);
+};
 
 /**
  * The values a target's stored options fill in. Boxes left out keep the
@@ -336,7 +678,8 @@ export const valuesOfPost = (
 
 /**
  * The values with one field changed. A box under another is cleared when
- * that one is unticked.
+ * that one is unticked, and a lookup under another emptied when that one
+ * changes.
  */
 export const withValue = (
   platform: Platform,
@@ -350,8 +693,16 @@ export const withValue = (
       : []
   );
 
+  const emptied = new Set(
+    fieldsOf(platform).flatMap((field) =>
+      field.kind === "lookup" && field.under === name && values[name] !== value
+        ? [field.name]
+        : []
+    )
+  );
+
   const kept = Object.entries(values).filter(
-    ([key]) => key !== name && !cleared.includes(key)
+    ([key]) => key !== name && !cleared.includes(key) && !emptied.has(key)
   );
 
   const changed = [
@@ -372,9 +723,28 @@ const tagsOf = (typed: string): readonly string[] =>
 const optionOf = (
   field: OptionField,
   value: boolean | string | undefined
-): Option.Option<boolean | string | readonly string[]> => {
+): Option.Option<
+  boolean | number | string | readonly LinkedInMention[] | readonly string[]
+> => {
   if (value === undefined || value === "") {
     return Option.none();
+  }
+
+  // Digits only: anything else is not a number the API would take.
+  if (field.kind === "number") {
+    return decodeText(value).pipe(
+      Option.map((typed) => typed.trim()),
+      Option.filter((typed) => wholeNumber.test(typed)),
+      Option.map(Number),
+      Option.filter((number) => Number.isSafeInteger(number))
+    );
+  }
+
+  if (field.kind === "mentions") {
+    return decodeText(value).pipe(
+      Option.map(mentionsOf),
+      Option.filter((mentions) => mentions.length > 0)
+    );
   }
 
   if (field.kind === "tags") {
@@ -399,12 +769,14 @@ export const optionsOf = (
 ): Option.Option<TargetOptions> =>
   decodeOptions({
     ...Object.fromEntries(
-      fieldsOf(platform).flatMap((field) =>
-        Option.match(optionOf(field, values[field.name]), {
-          onNone: () => [],
-          onSome: (option) => [[field.name, option]],
-        })
-      )
+      fieldsOf(platform)
+        .filter((field) => isShown(platform, field, values))
+        .flatMap((field) =>
+          Option.match(optionOf(field, values[field.name]), {
+            onNone: () => [],
+            onSome: (option) => [[field.name, option]],
+          })
+        )
     ),
     platform,
   });

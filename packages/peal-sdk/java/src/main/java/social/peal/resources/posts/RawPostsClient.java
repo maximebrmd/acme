@@ -30,11 +30,9 @@ import social.peal.errors.ConflictError;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.NotFoundError;
 import social.peal.errors.PaymentRequiredError;
-import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
 import social.peal.resources.posts.requests.AttemptsPostsRequest;
-import social.peal.resources.posts.requests.BulkPosts;
 import social.peal.resources.posts.requests.CancelPostsRequest;
 import social.peal.resources.posts.requests.ConfirmPostsRequest;
 import social.peal.resources.posts.requests.CreatePostsRequest;
@@ -43,23 +41,15 @@ import social.peal.resources.posts.requests.DraftsPostsRequest;
 import social.peal.resources.posts.requests.GetPostsRequest;
 import social.peal.resources.posts.requests.ListPostsRequest;
 import social.peal.resources.posts.requests.NewPost;
-import social.peal.resources.posts.requests.OutcomePostsRequest;
-import social.peal.resources.posts.requests.PostImport;
-import social.peal.resources.posts.requests.PostToValidate;
 import social.peal.resources.posts.requests.RepostPostsRequest;
 import social.peal.resources.posts.requests.ReschedulePostsRequest;
 import social.peal.resources.posts.requests.SchedulePost;
-import social.peal.resources.posts.requests.SearchPostsRequest;
 import social.peal.resources.posts.requests.UnschedulePostsRequest;
 import social.peal.resources.posts.requests.UpdatePostsRequest;
-import social.peal.types.BulkResult;
 import social.peal.types.DraftPage;
 import social.peal.types.ForbiddenEncoded;
-import social.peal.types.ImportResult;
 import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.Post;
-import social.peal.types.PostPage;
-import social.peal.types.PostValidation;
 import social.peal.types.PublicationAttempt;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -157,9 +147,6 @@ public class RawPostsClient {
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
                 // unable to map error response, throwing generic error
@@ -240,9 +227,6 @@ public class RawPostsClient {
                                 response);
                     case 404:
                         throw new NotFoundError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
@@ -327,9 +311,6 @@ public class RawPostsClient {
                     case 422:
                         throw new UnprocessableEntityError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
                 // unable to map error response, throwing generic error
@@ -345,150 +326,14 @@ public class RawPostsClient {
     }
 
     /**
-     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
-     */
-    public PealClientHttpResponse<PostPage> search(String workspaceId) {
-        return search(workspaceId, SearchPostsRequest.builder().build());
-    }
-
-    /**
-     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
-     */
-    public PealClientHttpResponse<PostPage> search(String workspaceId, RequestOptions requestOptions) {
-        return search(workspaceId, SearchPostsRequest.builder().build(), requestOptions);
-    }
-
-    /**
-     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
-     */
-    public PealClientHttpResponse<PostPage> search(String workspaceId, SearchPostsRequest request) {
-        return search(workspaceId, request, null);
-    }
-
-    /**
-     * Lists the workspace's posts, whatever their state, a page at a time: 20 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>status</code> (draft, scheduled, publishing, finished, cancelled), <code>outcome</code> (how a finished post ended, such as <code>failed</code> or <code>partiallyPublished</code>), <code>channelId</code> (posts with a target on that channel), <code>platform</code> (posts with a target on a connected channel of that platform), <code>from</code> (included) and <code>to</code> (excluded), on the scheduled instant, which leave out posts without a time, <code>createdVia</code> (<code>web</code>, <code>apiKey</code> or <code>application</code>) and <code>authorId</code>. <code>sort</code> orders them by creation (<code>createdDesc</code>, the default, or <code>createdAsc</code>) or by scheduled instant (<code>scheduledDesc</code>, <code>scheduledAsc</code>, which list only posts with a time). Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and <code>channels</code> gives the platform of each channel the page names. Needs post:read and channel:read.
-     */
-    public PealClientHttpResponse<PostPage> search(
-            String workspaceId, SearchPostsRequest request, RequestOptions requestOptions) {
-        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
-                .newBuilder()
-                .addPathSegments("api/workspaces")
-                .addPathSegment(PathSegments.validate(workspaceId))
-                .addPathSegments("posts")
-                .addPathSegments("search");
-        if (request.getAuthorId().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "authorId", request.getAuthorId().get(), false);
-        }
-        if (request.getChannelId().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "channelId", request.getChannelId().get(), false);
-        }
-        if (request.getCreatedVia().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "createdVia", request.getCreatedVia().get(), false);
-        }
-        if (request.getCursor().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "cursor", request.getCursor().get(), false);
-        }
-        if (request.getFrom().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "from", request.getFrom().get(), false);
-        }
-        if (request.getLimit().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "limit", request.getLimit().get(), false);
-        }
-        if (request.getOutcome().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "outcome", request.getOutcome().get(), false);
-        }
-        if (request.getPlatform().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "platform", request.getPlatform().get(), false);
-        }
-        if (request.getSort().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "sort", request.getSort().get(), false);
-        }
-        if (request.getStatus().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "status", request.getStatus().get(), false);
-        }
-        if (request.getTo().isPresent()) {
-            QueryStringMapper.addQueryParameter(httpUrl, "to", request.getTo().get(), false);
-        }
-        if (requestOptions != null) {
-            requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                httpUrl.addQueryParameter(_key, _value);
-            });
-        }
-        Request.Builder _requestBuilder = new Request.Builder()
-                .url(httpUrl.build())
-                .method("GET", null)
-                .headers(Headers.of(clientOptions.headers(requestOptions)))
-                .addHeader("Accept", "application/json");
-        Request okhttpRequest = _requestBuilder.build();
-        OkHttpClient client = clientOptions.httpClient();
-        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-            client = clientOptions.httpClientWithTimeout(requestOptions);
-        }
-        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
-            okhttpRequest = okhttpRequest
-                    .newBuilder()
-                    .tag(
-                            RetryInterceptor.MaxRetriesOverride.class,
-                            new RetryInterceptor.MaxRetriesOverride(
-                                    requestOptions.getMaxRetries().get()))
-                    .build();
-        }
-        try (Response response = client.newCall(okhttpRequest).execute()) {
-            ResponseBody responseBody = response.body();
-            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
-            if (response.isSuccessful()) {
-                return new PealClientHttpResponse<>(
-                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, PostPage.class), response);
-            }
-            try {
-                switch (response.code()) {
-                    case 400:
-                        throw new BadRequestError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 401:
-                        throw new UnauthorizedError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
-                                response);
-                    case 403:
-                        throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
-                    case 404:
-                        throw new NotFoundError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                }
-            } catch (JsonProcessingException ignored) {
-                // unable to map error response, throwing generic error
-            }
-            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
-            throw new PealClientApiException(
-                    "Error with status code " + response.code(), response.code(), errorBody, response);
-        } catch (JsonProcessingException e) {
-            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new PealClientException("Network error executing HTTP request", e);
-        }
-    }
-
-    /**
-     * Creates a post and sends it to some of the workspace's channels in one call: <code>when</code> is <code>now</code>, which publishes at once, or <code>at</code> an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an <code>Idempotency-Key</code> header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says <code>allowDuplicate: true</code>; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless <code>wait</code> says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (<code>status</code> <code>finished</code>, with its <code>outcome</code>, each target <code>published</code> with its <code>permalink</code> or <code>failed</code> with its <code>failureReason</code>), or the post as it stands when the time runs out, some targets still <code>pending</code> or <code>publishing</code>: it goes on publishing, and <code>GET …/posts/{postId}/outcome</code> waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+     * Creates a post and sends it to some of the workspace's channels in one call: <code>when</code> is <code>now</code>, which publishes at once, or <code>at</code> an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status <code>awaitingApproval</code>: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an <code>Idempotency-Key</code> header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
      */
     public PealClientHttpResponse<Post> send(String workspaceId, NewPost request) {
         return send(workspaceId, request, null);
     }
 
     /**
-     * Creates a post and sends it to some of the workspace's channels in one call: <code>when</code> is <code>now</code>, which publishes at once, or <code>at</code> an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an <code>Idempotency-Key</code> header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says <code>allowDuplicate: true</code>; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless <code>wait</code> says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (<code>status</code> <code>finished</code>, with its <code>outcome</code>, each target <code>published</code> with its <code>permalink</code> or <code>failed</code> with its <code>failureReason</code>), or the post as it stands when the time runs out, some targets still <code>pending</code> or <code>publishing</code>: it goes on publishing, and <code>GET …/posts/{postId}/outcome</code> waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+     * Creates a post and sends it to some of the workspace's channels in one call: <code>when</code> is <code>now</code>, which publishes at once, or <code>at</code> an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status <code>awaitingApproval</code>: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an <code>Idempotency-Key</code> header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
      */
     public PealClientHttpResponse<Post> send(String workspaceId, NewPost request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
@@ -497,10 +342,6 @@ public class RawPostsClient {
                 .addPathSegment(PathSegments.validate(workspaceId))
                 .addPathSegments("posts")
                 .addPathSegments("send");
-        if (request.getWait().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "wait", request.getWait().get(), false);
-        }
         if (requestOptions != null) {
             requestOptions.getQueryParameters().forEach((_key, _value) -> {
                 httpUrl.addQueryParameter(_key, _value);
@@ -563,263 +404,6 @@ public class RawPostsClient {
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 422:
                         throw new UnprocessableEntityError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                }
-            } catch (JsonProcessingException ignored) {
-                // unable to map error response, throwing generic error
-            }
-            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
-            throw new PealClientApiException(
-                    "Error with status code " + response.code(), response.code(), errorBody, response);
-        } catch (JsonProcessingException e) {
-            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new PealClientException("Network error executing HTTP request", e);
-        }
-    }
-
-    /**
-     * Creates and sends up to 50 posts in one request, each as <code>send</code> would: one post per item, each with its own channels, content, options and time, so the same content at several times, or at a time of its own on each channel, is several items. Items are taken in order, one at a time, each on its own: one refused keeps none of the others from being made, and nothing is undone. The answer is 200 whenever the request itself was read, even if every item was refused: <code>items</code> says, for each by its place in the request, <code>created</code> with its post, or <code>refused</code> with what <code>send</code> would have answered for it alone (its content's violations, unknown channels or media, a time gone by, the plan's limit, a duplicate). A request that cannot be read at all (malformed, no item, more than 50) is 400, and makes nothing. The plan's limits hold across the request: once the month has no room, the items left are refused. Each item is checked against the posts made before it, the request's earlier items included, for the same content on the same channel (DuplicatePost). An <code>Idempotency-Key</code> header makes the whole request safe to send again within 24 hours: each item is kept under the key and its place, so the same request sent again answers the posts it made (<code>replayed</code>), makes those that were not made the first time if they now can be, and an item that changed under the same key is refused (IdempotencyKeyReused). An item's own <code>idempotencyKey</code> is used instead of the header's for that item. Needs post:schedule and channel:read, and media:read for the items that show media; an OAuth client needs the scope workspace:publish.
-     */
-    public PealClientHttpResponse<BulkResult> bulk(String workspaceId, BulkPosts request) {
-        return bulk(workspaceId, request, null);
-    }
-
-    /**
-     * Creates and sends up to 50 posts in one request, each as <code>send</code> would: one post per item, each with its own channels, content, options and time, so the same content at several times, or at a time of its own on each channel, is several items. Items are taken in order, one at a time, each on its own: one refused keeps none of the others from being made, and nothing is undone. The answer is 200 whenever the request itself was read, even if every item was refused: <code>items</code> says, for each by its place in the request, <code>created</code> with its post, or <code>refused</code> with what <code>send</code> would have answered for it alone (its content's violations, unknown channels or media, a time gone by, the plan's limit, a duplicate). A request that cannot be read at all (malformed, no item, more than 50) is 400, and makes nothing. The plan's limits hold across the request: once the month has no room, the items left are refused. Each item is checked against the posts made before it, the request's earlier items included, for the same content on the same channel (DuplicatePost). An <code>Idempotency-Key</code> header makes the whole request safe to send again within 24 hours: each item is kept under the key and its place, so the same request sent again answers the posts it made (<code>replayed</code>), makes those that were not made the first time if they now can be, and an item that changed under the same key is refused (IdempotencyKeyReused). An item's own <code>idempotencyKey</code> is used instead of the header's for that item. Needs post:schedule and channel:read, and media:read for the items that show media; an OAuth client needs the scope workspace:publish.
-     */
-    public PealClientHttpResponse<BulkResult> bulk(
-            String workspaceId, BulkPosts request, RequestOptions requestOptions) {
-        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
-                .newBuilder()
-                .addPathSegments("api/workspaces")
-                .addPathSegment(PathSegments.validate(workspaceId))
-                .addPathSegments("posts")
-                .addPathSegments("bulk");
-        if (requestOptions != null) {
-            requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                httpUrl.addQueryParameter(_key, _value);
-            });
-        }
-        RequestBody body;
-        try {
-            body = RequestBody.create(
-                    ObjectMappers.JSON_MAPPER.writeValueAsBytes(BodyProperties.merge(
-                            request, requestOptions != null ? requestOptions.getBodyProperties() : null)),
-                    MediaTypes.APPLICATION_JSON);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        Request.Builder _requestBuilder = new Request.Builder()
-                .url(httpUrl.build())
-                .method("POST", body)
-                .headers(Headers.of(clientOptions.headers(requestOptions)))
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json");
-        if (request.getIdempotencyKey().isPresent()) {
-            _requestBuilder.addHeader(
-                    "idempotency-key", request.getIdempotencyKey().get());
-        }
-        Request okhttpRequest = _requestBuilder.build();
-        OkHttpClient client = clientOptions.httpClient();
-        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-            client = clientOptions.httpClientWithTimeout(requestOptions);
-        }
-        okhttpRequest = okhttpRequest
-                .newBuilder()
-                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
-                .build();
-        try (Response response = client.newCall(okhttpRequest).execute()) {
-            ResponseBody responseBody = response.body();
-            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
-            if (response.isSuccessful()) {
-                return new PealClientHttpResponse<>(
-                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, BulkResult.class), response);
-            }
-            try {
-                switch (response.code()) {
-                    case 401:
-                        throw new UnauthorizedError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
-                                response);
-                    case 403:
-                        throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
-                    case 404:
-                        throw new NotFoundError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                }
-            } catch (JsonProcessingException ignored) {
-                // unable to map error response, throwing generic error
-            }
-            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
-            throw new PealClientApiException(
-                    "Error with status code " + response.code(), response.code(), errorBody, response);
-        } catch (JsonProcessingException e) {
-            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new PealClientException("Network error executing HTTP request", e);
-        }
-    }
-
-    /**
-     * Creates and sends the posts a CSV file lists, one per row, at most 100 rows under its first line, which names the columns, in any order: <code>text</code> and <code>channels</code> (channel ids separated by spaces, commas or semicolons) are required columns, <code>at</code> too (<code>now</code>, an instant with its offset such as 2026-11-20T09:00:00Z, or a local time without one such as 2026-11-20 10:00, read in the row's <code>time_zone</code>, an IANA zone, UTC if left out); <code>media</code> (ids of ready media of the workspace), <code>allow_duplicate</code> (<code>true</code> or <code>false</code>) and <code>idempotency_key</code> are optional. Cells follow RFC 4180: a cell with a comma, a quote or a line break is written between double quotes, a quote inside it doubled. The file is checked first, every row, as <code>validate</code> checks a post; unless every row is valid, nothing is made, and <code>rows</code> says which are <code>valid</code>, <code>refused</code> (with what <code>send</code> would have answered) or <code>unreadable</code> (with the cells at fault). <code>dryRun</code> stops there even when every row is valid. Otherwise the rows are then made in order as <code>bulk</code> makes its items, each <code>created</code> or, when something changed since the check or a row repeats an earlier one, <code>refused</code>. The answer is 200 once the file was read; a file that cannot be read at all is ImportUnreadable. An <code>Idempotency-Key</code> header works as on <code>bulk</code>, by row. Needs post:schedule and channel:read, and media:read for rows with media; an OAuth client needs the scope workspace:publish.
-     */
-    public PealClientHttpResponse<ImportResult> import_(String workspaceId, PostImport request) {
-        return import_(workspaceId, request, null);
-    }
-
-    /**
-     * Creates and sends the posts a CSV file lists, one per row, at most 100 rows under its first line, which names the columns, in any order: <code>text</code> and <code>channels</code> (channel ids separated by spaces, commas or semicolons) are required columns, <code>at</code> too (<code>now</code>, an instant with its offset such as 2026-11-20T09:00:00Z, or a local time without one such as 2026-11-20 10:00, read in the row's <code>time_zone</code>, an IANA zone, UTC if left out); <code>media</code> (ids of ready media of the workspace), <code>allow_duplicate</code> (<code>true</code> or <code>false</code>) and <code>idempotency_key</code> are optional. Cells follow RFC 4180: a cell with a comma, a quote or a line break is written between double quotes, a quote inside it doubled. The file is checked first, every row, as <code>validate</code> checks a post; unless every row is valid, nothing is made, and <code>rows</code> says which are <code>valid</code>, <code>refused</code> (with what <code>send</code> would have answered) or <code>unreadable</code> (with the cells at fault). <code>dryRun</code> stops there even when every row is valid. Otherwise the rows are then made in order as <code>bulk</code> makes its items, each <code>created</code> or, when something changed since the check or a row repeats an earlier one, <code>refused</code>. The answer is 200 once the file was read; a file that cannot be read at all is ImportUnreadable. An <code>Idempotency-Key</code> header works as on <code>bulk</code>, by row. Needs post:schedule and channel:read, and media:read for rows with media; an OAuth client needs the scope workspace:publish.
-     */
-    public PealClientHttpResponse<ImportResult> import_(
-            String workspaceId, PostImport request, RequestOptions requestOptions) {
-        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
-                .newBuilder()
-                .addPathSegments("api/workspaces")
-                .addPathSegment(PathSegments.validate(workspaceId))
-                .addPathSegments("posts")
-                .addPathSegments("import");
-        if (requestOptions != null) {
-            requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                httpUrl.addQueryParameter(_key, _value);
-            });
-        }
-        RequestBody body;
-        try {
-            body = RequestBody.create(
-                    ObjectMappers.JSON_MAPPER.writeValueAsBytes(BodyProperties.merge(
-                            request, requestOptions != null ? requestOptions.getBodyProperties() : null)),
-                    MediaTypes.APPLICATION_JSON);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        Request.Builder _requestBuilder = new Request.Builder()
-                .url(httpUrl.build())
-                .method("POST", body)
-                .headers(Headers.of(clientOptions.headers(requestOptions)))
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json");
-        if (request.getIdempotencyKey().isPresent()) {
-            _requestBuilder.addHeader(
-                    "idempotency-key", request.getIdempotencyKey().get());
-        }
-        Request okhttpRequest = _requestBuilder.build();
-        OkHttpClient client = clientOptions.httpClient();
-        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-            client = clientOptions.httpClientWithTimeout(requestOptions);
-        }
-        okhttpRequest = okhttpRequest
-                .newBuilder()
-                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
-                .build();
-        try (Response response = client.newCall(okhttpRequest).execute()) {
-            ResponseBody responseBody = response.body();
-            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
-            if (response.isSuccessful()) {
-                return new PealClientHttpResponse<>(
-                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ImportResult.class), response);
-            }
-            try {
-                switch (response.code()) {
-                    case 401:
-                        throw new UnauthorizedError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
-                                response);
-                    case 403:
-                        throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
-                    case 404:
-                        throw new NotFoundError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 422:
-                        throw new UnprocessableEntityError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                }
-            } catch (JsonProcessingException ignored) {
-                // unable to map error response, throwing generic error
-            }
-            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
-            throw new PealClientApiException(
-                    "Error with status code " + response.code(), response.code(), errorBody, response);
-        } catch (JsonProcessingException e) {
-            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new PealClientException("Network error executing HTTP request", e);
-        }
-    }
-
-    /**
-     * Checks a post without making it, and changes nothing: send what <code>send</code> takes, or a draft (no <code>when</code>). It answers 200 whether or not the post would go through, with <code>valid</code> and everything that would refuse it, all at once: per channel, the text the channel receives, counted as its platform counts it against each of its limits, its hashtags, mentions, links and media, and every violation of the platform's rules (text, media formats, sizes, counts and durations, options) and of the account's own where its platform tells them; the channels and media that are not the workspace's; and, when <code>when</code> is given, whether the time can be kept, whether the workspace's plan has room, and the channels that already have the same content from another post (<code>duplicates</code>, as DuplicatePost tells them; none with <code>allowDuplicate</code>). A post that is valid now can still be refused later: a channel disconnected, a plan's month filled meanwhile. Needs post:read and channel:read, and media:read when it shows media.
-     */
-    public PealClientHttpResponse<PostValidation> validate(String workspaceId, PostToValidate request) {
-        return validate(workspaceId, request, null);
-    }
-
-    /**
-     * Checks a post without making it, and changes nothing: send what <code>send</code> takes, or a draft (no <code>when</code>). It answers 200 whether or not the post would go through, with <code>valid</code> and everything that would refuse it, all at once: per channel, the text the channel receives, counted as its platform counts it against each of its limits, its hashtags, mentions, links and media, and every violation of the platform's rules (text, media formats, sizes, counts and durations, options) and of the account's own where its platform tells them; the channels and media that are not the workspace's; and, when <code>when</code> is given, whether the time can be kept, whether the workspace's plan has room, and the channels that already have the same content from another post (<code>duplicates</code>, as DuplicatePost tells them; none with <code>allowDuplicate</code>). A post that is valid now can still be refused later: a channel disconnected, a plan's month filled meanwhile. Needs post:read and channel:read, and media:read when it shows media.
-     */
-    public PealClientHttpResponse<PostValidation> validate(
-            String workspaceId, PostToValidate request, RequestOptions requestOptions) {
-        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
-                .newBuilder()
-                .addPathSegments("api/workspaces")
-                .addPathSegment(PathSegments.validate(workspaceId))
-                .addPathSegments("posts")
-                .addPathSegments("validate");
-        if (requestOptions != null) {
-            requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                httpUrl.addQueryParameter(_key, _value);
-            });
-        }
-        RequestBody body;
-        try {
-            body = RequestBody.create(
-                    ObjectMappers.JSON_MAPPER.writeValueAsBytes(BodyProperties.merge(
-                            request, requestOptions != null ? requestOptions.getBodyProperties() : null)),
-                    MediaTypes.APPLICATION_JSON);
-        } catch (JsonProcessingException e) {
-            throw new PealClientException("Failed to serialize request", e);
-        }
-        Request okhttpRequest = new Request.Builder()
-                .url(httpUrl.build())
-                .method("POST", body)
-                .headers(Headers.of(clientOptions.headers(requestOptions)))
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json")
-                .build();
-        OkHttpClient client = clientOptions.httpClient();
-        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-            client = clientOptions.httpClientWithTimeout(requestOptions);
-        }
-        okhttpRequest = okhttpRequest
-                .newBuilder()
-                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
-                .build();
-        try (Response response = client.newCall(okhttpRequest).execute()) {
-            ResponseBody responseBody = response.body();
-            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
-            if (response.isSuccessful()) {
-                return new PealClientHttpResponse<>(
-                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, PostValidation.class), response);
-            }
-            try {
-                switch (response.code()) {
-                    case 401:
-                        throw new UnauthorizedError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
-                                response);
-                    case 403:
-                        throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
-                    case 404:
-                        throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
@@ -910,9 +494,6 @@ public class RawPostsClient {
                                 response);
                     case 404:
                         throw new NotFoundError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
@@ -1005,9 +586,6 @@ public class RawPostsClient {
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 422:
                         throw new UnprocessableEntityError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
@@ -1104,104 +682,6 @@ public class RawPostsClient {
                     case 409:
                         throw new ConflictError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                }
-            } catch (JsonProcessingException ignored) {
-                // unable to map error response, throwing generic error
-            }
-            Object errorBody = ObjectMappers.parseErrorBody(responseBodyString);
-            throw new PealClientApiException(
-                    "Error with status code " + response.code(), response.code(), errorBody, response);
-        } catch (JsonProcessingException e) {
-            throw new PealClientException("Failed to deserialize response: " + e.getMessage(), e);
-        } catch (IOException e) {
-            throw new PealClientException("Network error executing HTTP request", e);
-        }
-    }
-
-    /**
-     * Answers with a post once it has gone out: it waits up to <code>wait</code> seconds (60 at most; none unless given) until every channel has its result, and answers the post then (<code>status</code> <code>finished</code>), or as it stands when the time runs out, which a client asks again. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing and holds nothing: the post publishes in its own job either way. Needs post:read.
-     */
-    public PealClientHttpResponse<Post> outcome(String workspaceId, String postId) {
-        return outcome(workspaceId, postId, OutcomePostsRequest.builder().build());
-    }
-
-    /**
-     * Answers with a post once it has gone out: it waits up to <code>wait</code> seconds (60 at most; none unless given) until every channel has its result, and answers the post then (<code>status</code> <code>finished</code>), or as it stands when the time runs out, which a client asks again. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing and holds nothing: the post publishes in its own job either way. Needs post:read.
-     */
-    public PealClientHttpResponse<Post> outcome(String workspaceId, String postId, RequestOptions requestOptions) {
-        return outcome(workspaceId, postId, OutcomePostsRequest.builder().build(), requestOptions);
-    }
-
-    /**
-     * Answers with a post once it has gone out: it waits up to <code>wait</code> seconds (60 at most; none unless given) until every channel has its result, and answers the post then (<code>status</code> <code>finished</code>), or as it stands when the time runs out, which a client asks again. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing and holds nothing: the post publishes in its own job either way. Needs post:read.
-     */
-    public PealClientHttpResponse<Post> outcome(String workspaceId, String postId, OutcomePostsRequest request) {
-        return outcome(workspaceId, postId, request, null);
-    }
-
-    /**
-     * Answers with a post once it has gone out: it waits up to <code>wait</code> seconds (60 at most; none unless given) until every channel has its result, and answers the post then (<code>status</code> <code>finished</code>), or as it stands when the time runs out, which a client asks again. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing and holds nothing: the post publishes in its own job either way. Needs post:read.
-     */
-    public PealClientHttpResponse<Post> outcome(
-            String workspaceId, String postId, OutcomePostsRequest request, RequestOptions requestOptions) {
-        HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
-                .newBuilder()
-                .addPathSegments("api/workspaces")
-                .addPathSegment(PathSegments.validate(workspaceId))
-                .addPathSegments("posts")
-                .addPathSegment(PathSegments.validate(postId))
-                .addPathSegments("outcome");
-        if (request.getWait().isPresent()) {
-            QueryStringMapper.addQueryParameter(
-                    httpUrl, "wait", request.getWait().get(), false);
-        }
-        if (requestOptions != null) {
-            requestOptions.getQueryParameters().forEach((_key, _value) -> {
-                httpUrl.addQueryParameter(_key, _value);
-            });
-        }
-        Request.Builder _requestBuilder = new Request.Builder()
-                .url(httpUrl.build())
-                .method("GET", null)
-                .headers(Headers.of(clientOptions.headers(requestOptions)))
-                .addHeader("Accept", "application/json");
-        Request okhttpRequest = _requestBuilder.build();
-        OkHttpClient client = clientOptions.httpClient();
-        if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
-            client = clientOptions.httpClientWithTimeout(requestOptions);
-        }
-        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
-            okhttpRequest = okhttpRequest
-                    .newBuilder()
-                    .tag(
-                            RetryInterceptor.MaxRetriesOverride.class,
-                            new RetryInterceptor.MaxRetriesOverride(
-                                    requestOptions.getMaxRetries().get()))
-                    .build();
-        }
-        try (Response response = client.newCall(okhttpRequest).execute()) {
-            ResponseBody responseBody = response.body();
-            String responseBodyString = responseBody != null ? responseBody.string() : "{}";
-            if (response.isSuccessful()) {
-                return new PealClientHttpResponse<>(
-                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Post.class), response);
-            }
-            try {
-                switch (response.code()) {
-                    case 401:
-                        throw new UnauthorizedError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
-                                response);
-                    case 403:
-                        throw new ForbiddenError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, ForbiddenEncoded.class),
-                                response);
-                    case 404:
-                        throw new NotFoundError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
                 // unable to map error response, throwing generic error
@@ -1297,9 +777,6 @@ public class RawPostsClient {
                     case 404:
                         throw new NotFoundError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
                 // unable to map error response, throwing generic error
@@ -1315,14 +792,14 @@ public class RawPostsClient {
     }
 
     /**
-     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
+     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Where the workspace asks for an approval of this post (its approval policy), the post is not scheduled: it answers with the status <code>awaitingApproval</code>, keeps its time, and goes out only once approved; contributors may then ask too, with post:create. Needs post:schedule and channel:read, and media:read when it shows media.
      */
     public PealClientHttpResponse<Post> schedule(String workspaceId, String postId, SchedulePost request) {
         return schedule(workspaceId, postId, request, null);
     }
 
     /**
-     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
+     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Where the workspace asks for an approval of this post (its approval policy), the post is not scheduled: it answers with the status <code>awaitingApproval</code>, keeps its time, and goes out only once approved; contributors may then ask too, with post:create. Needs post:schedule and channel:read, and media:read when it shows media.
      */
     public PealClientHttpResponse<Post> schedule(
             String workspaceId, String postId, SchedulePost request, RequestOptions requestOptions) {
@@ -1392,9 +869,6 @@ public class RawPostsClient {
                     case 422:
                         throw new UnprocessableEntityError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
                 // unable to map error response, throwing generic error
@@ -1410,14 +884,14 @@ public class RawPostsClient {
     }
 
     /**
-     * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
+     * Moves a scheduled post, or one awaiting approval, to another instant, or schedules a draft on the channels it has. A post that needs an approval it does not have waits for it (<code>awaitingApproval</code>). Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
      */
     public PealClientHttpResponse<Post> reschedule(String workspaceId, String postId, ReschedulePostsRequest request) {
         return reschedule(workspaceId, postId, request, null);
     }
 
     /**
-     * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
+     * Moves a scheduled post, or one awaiting approval, to another instant, or schedules a draft on the channels it has. A post that needs an approval it does not have waits for it (<code>awaitingApproval</code>). Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
      */
     public PealClientHttpResponse<Post> reschedule(
             String workspaceId, String postId, ReschedulePostsRequest request, RequestOptions requestOptions) {
@@ -1486,9 +960,6 @@ public class RawPostsClient {
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 422:
                         throw new UnprocessableEntityError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
@@ -1582,9 +1053,6 @@ public class RawPostsClient {
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 409:
                         throw new ConflictError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
@@ -1689,9 +1157,6 @@ public class RawPostsClient {
                     case 409:
                         throw new ConflictError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
                 // unable to map error response, throwing generic error
@@ -1784,9 +1249,6 @@ public class RawPostsClient {
                     case 409:
                         throw new ConflictError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {
                 // unable to map error response, throwing generic error
@@ -1802,28 +1264,28 @@ public class RawPostsClient {
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public PealClientHttpResponse<Post> cancel(String workspaceId, String postId) {
         return cancel(workspaceId, postId, CancelPostsRequest.builder().build());
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public PealClientHttpResponse<Post> cancel(String workspaceId, String postId, RequestOptions requestOptions) {
         return cancel(workspaceId, postId, CancelPostsRequest.builder().build(), requestOptions);
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public PealClientHttpResponse<Post> cancel(String workspaceId, String postId, CancelPostsRequest request) {
         return cancel(workspaceId, postId, request, null);
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public PealClientHttpResponse<Post> cancel(
             String workspaceId, String postId, CancelPostsRequest request, RequestOptions requestOptions) {
@@ -1879,9 +1341,6 @@ public class RawPostsClient {
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                     case 409:
                         throw new ConflictError(
-                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
-                    case 429:
-                        throw new TooManyRequestsError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class), response);
                 }
             } catch (JsonProcessingException ignored) {

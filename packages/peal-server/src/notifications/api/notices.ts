@@ -67,6 +67,27 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       channel: channelView(channel),
       expiresAt,
     }),
+    PostApprovalRequested: ({ postId, scheduledAt }): NoticeEventView => ({
+      _tag: "PostApprovalRequested",
+      postId,
+      scheduledAt,
+    }),
+    PostApproved: ({ by, late, postId }): NoticeEventView => ({
+      _tag: "PostApproved",
+      by,
+      late,
+      postId,
+    }),
+    PostChangesRequested: ({ by, postId }): NoticeEventView => ({
+      _tag: "PostChangesRequested",
+      by,
+      postId,
+    }),
+    PostCommented: ({ by, postId }): NoticeEventView => ({
+      _tag: "PostCommented",
+      by,
+      postId,
+    }),
     PostFailed: ({ channel, postId, reason }): NoticeEventView => ({
       _tag: "PostFailed",
       channel: postChannelView(channel),

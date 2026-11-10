@@ -14,7 +14,7 @@ class Channel extends JsonSerializableType
     public ?string $avatarUrl;
 
     /**
-     * @var ?value-of<InstagramConnection> $connection
+     * @var ?value-of<ChannelConnection> $connection
      */
     #[JsonProperty('connection')]
     public ?string $connection;
@@ -62,7 +62,7 @@ class Channel extends JsonSerializableType
      *   platform: value-of<Platform>,
      *   status: ChannelStatus,
      *   avatarUrl?: ?string,
-     *   connection?: ?value-of<InstagramConnection>,
+     *   connection?: ?value-of<ChannelConnection>,
      *   displayName?: ?string,
      *   tokenExpiresAt?: ?string,
      * } $values

@@ -581,6 +581,7 @@ layer(connectTest(["instagramLogin", "facebookLogin"]))(
 
         assert.deepStrictEqual(reachable, {
           instagramConnections: ["instagramLogin", "facebookLogin"],
+          linkedinConnections: [],
           platforms: ["instagram"],
         });
       })

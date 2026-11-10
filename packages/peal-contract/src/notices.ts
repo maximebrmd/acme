@@ -37,6 +37,18 @@ export const NoticeChannelSchema = Schema.Struct({
 export type NoticeChannel = typeof NoticeChannelSchema.Type;
 
 /**
+ * Who did something in a post's review: a `member`, a `visitor` who came
+ * through a review link, or an `application` with an API key.
+ */
+export const ReviewPartySchema = Schema.Literals([
+  "member",
+  "visitor",
+  "application",
+]).annotate({ identifier: "ReviewParty" });
+
+export type ReviewParty = typeof ReviewPartySchema.Type;
+
+/**
  * What happened, as data: clients write it in the reader's language. A post's
  * channel is null when it was disconnected before the notice was made.
  */
@@ -58,6 +70,29 @@ export const NoticeEventSchema = Schema.Union([
   // reposting it.
   Schema.TaggedStruct("PostUnconfirmed", {
     channel: Schema.NullOr(NoticeChannelSchema),
+    postId: Schema.String,
+  }),
+  // Someone asked for the post to go out at `scheduledAt`: it waits for an
+  // approval.
+  Schema.TaggedStruct("PostApprovalRequested", {
+    postId: Schema.String,
+    scheduledAt: Schema.DateTimeUtc,
+  }),
+  // The post was approved: it is scheduled, or, when `late` (approved after
+  // its time), back to draft for a new time.
+  Schema.TaggedStruct("PostApproved", {
+    by: ReviewPartySchema,
+    late: Schema.Boolean,
+    postId: Schema.String,
+  }),
+  // Changes were asked for: the post is back to draft, with a comment.
+  Schema.TaggedStruct("PostChangesRequested", {
+    by: ReviewPartySchema,
+    postId: Schema.String,
+  }),
+  // Someone commented on the post.
+  Schema.TaggedStruct("PostCommented", {
+    by: ReviewPartySchema,
     postId: Schema.String,
   }),
   // The channel's authorization stopped working: reconnect it to post again.

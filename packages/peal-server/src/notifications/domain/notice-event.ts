@@ -63,6 +63,19 @@ const postOn = {
 };
 
 /**
+ * Who did something in a post's review: a member, a visitor who came
+ * through a review link, or an application with an API key. Never their
+ * name: the post's page shows it to those who may read the post.
+ */
+export const ReviewPartySchema = Schema.Literals([
+  "member",
+  "visitor",
+  "application",
+]);
+
+export type ReviewParty = typeof ReviewPartySchema.Type;
+
+/**
  * Something that happened in a workspace, which its members hear about. A
  * notice keeps it as data, never as sentences: each reader gets it in their
  * language, in the app and by email, when it reaches them.
@@ -84,6 +97,29 @@ export const NoticeEventSchema = Schema.Union([
   // Whether the post went live is not known: the reader checks the platform
   // before reposting it.
   Schema.TaggedStruct("PostUnconfirmed", postOn),
+  // Someone asked for the post to go out at `scheduledAt`, and it waits for
+  // an approval.
+  Schema.TaggedStruct("PostApprovalRequested", {
+    postId: PostIdSchema,
+    scheduledAt: Schema.DateTimeUtc,
+  }),
+  // The post was approved: it is scheduled, or, approved after its time
+  // (`late`), back to draft for a new one.
+  Schema.TaggedStruct("PostApproved", {
+    by: ReviewPartySchema,
+    late: Schema.Boolean,
+    postId: PostIdSchema,
+  }),
+  // Changes were asked for: the post is back to draft, with a comment.
+  Schema.TaggedStruct("PostChangesRequested", {
+    by: ReviewPartySchema,
+    postId: PostIdSchema,
+  }),
+  // Someone commented on the post.
+  Schema.TaggedStruct("PostCommented", {
+    by: ReviewPartySchema,
+    postId: PostIdSchema,
+  }),
   // The channel's authorization stopped working: nothing is posted until it
   // is reconnected.
   Schema.TaggedStruct("ChannelReconnectRequired", {
@@ -155,6 +191,7 @@ export type EmailKind =
   | "channelReconnect"
   | "postFailed"
   | "postPublished"
+  | "postReview"
   | "postUnconfirmed";
 
 /**
@@ -167,6 +204,10 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
   Match.valueTags(event, {
     ChannelReconnectRequired: () => Option.some<EmailKind>("channelReconnect"),
     ChannelReconnectSoon: () => Option.some<EmailKind>("channelReconnect"),
+    PostApprovalRequested: () => Option.some<EmailKind>("postReview"),
+    PostApproved: () => Option.some<EmailKind>("postReview"),
+    PostChangesRequested: () => Option.some<EmailKind>("postReview"),
+    PostCommented: () => Option.some<EmailKind>("postReview"),
     PostFailed: () => Option.some<EmailKind>("postFailed"),
     PostPublished: () => Option.some<EmailKind>("postPublished"),
     PostUnconfirmed: () => Option.some<EmailKind>("postUnconfirmed"),
@@ -180,15 +221,20 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
 
 /**
  * Who may act on the event: those who may schedule posts can repost one, or
- * confirm whether it went out; those who may connect channels can reconnect
- * one; those who manage billing can order, cancel or withdraw; those who
- * manage webhooks can turn an endpoint back on. Who hears about it follows
- * from it (`recipientsOf`).
+ * confirm whether it went out, and follow what its review brings; those who
+ * may approve posts can decide on one that waits; those who may connect
+ * channels can reconnect one; those who manage billing can order, cancel or
+ * withdraw; those who manage webhooks can turn an endpoint back on. Who
+ * hears about it follows from it (`recipientsOf`).
  */
 export const audienceOf = (event: NoticeEvent): Permission =>
   Match.valueTags(event, {
     ChannelReconnectRequired: (): Permission => "channel:connect",
     ChannelReconnectSoon: (): Permission => "channel:connect",
+    PostApprovalRequested: (): Permission => "post:approve",
+    PostApproved: (): Permission => "post:schedule",
+    PostChangesRequested: (): Permission => "post:schedule",
+    PostCommented: (): Permission => "post:schedule",
     PostFailed: (): Permission => "post:schedule",
     PostPublished: (): Permission => "post:schedule",
     PostUnconfirmed: (): Permission => "post:schedule",
@@ -205,6 +251,10 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
   Match.valueTags(event, {
     ChannelReconnectRequired: () => false,
     ChannelReconnectSoon: () => false,
+    PostApprovalRequested: () => true,
+    PostApproved: () => true,
+    PostChangesRequested: () => true,
+    PostCommented: () => true,
     PostFailed: () => true,
     PostPublished: () => true,
     PostUnconfirmed: () => true,
@@ -234,20 +284,40 @@ export interface Candidate {
   readonly userId: UserId;
 }
 
+/** Who else hears about an event, and who does not. */
+export interface Hearing {
+  /**
+   * The member who did what the event tells, when a member did: they need
+   * no telling.
+   */
+  readonly except?: UserId | undefined;
+  /**
+   * Members who follow the post besides its author, whatever their role:
+   * whoever asked for its approval, or wrote in its review.
+   */
+  readonly followers?: readonly UserId[] | undefined;
+}
+
 /**
  * Who hears about the event, among the workspace's members:
  *
  * - about a channel: every member who may act on it (`audienceOf`);
- * - about a post with an author: its author, whatever their role, and the
- *   members who may schedule posts and chose to hear about every post;
+ * - about an approval asked for: every member who may give it, and those
+ *   who follow the post;
+ * - about a post with an author: its author, whatever their role, those
+ *   who follow it (`Hearing.followers`), and the members who may schedule
+ *   posts and chose to hear about every post;
  * - about a post without one, made with an API key, or whose author is no
  *   longer among the members: every member who may schedule posts, as
  *   nobody else would hear.
+ *
+ * Whoever did it (`Hearing.except`) is never told.
  */
 export const recipientsOf = (
   event: NoticeEvent,
   author: Option.Option<UserId>,
-  members: readonly Candidate[]
+  members: readonly Candidate[],
+  { except, followers = [] }: Hearing = {}
 ): readonly UserId[] => {
   // An author who left the workspace hears nothing more of it; their post
   // is then told as one without an author.
@@ -257,15 +327,29 @@ export const recipientsOf = (
     )
   );
 
+  const follows = (member: Candidate) =>
+    followers.includes(member.userId) ||
+    Option.contains(present, member.userId);
+
   const hears = (member: Candidate): boolean => {
-    if (!isAboutPost(event) || Option.isNone(present)) {
+    if (member.userId === except) {
+      return false;
+    }
+
+    if (!isAboutPost(event)) {
       return member.mayAct;
     }
 
-    return (
-      member.userId === present.value ||
-      (member.mayAct && member.followsEveryPost)
-    );
+    // Everyone who may approve is asked to.
+    if (event._tag === "PostApprovalRequested") {
+      return member.mayAct || follows(member);
+    }
+
+    if (Option.isNone(present) && followers.length === 0) {
+      return member.mayAct;
+    }
+
+    return follows(member) || (member.mayAct && member.followsEveryPost);
   };
 
   return members.flatMap((member) => (hears(member) ? [member.userId] : []));
@@ -276,6 +360,11 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
   Match.valueTags(event, {
     ChannelReconnectRequired: () => `/app/${workspaceId}/channels`,
     ChannelReconnectSoon: () => `/app/${workspaceId}/channels`,
+    PostApprovalRequested: ({ postId }) =>
+      `/app/${workspaceId}/posts/${postId}`,
+    PostApproved: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
+    PostChangesRequested: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
+    PostCommented: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
     PostFailed: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
     PostPublished: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
     PostUnconfirmed: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,

@@ -25,9 +25,9 @@ public final class ContentViolationMediaTooSmall {
 
     private final String mediaId;
 
-    private final int byteSize;
+    private final long byteSize;
 
-    private final int minimum;
+    private final long minimum;
 
     private final Map<String, Object> additionalProperties;
 
@@ -35,8 +35,8 @@ public final class ContentViolationMediaTooSmall {
             String channelId,
             Platform platform,
             String mediaId,
-            int byteSize,
-            int minimum,
+            long byteSize,
+            long minimum,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
         this.platform = platform;
@@ -62,12 +62,12 @@ public final class ContentViolationMediaTooSmall {
     }
 
     @JsonProperty("byteSize")
-    public int getByteSize() {
+    public long getByteSize() {
         return byteSize;
     }
 
     @JsonProperty("minimum")
-    public int getMinimum() {
+    public long getMinimum() {
         return minimum;
     }
 
@@ -119,11 +119,11 @@ public final class ContentViolationMediaTooSmall {
     }
 
     public interface ByteSizeStage {
-        MinimumStage byteSize(int byteSize);
+        MinimumStage byteSize(long byteSize);
     }
 
     public interface MinimumStage {
-        _FinalStage minimum(int minimum);
+        _FinalStage minimum(long minimum);
     }
 
     public interface _FinalStage {
@@ -143,9 +143,9 @@ public final class ContentViolationMediaTooSmall {
 
         private String mediaId;
 
-        private int byteSize;
+        private long byteSize;
 
-        private int minimum;
+        private long minimum;
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -184,14 +184,14 @@ public final class ContentViolationMediaTooSmall {
 
         @java.lang.Override
         @JsonSetter("byteSize")
-        public MinimumStage byteSize(int byteSize) {
+        public MinimumStage byteSize(long byteSize) {
             this.byteSize = byteSize;
             return this;
         }
 
         @java.lang.Override
         @JsonSetter("minimum")
-        public _FinalStage minimum(int minimum) {
+        public _FinalStage minimum(long minimum) {
             this.minimum = minimum;
             return this;
         }

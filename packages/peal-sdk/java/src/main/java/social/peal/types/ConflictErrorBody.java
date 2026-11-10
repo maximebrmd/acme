@@ -26,36 +26,36 @@ public final class ConflictErrorBody {
         return value.visit(visitor);
     }
 
-    public static ConflictErrorBody externalIdTaken(ExternalIdTakenEncoded value) {
-        return new ConflictErrorBody(new ExternalIdTakenValue(value));
+    public static ConflictErrorBody postNotReviewable(PostNotReviewableEncoded value) {
+        return new ConflictErrorBody(new PostNotReviewableValue(value));
     }
 
-    public static ConflictErrorBody idempotencyKeyReused(IdempotencyKeyReusedEncoded value) {
-        return new ConflictErrorBody(new IdempotencyKeyReusedValue(value));
+    public static ConflictErrorBody tooManyReviewLinks(TooManyReviewLinksEncoded value) {
+        return new ConflictErrorBody(new TooManyReviewLinksValue(value));
     }
 
-    public boolean isExternalIdTaken() {
-        return value instanceof ExternalIdTakenValue;
+    public boolean isPostNotReviewable() {
+        return value instanceof PostNotReviewableValue;
     }
 
-    public boolean isIdempotencyKeyReused() {
-        return value instanceof IdempotencyKeyReusedValue;
+    public boolean isTooManyReviewLinks() {
+        return value instanceof TooManyReviewLinksValue;
     }
 
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<ExternalIdTakenEncoded> getExternalIdTaken() {
-        if (isExternalIdTaken()) {
-            return Optional.of(((ExternalIdTakenValue) value).value);
+    public Optional<PostNotReviewableEncoded> getPostNotReviewable() {
+        if (isPostNotReviewable()) {
+            return Optional.of(((PostNotReviewableValue) value).value);
         }
         return Optional.empty();
     }
 
-    public Optional<IdempotencyKeyReusedEncoded> getIdempotencyKeyReused() {
-        if (isIdempotencyKeyReused()) {
-            return Optional.of(((IdempotencyKeyReusedValue) value).value);
+    public Optional<TooManyReviewLinksEncoded> getTooManyReviewLinks() {
+        if (isTooManyReviewLinks()) {
+            return Optional.of(((TooManyReviewLinksValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,46 +89,46 @@ public final class ConflictErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitExternalIdTaken(ExternalIdTakenEncoded externalIdTaken);
+        T visitPostNotReviewable(PostNotReviewableEncoded postNotReviewable);
 
-        T visitIdempotencyKeyReused(IdempotencyKeyReusedEncoded idempotencyKeyReused);
+        T visitTooManyReviewLinks(TooManyReviewLinksEncoded tooManyReviewLinks);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(ExternalIdTakenValue.class), @JsonSubTypes.Type(IdempotencyKeyReusedValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(PostNotReviewableValue.class), @JsonSubTypes.Type(TooManyReviewLinksValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("ExternalIdTaken")
+    @JsonTypeName("PostNotReviewable")
     @JsonIgnoreProperties("_tag")
-    private static final class ExternalIdTakenValue implements Value {
+    private static final class PostNotReviewableValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private ExternalIdTakenEncoded value;
+        private PostNotReviewableEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private ExternalIdTakenValue() {}
+        private PostNotReviewableValue() {}
 
-        private ExternalIdTakenValue(ExternalIdTakenEncoded value) {
+        private PostNotReviewableValue(PostNotReviewableEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitExternalIdTaken(value);
+            return visitor.visitPostNotReviewable(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof ExternalIdTakenValue && equalTo((ExternalIdTakenValue) other);
+            return other instanceof PostNotReviewableValue && equalTo((PostNotReviewableValue) other);
         }
 
-        private boolean equalTo(ExternalIdTakenValue other) {
+        private boolean equalTo(PostNotReviewableValue other) {
             return value.equals(other.value);
         }
 
@@ -143,32 +143,32 @@ public final class ConflictErrorBody {
         }
     }
 
-    @JsonTypeName("IdempotencyKeyReused")
+    @JsonTypeName("TooManyReviewLinks")
     @JsonIgnoreProperties("_tag")
-    private static final class IdempotencyKeyReusedValue implements Value {
+    private static final class TooManyReviewLinksValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private IdempotencyKeyReusedEncoded value;
+        private TooManyReviewLinksEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private IdempotencyKeyReusedValue() {}
+        private TooManyReviewLinksValue() {}
 
-        private IdempotencyKeyReusedValue(IdempotencyKeyReusedEncoded value) {
+        private TooManyReviewLinksValue(TooManyReviewLinksEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitIdempotencyKeyReused(value);
+            return visitor.visitTooManyReviewLinks(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof IdempotencyKeyReusedValue && equalTo((IdempotencyKeyReusedValue) other);
+            return other instanceof TooManyReviewLinksValue && equalTo((TooManyReviewLinksValue) other);
         }
 
-        private boolean equalTo(IdempotencyKeyReusedValue other) {
+        private boolean equalTo(TooManyReviewLinksValue other) {
             return value.equals(other.value);
         }
 

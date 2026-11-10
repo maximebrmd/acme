@@ -9,7 +9,7 @@ class NotFoundErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'ConnectLinkNotFound'
+     *    'ReviewLinkNotFound'
      *   |'WorkspaceNotFound'
      *   |'_unknown'
      * ) $type
@@ -18,7 +18,7 @@ class NotFoundErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    ConnectLinkNotFoundEncoded
+     *    ReviewLinkNotFoundEncoded
      *   |WorkspaceNotFoundEncoded
      *   |mixed
      * ) $value
@@ -28,12 +28,12 @@ class NotFoundErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'ConnectLinkNotFound'
+     *    'ReviewLinkNotFound'
      *   |'WorkspaceNotFound'
      *   |'_unknown'
      * ),
      *   value: (
-     *    ConnectLinkNotFoundEncoded
+     *    ReviewLinkNotFoundEncoded
      *   |WorkspaceNotFoundEncoded
      *   |mixed
      * ),
@@ -47,14 +47,14 @@ class NotFoundErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param ConnectLinkNotFoundEncoded $connectLinkNotFound
+     * @param ReviewLinkNotFoundEncoded $reviewLinkNotFound
      * @return NotFoundErrorBody
      */
-    public static function connectLinkNotFound(ConnectLinkNotFoundEncoded $connectLinkNotFound): NotFoundErrorBody
+    public static function reviewLinkNotFound(ReviewLinkNotFoundEncoded $reviewLinkNotFound): NotFoundErrorBody
     {
         return new NotFoundErrorBody([
-            'type' => 'ConnectLinkNotFound',
-            'value' => $connectLinkNotFound,
+            'type' => 'ReviewLinkNotFound',
+            'value' => $reviewLinkNotFound,
         ]);
     }
 
@@ -73,19 +73,19 @@ class NotFoundErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isConnectLinkNotFound(): bool
+    public function isReviewLinkNotFound(): bool
     {
-        return $this->value instanceof ConnectLinkNotFoundEncoded && $this->type === 'ConnectLinkNotFound';
+        return $this->value instanceof ReviewLinkNotFoundEncoded && $this->type === 'ReviewLinkNotFound';
     }
 
     /**
-     * @return ConnectLinkNotFoundEncoded
+     * @return ReviewLinkNotFoundEncoded
      */
-    public function asConnectLinkNotFound(): ConnectLinkNotFoundEncoded
+    public function asReviewLinkNotFound(): ReviewLinkNotFoundEncoded
     {
-        if (!($this->value instanceof ConnectLinkNotFoundEncoded && $this->type === 'ConnectLinkNotFound')) {
+        if (!($this->value instanceof ReviewLinkNotFoundEncoded && $this->type === 'ReviewLinkNotFound')) {
             throw new Exception(
-                "Expected ConnectLinkNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected ReviewLinkNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,8 +134,8 @@ class NotFoundErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'ConnectLinkNotFound':
-                $value = $this->asConnectLinkNotFound()->jsonSerialize();
+            case 'ReviewLinkNotFound':
+                $value = $this->asReviewLinkNotFound()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case 'WorkspaceNotFound':
@@ -178,8 +178,8 @@ class NotFoundErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'ConnectLinkNotFound':
-                $args['value'] = ConnectLinkNotFoundEncoded::jsonDeserialize($data);
+            case 'ReviewLinkNotFound':
+                $args['value'] = ReviewLinkNotFoundEncoded::jsonDeserialize($data);
                 break;
             case 'WorkspaceNotFound':
                 $args['value'] = WorkspaceNotFoundEncoded::jsonDeserialize($data);

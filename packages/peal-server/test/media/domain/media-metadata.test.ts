@@ -16,6 +16,22 @@ describe(MediaMetadata, () => {
     expect(Result.isSuccess(decode(withDuration(maxDuration)))).toBeTruthy();
   });
 
+  it("takes what was written before documents had pages, as none", () => {
+    expect(
+      Result.getOrThrow(decode(withDuration(maxDuration))).pages
+    ).toStrictEqual(Option.none());
+    expect(
+      Result.isSuccess(
+        decode({ ...withDuration(maxDuration), pages: Option.some(12) })
+      )
+    ).toBeTruthy();
+    expect(
+      Result.isFailure(
+        decode({ ...withDuration(maxDuration), pages: Option.some(0) })
+      )
+    ).toBeTruthy();
+  });
+
   it("refuses a longer duration, which no platform takes", () => {
     expect(
       Result.isFailure(

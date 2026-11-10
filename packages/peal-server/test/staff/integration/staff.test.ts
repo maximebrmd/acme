@@ -102,6 +102,13 @@ const StaffedLive = Layer.effect(
       platform: "youtube",
     });
 
+    // A LinkedIn company page, which staff tell from a profile.
+    const pageChannel = yield* seedChannel(workspaceId, "Console page", {
+      platform: "linkedin",
+    });
+
+    yield* sql`UPDATE channels.channels SET connection = 'linkedinPage' WHERE id = ${pageChannel}`;
+
     const tiktokPost = yield* seedPost(workspaceId, tiktokChannel, secretText);
 
     const youtubePost = yield* seedPost(
@@ -406,7 +413,8 @@ layer(StaffedLive, { excludeTestServices: true, timeout: "180 seconds" })(
         );
         assert.deepStrictEqual(
           workspace.channels
-            .map(({ handle, platform, status }) => ({
+            .map(({ connection, handle, platform, status }) => ({
+              connection,
               handle,
               platform,
               status,
@@ -414,16 +422,25 @@ layer(StaffedLive, { excludeTestServices: true, timeout: "180 seconds" })(
             .toSorted((a, b) => a.platform.localeCompare(b.platform)),
           [
             {
+              connection: "linkedinPage",
+              handle: "Console page",
+              platform: "linkedin",
+              status: { _tag: "active" },
+            },
+            {
+              connection: null,
               handle: "@console@social.example",
               platform: "mastodon",
               status: { _tag: "active" },
             },
             {
+              connection: null,
               handle: "@console_tiktok",
               platform: "tiktok",
               status: { _tag: "refreshNeeded" },
             },
             {
+              connection: null,
               handle: "Console videos",
               platform: "youtube",
               status: { _tag: "active" },
@@ -431,6 +448,7 @@ layer(StaffedLive, { excludeTestServices: true, timeout: "180 seconds" })(
           ]
         );
         assert.deepStrictEqual(workspace.posts, {
+          awaitingApproval: 0,
           cancelled: 0,
           draft: 3,
           finished: 0,

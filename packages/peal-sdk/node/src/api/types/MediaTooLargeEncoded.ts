@@ -12,7 +12,8 @@ export interface MediaTooLargeEncoded {
 export namespace MediaTooLargeEncoded {
     export const Kind = {
             Image: "image",
-            Video: "video"
+            Video: "video",
+            Document: "document"
         } as const;
     export type Kind = typeof Kind[keyof typeof Kind];
 }

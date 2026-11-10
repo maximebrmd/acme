@@ -6,6 +6,7 @@ import {
   PlanSchema,
 } from "./billing-plans.ts";
 import { errorEnvelope } from "./error-envelope.ts";
+import { Int64Schema } from "./int64.ts";
 
 /**
  * The workspace's plan allows no more of this, with what a client needs to
@@ -17,7 +18,8 @@ export class PlanLimitReached extends Schema.TaggedError<PlanLimitReached>()(
   {
     ...errorEnvelope,
     // How many the plan allows.
-    allowed: Schema.Int,
+    // A count of bytes for `mediaStorage`: 64-bit.
+    allowed: Int64Schema,
     // The workspace's billing page in the web app, where an owner or an
     // admin orders a plan.
     billingUrl: Schema.String,
@@ -29,7 +31,7 @@ export class PlanLimitReached extends Schema.TaggedError<PlanLimitReached>()(
     planWithRoom: Schema.NullOr(PaidPlanSchema),
     // How many the workspace holds now, counted as the limit counts them:
     // more than `allowed` after a move to a smaller plan.
-    used: Schema.Int,
+    used: Int64Schema,
   },
   {
     description:

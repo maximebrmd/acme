@@ -4,6 +4,7 @@ import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
 import { duplicateWindowHours, maxImportRows } from "peal-contract";
 import type {
+  CommentInvalid,
   ContentViolation,
   DuplicateOnChannel,
   ImportUnreadable,
@@ -173,6 +174,17 @@ const sourceFailures: Readonly<Record<MediaSourceFailure, string>> = {
   unknownHost: "its host has no address",
 };
 
+// What is wrong with a comment, as the user fixes it.
+const commentProblems: Readonly<Record<CommentInvalid["problem"], string>> = {
+  anchor:
+    "it is about a channel the post does not go to, or it is an answer, which is about what its thread is about",
+  name: "the name is empty, or longer than 80 characters",
+  parent:
+    "it answers a comment that started no thread of this post: answer the first comment of a thread, which is also the one to resolve",
+  selection: "the words it quotes are not in the post's text where it says",
+  text: "its text is empty, or longer than 2000 characters",
+};
+
 const refused = (reason: string) => new Refused({ reason });
 
 const reasonOf =
@@ -183,6 +195,14 @@ const reasonOf =
       AltTextTooLong: ({ maxLength }) =>
         refused(
           `The description is longer than Peal keeps: ${String(maxLength)} characters at most.`
+        ),
+      ApprovalChanged: () =>
+        refused(
+          "The post changed since you read it: it was asked again, or says something else. Nothing was decided. Read it again with peal review show, then decide with the --approval and --subject it prints."
+        ),
+      ApprovalNotPending: () =>
+        refused(
+          "The post does not wait for an approval: none was asked, or it was already decided, withdrawn or scheduled. peal approvals list shows those that wait."
         ),
       BadRequest: () => refused("Peal could not read the request."),
       ChannelCannotPost: ({ reason }) =>
@@ -195,6 +215,10 @@ const reasonOf =
         refused(
           "The workspace has no such channel, or it is not of this platform: peal channels list shows them."
         ),
+      CommentInvalid: ({ problem }) =>
+        refused(`Peal refused the comment: ${commentProblems[problem]}.`),
+      CommentNotFound: () =>
+        refused("The post has no such comment: peal review show lists them."),
       ConnectFailed: ({ reason }) =>
         refused(
           reason === "notConfigured"
@@ -239,6 +263,14 @@ const reasonOf =
         refused(
           "The workspace has no pending invitation with that id: it was accepted, declined or revoked."
         ),
+      LookupInputInvalid: () =>
+        refused(
+          "The lookup refused its input: peal channels lookup <channel-id> lists what each lookup takes, and a cursor must be one a page before named."
+        ),
+      LookupNotFound: () =>
+        refused(
+          "This channel's platform has no such lookup: peal channels lookup <channel-id> lists those it has."
+        ),
       MediaImportBusy: () =>
         refused(
           "The workspace already imports two files at once, or the server as many as it runs together: nothing was fetched. Try again in a moment."
@@ -265,6 +297,12 @@ const reasonOf =
           "The workspace has no partner account: an owner or an admin opens one in the web app's settings, where the server lets them, or its operator does."
         ),
       PlanLimitReached: (reached) => refused(planLimitReason(reached)),
+      PlatformRateLimited: ({ retryAfterSeconds }) =>
+        refused(
+          retryAfterSeconds === null
+            ? "The platform asked to slow down, or its allowance for today is spent: try again later."
+            : `The platform asked to slow down: try again in ${String(retryAfterSeconds)} seconds.`
+        ),
       PlatformUnreachable: () =>
         refused(
           "The platform did not answer, or asked to slow down: try again in a few minutes."
@@ -277,11 +315,21 @@ const reasonOf =
           ].join("\n")
         ),
       PostNotFound: () => refused("The workspace has no such post."),
+      PostNotReviewable: ({ status }) =>
+        refused(
+          status === "cancelled"
+            ? "The post was cancelled: nothing is left to review."
+            : "The post went out, or is going out: nothing is left to review."
+        ),
       PostStatusConflict: ({ status }) =>
         refused(`The post is ${status}, which does not allow this.`),
       ReturnUrlNotAllowed: () =>
         refused(
           "The return address was refused: it must be HTTPS, on an origin the workspace's partner account registered (peal partner show lists them). A workspace without a partner account takes none."
+        ),
+      ReviewLinkNotFound: () =>
+        refused(
+          "The workspace has no such review link: peal review links lists a post's."
         ),
       ScheduleInPast: () =>
         refused("That time has passed: give a later --at, or publish it now."),
@@ -301,6 +349,10 @@ const reasonOf =
       TooManyRequests: ({ limit, retryAfterSeconds, windowSeconds }) =>
         refused(
           `Peal takes ${String(limit)} requests every ${String(windowSeconds)} seconds from one sign-in or key, and this one sent more: nothing was done. Try again in ${String(retryAfterSeconds)} seconds.`
+        ),
+      TooManyReviewLinks: ({ limit }) =>
+        refused(
+          `The post has ${String(limit)} working review links, the most it may: revoke one first.`
         ),
       TooManyWebhookEndpoints: ({ allowed }) =>
         refused(

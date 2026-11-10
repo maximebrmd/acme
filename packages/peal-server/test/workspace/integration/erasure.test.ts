@@ -9,9 +9,8 @@ import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
-import { SqlLive } from "#shared/infrastructure/database.ts";
-
 import {
+  MigratedSqlLive,
   apiKeyOf,
   bodyOf,
   password,
@@ -54,6 +53,7 @@ const schemas = [
   "media",
   "notifications",
   "publishing",
+  "review",
   "staff",
   "webhooks",
   "workspace",
@@ -133,6 +133,14 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.publication_calls c JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.upload_sessions": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.upload_sessions u JOIN publishing.publication_calls c ON c.idempotency_key = u.idempotency_key JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
+  "review.approval_requests": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM review.approval_requests WHERE workspace_id = ${id}`,
+  "review.comments": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM review.comments WHERE workspace_id = ${id}`,
+  "review.links": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM review.links WHERE workspace_id = ${id}`,
+  "review.settings": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM review.settings WHERE workspace_id = ${id}`,
   "webhooks.deliveries": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM webhooks.deliveries WHERE workspace_id = ${id}`,
   "webhooks.endpoints": (sql, id) =>
@@ -217,6 +225,16 @@ const userRows = {
   // them.
   "publishing.posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id} OR scheduled_by = ${id}`,
+  // What they wrote and decided in reviews stays with its workspace,
+  // without them, as do the links and the policy they made.
+  "review.approval_requests": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM review.approval_requests WHERE requested_by = ${id} OR decided_by_user_id = ${id}`,
+  "review.comments": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM review.comments WHERE author_user_id = ${id} OR resolved_by_user_id = ${id}`,
+  "review.links": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM review.links WHERE created_by = ${id}`,
+  "review.settings": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM review.settings WHERE updated_by = ${id}`,
   // What staff did to them: the events stay, without them and without the
   // reason given about them. What they did as staff keeps their id (below).
   // An id the user is named by in a change staff made as someone else goes
@@ -354,6 +372,26 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO publishing.upload_sessions (idempotency_key, byte_size, opened_at, video_id)
     VALUES (${callKey}, 2048, now(), 'synthetic-video')`;
+
+  // The post's review: the policy the user chose, a link they made, a
+  // comment they wrote and resolved, a visitor's with a name and an
+  // address, and an approval they asked for and decided.
+  const linkId = uuid7();
+
+  yield* sql`INSERT INTO review.settings (workspace_id, approval_policy, updated_at, updated_by)
+    VALUES (${workspaceId}, 'always', now(), ${person.id})`;
+
+  yield* sql`INSERT INTO review.links (id, workspace_id, post_id, token_hash, access, created_by, created_at, expires_at)
+    VALUES (${linkId}, ${workspaceId}, ${postId}, ${randomUUID().replaceAll("-", "")}, 'approve', ${person.id}, now(), now() + interval '14 days')`;
+
+  yield* sql`INSERT INTO review.comments (id, workspace_id, post_id, author_kind, author_user_id, body, created_at, resolved_at, resolved_by_kind, resolved_by_user_id)
+    VALUES (${uuid7()}, ${workspaceId}, ${postId}, 'member', ${person.id}, 'A synthetic comment.', now(), now(), 'member', ${person.id})`;
+
+  yield* sql`INSERT INTO review.comments (id, workspace_id, post_id, author_kind, author_link_id, visitor_name, body, created_at)
+    VALUES (${uuid7()}, ${workspaceId}, ${postId}, 'visitor', ${linkId}, 'A synthetic reviewer', 'A synthetic comment.', now())`;
+
+  yield* sql`INSERT INTO review.approval_requests (id, workspace_id, post_id, subject_hash, requested_by, requested_via, requested_at, scheduled_at, schedule_zone, status, decided_at, decided_by_kind, decided_by_user_id)
+    VALUES (${uuid7()}, ${workspaceId}, ${postId}, 'synthetic', ${person.id}, 'member', now(), now(), 'Europe/Paris', 'approved', now(), 'member', ${person.id})`;
 
   yield* seedTrackedPost(workspaceId, channelId, postId);
   yield* seedUsage(workspaceId, 2);
@@ -509,7 +547,7 @@ const none = (rows: Readonly<Record<string, Count>>) =>
 // records are covered too.
 const RetainingLive = Layer.mergeAll(
   TestApp.layerWith({ PEAL_LEGAL_RETENTION: "true" }),
-  SqlLive
+  MigratedSqlLive
 );
 
 layer(RetainingLive, {

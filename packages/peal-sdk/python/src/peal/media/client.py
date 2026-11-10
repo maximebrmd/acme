@@ -109,7 +109,7 @@ class MediaClient:
         )
         client.media.create(
             workspace_id="workspaceId",
-            byte_size=1,
+            byte_size=1000000,
             content_type="contentType",
         )
         """
@@ -460,7 +460,7 @@ class AsyncMediaClient:
         async def main() -> None:
             await client.media.create(
                 workspace_id="workspaceId",
-                byte_size=1,
+                byte_size=1000000,
                 content_type="contentType",
             )
 

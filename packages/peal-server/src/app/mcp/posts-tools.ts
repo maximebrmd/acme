@@ -48,7 +48,7 @@ const channelIds = Schema.Array(Schema.String).annotate({
 // The API's draft options, each channel's once.
 const options = PostDraftSchema.fields.options.schema.annotate({
   description:
-    "What the post sets on the platforms that ask for more than text and media, one entry per channel, tagged by the channel's `platform`: YouTube's title (required), madeForKids (required), privacy, tags, categoryId, notifySubscribers and containsSyntheticMedia; TikTok's privacyLevel (required: one of the levels get_tiktok_creator answers), disableComment, disableDuet, disableStitch, commercialContent, brandOrganic, brandContent and aiGenerated. A draft keeps them unfinished; scheduling needs the required ones.",
+    "What the post sets on the platforms that ask for more than text and media, one entry per channel, tagged by the channel's `platform`: YouTube's title (required), madeForKids (required), privacy, tags, categoryId, notifySubscribers and containsSyntheticMedia; TikTok's privacyLevel (required: one of the levels get_tiktok_creator answers), disableComment, disableDuet, disableStitch, commercialContent, brandOrganic, brandContent and aiGenerated; Google Business Profile's postType (standard when left out, event or offer), title, startsAt and endsAt (required for an event or an offer, as 2026-11-27T09:00 on the location's own clock), callToAction (book, order, shop, learnMore, signUp or call) with its callToActionUrl (none for call), and an offer's couponCode, redeemUrl and terms; Pinterest's boardId (required: a board's id from the pinterestBoards lookup, run_channel_lookup), boardSectionId (from pinterestBoardSections), title, link, coverSecond and dominantColor; LinkedIn's visibility (public when left out, connections on a profile, or loggedIn), disableReshare, mentions (company pages, each a name and urn as the linkedinOrganizations lookup answers them on a company page channel, the text holding @ and that name), linkUrl with its linkTitle and a linkDescription, and a PDF document's documentTitle. get_channel_capabilities describes every field of a channel. A draft keeps them unfinished; scheduling needs the required ones.",
 });
 
 export const ListDrafts = Tool.make("list_drafts", {
@@ -82,7 +82,7 @@ export const GetPost = Tool.make("get_post", {
 export const CreateDraft = Tool.make("create_draft", {
   dependencies: [CurrentMember],
   description:
-    "Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the channels it is for, and the options of those whose platform asks for more (YouTube, TikTok). A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.",
+    "Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the channels it is for, and the options of those whose platform asks for more (LinkedIn, TikTok, YouTube, Pinterest, Google Business Profile). A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.",
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelIds,
@@ -214,6 +214,9 @@ const reachesThePublic =
 const refusedWhole =
   "The post is checked against every channel's platform first (text length, media types, sizes and counts, required options, and what the account itself refuses): when anything is wrong, nothing is scheduled, and the refusal lists every violation at once, each with its channel, and its field or media, so one more call can fix them all.";
 
+const mayWait =
+  "In a workspace that asks for approvals, what this client sends or schedules is not refused but waits: the post answered has the status awaitingApproval, keeps its time, and goes out only once a person approves it (in the web app, or through a review link), or goes back to draft when that time passes first. Tell the user it waits; do not send it again.";
+
 const needsPublishing =
   "Needs the scope workspace:publish, which the user grants when they connect this client, and a role that schedules posts (owner, admin or editor).";
 
@@ -275,7 +278,7 @@ export const ListPostAttempts = Tool.make("list_post_attempts", {
 
 export const SchedulePost = Tool.make("schedule_post", {
   dependencies: [CurrentMember],
-  description: `Schedules a draft to go out at an instant: on \`channelIds\` when given, which become its channels (those it had keep their options, new ones have none), otherwise on the channels it has. ${reachesThePublic} ${refusedWhole} Until its time, unschedule_post takes it back to draft and cancel_post cancels it. On a server that bills, the month must have room for it in the workspace's plan. ${needsPublishing}`,
+  description: `Schedules a draft to go out at an instant: on \`channelIds\` when given, which become its channels (those it had keep their options, new ones have none), otherwise on the channels it has. ${reachesThePublic} ${refusedWhole} Until its time, unschedule_post takes it back to draft and cancel_post cancels it. On a server that bills, the month must have room for it in the workspace's plan. ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     at,
@@ -298,7 +301,7 @@ export const SchedulePost = Tool.make("schedule_post", {
 
 export const PublishPost = Tool.make("publish_post", {
   dependencies: [CurrentMember],
-  description: `Publishes a draft, or a post scheduled for later, now, on the channels it has: it goes out within seconds, and cannot be stopped once it started. ${reachesThePublic} ${refusedWhole} Then read it with get_post until its status is finished: its outcome and each target say how it went. ${needsPublishing}`,
+  description: `Publishes a draft, or a post scheduled for later, now, on the channels it has: it goes out within seconds, and cannot be stopped once it started. ${reachesThePublic} ${refusedWhole} Then read it with get_post until its status is finished: its outcome and each target say how it went. ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({ postId }),
   success: PostSchema,
@@ -310,7 +313,7 @@ export const PublishPost = Tool.make("publish_post", {
 
 export const ReschedulePost = Tool.make("reschedule_post", {
   dependencies: [CurrentMember],
-  description: `Moves a scheduled post to another instant, replacing the time it had; what it says and where it goes stay. A draft is scheduled with schedule_post, and a post already publishing or finished is refused. ${reachesThePublic} ${needsPublishing}`,
+  description: `Moves a scheduled post to another instant, replacing the time it had; what it says and where it goes stay. A draft is scheduled with schedule_post, and a post already publishing or finished is refused. ${reachesThePublic} ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({ at, postId, timeZone }),
   success: PostSchema,
@@ -334,7 +337,7 @@ export const CancelPost = Tool.make("cancel_post", {
 
 export const CreatePost = Tool.make("create_post", {
   dependencies: [CurrentMember],
-  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. Apart from keys, a post whose content already goes to one of its channels less than ${String(duplicateWindowHours)} hours from its time is refused, naming the post that has it: pass \`allowDuplicate: true\` only when the user means to post the same twice. ${waitsForOutcome} ${needsPublishing}`,
+  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. Apart from keys, a post whose content already goes to one of its channels less than ${String(duplicateWindowHours)} hours from its time is refused, naming the post that has it: pass \`allowDuplicate: true\` only when the user means to post the same twice. ${waitsForOutcome} ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     allowDuplicate: NewPostSchema.fields.allowDuplicate,

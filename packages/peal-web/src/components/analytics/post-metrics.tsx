@@ -22,8 +22,13 @@ interface PostMetricsViewProps {
   readonly publishedOn: readonly string[];
 }
 
-const isCounted = (platform: Platform) =>
+const isCountedPlatform = (platform: Platform) =>
   countedPlatforms.some((counted) => counted === platform);
+
+// On LinkedIn, Peal reads the counts of company pages only.
+const isCounted = ({ connection, platform }: Channel) =>
+  isCountedPlatform(platform) &&
+  (platform !== "linkedin" || connection === "linkedinPage");
 
 /**
  * What a post's channels counted: each one's latest counts, when they were
@@ -40,23 +45,27 @@ export const PostMetricsView = ({
   const tPosts = useTranslations("Posts");
   const format = useFormatter();
 
-  // The platforms the post went live on, where the channel is still known.
-  const platformsOf = publishedOn.map(
-    (channelId) => channels.find(({ id }) => id === channelId)?.platform
+  // The channels the post went live on, where they are still known.
+  const publishedChannels = publishedOn.map((channelId) =>
+    channels.find(({ id }) => id === channelId)
   );
 
   const uncounted = [
     ...new Set(
-      platformsOf.filter(
-        (platform): platform is Platform =>
-          platform !== undefined && !isCounted(platform)
+      publishedChannels.flatMap((channel) =>
+        channel === undefined || isCounted(channel) ? [] : [channel.platform]
       )
     ),
   ];
 
   // The platforms Peal reads counts on, as the reader's language lists them.
   const counted = format.list(
-    countedPlatforms.map((platform) => tPosts("platform", { platform })),
+    countedPlatforms.map((platform) =>
+      t("post.countedName", {
+        name: tPosts("platform", { platform }),
+        platform,
+      })
+    ),
     { type: "conjunction" }
   );
 
@@ -66,7 +75,12 @@ export const PostMetricsView = ({
         {t("post.uncounted", {
           counted,
           platforms: format.list(
-            uncounted.map((platform) => tPosts("platform", { platform })),
+            uncounted.map((platform) =>
+              t("post.uncountedName", {
+                name: tPosts("platform", { platform }),
+                platform,
+              })
+            ),
             { type: "conjunction" }
           ),
         })}
@@ -76,8 +90,8 @@ export const PostMetricsView = ({
   if (analytics.targets.length === 0) {
     // Counts may still come from a channel Peal reads, or one since
     // disconnected, which it can no longer tell.
-    const mayCome = platformsOf.some(
-      (platform) => platform === undefined || isCounted(platform)
+    const mayCome = publishedChannels.some(
+      (channel) => channel === undefined || isCounted(channel)
     );
 
     return (

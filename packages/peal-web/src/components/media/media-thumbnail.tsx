@@ -1,13 +1,21 @@
 "use client";
 
-import { FilmIcon, ImageIcon } from "lucide-react";
+import { FileTextIcon, FilmIcon, ImageIcon } from "lucide-react";
 import Image from "next/image";
 import type { Media } from "peal-contract";
 
+const icons = {
+  document: FileTextIcon,
+  image: ImageIcon,
+  video: FilmIcon,
+} as const;
+
 /**
  * The file itself, shown small and filling its box: images as they are,
- * videos by their first frame. Nothing is stored yet for pending media, nor
- * any more for rejected, so their kind's icon stands in. `sizes` is how
+ * videos by their first frame. A document shows as its kind's icon: Peal
+ * stores a PDF and hands it to the platform, and never opens it. Nothing is
+ * stored yet for pending media, nor any more for rejected, so their kind's
+ * icon stands in too. `sizes` is how
  * wide the box is, as `<img sizes>` reads it.
  */
 export const MediaThumbnail = ({
@@ -19,8 +27,8 @@ export const MediaThumbnail = ({
 }) => {
   const { url } = media;
 
-  if (url === null) {
-    const Icon = media.kind === "image" ? ImageIcon : FilmIcon;
+  if (url === null || media.kind === "document") {
+    const Icon = icons[media.kind];
 
     return (
       <div className="bg-muted flex size-full items-center justify-center">

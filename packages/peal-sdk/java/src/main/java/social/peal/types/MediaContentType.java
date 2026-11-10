@@ -11,6 +11,9 @@ public final class MediaContentType {
 
     public static final MediaContentType IMAGE_GIF = new MediaContentType(Value.IMAGE_GIF, "image/gif");
 
+    public static final MediaContentType APPLICATION_PDF =
+            new MediaContentType(Value.APPLICATION_PDF, "application/pdf");
+
     public static final MediaContentType IMAGE_JPEG = new MediaContentType(Value.IMAGE_JPEG, "image/jpeg");
 
     public static final MediaContentType IMAGE_PNG = new MediaContentType(Value.IMAGE_PNG, "image/png");
@@ -56,6 +59,8 @@ public final class MediaContentType {
                 return visitor.visitImageWebp();
             case IMAGE_GIF:
                 return visitor.visitImageGif();
+            case APPLICATION_PDF:
+                return visitor.visitApplicationPdf();
             case IMAGE_JPEG:
                 return visitor.visitImageJpeg();
             case IMAGE_PNG:
@@ -77,6 +82,8 @@ public final class MediaContentType {
                 return IMAGE_WEBP;
             case "image/gif":
                 return IMAGE_GIF;
+            case "application/pdf":
+                return APPLICATION_PDF;
             case "image/jpeg":
                 return IMAGE_JPEG;
             case "image/png":
@@ -103,6 +110,8 @@ public final class MediaContentType {
 
         VIDEO_QUICKTIME,
 
+        APPLICATION_PDF,
+
         UNKNOWN
     }
 
@@ -118,6 +127,8 @@ public final class MediaContentType {
         T visitVideoMp4();
 
         T visitVideoQuicktime();
+
+        T visitApplicationPdf();
 
         T visitUnknown(String unknownType);
     }

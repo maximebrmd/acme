@@ -1479,7 +1479,7 @@ func TestSettersMarkExplicitPeriodUsage(t *testing.T) {
 func TestSettersPlanAllowances(t *testing.T) {
 	t.Run("SetAssistantRequests", func(t *testing.T) {
 		obj := &PlanAllowances{}
-		var fernTestValueAssistantRequests *int
+		var fernTestValueAssistantRequests *int64
 		obj.SetAssistantRequests(fernTestValueAssistantRequests)
 		assert.Equal(t, fernTestValueAssistantRequests, obj.AssistantRequests)
 		assert.NotNil(t, obj.explicitFields)
@@ -1487,7 +1487,7 @@ func TestSettersPlanAllowances(t *testing.T) {
 
 	t.Run("SetChannels", func(t *testing.T) {
 		obj := &PlanAllowances{}
-		var fernTestValueChannels *int
+		var fernTestValueChannels *int64
 		obj.SetChannels(fernTestValueChannels)
 		assert.Equal(t, fernTestValueChannels, obj.Channels)
 		assert.NotNil(t, obj.explicitFields)
@@ -1495,7 +1495,7 @@ func TestSettersPlanAllowances(t *testing.T) {
 
 	t.Run("SetMediaStorage", func(t *testing.T) {
 		obj := &PlanAllowances{}
-		var fernTestValueMediaStorage *int
+		var fernTestValueMediaStorage *int64
 		obj.SetMediaStorage(fernTestValueMediaStorage)
 		assert.Equal(t, fernTestValueMediaStorage, obj.MediaStorage)
 		assert.NotNil(t, obj.explicitFields)
@@ -1503,7 +1503,7 @@ func TestSettersPlanAllowances(t *testing.T) {
 
 	t.Run("SetMembers", func(t *testing.T) {
 		obj := &PlanAllowances{}
-		var fernTestValueMembers *int
+		var fernTestValueMembers *int64
 		obj.SetMembers(fernTestValueMembers)
 		assert.Equal(t, fernTestValueMembers, obj.Members)
 		assert.NotNil(t, obj.explicitFields)
@@ -1511,7 +1511,7 @@ func TestSettersPlanAllowances(t *testing.T) {
 
 	t.Run("SetScheduledPosts", func(t *testing.T) {
 		obj := &PlanAllowances{}
-		var fernTestValueScheduledPosts *int
+		var fernTestValueScheduledPosts *int64
 		obj.SetScheduledPosts(fernTestValueScheduledPosts)
 		assert.Equal(t, fernTestValueScheduledPosts, obj.ScheduledPosts)
 		assert.NotNil(t, obj.explicitFields)
@@ -1524,7 +1524,7 @@ func TestGettersPlanAllowances(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &PlanAllowances{}
-		var expected *int
+		var expected *int64
 		obj.AssistantRequests = expected
 
 		// Act & Assert
@@ -1557,7 +1557,7 @@ func TestGettersPlanAllowances(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &PlanAllowances{}
-		var expected *int
+		var expected *int64
 		obj.Channels = expected
 
 		// Act & Assert
@@ -1590,7 +1590,7 @@ func TestGettersPlanAllowances(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &PlanAllowances{}
-		var expected *int
+		var expected *int64
 		obj.MediaStorage = expected
 
 		// Act & Assert
@@ -1623,7 +1623,7 @@ func TestGettersPlanAllowances(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &PlanAllowances{}
-		var expected *int
+		var expected *int64
 		obj.Members = expected
 
 		// Act & Assert
@@ -1656,7 +1656,7 @@ func TestGettersPlanAllowances(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &PlanAllowances{}
-		var expected *int
+		var expected *int64
 		obj.ScheduledPosts = expected
 
 		// Act & Assert
@@ -1692,7 +1692,7 @@ func TestSettersMarkExplicitPlanAllowances(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &PlanAllowances{}
-		var fernTestValueAssistantRequests *int
+		var fernTestValueAssistantRequests *int64
 
 		// Act
 		obj.SetAssistantRequests(fernTestValueAssistantRequests)
@@ -1723,7 +1723,7 @@ func TestSettersMarkExplicitPlanAllowances(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &PlanAllowances{}
-		var fernTestValueChannels *int
+		var fernTestValueChannels *int64
 
 		// Act
 		obj.SetChannels(fernTestValueChannels)
@@ -1754,7 +1754,7 @@ func TestSettersMarkExplicitPlanAllowances(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &PlanAllowances{}
-		var fernTestValueMediaStorage *int
+		var fernTestValueMediaStorage *int64
 
 		// Act
 		obj.SetMediaStorage(fernTestValueMediaStorage)
@@ -1785,7 +1785,7 @@ func TestSettersMarkExplicitPlanAllowances(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &PlanAllowances{}
-		var fernTestValueMembers *int
+		var fernTestValueMembers *int64
 
 		// Act
 		obj.SetMembers(fernTestValueMembers)
@@ -1816,7 +1816,7 @@ func TestSettersMarkExplicitPlanAllowances(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &PlanAllowances{}
-		var fernTestValueScheduledPosts *int
+		var fernTestValueScheduledPosts *int64
 
 		// Act
 		obj.SetScheduledPosts(fernTestValueScheduledPosts)
@@ -2756,7 +2756,7 @@ func TestSettersUsage(t *testing.T) {
 
 	t.Run("SetMediaStorage", func(t *testing.T) {
 		obj := &Usage{}
-		var fernTestValueMediaStorage int
+		var fernTestValueMediaStorage int64
 		obj.SetMediaStorage(fernTestValueMediaStorage)
 		assert.Equal(t, fernTestValueMediaStorage, obj.MediaStorage)
 		assert.NotNil(t, obj.explicitFields)
@@ -2841,7 +2841,7 @@ func TestGettersUsage(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &Usage{}
-		var expected int
+		var expected int64
 		obj.MediaStorage = expected
 
 		// Act & Assert
@@ -2985,7 +2985,7 @@ func TestSettersMarkExplicitUsage(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &Usage{}
-		var fernTestValueMediaStorage int
+		var fernTestValueMediaStorage int64
 
 		// Act
 		obj.SetMediaStorage(fernTestValueMediaStorage)

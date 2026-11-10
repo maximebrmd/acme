@@ -12,19 +12,19 @@ public record PlanAllowances : IJsonOnDeserialized
         new Dictionary<string, JsonElement>();
 
     [JsonPropertyName("assistantRequests")]
-    public int? AssistantRequests { get; set; }
+    public long? AssistantRequests { get; set; }
 
     [JsonPropertyName("channels")]
-    public int? Channels { get; set; }
+    public long? Channels { get; set; }
 
     [JsonPropertyName("mediaStorage")]
-    public int? MediaStorage { get; set; }
+    public long? MediaStorage { get; set; }
 
     [JsonPropertyName("members")]
-    public int? Members { get; set; }
+    public long? Members { get; set; }
 
     [JsonPropertyName("scheduledPosts")]
-    public int? ScheduledPosts { get; set; }
+    public long? ScheduledPosts { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

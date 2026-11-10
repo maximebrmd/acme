@@ -72,16 +72,21 @@ describe(mediaViolationsOn, () => {
     expect(withRules.toSorted()).toStrictEqual([
       "bluesky",
       "facebook",
+      "googleBusiness",
       "instagram",
       "linkedin",
       "mastodon",
+      "pinterest",
       "threads",
       "tiktok",
       "x",
       "youtube",
     ]);
 
-    for (const platform of withRules) {
+    // A Google Business Profile post takes photos only.
+    for (const platform of withRules.filter(
+      (name) => name !== "googleBusiness"
+    )) {
       expect(violations(platform, video(first))).toStrictEqual([]);
     }
 
@@ -408,16 +413,68 @@ describe(mediaViolationsOn, () => {
     ).toStrictEqual([]);
   });
 
-  it("refuses nothing where no media rule is known", () => {
-    const huge = mediaFile(first, {
-      byteSize: 900 * mebibyte,
-      contentType: "video/quicktime",
-      duration: Option.some(Duration.hours(2)),
+  it("holds Pinterest to JPEG and PNG images, or a video", () => {
+    const five = [1, 2, 3, 4, 5].map((number) =>
+      mediaFile(
+        MediaAssetIdSchema.make(`00000000-0000-7000-8000-00000000b00${number}`),
+        { contentType: "image/png" }
+      )
+    );
+
+    expect(violations("pinterest", ...five)).toStrictEqual([]);
+    expect(
+      violations("pinterest", video(first, { contentType: "video/quicktime" }))
+    ).toStrictEqual([]);
+    expect(
+      violations(
+        "pinterest",
+        animated(first),
+        mediaFile(second, { contentType: "image/webp" })
+      ).map(({ _tag }) => _tag)
+    ).toStrictEqual(["mediaTypeUnsupported", "mediaTypeUnsupported"]);
+  });
+
+  it("holds Pinterest's video to its length and shape, alone", () => {
+    expect(
+      violations("pinterest", lasting(3999), mediaFile(second)).map(
+        ({ _tag }) => _tag
+      )
+    ).toStrictEqual(["videoTooShort", "mixedMedia"]);
+    expect(
+      violations("pinterest", lasting(900_001)).map(({ _tag }) => _tag)
+    ).toStrictEqual(["videoTooLong"]);
+    // Wider than 1.91:1, or taller than 1:2.
+    expect(
+      [sized(1920, 1000), sized(1000, 2001)].map((dimensions) =>
+        violations("pinterest", video(first, { dimensions })).map(
+          ({ _tag }) => _tag
+        )
+      )
+    ).toStrictEqual([["aspectRatioUnsupported"], ["aspectRatioUnsupported"]]);
+  });
+
+  it("takes JPEG and PNG photos of 10,240 bytes to 5 MiB on Google Business Profile, and no video", () => {
+    const smallest = mediaFile(first, { byteSize: 10_240 });
+
+    const largest = mediaFile(second, {
+      byteSize: 5 * mebibyte,
+      contentType: "image/png",
     });
 
-    for (const platform of ["pinterest"] as const) {
-      expect(violations(platform, huge, mediaFile(second))).toStrictEqual([]);
-    }
+    expect(violations("googleBusiness", smallest, largest)).toStrictEqual([]);
+
+    expect(
+      violations(
+        "googleBusiness",
+        mediaFile(first, { byteSize: 10_239 }),
+        mediaFile(second, { byteSize: 5 * mebibyte + 1 }),
+        mediaFile(third, { contentType: "image/webp" })
+      ).map(({ _tag }) => _tag)
+    ).toStrictEqual(["mediaTooSmall", "mediaTooLarge", "mediaTypeUnsupported"]);
+
+    expect(
+      violations("googleBusiness", video(first)).map(({ _tag }) => _tag)
+    ).toStrictEqual(["mediaTypeUnsupported"]);
   });
 
   it("holds TikTok's photos to JPEG and WebP of 1080p at most", () => {

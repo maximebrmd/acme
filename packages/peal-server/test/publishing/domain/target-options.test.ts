@@ -9,6 +9,11 @@ import {
 } from "#publishing/domain/content-rules.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import {
+  maxPinterestLinkLength,
+  maxPinterestTitleLength,
+  PinterestOptions,
+} from "#publishing/domain/pinterest-options.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import {
   noOptionsOn,
@@ -62,8 +67,14 @@ const on = (target: ChannelOnPlatform, options: TargetOptions) =>
   new ChannelOptions({ channelId: target.channelId, options });
 
 describe("the platforms that take options", () => {
-  it("are YouTube and TikTok", () => {
-    expect(optionsPlatforms).toStrictEqual(["tiktok", "youtube"]);
+  it("are LinkedIn, TikTok, YouTube, Pinterest and Google Business Profile", () => {
+    expect(optionsPlatforms).toStrictEqual([
+      "linkedin",
+      "tiktok",
+      "youtube",
+      "pinterest",
+      "googleBusiness",
+    ]);
     expect(takesOptions("mastodon")).toBeFalsy();
     expect(noOptionsOn("x")).toStrictEqual(Option.none());
   });
@@ -182,6 +193,92 @@ describe("YouTube's options", () => {
     expect(inCategory("People & Blogs")).toStrictEqual([
       { _tag: "optionInvalid", ...youtube, field: "categoryId" },
     ]);
+  });
+});
+
+const pinterestProblems = (fields: Partial<PinterestOptions>) =>
+  new PinterestOptions({ platform: "pinterest", ...fields }).problems();
+
+describe("Pinterest's options", () => {
+  it("need the board the Pin is saved to, by its id", () => {
+    expect(pinterestProblems({})).toStrictEqual([
+      { _tag: "missing", field: "boardId" },
+    ]);
+    expect(pinterestProblems({ boardId: "549755885001" })).toStrictEqual([]);
+    expect(
+      pinterestProblems({ boardId: "summer-recipes", boardSectionId: "salads" })
+    ).toStrictEqual([
+      { _tag: "invalid", field: "boardId" },
+      { _tag: "invalid", field: "boardSectionId" },
+    ]);
+  });
+
+  it("take a title of 100 characters and a link of 2,048", () => {
+    const board = { boardId: "549755885001" };
+
+    expect(
+      pinterestProblems({
+        ...board,
+        link: `https://peal.example/${"a".repeat(maxPinterestLinkLength - 21)}`,
+        title: "é".repeat(maxPinterestTitleLength),
+      })
+    ).toStrictEqual([]);
+    expect(
+      pinterestProblems({
+        ...board,
+        link: `https://peal.example/${"a".repeat(maxPinterestLinkLength)}`,
+        title: "😀".repeat(maxPinterestTitleLength + 1),
+      })
+    ).toStrictEqual([
+      {
+        _tag: "tooLong",
+        field: "link",
+        length: maxPinterestLinkLength + 21,
+        maximum: maxPinterestLinkLength,
+      },
+      {
+        _tag: "tooLong",
+        field: "title",
+        length: maxPinterestTitleLength + 1,
+        maximum: maxPinterestTitleLength,
+      },
+    ]);
+  });
+
+  it("take a web address as link, and a hex colour", () => {
+    const board = { boardId: "549755885001" };
+
+    expect(
+      pinterestProblems({
+        ...board,
+        dominantColor: "#6E7874",
+        link: "http://peal.example",
+      })
+    ).toStrictEqual([]);
+    expect(
+      pinterestProblems({
+        ...board,
+        dominantColor: "grey",
+        link: "peal.example/recipes",
+      })
+    ).toStrictEqual([
+      { _tag: "invalid", field: "dominantColor" },
+      { _tag: "invalid", field: "link" },
+    ]);
+  });
+
+  it("take a video's cover at a whole second, never before its start", () => {
+    const decode = Schema.decodeUnknownOption(PinterestOptions);
+
+    expect(
+      Option.isSome(decode({ coverSecond: 12, platform: "pinterest" }))
+    ).toBeTruthy();
+
+    for (const coverSecond of [-1, 1.5]) {
+      expect(decode({ coverSecond, platform: "pinterest" })).toStrictEqual(
+        Option.none()
+      );
+    }
   });
 });
 

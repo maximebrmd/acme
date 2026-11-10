@@ -13,6 +13,7 @@ module Peal
       IMAGE_WEBP = "image/webp"
       VIDEO_MP4 = "video/mp4"
       VIDEO_QUICKTIME = "video/quicktime"
+      APPLICATION_PDF = "application/pdf"
     end
   end
 end

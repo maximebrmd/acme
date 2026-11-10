@@ -2,6 +2,7 @@ import { Context } from "effect";
 import type { DateTime, Effect, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type {
   ChannelId,
   PostId,
@@ -38,6 +39,8 @@ export type ChannelState =
 
 /** A channel and how it is doing, without its tokens. */
 export interface ChannelHealth {
+  /** The way in it came through, on a platform that has several. */
+  readonly connection: Option.Option<ChannelConnection>;
   readonly handle: string;
   readonly id: ChannelId;
   readonly platform: Platform;
@@ -62,6 +65,7 @@ export interface WebhookHealth {
 
 /** How many of a workspace's posts are in each status. */
 export interface PostCounts {
+  readonly awaitingApproval: number;
   readonly cancelled: number;
   readonly draft: number;
   readonly finished: number;

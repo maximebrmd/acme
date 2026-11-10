@@ -7,6 +7,7 @@ import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
 import { BillingActionsApi } from "./billing-actions.ts";
 import { BillingApi } from "./billing.ts";
+import { CapabilitiesApi } from "./capabilities.ts";
 import { CaptchaApi } from "./captcha.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
@@ -19,6 +20,7 @@ import { DataDeletionApi } from "./data-deletion.ts";
 import { HostedConnectApi } from "./hosted-connect.ts";
 import { InvitationsApi } from "./invitations.ts";
 import { LegalApi } from "./legal.ts";
+import { LookupsApi } from "./lookups.ts";
 import { MediaApi } from "./media.ts";
 import { MembersApi } from "./members.ts";
 import { NoticesApi } from "./notices.ts";
@@ -26,6 +28,8 @@ import { NotificationPreferencesApi } from "./notification-preferences.ts";
 import { PartnerAccountApi } from "./partner-account.ts";
 import { PartnerApi } from "./partner.ts";
 import { PostsApi } from "./posts.ts";
+import { ReviewLinkApi } from "./review-link.ts";
+import { ReviewApi } from "./review.ts";
 import { SessionApi } from "./session.ts";
 import { StaffApi } from "./staff.ts";
 import { SystemApi } from "./system.ts";
@@ -323,6 +327,68 @@ export type {
   PlanPrices,
 } from "./billing-plans.ts";
 
+export {
+  AccountRestrictionSchema,
+  AccountStandingSchema,
+  AccountUnreadReasonSchema,
+  CapabilitiesApi,
+  capabilitiesVersion,
+  ChannelCapabilitiesSchema,
+  MediaCapabilitiesSchema,
+  MediaFormatSchema,
+  OptionConstraintSchema,
+  PlatformCapabilitiesSchema,
+  TextCapabilitiesSchema,
+  TextLimitSchema,
+} from "./capabilities.ts";
+
+export type {
+  AccountRestriction,
+  AccountStanding,
+  ChannelCapabilities,
+  MediaFormat,
+  OptionConstraint,
+  PlatformCapabilities,
+  TextLimit,
+} from "./capabilities.ts";
+
+export {
+  FieldDefaultSchema,
+  FieldDescriptionSchema,
+  FieldTypeSchema,
+} from "./field-description.ts";
+
+export type { FieldDescription, FieldType } from "./field-description.ts";
+
+export { LookupInputInvalid } from "./lookup-input-invalid.ts";
+
+export { LookupNameSchema } from "./lookup-name.ts";
+
+export type { LookupName } from "./lookup-name.ts";
+
+export { LookupNotFound } from "./lookup-not-found.ts";
+
+export {
+  LinkedInOrganizationSchema,
+  LookupDescriptionSchema,
+  LookupInputSchema,
+  LookupResultSchema,
+  LookupsApi,
+  maxLookupPageSize,
+  PinterestBoardSchema,
+  PinterestBoardSectionSchema,
+  YouTubePlaylistSchema,
+  YouTubeVideoCategorySchema,
+} from "./lookups.ts";
+
+export type {
+  LookupDescription,
+  LookupInput,
+  LookupResult,
+} from "./lookups.ts";
+
+export { PlatformRateLimited } from "./platform-rate-limited.ts";
+
 export { CaptchaApi, CaptchaSchema } from "./captcha.ts";
 
 export type { Captcha } from "./captcha.ts";
@@ -563,9 +629,19 @@ export type { Permission } from "./permission.ts";
 
 export { PlanLimitReached } from "./plan-limit-reached.ts";
 
-export { InstagramConnectionSchema, PlatformSchema } from "./platform.ts";
+export {
+  ChannelConnectionSchema,
+  InstagramConnectionSchema,
+  LinkedInConnectionSchema,
+  PlatformSchema,
+} from "./platform.ts";
 
-export type { InstagramConnection, Platform } from "./platform.ts";
+export type {
+  ChannelConnection,
+  InstagramConnection,
+  LinkedInConnection,
+  Platform,
+} from "./platform.ts";
 
 export {
   ContentViolationSchema,
@@ -705,9 +781,26 @@ export type {
 
 export {
   ChannelOptionsSchema,
+  GoogleBusinessCallToActionSchema,
+  googleBusinessLocalTimePattern,
+  GoogleBusinessOptionsSchema,
+  GoogleBusinessPostTypeSchema,
+  maxGoogleBusinessTitleLength,
+  maxPinterestLinkLength,
+  maxPinterestTitleLength,
+  LinkedInMentionSchema,
+  LinkedInOptionsSchema,
+  LinkedInVisibilitySchema,
+  maxLinkedInDocumentTitleLength,
+  maxLinkedInLinkDescriptionLength,
+  maxLinkedInLinkTitleLength,
+  maxLinkedInLinkUrlLength,
+  maxLinkedInMentionNameLength,
+  maxLinkedInMentions,
   maxYouTubeTagsLength,
   maxYouTubeTitleLength,
   optionsPlatforms,
+  PinterestOptionsSchema,
   TargetOptionsSchema,
   TikTokOptionsSchema,
   TikTokPrivacyLevelSchema,
@@ -718,7 +811,14 @@ export {
 
 export type {
   ChannelOptions,
+  GoogleBusinessCallToAction,
+  GoogleBusinessOptions,
+  GoogleBusinessPostType,
+  LinkedInMention,
+  LinkedInOptions,
+  LinkedInVisibility,
   OptionsPlatform,
+  PinterestOptions,
   TargetOptions,
   TikTokOptions,
   TikTokPrivacyLevel,
@@ -892,6 +992,7 @@ export { WebhookEndpointNotFound } from "./webhook-endpoint-not-found.ts";
 
 export {
   MediaFailureReasonSchema,
+  WebhookReviewPartySchema,
   SubscribableWebhookEventTypeSchema,
   webhookEventVersion,
   WebhookEventTypeSchema,
@@ -901,6 +1002,7 @@ export {
 
 export type {
   MediaFailureReason,
+  WebhookReviewParty,
   SubscribableWebhookEventType,
   WebhookEventType,
   WebhookPayload,
@@ -1076,6 +1178,120 @@ export type {
 
 export { WorkspaceAccess } from "./workspace-access.ts";
 
+export { ApprovalChanged } from "./approval-changed.ts";
+
+export { WorkspaceOverPlan } from "./workspace-over-plan.ts";
+
+export { ApprovalNotPending } from "./approval-not-pending.ts";
+
+export { CommentInvalid, CommentProblemSchema } from "./comment-invalid.ts";
+
+export type { CommentProblem } from "./comment-invalid.ts";
+
+export { CommentNotFound } from "./comment-not-found.ts";
+
+export { PostNotReviewable } from "./post-not-reviewable.ts";
+
+export { ReviewAccessDenied } from "./review-access-denied.ts";
+
+export { ReviewCaptchaRequired } from "./review-captcha-required.ts";
+
+export { ReviewLinkAccessSchema } from "./review-link-access.ts";
+
+export type { ReviewLinkAccess } from "./review-link-access.ts";
+
+export {
+  ReviewLinkClosed,
+  ReviewLinkClosureSchema,
+} from "./review-link-closed.ts";
+
+export type { ReviewLinkClosure } from "./review-link-closed.ts";
+
+export { ReviewLinkNotFound } from "./review-link-not-found.ts";
+
+export {
+  ReviewLinkApi,
+  ReviewPageSchema,
+  VisitorApprovalSchema,
+  VisitorChangesSchema,
+  VisitorCommentSchema,
+} from "./review-link.ts";
+
+export type {
+  ReviewPage,
+  VisitorApproval,
+  VisitorChanges,
+  VisitorComment,
+} from "./review-link.ts";
+
+export { ReviewRequestTooLarge } from "./review-request-too-large.ts";
+
+export { ReviewVisitorAddress } from "./review-visitor-address.ts";
+
+export { maxReviewRequestBytes, ReviewVisitor } from "./review-visitor.ts";
+
+export { TooManyReviewLinks } from "./too-many-review-links.ts";
+
+export { TooManyReviewRequests } from "./too-many-review-requests.ts";
+
+export {
+  ApprovalOriginSchema,
+  ApprovalOutcomeSchema,
+  ApprovalPolicySchema,
+  ApprovalRequestSchema,
+  ApprovalStatusSchema,
+  ChangesOutcomeSchema,
+  ApprovalDecisionSchema,
+  ChangesRequestSchema,
+  ReviewedChannelSchema,
+  ReviewedMediaSchema,
+  maxSubjectHashLength,
+  CommentAnchorSchema,
+  CommentSelectionSchema,
+  CreatedReviewLinkSchema,
+  defaultReviewLinkHours,
+  maxCommentLength,
+  maxQuoteLength,
+  maxReviewLinkHours,
+  maxReviewLinksPerPost,
+  maxVisitorNameLength,
+  NewCommentSchema,
+  NewReviewLinkSchema,
+  PostReviewSchema,
+  ReviewApi,
+  ReviewCommentSchema,
+  ReviewerKindSchema,
+  ReviewerSchema,
+  ReviewLinkSchema,
+  ReviewLinkStatusSchema,
+  ReviewSettingsSchema,
+} from "./review.ts";
+
+export type {
+  ApprovalOrigin,
+  ApprovalOutcome,
+  ApprovalPolicy,
+  ApprovalRequest,
+  ApprovalStatus,
+  ChangesOutcome,
+  ApprovalDecision,
+  ChangesRequest,
+  ReviewedChannel,
+  ReviewedMedia,
+  CommentAnchor,
+  CommentSelection,
+  CreatedReviewLink,
+  NewComment,
+  NewReviewLink,
+  PostReview,
+  ReviewComment,
+  Reviewer,
+  ReviewerKind,
+  ReviewLink,
+  ReviewLinkStatus,
+  ReviewSettings,
+} from "./review.ts";
+
 export { WorkspaceNotFound } from "./workspace-not-found.ts";
 
 // The one definition of the HTTP API. The server implements it; the web app,
@@ -1103,6 +1319,8 @@ export class Api extends HttpApi.make("peal")
   .add(CaptchaApi)
   .add(AnalyticsApi)
   .add(TikTokApi)
+  .add(CapabilitiesApi)
+  .add(LookupsApi)
   .add(WebhooksApi)
   .add(ActivityApi)
   .add(PartnerApi)
@@ -1112,6 +1330,8 @@ export class Api extends HttpApi.make("peal")
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)
+  .add(ReviewApi)
+  .add(ReviewLinkApi)
   .add(ContractRequestsApi)
   .add(ContractRequestsDeskApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients

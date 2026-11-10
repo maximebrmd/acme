@@ -13,6 +13,8 @@ public final class ProbeState {
 
     public static final ProbeState TOO_LARGE = new ProbeState(Value.TOO_LARGE, "tooLarge");
 
+    public static final ProbeState TOO_MANY_PAGES = new ProbeState(Value.TOO_MANY_PAGES, "tooManyPages");
+
     public static final ProbeState PENDING = new ProbeState(Value.PENDING, "pending");
 
     public static final ProbeState UNAVAILABLE = new ProbeState(Value.UNAVAILABLE, "unavailable");
@@ -56,6 +58,8 @@ public final class ProbeState {
                 return visitor.visitTimedOut();
             case TOO_LARGE:
                 return visitor.visitTooLarge();
+            case TOO_MANY_PAGES:
+                return visitor.visitTooManyPages();
             case PENDING:
                 return visitor.visitPending();
             case UNAVAILABLE:
@@ -77,6 +81,8 @@ public final class ProbeState {
                 return TIMED_OUT;
             case "tooLarge":
                 return TOO_LARGE;
+            case "tooManyPages":
+                return TOO_MANY_PAGES;
             case "pending":
                 return PENDING;
             case "unavailable":
@@ -101,6 +107,8 @@ public final class ProbeState {
 
         TOOL_FAILED,
 
+        TOO_MANY_PAGES,
+
         UNKNOWN
     }
 
@@ -116,6 +124,8 @@ public final class ProbeState {
         T visitTooLarge();
 
         T visitToolFailed();
+
+        T visitTooManyPages();
 
         T visitUnknown(String unknownType);
     }

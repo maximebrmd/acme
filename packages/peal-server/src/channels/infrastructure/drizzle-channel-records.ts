@@ -73,6 +73,7 @@ export const DrizzleChannelRecords = Layer.effect(
         function* exportWorkspace(workspaceId) {
           const rows = yield* db
             .select({
+              connection: channels.connection,
               createdAt: channels.createdAt,
               displayName: channels.displayName,
               handle: channels.handle,

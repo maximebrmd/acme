@@ -72,11 +72,11 @@ describe(planFor, () => {
     );
   });
 
-  it("halves a post for a platform whose limit is unknown", () => {
+  it("halves a post for a platform whose limit is not known", () => {
     const { prompt } = planFor(
       { _tag: "shorten", platform: "pinterest" },
       draftOf("A long post."),
-      textLimitsOn("pinterest")
+      []
     );
 
     expect(prompt.instructions).toContain(

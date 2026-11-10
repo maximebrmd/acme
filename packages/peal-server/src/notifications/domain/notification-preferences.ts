@@ -15,6 +15,8 @@ export class NotificationPreferences extends Schema.Class<NotificationPreference
     channelReconnect: Schema.Boolean,
     postFailed: Schema.Boolean,
     postPublished: Schema.Boolean,
+    // Comments on posts, and approvals asked for and decided.
+    postReview: Schema.Boolean,
     postUnconfirmed: Schema.Boolean,
   }),
   // How the posts others wrote went, for members who may schedule posts.
@@ -23,14 +25,16 @@ export class NotificationPreferences extends Schema.Class<NotificationPreference
 
 /**
  * Until a user chooses: email for what needs them (a post that failed or may
- * not have gone out, a channel to reconnect), and not for posts that went
- * out as planned; and only the posts they wrote.
+ * not have gone out, a channel to reconnect, a post to approve or what its
+ * review brought), and not for posts that went out as planned; and only the
+ * posts they wrote.
  */
 export const defaultPreferences = new NotificationPreferences({
   email: {
     channelReconnect: true,
     postFailed: true,
     postPublished: false,
+    postReview: true,
     postUnconfirmed: true,
   },
   everyPost: false,
@@ -54,6 +58,7 @@ export const changePreferences = (
       channelReconnect: asked.channelReconnect ?? email.channelReconnect,
       postFailed: asked.postFailed ?? email.postFailed,
       postPublished: asked.postPublished ?? email.postPublished,
+      postReview: asked.postReview ?? email.postReview,
       postUnconfirmed: asked.postUnconfirmed ?? email.postUnconfirmed,
     },
     everyPost: change.everyPost ?? preferences.everyPost,

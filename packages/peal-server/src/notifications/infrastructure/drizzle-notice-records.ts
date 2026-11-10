@@ -32,6 +32,27 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       channel,
       expiresAt,
     }),
+    PostApprovalRequested: ({ postId, scheduledAt }): NoticeEventRecord => ({
+      _tag: "PostApprovalRequested",
+      postId,
+      scheduledAt,
+    }),
+    PostApproved: ({ by, late, postId }): NoticeEventRecord => ({
+      _tag: "PostApproved",
+      by,
+      late,
+      postId,
+    }),
+    PostChangesRequested: ({ by, postId }): NoticeEventRecord => ({
+      _tag: "PostChangesRequested",
+      by,
+      postId,
+    }),
+    PostCommented: ({ by, postId }): NoticeEventRecord => ({
+      _tag: "PostCommented",
+      by,
+      postId,
+    }),
     PostFailed: ({ channel, postId, reason }): NoticeEventRecord => ({
       _tag: "PostFailed",
       channel: Option.getOrNull(channel),
@@ -149,6 +170,7 @@ export const DrizzleNoticeRecords = Layer.effect(
                   channelReconnect: chosen.emailChannelReconnect,
                   postFailed: chosen.emailPostFailed,
                   postPublished: chosen.emailPostPublished,
+                  postReview: chosen.emailPostReview,
                   postUnconfirmed: chosen.emailPostUnconfirmed,
                 },
                 everyPost: chosen.everyPost,

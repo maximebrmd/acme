@@ -33,6 +33,7 @@ const photo: Media = {
   durationMs: null,
   id: "00000000-0000-7000-8000-00000000a001",
   kind: "image",
+  pageCount: null,
   status: { _tag: "ready" },
   updatedAt: created,
   url: null,
@@ -46,6 +47,7 @@ const clip: Media = {
   durationMs: 150_000,
   id: "00000000-0000-7000-8000-00000000a002",
   kind: "video",
+  pageCount: null,
 };
 
 const attached: readonly AttachedMedia[] = [

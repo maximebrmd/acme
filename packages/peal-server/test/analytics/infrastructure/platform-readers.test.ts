@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer, Option } from "effect";
+import { DateTime, Effect, Layer, Option } from "effect";
 
 import { ChannelUnreadable } from "#analytics/application/channel-unreadable.ts";
 import { MetricsReader } from "#analytics/application/metrics-reader.ts";
@@ -22,6 +22,7 @@ import { fakeStatuses } from "#test/analytics/fakes/fake-statuses.ts";
 import type { FakeStatusesOptions } from "#test/analytics/fakes/fake-statuses.ts";
 import { countsOf, readersWith } from "#test/analytics/support.ts";
 import { mastodonAccountId } from "#test/publishing/fakes/fake-mastodon-instance.ts";
+import { fakePinterestApi } from "#test/publishing/fakes/fake-pinterest-api.ts";
 import {
   dropped,
   empty,
@@ -47,6 +48,7 @@ const reading = (
   account: AccountFailure | ChannelAccount,
   options: {
     readonly appView?: string;
+    readonly pinterestApi?: string;
     readonly tokens?: readonly string[];
     readonly youtubeApi?: string;
   } = {}
@@ -61,6 +63,7 @@ const reading = (
     Effect.provide(
       readersWith({
         appView: options.appView,
+        pinterestApi: options.pinterestApi,
         youtubeApi: options.youtubeApi,
       }).pipe(
         Layer.provideMerge(channelAccessOf(account, options.tokens ?? []))
@@ -641,6 +644,177 @@ describe("reading counts on YouTube", () => {
         "counted"
       );
       assert.deepStrictEqual(renewed.handed, ["token-1", "token-2"]);
+    })
+  );
+});
+
+describe("reading counts on Pinterest", () => {
+  const account: ChannelAccount = {
+    accountId: "549755885175",
+    channelId,
+    connection: Option.none(),
+    platform: "pinterest",
+    scopes: ["boards:read", "pins:read"],
+  };
+
+  const metrics = {
+    "860000000000000001": {
+      comments: 4,
+      impressions: 1500,
+      reactions: 12,
+      saves: 31,
+    },
+    "860000000000000002": {
+      comments: 0,
+      impressions: 0,
+      reactions: 0,
+      saves: 0,
+    },
+  };
+
+  it.live("reads each Pin's analytics over the last 90 days", () =>
+    Effect.gen(function* pins() {
+      const pinterest = yield* fakePinterestApi({ metrics });
+
+      const posts = postsToRead(
+        "860000000000000001",
+        "860000000000000009",
+        "860000000000000002"
+      );
+
+      const { batch, handed } = yield* reading(posts, account, {
+        pinterestApi: pinterest.url,
+        tokens: ["token-1"],
+      });
+
+      const success = batch._tag === "Success" ? batch.success : undefined;
+      const [first] = pinterest.requests();
+      const today = DateTime.formatIso(yield* DateTime.now).slice(0, 10);
+
+      assert.deepStrictEqual(success, {
+        halted: false,
+        readings: [
+          {
+            _tag: "counted",
+            metrics: new PostMetrics({
+              impressions: Option.some(1500),
+              likes: 12,
+              quotes: Option.none(),
+              replies: 4,
+              reposts: 31,
+            }),
+            targetId: posts[0]?.targetId ?? PostTargetIdSchema.make(""),
+          },
+          // A Pin Pinterest no longer has.
+          {
+            _tag: "missing",
+            targetId: posts[1]?.targetId ?? PostTargetIdSchema.make(""),
+          },
+          {
+            _tag: "counted",
+            metrics: new PostMetrics({
+              impressions: Option.some(0),
+              likes: 0,
+              quotes: Option.none(),
+              replies: 0,
+              reposts: 0,
+            }),
+            targetId: posts[2]?.targetId ?? PostTargetIdSchema.make(""),
+          },
+        ],
+      });
+      assert.strictEqual(first?.path, "/v5/pins/860000000000000001/analytics");
+      assert.strictEqual(
+        first?.query.get("metric_types"),
+        "IMPRESSION,SAVE,TOTAL_COMMENTS,TOTAL_REACTIONS"
+      );
+      assert.strictEqual(first?.query.get("end_date"), today);
+      assert.match(
+        first?.query.get("start_date") ?? "",
+        /^\d{4}-\d{2}-\d{2}$/u
+      );
+      assert.deepStrictEqual(handed, ["token-1"]);
+    })
+  );
+
+  it.live("halts on a rate limit, and after a Pin it could not read", () =>
+    Effect.gen(function* halted() {
+      const pinterest = yield* fakePinterestApi({ metrics });
+      const posts = postsToRead("860000000000000001", "860000000000000002");
+      const route = "GET /v5/pins/860000000000000001/analytics";
+
+      pinterest.script.push(route, [
+        pinterest.refusal(429, 8, "Rate limit exceeded."),
+        pinterest.refusal(403, 29, "You are not permitted to do that."),
+        json({ all: "nothing" }),
+      ]);
+
+      const outcomes = yield* Effect.forEach(
+        [1, 2, 3],
+        () =>
+          reading(posts, account, {
+            pinterestApi: pinterest.url,
+            tokens: ["token-1"],
+          }),
+        { concurrency: 1 }
+      );
+
+      const failed = {
+        halted: true,
+        readings: [
+          {
+            _tag: "failed" as const,
+            targetId: posts[0]?.targetId ?? PostTargetIdSchema.make(""),
+          },
+        ],
+      };
+
+      assert.deepStrictEqual(
+        outcomes.map(({ batch }) =>
+          batch._tag === "Success" ? batch.success : undefined
+        ),
+        [{ halted: true, readings: [] }, failed, failed]
+      );
+    })
+  );
+
+  it.live("renews a token Pinterest refused, never one a proxy did", () =>
+    Effect.gen(function* tokens() {
+      const pinterest = yield* fakePinterestApi({
+        metrics,
+        tokens: ["token-2"],
+      });
+
+      const posts = postsToRead("860000000000000001");
+
+      const renewed = yield* reading(posts, account, {
+        pinterestApi: pinterest.url,
+        tokens: ["token-1", "token-2"],
+      });
+
+      pinterest.script.push("GET /v5/pins/860000000000000001/analytics", [
+        json({ error: "Unauthorized" }, 401),
+      ]);
+
+      const proxied = yield* reading(posts, account, {
+        pinterestApi: pinterest.url,
+        tokens: ["token-2"],
+      });
+
+      assert.strictEqual(
+        renewed.batch._tag === "Success"
+          ? renewed.batch.success.readings[0]?._tag
+          : undefined,
+        "counted"
+      );
+      assert.deepStrictEqual(renewed.handed, ["token-1", "token-2"]);
+      assert.strictEqual(
+        proxied.batch._tag === "Success"
+          ? proxied.batch.success.readings[0]?._tag
+          : undefined,
+        "failed"
+      );
+      assert.deepStrictEqual(proxied.handed, ["token-2"]);
     })
   );
 });

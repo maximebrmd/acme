@@ -7,7 +7,10 @@ import {
   TooManyContractRequests,
 } from "peal-contract";
 
-import { addressHeadersConfig, addressOf } from "#app/client-errors/intake.ts";
+import {
+  addressHeadersConfig,
+  addressOf,
+} from "#shared/infrastructure/client-address.ts";
 import { CaptchaChallenge } from "#workspace/application/captcha-challenge.ts";
 
 /** How many requests to cancel or withdraw each address may send an hour. */

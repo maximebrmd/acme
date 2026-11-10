@@ -4,6 +4,8 @@ import {
   ContentViolationSchema,
   duplicateWindowHours as contractDuplicateWindowHours,
   maxOutcomeWaitSeconds as contractMaxOutcomeWaitSeconds,
+  googleBusinessLocalTimePattern as contractLocalTimePattern,
+  maxGoogleBusinessTitleLength as contractMaxBusinessTitleLength,
   maxYouTubeTagsLength as contractMaxTagsLength,
   maxYouTubeTitleLength as contractMaxTitleLength,
   optionsPlatforms as contractOptionsPlatforms,
@@ -11,13 +13,31 @@ import {
   TargetOptionsSchema as ContractOptionsSchema,
   youTubeTagsLength as contractTagsLength,
 } from "peal-contract";
+import * as contractOptions from "peal-contract";
 import type { ContentViolation as ContractViolation } from "peal-contract";
 import * as ContractText from "peal-contract/post-text";
 
 import { maxOutcomeWait } from "#publishing/application/post-outcomes.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import { duplicateWindow } from "#publishing/domain/duplicate-window.ts";
+import {
+  googleBusinessLocalTimePattern,
+  maxGoogleBusinessTitleLength,
+} from "#publishing/domain/google-business-options.ts";
+import { maxLinkedInMentionNameLength } from "#publishing/domain/linkedin-mentions.ts";
+import {
+  LinkedInVisibilitySchema,
+  maxLinkedInDocumentTitleLength,
+  maxLinkedInLinkDescriptionLength,
+  maxLinkedInLinkTitleLength,
+  maxLinkedInLinkUrlLength,
+  maxLinkedInMentions,
+} from "#publishing/domain/linkedin-options.ts";
 import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";
+import {
+  maxPinterestLinkLength,
+  maxPinterestTitleLength,
+} from "#publishing/domain/pinterest-options.ts";
 import { platformRules } from "#publishing/domain/platform-rules.ts";
 import {
   maxMediaPerPost,
@@ -392,6 +412,78 @@ const options: readonly unknown[] = [
   },
   { platform: "tiktok", privacyLevel: "FRIENDS" },
   { platform: "tiktok", title: "TikTok's caption is the post's text" },
+  { platform: "linkedin" },
+  {
+    disableReshare: true,
+    documentTitle: "A synthetic deck",
+    linkDescription: "What ships",
+    linkTitle: "Launch day",
+    linkUrl: "https://example.test/launch",
+    mentions: [
+      { name: "Example Bakery", urn: "urn:li:organization:9000000001" },
+    ],
+    platform: "linkedin",
+    visibility: "loggedIn",
+  },
+  // Unfinished or refused later: kept until the post is scheduled.
+  { linkTitle: "A title without its link", platform: "linkedin" },
+  {
+    mentions: [{ name: "Alice", urn: "urn:li:person:aB3dE5fG7h" }],
+    platform: "linkedin",
+  },
+  { platform: "linkedin", visibility: "friends" },
+  { mentions: [{ name: "No URN" }], platform: "linkedin" },
+  {
+    mentions: [{ name: "a".repeat(201), urn: "urn:li:organization:1" }],
+    platform: "linkedin",
+  },
+  {
+    mentions: Array.from({ length: 31 }, () => ({
+      name: "Example Bakery",
+      urn: "urn:li:organization:9000000001",
+    })),
+    platform: "linkedin",
+  },
+  { documentTitle: "a\u0000b", platform: "linkedin" },
+  { platform: "googleBusiness" },
+  {
+    callToAction: "learnMore",
+    callToActionUrl: "https://example.com/menu",
+    endsAt: "2026-11-27T18:00",
+    platform: "googleBusiness",
+    postType: "event",
+    startsAt: "2026-11-27T09:00",
+    title: "Synthetic open day",
+  },
+  {
+    couponCode: "SYNTHETIC-10",
+    platform: "googleBusiness",
+    postType: "offer",
+    redeemUrl: "https://example.com/redeem",
+    terms: "One per synthetic customer.",
+  },
+  // Unfinished or refused later: kept until the post is scheduled.
+  { endsAt: "tomorrow", platform: "googleBusiness", title: "a".repeat(59) },
+  { platform: "googleBusiness", postType: "alert" },
+  { callToAction: "getOffer", platform: "googleBusiness" },
+  { platform: "googleBusiness", title: "a\u0000b" },
+  { platform: "pinterest" },
+  {
+    boardId: "549755885001",
+    boardSectionId: "5000000000001",
+    coverSecond: 12,
+    dominantColor: "#6E7874",
+    link: "https://example.test/recipes",
+    platform: "pinterest",
+    title: "Tomato salad",
+  },
+  // Unfinished or refused later: kept until the post is scheduled.
+  { boardId: "not digits", platform: "pinterest", title: "a".repeat(101) },
+  { dominantColor: "grey", link: "example.test", platform: "pinterest" },
+  { coverSecond: -1, platform: "pinterest" },
+  { coverSecond: 1.5, platform: "pinterest" },
+  { coverSecond: "12", platform: "pinterest" },
+  { platform: "pinterest", title: "a\u0000b" },
   { platform: "mastodon" },
   { platform: "youtube", title: "A title", unknownOption: true },
 ];
@@ -413,14 +505,52 @@ describe("the contract's duplicate window", () => {
 });
 
 describe("the contract's target options", () => {
-  it("are the server's, with the same limits", () => {
+  it("are the server's, on the same platforms", () => {
     expect(contractOptionsPlatforms).toStrictEqual(optionsPlatforms);
+  });
+
+  it("hold YouTube's limits", () => {
     expect(contractMaxTitleLength).toBe(maxYouTubeTitleLength);
     expect(contractMaxTagsLength).toBe(maxYouTubeTagsLength);
 
     for (const tags of [[], ["Foo-Baz", "Foo Baz"], ["日本語", "👍🏽 ok"]]) {
       expect(contractTagsLength(tags)).toBe(youTubeTagsLength(tags));
     }
+  });
+
+  it("hold Pinterest's limits", () => {
+    expect(contractOptions.maxPinterestTitleLength).toBe(
+      maxPinterestTitleLength
+    );
+    expect(contractOptions.maxPinterestLinkLength).toBe(maxPinterestLinkLength);
+  });
+
+  it("hold Google Business Profile's limits", () => {
+    expect(contractMaxBusinessTitleLength).toBe(maxGoogleBusinessTitleLength);
+    expect(contractLocalTimePattern.source).toBe(
+      googleBusinessLocalTimePattern.source
+    );
+  });
+
+  it("hold LinkedIn's limits", () => {
+    expect([
+      contractOptions.maxLinkedInDocumentTitleLength,
+      contractOptions.maxLinkedInLinkDescriptionLength,
+      contractOptions.maxLinkedInLinkTitleLength,
+      contractOptions.maxLinkedInLinkUrlLength,
+      contractOptions.maxLinkedInMentionNameLength,
+      contractOptions.maxLinkedInMentions,
+    ]).toStrictEqual([
+      maxLinkedInDocumentTitleLength,
+      maxLinkedInLinkDescriptionLength,
+      maxLinkedInLinkTitleLength,
+      maxLinkedInLinkUrlLength,
+      maxLinkedInMentionNameLength,
+      maxLinkedInMentions,
+    ]);
+    expect(contractOptions.LinkedInVisibilitySchema.literals).toStrictEqual(
+      LinkedInVisibilitySchema.literals
+    );
   });
 
   it.each(options)("decode %j as the server does", (input) => {

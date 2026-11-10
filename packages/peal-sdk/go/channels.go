@@ -186,11 +186,11 @@ var (
 )
 
 type ConnectChannel struct {
-	WorkspaceID string               `json:"-" url:"-"`
-	Platform    Platform             `json:"-" url:"-"`
-	Connection  *InstagramConnection `json:"connection,omitempty" url:"-"`
-	Handle      *string              `json:"handle,omitempty" url:"-"`
-	Instance    *string              `json:"instance,omitempty" url:"-"`
+	WorkspaceID string             `json:"-" url:"-"`
+	Platform    Platform           `json:"-" url:"-"`
+	Connection  *ChannelConnection `json:"connection,omitempty" url:"-"`
+	Handle      *string            `json:"handle,omitempty" url:"-"`
+	Instance    *string            `json:"instance,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -221,7 +221,7 @@ func (c *ConnectChannel) SetPlatform(platform Platform) {
 
 // SetConnection sets the Connection field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *ConnectChannel) SetConnection(connection *InstagramConnection) {
+func (c *ConnectChannel) SetConnection(connection *ChannelConnection) {
 	c.Connection = connection
 	c.require(connectChannelFieldConnection)
 }
@@ -493,14 +493,14 @@ var channelNullableFields = map[string]*big.Int{
 }
 
 type Channel struct {
-	AvatarURL      *string              `json:"avatarUrl,omitempty" url:"avatarUrl,omitempty"`
-	Connection     *InstagramConnection `json:"connection,omitempty" url:"connection,omitempty"`
-	DisplayName    *string              `json:"displayName,omitempty" url:"displayName,omitempty"`
-	Handle         string               `json:"handle" url:"handle"`
-	ID             string               `json:"id" url:"id"`
-	Platform       Platform             `json:"platform" url:"platform"`
-	Status         *ChannelStatus       `json:"status" url:"status"`
-	TokenExpiresAt *string              `json:"tokenExpiresAt,omitempty" url:"tokenExpiresAt,omitempty"`
+	AvatarURL      *string            `json:"avatarUrl,omitempty" url:"avatarUrl,omitempty"`
+	Connection     *ChannelConnection `json:"connection,omitempty" url:"connection,omitempty"`
+	DisplayName    *string            `json:"displayName,omitempty" url:"displayName,omitempty"`
+	Handle         string             `json:"handle" url:"handle"`
+	ID             string             `json:"id" url:"id"`
+	Platform       Platform           `json:"platform" url:"platform"`
+	Status         *ChannelStatus     `json:"status" url:"status"`
+	TokenExpiresAt *string            `json:"tokenExpiresAt,omitempty" url:"tokenExpiresAt,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -516,7 +516,7 @@ func (c *Channel) GetAvatarURL() *string {
 	return c.AvatarURL
 }
 
-func (c *Channel) GetConnection() *InstagramConnection {
+func (c *Channel) GetConnection() *ChannelConnection {
 	if c == nil {
 		return nil
 	}
@@ -590,7 +590,7 @@ func (c *Channel) SetAvatarURL(avatarURL *string) {
 
 // SetConnection sets the Connection field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (c *Channel) SetConnection(connection *InstagramConnection) {
+func (c *Channel) SetConnection(connection *ChannelConnection) {
 	c.Connection = connection
 	c.require(channelFieldConnection)
 }
@@ -684,6 +684,35 @@ func (c *Channel) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+// The way in a channel came through, on platforms that have several.
+type ChannelConnection string
+
+const (
+	ChannelConnectionInstagramLogin  ChannelConnection = "instagramLogin"
+	ChannelConnectionFacebookLogin   ChannelConnection = "facebookLogin"
+	ChannelConnectionLinkedinProfile ChannelConnection = "linkedinProfile"
+	ChannelConnectionLinkedinPage    ChannelConnection = "linkedinPage"
+)
+
+func NewChannelConnectionFromString(s string) (ChannelConnection, error) {
+	switch s {
+	case "instagramLogin":
+		return ChannelConnectionInstagramLogin, nil
+	case "facebookLogin":
+		return ChannelConnectionFacebookLogin, nil
+	case "linkedinProfile":
+		return ChannelConnectionLinkedinProfile, nil
+	case "linkedinPage":
+		return ChannelConnectionLinkedinPage, nil
+	}
+	var t ChannelConnection
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c ChannelConnection) Ptr() *ChannelConnection {
+	return &c
 }
 
 type ChannelStatus struct {
@@ -1551,11 +1580,13 @@ func (c *ConnectOutcomeConnected) String() string {
 
 var (
 	connectablePlatformsFieldInstagramConnections = big.NewInt(1 << 0)
-	connectablePlatformsFieldPlatforms            = big.NewInt(1 << 1)
+	connectablePlatformsFieldLinkedinConnections  = big.NewInt(1 << 1)
+	connectablePlatformsFieldPlatforms            = big.NewInt(1 << 2)
 )
 
 type ConnectablePlatforms struct {
 	InstagramConnections []InstagramConnection `json:"instagramConnections" url:"instagramConnections"`
+	LinkedinConnections  []LinkedInConnection  `json:"linkedinConnections" url:"linkedinConnections"`
 	Platforms            []Platform            `json:"platforms" url:"platforms"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1570,6 +1601,13 @@ func (c *ConnectablePlatforms) GetInstagramConnections() []InstagramConnection {
 		return nil
 	}
 	return c.InstagramConnections
+}
+
+func (c *ConnectablePlatforms) GetLinkedinConnections() []LinkedInConnection {
+	if c == nil {
+		return nil
+	}
+	return c.LinkedinConnections
 }
 
 func (c *ConnectablePlatforms) GetPlatforms() []Platform {
@@ -1600,6 +1638,13 @@ func (c *ConnectablePlatforms) require(field *big.Int) {
 func (c *ConnectablePlatforms) SetInstagramConnections(instagramConnections []InstagramConnection) {
 	c.InstagramConnections = instagramConnections
 	c.require(connectablePlatformsFieldInstagramConnections)
+}
+
+// SetLinkedinConnections sets the LinkedinConnections field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ConnectablePlatforms) SetLinkedinConnections(linkedinConnections []LinkedInConnection) {
+	c.LinkedinConnections = linkedinConnections
+	c.require(connectablePlatformsFieldLinkedinConnections)
 }
 
 // SetPlatforms sets the Platforms field and marks it as non-optional;
@@ -1649,4 +1694,50 @@ func (c *ConnectablePlatforms) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+// How an Instagram channel reaches its account.
+type InstagramConnection string
+
+const (
+	InstagramConnectionInstagramLogin InstagramConnection = "instagramLogin"
+	InstagramConnectionFacebookLogin  InstagramConnection = "facebookLogin"
+)
+
+func NewInstagramConnectionFromString(s string) (InstagramConnection, error) {
+	switch s {
+	case "instagramLogin":
+		return InstagramConnectionInstagramLogin, nil
+	case "facebookLogin":
+		return InstagramConnectionFacebookLogin, nil
+	}
+	var t InstagramConnection
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i InstagramConnection) Ptr() *InstagramConnection {
+	return &i
+}
+
+// What a LinkedIn channel posts as: a profile or a page.
+type LinkedInConnection string
+
+const (
+	LinkedInConnectionLinkedinProfile LinkedInConnection = "linkedinProfile"
+	LinkedInConnectionLinkedinPage    LinkedInConnection = "linkedinPage"
+)
+
+func NewLinkedInConnectionFromString(s string) (LinkedInConnection, error) {
+	switch s {
+	case "linkedinProfile":
+		return LinkedInConnectionLinkedinProfile, nil
+	case "linkedinPage":
+		return LinkedInConnectionLinkedinPage, nil
+	}
+	var t LinkedInConnection
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (l LinkedInConnection) Ptr() *LinkedInConnection {
+	return &l
 }

@@ -25,6 +25,7 @@ const media = (id: string, altText: string | null = null): Media => ({
   durationMs: null,
   id,
   kind: "image",
+  pageCount: null,
   status: { _tag: "ready" },
   updatedAt: created,
   url: null,

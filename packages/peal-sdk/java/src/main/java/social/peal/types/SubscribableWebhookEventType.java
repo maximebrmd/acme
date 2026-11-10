@@ -7,14 +7,29 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class SubscribableWebhookEventType {
-    public static final SubscribableWebhookEventType CHANNEL_CONNECTED =
-            new SubscribableWebhookEventType(Value.CHANNEL_CONNECTED, "channel.connected");
-
     public static final SubscribableWebhookEventType MEDIA_FAILED =
             new SubscribableWebhookEventType(Value.MEDIA_FAILED, "media.failed");
 
     public static final SubscribableWebhookEventType POST_FAILED =
             new SubscribableWebhookEventType(Value.POST_FAILED, "post.failed");
+
+    public static final SubscribableWebhookEventType POST_PUBLISHED =
+            new SubscribableWebhookEventType(Value.POST_PUBLISHED, "post.published");
+
+    public static final SubscribableWebhookEventType POST_APPROVAL_REQUESTED =
+            new SubscribableWebhookEventType(Value.POST_APPROVAL_REQUESTED, "post.approval_requested");
+
+    public static final SubscribableWebhookEventType POST_UNSCHEDULED =
+            new SubscribableWebhookEventType(Value.POST_UNSCHEDULED, "post.unscheduled");
+
+    public static final SubscribableWebhookEventType POST_CHANGES_REQUESTED =
+            new SubscribableWebhookEventType(Value.POST_CHANGES_REQUESTED, "post.changes_requested");
+
+    public static final SubscribableWebhookEventType POST_APPROVED =
+            new SubscribableWebhookEventType(Value.POST_APPROVED, "post.approved");
+
+    public static final SubscribableWebhookEventType CHANNEL_CONNECTED =
+            new SubscribableWebhookEventType(Value.CHANNEL_CONNECTED, "channel.connected");
 
     public static final SubscribableWebhookEventType CHANNEL_DISCONNECTED =
             new SubscribableWebhookEventType(Value.CHANNEL_DISCONNECTED, "channel.disconnected");
@@ -28,14 +43,8 @@ public final class SubscribableWebhookEventType {
     public static final SubscribableWebhookEventType POST_SCHEDULED =
             new SubscribableWebhookEventType(Value.POST_SCHEDULED, "post.scheduled");
 
-    public static final SubscribableWebhookEventType POST_PUBLISHED =
-            new SubscribableWebhookEventType(Value.POST_PUBLISHED, "post.published");
-
     public static final SubscribableWebhookEventType MEDIA_READY =
             new SubscribableWebhookEventType(Value.MEDIA_READY, "media.ready");
-
-    public static final SubscribableWebhookEventType POST_UNSCHEDULED =
-            new SubscribableWebhookEventType(Value.POST_UNSCHEDULED, "post.unscheduled");
 
     public static final SubscribableWebhookEventType POST_UNCONFIRMED =
             new SubscribableWebhookEventType(Value.POST_UNCONFIRMED, "post.unconfirmed");
@@ -73,12 +82,22 @@ public final class SubscribableWebhookEventType {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
-            case CHANNEL_CONNECTED:
-                return visitor.visitChannelConnected();
             case MEDIA_FAILED:
                 return visitor.visitMediaFailed();
             case POST_FAILED:
                 return visitor.visitPostFailed();
+            case POST_PUBLISHED:
+                return visitor.visitPostPublished();
+            case POST_APPROVAL_REQUESTED:
+                return visitor.visitPostApprovalRequested();
+            case POST_UNSCHEDULED:
+                return visitor.visitPostUnscheduled();
+            case POST_CHANGES_REQUESTED:
+                return visitor.visitPostChangesRequested();
+            case POST_APPROVED:
+                return visitor.visitPostApproved();
+            case CHANNEL_CONNECTED:
+                return visitor.visitChannelConnected();
             case CHANNEL_DISCONNECTED:
                 return visitor.visitChannelDisconnected();
             case CHANNEL_RECONNECT_NEEDED:
@@ -87,12 +106,8 @@ public final class SubscribableWebhookEventType {
                 return visitor.visitPostCancelled();
             case POST_SCHEDULED:
                 return visitor.visitPostScheduled();
-            case POST_PUBLISHED:
-                return visitor.visitPostPublished();
             case MEDIA_READY:
                 return visitor.visitMediaReady();
-            case POST_UNSCHEDULED:
-                return visitor.visitPostUnscheduled();
             case POST_UNCONFIRMED:
                 return visitor.visitPostUnconfirmed();
             case UNKNOWN:
@@ -104,12 +119,22 @@ public final class SubscribableWebhookEventType {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static SubscribableWebhookEventType valueOf(String value) {
         switch (value) {
-            case "channel.connected":
-                return CHANNEL_CONNECTED;
             case "media.failed":
                 return MEDIA_FAILED;
             case "post.failed":
                 return POST_FAILED;
+            case "post.published":
+                return POST_PUBLISHED;
+            case "post.approval_requested":
+                return POST_APPROVAL_REQUESTED;
+            case "post.unscheduled":
+                return POST_UNSCHEDULED;
+            case "post.changes_requested":
+                return POST_CHANGES_REQUESTED;
+            case "post.approved":
+                return POST_APPROVED;
+            case "channel.connected":
+                return CHANNEL_CONNECTED;
             case "channel.disconnected":
                 return CHANNEL_DISCONNECTED;
             case "channel.reconnect_needed":
@@ -118,12 +143,8 @@ public final class SubscribableWebhookEventType {
                 return POST_CANCELLED;
             case "post.scheduled":
                 return POST_SCHEDULED;
-            case "post.published":
-                return POST_PUBLISHED;
             case "media.ready":
                 return MEDIA_READY;
-            case "post.unscheduled":
-                return POST_UNSCHEDULED;
             case "post.unconfirmed":
                 return POST_UNCONFIRMED;
             default:
@@ -143,6 +164,12 @@ public final class SubscribableWebhookEventType {
         POST_UNCONFIRMED,
 
         POST_CANCELLED,
+
+        POST_APPROVAL_REQUESTED,
+
+        POST_APPROVED,
+
+        POST_CHANGES_REQUESTED,
 
         CHANNEL_CONNECTED,
 
@@ -169,6 +196,12 @@ public final class SubscribableWebhookEventType {
         T visitPostUnconfirmed();
 
         T visitPostCancelled();
+
+        T visitPostApprovalRequested();
+
+        T visitPostApproved();
+
+        T visitPostChangesRequested();
 
         T visitChannelConnected();
 

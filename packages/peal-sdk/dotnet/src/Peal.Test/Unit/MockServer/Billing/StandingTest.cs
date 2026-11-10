@@ -17,14 +17,14 @@ public class StandingTest : BaseMockServerTest
               "mustReduce": true,
               "over": [
                 {
-                  "allowed": 1,
+                  "allowed": 1000000,
                   "limit": "channels",
-                  "used": 1
+                  "used": 1000000
                 },
                 {
-                  "allowed": 1,
+                  "allowed": 1000000,
                   "limit": "channels",
-                  "used": 1
+                  "used": 1000000
                 }
               ],
               "plan": "free",
@@ -61,9 +61,9 @@ public class StandingTest : BaseMockServerTest
               "mustReduce": true,
               "over": [
                 {
-                  "allowed": 1,
+                  "allowed": 1000000,
                   "limit": "channels",
-                  "used": 1
+                  "used": 1000000
                 }
               ],
               "plan": "free",

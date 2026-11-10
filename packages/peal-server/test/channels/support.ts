@@ -23,14 +23,14 @@ import { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-ciphe
 import { Ids, newId } from "#shared/application/ids.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
+import { connectionOf } from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import {
   ChannelIdSchema,
   UserIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
-import { connectionOf } from "#shared/domain/instagram-connection.ts";
-import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
@@ -72,7 +72,7 @@ export const freshChannel = Effect.fn("freshChannel")(function* freshChannel(
   workspaceId: WorkspaceId,
   options: {
     readonly accountId?: string | undefined;
-    readonly connection?: InstagramConnection | undefined;
+    readonly connection?: ChannelConnection | undefined;
     readonly platform?: Platform;
     readonly token?: TokenLifetime;
   } = {}

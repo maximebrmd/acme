@@ -115,13 +115,15 @@ var (
 	notificationPreferencesEmailFieldChannelReconnect = big.NewInt(1 << 0)
 	notificationPreferencesEmailFieldPostFailed       = big.NewInt(1 << 1)
 	notificationPreferencesEmailFieldPostPublished    = big.NewInt(1 << 2)
-	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 3)
+	notificationPreferencesEmailFieldPostReview       = big.NewInt(1 << 3)
+	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 4)
 )
 
 type NotificationPreferencesEmail struct {
 	ChannelReconnect bool `json:"channelReconnect" url:"channelReconnect"`
 	PostFailed       bool `json:"postFailed" url:"postFailed"`
 	PostPublished    bool `json:"postPublished" url:"postPublished"`
+	PostReview       bool `json:"postReview" url:"postReview"`
 	PostUnconfirmed  bool `json:"postUnconfirmed" url:"postUnconfirmed"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -150,6 +152,13 @@ func (n *NotificationPreferencesEmail) GetPostPublished() bool {
 		return false
 	}
 	return n.PostPublished
+}
+
+func (n *NotificationPreferencesEmail) GetPostReview() bool {
+	if n == nil {
+		return false
+	}
+	return n.PostReview
 }
 
 func (n *NotificationPreferencesEmail) GetPostUnconfirmed() bool {
@@ -194,6 +203,13 @@ func (n *NotificationPreferencesEmail) SetPostFailed(postFailed bool) {
 func (n *NotificationPreferencesEmail) SetPostPublished(postPublished bool) {
 	n.PostPublished = postPublished
 	n.require(notificationPreferencesEmailFieldPostPublished)
+}
+
+// SetPostReview sets the PostReview field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesEmail) SetPostReview(postReview bool) {
+	n.PostReview = postReview
+	n.require(notificationPreferencesEmailFieldPostReview)
 }
 
 // SetPostUnconfirmed sets the PostUnconfirmed field and marks it as non-optional;
@@ -249,13 +265,15 @@ var (
 	notificationPreferencesChangeEmailFieldChannelReconnect = big.NewInt(1 << 0)
 	notificationPreferencesChangeEmailFieldPostFailed       = big.NewInt(1 << 1)
 	notificationPreferencesChangeEmailFieldPostPublished    = big.NewInt(1 << 2)
-	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 3)
+	notificationPreferencesChangeEmailFieldPostReview       = big.NewInt(1 << 3)
+	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 4)
 )
 
 type NotificationPreferencesChangeEmail struct {
 	ChannelReconnect *bool `json:"channelReconnect,omitempty" url:"channelReconnect,omitempty"`
 	PostFailed       *bool `json:"postFailed,omitempty" url:"postFailed,omitempty"`
 	PostPublished    *bool `json:"postPublished,omitempty" url:"postPublished,omitempty"`
+	PostReview       *bool `json:"postReview,omitempty" url:"postReview,omitempty"`
 	PostUnconfirmed  *bool `json:"postUnconfirmed,omitempty" url:"postUnconfirmed,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -284,6 +302,13 @@ func (n *NotificationPreferencesChangeEmail) GetPostPublished() *bool {
 		return nil
 	}
 	return n.PostPublished
+}
+
+func (n *NotificationPreferencesChangeEmail) GetPostReview() *bool {
+	if n == nil {
+		return nil
+	}
+	return n.PostReview
 }
 
 func (n *NotificationPreferencesChangeEmail) GetPostUnconfirmed() *bool {
@@ -328,6 +353,13 @@ func (n *NotificationPreferencesChangeEmail) SetPostFailed(postFailed *bool) {
 func (n *NotificationPreferencesChangeEmail) SetPostPublished(postPublished *bool) {
 	n.PostPublished = postPublished
 	n.require(notificationPreferencesChangeEmailFieldPostPublished)
+}
+
+// SetPostReview sets the PostReview field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesChangeEmail) SetPostReview(postReview *bool) {
+	n.PostReview = postReview
+	n.require(notificationPreferencesChangeEmailFieldPostReview)
 }
 
 // SetPostUnconfirmed sets the PostUnconfirmed field and marks it as non-optional;

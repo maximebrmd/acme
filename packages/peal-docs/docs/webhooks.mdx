@@ -86,11 +86,14 @@ Event types and their fields are a public contract. Peal adds event types, and f
 | Event                                                   | When                                                                      |
 | ------------------------------------------------------- | ------------------------------------------------------------------------- |
 | [`post.scheduled`](#post-scheduled)                     | A post was scheduled, or moved to another time                            |
-| [`post.unscheduled`](#post-unscheduled)                 | A scheduled post was taken back to draft                                  |
+| [`post.unscheduled`](#post-unscheduled)                 | A scheduled post, or one that waited, was taken back to draft             |
 | [`post.published`](#post-published)                     | A post went live on a channel                                             |
 | [`post.failed`](#post-failed)                           | A post did not go out on a channel                                        |
 | [`post.unconfirmed`](#post-unconfirmed)                 | Peal cannot tell whether a post went live on a channel                    |
 | [`post.cancelled`](#post-cancelled)                     | A post was cancelled                                                      |
+| [`post.approval_requested`](#post-approval-requested)   | A post waits for an approval                                              |
+| [`post.approved`](#post-approved)                       | A post that waited was approved                                           |
+| [`post.changes_requested`](#post-changes-requested)     | Changes were asked for on a post that waited                              |
 | [`channel.connected`](#channel-connected)               | An account was connected, or a channel authorized again                   |
 | [`channel.disconnected`](#channel-disconnected)         | A channel was disconnected                                                |
 | [`channel.reconnect_needed`](#channel-reconnect-needed) | A channel's authorization stopped working                                 |
@@ -111,7 +114,7 @@ Every event's `data` has `workspaceId`, the workspace it happened in.
 
 ### post.scheduled [#post-scheduled]
 
-A post was scheduled, or moved to another time.
+A post was scheduled, or moved to another time. A post that waits for an [approval](/review) is not scheduled yet: it sends `post.approval_requested`, and this event only once it is approved.
 
 | Field         | Type   | What it holds                                                                 |
 | ------------- | ------ | ----------------------------------------------------------------------------- |
@@ -151,7 +154,7 @@ A post was scheduled, or moved to another time.
 
 ### post.unscheduled [#post-unscheduled]
 
-A scheduled post was taken back to draft: it goes out nowhere until it is scheduled again.
+A scheduled post, or one that waited for an approval, was taken back to draft: it goes out nowhere until it is scheduled again.
 
 | Field         | Type   | What it holds |
 | ------------- | ------ | ------------- |
@@ -336,6 +339,89 @@ The post was cancelled. `targets` are the channels it will not go out on; a chan
 }
 ```
 
+### post.approval_requested [#post-approval-requested]
+
+Someone asked for the post to go out, in a workspace that asks for [approvals](/review): it waits. It keeps its time, and no `post.scheduled` is sent until it is approved. What an application sends or schedules there starts this way.
+
+What follows tells what became of it, one of:
+
+- `post.approval_requested` again, with its new `scheduledAt`: it was moved to another time, and still waits;
+- [`post.approved`](#post-approved), then `post.scheduled` unless the approval came `late`;
+- [`post.changes_requested`](#post-changes-requested): it is a draft again;
+- `post.unscheduled`: someone took it back to draft before anyone decided;
+- `post.cancelled`: it was cancelled while it waited;
+- `post.scheduled` alone: a member who may schedule without an approval scheduled it.
+
+| Field         | Type   | What it holds                                     |
+| ------------- | ------ | ------------------------------------------------- |
+| `workspaceId` | string | The workspace                                     |
+| `postId`      | string | The post                                          |
+| `scheduledAt` | string | When it was asked to go out, as an instant in UTC |
+
+```json title="post.approval_requested"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0a",
+  "type": "post.approval_requested",
+  "version": 1,
+  "timestamp": "2026-11-09T16:40:00.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "scheduledAt": "2026-11-12T08:00:00.000Z"
+  }
+}
+```
+
+### post.approved [#post-approved]
+
+The post was approved. Approved in time, it is scheduled, and a `post.scheduled` follows. Approved after its time (`late`), nothing goes out late: it is a draft again, and no `post.scheduled` follows.
+
+| Field         | Type    | What it holds                                                                                                         |
+| ------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `workspaceId` | string  | The workspace                                                                                                         |
+| `postId`      | string  | The post                                                                                                              |
+| `by`          | string  | Who approved it, by kind: `member`, `visitor` (someone who came through a review link) or `application`. Never a name |
+| `late`        | boolean | Whether its time had passed                                                                                           |
+
+```json title="post.approved"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0b",
+  "type": "post.approved",
+  "version": 1,
+  "timestamp": "2026-11-09T17:00:00.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "by": "visitor",
+    "late": false
+  }
+}
+```
+
+### post.changes_requested [#post-changes-requested]
+
+Changes were asked for on a post that waited: it is a draft again. What was asked is a comment on the post, which the event does not carry: read the post's review through the API.
+
+| Field         | Type   | What it holds                                            |
+| ------------- | ------ | -------------------------------------------------------- |
+| `workspaceId` | string | The workspace                                            |
+| `postId`      | string | The post                                                 |
+| `by`          | string | Who asked, by kind: `member`, `visitor` or `application` |
+
+```json title="post.changes_requested"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0c",
+  "type": "post.changes_requested",
+  "version": 1,
+  "timestamp": "2026-11-09T17:00:00.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "by": "member"
+  }
+}
+```
+
 ### channel.connected [#channel-connected]
 
 An account was connected to the workspace, or a channel the workspace had was authorized again.
@@ -456,6 +542,7 @@ The file was refused, or Peal could not read it. A file that could not be read s
 | `timedOut`     | Reading the file took longer than Peal allows.                         |
 | `tooLarge`     | The store served more bytes than Peal stores for the file's kind.      |
 | `toolFailed`   | The program that reads files could not run, or printed nothing usable. |
+| `tooManyPages` | A PDF document has more than 300 pages, which no platform shows.       |
 | `unavailable`  | The instance has nothing to read this kind of file with.               |
 
 ```json title="media.failed"

@@ -104,6 +104,7 @@ const userView = (user: UserProfile): StaffUser => ({
 });
 
 const channelView = (channel: ChannelHealth): StaffChannel => ({
+  connection: orNull(channel.connection),
   handle: channel.handle,
   id: channel.id,
   platform: channel.platform,

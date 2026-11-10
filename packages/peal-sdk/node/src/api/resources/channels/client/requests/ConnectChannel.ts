@@ -12,7 +12,7 @@ import * as Peal from "../../../../index.js";
 export interface ConnectChannel {
     workspaceId: string;
     platform: Peal.Platform;
-    connection?: Peal.InstagramConnection;
+    connection?: Peal.ChannelConnection;
     handle?: string;
     instance?: string;
 }

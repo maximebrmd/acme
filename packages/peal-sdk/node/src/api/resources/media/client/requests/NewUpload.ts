@@ -4,7 +4,7 @@
  * @example
  *     {
  *         workspaceId: "workspaceId",
- *         byteSize: 1,
+ *         byteSize: 1000000,
  *         contentType: "contentType"
  *     }
  */

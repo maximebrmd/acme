@@ -22,6 +22,7 @@ public class UpdateTest : BaseMockServerTest
                 "channelReconnect": true,
                 "postFailed": true,
                 "postPublished": true,
+                "postReview": true,
                 "postUnconfirmed": true
               },
               "everyPost": true
@@ -63,6 +64,7 @@ public class UpdateTest : BaseMockServerTest
                 "channelReconnect": true,
                 "postFailed": true,
                 "postPublished": true,
+                "postReview": true,
                 "postUnconfirmed": true
               },
               "everyPost": true

@@ -8,17 +8,14 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .post_not_reviewable_encoded_status import PostNotReviewableEncodedStatus
 
 
-class ConflictErrorBody_AlreadyMember(UniversalBaseModel):
+class ConflictErrorBody_PostNotReviewable(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["AlreadyMember"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "AlreadyMember"
-    code: typing.Optional[str] = None
-    message: typing.Optional[str] = None
-    request_id: typing_extensions.Annotated[
-        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
-    ] = None
+        typing.Literal["PostNotReviewable"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "PostNotReviewable"
+    status: PostNotReviewableEncodedStatus
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -30,15 +27,11 @@ class ConflictErrorBody_AlreadyMember(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
-class ConflictErrorBody_TooManyInvitations(UniversalBaseModel):
+class ConflictErrorBody_TooManyReviewLinks(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["TooManyInvitations"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "TooManyInvitations"
-    code: typing.Optional[str] = None
-    message: typing.Optional[str] = None
-    request_id: typing_extensions.Annotated[
-        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
-    ] = None
+        typing.Literal["TooManyReviewLinks"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "TooManyReviewLinks"
+    limit: int
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -51,6 +44,6 @@ class ConflictErrorBody_TooManyInvitations(UniversalBaseModel):
 
 
 ConflictErrorBody = typing_extensions.Annotated[
-    typing.Union[ConflictErrorBody_AlreadyMember, ConflictErrorBody_TooManyInvitations],
+    typing.Union[ConflictErrorBody_PostNotReviewable, ConflictErrorBody_TooManyReviewLinks],
     pydantic.Field(discriminator="type"),
 ]

@@ -9,9 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::ExternalIDTakenEncoded }, key: "EXTERNAL_ID_TAKEN"
+      member -> { Peal::Types::PostNotReviewableEncoded }, key: "POST_NOT_REVIEWABLE"
 
-      member -> { Peal::Types::IdempotencyKeyReusedEncoded }, key: "IDEMPOTENCY_KEY_REUSED"
+      member -> { Peal::Types::TooManyReviewLinksEncoded }, key: "TOO_MANY_REVIEW_LINKS"
     end
   end
 end

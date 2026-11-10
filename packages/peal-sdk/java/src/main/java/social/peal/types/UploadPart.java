@@ -19,7 +19,7 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = UploadPart.Builder.class)
 public final class UploadPart {
-    private final int byteSize;
+    private final long byteSize;
 
     private final int partNumber;
 
@@ -27,7 +27,7 @@ public final class UploadPart {
 
     private final Map<String, Object> additionalProperties;
 
-    private UploadPart(int byteSize, int partNumber, SignedRequest request, Map<String, Object> additionalProperties) {
+    private UploadPart(long byteSize, int partNumber, SignedRequest request, Map<String, Object> additionalProperties) {
         this.byteSize = byteSize;
         this.partNumber = partNumber;
         this.request = request;
@@ -35,7 +35,7 @@ public final class UploadPart {
     }
 
     @JsonProperty("byteSize")
-    public int getByteSize() {
+    public long getByteSize() {
         return byteSize;
     }
 
@@ -79,7 +79,7 @@ public final class UploadPart {
     }
 
     public interface ByteSizeStage {
-        PartNumberStage byteSize(int byteSize);
+        PartNumberStage byteSize(long byteSize);
 
         Builder from(UploadPart other);
     }
@@ -102,7 +102,7 @@ public final class UploadPart {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements ByteSizeStage, PartNumberStage, RequestStage, _FinalStage {
-        private int byteSize;
+        private long byteSize;
 
         private int partNumber;
 
@@ -122,7 +122,7 @@ public final class UploadPart {
 
         @java.lang.Override
         @JsonSetter("byteSize")
-        public PartNumberStage byteSize(int byteSize) {
+        public PartNumberStage byteSize(long byteSize) {
             this.byteSize = byteSize;
             return this;
         }

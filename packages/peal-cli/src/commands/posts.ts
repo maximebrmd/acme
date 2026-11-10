@@ -129,6 +129,10 @@ const standingOf = (post: Post): string => {
       return `Post ${post.id} is a draft: it goes out at no time until it is scheduled.`;
     }
 
+    case "awaitingApproval": {
+      return `Post ${post.id} waits for an approval, for ${timeOf(post)}: nothing goes out until a person approves it. peal approvals list shows the posts that wait.`;
+    }
+
     case "cancelled": {
       return `Post ${post.id} was cancelled: it goes out on no channel.`;
     }

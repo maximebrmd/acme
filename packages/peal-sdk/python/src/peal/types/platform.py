@@ -4,7 +4,17 @@ import typing
 
 Platform = typing.Union[
     typing.Literal[
-        "x", "linkedin", "bluesky", "mastodon", "threads", "instagram", "facebook", "tiktok", "youtube", "pinterest"
+        "x",
+        "linkedin",
+        "bluesky",
+        "mastodon",
+        "threads",
+        "instagram",
+        "facebook",
+        "tiktok",
+        "youtube",
+        "pinterest",
+        "googleBusiness",
     ],
     typing.Any,
 ]

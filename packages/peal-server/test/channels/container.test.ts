@@ -14,7 +14,9 @@ import { TokenCipher } from "#channels/application/token-cipher.ts";
 import { ChannelsLive } from "#channels/container.ts";
 import { platforms } from "#channels/domain/platform.ts";
 import { platformRegistrations } from "#channels/infrastructure/platforms/platform-addresses.ts";
+import type { PlatformRegistration } from "#channels/infrastructure/platforms/platform-addresses.ts";
 import { Notify } from "#notifications/application/notify.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
 import {
   actorIn,
@@ -58,8 +60,14 @@ const channelsWithSettings = (settings: Record<string, string>) =>
 
 // No app on LinkedIn, X or TikTok, whatever the environment says.
 const withoutApps = {
+  GOOGLE_BUSINESS_CLIENT_ID: "",
+  GOOGLE_BUSINESS_CLIENT_SECRET: "",
   LINKEDIN_CLIENT_ID: "",
   LINKEDIN_CLIENT_SECRET: "",
+  LINKEDIN_PAGES_CLIENT_ID: "",
+  LINKEDIN_PAGES_CLIENT_SECRET: "",
+  PINTEREST_APP_ID: "",
+  PINTEREST_APP_SECRET: "",
   TIKTOK_CLIENT_KEY: "",
   TIKTOK_CLIENT_SECRET: "",
   X_CLIENT_ID: "",
@@ -175,8 +183,10 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
         // Nor Meta's platforms, without Meta's app.
         assert.deepStrictEqual([...authorizers.unconfigured].toSorted(), [
           "facebook",
+          "googleBusiness",
           "instagram",
           "linkedin",
+          "pinterest",
           "threads",
           "tiktok",
           "x",
@@ -188,18 +198,23 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
 });
 
 layer(DatabaseTest)(
-  "the channels context's LinkedIn, X, TikTok and YouTube settings",
+  "the channels context's LinkedIn, X, TikTok, Google and Pinterest settings",
   (it) => {
     it.effect(
-      "connect LinkedIn, X, TikTok and YouTube once their apps are set",
+      "connect LinkedIn, X, TikTok, YouTube, Pinterest and Google Business Profile once their apps are set",
       () =>
         Effect.gen(function* configured() {
           const authorizers = yield* PlatformAuthorizers.pipe(
             Effect.provide(
               channelsWithSettings({
                 BLUESKY_CLIENT_KEYS: "",
+                GOOGLE_BUSINESS_CLIENT_ID:
+                  "synthetic-business.apps.googleusercontent.example",
+                GOOGLE_BUSINESS_CLIENT_SECRET: "synthetic-business-secret",
                 LINKEDIN_CLIENT_ID: "77synthetic",
                 LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
+                PINTEREST_APP_ID: "1500000",
+                PINTEREST_APP_SECRET: "synthetic-pinterest-secret",
                 TIKTOK_CLIENT_KEY: "awsynthetic",
                 TIKTOK_CLIENT_SECRET: "synthetic-tiktok-secret",
                 X_CLIENT_ID: "c3ludGhldGlj",
@@ -226,6 +241,25 @@ layer(DatabaseTest)(
             Option.getOrThrow(authorizers.for("youtube")).platform,
             "youtube"
           );
+          assert.strictEqual(
+            Option.getOrThrow(authorizers.for("pinterest")).platform,
+            "pinterest"
+          );
+          assert.isFalse(authorizers.unconfigured.has("pinterest"));
+          assert.strictEqual(
+            Option.getOrThrow(authorizers.for("googleBusiness")).platform,
+            "googleBusiness"
+          );
+          assert.isFalse(authorizers.unconfigured.has("googleBusiness"));
+          // The first app connects profiles, and no page.
+          assert.deepStrictEqual(authorizers.linkedinConnections, [
+            "linkedinProfile",
+          ]);
+          assert.isTrue(
+            Option.isNone(
+              authorizers.for("linkedin", Option.some("linkedinPage"))
+            )
+          );
           assert.isFalse(authorizers.unconfigured.has("linkedin"));
           assert.isFalse(authorizers.unconfigured.has("x"));
           assert.isFalse(authorizers.unconfigured.has("tiktok"));
@@ -233,10 +267,77 @@ layer(DatabaseTest)(
         }).pipe(Effect.scoped)
     );
 
+    it.effect(
+      "connect LinkedIn pages with the second app, beside profiles or alone",
+      () =>
+        Effect.gen(function* pages() {
+          const pagesApp = {
+            LINKEDIN_PAGES_CLIENT_ID: "88synthetic-pages",
+            LINKEDIN_PAGES_CLIENT_SECRET: "synthetic-linkedin-pages-secret",
+          };
+
+          const both = yield* PlatformAuthorizers.pipe(
+            Effect.provide(
+              channelsWithSettings({
+                ...withoutApps,
+                ...pagesApp,
+                BLUESKY_CLIENT_KEYS: "",
+                LINKEDIN_CLIENT_ID: "77synthetic",
+                LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
+              })
+            )
+          );
+
+          assert.deepStrictEqual(both.linkedinConnections, [
+            "linkedinProfile",
+            "linkedinPage",
+          ]);
+          // Without a way in named, the profile.
+          assert.strictEqual(
+            Option.getOrThrow(both.for("linkedin")).connection,
+            "linkedinProfile"
+          );
+          assert.strictEqual(
+            Option.getOrThrow(both.for("linkedin", Option.some("linkedinPage")))
+              .connection,
+            "linkedinPage"
+          );
+
+          const alone = yield* PlatformAuthorizers.pipe(
+            Effect.provide(
+              channelsWithSettings({
+                ...withoutApps,
+                ...pagesApp,
+                BLUESKY_CLIENT_KEYS: "",
+              })
+            )
+          );
+
+          assert.deepStrictEqual(alone.linkedinConnections, ["linkedinPage"]);
+          assert.strictEqual(
+            Option.getOrThrow(alone.for("linkedin")).connection,
+            "linkedinPage"
+          );
+          assert.isFalse(alone.unconfigured.has("linkedin"));
+          // A profile connected before the first app was removed cannot
+          // be reconnected through the pages app.
+          assert.isTrue(
+            Option.isNone(alone.for("linkedin", Option.some("linkedinProfile")))
+          );
+        }).pipe(Effect.scoped)
+    );
+
     it.effect("refuse to start with half of an app", () =>
       Effect.gen(function* refuses() {
         for (const [platform, settings] of [
           ["linkedin", { ...withoutApps, LINKEDIN_CLIENT_ID: "77synthetic" }],
+          [
+            "linkedin",
+            {
+              ...withoutApps,
+              LINKEDIN_PAGES_CLIENT_SECRET: "synthetic-linkedin-pages-secret",
+            },
+          ],
           ["x", { ...withoutApps, X_CLIENT_SECRET: "synthetic-x-secret" }],
           ["tiktok", { ...withoutApps, TIKTOK_CLIENT_KEY: "awsynthetic" }],
           [
@@ -244,6 +345,21 @@ layer(DatabaseTest)(
             {
               ...withoutApps,
               YOUTUBE_CLIENT_SECRET: "synthetic-google-secret",
+            },
+          ],
+          [
+            "pinterest",
+            {
+              ...withoutApps,
+              PINTEREST_APP_SECRET: "synthetic-pinterest-secret",
+            },
+          ],
+          [
+            "googleBusiness",
+            {
+              ...withoutApps,
+              GOOGLE_BUSINESS_CLIENT_ID:
+                "synthetic-business.apps.googleusercontent.example",
             },
           ],
         ] as const) {
@@ -331,6 +447,20 @@ const syntheticSetting = (name: string, blueskyKey: string) => {
     : `synthetic-${name.toLowerCase()}`;
 };
 
+// The way in a registration's app connects, on the platforms that have
+// several.
+const connections: Partial<
+  Record<PlatformRegistration["id"], ChannelConnection>
+> = {
+  facebookLogin: "facebookLogin",
+  instagramLogin: "instagramLogin",
+  linkedin: "linkedinProfile",
+  linkedinPages: "linkedinPage",
+};
+
+const connectionOf = (id: PlatformRegistration["id"]) =>
+  Option.fromUndefinedOr(connections[id]);
+
 // The address the sign-in asks the platform to send the member back to.
 const redirectOf = (authorizationUrl: string) =>
   new URL(authorizationUrl).searchParams.get("redirect_uri");
@@ -379,6 +509,16 @@ layer(DatabaseTest)(
             platform
           );
         }
+
+        // Every way in of every platform has its app in the list.
+        assert.deepStrictEqual(authorizers.linkedinConnections, [
+          "linkedinProfile",
+          "linkedinPage",
+        ]);
+        assert.deepStrictEqual(authorizers.instagramConnections, [
+          "instagramLogin",
+          "facebookLogin",
+        ]);
       }).pipe(Effect.scoped)
     );
 
@@ -407,16 +547,7 @@ layer(DatabaseTest)(
             registration.registeredBy === "server"
               ? []
               : registration.platforms.map((platform) =>
-                  authorizers.for(
-                    platform,
-                    platform === "instagram"
-                      ? Option.some(
-                          registration.id === "instagramLogin"
-                            ? ("instagramLogin" as const)
-                            : ("facebookLogin" as const)
-                        )
-                      : Option.none()
-                  )
+                  authorizers.for(platform, connectionOf(registration.id))
                 );
 
           const listed = registration.addresses

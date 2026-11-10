@@ -55,7 +55,7 @@ var (
 type NewUpload struct {
 	WorkspaceID string  `json:"-" url:"-"`
 	AltText     *string `json:"altText,omitempty" url:"-"`
-	ByteSize    int     `json:"byteSize" url:"-"`
+	ByteSize    int64   `json:"byteSize" url:"-"`
 	ContentType string  `json:"contentType" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -87,7 +87,7 @@ func (n *NewUpload) SetAltText(altText *string) {
 
 // SetByteSize sets the ByteSize field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NewUpload) SetByteSize(byteSize int) {
+func (n *NewUpload) SetByteSize(byteSize int64) {
 	n.ByteSize = byteSize
 	n.require(newUploadFieldByteSize)
 }
@@ -379,9 +379,10 @@ var (
 	mediaFieldDurationMs  = big.NewInt(1 << 6)
 	mediaFieldID          = big.NewInt(1 << 7)
 	mediaFieldKind        = big.NewInt(1 << 8)
-	mediaFieldStatus      = big.NewInt(1 << 9)
-	mediaFieldUpdatedAt   = big.NewInt(1 << 10)
-	mediaFieldURL         = big.NewInt(1 << 11)
+	mediaFieldPageCount   = big.NewInt(1 << 9)
+	mediaFieldStatus      = big.NewInt(1 << 10)
+	mediaFieldUpdatedAt   = big.NewInt(1 << 11)
+	mediaFieldURL         = big.NewInt(1 << 12)
 )
 
 // mediaNullableFields maps the wire names of Media's nullable fields (required or optional) to their field bits.
@@ -390,12 +391,13 @@ var mediaNullableFields = map[string]*big.Int{
 	"codec":      mediaFieldCodec,
 	"dimensions": mediaFieldDimensions,
 	"durationMs": mediaFieldDurationMs,
+	"pageCount":  mediaFieldPageCount,
 	"url":        mediaFieldURL,
 }
 
 type Media struct {
 	AltText     *string          `json:"altText,omitempty" url:"altText,omitempty"`
-	ByteSize    int              `json:"byteSize" url:"byteSize"`
+	ByteSize    int64            `json:"byteSize" url:"byteSize"`
 	Codec       *string          `json:"codec,omitempty" url:"codec,omitempty"`
 	ContentType MediaContentType `json:"contentType" url:"contentType"`
 	CreatedAt   string           `json:"createdAt" url:"createdAt"`
@@ -403,6 +405,7 @@ type Media struct {
 	DurationMs  *int             `json:"durationMs,omitempty" url:"durationMs,omitempty"`
 	ID          string           `json:"id" url:"id"`
 	Kind        MediaKind        `json:"kind" url:"kind"`
+	PageCount   *int             `json:"pageCount,omitempty" url:"pageCount,omitempty"`
 	Status      *MediaStatus     `json:"status" url:"status"`
 	UpdatedAt   string           `json:"updatedAt" url:"updatedAt"`
 	URL         *string          `json:"url,omitempty" url:"url,omitempty"`
@@ -421,7 +424,7 @@ func (m *Media) GetAltText() *string {
 	return m.AltText
 }
 
-func (m *Media) GetByteSize() int {
+func (m *Media) GetByteSize() int64 {
 	if m == nil {
 		return 0
 	}
@@ -477,6 +480,13 @@ func (m *Media) GetKind() MediaKind {
 	return m.Kind
 }
 
+func (m *Media) GetPageCount() *int {
+	if m == nil {
+		return nil
+	}
+	return m.PageCount
+}
+
 func (m *Media) GetStatus() *MediaStatus {
 	if m == nil {
 		return nil
@@ -523,7 +533,7 @@ func (m *Media) SetAltText(altText *string) {
 
 // SetByteSize sets the ByteSize field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (m *Media) SetByteSize(byteSize int) {
+func (m *Media) SetByteSize(byteSize int64) {
 	m.ByteSize = byteSize
 	m.require(mediaFieldByteSize)
 }
@@ -575,6 +585,13 @@ func (m *Media) SetID(id string) {
 func (m *Media) SetKind(kind MediaKind) {
 	m.Kind = kind
 	m.require(mediaFieldKind)
+}
+
+// SetPageCount sets the PageCount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetPageCount(pageCount *int) {
+	m.PageCount = pageCount
+	m.require(mediaFieldPageCount)
 }
 
 // SetStatus sets the Status field and marks it as non-optional;
@@ -747,28 +764,6 @@ func (m *MediaDimensions) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", m)
-}
-
-type MediaKind string
-
-const (
-	MediaKindImage MediaKind = "image"
-	MediaKindVideo MediaKind = "video"
-)
-
-func NewMediaKindFromString(s string) (MediaKind, error) {
-	switch s {
-	case "image":
-		return MediaKindImage, nil
-	case "video":
-		return MediaKindVideo, nil
-	}
-	var t MediaKind
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (m MediaKind) Ptr() *MediaKind {
-	return &m
 }
 
 var (
@@ -1572,12 +1567,13 @@ func (p *PreparedUpload) String() string {
 type ProbeState string
 
 const (
-	ProbeStatePending     ProbeState = "pending"
-	ProbeStateUnavailable ProbeState = "unavailable"
-	ProbeStateUnreadable  ProbeState = "unreadable"
-	ProbeStateTimedOut    ProbeState = "timedOut"
-	ProbeStateTooLarge    ProbeState = "tooLarge"
-	ProbeStateToolFailed  ProbeState = "toolFailed"
+	ProbeStatePending      ProbeState = "pending"
+	ProbeStateUnavailable  ProbeState = "unavailable"
+	ProbeStateUnreadable   ProbeState = "unreadable"
+	ProbeStateTimedOut     ProbeState = "timedOut"
+	ProbeStateTooLarge     ProbeState = "tooLarge"
+	ProbeStateToolFailed   ProbeState = "toolFailed"
+	ProbeStateTooManyPages ProbeState = "tooManyPages"
 )
 
 func NewProbeStateFromString(s string) (ProbeState, error) {
@@ -1594,6 +1590,8 @@ func NewProbeStateFromString(s string) (ProbeState, error) {
 		return ProbeStateTooLarge, nil
 	case "toolFailed":
 		return ProbeStateToolFailed, nil
+	case "tooManyPages":
+		return ProbeStateTooManyPages, nil
 	}
 	var t ProbeState
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -1769,7 +1767,7 @@ var (
 )
 
 type UploadPart struct {
-	ByteSize   int            `json:"byteSize" url:"byteSize"`
+	ByteSize   int64          `json:"byteSize" url:"byteSize"`
 	PartNumber int            `json:"partNumber" url:"partNumber"`
 	Request    *SignedRequest `json:"request" url:"request"`
 
@@ -1780,7 +1778,7 @@ type UploadPart struct {
 	rawJSON         json.RawMessage
 }
 
-func (u *UploadPart) GetByteSize() int {
+func (u *UploadPart) GetByteSize() int64 {
 	if u == nil {
 		return 0
 	}
@@ -1819,7 +1817,7 @@ func (u *UploadPart) require(field *big.Int) {
 
 // SetByteSize sets the ByteSize field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UploadPart) SetByteSize(byteSize int) {
+func (u *UploadPart) SetByteSize(byteSize int64) {
 	u.ByteSize = byteSize
 	u.require(uploadPartFieldByteSize)
 }

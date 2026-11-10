@@ -63,6 +63,11 @@ export const sniffContentType = (
     return Option.some("image/webp");
   }
 
+  // A PDF starts with its header: the one document Peal stores.
+  if (ascii(bytes, 0, 5) === "%PDF-") {
+    return Option.some("application/pdf");
+  }
+
   if (ascii(bytes, 4, 8) !== "ftyp") {
     return Option.none();
   }

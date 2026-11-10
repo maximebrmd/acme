@@ -26,16 +26,16 @@ public final class NotFoundErrorBody {
         return value.visit(visitor);
     }
 
-    public static NotFoundErrorBody connectLinkNotFound(ConnectLinkNotFoundEncoded value) {
-        return new NotFoundErrorBody(new ConnectLinkNotFoundValue(value));
+    public static NotFoundErrorBody reviewLinkNotFound(ReviewLinkNotFoundEncoded value) {
+        return new NotFoundErrorBody(new ReviewLinkNotFoundValue(value));
     }
 
     public static NotFoundErrorBody workspaceNotFound(WorkspaceNotFoundEncoded value) {
         return new NotFoundErrorBody(new WorkspaceNotFoundValue(value));
     }
 
-    public boolean isConnectLinkNotFound() {
-        return value instanceof ConnectLinkNotFoundValue;
+    public boolean isReviewLinkNotFound() {
+        return value instanceof ReviewLinkNotFoundValue;
     }
 
     public boolean isWorkspaceNotFound() {
@@ -46,9 +46,9 @@ public final class NotFoundErrorBody {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<ConnectLinkNotFoundEncoded> getConnectLinkNotFound() {
-        if (isConnectLinkNotFound()) {
-            return Optional.of(((ConnectLinkNotFoundValue) value).value);
+    public Optional<ReviewLinkNotFoundEncoded> getReviewLinkNotFound() {
+        if (isReviewLinkNotFound()) {
+            return Optional.of(((ReviewLinkNotFoundValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,7 +89,7 @@ public final class NotFoundErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitConnectLinkNotFound(ConnectLinkNotFoundEncoded connectLinkNotFound);
+        T visitReviewLinkNotFound(ReviewLinkNotFoundEncoded reviewLinkNotFound);
 
         T visitWorkspaceNotFound(WorkspaceNotFoundEncoded workspaceNotFound);
 
@@ -97,39 +97,38 @@ public final class NotFoundErrorBody {
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(ConnectLinkNotFoundValue.class), @JsonSubTypes.Type(WorkspaceNotFoundValue.class)
-    })
+    @JsonSubTypes({@JsonSubTypes.Type(ReviewLinkNotFoundValue.class), @JsonSubTypes.Type(WorkspaceNotFoundValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("ConnectLinkNotFound")
+    @JsonTypeName("ReviewLinkNotFound")
     @JsonIgnoreProperties("_tag")
-    private static final class ConnectLinkNotFoundValue implements Value {
+    private static final class ReviewLinkNotFoundValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private ConnectLinkNotFoundEncoded value;
+        private ReviewLinkNotFoundEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private ConnectLinkNotFoundValue() {}
+        private ReviewLinkNotFoundValue() {}
 
-        private ConnectLinkNotFoundValue(ConnectLinkNotFoundEncoded value) {
+        private ReviewLinkNotFoundValue(ReviewLinkNotFoundEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitConnectLinkNotFound(value);
+            return visitor.visitReviewLinkNotFound(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof ConnectLinkNotFoundValue && equalTo((ConnectLinkNotFoundValue) other);
+            return other instanceof ReviewLinkNotFoundValue && equalTo((ReviewLinkNotFoundValue) other);
         }
 
-        private boolean equalTo(ConnectLinkNotFoundValue other) {
+        private boolean equalTo(ReviewLinkNotFoundValue other) {
             return value.equals(other.value);
         }
 

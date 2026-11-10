@@ -1,6 +1,6 @@
 "use client";
 
-import { useAtomValue } from "@effect/atom-react";
+import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { Cause, Match, Option, Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
@@ -10,6 +10,7 @@ import type {
   TikTokAccount,
   TikTokCreator,
 } from "peal-contract";
+import { Button } from "peal-ui/components/button";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Input } from "peal-ui/components/input";
 import { Label } from "peal-ui/components/label";
@@ -24,19 +25,30 @@ import { Separator } from "peal-ui/components/separator";
 import { useEffect } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 
-import { tiktokCreator } from "#posts/api.ts";
+import {
+  pinterestBoards,
+  pinterestBoardSections,
+  tiktokCreator,
+} from "#posts/api.ts";
 import type { ComposerFailure } from "#posts/composer-failure.ts";
+import { choicesOf } from "#posts/lookup-choices.ts";
+import type { LookupChoices } from "#posts/lookup-choices.ts";
 import {
   fieldsOf,
+  isShown,
   violationsByField,
   withValue,
 } from "#posts/target-options.ts";
 import type {
   ChoiceField,
+  LocalTimeField,
+  LookupField,
+  NumberField,
   OptionField,
   OptionValues,
   OptionViolation,
   TagsField,
+  MentionsField,
   TextField,
   ToggleField,
   YesNoField,
@@ -54,9 +66,18 @@ const decodeText = Schema.decodeUnknownOption(Schema.String);
 const textOf = (value: Value): string =>
   decodeText(value).pipe(Option.getOrElse(() => ""));
 
+/** What a lookup field offers on a channel, and how to ask again. */
+export interface LookupSource {
+  readonly choices: LookupChoices;
+  /** Reads the list again, after it could not be read. */
+  readonly retry?: () => void;
+}
+
 interface FieldProps<F extends OptionField> {
   readonly disabled: boolean;
   readonly field: F;
+  /** The account's values, for a field a lookup fills. */
+  readonly lookup: LookupSource | undefined;
   /** How the account shows it, when its platform says (TikTok's creator). */
   readonly limits: FieldLimits;
   readonly id: string;
@@ -143,7 +164,7 @@ const TextInput = ({
   limits,
   value,
   violation,
-}: FieldProps<TagsField | TextField>) => {
+}: FieldProps<LocalTimeField | MentionsField | TagsField | TextField>) => {
   const t = useTranslations("Posts.Options");
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -155,7 +176,7 @@ const TextInput = ({
       <Label htmlFor={id}>{labelOf(t, field)}</Label>
       <Input
         id={id}
-        type="text"
+        type={field.kind === "localTime" ? "datetime-local" : "text"}
         autoComplete="off"
         disabled={disabled}
         value={textOf(value)}
@@ -231,6 +252,9 @@ const ChoiceSelect = ({
   );
 };
 
+// The choice that chooses nothing again: no option's value is empty.
+const nothing = "";
+
 const ChoiceInput = ({
   field,
   onValue,
@@ -239,23 +263,33 @@ const ChoiceInput = ({
 }: FieldProps<ChoiceField>) => {
   const t = useTranslations("Posts.Options");
 
+  const offered = field.choices
+    .filter(
+      ({ value: choice }) =>
+        rest.limits.choices === undefined || rest.limits.choices.has(choice)
+    )
+    .map((choice) => ({
+      closed: rest.limits.closedChoices?.has(choice.value) ?? false,
+      label: t(choice.label),
+      value: choice.value,
+    }));
+
   return (
     <ChoiceSelect
       {...rest}
       field={field}
-      choices={field.choices
-        .filter(
-          ({ value: offered }) =>
-            rest.limits.choices === undefined ||
-            rest.limits.choices.has(offered)
-        )
-        .map((choice) => ({
-          closed: rest.limits.closedChoices?.has(choice.value) ?? false,
-          label: t(choice.label),
-          value: choice.value,
-        }))}
+      choices={
+        field.none === undefined
+          ? offered
+          : [
+              { closed: false, label: t(field.none), value: nothing },
+              ...offered,
+            ]
+      }
       selected={Option.getOrUndefined(decodeText(value))}
-      onChoice={onValue}
+      onChoice={(choice) => {
+        onValue(choice === nothing ? undefined : choice);
+      }}
     />
   );
 };
@@ -332,10 +366,148 @@ const ToggleInput = ({
   );
 };
 
+const NumberInput = ({
+  disabled,
+  field,
+  id,
+  onValue,
+  limits,
+  value,
+  violation,
+}: FieldProps<NumberField>) => {
+  const t = useTranslations("Posts.Options");
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onValue(event.target.value);
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor={id}>{t(field.label)}</Label>
+      <Input
+        id={id}
+        type="number"
+        inputMode="numeric"
+        min={field.minimum}
+        step={1}
+        autoComplete="off"
+        disabled={disabled}
+        value={textOf(value)}
+        aria-invalid={violation !== undefined}
+        aria-describedby={describedBy(field, id, violation)}
+        onChange={handleChange}
+      />
+      <Notes field={field} id={id} limits={limits} violation={violation} />
+    </div>
+  );
+};
+
+// Stands for no choice in a list: no platform's id is this word.
+const noChoice = "none";
+
+const loadingChoices: LookupChoices = { _tag: "loading" };
+
+// The list a lookup filled: the account's values, with "None" first for a
+// field that may stay empty, and the value the post holds when the list
+// lacks it, so nothing chosen earlier is lost unseen.
+const LoadedLookup = ({
+  field,
+  loaded,
+  onValue,
+  value,
+  ...rest
+}: FieldProps<LookupField> & {
+  readonly loaded: Extract<LookupChoices, { readonly _tag: "loaded" }>;
+}) => {
+  const t = useTranslations("Posts.Options");
+  const selected = textOf(value);
+  const known = loaded.choices.some((choice) => choice.value === selected);
+
+  const choices: readonly Choice[] = [
+    ...(field.required === true
+      ? []
+      : [{ closed: false, label: t("lookupNone"), value: noChoice }]),
+    ...loaded.choices.map((choice) => ({ ...choice, closed: false })),
+    ...(selected === "" || known
+      ? []
+      : [
+          {
+            closed: false,
+            label: t("lookupUnknown", { value: selected }),
+            value: selected,
+          },
+        ]),
+  ];
+
+  return (
+    <div className="flex flex-col gap-2">
+      <ChoiceSelect
+        {...rest}
+        field={field}
+        choices={choices}
+        selected={selected === "" ? undefined : selected}
+        onChoice={(choice) => {
+          onValue(choice === noChoice ? undefined : choice);
+        }}
+      />
+      {loaded.choices.length === 0 && field.empty !== undefined ? (
+        <p className="text-muted-foreground text-xs">{t(field.empty)}</p>
+      ) : null}
+      {loaded.truncated ? (
+        <p className="text-muted-foreground text-xs">
+          {t("lookupTruncated", { count: loaded.choices.length })}
+        </p>
+      ) : null}
+    </div>
+  );
+};
+
+// A field a lookup fills: its list once read, and until then that it is
+// being read, or why it could not be, with a way to ask again.
+const LookupInput = (props: FieldProps<LookupField>) => {
+  const t = useTranslations("Posts.Options");
+  const { field, id, limits, lookup, violation } = props;
+  const state = lookup?.choices ?? loadingChoices;
+  const handleRetry = lookup?.retry;
+
+  if (state._tag === "loaded") {
+    return <LoadedLookup {...props} loaded={state} />;
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm leading-none font-medium">{labelOf(t, field)}</p>
+      <output className="text-sm">
+        {state._tag === "loading"
+          ? t("lookupLoading")
+          : t("lookupFailed", { reason: state.reason })}
+      </output>
+      {state._tag === "failed" && handleRetry !== undefined ? (
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={props.disabled}
+            onClick={handleRetry}
+          >
+            {t("lookupRetry")}
+          </Button>
+        </div>
+      ) : null}
+      <Notes field={field} id={id} limits={limits} violation={violation} />
+    </div>
+  );
+};
+
 const FieldInput = (props: FieldProps<OptionField>) =>
   Match.value(props.field).pipe(
     Match.discriminatorsExhaustive("kind")({
       choice: (field) => <ChoiceInput {...props} field={field} />,
+      localTime: (field) => <TextInput {...props} field={field} />,
+      lookup: (field) => <LookupInput {...props} field={field} />,
+      mentions: (field) => <TextInput {...props} field={field} />,
+      number: (field) => <NumberInput {...props} field={field} />,
       tags: (field) => <TextInput {...props} field={field} />,
       text: (field) => <TextInput {...props} field={field} />,
       toggle: (field) => <ToggleInput {...props} field={field} />,
@@ -355,6 +527,36 @@ const unlimited: FieldLimits = {};
 
 const noFields: ReadonlyMap<string, FieldLimits> = new Map();
 
+const noLookups: ReadonlyMap<string, LookupSource> = new Map();
+
+// Whether a field its platform's values show (`isShown`) is offered: a box
+// under another only while that one is ticked; a lookup under another once
+// that one has a value, and unless the account has nothing to choose there.
+const isOffered = (
+  field: OptionField,
+  values: OptionValues,
+  lookups: ReadonlyMap<string, LookupSource>
+): boolean => {
+  if (field.kind === "toggle") {
+    return field.within === undefined || values[field.within] === true;
+  }
+
+  if (field.kind !== "lookup" || field.under === undefined) {
+    return true;
+  }
+
+  const offered = lookups.get(field.name)?.choices;
+
+  return (
+    textOf(values[field.under]) !== "" &&
+    !(
+      offered?._tag === "loaded" &&
+      offered.choices.length === 0 &&
+      textOf(values[field.name]) === ""
+    )
+  );
+};
+
 // The fields of one channel's platform, filled in with its values, limited
 // by its account when it says how (`limits`), with `header` above them and
 // `footer` below.
@@ -365,14 +567,18 @@ const ChannelOptionsFields = ({
   header,
   onChange,
   limits,
+  lookups,
   values,
   violations,
 }: ChannelOptionsProps & {
   readonly footer?: ReactNode;
   readonly header?: ReactNode;
   readonly limits?: ReadonlyMap<string, FieldLimits>;
+  /** What each field a lookup fills offers, by field. */
+  readonly lookups?: ReadonlyMap<string, LookupSource>;
 }) => {
   const limitsByField = limits ?? noFields;
+  const lookupsByField = lookups ?? noLookups;
   const t = useTranslations("Posts.Options");
   const tPosts = useTranslations("Posts");
   const byField = violationsByField(violations, channel.id);
@@ -381,9 +587,8 @@ const ChannelOptionsFields = ({
   const shown = fieldsOf(channel.platform).filter(
     (field) =>
       limitsByField.get(field.name)?.hidden !== true &&
-      (field.kind !== "toggle" ||
-        field.within === undefined ||
-        values[field.within] === true)
+      isShown(channel.platform, field, values) &&
+      isOffered(field, values, lookupsByField)
   );
 
   return (
@@ -413,6 +618,7 @@ const ChannelOptionsFields = ({
             disabled={disabled}
             field={field}
             limits={limitsByField.get(field.name) ?? unlimited}
+            lookup={lookupsByField.get(field.name)}
             id={`option-${channel.id}-${field.name}`}
             value={values[field.name]}
             violation={byField.get(field.name)}
@@ -604,6 +810,66 @@ const TikTokChannelOptions = ({
   return <TikTokOptionsFields {...props} photos={photos} state={state} />;
 };
 
+/**
+ * A Pinterest channel's fields, its board and section chosen among those
+ * `boards` and `sections` say the account has.
+ */
+export const PinterestOptionsFields = ({
+  boards,
+  sections,
+  ...props
+}: ChannelOptionsProps & {
+  readonly boards: LookupSource;
+  readonly sections: LookupSource;
+}) => (
+  <ChannelOptionsFields
+    {...props}
+    lookups={
+      new Map([
+        ["boardId", boards],
+        ["boardSectionId", sections],
+      ])
+    }
+  />
+);
+
+// A Pinterest channel's fields, with its boards read from the API, and
+// the sections of the board chosen.
+const PinterestChannelOptions = ({
+  workspaceId,
+  ...props
+}: ChannelOptionsProps & { readonly workspaceId: string }) => {
+  const boards = pinterestBoards(workspaceId, props.channel.id);
+
+  const sections = pinterestBoardSections(
+    workspaceId,
+    props.channel.id,
+    textOf(props.values["boardId"])
+  );
+
+  return (
+    <PinterestOptionsFields
+      {...props}
+      boards={{
+        choices: choicesOf(useAtomValue(boards), ({ id, name }) => ({
+          label: name,
+          value: id,
+        })),
+        retry: useAtomRefresh(boards),
+      }}
+      sections={{
+        choices: choicesOf(useAtomValue(sections), ({ id, name }) => ({
+          label: name,
+          value: id,
+        })),
+        retry: useAtomRefresh(sections),
+      }}
+    />
+  );
+};
+
+const loadingLookup: LookupSource = { choices: { _tag: "loading" } };
+
 interface TargetOptionsPanelProps {
   /** The channels the post goes to; those whose platform takes options show. */
   readonly channels: readonly Channel[];
@@ -611,8 +877,8 @@ interface TargetOptionsPanelProps {
   /** Whether the post shows photos only, which TikTok posts as photos. */
   readonly photos?: boolean;
   /**
-   * The workspace, whose TikTok channels' creators are read from the API;
-   * without it, they show without them.
+   * The workspace, whose TikTok channels' creators and Pinterest channels'
+   * boards are read from the API; without it, they show without them.
    */
   readonly workspaceId?: string;
   readonly onChange: (channelId: string, values: OptionValues) => void;
@@ -651,6 +917,23 @@ export const TargetOptionsPanel = ({
           values: valuesOf(channel),
           violations,
         };
+
+        if (channel.platform === "pinterest") {
+          return workspaceId === undefined ? (
+            <PinterestOptionsFields
+              key={channel.id}
+              {...props}
+              boards={loadingLookup}
+              sections={loadingLookup}
+            />
+          ) : (
+            <PinterestChannelOptions
+              key={channel.id}
+              {...props}
+              workspaceId={workspaceId}
+            />
+          );
+        }
 
         if (channel.platform !== "tiktok") {
           return <ChannelOptionsFields key={channel.id} {...props} />;

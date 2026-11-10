@@ -28,6 +28,9 @@ class Media(UniversalBaseModel):
     ] = None
     id: str
     kind: MediaKind
+    page_count: typing_extensions.Annotated[
+        typing.Optional[int], FieldMetadata(alias="pageCount"), pydantic.Field(alias="pageCount")
+    ] = None
     status: MediaStatus
     updated_at: typing_extensions.Annotated[str, FieldMetadata(alias="updatedAt"), pydantic.Field(alias="updatedAt")]
     url: typing.Optional[str] = None

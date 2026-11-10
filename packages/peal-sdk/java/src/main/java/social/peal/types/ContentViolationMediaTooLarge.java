@@ -25,9 +25,9 @@ public final class ContentViolationMediaTooLarge {
 
     private final String mediaId;
 
-    private final int byteSize;
+    private final long byteSize;
 
-    private final int maximum;
+    private final long maximum;
 
     private final Map<String, Object> additionalProperties;
 
@@ -35,8 +35,8 @@ public final class ContentViolationMediaTooLarge {
             String channelId,
             Platform platform,
             String mediaId,
-            int byteSize,
-            int maximum,
+            long byteSize,
+            long maximum,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
         this.platform = platform;
@@ -62,12 +62,12 @@ public final class ContentViolationMediaTooLarge {
     }
 
     @JsonProperty("byteSize")
-    public int getByteSize() {
+    public long getByteSize() {
         return byteSize;
     }
 
     @JsonProperty("maximum")
-    public int getMaximum() {
+    public long getMaximum() {
         return maximum;
     }
 
@@ -119,11 +119,11 @@ public final class ContentViolationMediaTooLarge {
     }
 
     public interface ByteSizeStage {
-        MaximumStage byteSize(int byteSize);
+        MaximumStage byteSize(long byteSize);
     }
 
     public interface MaximumStage {
-        _FinalStage maximum(int maximum);
+        _FinalStage maximum(long maximum);
     }
 
     public interface _FinalStage {
@@ -143,9 +143,9 @@ public final class ContentViolationMediaTooLarge {
 
         private String mediaId;
 
-        private int byteSize;
+        private long byteSize;
 
-        private int maximum;
+        private long maximum;
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -184,14 +184,14 @@ public final class ContentViolationMediaTooLarge {
 
         @java.lang.Override
         @JsonSetter("byteSize")
-        public MaximumStage byteSize(int byteSize) {
+        public MaximumStage byteSize(long byteSize) {
             this.byteSize = byteSize;
             return this;
         }
 
         @java.lang.Override
         @JsonSetter("maximum")
-        public _FinalStage maximum(int maximum) {
+        public _FinalStage maximum(long maximum) {
             this.maximum = maximum;
             return this;
         }

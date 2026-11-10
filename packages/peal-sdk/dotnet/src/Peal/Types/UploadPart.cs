@@ -12,7 +12,7 @@ public record UploadPart : IJsonOnDeserialized
         new Dictionary<string, JsonElement>();
 
     [JsonPropertyName("byteSize")]
-    public required int ByteSize { get; set; }
+    public required long ByteSize { get; set; }
 
     [JsonPropertyName("partNumber")]
     public required int PartNumber { get; set; }

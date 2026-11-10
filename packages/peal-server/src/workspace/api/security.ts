@@ -10,6 +10,8 @@ import {
   CurrentMember,
   CurrentPrincipal,
   CurrentStaff,
+  ReviewVisitor,
+  ReviewVisitorAddress,
   StaffAccess,
   Unauthenticated,
   WorkspaceAccess,
@@ -61,9 +63,14 @@ const objectIdsOf = (
     Object.entries(params).filter(([name]) => name !== "workspaceId")
   );
 
-// The groups whose writes create, change or delete content: the law has
-// Peal keep each such connection a year (ConnectionJournal).
-const contentGroups: ReadonlySet<string> = new Set(["media", "posts"]);
+// The groups whose writes create, change or delete content, comments and
+// approvals included: the law has Peal keep each such connection a year
+// (ConnectionJournal).
+const contentGroups: ReadonlySet<string> = new Set([
+  "media",
+  "posts",
+  "review",
+]);
 
 // The requests sent as writes that make nothing: checking a post reads it
 // and answers, so its connection is not kept, and the activity log, which
@@ -450,6 +457,18 @@ const openIntakeTest = Layer.mergeAll(
   Layer.succeed(
     ClientErrorIntake,
     ClientErrorIntake.of((httpEffect) => httpEffect)
+  ),
+  // Visitors of review links come from a synthetic address.
+  Layer.succeed(
+    ReviewVisitor,
+    ReviewVisitor.of((httpEffect) =>
+      httpEffect.pipe(
+        Effect.provideService(
+          ReviewVisitorAddress,
+          ReviewVisitorAddress.of({ address: "203.0.113.1" })
+        )
+      )
+    )
   ),
   Layer.succeed(
     ContractRequestIntake,

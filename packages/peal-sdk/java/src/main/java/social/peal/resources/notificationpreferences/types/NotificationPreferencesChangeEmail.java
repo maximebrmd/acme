@@ -26,6 +26,8 @@ public final class NotificationPreferencesChangeEmail {
 
     private final Optional<Boolean> postPublished;
 
+    private final Optional<Boolean> postReview;
+
     private final Optional<Boolean> postUnconfirmed;
 
     private final Map<String, Object> additionalProperties;
@@ -34,11 +36,13 @@ public final class NotificationPreferencesChangeEmail {
             Optional<Boolean> channelReconnect,
             Optional<Boolean> postFailed,
             Optional<Boolean> postPublished,
+            Optional<Boolean> postReview,
             Optional<Boolean> postUnconfirmed,
             Map<String, Object> additionalProperties) {
         this.channelReconnect = channelReconnect;
         this.postFailed = postFailed;
         this.postPublished = postPublished;
+        this.postReview = postReview;
         this.postUnconfirmed = postUnconfirmed;
         this.additionalProperties = additionalProperties;
     }
@@ -56,6 +60,11 @@ public final class NotificationPreferencesChangeEmail {
     @JsonProperty("postPublished")
     public Optional<Boolean> getPostPublished() {
         return postPublished;
+    }
+
+    @JsonProperty("postReview")
+    public Optional<Boolean> getPostReview() {
+        return postReview;
     }
 
     @JsonProperty("postUnconfirmed")
@@ -79,12 +88,14 @@ public final class NotificationPreferencesChangeEmail {
         return channelReconnect.equals(other.channelReconnect)
                 && postFailed.equals(other.postFailed)
                 && postPublished.equals(other.postPublished)
+                && postReview.equals(other.postReview)
                 && postUnconfirmed.equals(other.postUnconfirmed);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelReconnect, this.postFailed, this.postPublished, this.postUnconfirmed);
+        return Objects.hash(
+                this.channelReconnect, this.postFailed, this.postPublished, this.postReview, this.postUnconfirmed);
     }
 
     @java.lang.Override
@@ -104,6 +115,8 @@ public final class NotificationPreferencesChangeEmail {
 
         private Optional<Boolean> postPublished = Optional.empty();
 
+        private Optional<Boolean> postReview = Optional.empty();
+
         private Optional<Boolean> postUnconfirmed = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -114,6 +127,7 @@ public final class NotificationPreferencesChangeEmail {
             channelReconnect(other.getChannelReconnect());
             postFailed(other.getPostFailed());
             postPublished(other.getPostPublished());
+            postReview(other.getPostReview());
             postUnconfirmed(other.getPostUnconfirmed());
             return this;
         }
@@ -151,6 +165,17 @@ public final class NotificationPreferencesChangeEmail {
             return this;
         }
 
+        @JsonSetter(value = "postReview", nulls = Nulls.SKIP)
+        public Builder postReview(Optional<Boolean> postReview) {
+            this.postReview = postReview;
+            return this;
+        }
+
+        public Builder postReview(Boolean postReview) {
+            this.postReview = Optional.ofNullable(postReview);
+            return this;
+        }
+
         @JsonSetter(value = "postUnconfirmed", nulls = Nulls.SKIP)
         public Builder postUnconfirmed(Optional<Boolean> postUnconfirmed) {
             this.postUnconfirmed = postUnconfirmed;
@@ -164,7 +189,7 @@ public final class NotificationPreferencesChangeEmail {
 
         public NotificationPreferencesChangeEmail build() {
             return new NotificationPreferencesChangeEmail(
-                    channelReconnect, postFailed, postPublished, postUnconfirmed, additionalProperties);
+                    channelReconnect, postFailed, postPublished, postReview, postUnconfirmed, additionalProperties);
         }
 
         @JsonAnySetter
@@ -172,6 +197,7 @@ public final class NotificationPreferencesChangeEmail {
             if (key.equalsIgnoreCase("channelReconnect")
                     || key.equalsIgnoreCase("postFailed")
                     || key.equalsIgnoreCase("postPublished")
+                    || key.equalsIgnoreCase("postReview")
                     || key.equalsIgnoreCase("postUnconfirmed")) {
                 return;
             }

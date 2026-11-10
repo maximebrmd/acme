@@ -11,7 +11,6 @@ import { SqlClient } from "effect/sql";
 
 import { ErasureReplayServicesLive } from "#app/server.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import { SqlLive } from "#shared/infrastructure/database.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { storageSettings } from "#test/media/support.ts";
 import { ErasureLedger } from "#workspace/application/erasure-ledger.ts";
@@ -19,7 +18,13 @@ import { ReplayErasures } from "#workspace/application/replay-erasures.ts";
 import { erasureOf } from "#workspace/application/workspace-erasure.ts";
 import { S3ErasureLedger } from "#workspace/infrastructure/s3-erasure-ledger.ts";
 
-import { password, signedUp, TestApp, workspaceOf } from "./harness.ts";
+import {
+  MigratedSqlLive,
+  password,
+  signedUp,
+  TestApp,
+  workspaceOf,
+} from "./harness.ts";
 import { bearer, customerOf, keyOf } from "./partner-support.ts";
 import { countOf } from "./seed.ts";
 
@@ -40,7 +45,7 @@ const ReplayTest = Layer.mergeAll(
   ErasureReplayServicesLive.pipe(Layer.provide(storageSettings)),
   S3ErasureLedger.pipe(Layer.provide(storageSettings)),
   IdsLive,
-  SqlLive
+  MigratedSqlLive
 ).pipe(Layer.provide(own));
 
 // The tables a restore is simulated on: what names the workspace or the

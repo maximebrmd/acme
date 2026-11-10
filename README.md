@@ -15,22 +15,26 @@ two years after it ships. The API contract and the SDKs in
 It is not released yet. Today you can:
 
 - create an account and workspaces, and connect Mastodon, Bluesky, LinkedIn,
-  X, Threads, Instagram and TikTok accounts, Facebook Pages and YouTube
-  channels to them;
-- upload images and videos to a workspace's media library;
+  X, Threads, Instagram, TikTok and Pinterest accounts, Facebook Pages,
+  YouTube channels and Google Business Profile locations to them;
+- upload images, videos and PDF documents, which LinkedIn shows page by
+  page, to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
   with alt text, keep it with the workspace's drafts or discard it, then
   schedule it, move it on a calendar, take it back to draft or cancel it;
+- share a post through a review link with people outside the workspace,
+  who comment on it or approve it, and have posts wait for an approval
+  before they go out, when the workspace asks for one;
 - have it published on those channels at its time, with its media (a
   video uploaded to YouTube with the title and settings it asks for), then
   follow each channel's attempts, post it again where it failed, and say
   whether one Peal could not confirm went out;
 - hear how your posts ended, or every post if you choose, and which
   channels need reconnecting, under a bell in the app and by email;
-- see how posts did on Mastodon, Bluesky, TikTok and YouTube: their likes,
-  reposts, replies and quotes, and a YouTube video's views, read back every
-  hour for two days then daily for a month, by
-  channel and day, and on each post's page;
+- see how posts did on Mastodon, Bluesky, TikTok, YouTube, Instagram,
+  Pinterest and LinkedIn company pages: their likes, reposts, replies and
+  quotes, and a YouTube video's views, read back every hour for two days
+  then daily for a month, by channel and day, and on each post's page;
 - ask a writing assistant to rewrite, shorten or translate a post, or to
   suggest hashtags, when the server has an AI provider;
 - manage a workspace's members, invitations and API keys, rename it or
@@ -58,7 +62,8 @@ It is not released yet. Today you can:
   counted by the server, with a Grafana alert on a spike.
 
 Analytics on LinkedIn, X and Meta's platforms, and the other platforms Peal
-knows (Pinterest), are still to come.
+knows (Pinterest), are still to come. Google gives no counts for a Business
+Profile post.
 
 ## Set up
 
@@ -219,6 +224,19 @@ be read, and their channels must be reconnected.
   `YOUTUBE_CLIENT_SECRET`; Google takes `http://localhost:3001` there. While
   the project's consent screen is in testing, only its test users sign in,
   and Google ends their access after 7 days: reconnect then.
+- **Pinterest** needs an app registered on Pinterest's developer site, in
+  `PINTEREST_APP_ID` and `PINTEREST_APP_SECRET`, whose redirect is exactly
+  `PUBLIC_URL/connect/pinterest/callback`. Until Pinterest grants the app
+  Standard access, set `PINTEREST_SANDBOX=true`: Pins then go to Pinterest's
+  Sandbox, where only their creator sees them, and which takes no video.
+
+- **Google Business Profile** needs an OAuth client of the web application
+  type in a Google Cloud project that Google gave access to the Business
+  Profile APIs (ask with Google's API contact form: until then the project's
+  quota is 0), whose redirect is
+  `PUBLIC_URL/connect/googleBusiness/callback`, in
+  `GOOGLE_BUSINESS_CLIENT_ID` and `GOOGLE_BUSINESS_CLIENT_SECRET`. Members
+  connect the verified locations they manage, one channel each.
 
 The server refreshes tokens due for it every 10 minutes and, daily at 08:00
 UTC, tells a workspace's owners and admins about accounts that must be
@@ -380,31 +398,35 @@ The docs' [environment variables](packages/peal-docs/docs/environment-variables.
 page lists every variable the server, the web app and the command line read.
 In development, these are the ones you may want:
 
-| Variable                      | Default                          | What it does                                                   |
-| ----------------------------- | -------------------------------- | -------------------------------------------------------------- |
-| `DATABASE_URL`                | none: required                   | The Postgres database                                          |
-| `PEAL_TOKEN_KEYS`             | unset: channels cannot connect   | `keyId:base64key` entries that encrypt channel tokens          |
-| `BLUESKY_CLIENT_KEYS`         | unset: the loopback client       | Keys of the confidential Bluesky client                        |
-| `LINKEDIN_CLIENT_ID`          | unset: LinkedIn is not offered   | The LinkedIn app's client id, with `LINKEDIN_CLIENT_SECRET`    |
-| `X_CLIENT_ID`                 | unset: X is not offered          | The X app's OAuth 2.0 client id, with `X_CLIENT_SECRET`        |
-| `META_APP_ID`                 | unset: no Facebook nor Instagram | Meta's app, with `META_APP_SECRET`                             |
-| `INSTAGRAM_APP_ID`            | unset: Instagram through a Page  | The app's Instagram id, with `INSTAGRAM_APP_SECRET`            |
-| `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                |
-| `TIKTOK_CLIENT_KEY`           | unset: TikTok is not offered     | The TikTok app's client key, with `TIKTOK_CLIENT_SECRET`       |
-| `YOUTUBE_CLIENT_ID`           | unset: YouTube is not offered    | The Google OAuth client's id, with `YOUTUBE_CLIENT_SECRET`     |
-| `PEAL_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                             |
-| `PEAL_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                     |
-| `PEAL_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server   |
-| `PEAL_AI_MODEL`               | `claude-opus-5-5` with Anthropic | The model: required for an OpenAI-compatible server            |
-| `PEAL_AI_DAILY_REQUESTS`      | `100`                            | Assistant requests each workspace may send per UTC day         |
-| `STRIPE_SECRET_KEY`           | unset: no billing, no limits     | Bills workspaces through Stripe, with the variables it needs   |
-| `TURNSTILE_SITE_KEY`          | unset: no captcha                | With `TURNSTILE_SECRET_KEY`, Turnstile on sign-up and resets   |
-| `MCP_DYNAMIC_REGISTRATION`    | `false`                          | Lets MCP clients register themselves                           |
-| `PUBLIC_URL`                  | `http://localhost:3001`          | The origin people open Peal at                                 |
-| `TRUSTED_ORIGINS`             | none                             | More origins allowed to send signed-in requests and uploads    |
-| `PEAL_API_URL`                | `http://localhost:3000`          | Where the web app and the command line reach the server        |
-| `PEAL_S3_KEY_PREFIX`          | none                             | A folder for this checkout's media in a shared bucket (`dev/`) |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset                            | Exports logs, metrics and traces                               |
+| Variable                      | Default                          | What it does                                                           |
+| ----------------------------- | -------------------------------- | ---------------------------------------------------------------------- |
+| `DATABASE_URL`                | none: required                   | The Postgres database                                                  |
+| `PEAL_TOKEN_KEYS`             | unset: channels cannot connect   | `keyId:base64key` entries that encrypt channel tokens                  |
+| `BLUESKY_CLIENT_KEYS`         | unset: the loopback client       | Keys of the confidential Bluesky client                                |
+| `LINKEDIN_CLIENT_ID`          | unset: LinkedIn is not offered   | The LinkedIn app's client id, with `LINKEDIN_CLIENT_SECRET`            |
+| `LINKEDIN_PAGES_CLIENT_ID`    | unset: no LinkedIn company pages | A second LinkedIn app's client id, with `LINKEDIN_PAGES_CLIENT_SECRET` |
+| `X_CLIENT_ID`                 | unset: X is not offered          | The X app's OAuth 2.0 client id, with `X_CLIENT_SECRET`                |
+| `META_APP_ID`                 | unset: no Facebook nor Instagram | Meta's app, with `META_APP_SECRET`                                     |
+| `INSTAGRAM_APP_ID`            | unset: Instagram through a Page  | The app's Instagram id, with `INSTAGRAM_APP_SECRET`                    |
+| `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                        |
+| `TIKTOK_CLIENT_KEY`           | unset: TikTok is not offered     | The TikTok app's client key, with `TIKTOK_CLIENT_SECRET`               |
+| `YOUTUBE_CLIENT_ID`           | unset: YouTube is not offered    | The Google OAuth client's id, with `YOUTUBE_CLIENT_SECRET`             |
+| `PINTEREST_APP_ID`            | unset: Pinterest is not offered  | The Pinterest app's id, with `PINTEREST_APP_SECRET`                    |
+| `PINTEREST_SANDBOX`           | `false`                          | `true` sends Pinterest's calls to its Sandbox (Trial access)           |
+| `GOOGLE_BUSINESS_CLIENT_ID`   | unset: no Business Profile       | Its Google client's id, with `GOOGLE_BUSINESS_CLIENT_SECRET`           |
+| `PEAL_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                                     |
+| `PEAL_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                             |
+| `PEAL_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server           |
+| `PEAL_AI_MODEL`               | `claude-opus-5-5` with Anthropic | The model: required for an OpenAI-compatible server                    |
+| `PEAL_AI_DAILY_REQUESTS`      | `100`                            | Assistant requests each workspace may send per UTC day                 |
+| `STRIPE_SECRET_KEY`           | unset: no billing, no limits     | Bills workspaces through Stripe, with the variables it needs           |
+| `TURNSTILE_SITE_KEY`          | unset: no captcha                | With `TURNSTILE_SECRET_KEY`, Turnstile on sign-up and resets           |
+| `MCP_DYNAMIC_REGISTRATION`    | `false`                          | Lets MCP clients register themselves                                   |
+| `PUBLIC_URL`                  | `http://localhost:3001`          | The origin people open Peal at                                         |
+| `TRUSTED_ORIGINS`             | none                             | More origins allowed to send signed-in requests and uploads            |
+| `PEAL_API_URL`                | `http://localhost:3000`          | Where the web app and the command line reach the server                |
+| `PEAL_S3_KEY_PREFIX`          | none                             | A folder for this checkout's media in a shared bucket (`dev/`)         |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset                            | Exports logs, metrics and traces                                       |
 
 ## Verify
 

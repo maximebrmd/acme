@@ -238,8 +238,6 @@ const fileProblems = (
   ];
 };
 
-const noMediaRules: MediaFit = { missingAltText: 0, problems: [] };
-
 /**
  * How the attached media fits `platform`: each file's type, size, duration,
  * dimensions and alt text, whether a file that goes alone has company, then
@@ -252,8 +250,26 @@ export const mediaFitOn = (
 ): MediaFit => {
   const rules = platformRules[platform].media;
 
+  // A platform whose media rules are not known may take images and videos
+  // nobody can check here; a document goes only where the rules say so.
   if (rules === undefined) {
-    return noMediaRules;
+    return {
+      missingAltText: 0,
+      problems: attached.flatMap(({ media }, index) =>
+        Option.toArray(media).flatMap((file) =>
+          file.kind === "document"
+            ? [
+                {
+                  _tag: "mediaTypeUnsupported" as const,
+                  contentType: file.contentType,
+                  kind: file.kind,
+                  position: index + 1,
+                },
+              ]
+            : []
+        )
+      ),
+    };
   }
 
   const known = attached.flatMap(({ altText, media }, index) =>
@@ -283,8 +299,13 @@ export const mediaFitOn = (
     (maxMedia === undefined || attached.length <= maxMedia);
 
   return {
+    // A document has no alt text to miss.
     missingAltText: rules.showsAltText
-      ? attached.filter(({ altText }) => altText.trim() === "").length
+      ? attached.filter(
+          ({ altText, media }) =>
+            altText.trim() === "" &&
+            !Option.exists(media, ({ kind }) => kind === "document")
+        ).length
       : 0,
     problems: [
       ...known.flatMap(({ altText, file, position }) =>

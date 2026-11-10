@@ -22,6 +22,7 @@ describe(sniffContentType, () => {
     ["video/mp4", isoMedia("isom")],
     ["video/mp4", isoMedia("mp42")],
     ["video/quicktime", isoMedia("qt  ")],
+    ["application/pdf", text("%PDF-1.7\n%âãÏÓ\n")],
   ] as const)("reads %s from a file's first bytes", (contentType, start) => {
     expect(sniffContentType(start)).toStrictEqual(Option.some(contentType));
   });
@@ -30,7 +31,7 @@ describe(sniffContentType, () => {
     ["an empty file", bytes()],
     ["a page", text("<!doctype html><html><head>")],
     ["an SVG", text('<svg xmlns="http://www.w3.org/2000/svg">')],
-    ["a PDF", text("%PDF-1.7\n%âãÏÓ\n")],
+    ["a page that names a PDF", text("<a href=x>%PDF-1.7</a>")],
     ["a sound in a RIFF file", text("RIFF\u0010\u0000\u0000\u0000WAVEfmt ")],
     ["a HEIC image", isoMedia("heic")],
     ["an AVIF image", isoMedia("avif")],

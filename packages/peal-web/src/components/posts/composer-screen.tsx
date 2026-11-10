@@ -9,9 +9,11 @@ import { Skeleton } from "peal-ui/components/skeleton";
 
 import { Composer } from "#components/posts/composer.tsx";
 import { PostDetail } from "#components/posts/post-detail.tsx";
+import { PostReviewSection } from "#components/review/post-review-section.tsx";
 import { Link } from "#i18n/navigation.ts";
 import { workspaceChannels, workspacePost } from "#posts/api.ts";
 import { useMounted } from "#posts/use-mounted.ts";
+import { reviewSettings } from "#review/api.ts";
 
 interface ComposerScreenProps {
   readonly permissions: readonly Permission[];
@@ -50,6 +52,16 @@ const Failed = ({
   );
 };
 
+// The workspace's approval policy; never, until it is known, so nothing
+// offers to ask for an approval the server would not take.
+const useApprovalPolicy = (workspaceId: string) => {
+  const settings = useAtomValue(reviewSettings(workspaceId));
+
+  return AsyncResult.isSuccess(settings)
+    ? settings.value.approvalPolicy
+    : "never";
+};
+
 const ExistingPost = ({
   channels,
   permissions,
@@ -64,28 +76,46 @@ const ExistingPost = ({
   const query = workspacePost(workspaceId, postId);
   const result = useAtomValue(query);
   const retry = useAtomRefresh(query);
+  const approvalPolicy = useApprovalPolicy(workspaceId);
 
   if (AsyncResult.isSuccess(result)) {
     const post = result.value;
 
     // Once it went out, or was cancelled, the page tells how it went.
-    return post.status === "draft" || post.status === "scheduled" ? (
-      <Composer
-        key={post.id}
-        channels={channels}
-        permissions={permissions}
-        post={post}
-        userId={userId}
-        workspaceId={workspaceId}
-      />
+    return post.status === "draft" ||
+      post.status === "awaitingApproval" ||
+      post.status === "scheduled" ? (
+      <div className="flex flex-col gap-6">
+        <Composer
+          key={post.id}
+          approvalPolicy={approvalPolicy}
+          channels={channels}
+          permissions={permissions}
+          post={post}
+          userId={userId}
+          workspaceId={workspaceId}
+        />
+        <PostReviewSection
+          permissions={permissions}
+          post={post}
+          workspaceId={workspaceId}
+        />
+      </div>
     ) : (
-      <PostDetail
-        channels={channels}
-        permissions={permissions}
-        post={post}
-        userId={userId}
-        workspaceId={workspaceId}
-      />
+      <div className="flex flex-col gap-6">
+        <PostDetail
+          channels={channels}
+          permissions={permissions}
+          post={post}
+          userId={userId}
+          workspaceId={workspaceId}
+        />
+        <PostReviewSection
+          permissions={permissions}
+          post={post}
+          workspaceId={workspaceId}
+        />
+      </div>
     );
   }
 
@@ -110,6 +140,7 @@ export const ComposerScreen = ({
   const query = workspaceChannels(workspaceId);
   const channels = useAtomValue(query);
   const retry = useAtomRefresh(query);
+  const approvalPolicy = useApprovalPolicy(workspaceId);
 
   const body = (() => {
     if (!mounted || AsyncResult.isInitial(channels)) {
@@ -122,6 +153,7 @@ export const ComposerScreen = ({
 
     return postId === undefined ? (
       <Composer
+        approvalPolicy={approvalPolicy}
         channels={channels.value}
         permissions={permissions}
         post={undefined}

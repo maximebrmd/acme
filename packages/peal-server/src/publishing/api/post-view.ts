@@ -24,6 +24,7 @@ const scheduleView = ({ at, timeZone }: Schedule) => ({ at, timeZone });
 
 const scheduleOf = (status: PostStatus) =>
   Match.valueTags(status, {
+    awaitingApproval: ({ schedule }) => scheduleView(schedule),
     cancelled: ({ schedule }) =>
       schedule.pipe(Option.map(scheduleView), Option.getOrNull),
     draft: () => null,

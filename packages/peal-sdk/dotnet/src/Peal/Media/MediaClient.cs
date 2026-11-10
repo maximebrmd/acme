@@ -1368,7 +1368,7 @@ public partial class MediaClient : IMediaClient
     ///     new NewUpload
     ///     {
     ///         WorkspaceId = "workspaceId",
-    ///         ByteSize = 1,
+    ///         ByteSize = 1000000,
     ///         ContentType = "contentType",
     ///     }
     /// );

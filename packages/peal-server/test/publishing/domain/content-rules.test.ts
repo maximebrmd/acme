@@ -8,9 +8,11 @@ import {
 } from "#publishing/domain/content-rules.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import { LinkedInOptions } from "#publishing/domain/linkedin-options.ts";
 import { emptyContent, textOn } from "#publishing/domain/post-content.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
+import { platforms } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { contentOf, mediaFile } from "#test/publishing/support.ts";
 
@@ -48,6 +50,12 @@ const media = (count: number) =>
       `00000000-0000-7000-8000-${(index + 100).toString().padStart(12, "0")}`
     )
   );
+
+// A channel as violations name it: its id and its platform.
+const channelOf = ({ channelId, platform }: ChannelOnPlatform) => ({
+  channelId,
+  platform,
+});
 
 const violationsOf = (
   result: Result.Result<
@@ -154,6 +162,24 @@ describe(violationsOn, () => {
         ...mastodon,
         length: 502,
         maximum: 500,
+        unit: "codePoints",
+      },
+    ]);
+  });
+
+  it("takes Google Business Profile posts up to 1,500 characters", () => {
+    const location = { ...mastodon, platform: "googleBusiness" as const };
+
+    expect(violationsOn(contentOf("é".repeat(1500)), location)).toStrictEqual(
+      []
+    );
+
+    expect(violationsOn(contentOf("é".repeat(1501)), location)).toStrictEqual([
+      {
+        _tag: "textTooLong",
+        ...location,
+        length: 1501,
+        maximum: 1500,
         unit: "codePoints",
       },
     ]);
@@ -320,4 +346,118 @@ describe(checkDraft, () => {
       { _tag: "overrideWithoutChannel", channelId: x.channelId },
     ]);
   });
+});
+
+// A post on the channel that only its member's connections see.
+const toConnections = (channelId: ChannelOnPlatform["channelId"]) => [
+  {
+    channelId,
+    options: new LinkedInOptions({
+      platform: "linkedin",
+      visibility: "connections",
+    }),
+  },
+];
+
+describe("a post only a member's connections see", () => {
+  const profile = channel("8", "linkedin");
+
+  const page = {
+    ...channel("9", "linkedin"),
+    connection: "linkedinPage" as const,
+  };
+
+  const content = contentOf("For those who know us.");
+
+  it("goes out from a LinkedIn profile, and is refused on a page, which has no connections", () => {
+    expect(
+      violationsOf(
+        checkPublishable(
+          content,
+          [profile],
+          [],
+          toConnections(profile.channelId)
+        )
+      )
+    ).toStrictEqual([]);
+    expect(
+      violationsOf(
+        checkPublishable(content, [page], [], toConnections(page.channelId))
+      )
+    ).toStrictEqual([
+      { _tag: "optionInvalid", ...channelOf(page), field: "visibility" },
+    ]);
+  });
+});
+
+describe("a document in a post", () => {
+  const pdf = MediaAssetIdSchema.make("00000000-0000-7000-8000-0000000d0001");
+  const image = MediaAssetIdSchema.make("00000000-0000-7000-8000-0000000d0002");
+  const linkedin = channel("7", "linkedin");
+  const mebibyte = 1024 * 1024;
+
+  const document = (byteSize = 2 * mebibyte) =>
+    mediaFile(pdf, {
+      byteSize,
+      contentType: "application/pdf",
+      dimensions: Option.none(),
+    });
+
+  it("goes out on LinkedIn, alone, up to 100 MiB", () => {
+    const content = contentOf("Our menu", { media: [pdf] });
+
+    expect(
+      violationsOf(checkPublishable(content, [linkedin], [document()]))
+    ).toStrictEqual([]);
+    expect(
+      violationsOf(
+        checkPublishable(content, [linkedin], [document(100 * mebibyte + 1)])
+      )
+    ).toStrictEqual([
+      {
+        _tag: "mediaTooLarge",
+        ...linkedin,
+        byteSize: 100 * mebibyte + 1,
+        maximum: 100 * mebibyte,
+        mediaId: pdf,
+      },
+    ]);
+    expect(
+      violationsOf(
+        checkPublishable(
+          contentOf("Our menu", { media: [pdf, image] }),
+          [linkedin],
+          [document(), mediaFile(image)]
+        )
+      )
+    ).toStrictEqual([
+      { _tag: "tooManyMedia", ...linkedin, count: 2, maximum: 1 },
+    ]);
+  });
+
+  // Pinterest and Google Business Profile included: each names the types it
+  // takes, and a PDF is none of them.
+  it.each(platforms.filter((platform) => platform !== "linkedin"))(
+    "is refused on %s, as on every platform but LinkedIn",
+    (platform) => {
+      const elsewhere = channel("8", platform);
+
+      expect(
+        violationsOf(
+          checkPublishable(
+            contentOf("Our menu", { media: [pdf] }),
+            [elsewhere],
+            [document()]
+          )
+        ).filter(({ _tag }) => _tag === "mediaTypeUnsupported")
+      ).toStrictEqual([
+        {
+          _tag: "mediaTypeUnsupported",
+          ...elsewhere,
+          contentType: "application/pdf",
+          mediaId: pdf,
+        },
+      ]);
+    }
+  );
 });

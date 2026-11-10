@@ -3,21 +3,23 @@
 package client
 
 import (
-	activity "github.com/peal-social/peal/packages/peal-sdk/go/activity"
 	analytics "github.com/peal-social/peal/packages/peal-sdk/go/analytics"
 	apikeys "github.com/peal-social/peal/packages/peal-sdk/go/apikeys"
 	assistant "github.com/peal-social/peal/packages/peal-sdk/go/assistant"
 	billing "github.com/peal-social/peal/packages/peal-sdk/go/billing"
+	capabilities "github.com/peal-social/peal/packages/peal-sdk/go/capabilities"
 	channels "github.com/peal-social/peal/packages/peal-sdk/go/channels"
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
 	internal "github.com/peal-social/peal/packages/peal-sdk/go/internal"
 	invitations "github.com/peal-social/peal/packages/peal-sdk/go/invitations"
+	lookups "github.com/peal-social/peal/packages/peal-sdk/go/lookups"
 	media "github.com/peal-social/peal/packages/peal-sdk/go/media"
 	members "github.com/peal-social/peal/packages/peal-sdk/go/members"
 	notices "github.com/peal-social/peal/packages/peal-sdk/go/notices"
 	notificationpreferences "github.com/peal-social/peal/packages/peal-sdk/go/notificationpreferences"
 	option "github.com/peal-social/peal/packages/peal-sdk/go/option"
 	posts "github.com/peal-social/peal/packages/peal-sdk/go/posts"
+	review "github.com/peal-social/peal/packages/peal-sdk/go/review"
 	session "github.com/peal-social/peal/packages/peal-sdk/go/session"
 	system "github.com/peal-social/peal/packages/peal-sdk/go/system"
 	tiktok "github.com/peal-social/peal/packages/peal-sdk/go/tiktok"
@@ -39,8 +41,10 @@ type Client struct {
 	Billing                 *billing.Client
 	Analytics               *analytics.Client
 	Tiktok                  *tiktok.Client
+	Capabilities            *capabilities.Client
+	Lookups                 *lookups.Client
 	Webhooks                *webhooks.Client
-	Activity                *activity.Client
+	Review                  *review.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -64,8 +68,10 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Billing:                 billing.NewClient(options),
 		Analytics:               analytics.NewClient(options),
 		Tiktok:                  tiktok.NewClient(options),
+		Capabilities:            capabilities.NewClient(options),
+		Lookups:                 lookups.NewClient(options),
 		Webhooks:                webhooks.NewClient(options),
-		Activity:                activity.NewClient(options),
+		Review:                  review.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,
 		caller: internal.NewCaller(

@@ -8,6 +8,7 @@ import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
 import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
+import { DrizzleRecordedPosts } from "#publishing/infrastructure/drizzle-recorded-posts.ts";
 import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
 import { platformClientsWith } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
@@ -47,6 +48,7 @@ const platformsOn = (instanceUrl: string) =>
   RoutedPlatformPublisher.pipe(
     Layer.provide(
       platformClientsWith({
+        googleBusinessApi: new URL(instanceUrl),
         linkedinApi: new URL(instanceUrl),
         mastodonScheme: "http:",
         metaAppSecret: Option.none(),
@@ -59,6 +61,7 @@ const platformsOn = (instanceUrl: string) =>
           threadsAuthorize: new URL(instanceUrl),
           threadsGraph: new URL(instanceUrl),
         },
+        pinterestApi: new URL(instanceUrl),
         tiktokApi: new URL(instanceUrl),
         tiktokPullFrom: Option.none(),
         timing: testTiming,
@@ -77,7 +80,8 @@ const platformsOn = (instanceUrl: string) =>
         mediaOf([]),
         DrizzlePublicationProgress,
         DrizzleUploadSessions,
-        DrizzlePlatformQuota
+        DrizzlePlatformQuota,
+        DrizzleRecordedPosts
       )
     ),
     Layer.provide(

@@ -15,6 +15,7 @@ import {
   isProduction,
   publicUrlConfig,
 } from "#shared/infrastructure/environment.ts";
+import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import {
   instagramAppConfig,
   metaAppConfig,
@@ -23,6 +24,8 @@ import {
 import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
+import { pinterestHostsConfig } from "#shared/infrastructure/platforms/pinterest-api.ts";
+import type { PinterestHosts } from "#shared/infrastructure/platforms/pinterest-api.ts";
 import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 
@@ -36,6 +39,12 @@ export interface ChannelPlatformSettings {
   /** None when this server cannot connect Bluesky accounts. */
   readonly bluesky: Option.Option<BlueskyAuthorizerOptions>;
   /**
+   * Peal's Google OAuth client for Business Profile locations, if the
+   * operator made one: its Google Cloud project is the one Google gave
+   * access to the Business Profile APIs.
+   */
+  readonly googleBusiness: Option.Option<OAuthClient>;
+  /**
    * The app's Instagram credentials, for Business Login for Instagram;
    * none when this server connects Instagram through Facebook Login only.
    */
@@ -43,12 +52,24 @@ export interface ChannelPlatformSettings {
   /** Peal's LinkedIn app, if the operator registered one. */
   readonly linkedin: Option.Option<OAuthClient>;
   /**
+   * Peal's second LinkedIn app, the one LinkedIn granted its Community
+   * Management API, which connects company pages; none on a server that
+   * connects members' profiles only.
+   */
+  readonly linkedinPages: Option.Option<OAuthClient>;
+  /** The version of LinkedIn's API calls name (`Linkedin-Version`). */
+  readonly linkedinVersion: string;
+  /**
    * Meta's main app, whose Facebook Login connects Facebook Pages and
    * Instagram accounts; none when this server connects neither.
    */
   readonly meta: Option.Option<MetaApp>;
   /** Where Meta's services are. */
   readonly metaHosts: MetaHosts;
+  /** Peal's Pinterest app, if the operator registered one. */
+  readonly pinterest: Option.Option<OAuthClient>;
+  /** Where Pinterest's API and sign-in page are: its Sandbox when asked. */
+  readonly pinterestHosts: PinterestHosts;
   /** The web app's origin, where the platforms send members back. */
   readonly publicUrl: string;
   /** The app's Threads credentials; none when this server has none. */
@@ -172,6 +193,9 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   `X_CLIENT_SECRET`: the apps the operator registered on LinkedIn and X.
  *   Without them, the platform is not offered; one half alone stops the
  *   server.
+ * - `LINKEDIN_PAGES_CLIENT_ID` and `LINKEDIN_PAGES_CLIENT_SECRET`: a second
+ *   LinkedIn app, which has the Community Management API and nothing else,
+ *   for company pages. Without them, LinkedIn connects profiles only.
  * - `META_APP_ID` and `META_APP_SECRET`: Meta's app, for Facebook Pages and
  *   Instagram professional accounts.
  * - `THREADS_APP_ID` and `THREADS_APP_SECRET`: the same app's Threads
@@ -187,6 +211,17 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   operator made in a Google Cloud project with the YouTube Data API on,
  *   for YouTube channels. Like LinkedIn's and X's, one half alone stops the
  *   server.
+ * - `GOOGLE_BUSINESS_CLIENT_ID` and `GOOGLE_BUSINESS_CLIENT_SECRET`: the
+ *   OAuth client of the Google Cloud project Google gave access to the
+ *   Business Profile APIs, for Business Profile locations. A client of its
+ *   own, not YouTube's: access, quotas and Google's reviews are per
+ *   project, and a server may have one product without the other. An
+ *   operator whose one project has both gives the same client twice. One
+ *   half alone stops the server.
+ * - `PINTEREST_APP_ID` and `PINTEREST_APP_SECRET`: the app the operator
+ *   registered on Pinterest's developer site. Without them, Pinterest is
+ *   not offered; one alone stops the server. `PINTEREST_SANDBOX` sends its
+ *   calls to Pinterest's Sandbox.
  */
 export const channelPlatformsConfig = Effect.gen(function* settings() {
   const publicUrl = yield* publicUrlConfig;
@@ -200,12 +235,28 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
 
   const mode = yield* blueskyModeOf({ keys, production, publicUrl });
   const linkedin = yield* oauthClientConfig("linkedin", "LINKEDIN");
+  const linkedinPages = yield* oauthClientConfig("linkedin", "LINKEDIN_PAGES");
+  const linkedinVersion = yield* linkedinVersionConfig;
   const x = yield* oauthClientConfig("x", "X");
   const meta = yield* metaAppConfig;
   const threads = yield* threadsAppConfig;
   const instagram = yield* instagramAppConfig;
   const tiktok = yield* oauthClientConfig("tiktok", "TIKTOK", "CLIENT_KEY");
   const youtube = yield* oauthClientConfig("youtube", "YOUTUBE");
+
+  const pinterest = yield* oauthClientConfig(
+    "pinterest",
+    "PINTEREST",
+    "APP_ID",
+    "APP_SECRET"
+  );
+
+  const pinterestHosts = yield* pinterestHostsConfig;
+
+  const googleBusiness = yield* oauthClientConfig(
+    "googleBusiness",
+    "GOOGLE_BUSINESS"
+  );
 
   const platforms: ChannelPlatformSettings = {
     bluesky: mode.pipe(
@@ -215,10 +266,15 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
         publicUrl,
       }))
     ),
+    googleBusiness,
     instagram,
     linkedin,
+    linkedinPages,
+    linkedinVersion,
     meta,
     metaHosts,
+    pinterest,
+    pinterestHosts,
     publicUrl,
     threads,
     tiktok,

@@ -57,13 +57,21 @@ import {
   NotificationsWorkersLive,
 } from "#notifications/container.ts";
 import {
+  CapabilitiesApiLive,
   GatedMetricsReader,
+  LookupsApiLive,
   MediaInPostsLive,
   PostsApiLive,
   PublishingLive,
   TikTokApiLive,
   publishingWorkersReading,
 } from "#publishing/container.ts";
+import {
+  ReviewApiLive,
+  ReviewGateLive,
+  ReviewLinkApiLive,
+  ReviewLive,
+} from "#review/container.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
@@ -108,8 +116,11 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   BillingActionsApiLive,
   AnalyticsApiLive,
   TikTokApiLive,
+  CapabilitiesApiLive,
+  LookupsApiLive,
   StaffApiLive,
   LegalApiLive,
+  ReviewApiLive,
   WebhooksApiLive,
   ActivityApiLive,
   ContractRequestsDeskApiLive
@@ -125,6 +136,7 @@ const ApiLive = HttpApiBuilder.layer(Api, {
     HostedConnectLive,
     ChannelOAuthApiLive,
     DataDeletionApiLive,
+    ReviewLinkApiLive,
     WorkspaceGroupsLive,
   ])
 );
@@ -195,10 +207,36 @@ const MediaContextLive = MediaLive.pipe(
   )
 );
 
+// What the review context decides before publishing schedules a post (its
+// approval gate), told through the notices, with its records and their
+// retention.
+const ReviewGateContextLive = ReviewGateLive.pipe(
+  Layer.provide(ChannelsWithNoticesLive)
+);
+
 // Publishing posts to the channels the channels context lists, with the
-// media the media context holds.
+// media the media context holds, once the review context's gate admits
+// them.
 const PublishingContextLive = PublishingLive.pipe(
-  Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, MediaContextLive))
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      MediaContextLive,
+      ReviewGateContextLive
+    )
+  )
+);
+
+// Reviews: links, comments and approvals of the posts publishing holds,
+// with their channels' names, their media and their members' names.
+const ReviewContextLive = ReviewLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      MediaContextLive,
+      PublishingContextLive
+    )
+  )
 );
 
 // The assistant, whose daily quota is the workspace plan's.
@@ -217,7 +255,8 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       MediaContextLive,
       AssistantContextLive,
       AnalyticsLive,
-      StaffRecordsLive
+      StaffRecordsLive,
+      ReviewGateContextLive
     )
   )
 );
@@ -229,7 +268,8 @@ const ErasedContextsLive = Layer.mergeAll(
   MediaContextLive,
   AssistantContextLive,
   AnalyticsLive,
-  StaffRecordsLive
+  StaffRecordsLive,
+  ReviewGateContextLive
 );
 
 // The staff console, which reads accounts and workspaces from the workspace
@@ -306,6 +346,8 @@ const ServicesLive = Layer.mergeAll(
   AnalyticsLive,
   StaffContextLive,
   LegalRequestsContextLive,
+  ReviewGateContextLive,
+  ReviewContextLive,
   ContractRequestsContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
@@ -366,6 +408,8 @@ const ContextsLive = Layer.mergeAll(
   AnalyticsContextLive,
   StaffContextLive,
   LegalRequestsContextLive,
+  ReviewGateContextLive,
+  ReviewContextLive,
   ContractRequestsContextLive
 ).pipe(
   Layer.provideMerge(

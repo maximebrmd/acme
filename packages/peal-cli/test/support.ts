@@ -32,6 +32,9 @@ import {
   OAuthClientNotPublished,
   StaffAccess,
   Unauthenticated,
+  ReviewLinkNotFound,
+  ReviewVisitor,
+  ReviewVisitorAddress,
 } from "peal-contract";
 import type { Me } from "peal-contract";
 
@@ -288,6 +291,32 @@ const LegalLive = HttpApiBuilder.group(Api, "legal", (handlers) =>
   )
 );
 
+// No review link is known here: the command line never opens one.
+const noLink = Effect.fail(new ReviewLinkNotFound());
+
+const ReviewLinkLive = HttpApiBuilder.group(Api, "reviewLink", (handlers) =>
+  handlers.handleAll({
+    approve: () => noLink,
+    comment: () => noLink,
+    open: () => noLink,
+    requestChanges: () => noLink,
+  })
+).pipe(
+  Layer.provideMerge(
+    Layer.succeed(
+      ReviewVisitor,
+      ReviewVisitor.of((httpEffect) =>
+        httpEffect.pipe(
+          Effect.provideService(
+            ReviewVisitorAddress,
+            ReviewVisitorAddress.of({ address: "203.0.113.1" })
+          )
+        )
+      )
+    )
+  )
+);
+
 // This server sells no subscription: it has no contract to cancel or
 // withdraw from, and no request waits for staff.
 const noContract = Effect.fail(new BillingNotEnabled());
@@ -334,17 +363,17 @@ const ClientErrorsLive = HttpApiBuilder.group(Api, "clientErrors", (handlers) =>
 );
 
 // No link opens anything here: the hosted pages are the web app's.
-const noLink = Effect.fail(new ConnectLinkNotFound());
+const noConnectLink = Effect.fail(new ConnectLinkNotFound());
 
 const HostedConnectLive = HttpApiBuilder.group(
   Api,
   "hostedConnect",
   (handlers) =>
     handlers.handleAll({
-      choose: () => noLink,
-      complete: () => noLink,
-      open: () => noLink,
-      start: () => noLink,
+      choose: () => noConnectLink,
+      complete: () => noConnectLink,
+      open: () => noConnectLink,
+      start: () => noConnectLink,
     })
 ).pipe(
   Layer.provideMerge(
@@ -401,6 +430,7 @@ export const inMemoryServer = (
                 Layer.provide(LegalLive),
                 Layer.provide(ClientErrorsLive),
                 Layer.provide(HostedConnectLive),
+                Layer.provide(ReviewLinkLive),
                 Layer.provide(ContractRequestsLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(

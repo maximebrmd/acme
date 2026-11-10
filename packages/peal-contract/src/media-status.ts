@@ -21,6 +21,8 @@ export type RejectionReason = typeof RejectionReasonSchema.Type;
  * - `timedOut`: reading it took too long.
  * - `tooLarge`: the store served more bytes than declared.
  * - `toolFailed`: the probing program failed.
+ * - `tooManyPages`: a document of more than 300 pages, which no platform
+ *   shows.
  *
  * Completing the upload again probes the file again.
  */
@@ -31,6 +33,7 @@ export const ProbeStateSchema = Schema.Literals([
   "timedOut",
   "tooLarge",
   "toolFailed",
+  "tooManyPages",
 ]).annotate({ identifier: "ProbeState" });
 
 export type ProbeState = typeof ProbeStateSchema.Type;

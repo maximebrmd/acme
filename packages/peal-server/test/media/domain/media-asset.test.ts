@@ -77,6 +77,7 @@ describe(acceptUpload, () => {
     ["image/webp", "image"],
     ["video/mp4", "video"],
     ["video/quicktime", "video"],
+    ["application/pdf", "document"],
   ])("accepts %s as an %s", (contentType, kind) => {
     const accepted = Result.getOrThrow(acceptUpload(contentType, 1024));
 
@@ -88,7 +89,7 @@ describe(acceptUpload, () => {
     "image/heic",
     "image/avif",
     "video/webm",
-    "application/pdf",
+    "application/msword",
     "text/html",
     "",
   ])("refuses %j", (contentType) => {
@@ -112,6 +113,7 @@ describe(acceptUpload, () => {
   it.each([
     ["image/png", 16 * mebibyte],
     ["video/mp4", 1024 * mebibyte],
+    ["application/pdf", 100 * mebibyte],
   ])("takes a %s of exactly the limit, %i bytes", (contentType, limit) => {
     expect(Result.isSuccess(acceptUpload(contentType, limit))).toBeTruthy();
   });
@@ -119,6 +121,7 @@ describe(acceptUpload, () => {
   it.each([
     ["image/png", "image", 16 * mebibyte],
     ["video/quicktime", "video", 1024 * mebibyte],
+    ["application/pdf", "document", 100 * mebibyte],
   ])("refuses a %s one byte over its limit", (contentType, kind, limit) => {
     const result = acceptUpload(contentType, limit + 1);
 

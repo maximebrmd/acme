@@ -8,6 +8,7 @@ import {
   Result,
 } from "effect";
 
+import { approvalSubject } from "#publishing/domain/approval-subject.ts";
 import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
@@ -18,6 +19,7 @@ import { cancelTarget, isSettled } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   authorOf,
+  awaitApproval,
   cancelPost,
   createDraft,
   finishPost,
@@ -34,16 +36,18 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
+import { can } from "#shared/domain/access.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import { roomForOneMore, withinAllowance } from "#shared/domain/allowance.ts";
+import { roomForOneMore } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
-import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 
 import type { AccountRules } from "./account-rules.ts";
+import { ApprovalGate } from "./approval-gate.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
 import type { ContentFingerprints } from "./content-fingerprints.ts";
 import { admit, remember } from "./duplicate-guard.ts";
@@ -61,6 +65,7 @@ import { PublicationScheduler } from "./publication-scheduler.ts";
 import { violationsOf } from "./publishability.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
+import { withinPlan as withinPlanOf } from "./within-plan.ts";
 import type { WorkspaceChannels } from "./workspace-channels.ts";
 import {
   findInWorkspace,
@@ -74,8 +79,9 @@ import {
 const applied = (written: boolean) =>
   written ? Effect.void : Effect.die("A post changed under its row lock");
 
+// The time of a post that is scheduled, or waits for an approval to be.
 const scheduleOf = (post: Post) =>
-  post.status._tag === "scheduled"
+  post.status._tag === "scheduled" || post.status._tag === "awaitingApproval"
     ? Effect.succeed(post.status.schedule)
     : Effect.die(`Post ${post.id} is ${post.status._tag}, not scheduled`);
 
@@ -140,6 +146,7 @@ type Unpublishable =
 
 type Ports =
   | AccountRules
+  | ApprovalGate
   | AttachableMedia
   | ContentFingerprints
   | IdempotencyKeys
@@ -149,8 +156,12 @@ type Ports =
   | PostRepository
   | WorkspaceChannels;
 
-const mayPublish = (actor: Actor) =>
-  Effect.fromResult(authorize(actor, "post:schedule"));
+// Someone who only asks acts on drafts and on posts that wait: a scheduled
+// post is for those who may schedule to move or stop.
+const mayChange = (actor: Actor, { status }: Post) =>
+  status._tag === "draft" || status._tag === "awaitingApproval"
+    ? Effect.succeed(actor)
+    : Effect.fromResult(authorize(actor, "post:schedule"));
 
 /**
  * Scheduling posts: create one for a time, schedule a draft, move a post,
@@ -159,6 +170,13 @@ const mayPublish = (actor: Actor) =>
  * when its job exists. Each needs post:schedule, and scheduling reads the
  * workspace's channels, which needs channel:read. A post keeps who scheduled
  * or moved it last, and how they reached Peal (`PostOrigins`).
+ *
+ * Every post scheduled here passes the workspace's `ApprovalGate`, in the
+ * transaction that saves it: a post it holds waits for an approval
+ * (`awaitingApproval`) with its time and no job, which `HeldPosts` starts
+ * once it is approved. Where the gate lets them (`maySubmit`), people
+ * without post:schedule ask for posts to go out too, and act on drafts and
+ * on posts that wait, never on a scheduled one.
  *
  * A post is scheduled only on channels of its workspace, with ready media of
  * the workspace, and with content their platforms take, its media included
@@ -284,6 +302,47 @@ export class PostScheduling extends Context.Service<
       const ports = yield* Effect.context<Ports>();
 
       const withPorts = Effect.provideContext(ports);
+      const gate = yield* ApprovalGate;
+
+      // Whoever may schedule, and whoever the gate lets ask for posts to go
+      // out, which then wait for an approval.
+      const mayAsk = Effect.fn("PostScheduling.mayAsk")(function* mayAsk(
+        actor: Actor
+      ) {
+        const allowed =
+          can(actor, "post:schedule") || (yield* gate.maySubmit(actor));
+
+        if (!allowed) {
+          return yield* new MissingPermission({ permission: "post:schedule" });
+        }
+
+        return actor;
+      });
+
+      // The post as the gate leaves it: scheduled, or waiting for an
+      // approval. Run in the transaction that saves it.
+      const throughGate = Effect.fn("PostScheduling.throughGate")(
+        function* throughGate(
+          actor: Actor,
+          post: Post,
+          targets: readonly PostTarget[]
+        ) {
+          const { at, timeZone } = yield* scheduleOf(post);
+
+          const admission = yield* gate.admit(actor, {
+            authorId: post.authorId,
+            postId: post.id,
+            scheduledAt: at,
+            subject: approvalSubject(post.content, targets),
+            timeZone,
+            workspaceId: post.workspaceId,
+          });
+
+          return admission === "admitted"
+            ? post
+            : yield* Effect.fromResult(awaitApproval(post)).pipe(Effect.orDie);
+        }
+      );
 
       // The channels to send the content to, once their platforms take it
       // and the options it has on them.
@@ -317,26 +376,8 @@ export class PostScheduling extends Context.Service<
       // A workspace with more channels or members than its plan allows,
       // as after its trial, schedules and moves nothing until it is back
       // within it.
-      const withinPlan = Effect.fn("PostScheduling.withinPlan")(
-        function* withinPlan(post: Post) {
-          const channels = yield* PostAllowance.use((allowance) =>
-            allowance.channels(post.workspaceId)
-          );
-
-          yield* Effect.fromResult(
-            withinAllowance("channels", channels.allowed, channels.connected)
-          );
-
-          const members = yield* PostAllowance.use((allowance) =>
-            allowance.members(post.workspaceId)
-          );
-
-          yield* Effect.fromResult(
-            withinAllowance("members", members.allowed, members.taken)
-          );
-        },
-        withPorts
-      );
+      const withinPlan = (post: Post) =>
+        withinPlanOf(post.workspaceId).pipe(withPorts);
 
       // Room in the month the post goes out in, besides the post itself.
       // Run in the transaction that saves the post: the month stays claimed
@@ -372,10 +413,15 @@ export class PostScheduling extends Context.Service<
       );
 
       // Starts the job for the post's current revision, at the time it was
-      // scheduled for (which may be later than asked), and records it.
+      // scheduled for (which may be later than asked), and records it. A
+      // post that waits for an approval gets none.
       const startJob = Effect.fn("PostScheduling.startJob")(function* startJob(
         post: Post
       ) {
+        if (post.status._tag === "awaitingApproval") {
+          return;
+        }
+
         const { at } = yield* scheduleOf(post);
 
         const executionId = yield* scheduler.schedule({
@@ -386,6 +432,14 @@ export class PostScheduling extends Context.Service<
 
         yield* applied(yield* posts.setExecution(post, executionId));
       });
+
+      // Tells whoever follows the workspace that the post is scheduled.
+      // One that waits for an approval is not: `HeldPosts` tells it once
+      // it is released.
+      const announce = (post: Post, targets: readonly PostTarget[]) =>
+        post.status._tag === "scheduled"
+          ? events.scheduled(post, targets)
+          : Effect.void;
 
       const stopJob = ({ execution }: StoredPost) =>
         Option.match(execution, {
@@ -403,26 +457,39 @@ export class PostScheduling extends Context.Service<
         actor: Actor,
         current: StoredPost,
         at: Schedule,
-        received: DateTime.Utc
+        received: DateTime.Utc,
+        targets: readonly PostTarget[]
       ) {
         const now = yield* DateTime.now;
 
-        const moved = scheduledThrough(
-          yield* Effect.fromResult(
-            schedulePost(current.post, asReceived(at, received, now), now)
+        const moved = yield* throughGate(
+          actor,
+          scheduledThrough(
+            yield* Effect.fromResult(
+              schedulePost(current.post, asReceived(at, received, now), now)
+            ),
+            yield* originOf(actor),
+            authorOf(actor)
           ),
-          yield* originOf(actor),
-          authorOf(actor)
+          targets
         );
 
         // A scheduled post moved within its month takes no more room, even
         // in a month already past a smaller plan's allowance.
         const staysInMonth =
-          current.post.status._tag === "scheduled" &&
+          current.post.status._tag !== "draft" &&
           sameMonth(
-            current.post.status.schedule.at,
+            (yield* scheduleOf(current.post)).at,
             (yield* scheduleOf(moved)).at
           );
+
+        // It waited for an approval, and no longer does.
+        if (
+          current.post.status._tag === "awaitingApproval" &&
+          moved.status._tag === "scheduled"
+        ) {
+          yield* gate.withdrawn(moved.workspaceId, moved.id);
+        }
 
         // Within its month it takes no more room, and the plan is still
         // checked: a workspace over it moves nothing.
@@ -457,6 +524,12 @@ export class PostScheduling extends Context.Service<
           );
         }
       );
+
+      // Tells the gate that a post which waited for an approval stopped.
+      const noLongerWaits = (post: Post) =>
+        post.status._tag === "awaitingApproval"
+          ? gate.withdrawn(post.workspaceId, post.id)
+          : Effect.void;
 
       const lockPost = (actor: Actor, postId: PostId) =>
         lockInWorkspace(actor.workspaceId, postId).pipe(withPorts);
@@ -532,22 +605,26 @@ export class PostScheduling extends Context.Service<
               const earlier = yield* claimed(post);
 
               if (Option.isSome(earlier)) {
-                return earlier;
+                return { placed: post, used: earlier };
               }
 
-              yield* roomInMonth(post);
-              yield* posts.insert(post, targets);
-              yield* kept(post, targets).pipe(withPorts);
-              yield* startJob(post);
+              // The gate first: a post it holds waits with its time, takes
+              // its room in the month, and gets no job.
+              const placed = yield* throughGate(actor, post, targets);
+
+              yield* roomInMonth(placed);
+              yield* posts.insert(placed, targets);
+              yield* kept(placed, targets).pipe(withPorts);
+              yield* startJob(placed);
               // Told once, with the post: a request that finds its key
               // used made none, and tells nothing.
-              yield* events.scheduled(post, targets);
+              yield* announce(placed, targets);
 
-              return earlier;
+              return { placed, used: earlier };
             })
           );
 
-          return { made: { post, targets }, used };
+          return { made: { post: used.placed, targets }, used: used.used };
         }
       );
 
@@ -555,7 +632,7 @@ export class PostScheduling extends Context.Service<
         actor: Actor,
         request: SchedulePostRequest
       ) {
-        yield* mayPublish(actor);
+        yield* mayAsk(actor);
 
         const { made } = yield* scheduleNew(
           actor,
@@ -600,7 +677,9 @@ export class PostScheduling extends Context.Service<
           ...request
         }: SendPostRequest
       ) {
-        yield* mayPublish(actor);
+        // As `schedule`: where the gate lets them, people and applications
+        // without post:schedule send posts too, which wait for an approval.
+        yield* mayAsk(actor);
 
         const now = yield* DateTime.now;
         const since = DateTime.subtractDuration(now, idempotencyKeyLifetime);
@@ -661,7 +740,7 @@ export class PostScheduling extends Context.Service<
           postId: PostId,
           { channelIds, schedule: at }: ScheduleDraftRequest
         ) {
-          yield* mayPublish(actor);
+          yield* mayAsk(actor);
 
           const received = yield* DateTime.now;
 
@@ -694,9 +773,9 @@ export class PostScheduling extends Context.Service<
 
               yield* posts.setTargets(postId, targets);
 
-              const post = yield* move(actor, current, at, received);
+              const post = yield* move(actor, current, at, received, targets);
 
-              yield* events.scheduled(post, targets);
+              yield* announce(post, targets);
 
               return { post, targets };
             })
@@ -706,13 +785,16 @@ export class PostScheduling extends Context.Service<
 
       const reschedule = Effect.fn("PostScheduling.reschedule")(
         function* reschedule(actor: Actor, postId: PostId, at: Schedule) {
-          yield* mayPublish(actor);
+          yield* mayAsk(actor);
 
           const received = yield* DateTime.now;
 
           return yield* transaction(
             Effect.gen(function* moveAndRestart() {
               const current = yield* lockPost(actor, postId);
+
+              yield* mayChange(actor, current.post);
+
               const targets = yield* posts.targets(postId);
 
               // A draft is checked as it is scheduled. A scheduled post was
@@ -728,9 +810,9 @@ export class PostScheduling extends Context.Service<
                 );
               }
 
-              const post = yield* move(actor, current, at, received);
+              const post = yield* move(actor, current, at, received, targets);
 
-              yield* events.scheduled(post, targets);
+              yield* announce(post, targets);
 
               return { post, targets };
             })
@@ -740,16 +822,23 @@ export class PostScheduling extends Context.Service<
 
       const unschedule = Effect.fn("PostScheduling.unschedule")(
         function* unschedule(actor: Actor, postId: PostId) {
-          yield* mayPublish(actor);
+          yield* mayAsk(actor);
 
           return yield* transaction(
             Effect.gen(function* moveBackAndStop() {
               const current = yield* lockPost(actor, postId);
 
+              yield* mayChange(actor, current.post);
+
               const draft = yield* Effect.fromResult(moveToDraft(current.post));
 
               yield* applied(yield* posts.update(draft, current.post));
               yield* stopJob(current);
+              yield* noLongerWaits(current.post);
+
+              // A post that waited was never told as scheduled, yet those
+              // who heard it waited (`post.approval_requested`) hear it no
+              // longer does, as those who heard it scheduled do.
               yield* events.unscheduled(draft);
 
               return { post: draft, targets: yield* posts.targets(postId) };
@@ -762,12 +851,14 @@ export class PostScheduling extends Context.Service<
         actor: Actor,
         postId: PostId
       ) {
-        yield* mayPublish(actor);
+        yield* mayAsk(actor);
 
         return yield* transaction(
           Effect.gen(function* cancelAndStop() {
             const current = yield* lockPost(actor, postId);
             const now = yield* DateTime.now;
+
+            yield* mayChange(actor, current.post);
 
             // The job already woke: it finishes with the targets it sent.
             // Once every target has settled, as when only a repost that had
@@ -816,6 +907,7 @@ export class PostScheduling extends Context.Service<
             const targets = yield* cancelTargets(postId, now);
 
             yield* stopJob(current);
+            yield* noLongerWaits(current.post);
             yield* events.cancelled(cancelled, cancelledNow(targets));
 
             return { post: cancelled, targets };

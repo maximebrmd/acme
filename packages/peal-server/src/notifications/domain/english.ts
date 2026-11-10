@@ -146,6 +146,7 @@ export const english: EmailCatalog = {
   platforms: {
     bluesky: "Bluesky",
     facebook: "Facebook",
+    googleBusiness: "Google Business Profile",
     instagram: "Instagram",
     linkedin: "LinkedIn",
     mastodon: "Mastodon",
@@ -154,6 +155,41 @@ export const english: EmailCatalog = {
     tiktok: "TikTok",
     x: "X",
     youtube: "YouTube",
+  },
+  postApprovalRequested: {
+    action: "Review the post",
+    body: "A post of {workspaceName} waits for an approval. It was asked to go out on {scheduledAt}, and will not until someone approves it.",
+    ignore:
+      "You receive this email because you may approve posts in {workspaceName} on Peal. Choose which notifications you receive by email in your notification preferences.",
+    subject: "A post waits for your approval",
+  },
+  postApproved: {
+    action: "Open the post",
+    body: "{by} approved a post of {workspaceName}. It is scheduled.",
+    ignore:
+      "You receive this email because you wrote this post in {workspaceName} on Peal, asked for its approval or took part in its review. Choose which notifications you receive by email in your notification preferences.",
+    subject: "A post was approved",
+  },
+  postApprovedLate: {
+    action: "Choose a new time",
+    body: "{by} approved a post of {workspaceName}, after the time it was to go out. Nothing was published late: the post is a draft again, still approved. Give it a new time to schedule it.",
+    ignore:
+      "You receive this email because you wrote this post in {workspaceName} on Peal, asked for its approval or took part in its review. Choose which notifications you receive by email in your notification preferences.",
+    subject: "A post was approved after its time",
+  },
+  postChangesRequested: {
+    action: "Open the post",
+    body: "{by} asked for changes to a post of {workspaceName}. It is a draft again, with a comment that says what to change.",
+    ignore:
+      "You receive this email because you wrote this post in {workspaceName} on Peal, asked for its approval or took part in its review. Choose which notifications you receive by email in your notification preferences.",
+    subject: "Changes asked for on a post",
+  },
+  postCommented: {
+    action: "Read the comment",
+    body: "{by} commented on a post of {workspaceName}.",
+    ignore:
+      "You receive this email because you wrote this post in {workspaceName} on Peal, asked for its approval or took part in its review. Choose which notifications you receive by email in your notification preferences.",
+    subject: "A new comment on a post",
   },
   postFailed: {
     action: "Open the post",
@@ -183,6 +219,11 @@ export const english: EmailCatalog = {
     ignore:
       "If you did not ask for this, ignore this email: your password stays as it is. The link expires in an hour.",
     subject: "Reset your Peal password",
+  },
+  reviewParties: {
+    application: "An application",
+    member: "A member",
+    visitor: "A reviewer",
   },
   roles: {
     admin: "as an admin",

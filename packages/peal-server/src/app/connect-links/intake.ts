@@ -3,8 +3,11 @@ import { HttpServerRequest } from "effect/http";
 import { RateLimiter } from "effect/persistence";
 import { ConnectLinkIntake, TooManyConnectAttempts } from "peal-contract";
 
-import { addressHeadersConfig, addressOf } from "#app/client-errors/intake.ts";
 import { refused } from "#shared/api/forbidden.ts";
+import {
+  addressHeadersConfig,
+  addressOf,
+} from "#shared/infrastructure/client-address.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 
 /** How many times each address may open a connect link in an hour. */

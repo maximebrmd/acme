@@ -12,6 +12,8 @@ module Peal
 
         field :post_published, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "postPublished"
 
+        field :post_review, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "postReview"
+
         field :post_unconfirmed, -> { Internal::Types::Boolean }, optional: true, nullable: false, api_name: "postUnconfirmed"
       end
     end

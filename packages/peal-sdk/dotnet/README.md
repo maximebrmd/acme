@@ -52,7 +52,7 @@ await client.ApiKeys.CreateAsync(
     {
         WorkspaceId = "workspaceId",
         Name = "name",
-        Permissions = new List<Permission>() { Permission.ActivityRead },
+        Permissions = new List<Permission>() { Permission.AnalyticsRead },
     }
 );
 ```
@@ -234,25 +234,25 @@ This SDK uses forward-compatible enums that can handle unknown values gracefully
 using Peal;
 
 // Using a built-in value
-var activityVia = ActivityVia.Session;
+var accountUnreadReason = AccountUnreadReason.Disabled;
 
 // Using a custom value
-var customActivityVia = ActivityVia.FromCustom("custom-value");
+var customAccountUnreadReason = AccountUnreadReason.FromCustom("custom-value");
 
 // Using in a switch statement
-switch (activityVia.Value)
+switch (accountUnreadReason.Value)
 {
-    case ActivityVia.Values.Session:
-        Console.WriteLine("Session");
+    case AccountUnreadReason.Values.Disabled:
+        Console.WriteLine("Disabled");
         break;
     default:
-        Console.WriteLine($"Unknown value: {activityVia.Value}");
+        Console.WriteLine($"Unknown value: {accountUnreadReason.Value}");
         break;
 }
 
 // Explicit casting
-string activityViaString = (string)ActivityVia.Session;
-ActivityVia activityViaFromString = (ActivityVia)"session";
+string accountUnreadReasonString = (string)AccountUnreadReason.Disabled;
+AccountUnreadReason accountUnreadReasonFromString = (AccountUnreadReason)"disabled";
 ```
 
 ## Contributing

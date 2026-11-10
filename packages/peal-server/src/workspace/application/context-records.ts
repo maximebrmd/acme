@@ -16,8 +16,10 @@ import type {
   NoticeRecord,
   PostRecord,
   PreferencesRecord,
+  ReviewRecord,
   StaffActionRecord,
   UsageRecord,
+  UserReviewRecord,
   WebhookRecord,
 } from "#shared/application/personal-data.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -50,6 +52,8 @@ export interface WorkspaceContent {
   readonly channels: readonly ChannelRecord[];
   readonly media: readonly MediaRecord[];
   readonly posts: readonly PostRecord[];
+  /** Its approval policy, review links, comments and approvals. */
+  readonly review: ReviewRecord;
   readonly webhooks: readonly WebhookRecord[];
 }
 
@@ -70,6 +74,8 @@ export interface UserContent {
   readonly legalHold: LegalHoldRecord | null;
   readonly notices: readonly NoticeRecord[];
   readonly preferences: PreferencesRecord;
+  /** What they wrote and decided in the reviews of posts. */
+  readonly review: UserReviewRecord;
   /** What staff did to their account, from the audit log. */
   readonly staffActions: readonly StaffActionRecord[];
 }

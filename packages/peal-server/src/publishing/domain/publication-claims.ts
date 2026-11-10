@@ -110,6 +110,10 @@ export const claimPost = (
   }
 
   return Match.valueTags(status, {
+    // No job is started for a post waiting for an approval: one that wakes
+    // for it publishes nothing.
+    awaitingApproval: () =>
+      Result.succeed<PostClaimDecision>({ _tag: "superseded" }),
     draft: () => Result.succeed<PostClaimDecision>({ _tag: "superseded" }),
     finished: () => Result.succeed<PostClaimDecision>({ _tag: "resume" }),
     publishing: () => Result.succeed<PostClaimDecision>({ _tag: "resume" }),

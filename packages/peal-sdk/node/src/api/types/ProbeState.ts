@@ -6,6 +6,7 @@ export const ProbeState = {
         Unreadable: "unreadable",
         TimedOut: "timedOut",
         TooLarge: "tooLarge",
-        ToolFailed: "toolFailed"
+        ToolFailed: "toolFailed",
+        TooManyPages: "tooManyPages"
     } as const;
 export type ProbeState = typeof ProbeState[keyof typeof ProbeState];

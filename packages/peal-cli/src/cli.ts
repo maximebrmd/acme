@@ -5,6 +5,7 @@ import { PealApi } from "#api.ts";
 import { account } from "#commands/account.ts";
 import { activity } from "#commands/activity.ts";
 import { analytics } from "#commands/analytics.ts";
+import { approvals } from "#commands/approvals.ts";
 import { billing } from "#commands/billing.ts";
 import { channels } from "#commands/channels.ts";
 import { doctor } from "#commands/doctor.ts";
@@ -20,6 +21,7 @@ import { members } from "#commands/members.ts";
 import { partner } from "#commands/partner.ts";
 import { post } from "#commands/post.ts";
 import { posts } from "#commands/posts.ts";
+import { review } from "#commands/review.ts";
 import { webhooks } from "#commands/webhooks.ts";
 import { whoami } from "#commands/whoami.ts";
 import { CredentialStore } from "#credentials.ts";
@@ -44,6 +46,8 @@ export const cli = peal.pipe(
     drafts,
     post,
     posts,
+    approvals,
+    review,
     media,
     analytics,
     billing,

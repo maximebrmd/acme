@@ -79,6 +79,26 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
             workspace,
           })
         ),
+      PostApprovalRequested: ({ postId, scheduledAt }) =>
+        post(
+          postId,
+          t("event.PostApprovalRequested", {
+            scheduledAt: DateTime.toDate(scheduledAt),
+            workspace,
+          })
+        ),
+      PostApproved: ({ by, late, postId }) =>
+        post(
+          postId,
+          t(late ? "event.PostApprovedLate" : "event.PostApproved", {
+            by,
+            workspace,
+          })
+        ),
+      PostChangesRequested: ({ by, postId }) =>
+        post(postId, t("event.PostChangesRequested", { by, workspace })),
+      PostCommented: ({ by, postId }) =>
+        post(postId, t("event.PostCommented", { by, workspace })),
       PostFailed: ({ postId, reason }) =>
         post(
           postId,

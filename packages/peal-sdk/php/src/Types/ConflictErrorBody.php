@@ -9,8 +9,8 @@ class ConflictErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'ExternalIdTaken'
-     *   |'IdempotencyKeyReused'
+     *    'PostNotReviewable'
+     *   |'TooManyReviewLinks'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +18,8 @@ class ConflictErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    ExternalIdTakenEncoded
-     *   |IdempotencyKeyReusedEncoded
+     *    PostNotReviewableEncoded
+     *   |TooManyReviewLinksEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +28,13 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'ExternalIdTaken'
-     *   |'IdempotencyKeyReused'
+     *    'PostNotReviewable'
+     *   |'TooManyReviewLinks'
      *   |'_unknown'
      * ),
      *   value: (
-     *    ExternalIdTakenEncoded
-     *   |IdempotencyKeyReusedEncoded
+     *    PostNotReviewableEncoded
+     *   |TooManyReviewLinksEncoded
      *   |mixed
      * ),
      * } $values
@@ -47,45 +47,45 @@ class ConflictErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param ExternalIdTakenEncoded $externalIdTaken
+     * @param PostNotReviewableEncoded $postNotReviewable
      * @return ConflictErrorBody
      */
-    public static function externalIdTaken(ExternalIdTakenEncoded $externalIdTaken): ConflictErrorBody
+    public static function postNotReviewable(PostNotReviewableEncoded $postNotReviewable): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'ExternalIdTaken',
-            'value' => $externalIdTaken,
+            'type' => 'PostNotReviewable',
+            'value' => $postNotReviewable,
         ]);
     }
 
     /**
-     * @param IdempotencyKeyReusedEncoded $idempotencyKeyReused
+     * @param TooManyReviewLinksEncoded $tooManyReviewLinks
      * @return ConflictErrorBody
      */
-    public static function idempotencyKeyReused(IdempotencyKeyReusedEncoded $idempotencyKeyReused): ConflictErrorBody
+    public static function tooManyReviewLinks(TooManyReviewLinksEncoded $tooManyReviewLinks): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'IdempotencyKeyReused',
-            'value' => $idempotencyKeyReused,
+            'type' => 'TooManyReviewLinks',
+            'value' => $tooManyReviewLinks,
         ]);
     }
 
     /**
      * @return bool
      */
-    public function isExternalIdTaken(): bool
+    public function isPostNotReviewable(): bool
     {
-        return $this->value instanceof ExternalIdTakenEncoded && $this->type === 'ExternalIdTaken';
+        return $this->value instanceof PostNotReviewableEncoded && $this->type === 'PostNotReviewable';
     }
 
     /**
-     * @return ExternalIdTakenEncoded
+     * @return PostNotReviewableEncoded
      */
-    public function asExternalIdTaken(): ExternalIdTakenEncoded
+    public function asPostNotReviewable(): PostNotReviewableEncoded
     {
-        if (!($this->value instanceof ExternalIdTakenEncoded && $this->type === 'ExternalIdTaken')) {
+        if (!($this->value instanceof PostNotReviewableEncoded && $this->type === 'PostNotReviewable')) {
             throw new Exception(
-                "Expected ExternalIdTaken; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected PostNotReviewable; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -95,19 +95,19 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isIdempotencyKeyReused(): bool
+    public function isTooManyReviewLinks(): bool
     {
-        return $this->value instanceof IdempotencyKeyReusedEncoded && $this->type === 'IdempotencyKeyReused';
+        return $this->value instanceof TooManyReviewLinksEncoded && $this->type === 'TooManyReviewLinks';
     }
 
     /**
-     * @return IdempotencyKeyReusedEncoded
+     * @return TooManyReviewLinksEncoded
      */
-    public function asIdempotencyKeyReused(): IdempotencyKeyReusedEncoded
+    public function asTooManyReviewLinks(): TooManyReviewLinksEncoded
     {
-        if (!($this->value instanceof IdempotencyKeyReusedEncoded && $this->type === 'IdempotencyKeyReused')) {
+        if (!($this->value instanceof TooManyReviewLinksEncoded && $this->type === 'TooManyReviewLinks')) {
             throw new Exception(
-                "Expected IdempotencyKeyReused; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected TooManyReviewLinks; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +134,12 @@ class ConflictErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'ExternalIdTaken':
-                $value = $this->asExternalIdTaken()->jsonSerialize();
+            case 'PostNotReviewable':
+                $value = $this->asPostNotReviewable()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'IdempotencyKeyReused':
-                $value = $this->asIdempotencyKeyReused()->jsonSerialize();
+            case 'TooManyReviewLinks':
+                $value = $this->asTooManyReviewLinks()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +178,11 @@ class ConflictErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'ExternalIdTaken':
-                $args['value'] = ExternalIdTakenEncoded::jsonDeserialize($data);
+            case 'PostNotReviewable':
+                $args['value'] = PostNotReviewableEncoded::jsonDeserialize($data);
                 break;
-            case 'IdempotencyKeyReused':
-                $args['value'] = IdempotencyKeyReusedEncoded::jsonDeserialize($data);
+            case 'TooManyReviewLinks':
+                $args['value'] = TooManyReviewLinksEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

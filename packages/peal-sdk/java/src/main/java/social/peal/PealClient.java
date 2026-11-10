@@ -6,18 +6,20 @@ package social.peal;
 import java.util.function.Supplier;
 import social.peal.core.ClientOptions;
 import social.peal.core.Suppliers;
-import social.peal.resources.activity.ActivityClient;
 import social.peal.resources.analytics.AnalyticsClient;
 import social.peal.resources.apikeys.ApiKeysClient;
 import social.peal.resources.assistant.AssistantClient;
 import social.peal.resources.billing.BillingClient;
+import social.peal.resources.capabilities.CapabilitiesClient;
 import social.peal.resources.channels.ChannelsClient;
 import social.peal.resources.invitations.InvitationsClient;
+import social.peal.resources.lookups.LookupsClient;
 import social.peal.resources.media.MediaClient;
 import social.peal.resources.members.MembersClient;
 import social.peal.resources.notices.NoticesClient;
 import social.peal.resources.notificationpreferences.NotificationPreferencesClient;
 import social.peal.resources.posts.PostsClient;
+import social.peal.resources.review.ReviewClient;
 import social.peal.resources.session.SessionClient;
 import social.peal.resources.system.SystemClient;
 import social.peal.resources.tiktok.TiktokClient;
@@ -54,9 +56,13 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<TiktokClient> tiktokClient;
 
+    protected final Supplier<CapabilitiesClient> capabilitiesClient;
+
+    protected final Supplier<LookupsClient> lookupsClient;
+
     protected final Supplier<WebhooksClient> webhooksClient;
 
-    protected final Supplier<ActivityClient> activityClient;
+    protected final Supplier<ReviewClient> reviewClient;
 
     public PealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
@@ -74,8 +80,10 @@ public class PealClient implements AutoCloseable {
         this.billingClient = Suppliers.memoize(() -> new BillingClient(clientOptions));
         this.analyticsClient = Suppliers.memoize(() -> new AnalyticsClient(clientOptions));
         this.tiktokClient = Suppliers.memoize(() -> new TiktokClient(clientOptions));
+        this.capabilitiesClient = Suppliers.memoize(() -> new CapabilitiesClient(clientOptions));
+        this.lookupsClient = Suppliers.memoize(() -> new LookupsClient(clientOptions));
         this.webhooksClient = Suppliers.memoize(() -> new WebhooksClient(clientOptions));
-        this.activityClient = Suppliers.memoize(() -> new ActivityClient(clientOptions));
+        this.reviewClient = Suppliers.memoize(() -> new ReviewClient(clientOptions));
     }
 
     public SystemClient system() {
@@ -134,12 +142,20 @@ public class PealClient implements AutoCloseable {
         return this.tiktokClient.get();
     }
 
+    public CapabilitiesClient capabilities() {
+        return this.capabilitiesClient.get();
+    }
+
+    public LookupsClient lookups() {
+        return this.lookupsClient.get();
+    }
+
     public WebhooksClient webhooks() {
         return this.webhooksClient.get();
     }
 
-    public ActivityClient activity() {
-        return this.activityClient.get();
+    public ReviewClient review() {
+        return this.reviewClient.get();
     }
 
     /**

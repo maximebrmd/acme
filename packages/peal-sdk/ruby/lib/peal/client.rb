@@ -90,14 +90,24 @@ module Peal
       @tiktok ||= Peal::Tiktok::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Capabilities::Client]
+    def capabilities
+      @capabilities ||= Peal::Capabilities::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::Lookups::Client]
+    def lookups
+      @lookups ||= Peal::Lookups::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::Webhooks::Client]
     def webhooks
       @webhooks ||= Peal::Webhooks::Client.new(client: @raw_client)
     end
 
-    # @return [Peal::Activity::Client]
-    def activity
-      @activity ||= Peal::Activity::Client.new(client: @raw_client)
+    # @return [Peal::Review::Client]
+    def review
+      @review ||= Peal::Review::Client.new(client: @raw_client)
     end
   end
 end

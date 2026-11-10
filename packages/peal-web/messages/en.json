@@ -43,7 +43,7 @@
       "publishedAt": "Published {at}",
       "engagement": "{count, plural, =0 {No interaction yet} one {# interaction} other {# interactions}}",
       "open": "Open the post",
-      "view": "View on {platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {the platform}}"
+      "view": "View on {platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google} other {the platform}}"
     },
     "post": {
       "title": "How it did",
@@ -55,7 +55,9 @@
       "stopped": "No longer read: posts are followed for 30 days.",
       "tableCaption": "Counts of the post on {handle}, each time they were read",
       "readAtColumn": "Read",
-      "uncounted": "Counts are not available on {platforms}: Peal reads them on {counted} only, so far."
+      "uncounted": "Counts are not available on {platforms}: Peal reads them on {counted} only, so far.",
+      "countedName": "{platform, select, linkedin {LinkedIn pages} other {{name}}}",
+      "uncountedName": "{platform, select, linkedin {LinkedIn profiles} other {{name}}}"
     }
   },
   "Assistant": {
@@ -245,8 +247,8 @@
     "retry": "Try again",
     "empty": "No account is connected yet.",
     "listTitle": "Connected accounts",
-    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
-    "platformVia": "{platform, select, instagram {Instagram} other {{platform}}} ({connection, select, instagramLogin {Instagram Login} facebookLogin {through a Facebook Page} other {{connection}}})",
+    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platformVia": "{platform, select, instagram {Instagram} linkedin {LinkedIn} other {{platform}}} ({connection, select, instagramLogin {Instagram Login} facebookLogin {through a Facebook Page} linkedinProfile {profile} linkedinPage {company page} other {{connection}}})",
     "status": {
       "active": "Connected",
       "refreshNeeded": "Reconnect needed",
@@ -260,7 +262,7 @@
     "disconnectAccount": "Disconnect {handle}",
     "disconnecting": "Disconnecting…",
     "disconnectTitle": "Disconnect {handle}?",
-    "disconnectDescription": "Peal deletes the tokens it holds for this {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account and posts nothing more on it. You can connect it again later.",
+    "disconnectDescription": "Peal deletes the tokens it holds for this {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account and posts nothing more on it. You can connect it again later.",
     "cancel": "Cancel",
     "disconnected": "{handle} is disconnected.",
     "connectTitle": "Connect an account",
@@ -291,7 +293,7 @@
       "forbidden": "You may not do this in this workspace.",
       "notFound": "This channel is no longer connected.",
       "unknown": "Something went wrong. Try again.",
-      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel."
+      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel; on Google Business Profile, it manages no verified location; on LinkedIn, you are not an administrator or a content administrator of any page."
     }
   },
   "PlatformConnect": {
@@ -316,6 +318,16 @@
       "title": "YouTube",
       "description": "Your YouTube channel. You sign in with Google, pick the channel if your account has several, and allow Peal to upload videos and read the channel.",
       "connect": "Connect YouTube"
+    },
+    "pinterest": {
+      "title": "Pinterest",
+      "description": "Your Pinterest account. You sign in on Pinterest and allow Peal to create Pins on your boards and read their counts.",
+      "connect": "Connect Pinterest"
+    },
+    "googleBusiness": {
+      "title": "Google Business Profile",
+      "description": "Your business on Google Search and Maps. You sign in with Google, allow Peal to manage your Business Profile, then choose the verified locations this workspace posts to.",
+      "connect": "Connect Google Business Profile"
     }
   },
   "ConnectCallbackPage": {
@@ -390,20 +402,26 @@
     "description": "{platform, select, facebook {Sign in with Facebook, then choose the Pages this workspace posts to.} instagram {Professional accounts linked to a Facebook Page: sign in with Facebook, then choose the accounts.} threads {Sign in with your Threads account.} other {Sign in on the platform.}}",
     "connect": "{platform, select, facebook {Connect Facebook Pages} instagram {Connect Instagram} threads {Connect Threads} other {Connect}}",
     "connecting": "Opening…",
-    "chooseTitle": "{platform, select, facebook {The Pages to connect} instagram {The Instagram accounts to connect} other {The accounts to connect}}",
-    "chooseDescription": "{platform, select, facebook {Your sign-in reached these Pages.} instagram {Your sign-in reached these Instagram accounts.} other {Your sign-in reached these accounts.}} Choose those this workspace posts to, within a quarter of an hour.",
+    "chooseTitle": "{platform, select, facebook {The Pages to connect} instagram {The Instagram accounts to connect} googleBusiness {The locations to connect} linkedin {The LinkedIn pages to connect} other {The accounts to connect}}",
+    "chooseDescription": "{platform, select, facebook {Your sign-in reached these Pages.} instagram {Your sign-in reached these Instagram accounts.} googleBusiness {Your sign-in reached these verified locations.} linkedin {You administer these LinkedIn pages.} other {Your sign-in reached these accounts.}} Choose those this workspace posts to, within a quarter of an hour.",
     "alreadyConnected": "Connected: choosing it reconnects it",
     "connectChosen": "{count, plural, =0 {Connect} one {Connect # account} other {Connect # accounts}}",
     "connectingChosen": "Connecting…",
     "connected": "{count, plural, one {# account is connected.} other {# accounts are connected.}}",
     "cancel": "Back to the channels",
-    "retry": "Choose again, or sign in with Facebook again for a new list.",
-    "startOver": "Sign in with Facebook again"
+    "retry": "Choose again, or {platform, select, facebook {sign in with Facebook again} instagram {sign in with Facebook again} youtube {sign in with Google again} googleBusiness {sign in with Google again} linkedin {sign in with LinkedIn again} other {sign in again}} for a new list.",
+    "startOver": "{platform, select, facebook {Sign in with Facebook again} instagram {Sign in with Facebook again} youtube {Sign in with Google again} googleBusiness {Sign in with Google again} linkedin {Sign in with LinkedIn again} other {Sign in again}}"
   },
   "InstagramChannels": {
     "title": "Instagram",
     "description": "{connection, select, instagramLogin {Sign in to your professional account (Business or Creator) on Instagram: no Facebook Page needed. Peal renews its access every 60 days by itself.} facebookLogin {Or, for accounts run from a Facebook Page: sign in with Facebook, then choose the accounts linked to your Pages.} other {Sign in on Instagram.}}",
     "connect": "{connection, select, instagramLogin {Connect with Instagram} facebookLogin {Connect through a Facebook Page} other {Connect Instagram}}",
+    "connecting": "Opening…"
+  },
+  "LinkedInChannels": {
+    "title": "LinkedIn",
+    "description": "{connection, select, linkedinProfile {Your own profile. LinkedIn asks you to sign in again every 60 days: Peal reminds you a week before.} linkedinPage {The company pages you administer: sign in, then choose the pages. You must be an administrator or a content administrator of a page to post to it.} other {Sign in on LinkedIn.}}",
+    "connect": "{connection, select, linkedinProfile {Connect your profile} linkedinPage {Connect company pages} other {Connect LinkedIn}}",
     "connecting": "Opening…"
   },
   "DataDeletionPage": {
@@ -416,8 +434,8 @@
     "unavailable": "The status could not be read. Try again later."
   },
   "Posts": {
-    "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {{platform}}}",
-    "status": "{status, select, draft {Draft} scheduled {Scheduled} publishing {Publishing} finished {Finished} cancelled {Cancelled} other {{status}}}",
+    "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {{platform}}}",
+    "status": "{status, select, draft {Draft} awaitingApproval {Awaiting approval} scheduled {Scheduled} publishing {Publishing} finished {Finished} cancelled {Cancelled} other {{status}}}",
     "targetStatus": "{status, select, pending {Waiting} publishing {Publishing} published {Published} failed {Failed} unconfirmed {To check} cancelled {Cancelled} other {{status}}}",
     "outcome": "{outcome, select, published {Published} partiallyPublished {Partly published} unconfirmed {To check} failed {Failed} cancelled {Cancelled} other {{outcome}}}",
     "disconnectedChannel": "A disconnected channel",
@@ -435,6 +453,7 @@
       "newTitle": "New post",
       "editTitle": "Edit the draft",
       "scheduledTitle": "Scheduled post",
+      "awaitingTitle": "Post awaiting approval",
       "closedTitle": "Post",
       "description": "Write once, adjust the text for each channel if you like, then pick when it goes out.",
       "loading": "Loading the post…",
@@ -474,6 +493,8 @@
       "saving": "Saving…",
       "schedule": "Schedule",
       "scheduling": "Scheduling…",
+      "askApproval": "Ask for approval",
+      "askingApproval": "Asking…",
       "reschedule": "Move to this time",
       "rescheduling": "Moving…",
       "cancelPost": "Cancel the post",
@@ -493,11 +514,14 @@
       "closeDialog": "Close",
       "saved": "Draft saved.",
       "scheduled": "Post scheduled for {at}.",
+      "sentForApproval": "Sent for approval. Once approved, the post goes out on {at}.",
       "rescheduled": "Post moved to {at}.",
       "cancelled": "Post cancelled.",
       "unscheduled": "The post is a draft again: edit it, then schedule it.",
       "discarded": "Draft discarded.",
       "lockedText": "A scheduled post keeps its text. You can still move it or cancel it, or take it back to draft to change it.",
+      "awaitingText": "This post waits for an approval: it keeps its text, and goes out at its time only once someone approves it. You can still move it or cancel it, or take it back to draft to change it.",
+      "willWait": "This workspace asks for an approval: once you ask, the post waits, and goes out at its time only if someone approves it before.",
       "readOnly": "This post can no longer be changed.",
       "notAllowed": "Your role lets you read posts, not change them.",
       "cannotSchedule": "Your role lets you write drafts. Someone who can schedule will pick the time.",
@@ -505,7 +529,7 @@
         "generic": "Something went wrong. Try again.",
         "forbidden": "Your role does not allow this.",
         "notFound": "This post no longer exists.",
-        "conflict": "This post is {status, select, draft {a draft} scheduled {scheduled} publishing {publishing} finished {finished} cancelled {cancelled} other {{status}}} and cannot be changed this way.",
+        "conflict": "This post is {status, select, draft {a draft} awaitingApproval {awaiting approval} scheduled {scheduled} publishing {publishing} finished {finished} cancelled {cancelled} other {{status}}} and cannot be changed this way.",
         "inPast": "This time has passed. Pick a later one.",
         "timeZone": "Pick a time zone from the list.",
         "unknownChannels": "Some of these channels are no longer connected.",
@@ -541,6 +565,50 @@
       "tooLong": "{length} of {maximum} characters.",
       "invalid": "Not a value the platform takes.",
       "unknownField": "an option",
+      "linkedin": {
+        "visibility": "Who can see this post",
+        "visibilityHint": "Anyone unless you choose otherwise. Connections only is for a profile: a page has none.",
+        "visibilityPublic": "Anyone",
+        "visibilityConnections": "Connections only",
+        "visibilityLoggedIn": "Signed-in LinkedIn members",
+        "disableReshare": "Keep others from resharing this post",
+        "mentions": "Pages to mention",
+        "mentionsHint": "Write @ and a page’s full name in the text, exactly as LinkedIn shows it, and list the page here as Name <urn:li:organization:number>, several separated by semicolons. A company page channel finds a page’s number from the name in its address (the linkedinOrganizations lookup). People cannot be mentioned.",
+        "mentionsInvalid": "Each mention is a page’s name and its URN, as Name <urn:li:organization:number>, and a name is listed once.",
+        "linkUrl": "Link to show as a card",
+        "linkUrlHint": "An address starting with https://. LinkedIn does not read the page: give the card its title below. One image attached becomes the card’s picture; a link cannot go with a video, a document or several images.",
+        "linkUrlInvalid": "A link is a web address starting with https:// or http://.",
+        "linkTitle": "Link title",
+        "linkTitleHint": "Needed with a link.",
+        "linkDescription": "Link description",
+        "documentTitle": "Document title",
+        "documentTitleHint": "Shown above a PDF attached to the post. The file’s name when left empty.",
+        "documentTitleInvalid": "A title cannot be only spaces."
+      },
+      "lookupLoading": "Reading the list on the platform…",
+      "lookupFailed": "{reason, select, reconnect {Reconnect this account to read its list.} disabled {This channel is turned off: disconnect it and connect the account again to post to it.} rateLimited {The platform asked to slow down. Try again in a moment.} other {The list could not be read from the platform. Try again in a moment.}}",
+      "lookupRetry": "Try again",
+      "lookupNone": "None",
+      "lookupUnknown": "Not in the list ({value})",
+      "lookupTruncated": "Only the first {count, number} are listed.",
+      "pinterest": {
+        "board": "Board",
+        "boardHint": "The board the Pin is saved to. The post’s text is the Pin’s description, and the first file’s description its alt text.",
+        "boardInvalid": "Choose one of the account’s boards.",
+        "boardEmpty": "This account has no board yet: create one on Pinterest, then try again.",
+        "boardSection": "Board section",
+        "boardSectionInvalid": "Choose one of the board’s sections.",
+        "title": "Title",
+        "titleHint": "At most 100 characters.",
+        "link": "Link",
+        "linkHint": "Where people land when they click the Pin: an address that starts with http:// or https://.",
+        "linkInvalid": "A link starts with http:// or https://, and has no space.",
+        "coverSecond": "Video cover, at second",
+        "coverSecondHint": "For a video: the second whose frame becomes the cover. The first frame when left empty.",
+        "dominantColor": "Dominant colour",
+        "dominantColorHint": "The colour shown while the image loads, as # and six hex digits, such as #6E7874.",
+        "dominantColorInvalid": "A colour is # and six hex digits, such as #6E7874."
+      },
       "youtube": {
         "title": "Title",
         "titleHint": "At most 100 characters, without < or >. The post's text is the description.",
@@ -562,6 +630,36 @@
         "categoryIdInvalid": "A category is a number, such as 22.",
         "notifySubscribers": "Notify subscribers",
         "containsSyntheticMedia": "Contains altered or synthetic content that looks real"
+      },
+      "googleBusiness": {
+        "postType": "Post type",
+        "postTypeHint": "An update unless you choose otherwise. The post's text is its description.",
+        "postTypeStandard": "Update",
+        "postTypeEvent": "Event",
+        "postTypeOffer": "Offer",
+        "title": "Title",
+        "titleHint": "The event's or the offer's name: at most 58 characters.",
+        "startsAt": "Starts",
+        "startsAtHint": "On the location's own clock.",
+        "startsAtInvalid": "Choose a day and a time.",
+        "endsAt": "Ends",
+        "endsAtInvalid": "Choose a day and a time after the start.",
+        "callToAction": "Button",
+        "callToActionHint": "No button unless you choose one. An offer shows Google's own.",
+        "actionNone": "No button",
+        "actionBook": "Book",
+        "actionOrder": "Order online",
+        "actionShop": "Shop",
+        "actionLearnMore": "Learn more",
+        "actionSignUp": "Sign up",
+        "actionCall": "Call now",
+        "callToActionUrl": "Button link",
+        "linkHint": "A full address, starting with https://.",
+        "linkInvalid": "Enter a full address, starting with https:// or http://.",
+        "couponCode": "Coupon code",
+        "couponCodeHint": "Usable in store or online.",
+        "redeemUrl": "Link to redeem the offer",
+        "terms": "Terms and conditions"
       },
       "tiktok": {
         "privacyLevel": "Who can view this post",
@@ -696,7 +794,7 @@
       "description": "Images and videos go straight to storage. Describe each one for people who cannot see it.",
       "dropzone": "Drop images or videos here, or click to choose them.",
       "choose": "Choose images or videos to upload",
-      "accepted": "JPEG, PNG, GIF and WebP images up to 16 MB, MP4 and QuickTime videos up to 1 GB.",
+      "accepted": "JPEG, PNG, GIF and WebP images up to 16 MB, MP4 and QuickTime videos up to 1 GB, PDF documents up to 100 MB and 300 pages (for LinkedIn).",
       "dropping": "Drop to upload",
       "uploads": "Uploads",
       "phase": {
@@ -720,7 +818,7 @@
       "remove": "Remove",
       "removeLabel": "Remove {name} from the list",
       "errors": {
-        "unsupportedType": "Peal does not take this type of file. Upload a JPEG, PNG, GIF or WebP image, or an MP4 or QuickTime video.",
+        "unsupportedType": "Peal does not take this type of file. Upload a JPEG, PNG, GIF or WebP image, an MP4 or QuickTime video, or a PDF document.",
         "tooLarge": "This file is larger than the {limit, number} MB Peal takes for its kind.",
         "storageFull": "The workspace’s plan has no room left for this file: it allows {limit} MB of media. Delete media, or ask an owner or an admin to move to a larger plan.",
         "altTextTooLong": "The description is longer than {limit, number} characters.",
@@ -749,7 +847,8 @@
       "unreadable": "Uploaded, but the file could not be read: it may be damaged.",
       "timedOut": "Uploaded, but reading the file took too long.",
       "tooLarge": "Uploaded, but the stored file is larger than declared.",
-      "toolFailed": "Uploaded, but the server failed to read it."
+      "toolFailed": "Uploaded, but the server failed to read it.",
+      "tooManyPages": "Uploaded, but the document has more than 300 pages, more than LinkedIn shows."
     },
     "rejected": {
       "sizeMismatch": "The file did not have the declared size, and was deleted.",
@@ -762,14 +861,15 @@
       "loadFailed": "The media could not be loaded.",
       "reload": "Try again",
       "loadMore": "Show more",
-      "kind": "{kind, select, image {Image} other {Video}}",
+      "kind": "{kind, select, image {Image} document {PDF document} other {Video}}",
+      "pages": "{count, plural, one {# page} other {# pages}}",
       "dimensions": "{width} × {height}",
       "duration": "{seconds, number} s",
       "noAltText": "No description",
       "added": "Added on {date, date, medium}",
       "delete": "Delete",
-      "deleteLabel": "Delete this {kind, select, image {image} other {video}}",
-      "deleteTitle": "Delete this {kind, select, image {image} other {video}}?",
+      "deleteLabel": "Delete this {kind, select, image {image} document {document} other {video}}",
+      "deleteTitle": "Delete this {kind, select, image {image} document {document} other {video}}?",
       "deleteDescription": "Its file is deleted from storage, and it can no longer go into posts. Posts already published keep it on their platforms. This cannot be undone.",
       "usageLoading": "Checking which posts show it…",
       "usageFailed": "Peal could not check which posts show it. Try again.",
@@ -787,18 +887,18 @@
   "PostMedia": {
     "count": "{count, plural, =0 {No image or video yet} one {# image or video} other {# images or videos}}, at most {maximum}.",
     "list": "Images and videos, in the order the post shows them",
-    "item": "{kind, select, image {Image {position}} video {Video {position}} other {Media {position}}}",
+    "item": "{kind, select, image {Image {position}} video {Video {position}} document {Document {position}} other {Media {position}}}",
     "loading": "Loading…",
     "loadFailed": "This image or video could not be loaded.",
     "altTextLabel": "Alt text for {kind, select, image {image {position}} video {video {position}} other {media {position}}}",
     "altTextHint": "Describe what it shows for people who cannot see it.",
     "altTextMissing": "No alt text yet: {platforms} {count, plural, one {shows} other {show}} it to people who cannot see the {kind, select, video {video} other {image}}.",
     "altTextEncouraged": "No alt text yet. Write one so that everyone can follow the post.",
-    "moveEarlier": "Move {kind, select, image {image {position}} video {video {position}} other {media {position}}} earlier",
-    "moveLater": "Move {kind, select, image {image {position}} video {video {position}} other {media {position}}} later",
-    "remove": "Remove {kind, select, image {image {position}} video {video {position}} other {media {position}}} from the post",
-    "moved": "{kind, select, image {Image} video {Video} other {Media}} moved to position {position} of {count}.",
-    "removed": "{kind, select, image {Image} video {Video} other {Media}} removed from the post.",
+    "moveEarlier": "Move {kind, select, image {image {position}} video {video {position}} document {document {position}} other {media {position}}} earlier",
+    "moveLater": "Move {kind, select, image {image {position}} video {video {position}} document {document {position}} other {media {position}}} later",
+    "remove": "Remove {kind, select, image {image {position}} video {video {position}} document {document {position}} other {media {position}}} from the post",
+    "moved": "{kind, select, image {Image} video {Video} document {Document} other {Media}} moved to position {position} of {count}.",
+    "removed": "{kind, select, image {Image} video {Video} document {Document} other {Media}} removed from the post.",
     "attached": "{count, plural, one {# image or video attached.} other {# images or videos attached.}}",
     "full": "The post holds {maximum} images or videos at most: {count, plural, one {# was not attached.} other {# were not attached.}}",
     "notReady": "The file was uploaded, but it cannot go into posts until it is processed.",
@@ -909,7 +1009,7 @@
     }
   },
   "Notices": {
-    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
     "channel": "{platform} ({handle})",
     "unknownChannel": "a disconnected channel",
     "unknownWorkspace": "a workspace you left",
@@ -917,6 +1017,11 @@
       "PostPublished": "A post of {workspace} is live on {channel}.",
       "PostFailed": "A post of {workspace} did not go out on {channel}: {reason}",
       "PostUnconfirmed": "A post of {workspace} may have gone out on {channel}. Check the platform before you post it again.",
+      "PostApprovalRequested": "A post of {workspace} waits for an approval, to go out on {scheduledAt, date, long} at {scheduledAt, time, short}.",
+      "PostApproved": "{by, select, visitor {A reviewer} application {An application} other {A member}} approved a post of {workspace}. It is scheduled.",
+      "PostApprovedLate": "{by, select, visitor {A reviewer} application {An application} other {A member}} approved a post of {workspace} after its time. Nothing was published late: it is a draft again, still approved. Give it a new time.",
+      "PostChangesRequested": "{by, select, visitor {A reviewer} application {An application} other {A member}} asked for changes to a post of {workspace}. It is a draft again.",
+      "PostCommented": "{by, select, visitor {A reviewer} application {An application} other {A member}} commented on a post of {workspace}.",
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
       "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed.",
       "TrialEnding": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
@@ -960,6 +1065,7 @@
       "legend": "Email me when",
       "postFailed": "A post did not go out",
       "postUnconfirmed": "A post may have gone out, and needs checking on the platform",
+      "postReview": "A post waits for my approval, or a post I follow is commented on, approved or sent back",
       "channelReconnect": "A channel must be reconnected, now or soon",
       "postPublished": "A post went out",
       "postsLegend": "Tell me about",
@@ -1433,7 +1539,10 @@
         "published": "A post goes live on a channel",
         "failed": "A post fails on a channel",
         "unconfirmed": "A post may have gone out on a channel",
-        "cancelled": "A post is cancelled"
+        "cancelled": "A post is cancelled",
+        "approval_requested": "A post waits for an approval",
+        "approved": "A post is approved",
+        "changes_requested": "Changes are requested on a post"
       },
       "channel": {
         "connected": "A channel is connected or reconnected",
@@ -1982,5 +2091,167 @@
     "description": "This page ran into an error, which was reported. Try again, or come back in a moment.",
     "retry": "Try again",
     "home": "Back to the home page"
+  },
+  "Review": {
+    "title": "Review",
+    "description": "Comments on this post, the approvals asked for it, and the links that show it to people without an account.",
+    "loading": "Loading the review…",
+    "loadFailed": "The review could not be loaded.",
+    "retry": "Try again",
+    "close": "Close",
+    "reviewer": {
+      "apiKey": "An API key",
+      "visitor": "A reviewer",
+      "formerMember": "A former member",
+      "visitorBadge": "Reviewer"
+    },
+    "thread": {
+      "title": "Comments",
+      "empty": "Nobody commented yet.",
+      "aChannel": "a channel",
+      "aboutChannel": "About the post on {channel}",
+      "aboutWords": "About these words, on {channel}:",
+      "aboutWordsGone": "About these words, which the text on {channel} no longer says:",
+      "resolved": "Resolved",
+      "answer": "Answer",
+      "resolve": "Resolve",
+      "reopen": "Reopen"
+    },
+    "form": {
+      "hint": "{count} of {maximum} characters. Plain text: nothing you type is read as formatting.",
+      "commentLabel": "Your comment",
+      "comment": "Comment",
+      "answerLabel": "Your answer",
+      "answer": "Answer",
+      "sending": "Sending…",
+      "aboutWords": "Your comment is about these words, on {channel}:",
+      "wholePost": "Comment on the whole post instead"
+    },
+    "preview": {
+      "title": "The post on each channel",
+      "hint": "What each channel will receive. This is not how the platform will lay it out.",
+      "hintSelect": "What each channel will receive. This is not how the platform will lay it out. Select some words to comment on them.",
+      "disconnected": "A disconnected channel",
+      "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+      "noText": "No text on this channel.",
+      "mediaLabel": "Images, videos and documents",
+      "mediaUnavailable": "This file cannot be shown.",
+      "video": "Video",
+      "document": "A PDF document, shown page by page on LinkedIn.",
+      "openDocument": "Open the document in a new tab",
+      "altText": "Alt text: {text}",
+      "noAltText": "No alt text.",
+      "options": "What this channel also receives with the post:",
+      "optionYes": "Yes",
+      "optionNo": "No"
+    },
+    "approval": {
+      "status": "{status, select, pending {Awaiting approval} approved {Approved} changesRequested {Changes requested} withdrawn {Withdrawn} other {{status}}}",
+      "askedFor": "to go out on {at}",
+      "askedBy": "{via, select, apiKey {Asked with an API key} application {Asked by {name}, through an application} unknown {Asked by a former member} other {Asked by {name}}} on {at}",
+      "decidedBy": "{kind, select, visitor {Decided by {name}, through a review link,} other {Decided by {name}}} on {at}"
+    },
+    "decide": {
+      "waiting": "This post waits for an approval. It goes out at its time only once someone who may approve posts, or a reviewer with a link that allows it, approves it.",
+      "waitingForYou": "This post waits for an approval, which you may give. Approved, it is scheduled for its time; approved after that time, it goes back to draft instead of going out late.",
+      "approve": "Approve",
+      "approving": "Approving…",
+      "requestChanges": "Request changes",
+      "changesTitle": "Request changes?",
+      "changesDescription": "The post goes back to draft and no longer goes out at its time. Its author is told, with your comment.",
+      "changesLabel": "What should change?",
+      "sendBack": "Send back to draft",
+      "sentBack": "Changes requested: the post is a draft again.",
+      "approved": "Approved: the post is scheduled.",
+      "approvedLate": "Approved after its time: nothing was published late. The post is a draft again, still approved: give it a new time."
+    },
+    "links": {
+      "title": "Review links",
+      "description": "A link shows this post, and nothing else of the workspace, to whoever holds it, without an account. It stops working when it expires or is revoked, and once the post is published, cancelled or deleted.",
+      "accessLabel": "Whoever opens it may",
+      "access": "{access, select, view {View only} comment {View and comment} approve {View, comment and approve} other {{access}}}",
+      "lifetimeLabel": "It works for",
+      "lifetime": "{days, plural, one {# day} other {# days}}",
+      "create": "Create a link",
+      "creating": "Creating…",
+      "createFailed": "The link could not be created.",
+      "madeTitle": "Copy this link now",
+      "madeDescription": "It is not shown again: Peal keeps no copy of it. Whoever opens it may {access, select, view {see the post} comment {see the post and comment} approve {see the post, comment, and approve it or ask for changes} other {{access}}}, until {until}.",
+      "copy": "Copy the link",
+      "copied": "Link copied.",
+      "loadFailed": "The links could not be loaded.",
+      "empty": "No link was made for this post.",
+      "status": "{status, select, active {Working} expired {Expired} revoked {Revoked} other {{status}}}",
+      "until": "until {until}",
+      "revoke": "Revoke",
+      "revoked": "Link revoked.",
+      "revokeFailed": "The link could not be revoked."
+    },
+    "errors": {
+      "comment": "{problem, select, text {Write a comment of 2000 characters at most.} name {Give a name of 80 characters at most.} parent {This thread no longer takes answers.} anchor {This channel is no longer one the post goes to.} selection {The text changed since you selected these words. Select them again.} other {The comment could not be kept.}}",
+      "failure": "{failure, select, Forbidden {Your role does not allow this, or an application asked for this post to go out: a person must approve it.} PostNotFound {This post no longer exists.} CommentNotFound {This comment no longer exists.} ApprovalNotPending {This post no longer waits for an approval: it was decided, taken back or scheduled meanwhile.} ApprovalChanged {The post changed since you opened it. Nothing was decided: read it again below, then decide.} PlanLimitReached {Nothing was approved: this workspace has more channels or members than its plan allows, and schedules nothing until it is back within it. The post still waits. An owner or an admin can change the plan on the billing page.} WorkspaceOverPlan {Nothing was approved: the team that sent you this link cannot schedule posts at the moment. Tell them; the post still waits for you.} ReviewAccessDenied {This link does not allow this.} ReviewCaptchaRequired {Complete the check below, then send again.} TooManyReviewRequests {Too much was sent through this link lately. Try again in a while.} ReviewRequestTooLarge {This is too long to send.} other {Something went wrong. Try again.}}"
+    },
+    "page": {
+      "metaTitle": "Review a post",
+      "title": "Review a post",
+      "intro": "You were sent this link to look at a post before it is published. You need no account.",
+      "loading": "Loading the post…",
+      "noToken": {
+        "title": "This link is incomplete",
+        "description": "Open the whole link you were sent: its end, after the # sign, is what opens the post."
+      },
+      "notFound": {
+        "title": "This link opens nothing",
+        "description": "Check that you opened the whole link, or ask whoever sent it for a new one."
+      },
+      "closed": {
+        "title": "This link no longer works",
+        "reason": "{reason, select, expired {It has expired. Ask whoever sent it for a new one.} revoked {It was revoked. Ask whoever sent it for a new one.} published {The post was published, or is being published: there is nothing left to review.} cancelled {The post was cancelled: it will not be published.} deleted {The post was deleted.} other {The post can no longer be reviewed.}}"
+      },
+      "failed": {
+        "title": "The post could not be loaded",
+        "description": "Check your connection, then try again."
+      },
+      "status": "{status, select, awaitingApproval {This post waits for an approval. Approved, it is published on {at}, your time ({zone}).} scheduled {This post is scheduled: it is published on {at}, your time ({zone}).} other {This post is a draft: it has no publication time yet.}}",
+      "expires": "This link works until {at}.",
+      "identityLegend": "Who are you?",
+      "nameLabel": "Your name",
+      "nameHint": "Shown with what you write and decide.",
+      "privacy": "Your name is kept with your comments and decisions for 24 months, for the team that sent you this link.",
+      "decideTitle": "Your decision",
+      "decideIntro": "Approve the post as it is shown here, or ask for changes. Your decision is recorded with your name.",
+      "approve": "Approve this post",
+      "approving": "Approving…",
+      "requestChanges": "Request changes",
+      "changesLabel": "What should change?",
+      "sendChanges": "Send",
+      "approved": "Thank you: the post is approved, and scheduled.",
+      "approvedLate": "Thank you: the post is approved. Its time had passed, so it was not published: the team will give it a new one.",
+      "changesSent": "Thank you: your request was sent, and the post went back to its author.",
+      "decided": "{status, select, approved {This post was approved.} changesRequested {Changes were requested on this post.} other {No approval is asked for this post now.}}"
+    },
+    "approvals": {
+      "nav": "Approvals",
+      "title": "Needs approval",
+      "description": "The posts of {workspace} that wait for an approval before they are scheduled, oldest first.",
+      "loading": "Loading the approvals…",
+      "loadFailed": "The approvals could not be loaded.",
+      "empty": "No post waits for an approval.",
+      "open": "Open the post",
+      "policy": "{policy, select, never {This workspace asks for no approval: whoever may schedule does. An owner or an admin can change this in the settings.} contributorsAndApplications {Posts by contributors and applications wait for an approval.} always {Every post waits for an approval.} other {{policy}}}"
+    },
+    "policy": {
+      "title": "Approvals",
+      "description": "Whether posts wait for an approval before they are scheduled. A post that waits has its time, and goes out only once someone who may approve posts, or a reviewer with a link that allows it, approves it.",
+      "legend": "Posts wait for an approval",
+      "option": "{policy, select, never {Never} contributorsAndApplications {When a contributor or an application asks} always {Always} other {{policy}}}",
+      "hint": "{policy, select, never {Whoever may schedule posts does. Contributors write drafts.} contributorsAndApplications {Contributors may ask for a post to go out, and what an API key, the command line or an AI assistant schedules waits too. Owners, admins and editors schedule at once in the app.} always {Every post waits, whoever asks. Whoever may approve may approve their own.} other {{policy}}}",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Approval setting saved. It applies to posts scheduled from now on.",
+      "saveFailed": "The setting could not be saved.",
+      "loadFailed": "The setting could not be loaded.",
+      "readOnly": "Owners and admins choose this."
+    }
   }
 }

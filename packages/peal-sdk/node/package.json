@@ -172,6 +172,28 @@
       },
       "default": "./dist/cjs/api/resources/tiktok/exports.js"
     },
+    "./capabilities": {
+      "import": {
+        "types": "./dist/esm/api/resources/capabilities/exports.d.mts",
+        "default": "./dist/esm/api/resources/capabilities/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/capabilities/exports.d.ts",
+        "default": "./dist/cjs/api/resources/capabilities/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/capabilities/exports.js"
+    },
+    "./lookups": {
+      "import": {
+        "types": "./dist/esm/api/resources/lookups/exports.d.mts",
+        "default": "./dist/esm/api/resources/lookups/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/lookups/exports.d.ts",
+        "default": "./dist/cjs/api/resources/lookups/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/lookups/exports.js"
+    },
     "./webhooks": {
       "import": {
         "types": "./dist/esm/api/resources/webhooks/exports.d.mts",
@@ -183,16 +205,16 @@
       },
       "default": "./dist/cjs/api/resources/webhooks/exports.js"
     },
-    "./activity": {
+    "./review": {
       "import": {
-        "types": "./dist/esm/api/resources/activity/exports.d.mts",
-        "default": "./dist/esm/api/resources/activity/exports.mjs"
+        "types": "./dist/esm/api/resources/review/exports.d.mts",
+        "default": "./dist/esm/api/resources/review/exports.mjs"
       },
       "require": {
-        "types": "./dist/cjs/api/resources/activity/exports.d.ts",
-        "default": "./dist/cjs/api/resources/activity/exports.js"
+        "types": "./dist/cjs/api/resources/review/exports.d.ts",
+        "default": "./dist/cjs/api/resources/review/exports.js"
       },
-      "default": "./dist/cjs/api/resources/activity/exports.js"
+      "default": "./dist/cjs/api/resources/review/exports.js"
     },
     "./package.json": "./package.json"
   },

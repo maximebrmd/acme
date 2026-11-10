@@ -29,6 +29,7 @@ const pending: Media = {
   durationMs: null,
   id: mediaId,
   kind: "video",
+  pageCount: null,
   status: { _tag: "pending" },
   updatedAt: createdAt,
   url: null,

@@ -10,6 +10,8 @@ public readonly record struct PostStatus : IStringEnum
 {
     public static readonly PostStatus Draft = new(Values.Draft);
 
+    public static readonly PostStatus AwaitingApproval = new(Values.AwaitingApproval);
+
     public static readonly PostStatus Scheduled = new(Values.Scheduled);
 
     public static readonly PostStatus Publishing = new(Values.Publishing);
@@ -114,6 +116,8 @@ public readonly record struct PostStatus : IStringEnum
     public static class Values
     {
         public const string Draft = "draft";
+
+        public const string AwaitingApproval = "awaitingApproval";
 
         public const string Scheduled = "scheduled";
 

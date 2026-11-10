@@ -110,7 +110,7 @@ export class MediaClient {
      * @example
      *     await client.media.create({
      *         workspaceId: "workspaceId",
-     *         byteSize: 1,
+     *         byteSize: 1000000,
      *         contentType: "contentType"
      *     })
      */

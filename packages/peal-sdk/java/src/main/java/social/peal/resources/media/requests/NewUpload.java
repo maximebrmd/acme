@@ -26,14 +26,14 @@ import social.peal.core.ObjectMappers;
 public final class NewUpload {
     private final Optional<String> altText;
 
-    private final int byteSize;
+    private final long byteSize;
 
     private final String contentType;
 
     private final Map<String, Object> additionalProperties;
 
     private NewUpload(
-            Optional<String> altText, int byteSize, String contentType, Map<String, Object> additionalProperties) {
+            Optional<String> altText, long byteSize, String contentType, Map<String, Object> additionalProperties) {
         this.altText = altText;
         this.byteSize = byteSize;
         this.contentType = contentType;
@@ -49,7 +49,7 @@ public final class NewUpload {
     }
 
     @JsonProperty("byteSize")
-    public int getByteSize() {
+    public long getByteSize() {
         return byteSize;
     }
 
@@ -94,7 +94,7 @@ public final class NewUpload {
     }
 
     public interface ByteSizeStage {
-        ContentTypeStage byteSize(int byteSize);
+        ContentTypeStage byteSize(long byteSize);
 
         Builder from(NewUpload other);
     }
@@ -119,7 +119,7 @@ public final class NewUpload {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements ByteSizeStage, ContentTypeStage, _FinalStage {
-        private int byteSize;
+        private long byteSize;
 
         private String contentType;
 
@@ -139,7 +139,7 @@ public final class NewUpload {
 
         @java.lang.Override
         @JsonSetter("byteSize")
-        public ContentTypeStage byteSize(int byteSize) {
+        public ContentTypeStage byteSize(long byteSize) {
             this.byteSize = byteSize;
             return this;
         }

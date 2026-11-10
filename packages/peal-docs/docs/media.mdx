@@ -11,12 +11,13 @@ A post can show images and videos from its workspace's media library, in the ord
 
 From a workspace's card, **Media library** holds the workspace's images and videos. Drop files there, or choose them; large videos go up in parts, and an upload can be cancelled or tried again. Give each file a description for people who cannot see it, of up to 2,000 characters.
 
-| Kind   | Formats               | Largest file |
-| ------ | --------------------- | ------------ |
-| Images | JPEG, PNG, GIF, WebP  | 16 MiB       |
-| Videos | MP4, QuickTime (.mov) | 1 GiB        |
+| Kind      | Formats               | Largest file |
+| --------- | --------------------- | ------------ |
+| Images    | JPEG, PNG, GIF, WebP  | 16 MiB       |
+| Videos    | MP4, QuickTime (.mov) | 1 GiB        |
+| Documents | PDF, up to 300 pages  | 100 MiB      |
 
-Peal reads each file once it is stored: an image's dimensions, a video's dimensions, duration and codec. An image whose content is not of the type it was uploaded as is refused, and deleted. Contributors and above upload; editors and above delete.
+Peal reads each file once it is stored: an image's dimensions, a video's dimensions, duration and codec, a PDF's number of pages. A PDF is a document, which only LinkedIn shows, page by page: Peal stores it and hands it over, and never opens it. One of more than 300 pages, the most LinkedIn takes, is not ready for posts; one whose pages cannot be counted, such as an encrypted file, is kept, and LinkedIn judges it. An image whose content is not of the type it was uploaded as is refused, and deleted. Contributors and above upload; editors and above delete.
 
 On an instance that bills, each plan holds a number of bytes of media ([Plans and billing](/billing#limits)), uploads in progress included: an upload the workspace has no room for is refused before anything is sent, and deleting media makes room.
 
@@ -68,7 +69,7 @@ The Mastodon limits are those of a Mastodon server as it comes. When the post go
 | Images and a video together   | No                                                             | No                                                         |
 | Alt text                      | On images, shown to people who need it, up to 4,086 characters | Shown to people who need it, up to 1,000 characters        |
 
-X lets some accounts post longer videos; Peal checks the length every account may post. A GIF with other files on X, and a video under 75 KB (75,000 bytes) on LinkedIn, are refused when the post is scheduled.
+X lets some accounts post longer videos; Peal checks the length every account may post. A GIF with other files on X, and a video under 75 KB (75,000 bytes) on LinkedIn, are refused when the post is scheduled. On LinkedIn, a post can show one PDF of up to 100 MiB instead, alone, without alt text, under the title its options give or its file's name; every other platform refuses a PDF when the post is scheduled.
 
 On Meta's platforms:
 
@@ -101,7 +102,28 @@ On YouTube:
 | Videos                        | MP4 or QuickTime, up to 256 GiB and 12 hours |
 | Alt text                      | Not sent: the post's text is the description |
 
+On Pinterest:
+
+| Limit                         | Pinterest                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| Images and videos in one post | One video, or up to 5 images, which make a carousel; at least one                        |
+| Images                        | JPEG and PNG, up to 20 MiB                                                               |
+| Videos                        | MP4 or QuickTime, up to 2 GiB, 4 seconds to 15 minutes, from 1:2 (tall) to 1.91:1 (wide) |
+| Images and a video together   | No                                                                                       |
+| Alt text                      | One for the Pin, the first file's, up to 500 characters                                  |
+
+Pinterest recommends images of 2:3, such as 1,000 by 1,500 pixels, and asks a carousel's images to be square or 2:3, which it checks itself.
+
 A video of 3 minutes or less, square or taller than wide, becomes a Short. YouTube takes videos longer than 15 minutes only from channels Google verified; it rejects the others once uploaded, and the post fails with that reason.
+
+On Google Business Profile:
+
+| Limit                         | Google Business Profile                                                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Images and videos in one post | Photos only                                                                                          |
+| Images                        | JPEG and PNG, from 10,240 bytes to 5 MiB; a shorter side of 250 pixels at least, which Google checks |
+| Videos                        | Not taken                                                                                            |
+| Alt text                      | Not sent                                                                                             |
 
 Peal checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
 
@@ -121,6 +143,8 @@ At the post's time, Peal sends each file from the library to the platform, then 
 - **TikTok**: a video goes up in parts of 10 MB, read one at a time from the media store, unless the server lets TikTok fetch it from the store's public address; photos TikTok always fetches. TikTok then processes the post before it goes live.
 
 - **YouTube**: Peal uploads the video in parts of 8 MiB, picking up where YouTube stands if an upload is cut off, even after the server restarts, then waits while YouTube processes it.
+- **Pinterest**: Peal gives Pinterest a link to each image in the media store, valid for two hours, and Pinterest fetches it when it creates the Pin. A video goes up in one request, read from the media store as it is sent and never held whole in memory, to the address Pinterest gives for it; Pinterest then processes it, usually within seconds.
+- **Google Business Profile**: Peal gives Google a link to each photo in the media store, valid for two hours, and Google fetches it.
 
 Peal waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer; a YouTube video, already uploaded, is left published while YouTube finishes.
 

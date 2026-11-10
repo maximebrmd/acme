@@ -15,6 +15,12 @@ class ConnectablePlatforms extends JsonSerializableType
     public array $instagramConnections;
 
     /**
+     * @var array<value-of<LinkedInConnection>> $linkedinConnections
+     */
+    #[JsonProperty('linkedinConnections'), ArrayType(['string'])]
+    public array $linkedinConnections;
+
+    /**
      * @var array<value-of<Platform>> $platforms
      */
     #[JsonProperty('platforms'), ArrayType(['string'])]
@@ -23,6 +29,7 @@ class ConnectablePlatforms extends JsonSerializableType
     /**
      * @param array{
      *   instagramConnections: array<value-of<InstagramConnection>>,
+     *   linkedinConnections: array<value-of<LinkedInConnection>>,
      *   platforms: array<value-of<Platform>>,
      * } $values
      */
@@ -30,6 +37,7 @@ class ConnectablePlatforms extends JsonSerializableType
         array $values,
     ) {
         $this->instagramConnections = $values['instagramConnections'];
+        $this->linkedinConnections = $values['linkedinConnections'];
         $this->platforms = $values['platforms'];
     }
 

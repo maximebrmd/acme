@@ -2,14 +2,18 @@ import { describe, expect, it } from "@effect/vitest";
 import { OpenApi } from "effect/http-api";
 import {
   Api,
+  ChannelConnectionSchema as ContractChannelConnectionSchema,
   InstagramConnectionSchema as ContractConnectionSchema,
+  LinkedInConnectionSchema as ContractLinkedInConnectionSchema,
   MetaAppSchema,
   PlatformSchema as ContractPlatformSchema,
 } from "peal-contract";
 
 import { MetaAppKindSchema } from "#channels/domain/data-deletion.ts";
 import { PlatformSchema } from "#channels/domain/platform.ts";
+import { ChannelConnectionSchema } from "#shared/domain/channel-connection.ts";
 import { InstagramConnectionSchema } from "#shared/domain/instagram-connection.ts";
+import { LinkedInConnectionSchema } from "#shared/domain/linkedin-connection.ts";
 
 // What the API reference tells clients each endpoint may answer.
 const documentedStatuses = (path: string) =>
@@ -29,12 +33,18 @@ describe("the channels contract", () => {
     ).toContain("402");
   });
 
-  it("copies the server's platforms, Instagram's ways in and Meta's apps", () => {
+  it("copies the server's platforms, Instagram's and LinkedIn's ways in and Meta's apps", () => {
     expect(ContractPlatformSchema.literals).toStrictEqual(
       PlatformSchema.literals
     );
     expect(ContractConnectionSchema.literals).toStrictEqual(
       InstagramConnectionSchema.literals
+    );
+    expect(ContractLinkedInConnectionSchema.literals).toStrictEqual(
+      LinkedInConnectionSchema.literals
+    );
+    expect(ContractChannelConnectionSchema.literals).toStrictEqual(
+      ChannelConnectionSchema.literals
     );
     expect(MetaAppSchema.literals).toStrictEqual(MetaAppKindSchema.literals);
   });

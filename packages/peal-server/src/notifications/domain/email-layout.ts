@@ -71,19 +71,29 @@ export const fill = (
 
 export const keep = (value: string): string => value;
 
-// One layout for every email: inline styles and tables, as email clients
-// ignore stylesheets, with a button and the link written out beneath it.
-export const layout = (parts: {
+/** The button of an email, and the link written out beneath it. */
+export interface EmailLink {
   readonly action: string;
-  readonly body: string;
-  /** What the email sets apart in a box under its body, if anything. */
-  readonly highlight?: string;
-  readonly ignore: string;
   readonly linkFallback: string;
-  readonly locale: Locale;
-  readonly signature: string;
   readonly url: string;
-}): string =>
+}
+
+const linkParagraphs = ({ action, linkFallback, url }: EmailLink) => [
+  `<p style="margin:0 0 24px;"><a href="${url}" style="display:inline-block;padding:12px 20px;border-radius:6px;background-color:#18181b;color:#ffffff;font-weight:600;text-decoration:none;">${action}</a></p>`,
+  `<p style="margin:0 0 4px;color:#52525b;font-size:14px;">${linkFallback}</p>`,
+  `<p style="margin:0 0 24px;font-size:14px;word-break:break-all;"><a href="${url}" style="color:#18181b;">${url}</a></p>`,
+];
+
+const framed = (
+  parts: {
+    readonly body: string;
+    readonly highlight?: string;
+    readonly ignore: string;
+    readonly locale: Locale;
+    readonly signature: string;
+  },
+  link: readonly string[]
+): string =>
   [
     "<!doctype html>",
     `<html lang="${parts.locale}">`,
@@ -96,9 +106,7 @@ export const layout = (parts: {
       : [
           `<p style="margin:0 0 24px;padding:12px 16px;border:2px solid #18181b;border-radius:6px;font-weight:600;">${parts.highlight}</p>`,
         ]),
-    `<p style="margin:0 0 24px;"><a href="${parts.url}" style="display:inline-block;padding:12px 20px;border-radius:6px;background-color:#18181b;color:#ffffff;font-weight:600;text-decoration:none;">${parts.action}</a></p>`,
-    `<p style="margin:0 0 4px;color:#52525b;font-size:14px;">${parts.linkFallback}</p>`,
-    `<p style="margin:0 0 24px;font-size:14px;word-break:break-all;"><a href="${parts.url}" style="color:#18181b;">${parts.url}</a></p>`,
+    ...link,
     `<p style="margin:0 0 24px;color:#52525b;font-size:14px;">${parts.ignore}</p>`,
     `<p style="margin:0;color:#52525b;font-size:14px;">${parts.signature}</p>`,
     "</td></tr></table>",
@@ -106,3 +114,28 @@ export const layout = (parts: {
     "</body>",
     "</html>",
   ].join("\n");
+
+/**
+ * The layout of an email that links nowhere: one to a visitor of a review
+ * link, whose address Peal does not keep.
+ */
+export const linklessLayout = (parts: {
+  readonly body: string;
+  readonly ignore: string;
+  readonly locale: Locale;
+  readonly signature: string;
+}): string => framed(parts, []);
+
+// One layout for every email: inline styles and tables, as email clients
+// ignore stylesheets, with a button and the link written out beneath it.
+export const layout = (parts: {
+  readonly action: string;
+  readonly body: string;
+  /** What the email sets apart in a box under its body, if anything. */
+  readonly highlight?: string;
+  readonly ignore: string;
+  readonly linkFallback: string;
+  readonly locale: Locale;
+  readonly signature: string;
+  readonly url: string;
+}): string => framed(parts, linkParagraphs(parts));

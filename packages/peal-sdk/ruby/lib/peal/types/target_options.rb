@@ -14,6 +14,12 @@ module Peal
       member -> { Peal::Types::YouTubeOptions }, key: "YOUTUBE"
 
       member -> { Peal::Types::TikTokOptions }, key: "TIKTOK"
+
+      member -> { Peal::Types::PinterestOptions }, key: "PINTEREST"
+
+      member -> { Peal::Types::GoogleBusinessOptions }, key: "GOOGLE_BUSINESS"
+
+      member -> { Peal::Types::LinkedInOptions }, key: "LINKEDIN"
     end
   end
 end

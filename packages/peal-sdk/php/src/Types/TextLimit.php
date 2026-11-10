@@ -1,0 +1,42 @@
+<?php
+
+namespace Peal\Types;
+
+use Peal\Core\Json\JsonSerializableType;
+use Peal\Core\Json\JsonProperty;
+
+class TextLimit extends JsonSerializableType
+{
+    /**
+     * @var int $maximum
+     */
+    #[JsonProperty('maximum')]
+    public int $maximum;
+
+    /**
+     * @var value-of<TextUnit> $unit
+     */
+    #[JsonProperty('unit')]
+    public string $unit;
+
+    /**
+     * @param array{
+     *   maximum: int,
+     *   unit: value-of<TextUnit>,
+     * } $values
+     */
+    public function __construct(
+        array $values,
+    ) {
+        $this->maximum = $values['maximum'];
+        $this->unit = $values['unit'];
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString(): string
+    {
+        return $this->toJson();
+    }
+}

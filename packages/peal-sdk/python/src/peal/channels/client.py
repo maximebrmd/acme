@@ -6,9 +6,9 @@ from ..core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ..core.request_options import RequestOptions
 from ..types.authorization import Authorization
 from ..types.channel import Channel
+from ..types.channel_connection import ChannelConnection
 from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
-from ..types.instagram_connection import InstagramConnection
 from ..types.platform import Platform
 from .raw_client import AsyncRawChannelsClient, RawChannelsClient
 
@@ -100,7 +100,7 @@ class ChannelsClient:
         workspace_id: str,
         platform: Platform,
         *,
-        connection: typing.Optional[InstagramConnection] = OMIT,
+        connection: typing.Optional[ChannelConnection] = OMIT,
         handle: typing.Optional[str] = OMIT,
         instance: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -114,7 +114,7 @@ class ChannelsClient:
 
         platform : Platform
 
-        connection : typing.Optional[InstagramConnection]
+        connection : typing.Optional[ChannelConnection]
 
         handle : typing.Optional[str]
 
@@ -423,7 +423,7 @@ class AsyncChannelsClient:
         workspace_id: str,
         platform: Platform,
         *,
-        connection: typing.Optional[InstagramConnection] = OMIT,
+        connection: typing.Optional[ChannelConnection] = OMIT,
         handle: typing.Optional[str] = OMIT,
         instance: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -437,7 +437,7 @@ class AsyncChannelsClient:
 
         platform : Platform
 
-        connection : typing.Optional[InstagramConnection]
+        connection : typing.Optional[ChannelConnection]
 
         handle : typing.Optional[str]
 

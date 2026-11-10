@@ -40,6 +40,7 @@ import {
   FakePlatformPublisher,
 } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { PublishPostV1 } from "#publishing/infrastructure/workflows/publish-post.ts";
+import { PurgeReviewData } from "#review/application/purge-review-data.ts";
 import { newId } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import {
@@ -125,6 +126,10 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     MeterPartnerUsage,
     MeterPartnerUsage.of({ run: Effect.succeed({ keys: 0, partners: 0 }) })
+  ),
+  Layer.succeed(
+    PurgeReviewData,
+    PurgeReviewData.of({ purge: Effect.succeed({ emails: 0, names: 0 }) })
   ),
   Layer.succeed(
     PurgeDeliveries,

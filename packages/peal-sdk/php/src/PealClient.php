@@ -16,8 +16,10 @@ use Peal\Invitations\InvitationsClient;
 use Peal\Billing\BillingClient;
 use Peal\Analytics\AnalyticsClient;
 use Peal\Tiktok\TiktokClient;
+use Peal\Capabilities\CapabilitiesClient;
+use Peal\Lookups\LookupsClient;
 use Peal\Webhooks\WebhooksClient;
-use Peal\Activity\ActivityClient;
+use Peal\Review\ReviewClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
 
@@ -94,14 +96,24 @@ class PealClient
     public TiktokClient $tiktok;
 
     /**
+     * @var CapabilitiesClient $capabilities
+     */
+    public CapabilitiesClient $capabilities;
+
+    /**
+     * @var LookupsClient $lookups
+     */
+    public LookupsClient $lookups;
+
+    /**
      * @var WebhooksClient $webhooks
      */
     public WebhooksClient $webhooks;
 
     /**
-     * @var ActivityClient $activity
+     * @var ReviewClient $review
      */
-    public ActivityClient $activity;
+    public ReviewClient $review;
 
     /**
      * @var array{
@@ -168,7 +180,9 @@ class PealClient
         $this->billing = new BillingClient($this->client, $this->options);
         $this->analytics = new AnalyticsClient($this->client, $this->options);
         $this->tiktok = new TiktokClient($this->client, $this->options);
+        $this->capabilities = new CapabilitiesClient($this->client, $this->options);
+        $this->lookups = new LookupsClient($this->client, $this->options);
         $this->webhooks = new WebhooksClient($this->client, $this->options);
-        $this->activity = new ActivityClient($this->client, $this->options);
+        $this->review = new ReviewClient($this->client, $this->options);
     }
 }

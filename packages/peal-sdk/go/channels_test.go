@@ -430,7 +430,7 @@ func TestSettersConnectChannel(t *testing.T) {
 
 	t.Run("SetConnection", func(t *testing.T) {
 		obj := &ConnectChannel{}
-		var fernTestValueConnection *InstagramConnection
+		var fernTestValueConnection *ChannelConnection
 		obj.SetConnection(fernTestValueConnection)
 		assert.Equal(t, fernTestValueConnection, obj.Connection)
 		assert.NotNil(t, obj.explicitFields)
@@ -521,7 +521,7 @@ func TestSettersMarkExplicitConnectChannel(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &ConnectChannel{}
-		var fernTestValueConnection *InstagramConnection
+		var fernTestValueConnection *ChannelConnection
 
 		// Act
 		obj.SetConnection(fernTestValueConnection)
@@ -952,7 +952,7 @@ func TestSettersChannel(t *testing.T) {
 
 	t.Run("SetConnection", func(t *testing.T) {
 		obj := &Channel{}
-		var fernTestValueConnection *InstagramConnection
+		var fernTestValueConnection *ChannelConnection
 		obj.SetConnection(fernTestValueConnection)
 		assert.Equal(t, fernTestValueConnection, obj.Connection)
 		assert.NotNil(t, obj.explicitFields)
@@ -1046,7 +1046,7 @@ func TestGettersChannel(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &Channel{}
-		var expected *InstagramConnection
+		var expected *ChannelConnection
 		obj.Connection = expected
 
 		// Act & Assert
@@ -1281,7 +1281,7 @@ func TestSettersMarkExplicitChannel(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &Channel{}
-		var fernTestValueConnection *InstagramConnection
+		var fernTestValueConnection *ChannelConnection
 
 		// Act
 		obj.SetConnection(fernTestValueConnection)
@@ -2418,6 +2418,14 @@ func TestSettersConnectablePlatforms(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetLinkedinConnections", func(t *testing.T) {
+		obj := &ConnectablePlatforms{}
+		var fernTestValueLinkedinConnections []LinkedInConnection
+		obj.SetLinkedinConnections(fernTestValueLinkedinConnections)
+		assert.Equal(t, fernTestValueLinkedinConnections, obj.LinkedinConnections)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetPlatforms", func(t *testing.T) {
 		obj := &ConnectablePlatforms{}
 		var fernTestValuePlatforms []Platform
@@ -2460,6 +2468,39 @@ func TestGettersConnectablePlatforms(t *testing.T) {
 			}
 		}()
 		_ = obj.GetInstagramConnections() // Should return zero value
+	})
+
+	t.Run("GetLinkedinConnections", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectablePlatforms{}
+		var expected []LinkedInConnection
+		obj.LinkedinConnections = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetLinkedinConnections(), "getter should return the property value")
+	})
+
+	t.Run("GetLinkedinConnections_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectablePlatforms{}
+		obj.LinkedinConnections = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetLinkedinConnections(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetLinkedinConnections_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ConnectablePlatforms
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetLinkedinConnections() // Should return zero value
 	})
 
 	t.Run("GetPlatforms", func(t *testing.T) {
@@ -2506,6 +2547,37 @@ func TestSettersMarkExplicitConnectablePlatforms(t *testing.T) {
 
 		// Act
 		obj.SetInstagramConnections(fernTestValueInstagramConnections)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetLinkedinConnections_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectablePlatforms{}
+		var fernTestValueLinkedinConnections []LinkedInConnection
+
+		// Act
+		obj.SetLinkedinConnections(fernTestValueLinkedinConnections)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -3090,6 +3162,107 @@ func TestStringConnectablePlatforms(t *testing.T) {
 		var obj *ConnectablePlatforms
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestEnumChannelConnection(t *testing.T) {
+	t.Run("NewFromString_instagramLogin", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewChannelConnectionFromString("instagramLogin")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, ChannelConnection("instagramLogin"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_facebookLogin", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewChannelConnectionFromString("facebookLogin")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, ChannelConnection("facebookLogin"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_linkedinProfile", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewChannelConnectionFromString("linkedinProfile")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, ChannelConnection("linkedinProfile"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_linkedinPage", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewChannelConnectionFromString("linkedinPage")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, ChannelConnection("linkedinPage"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewChannelConnectionFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewChannelConnectionFromString("instagramLogin")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumInstagramConnection(t *testing.T) {
+	t.Run("NewFromString_instagramLogin", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewInstagramConnectionFromString("instagramLogin")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, InstagramConnection("instagramLogin"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_facebookLogin", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewInstagramConnectionFromString("facebookLogin")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, InstagramConnection("facebookLogin"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewInstagramConnectionFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewInstagramConnectionFromString("instagramLogin")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumLinkedInConnection(t *testing.T) {
+	t.Run("NewFromString_linkedinProfile", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLinkedInConnectionFromString("linkedinProfile")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LinkedInConnection("linkedinProfile"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_linkedinPage", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLinkedInConnectionFromString("linkedinPage")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LinkedInConnection("linkedinPage"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewLinkedInConnectionFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewLinkedInConnectionFromString("linkedinProfile")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
 	})
 }
 

@@ -12,13 +12,13 @@ public record Excess : IJsonOnDeserialized
         new Dictionary<string, JsonElement>();
 
     [JsonPropertyName("allowed")]
-    public required int Allowed { get; set; }
+    public required long Allowed { get; set; }
 
     [JsonPropertyName("limit")]
     public required HeldLimit Limit { get; set; }
 
     [JsonPropertyName("used")]
-    public required int Used { get; set; }
+    public required long Used { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

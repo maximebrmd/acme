@@ -19,11 +19,11 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.ConnectLinkNotFound"/>.
+    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.ReviewLinkNotFound"/>.
     /// </summary>
-    public NotFoundErrorBody(NotFoundErrorBody.ConnectLinkNotFound value)
+    public NotFoundErrorBody(NotFoundErrorBody.ReviewLinkNotFound value)
     {
-        Type = "ConnectLinkNotFound";
+        Type = "ReviewLinkNotFound";
         Value = value.Value;
     }
 
@@ -48,9 +48,9 @@ public record NotFoundErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "ConnectLinkNotFound"
+    /// Returns true if <see cref="Type"/> is "ReviewLinkNotFound"
     /// </summary>
-    public bool IsConnectLinkNotFound => Type == "ConnectLinkNotFound";
+    public bool IsReviewLinkNotFound => Type == "ReviewLinkNotFound";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "WorkspaceNotFound"
@@ -58,14 +58,14 @@ public record NotFoundErrorBody
     public bool IsWorkspaceNotFound => Type == "WorkspaceNotFound";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.ConnectLinkNotFoundEncoded"/> if <see cref="Type"/> is 'ConnectLinkNotFound', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.ReviewLinkNotFoundEncoded"/> if <see cref="Type"/> is 'ReviewLinkNotFound', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ConnectLinkNotFound'.</exception>
-    public Peal.ConnectLinkNotFoundEncoded AsConnectLinkNotFound() =>
-        IsConnectLinkNotFound
-            ? (Peal.ConnectLinkNotFoundEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ReviewLinkNotFound'.</exception>
+    public Peal.ReviewLinkNotFoundEncoded AsReviewLinkNotFound() =>
+        IsReviewLinkNotFound
+            ? (Peal.ReviewLinkNotFoundEncoded)Value!
             : throw new global::System.Exception(
-                "NotFoundErrorBody.Type is not 'ConnectLinkNotFound'"
+                "NotFoundErrorBody.Type is not 'ReviewLinkNotFound'"
             );
 
     /// <summary>
@@ -80,29 +80,29 @@ public record NotFoundErrorBody
             );
 
     public T Match<T>(
-        Func<Peal.ConnectLinkNotFoundEncoded, T> onConnectLinkNotFound,
+        Func<Peal.ReviewLinkNotFoundEncoded, T> onReviewLinkNotFound,
         Func<Peal.WorkspaceNotFoundEncoded, T> onWorkspaceNotFound,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "ConnectLinkNotFound" => onConnectLinkNotFound(AsConnectLinkNotFound()),
+            "ReviewLinkNotFound" => onReviewLinkNotFound(AsReviewLinkNotFound()),
             "WorkspaceNotFound" => onWorkspaceNotFound(AsWorkspaceNotFound()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.ConnectLinkNotFoundEncoded> onConnectLinkNotFound,
+        Action<Peal.ReviewLinkNotFoundEncoded> onReviewLinkNotFound,
         Action<Peal.WorkspaceNotFoundEncoded> onWorkspaceNotFound,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "ConnectLinkNotFound":
-                onConnectLinkNotFound(AsConnectLinkNotFound());
+            case "ReviewLinkNotFound":
+                onReviewLinkNotFound(AsReviewLinkNotFound());
                 break;
             case "WorkspaceNotFound":
                 onWorkspaceNotFound(AsWorkspaceNotFound());
@@ -114,13 +114,13 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.ConnectLinkNotFoundEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.ReviewLinkNotFoundEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsConnectLinkNotFound(out Peal.ConnectLinkNotFoundEncoded? value)
+    public bool TryAsReviewLinkNotFound(out Peal.ReviewLinkNotFoundEncoded? value)
     {
-        if (Type == "ConnectLinkNotFound")
+        if (Type == "ReviewLinkNotFound")
         {
-            value = (Peal.ConnectLinkNotFoundEncoded)Value!;
+            value = (Peal.ReviewLinkNotFoundEncoded)Value!;
             return true;
         }
         value = null;
@@ -143,9 +143,8 @@ public record NotFoundErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator NotFoundErrorBody(
-        NotFoundErrorBody.ConnectLinkNotFound value
-    ) => new(value);
+    public static implicit operator NotFoundErrorBody(NotFoundErrorBody.ReviewLinkNotFound value) =>
+        new(value);
 
     public static implicit operator NotFoundErrorBody(NotFoundErrorBody.WorkspaceNotFound value) =>
         new(value);
@@ -191,10 +190,10 @@ public record NotFoundErrorBody
 
             var value = discriminator switch
             {
-                "ConnectLinkNotFound" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.ConnectLinkNotFoundEncoded?>(options)
+                "ReviewLinkNotFound" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ReviewLinkNotFoundEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.ConnectLinkNotFoundEncoded"
+                            "Failed to deserialize Peal.ReviewLinkNotFoundEncoded"
                         ),
                 "WorkspaceNotFound" => json.Deserialize<Peal.WorkspaceNotFoundEncoded?>(options)
                     ?? throw new JsonException(
@@ -214,7 +213,7 @@ public record NotFoundErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "ConnectLinkNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "ReviewLinkNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     "WorkspaceNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
@@ -245,22 +244,22 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for ConnectLinkNotFound
+    /// Discriminated union type for ReviewLinkNotFound
     /// </summary>
     [Serializable]
-    public struct ConnectLinkNotFound
+    public struct ReviewLinkNotFound
     {
-        public ConnectLinkNotFound(Peal.ConnectLinkNotFoundEncoded value)
+        public ReviewLinkNotFound(Peal.ReviewLinkNotFoundEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.ConnectLinkNotFoundEncoded Value { get; set; }
+        internal Peal.ReviewLinkNotFoundEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator NotFoundErrorBody.ConnectLinkNotFound(
-            Peal.ConnectLinkNotFoundEncoded value
+        public static implicit operator NotFoundErrorBody.ReviewLinkNotFound(
+            Peal.ReviewLinkNotFoundEncoded value
         ) => new(value);
     }
 

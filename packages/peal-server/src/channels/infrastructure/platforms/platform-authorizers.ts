@@ -1,9 +1,12 @@
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer, Option, Schema } from "effect";
 
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type { PlatformAuthorizer } from "#channels/application/platform-authorizer.ts";
 import type { Platform } from "#channels/domain/platform.ts";
-import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
+import { hasConnections } from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
+import { InstagramConnectionSchema } from "#shared/domain/instagram-connection.ts";
+import { LinkedInConnectionSchema } from "#shared/domain/linkedin-connection.ts";
 import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
 import {
   publicFetch,
@@ -13,15 +16,21 @@ import {
 import { blueskyAuthorizer } from "./bluesky/bluesky-authorizer.ts";
 import { ChannelPlatforms } from "./channel-platform-settings.ts";
 import {
+  googleBusinessAuthorizer,
+  googleBusinessEndpoints,
+} from "./google-business/google-business-authorizer.ts";
+import {
   linkedinAuthorizer,
   linkedinEndpoints,
 } from "./linkedin/linkedin-authorizer.ts";
+import { linkedinPagesAuthorizer } from "./linkedin/linkedin-pages-authorizer.ts";
 import { MastodonApps } from "./mastodon/mastodon-apps.ts";
 import { mastodonAuthorizer } from "./mastodon/mastodon-authorizer.ts";
 import { facebookAuthorizer } from "./meta/facebook-authorizer.ts";
 import { instagramAuthorizer } from "./meta/instagram-authorizer.ts";
 import { instagramLoginAuthorizer } from "./meta/instagram-login-authorizer.ts";
 import { threadsAuthorizer } from "./meta/threads-authorizer.ts";
+import { pinterestAuthorizer } from "./pinterest/pinterest-authorizer.ts";
 import { tiktokAuthorizer } from "./tiktok/tiktok-authorizer.ts";
 import { xAuthorizer, xEndpoints } from "./x/x-authorizer.ts";
 import {
@@ -47,29 +56,45 @@ export const registryOf = (
     }
   }
 
-  const instagram = configured.filter(
-    (authorizer) => authorizer.platform === "instagram"
-  );
-
-  const instagramConnections = instagram.flatMap(({ connection }) =>
-    connection === undefined ? [] : [connection]
-  );
+  // The ways in the server has for a platform, in the order given.
+  const connectionsOf = <A extends ChannelConnection>(
+    platform: Platform,
+    is: (connection: ChannelConnection) => connection is A
+  ): readonly A[] =>
+    configured.flatMap((authorizer) =>
+      authorizer.platform === platform &&
+      authorizer.connection !== undefined &&
+      is(authorizer.connection)
+        ? [authorizer.connection]
+        : []
+    );
 
   const forPlatform = (
     platform: Platform,
-    connection: Option.Option<InstagramConnection> = Option.none()
+    connection: Option.Option<ChannelConnection> = Option.none()
   ): Option.Option<PlatformAuthorizer> =>
-    platform === "instagram" && Option.isSome(connection)
+    Option.isSome(connection) && hasConnections(platform)
       ? Option.fromUndefinedOr(
-          instagram.find(
-            (authorizer) => authorizer.connection === connection.value
+          configured.find(
+            (authorizer) =>
+              authorizer.platform === platform &&
+              authorizer.connection === connection.value
           )
         )
       : Option.fromUndefinedOr(byPlatform.get(platform));
 
   return PlatformAuthorizers.of({
+    every: (platform) =>
+      configured.filter((authorizer) => authorizer.platform === platform),
     for: forPlatform,
-    instagramConnections,
+    instagramConnections: connectionsOf(
+      "instagram",
+      Schema.is(InstagramConnectionSchema)
+    ),
+    linkedinConnections: connectionsOf(
+      "linkedin",
+      Schema.is(LinkedInConnectionSchema)
+    ),
     unconfigured,
   });
 };
@@ -77,10 +102,13 @@ export const registryOf = (
 /**
  * Every platform this server connects, from its settings: Mastodon always,
  * Bluesky when it has a client to run, LinkedIn and X when the operator
- * registered an app there, Facebook Pages and Instagram with Meta's app,
+ * registered an app there, LinkedIn pages with a second app that has the
+ * Community Management API, Facebook Pages and Instagram with Meta's app,
  * Instagram through Instagram Login with the app's Instagram credentials
  * (preferred to Facebook Login when both are set), Threads with its
- * credentials, TikTok with its client key and secret, YouTube with a Google OAuth client. Needs an HttpClient, the outbound guard, the
+ * credentials, TikTok with its client key and secret, YouTube with a Google
+ * OAuth client, Pinterest with its app's id and secret, Google Business
+ * Profile with a Google OAuth client of its own. Needs an HttpClient, the outbound guard, the
  * database, the TokenCipher, SecureRandom, Digest and Mac.
  */
 export const PlatformAuthorizersLive = Layer.effect(
@@ -110,6 +138,20 @@ export const PlatformAuthorizersLive = Layer.effect(
         )
       : Option.none<PlatformAuthorizer>();
 
+    // Pages after profiles: without a way in named, LinkedIn connects the
+    // member's profile when the server has the app for it.
+    const linkedinPages = Option.isSome(settings.linkedinPages)
+      ? Option.some(
+          yield* linkedinPagesAuthorizer({
+            client: settings.linkedinPages.value,
+            endpoints: linkedinEndpoints,
+            http,
+            publicUrl: settings.publicUrl,
+            version: settings.linkedinVersion,
+          })
+        )
+      : Option.none<PlatformAuthorizer>();
+
     const x = Option.isSome(settings.x)
       ? Option.some(
           yield* xAuthorizer({
@@ -126,6 +168,17 @@ export const PlatformAuthorizersLive = Layer.effect(
           yield* youtubeAuthorizer({
             client: settings.youtube.value,
             endpoints: youtubeEndpoints,
+            http,
+            publicUrl: settings.publicUrl,
+          })
+        )
+      : Option.none<PlatformAuthorizer>();
+
+    const googleBusiness = Option.isSome(settings.googleBusiness)
+      ? Option.some(
+          yield* googleBusinessAuthorizer({
+            client: settings.googleBusiness.value,
+            endpoints: googleBusinessEndpoints,
             http,
             publicUrl: settings.publicUrl,
           })
@@ -166,16 +219,30 @@ export const PlatformAuthorizersLive = Layer.effect(
         ]
       : [];
 
+    const pinterest = Option.isSome(settings.pinterest)
+      ? [
+          yield* pinterestAuthorizer({
+            client: settings.pinterest.value,
+            hosts: settings.pinterestHosts,
+            http,
+            publicUrl: settings.publicUrl,
+          }),
+        ]
+      : [];
+
     const configured = [
       mastodon,
       ...Option.toArray(bluesky),
       ...Option.toArray(linkedin),
+      ...Option.toArray(linkedinPages),
       ...Option.toArray(x),
       ...instagramLogin,
       ...meta,
       ...threads,
       ...tiktok,
       ...Option.toArray(youtube),
+      ...pinterest,
+      ...Option.toArray(googleBusiness),
     ];
 
     // Platforms Peal supports, which this server lacks the settings for.
@@ -190,6 +257,8 @@ export const PlatformAuthorizersLive = Layer.effect(
           "threads",
           "tiktok",
           "youtube",
+          "pinterest",
+          "googleBusiness",
         ] as const
       ).filter(
         (platform) =>

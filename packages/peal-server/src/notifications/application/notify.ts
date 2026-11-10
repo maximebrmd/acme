@@ -35,6 +35,16 @@ export interface NoticeRequest {
   readonly author?: UserId;
   readonly event: NoticeEvent;
   /**
+   * The member who did what the event tells, when a member did: they are
+   * not told.
+   */
+  readonly except?: UserId;
+  /**
+   * For an event about a post: members who follow it besides its author,
+   * such as whoever asked for its approval (`recipientsOf`).
+   */
+  readonly followers?: readonly UserId[];
+  /**
    * Names the event, such as `post-target:<id>:<round>`: an event
    * whose key was notified before notifies nobody again.
    */
@@ -113,7 +123,8 @@ export class Notify extends Context.Service<
               followsEveryPost: preferencesOf(userId).everyPost,
               mayAct: mayAct.has(userId),
               userId,
-            }))
+            })),
+            { except: request.except, followers: request.followers }
           )
         );
 

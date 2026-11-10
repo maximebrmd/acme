@@ -35,8 +35,9 @@ export const MailerLive = Layer.unwrap(
 );
 
 /**
- * The notifications context: account emails, sent through MailerLive, which
- * it shares with the notices below.
+ * The notifications context: account emails, and those to the visitors of
+ * review links, sent through MailerLive, which it shares with the notices
+ * below.
  */
 export const NotificationsLive = SendAuthEmail.layer.pipe(
   Layer.provideMerge(MailerLive),

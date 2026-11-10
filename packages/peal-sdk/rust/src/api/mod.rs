@@ -12,8 +12,9 @@ pub mod resources;
 pub mod types;
 
 pub use resources::{
-    ActivityClient, AnalyticsClient, ApiKeysClient, AssistantClient, BillingClient, ChannelsClient,
-    InvitationsClient, MediaClient, MembersClient, NoticesClient, NotificationPreferencesClient,
-    PealClient, PostsClient, SessionClient, SystemClient, TiktokClient, WebhooksClient,
+    AnalyticsClient, ApiKeysClient, AssistantClient, BillingClient, CapabilitiesClient,
+    ChannelsClient, InvitationsClient, LookupsClient, MediaClient, MembersClient, NoticesClient,
+    NotificationPreferencesClient, PealClient, PostsClient, ReviewClient, SessionClient,
+    SystemClient, TiktokClient, WebhooksClient,
 };
 pub use types::*;

@@ -10,18 +10,20 @@ from .core.logging import LogConfig, Logger
 from .environment import PealEnvironment
 
 if typing.TYPE_CHECKING:
-    from .activity.client import ActivityClient, AsyncActivityClient
     from .analytics.client import AnalyticsClient, AsyncAnalyticsClient
     from .api_keys.client import ApiKeysClient, AsyncApiKeysClient
     from .assistant.client import AssistantClient, AsyncAssistantClient
     from .billing.client import AsyncBillingClient, BillingClient
+    from .capabilities.client import AsyncCapabilitiesClient, CapabilitiesClient
     from .channels.client import AsyncChannelsClient, ChannelsClient
     from .invitations.client import AsyncInvitationsClient, InvitationsClient
+    from .lookups.client import AsyncLookupsClient, LookupsClient
     from .media.client import AsyncMediaClient, MediaClient
     from .members.client import AsyncMembersClient, MembersClient
     from .notices.client import AsyncNoticesClient, NoticesClient
     from .notification_preferences.client import AsyncNotificationPreferencesClient, NotificationPreferencesClient
     from .posts.client import AsyncPostsClient, PostsClient
+    from .review.client import AsyncReviewClient, ReviewClient
     from .session.client import AsyncSessionClient, SessionClient
     from .system.client import AsyncSystemClient, SystemClient
     from .tiktok.client import AsyncTiktokClient, TiktokClient
@@ -126,8 +128,10 @@ class Peal:
         self._billing: typing.Optional[BillingClient] = None
         self._analytics: typing.Optional[AnalyticsClient] = None
         self._tiktok: typing.Optional[TiktokClient] = None
+        self._capabilities: typing.Optional[CapabilitiesClient] = None
+        self._lookups: typing.Optional[LookupsClient] = None
         self._webhooks: typing.Optional[WebhooksClient] = None
-        self._activity: typing.Optional[ActivityClient] = None
+        self._review: typing.Optional[ReviewClient] = None
 
     @property
     def system(self):
@@ -242,6 +246,22 @@ class Peal:
         return self._tiktok
 
     @property
+    def capabilities(self):
+        if self._capabilities is None:
+            from .capabilities.client import CapabilitiesClient  # noqa: E402
+
+            self._capabilities = CapabilitiesClient(client_wrapper=self._client_wrapper)
+        return self._capabilities
+
+    @property
+    def lookups(self):
+        if self._lookups is None:
+            from .lookups.client import LookupsClient  # noqa: E402
+
+            self._lookups = LookupsClient(client_wrapper=self._client_wrapper)
+        return self._lookups
+
+    @property
     def webhooks(self):
         if self._webhooks is None:
             from .webhooks.client import WebhooksClient  # noqa: E402
@@ -250,12 +270,12 @@ class Peal:
         return self._webhooks
 
     @property
-    def activity(self):
-        if self._activity is None:
-            from .activity.client import ActivityClient  # noqa: E402
+    def review(self):
+        if self._review is None:
+            from .review.client import ReviewClient  # noqa: E402
 
-            self._activity = ActivityClient(client_wrapper=self._client_wrapper)
-        return self._activity
+            self._review = ReviewClient(client_wrapper=self._client_wrapper)
+        return self._review
 
 
 def _make_default_async_client(
@@ -377,8 +397,10 @@ class AsyncPeal:
         self._billing: typing.Optional[AsyncBillingClient] = None
         self._analytics: typing.Optional[AsyncAnalyticsClient] = None
         self._tiktok: typing.Optional[AsyncTiktokClient] = None
+        self._capabilities: typing.Optional[AsyncCapabilitiesClient] = None
+        self._lookups: typing.Optional[AsyncLookupsClient] = None
         self._webhooks: typing.Optional[AsyncWebhooksClient] = None
-        self._activity: typing.Optional[AsyncActivityClient] = None
+        self._review: typing.Optional[AsyncReviewClient] = None
 
     @property
     def system(self):
@@ -493,6 +515,22 @@ class AsyncPeal:
         return self._tiktok
 
     @property
+    def capabilities(self):
+        if self._capabilities is None:
+            from .capabilities.client import AsyncCapabilitiesClient  # noqa: E402
+
+            self._capabilities = AsyncCapabilitiesClient(client_wrapper=self._client_wrapper)
+        return self._capabilities
+
+    @property
+    def lookups(self):
+        if self._lookups is None:
+            from .lookups.client import AsyncLookupsClient  # noqa: E402
+
+            self._lookups = AsyncLookupsClient(client_wrapper=self._client_wrapper)
+        return self._lookups
+
+    @property
     def webhooks(self):
         if self._webhooks is None:
             from .webhooks.client import AsyncWebhooksClient  # noqa: E402
@@ -501,12 +539,12 @@ class AsyncPeal:
         return self._webhooks
 
     @property
-    def activity(self):
-        if self._activity is None:
-            from .activity.client import AsyncActivityClient  # noqa: E402
+    def review(self):
+        if self._review is None:
+            from .review.client import AsyncReviewClient  # noqa: E402
 
-            self._activity = AsyncActivityClient(client_wrapper=self._client_wrapper)
-        return self._activity
+            self._review = AsyncReviewClient(client_wrapper=self._client_wrapper)
+        return self._review
 
 
 def _get_base_url(*, base_url: typing.Optional[str] = None, environment: PealEnvironment) -> str:

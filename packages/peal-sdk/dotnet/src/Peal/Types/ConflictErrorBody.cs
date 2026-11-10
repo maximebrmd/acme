@@ -19,20 +19,20 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.ExternalIdTaken"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.PostNotReviewable"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.ExternalIdTaken value)
+    public ConflictErrorBody(ConflictErrorBody.PostNotReviewable value)
     {
-        Type = "ExternalIdTaken";
+        Type = "PostNotReviewable";
         Value = value.Value;
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.IdempotencyKeyReused"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyReviewLinks"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.IdempotencyKeyReused value)
+    public ConflictErrorBody(ConflictErrorBody.TooManyReviewLinks value)
     {
-        Type = "IdempotencyKeyReused";
+        Type = "TooManyReviewLinks";
         Value = value.Value;
     }
 
@@ -48,62 +48,64 @@ public record ConflictErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "ExternalIdTaken"
+    /// Returns true if <see cref="Type"/> is "PostNotReviewable"
     /// </summary>
-    public bool IsExternalIdTaken => Type == "ExternalIdTaken";
+    public bool IsPostNotReviewable => Type == "PostNotReviewable";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "IdempotencyKeyReused"
+    /// Returns true if <see cref="Type"/> is "TooManyReviewLinks"
     /// </summary>
-    public bool IsIdempotencyKeyReused => Type == "IdempotencyKeyReused";
+    public bool IsTooManyReviewLinks => Type == "TooManyReviewLinks";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.ExternalIdTakenEncoded"/> if <see cref="Type"/> is 'ExternalIdTaken', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.PostNotReviewableEncoded"/> if <see cref="Type"/> is 'PostNotReviewable', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ExternalIdTaken'.</exception>
-    public Peal.ExternalIdTakenEncoded AsExternalIdTaken() =>
-        IsExternalIdTaken
-            ? (Peal.ExternalIdTakenEncoded)Value!
-            : throw new global::System.Exception("ConflictErrorBody.Type is not 'ExternalIdTaken'");
-
-    /// <summary>
-    /// Returns the value as a <see cref="Peal.IdempotencyKeyReusedEncoded"/> if <see cref="Type"/> is 'IdempotencyKeyReused', otherwise throws an exception.
-    /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'IdempotencyKeyReused'.</exception>
-    public Peal.IdempotencyKeyReusedEncoded AsIdempotencyKeyReused() =>
-        IsIdempotencyKeyReused
-            ? (Peal.IdempotencyKeyReusedEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostNotReviewable'.</exception>
+    public Peal.PostNotReviewableEncoded AsPostNotReviewable() =>
+        IsPostNotReviewable
+            ? (Peal.PostNotReviewableEncoded)Value!
             : throw new global::System.Exception(
-                "ConflictErrorBody.Type is not 'IdempotencyKeyReused'"
+                "ConflictErrorBody.Type is not 'PostNotReviewable'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.TooManyReviewLinksEncoded"/> if <see cref="Type"/> is 'TooManyReviewLinks', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyReviewLinks'.</exception>
+    public Peal.TooManyReviewLinksEncoded AsTooManyReviewLinks() =>
+        IsTooManyReviewLinks
+            ? (Peal.TooManyReviewLinksEncoded)Value!
+            : throw new global::System.Exception(
+                "ConflictErrorBody.Type is not 'TooManyReviewLinks'"
             );
 
     public T Match<T>(
-        Func<Peal.ExternalIdTakenEncoded, T> onExternalIdTaken,
-        Func<Peal.IdempotencyKeyReusedEncoded, T> onIdempotencyKeyReused,
+        Func<Peal.PostNotReviewableEncoded, T> onPostNotReviewable,
+        Func<Peal.TooManyReviewLinksEncoded, T> onTooManyReviewLinks,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "ExternalIdTaken" => onExternalIdTaken(AsExternalIdTaken()),
-            "IdempotencyKeyReused" => onIdempotencyKeyReused(AsIdempotencyKeyReused()),
+            "PostNotReviewable" => onPostNotReviewable(AsPostNotReviewable()),
+            "TooManyReviewLinks" => onTooManyReviewLinks(AsTooManyReviewLinks()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.ExternalIdTakenEncoded> onExternalIdTaken,
-        Action<Peal.IdempotencyKeyReusedEncoded> onIdempotencyKeyReused,
+        Action<Peal.PostNotReviewableEncoded> onPostNotReviewable,
+        Action<Peal.TooManyReviewLinksEncoded> onTooManyReviewLinks,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "ExternalIdTaken":
-                onExternalIdTaken(AsExternalIdTaken());
+            case "PostNotReviewable":
+                onPostNotReviewable(AsPostNotReviewable());
                 break;
-            case "IdempotencyKeyReused":
-                onIdempotencyKeyReused(AsIdempotencyKeyReused());
+            case "TooManyReviewLinks":
+                onTooManyReviewLinks(AsTooManyReviewLinks());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -112,13 +114,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.ExternalIdTakenEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.PostNotReviewableEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsExternalIdTaken(out Peal.ExternalIdTakenEncoded? value)
+    public bool TryAsPostNotReviewable(out Peal.PostNotReviewableEncoded? value)
     {
-        if (Type == "ExternalIdTaken")
+        if (Type == "PostNotReviewable")
         {
-            value = (Peal.ExternalIdTakenEncoded)Value!;
+            value = (Peal.PostNotReviewableEncoded)Value!;
             return true;
         }
         value = null;
@@ -126,13 +128,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.IdempotencyKeyReusedEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.TooManyReviewLinksEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsIdempotencyKeyReused(out Peal.IdempotencyKeyReusedEncoded? value)
+    public bool TryAsTooManyReviewLinks(out Peal.TooManyReviewLinksEncoded? value)
     {
-        if (Type == "IdempotencyKeyReused")
+        if (Type == "TooManyReviewLinks")
         {
-            value = (Peal.IdempotencyKeyReusedEncoded)Value!;
+            value = (Peal.TooManyReviewLinksEncoded)Value!;
             return true;
         }
         value = null;
@@ -141,12 +143,11 @@ public record ConflictErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.ExternalIdTaken value) =>
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.PostNotReviewable value) =>
         new(value);
 
-    public static implicit operator ConflictErrorBody(
-        ConflictErrorBody.IdempotencyKeyReused value
-    ) => new(value);
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.TooManyReviewLinks value) =>
+        new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<ConflictErrorBody>
@@ -181,16 +182,24 @@ public record ConflictErrorBody
                 discriminatorElement.GetString()
                 ?? throw new JsonException("Discriminator property '_tag' is null");
 
+            // Strip the discriminant property to prevent it from leaking into AdditionalProperties
+            var jsonObject = System.Text.Json.Nodes.JsonObject.Create(json);
+            jsonObject?.Remove("_tag");
+            var jsonWithoutDiscriminator =
+                jsonObject != null ? JsonSerializer.SerializeToElement(jsonObject, options) : json;
+
             var value = discriminator switch
             {
-                "ExternalIdTaken" => json.Deserialize<Peal.ExternalIdTakenEncoded?>(options)
-                    ?? throw new JsonException("Failed to deserialize Peal.ExternalIdTakenEncoded"),
-                "IdempotencyKeyReused" => json.Deserialize<Peal.IdempotencyKeyReusedEncoded?>(
-                    options
-                )
-                    ?? throw new JsonException(
-                        "Failed to deserialize Peal.IdempotencyKeyReusedEncoded"
-                    ),
+                "PostNotReviewable" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.PostNotReviewableEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.PostNotReviewableEncoded"
+                        ),
+                "TooManyReviewLinks" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyReviewLinksEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.TooManyReviewLinksEncoded"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new ConflictErrorBody(discriminator, value);
@@ -205,8 +214,8 @@ public record ConflictErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "ExternalIdTaken" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "IdempotencyKeyReused" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "PostNotReviewable" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "TooManyReviewLinks" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -236,42 +245,42 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for ExternalIdTaken
+    /// Discriminated union type for PostNotReviewable
     /// </summary>
     [Serializable]
-    public struct ExternalIdTaken
+    public struct PostNotReviewable
     {
-        public ExternalIdTaken(Peal.ExternalIdTakenEncoded value)
+        public PostNotReviewable(Peal.PostNotReviewableEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.ExternalIdTakenEncoded Value { get; set; }
+        internal Peal.PostNotReviewableEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.ExternalIdTaken(
-            Peal.ExternalIdTakenEncoded value
+        public static implicit operator ConflictErrorBody.PostNotReviewable(
+            Peal.PostNotReviewableEncoded value
         ) => new(value);
     }
 
     /// <summary>
-    /// Discriminated union type for IdempotencyKeyReused
+    /// Discriminated union type for TooManyReviewLinks
     /// </summary>
     [Serializable]
-    public struct IdempotencyKeyReused
+    public struct TooManyReviewLinks
     {
-        public IdempotencyKeyReused(Peal.IdempotencyKeyReusedEncoded value)
+        public TooManyReviewLinks(Peal.TooManyReviewLinksEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.IdempotencyKeyReusedEncoded Value { get; set; }
+        internal Peal.TooManyReviewLinksEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.IdempotencyKeyReused(
-            Peal.IdempotencyKeyReusedEncoded value
+        public static implicit operator ConflictErrorBody.TooManyReviewLinks(
+            Peal.TooManyReviewLinksEncoded value
         ) => new(value);
     }
 }

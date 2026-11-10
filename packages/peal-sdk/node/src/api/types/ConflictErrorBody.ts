@@ -3,15 +3,15 @@
 import * as Peal from "../index.js";
 
 export type ConflictErrorBody = 
-    | Peal.ConflictErrorBody.ExternalIdTaken
-    | Peal.ConflictErrorBody.IdempotencyKeyReused;
+    | Peal.ConflictErrorBody.PostNotReviewable
+    | Peal.ConflictErrorBody.TooManyReviewLinks;
 
 export namespace ConflictErrorBody {
-    export interface ExternalIdTaken extends Peal.ExternalIdTakenEncoded {
-        _tag: "ExternalIdTaken";
+    export interface PostNotReviewable extends Peal.PostNotReviewableEncoded {
+        _tag: "PostNotReviewable";
     }
 
-    export interface IdempotencyKeyReused extends Peal.IdempotencyKeyReusedEncoded {
-        _tag: "IdempotencyKeyReused";
+    export interface TooManyReviewLinks extends Peal.TooManyReviewLinksEncoded {
+        _tag: "TooManyReviewLinks";
     }
 }

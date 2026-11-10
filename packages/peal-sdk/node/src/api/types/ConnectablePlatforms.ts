@@ -4,5 +4,6 @@ import * as Peal from "../index.js";
 
 export interface ConnectablePlatforms {
     instagramConnections: Peal.InstagramConnection[];
+    linkedinConnections: Peal.LinkedInConnection[];
     platforms: Peal.Platform[];
 }

@@ -1,4 +1,5 @@
 import {
+  Array as Arr,
   Context,
   DateTime,
   Duration,
@@ -315,26 +316,32 @@ export class RefreshChannelTokens extends Context.Service<
         }
       );
 
-      // The platforms' cutoffs at `now`, from the authorizer that connects
-      // each: for Instagram, Instagram Login's, whose tokens alone renew;
-      // channels whose tokens never expire are not due whatever the cutoff.
-      // Those renewed ahead of their expiry come apart from those kept
-      // alive: the first lapse if the run is late, the second have weeks.
+      // The platforms' cutoffs at `now`: each platform's is the latest among
+      // its ways in that sweep that way, as only some renew their tokens
+      // (Instagram Login's, a LinkedIn page's, not a profile's). `refresh`
+      // then checks each channel against its own way in's policy, and
+      // channels whose tokens never expire, or cannot be renewed, are not
+      // due whatever the cutoff. Those renewed ahead of their expiry come
+      // apart from those kept alive: the first lapse if the run is late,
+      // the second have weeks.
       const cutoffsAt = (now: DateTime.Utc) => {
         const of = (sweep: RefreshSweep["_tag"]): readonly RefreshCutoff[] =>
-          platforms.flatMap((platform) =>
-            Option.toArray(
-              authorizers.for(platform).pipe(
-                Option.filter(
-                  ({ policy }) =>
-                    policy.refresh._tag === "refreshToken" &&
-                    policy.refresh.sweep._tag === sweep
-                ),
-                Option.flatMap(({ policy }) => refreshDueBefore(policy, now)),
-                Option.map((before) => ({ before, platform }))
+          platforms.flatMap((platform) => {
+            const befores = authorizers
+              .every(platform)
+              .filter(
+                ({ policy }) =>
+                  policy.refresh._tag === "refreshToken" &&
+                  policy.refresh.sweep._tag === sweep
               )
-            )
-          );
+              .flatMap(({ policy }) =>
+                Option.toArray(refreshDueBefore(policy, now))
+              );
+
+            return Arr.isReadonlyArrayNonEmpty(befores)
+              ? [{ before: Arr.max(befores, DateTime.Order), platform }]
+              : [];
+          });
 
         return { ahead: of("beforeExpiry"), idle: of("keepAlive") };
       };
