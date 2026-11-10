@@ -13,7 +13,7 @@ import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostOrigins } from "#publishing/application/post-origins.ts";
-import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
+import { PostOutcomesLive } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
@@ -95,7 +95,7 @@ export const publishingWith = <
       Layer.provideMerge(Layer.merge(PostChecks.layer, PostScheduling.layer))
     ),
     PostDrafts.layer,
-    PostOutcomes.layer,
+    PostOutcomesLive,
     PostQueries.layer,
     PostRecords.layer,
     PostSearch.layer,

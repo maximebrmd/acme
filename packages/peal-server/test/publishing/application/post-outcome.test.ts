@@ -2,7 +2,10 @@ import { assert, describe, it } from "@effect/vitest";
 import { DateTime, Duration, Effect, Fiber, Option } from "effect";
 import { TestClock } from "effect/testing";
 
-import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
+import {
+  makePostOutcomes,
+  PostOutcomes,
+} from "#publishing/application/post-outcomes.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
@@ -221,6 +224,26 @@ describe("PostOutcomes.await", () => {
             Duration.toSeconds(DateTime.distance(before, yield* DateTime.now)),
             62
           );
+
+          // A server lets so many requests wait at once: one more is
+          // answered at once, with the post as it stands, and asks again.
+          const one = yield* makePostOutcomes(1);
+
+          const first = yield* one
+            .await(actor, hanging.post.id, Duration.seconds(30))
+            .pipe(Effect.forkChild);
+
+          yield* TestClock.withLive(Effect.sleep(Duration.millis(50)));
+
+          const crowded = yield* one.await(
+            actor,
+            hanging.post.id,
+            Duration.seconds(30)
+          );
+
+          assert.isFalse(crowded.settled);
+          assert.strictEqual(crowded.post.status._tag, "publishing");
+          assert.isFalse((yield* answerOf(first)).settled);
 
           yield* platform.release(channel);
           yield* eventually("the post finished", isFinished(hanging.post.id));

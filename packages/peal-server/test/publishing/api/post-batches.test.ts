@@ -531,6 +531,29 @@ describe("the import endpoint", () => {
           );
           assert.lengthOf(yield* scheduledIn, 2);
 
+          // A row changed under the file's key is a mistake: found by the
+          // check, so nothing is made, the rows after it included.
+          const changed = yield* editor.posts.import({
+            headers,
+            params,
+            payload: {
+              csv: [
+                "text,channels,at,time_zone",
+                `Other words under the same key,${channel},2026-12-01 09:00,Europe/Paris`,
+                `Another synthetic post,${channel},2026-12-02T09:00:00Z,`,
+                `A third synthetic post,${channel},2026-12-02T10:00:00Z,`,
+              ].join("\n"),
+            },
+          });
+
+          assert.strictEqual(changed.created, 0);
+          assert.deepStrictEqual(
+            changed.rows.map(({ _tag }) => _tag),
+            ["refused", "valid", "valid"]
+          );
+          assert.instanceOf(refusalAt(changed.rows, 0), IdempotencyKeyReused);
+          assert.lengthOf(yield* scheduledIn, 2);
+
           // Without its key, it is the same content sent twice.
           const twice = yield* editor.posts.import({
             headers: {},

@@ -12,6 +12,7 @@ import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import type { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { IdempotencyKeys } from "./idempotency-keys.ts";
+import type { KeyUse } from "./idempotency-keys.ts";
 import { PostChecks } from "./post-checks.ts";
 import type { PostCheck } from "./post-checks.ts";
 import type { PostNotFound } from "./post-not-found.ts";
@@ -38,6 +39,15 @@ export type SendRefusal =
   | ScheduleInPast
   | UnknownChannels
   | UnknownMedia;
+
+/**
+ * What checking one request of several found: its check, or that its
+ * idempotency key was used already, by this request or by another.
+ */
+export type RequestCheck =
+  | { readonly _tag: "checked"; readonly check: PostCheck }
+  | { readonly _tag: "keyReused" }
+  | { readonly _tag: "made" };
 
 /** What became of one post of several: made, or why not. */
 export type SendOutcome = Result.Result<SentPost, SendRefusal>;
@@ -71,16 +81,16 @@ export class PostBatches extends Context.Service<
      * Checks each request as `PostChecks` does, making nothing, and
      * answers each check, in their order: what an import does to a whole
      * file before it makes its first post. A request whose idempotency
-     * key was used already has no check: sending it answers the post it
-     * made, or refuses the key, whatever the post would now be checked
-     * against, its own first sending included. Needs post:schedule too,
-     * as the sending it prepares does.
+     * key was used already is not checked again, least of all against the
+     * post it made: it is `made`, which sending answers, or its key came
+     * with another request (`keyReused`), which sending refuses. Needs
+     * post:schedule too, as the sending it prepares does.
      */
     readonly check: (
       actor: Actor,
       requests: readonly SendPostRequest[]
     ) => Effect.Effect<
-      readonly Option.Option<PostCheck>[],
+      readonly RequestCheck[],
       DatabaseError | MissingPermission
     >;
     readonly send: (
@@ -152,23 +162,30 @@ export class PostBatches extends Context.Service<
             options = [],
           }) {
             const used = yield* Option.match(idempotency, {
-              onNone: () => Effect.succeed(Option.none()),
+              onNone: () => Effect.succeed(Option.none<KeyUse>()),
               onSome: (keyed) => keys.find(actor.workspaceId, keyed, since),
             });
 
             if (Option.isSome(used)) {
-              return Option.none<PostCheck>();
+              const known: RequestCheck = used.value.sameRequest
+                ? { _tag: "made" }
+                : { _tag: "keyReused" };
+
+              return known;
             }
 
-            return Option.some(
-              yield* checks.check(actor, {
+            const checked: RequestCheck = {
+              _tag: "checked",
+              check: yield* checks.check(actor, {
                 allowDuplicate,
                 channelIds,
                 content,
                 options,
                 when: Option.some({ at }),
-              })
-            );
+              }),
+            };
+
+            return checked;
           }),
           { concurrency: 1 }
         );

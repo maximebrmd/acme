@@ -1,4 +1,12 @@
-import { Context, DateTime, Duration, Effect, Layer } from "effect";
+import {
+  Context,
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Option,
+  Semaphore,
+} from "effect";
 
 import type { Post } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -14,6 +22,12 @@ import { findInWorkspace } from "./workspace-posts.ts";
 
 /** The longest a request waits for a post's outcome. */
 export const maxOutcomeWait = Duration.seconds(60);
+
+/**
+ * How many requests wait at once in one process: each reads the post twice
+ * a second, and a client may open as many as it likes.
+ */
+export const maxWaitingRequests = 100;
 
 // How often a waiting request reads the post again.
 const readEvery = Duration.millis(500);
@@ -34,14 +48,53 @@ const mayChangeBy = (post: Post, deadline: DateTime.Utc): boolean =>
   (post.status._tag === "scheduled" &&
     DateTime.isLessThanOrEqualTo(post.status.schedule.at, deadline));
 
+const untilSettled = Effect.fn("PostOutcomes.untilSettled")(
+  function* untilSettled(
+    actor: Actor,
+    postId: PostId,
+    wait: Duration.Duration
+  ) {
+    const posts = yield* PostRepository;
+
+    const deadline = DateTime.addDuration(
+      yield* DateTime.now,
+      Duration.min(wait, maxOutcomeWait)
+    );
+
+    for (;;) {
+      const { post } = yield* findInWorkspace(actor.workspaceId, postId);
+      const targets = yield* posts.targets(postId);
+      const now = yield* DateTime.now;
+
+      if (
+        DateTime.isGreaterThanOrEqualTo(now, deadline) ||
+        !mayChangeBy(post, deadline)
+      ) {
+        const awaited: AwaitedPost = {
+          post,
+          settled: post.status._tag === "finished",
+          targets,
+        };
+
+        return awaited;
+      }
+
+      yield* Effect.sleep(
+        Duration.min(readEvery, DateTime.distance(now, deadline))
+      );
+    }
+  }
+);
+
 /**
  * Waiting for a post to go out, for a client that wants the outcome in the
  * answer to its request. Nothing here publishes: the post's durable job
  * does, as for any post, and this only reads the post again, every half
  * second, until it has finished or the time is up. Each read is a query of
  * its own, so no transaction, row lock or advisory lock is held while
- * waiting, and a request that waits costs one idle connection to its
- * client and nothing else. Needs post:read.
+ * waiting. A process lets `maxWaitingRequests` wait at once: one more is
+ * answered at once with the post as it stands, as when its time ran out,
+ * and its client asks again. Needs post:read.
  */
 export class PostOutcomes extends Context.Service<
   PostOutcomes,
@@ -62,59 +115,40 @@ export class PostOutcomes extends Context.Service<
       DatabaseError | MissingPermission | PostNotFound
     >;
   }
->()("peal-server/publishing/application/PostOutcomes") {
-  static readonly layer = Layer.effect(
-    PostOutcomes,
-    Effect.gen(function* PostOutcomesLive() {
-      const posts = yield* PostRepository;
-      const ports = yield* Effect.context<PostRepository>();
+>()("peal-server/publishing/application/PostOutcomes") {}
 
-      const read = Effect.fn("PostOutcomes.read")(function* read(
-        actor: Actor,
-        postId: PostId
-      ) {
-        const { post } = yield* findInWorkspace(actor.workspaceId, postId).pipe(
-          Effect.provideContext(ports)
-        );
+/** The use case, letting `waiters` requests wait at once. */
+export const makePostOutcomes = (waiters: number) =>
+  Effect.gen(function* PostOutcomesLive() {
+    const ports = yield* Effect.context<PostRepository>();
+    const waiting = yield* Semaphore.make(waiters);
 
-        return { post, targets: yield* posts.targets(postId) };
+    const awaitOutcome = Effect.fn("PostOutcomes.await")(function* awaiting(
+      actor: Actor,
+      postId: PostId,
+      wait: Duration.Duration
+    ) {
+      yield* Effect.fromResult(authorize(actor, "post:read"));
+
+      const room = yield* waiting
+        .withPermitsIfAvailable(1)(untilSettled(actor, postId, wait))
+        .pipe(Effect.provideContext(ports));
+
+      // No room to wait: the post as it stands.
+      return yield* Option.match(room, {
+        onNone: () =>
+          untilSettled(actor, postId, Duration.zero).pipe(
+            Effect.provideContext(ports)
+          ),
+        onSome: (awaited) => Effect.succeed(awaited),
       });
+    });
 
-      const awaitOutcome = Effect.fn("PostOutcomes.await")(function* awaiting(
-        actor: Actor,
-        postId: PostId,
-        wait: Duration.Duration
-      ) {
-        yield* Effect.fromResult(authorize(actor, "post:read"));
+    return PostOutcomes.of({ await: awaitOutcome });
+  });
 
-        const deadline = DateTime.addDuration(
-          yield* DateTime.now,
-          Duration.min(wait, maxOutcomeWait)
-        );
-
-        for (;;) {
-          const current = yield* read(actor, postId);
-          const now = yield* DateTime.now;
-
-          if (
-            DateTime.isGreaterThanOrEqualTo(now, deadline) ||
-            !mayChangeBy(current.post, deadline)
-          ) {
-            const awaited: AwaitedPost = {
-              ...current,
-              settled: current.post.status._tag === "finished",
-            };
-
-            return awaited;
-          }
-
-          yield* Effect.sleep(
-            Duration.min(readEvery, DateTime.distance(now, deadline))
-          );
-        }
-      });
-
-      return PostOutcomes.of({ await: awaitOutcome });
-    })
-  );
-}
+/** The use case as the server runs it. */
+export const PostOutcomesLive = Layer.effect(
+  PostOutcomes,
+  makePostOutcomes(maxWaitingRequests)
+);

@@ -1,4 +1,4 @@
-import { Duration, Effect, Option, Result } from "effect";
+import { Duration, Effect, Match, Option, Result } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
@@ -341,12 +341,19 @@ export const PostsHandlers = HttpApiBuilder.group(
             .check(actor, sendable)
             .pipe(Effect.catchTags(failures));
 
-          // A row its key already made has nothing to check.
+          // A row its key already made has nothing to check, and one
+          // whose key came with another row is refused as `send` would.
+          const toRefusal = refusalOfCheck(limitReached);
+
           const refusals = yield* Effect.all(
-            checked.map(
-              Option.match({
-                onNone: () => Effect.succeed(Option.none<PostRefusal>()),
-                onSome: refusalOfCheck(limitReached),
+            checked.map((found) =>
+              Match.valueTags(found, {
+                checked: ({ check }) => toRefusal(check),
+                keyReused: () =>
+                  Effect.succeed(
+                    Option.some<PostRefusal>(new IdempotencyKeyReused())
+                  ),
+                made: () => Effect.succeed(Option.none<PostRefusal>()),
               })
             )
           );
