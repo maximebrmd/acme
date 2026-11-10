@@ -103,24 +103,24 @@ export interface CatalogueTool {
  * `workspace:publish` or `workspace:write` (`scopesFor`). A test calls
  * each with a connection that lacks the scope.
  */
-const adsScopeSets: Readonly<
-  Record<string, readonly (readonly WorkspaceScope[])[]>
-> = {
-  boost_post: [scopesFor("ads:spend")],
-  pause_boost: [scopesFor("ads:spend"), scopesFor("ads:manage")],
-  quote_boost: [scopesFor("ads:spend")],
-  resume_boost: [scopesFor("ads:spend")],
-  stop_boost: [scopesFor("ads:spend"), scopesFor("ads:manage")],
-};
+const adsScopeSets = new Map<string, readonly (readonly WorkspaceScope[])[]>(
+  Object.entries({
+    boost_post: [scopesFor("ads:spend")],
+    pause_boost: [scopesFor("ads:spend"), scopesFor("ads:manage")],
+    quote_boost: [scopesFor("ads:spend")],
+    resume_boost: [scopesFor("ads:spend")],
+    stop_boost: [scopesFor("ads:spend"), scopesFor("ads:manage")],
+  })
+);
 
 /** The tools that take the scope `workspace:ads`. */
-export const adsTools: ReadonlySet<string> = new Set(Object.keys(adsScopeSets));
+export const adsTools: ReadonlySet<string> = new Set(adsScopeSets.keys());
 
 const scopeSetsOf = (
   name: string,
   changes: boolean
 ): readonly (readonly WorkspaceScope[])[] => {
-  const ads = adsScopeSets[name];
+  const ads = adsScopeSets.get(name);
 
   if (ads !== undefined) {
     return ads;
