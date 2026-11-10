@@ -1,5 +1,10 @@
 import { Effect, Layer, Metric, Option } from "effect";
-import { Headers, HttpServerRequest } from "effect/http";
+import {
+  Headers,
+  HttpEffect,
+  HttpServerRequest,
+  HttpServerResponse,
+} from "effect/http";
 import { RateLimiter } from "effect/persistence";
 import {
   ConnectLinkIntake,
@@ -57,6 +62,15 @@ export const ConnectLinkIntakeLive = Layer.effect(
       Effect.gen(function* intake() {
         const request = yield* HttpServerRequest.HttpServerRequest;
         const reading = request.method === "GET" || request.method === "HEAD";
+
+        // Every link's page has the same address, and its token is in a
+        // header: no cache on the way may keep one link's answer, or a
+        // refusal, for another request.
+        yield* HttpEffect.appendPreResponseHandler((_request, response) =>
+          Effect.succeed(
+            HttpServerResponse.setHeader(response, "cache-control", "no-store")
+          )
+        );
 
         if (
           !reading &&

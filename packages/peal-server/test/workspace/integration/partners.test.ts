@@ -1062,6 +1062,12 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.strictEqual(guessed.status, 404);
 
+          // Every link has the same address, its token in a header: no
+          // cache on the way keeps one link's answer, or a refusal, for
+          // another request.
+          assert.strictEqual(opened.headers.get("cache-control"), "no-store");
+          assert.strictEqual(guessed.headers.get("cache-control"), "no-store");
+
           // Its steps come from the web app's own pages only.
           const foreign = yield* app.request(`${hosted}/start`, {
             body: { instance: "social.example" },
