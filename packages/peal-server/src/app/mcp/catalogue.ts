@@ -5,6 +5,7 @@ import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { ConnectTools } from "#app/mcp/connect-tools.ts";
 import { ToolAreaSchema } from "#app/mcp/discovery-tools.ts";
 import type { ToolArea } from "#app/mcp/discovery-tools.ts";
+import { InboxTools } from "#app/mcp/inbox-tools.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
@@ -32,6 +33,7 @@ export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
   account: Object.values(BasicTools.tools),
   channels: Object.values(CapabilityTools.tools),
   connect: Object.values(ConnectTools.tools),
+  inbox: Object.values(InboxTools.tools),
   media: Object.values(MediaTools.tools),
   people: Object.values(PeopleTools.tools),
   posts: Object.values(PostTools.tools),
@@ -44,21 +46,28 @@ export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
  * The tools that decide what goes out to the platforms, and when: their
  * use cases check the publishing permissions, which only the scope
  * `workspace:publish` leaves to an OAuth client
- * (`#workspace/domain/oauth-grant.ts`). A test calls each with a
- * connection that lacks the scope.
+ * (`#workspace/domain/oauth-grant.ts`). Whatever answers, settles or
+ * moderates a comment is among them: its use cases check
+ * `engagement:reply`. A test calls each with a connection that lacks the
+ * scope.
  */
 export const publishingTools: ReadonlySet<string> = new Set([
   "approve_post",
   "cancel_post",
+  "confirm_comment_reply",
   "confirm_target",
   "create_post",
   "create_posts",
+  "mark_comment_answered",
+  "moderate_comment",
   "publish_post",
+  "reply_to_comment",
   "repost_target",
   "request_changes",
   "reschedule_post",
   "schedule_post",
   "unschedule_post",
+  "withdraw_comment_reply",
 ]);
 
 /** A tool as the catalogue describes it. */

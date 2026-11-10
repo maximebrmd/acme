@@ -474,6 +474,38 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             ]
           );
 
+          // The inbox is an area of its own: reading takes the scope that
+          // reads, and whatever answers or settles a comment, in public or
+          // not, the scope that publishes.
+          const comments = yield* reader.call("find_tools", FoundSchema, {
+            area: "inbox",
+          });
+
+          assert.deepStrictEqual(
+            comments.tools.map(({ name, scope }) => [name, scope]),
+            [
+              ["list_comment_threads", "workspace:read"],
+              ["get_comment_thread", "workspace:read"],
+              ["reply_to_comment", "workspace:publish"],
+              ["confirm_comment_reply", "workspace:publish"],
+              ["withdraw_comment_reply", "workspace:publish"],
+              ["mark_comment_answered", "workspace:publish"],
+              ["moderate_comment", "workspace:publish"],
+            ]
+          );
+
+          // The numbers are reports, the dashboard and a channel's days
+          // with the rest.
+          const reports = yield* reader.call("find_tools", FoundSchema, {
+            area: "reports",
+            query: "analytics",
+          });
+
+          assert.includeMembers(
+            reports.tools.map(({ name }) => name),
+            ["analytics_dashboard", "channel_analytics", "post_analytics"]
+          );
+
           const found = yield* writer.call("find_tools", FoundSchema, {
             query: "Invitation REVOKE_invitation",
           });
@@ -513,6 +545,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           const bogus = {
             approve_post: decision,
             cancel_post: { postId },
+            confirm_comment_reply: { replyId: postId, sent: true },
             confirm_target: {
               confirmation: { _tag: "notPublished" },
               postId,
@@ -532,7 +565,10 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
                 },
               ],
             },
+            mark_comment_answered: { answered: true, commentId: postId },
+            moderate_comment: { action: "like", commentId: postId },
             publish_post: { postId },
+            reply_to_comment: { commentId: postId, text: "Never sent." },
             repost_target: { postId, targetId: postId },
             request_changes: { ...decision, comment: "Never read." },
             reschedule_post: {
@@ -546,6 +582,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               timeZone: "Europe/Paris",
             },
             unschedule_post: { postId },
+            withdraw_comment_reply: { replyId: postId },
           } satisfies Record<string, ToolArguments>;
 
           assert.deepStrictEqual(
