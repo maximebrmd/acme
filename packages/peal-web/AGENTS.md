@@ -7,3 +7,189 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Web front
+
+- Build screens from `peal-ui` components and Tailwind classes; add no other
+  stylesheet.
+- Add a shadcn component by running `bunx shadcn add <name>` in
+  `packages/peal-ui`, which reads its `components.json`. Point the component's
+  `cn` import (the CLI writes `"cn"`) at `../lib/utils` and its sibling imports
+  at `./`, rewrite function components as arrow functions, take every
+  user-facing string (labels such as a dialog's close button) as a prop, then
+  run `bun run fix`.
+- Use theme tokens (`text-muted-foreground`, not `text-gray-500`) and
+  component variants and sizes rather than restyling a component; the
+  `@shadcn/lint` rules check pages against peal-ui. Dark mode follows the
+  operating system (`prefers-color-scheme`).
+- Pages live under `src/app/[locale]/`: the auth pages (`sign-up`, `sign-in`,
+  `verify-email`, `forgot-password`, `reset-password`, `invitations/[id]`),
+  the contract functions anyone reaches (`cancel`, `withdraw`, and
+  `contract-request`, the page of the link emailed to a request's
+  address),
+  the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
+  platforms' redirect URI `connect/[platform]/callback` (which shows the
+  account picker when a sign-in reached several accounts), Meta's data
+  deletion status `data-deletion/[code]`, the page behind a review link
+  `review` (no sign-in, noindex; the token is the address's fragment, read
+  in the browser), and the signed-in
+  app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
+  `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
+  `…/analytics`, `…/drafts`, `…/posts/new`, `…/posts/[postId]`, which opens
+  a draft or a scheduled post in the composer, and shows a post that went
+  out in `PostDetail` (each channel's status, attempts and reasons, with
+  repost and confirm, and its analytics), `…/approvals` (the posts that
+  wait), `…/settings` (with `members`, `invitations`, `api-keys` and
+  `webhooks`) and `…/billing`. The staff console is
+  `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
+  `admin/workspaces`, `admin/workspaces/[workspaceId]`,
+  `admin/contract-requests` (through `deskRead`), `admin/audit` and
+  `admin/legal`: its layout and pages read the staff endpoints with the
+  visitor's cookies through `staffRead` (`#staff/server.ts`), which shows
+  the not-found page for any 404, and its actions are mutations from
+  `#staff/atoms.ts`. `admin/legal` (legal requests, `legalRead`) is linked
+  and served for staff with the legal role only (`answersLegalRequests`):
+  its form (`LegalRequestForm`, `#staff/legal-request.ts`) sends nothing
+  without the authority, the reference, the legal basis and what the
+  request covers, `LegalAnswerView` shows what came back, and the page
+  says before anything is entered that each answer is recorded, as staff
+  must be told (Code du travail, art. L1222-4): keep that notice.
+  `ImpersonationBanner`, in `AppShell`, shows while staff act as someone.
+- The web app reports its errors to `POST /api/client-errors`:
+  `src/instrumentation-client.ts` (uncaught errors, unhandled rejections),
+  `app/[locale]/error.tsx` and `app/global-error.tsx` (the error pages, in
+  the reader's language), and `src/instrumentation.ts` (`onRequestError`).
+  Build reports with `reportOf` (`#errors/report.ts`), which cuts each field
+  to the contract's limits and keeps no query, id or address; browsers send
+  them without cookies, each error once, ten a page at most. The release
+  comes from `PEAL_RELEASE`, through the locale layout's `peal-release`
+  meta tag.
+- Pages fetch through the client derived from `peal-contract`, with
+  `@effect/atom-react`: query atoms come from `PealApi` in `src/api/client.ts`.
+  Browsers call `/api`; server code calls `PEAL_API_URL`.
+- Server Components read the signed-in user with `currentUser()` from
+  `#auth/session.ts` (GET /api/me with the request's cookies, once per
+  request); the header uses `currentUserOrNone()`, so pages stay up when the
+  API is down. Gate a page by the permissions `/api/me` lists for the
+  workspace.
+- To render a query on the server, give it a `serializationKey`, run
+  `prefetch([…])` from `src/api/prefetch.ts` in an async Server Component
+  after `await connection()`, and wrap the client component in
+  `HydrationBoundary`. `prefetch` does not forward the visitor's cookies, so a
+  query that needs them, and anything that depends on the browser (its time
+  zone, the current time), renders after hydration (`useHydrated`,
+  `useMounted`). Tiptap editors set `immediatelyRender: false`.
+- Settings pages read Better Auth's members, invitations and sessions in
+  atoms (`#settings/atoms.ts`), decoding each answer with `authCall`, and
+  offer only the role changes its routes accept (`#settings/member-rules.ts`).
+  Invitations go through `invite` (`#settings/invite.ts`): Better Auth's
+  client types roles from its own defaults. Sign-in opens `next` in the
+  language the account keeps (`landingLocale`), which account settings save
+  with `updateUser`.
+- Client components call Better Auth through `authClient` (`#auth/client.ts`).
+  During an OAuth authorization it sends the page's signed query with every
+  POST, and Better Auth resumes the authorization after any call that sets
+  the session cookie; calls that must not resume it, such as setting the
+  active workspace, go through `workspaceClient`. Better Auth error codes map
+  to `Auth.errors` in the catalogues.
+- Keep the OAuth pages' views (`WorkspacePickerView`) apart from their state,
+  so tests render each state: peal-web has no DOM test environment. A view
+  under test imports nothing from `#i18n/navigation.ts`, which needs Next to
+  run: take links as props or children (`DraftItemView`,
+  `MediaUsageNotice`).
+- Show dates in the reader's time zone. next-intl's server provider hands the
+  client the server's zone (UTC in the image): `ViewerTimeZone`
+  (`components/viewer-time-zone.tsx`), in the locale layout, sets the
+  browser's on the shared provider once the page has hydrated, so every
+  page's dates follow it. `InTimeZone` (`components/notices/in-time-zone.tsx`)
+  sets a given zone on part of a page.
+- The header's `NotificationBell`, beside the account menu, polls
+  `GET /api/me/notices/unread` every 30 seconds while the tab is visible and
+  when it is shown again (`useRefreshWhileVisible`), and announces arrivals
+  in a status region. Polling works through any proxy and needs nothing
+  shared between servers; keep it. Write notices from their events with
+  `src/notices/notice-text.ts`.
+- The composer's options come from `TargetOptionsSection`
+  (`components/posts/target-options-panel.tsx`), which renders the fields
+  `#posts/target-options.ts` describes for each selected channel's platform
+  (text, number, tags, choice, yes or no, toggle, and `lookup`, a choice
+  among what a lookup answers for the account, shown `under` another once
+  that one is chosen; `initial`, `inverted` and `within` for TikTok's
+  boxes), turns them into the contract's `TargetOptions` with
+  Schema, and shows each `option*` violation under its field. On a TikTok
+  channel, `TikTokChannelOptions` reads `GET …/channels/:id/tiktok-creator`
+  and limits the fields by the creator (`#posts/tiktok-account.ts`): their
+  nickname, their audiences, interactions they turned off (and set off),
+  no Duet or Stitch on photo posts, "Only me" closed to branded content,
+  the disclosure's label, and TikTok's consent line, as its content sharing
+  guidelines require. On a Pinterest channel, `PinterestChannelOptions`
+  reads the account's boards, ten pages of 50 at most, and the chosen
+  board's sections (`pinterestBoards` and `pinterestBoardSections` in
+  `#posts/api.ts`, as `LookupChoices`): a field shows that its list is being
+  read, or why it could not be with a way to ask again, and keeps a value
+  the list lacks.
+- The composer's attachments come from `MediaPicker` (ready media of the
+  workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
+  `#posts/attachments.ts` keeps the list: order, alt text seeded from the
+  library description, `maxMediaPerPost` at most. `#posts/media-fit.ts`
+  checks it against the contract's platform rules, so Schedule waits until
+  nothing would be refused. Keep `MediaUploader` mounted while the post is
+  editable and pass `disabled` while it is busy: unmounting it cancels the
+  uploads in flight.
+- Charts use peal-ui's `chart` (recharts) and come with the same figures as
+  a table, behind **Chart** and **Table** tabs; the chart itself is
+  `aria-hidden`. Write calendar days, such as a summary's, in UTC
+  (`#analytics/report.ts` `dayDate`), and instants in the reader's zone.
+- `AssistantMenu` sits in the composer's text section and works on the text
+  for all channels. Render it only for members with `assistant:use`, and
+  only while `GET …/assistant` answers `available`; refresh that status after
+  every request, which can change the requests left. Show each suggestion in
+  a preview the person accepts or discards: never apply one unasked.
+- A plan's refusal opens the one upgrade dialog (`UpgradeDialog`, its view
+  `UpgradeView`): the limit with usage and plan, the smallest plan with
+  room priced with VAT first (`offerOf`, from the contract's catalogue),
+  the consent and the order button of the billing page, then checkout
+  (`useCheckout`), back to the page the person was on; who can order, for
+  a member who cannot; how to ask for more on the largest plan
+  (`PEAL_CONTACT_URL`). `UpgradePrompts` puts it around a workspace's pages
+  (`app/[workspaceId]/layout.tsx`), the workspaces list and the connect
+  callback. A place that sends something a plan can refuse calls
+  `useOfferUpgrade()(exit)` (`useOfferAuthUpgrade` for Better Auth's
+  errors), or renders `OfferUpgrade` with the failure it keeps in state,
+  beside its own message: add it to every new such place. The same layout's
+  `PlanGate` shows `OverPlanScreen` instead of the page, billing's aside,
+  while the workspace must come back within its plan
+  (`standingOfWorkspace`, read with the visitor's cookies). The billing
+  page orders smaller plans too, and lists what a `PlanTooSmall` names.
+- The billing page shows `GET …/billing` (`BillingView` renders each state,
+  `BillingStep` the cancellation and withdrawal steps) with prices
+  including VAT first and excluding VAT beside them, a monthly and yearly
+  switch, the unticked box asking to start at once, and **Order with
+  obligation to pay**; it places the order (`#billing/api.ts`), then opens
+  Stripe's checkout and customer portal through `billingClient`
+  (`#auth/billing-client.ts`, Better Auth's Stripe client), with
+  `disableRedirect` and the page as the way back. It links the terms of
+  service at `PEAL_TERMS_URL`. Explain a `PlanLimitReached`, and Better
+  Auth's `MEMBER_LIMIT_REACHED`, wherever they surface, from the `Billing`
+  catalogue and `Auth.errors`.
+- The sign-up and password reset pages read the Turnstile site key at
+  request time (`captchaSiteKey()`, `GET /api/captcha`); `useCaptcha` shows
+  the widget only with one, sends its token as `x-captcha-response`, and
+  resets it after every call, since a token works once.
+- `src/proxy.ts` rewrites `/api/*` and `/.well-known/oauth-*` to
+  `PEAL_API_URL`, read per request. Keep it there, not in `next.config.ts`:
+  Next resolves config rewrites at build time and writes the URL into the
+  build.
+- `next dev` serves its scripts only to `localhost`: open the app at
+  `http://localhost:3001`; on `127.0.0.1` pages never hydrate.
+- English is the default language and French the second. Write no user-facing
+  string outside the message catalogues, notifications and emails included:
+  store events, render them in the reader's language. Give each feature its
+  own namespace (`ChannelsPage`, `Posts`, `Media`, `OAuth`…).
+- `messages/en.json` is the reference: every other catalogue has exactly its
+  keys, which a test and the types check. Use ICU arguments rather than
+  building sentences in code.
+- English has no prefix (`/`) and French is under `/fr`. Navigate with the
+  helpers in `src/i18n/navigation.ts`, not `next/link`.
+- Folders in `peal-web` import each other through `#…` (package.json
+  `imports`); `#messages/*` points at the catalogues.
