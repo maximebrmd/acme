@@ -16,6 +16,10 @@ Peal tells the members it concerns when something happens to a post or a channel
 | A post may have gone out           | Peal could not tell whether a channel published it. Check the platform before you post it again.           | The same                                                    |
 | A channel must be reconnected      | The platform no longer accepts Peal's access: nothing goes out on the channel until someone reconnects it. | Members who may connect channels: owners and admins         |
 | A channel must be reconnected soon | The channel's access cannot be renewed, and ends on the date the notification gives.                       | The same                                                    |
+| A post waits for an approval       | Someone asked for a post to go out, in a workspace that asks for [approvals](/review).                     | Members who may approve posts: owners, admins and editors   |
+| A post was approved                | Someone approved it, in Peal or through a review link. Approved after its time, it is a draft again.       | Its author, whoever asked, and whoever commented on it      |
+| Changes were requested on a post   | It is a draft again, with a comment that says what to change.                                              | The same                                                    |
+| A post was commented on            | A member, or a reviewer through a link, commented on it.                                                   | The same                                                    |
 
 A post's notifications go to its author, the member who created it, whatever their role, and to the members who may schedule posts (owners, admins and editors) and chose to hear about every post in their [preferences](#email). A post created with an API key has no author: its notifications go to every member who may schedule posts. A member who left the workspace hears nothing more about it, and their posts' notifications go to every member who may schedule posts, as for a post without an author.
 
@@ -51,12 +55,13 @@ You see the notifications of workspaces you have left too, under "a workspace yo
 
 From **Notifications**, choose **Email preferences** to pick which notifications also reach you by email, and under **Tell me about**, whether you hear about every post of your workspaces, not only the ones you wrote (off until you turn it on). Each choice is saved as you change it, and applies in all your workspaces.
 
-| Email me when                                                | Until you change it |
-| ------------------------------------------------------------ | ------------------- |
-| A post did not go out                                        | On                  |
-| A post may have gone out, and needs checking on the platform | On                  |
-| A channel must be reconnected, now or soon                   | On                  |
-| A post went out                                              | Off                 |
+| Email me when                                                                           | Until you change it |
+| --------------------------------------------------------------------------------------- | ------------------- |
+| A post did not go out                                                                   | On                  |
+| A post may have gone out, and needs checking on the platform                            | On                  |
+| A post waits for my approval, or a post I follow is commented on, approved or sent back | On                  |
+| A channel must be reconnected, now or soon                                              | On                  |
+| A post went out                                                                         | Off                 |
 
 Emails are written in your language. When the mail server turns an email away for now, Peal tries again for about five hours. An email waiting to go out is dropped if you leave the workspace, or turn that email off, in the meantime.
 

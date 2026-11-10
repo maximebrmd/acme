@@ -1,0 +1,127 @@
+---
+title: Review and approval
+description: Show a post to a client without a Peal account, collect their comments, and get an approval before it goes out. Approval policies, review links, comments, and what Peal keeps.
+sidebar:
+  order: 3.5
+---
+
+An agency shows a post to its client before it is published; a team has a manager look at what a contributor wrote. Peal does both: a **review link** shows one post to someone without an account, who can comment on it and approve it, and a workspace can ask that posts wait for an **approval** before they are scheduled.
+
+## In short, for an agency [#agency]
+
+1. In **Settings**, an owner or an admin sets **Approvals** to **Always**, or to **When a contributor or an application asks**.
+2. Write the post and choose **Ask for approval** (the button that otherwise says **Schedule**). The post has its time, shows on the calendar as **Awaiting approval**, and does not go out.
+3. On the post's page, under **Review links**, create a link that lets whoever opens it **View, comment and approve**, and send it to your client. The link is shown once: copy it then.
+4. Your client opens it, without an account, sees the post as each channel will receive it, comments, and chooses **Approve this post** or **Request changes**.
+5. Approved, the post is scheduled for its time. With changes requested, it is a draft again, with the client's comment: correct it and ask again.
+
+Members who may approve posts can also approve in Peal, on the post's page or from **Approvals**, the list of posts that wait.
+
+## Which posts wait [#policy]
+
+Each workspace has one approval policy, in **Settings**, under **Approvals**. Owners and admins choose it.
+
+| Policy                                        | What waits for an approval                                                                                                                                                                                                                                      |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Never** (until you change it)               | Nothing. Whoever may schedule posts does; contributors write drafts.                                                                                                                                                                                            |
+| **When a contributor or an application asks** | What a contributor asks to send, and what is scheduled with an [API key](/settings#api-keys) or through an application signed in for a member: the [command line](/cli) or an [AI assistant](/mcp). Owners, admins and editors schedule at once in the web app. |
+| **Always**                                    | Every post, whoever asks.                                                                                                                                                                                                                                       |
+
+With a policy other than **Never**, contributors may ask for a post to go out, which they otherwise cannot. Viewers still cannot.
+
+The policy applies to posts scheduled from then on. A post already scheduled stays scheduled, and a post that waits still waits.
+
+Every way of scheduling goes through the same check: the web app, the [API](/api-overview), an API key, the command line and AI assistants. None schedules around it.
+
+## A post that waits [#waiting]
+
+A post that waits for an approval has the status **Awaiting approval**. It has its time and its channels, shows on the [calendar](/scheduling#calendar) at that time, and counts in the month's posts of your [plan](/billing), but nothing publishes it until it is approved. Like a scheduled post, it keeps its text: take it **Back to draft** to change it, which withdraws the request.
+
+Whoever asked, and whoever may schedule, can move it to another time, take it back to draft or cancel it. A member who may schedule can also schedule it themselves where the policy lets them schedule without an approval, which withdraws the request.
+
+### Approve [#approve]
+
+Owners, admins and editors may approve, on the post's page (**Approve**) or with the API, the command line or an AI assistant. Someone without an account may approve through a review link that allows it. Peal records each decision: who decided (for a link, the name they gave and the link they used), what, and when. The post's page shows this history.
+
+Whoever may approve may approve a post they wrote or asked to send: an approval says that someone allowed to has looked, not that two people have. If you need a second person, have contributors write and editors approve.
+
+An application does not approve what an application asked for. What an API key, the command line or an AI assistant scheduled waits for a person: a member in the web app, or a reviewer through a link. An application may approve what a member asked for in the web app.
+
+### Request changes [#changes]
+
+**Request changes** sends the post back to draft with a comment that says what to change. Its author and whoever asked are told. Once corrected, ask again: a new request starts.
+
+### When the approval comes late [#late]
+
+An approval that comes after the post's time publishes nothing late. The post goes back to draft, still approved, and its author is told to give it a new time. Scheduling it again needs no new approval while it says the same. A time up to a minute ago still counts as now.
+
+### What an approval covers [#covers]
+
+An approval is for what the post says and where it goes. These changes void it, and the post waits again the next time it is scheduled:
+
+- its text, or the text it has on one channel;
+- its images and videos: which ones, their order, and their alt text;
+- the channels it goes to;
+- its [platform options](/scheduling#options) on a channel, such as a YouTube title.
+
+Its time is not part of it: an approved post may be moved, by those who may schedule, without a new approval.
+
+## Review links [#links]
+
+A review link shows one post to whoever holds it. They need no account and do not sign in.
+
+On the post's page, under **Review links**, members who may approve posts create a link and choose:
+
+- what it allows: **View only**, **View and comment**, or **View, comment and approve**;
+- how long it works: 14 days unless you choose otherwise, 90 days at most.
+
+Peal shows the link once, when it is created, and keeps no copy of it: only a fingerprint that recognises it. If you lose it, create another. A post has 20 working links at most.
+
+The page behind a link shows the post as each channel will receive it: the channel's name and platform, the text the post has there, its images and videos with their alt text written out, and its time in the reader's own time zone. It is an honest preview, not an imitation of each platform's layout. It shows nothing else of your workspace: not its name, its members' addresses, its other posts or its channels.
+
+A link stops working when it expires or you revoke it, and as soon as the post is published, cancelled or deleted. The page then says which. While a post is a draft again after changes were requested, its link still shows it.
+
+Links are made for drafts, posts that wait and scheduled posts. Staff acting as a member cannot create them.
+
+<Callout type="warning">
+
+Anyone who has the link can open it. Send it to the people who should see the post, and revoke it if it went to the wrong place.
+
+</Callout>
+
+## Comments [#comments]
+
+Each post has comments, on its page in Peal and on its review link's page when the link allows comments. A comment starts a thread, others answer it, and members resolve a thread once it is dealt with, or reopen it.
+
+A comment can be about the whole post, or about some words of the text on one channel: select the words in the preview, then write. The comment keeps the words it quotes. If the text changes later, the comment still points at those words wherever they moved; once the text no longer contains them, the comment keeps the quote and says the text has changed.
+
+Members comment as themselves. Owners, admins, editors and contributors may comment and resolve; viewers read. Someone who came through a link gives a name, shown with their comments and decisions, and may leave an email address to hear of answers.
+
+Comments are plain text, 2000 characters at most. Nothing typed is read as formatting or as code, and control characters are removed.
+
+The members who follow a post hear about its review through [notifications](/notifications): its author, whoever asked for its approval, and whoever commented on it. Members who may approve hear when a post starts waiting.
+
+## For reviewers without an account [#reviewers]
+
+If you were sent a review link:
+
+- Open the whole link. Its end, after the `#`, is what opens the post; your browser does not send that part to any other site.
+- Give your name before you comment or decide. It is shown with what you write to the team that sent you the link.
+- Leaving your email address is optional. It is used only to tell you that someone answered; the email names nothing and contains no link, so open the link you were sent to read the answer.
+- You may be asked to complete a check that you are not a robot before you send something.
+
+What Peal keeps of you: the name you gave, with your comments and decisions, for 24 months, after which they stay without a name; your email address until 30 days after the link ends. Everything is deleted earlier if the post or the workspace is deleted. To have it removed sooner, ask the team that sent you the link, or the operator of the Peal instance.
+
+## Through the API [#api]
+
+The [API](/api-overview) has the same operations, under `/api/workspaces/{workspaceId}`: `review/settings` for the policy, `approvals` for the posts that wait, and for a post, `review`, `comments`, `approve`, `request-changes` and `review-links`. A post that waits answers `"status": "awaitingApproval"` wherever posts are listed.
+
+Scheduling a post that needs an approval answers the post, waiting, rather than an error: check its `status`.
+
+The [command line](/cli#review) has `peal approvals` and `peal review`, and [AI assistants](/mcp#tools) have `list_approvals`, `get_post_review`, `approve_post` and `request_changes`.
+
+## On your own server [#self-hosting]
+
+Nothing to set: reviews work on every instance. Visitors' comments and decisions are limited to 20 every 10 minutes per address and 60 an hour per link, and requests to 16 KiB. When the instance has [Turnstile keys](/environment-variables), visitors complete its check before they write. The check is loaded only once a visitor starts to write, so reading a post through a link contacts no one but your instance and its media store.
+
+A link's address is `PUBLIC_URL/review#<token>`.
