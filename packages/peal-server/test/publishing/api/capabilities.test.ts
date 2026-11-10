@@ -188,6 +188,28 @@ describe("the platforms' capabilities endpoint", () => {
     })
   );
 
+  it.effect(
+    "names each format's kind as the media library does: a PDF is a document",
+    () =>
+      Effect.gen(function* kinds() {
+        const client = yield* clientWith(viewer);
+
+        const all = yield* client.capabilities.platforms({
+          params: { workspaceId },
+        });
+
+        const kindsOf = new Map(
+          all
+            .flatMap(({ media }) => media.formats ?? [])
+            .map(({ contentType, kind }) => [contentType, kind] as const)
+        );
+
+        assert.strictEqual(kindsOf.get("application/pdf"), "document");
+        assert.strictEqual(kindsOf.get("image/gif"), "image");
+        assert.strictEqual(kindsOf.get("video/quicktime"), "video");
+      })
+  );
+
   it.effect("describes a platform's media, format by format", () =>
     Effect.gen(function* media() {
       const client = yield* clientWith(viewer);

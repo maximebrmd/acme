@@ -11,7 +11,10 @@ import type { DescribedChannel } from "#publishing/application/posting-capabilit
 import type { AccountStanding } from "#publishing/domain/account-restriction.ts";
 import type { FieldDescription } from "#publishing/domain/field-description.ts";
 import type { LookupName } from "#publishing/domain/lookup.ts";
-import { MediaContentTypeSchema } from "#publishing/domain/media-file.ts";
+import {
+  MediaContentTypeSchema,
+  mediaKinds,
+} from "#publishing/domain/media-file.ts";
 import type {
   OptionLookup,
   PlatformCapabilities,
@@ -57,7 +60,7 @@ const formatView = (
   limits: FormatLimits
 ): MediaFormatView => ({
   contentType,
-  kind: contentType.startsWith("image/") ? "image" : "video",
+  kind: mediaKinds[contentType],
   maxAspectRatio: orNull(limits.aspectRatio?.maximum),
   maxByteSize: orNull(limits.maxByteSize),
   maxDurationMs: orNull(limits.maxDurationMs),

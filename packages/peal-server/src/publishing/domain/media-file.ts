@@ -20,7 +20,8 @@ export type MediaContentType = typeof MediaContentTypeSchema.Type;
 
 export type MediaKind = "document" | "image" | "video";
 
-const kinds: Readonly<Record<MediaContentType, MediaKind>> = {
+/** What kind of file each type Peal stores is. */
+export const mediaKinds: Readonly<Record<MediaContentType, MediaKind>> = {
   "application/pdf": "document",
   "image/gif": "image",
   "image/jpeg": "image",
@@ -56,6 +57,6 @@ export class MediaFile extends Schema.Class<MediaFile>(
   mediaId: MediaAssetIdSchema,
 }) {
   get kind(): MediaKind {
-    return kinds[this.contentType];
+    return mediaKinds[this.contentType];
   }
 }
