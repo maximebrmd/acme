@@ -160,6 +160,10 @@ describe("a member's tags", { serial: true }, () => {
 
     await expect(screen.getByText("Post cancelled.")).toBeVisible();
     await expect(screen.getByRole("heading", "Calendar")).toBeVisible();
+    // The next test cancels a post too: its toast must be the only one.
+    await expect(screen.getByText("Post cancelled.")).toBeHidden({
+      timeout: 10_000,
+    });
   });
 
   test("cancels the other post", async ({ screen }) => {
