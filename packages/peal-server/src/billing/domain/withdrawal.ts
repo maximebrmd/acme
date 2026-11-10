@@ -33,6 +33,16 @@ export const mayWithdraw = (
     return Result.fail(new WithdrawalUnavailable({ reason: "notSubscribed" }));
   }
 
+  // A statement that came before the contract started withdraws from an
+  // earlier one: counted from then, the whole of this one would go back.
+  if (
+    Option.exists(subscription.startedAt, (startedAt) =>
+      DateTime.isLessThan(now, startedAt)
+    )
+  ) {
+    return Result.fail(new WithdrawalUnavailable({ reason: "notSubscribed" }));
+  }
+
   return Option.match(withdrawalEndsAt(subscription), {
     onNone: () =>
       Result.fail(new WithdrawalUnavailable({ reason: "notSubscribed" })),

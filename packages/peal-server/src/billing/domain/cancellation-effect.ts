@@ -44,8 +44,8 @@ export interface NotifiedCancellation {
  * for its sender to be told from a stranger, never costs them a renewal
  * charged meanwhile. The contract ends with the period paid for, which is
  * not refunded, or on the day asked for when that is later; a trial ends at
- * once. A subscription that gives no plan, or is already set to end, has
- * nothing to cancel.
+ * once. A subscription that gives no plan, is already set to end, or
+ * started after the request came, has nothing to cancel.
  */
 export const cancellationEffect = (
   subscription: Subscription,
@@ -53,6 +53,17 @@ export const cancellationEffect = (
   now: DateTime.Utc
 ): Result.Result<CancellationEffect, NothingToCancel> => {
   if (!entitles(subscription) || subscription.cancelAtPeriodEnd) {
+    return Result.fail(new NothingToCancel());
+  }
+
+  // A contract that started after the request came is another one, ordered
+  // since: the request never spoke of it, and applied to it would end it
+  // and refund every period it charged.
+  if (
+    Option.exists(subscription.startedAt, (startedAt) =>
+      DateTime.isGreaterThan(startedAt, receivedAt)
+    )
+  ) {
     return Result.fail(new NothingToCancel());
   }
 

@@ -49,6 +49,28 @@ describe(cancellationEffect, () => {
     );
   });
 
+  it("applies nothing to a contract that started after the request came", () => {
+    // Sent on 10 November during a trial; a yearly plan ordered the day
+    // after is another contract, which the request never spoke of.
+    const orderedSince = subscriptionOf({
+      ...paid,
+      currentPeriodEnd: Option.some(at("2027-11-11T00:00:00Z")),
+      currentPeriodStart: Option.some(at("2026-11-11T00:00:00Z")),
+      startedAt: Option.some(at("2026-11-11T00:00:00Z")),
+    });
+
+    expect(
+      cancellationEffect(
+        orderedSince,
+        { desiredAt: Option.none(), receivedAt: at("2026-11-10T08:00:00Z") },
+        at("2026-12-09T08:00:00Z")
+      ).pipe(
+        Result.getFailure,
+        Option.map(({ _tag }) => _tag)
+      )
+    ).toStrictEqual(Option.some("NothingToCancel"));
+  });
+
   it("ends at once, and refunds the renewal, a plan that renewed after the request came", () => {
     // Received on 30 November, applied on 2 December: the period it was
     // received in ended on 1 December, and the renewal was charged since.
