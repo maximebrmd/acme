@@ -196,6 +196,7 @@ them:
 | `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
 | `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
 | `staff`         | the staff console: what staff read and do, and the audit log of it          |
+| `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log   |
 | `legal`         | what French law has a host keep, and the legal requests that read it        |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
@@ -410,7 +411,7 @@ and no socket, for tests.
   hands its records of a workspace or a user to the workspace context
   through an application port (`ChannelRecords`, `PostRecords`,
   `MediaRecords`, `NoticeRecords`, `UsageRecords`, `AnalyticsRecords`,
-  `BillingRecords`, `StaffRecords`, in the shapes of
+  `BillingRecords`, `StaffRecords`, `WebhookRecords`, in the shapes of
   `#shared/application/personal-data.ts`),
   which `ContextRecords` reaches. The rows go in one TransactionRunner
   transaction, Better Auth's included (the server's Drizzle on the `auth`
@@ -1265,6 +1266,80 @@ and no socket, for tests.
   a workspace of their own, at instants no other suite uses, and delete it
   after (`forgetWorkspace`): the collection reads every row that is due.
 
+### Webhooks
+
+- A workspace's endpoints (`WebhookEndpoints`, `WebhookDeliveries`) hear
+  what happens in it: reading needs `webhook:read`, changing
+  `webhook:manage` (owners and admins; API keys and OAuth clients follow
+  the permission; staff impersonating a member only read). 10 endpoints a
+  workspace, whatever the plan and on a server that does not bill
+  (`delivery-policy.ts`, counted under `EndpointStore.addingTo`'s advisory
+  lock). The contract copies the vocabulary and the limits, kept equal by
+  `test/webhooks/api/contract.test.ts`, which also decodes every example of
+  the docs' Webhooks page, en and fr: change them together.
+- Events (`#webhooks/domain/webhook-event.ts`, `WebhookPayloadSchema` in the
+  contract) are public contract, stored until delivered: add a type or a
+  field, never rename or remove one; a change receivers could not read is a
+  new `version` sent beside the old. They carry ids, states, codes, instants
+  and permalinks, never a post's text, a file, a handle or a name: the
+  receiver reads those through the API. Keep
+  `fixtures/persisted/events/stored.json` decoding.
+- Contexts publish through `WebhookEvents.publish({ event, key })`, which
+  joins the caller's transaction (as `Notify` does): the event, one delivery
+  per endpoint that is on and subscribes, and the start of each job commit
+  with the fact, or not at all, once per key (ids and instants, never
+  content). A workspace where nobody listens keeps nothing. Publishing
+  tells through `PostEvents` (schedule, unschedule, cancel, confirm, in
+  `PostScheduling`'s and `PostFollowUp`'s transactions) and
+  `webhookOutcomes` around `PublicationOutcomes`; channels through
+  `ChannelEvents` (connect, reconnect, disconnect, in
+  `ChannelRepository.addingTo`'s transaction) and `webhookChannelNotices`
+  (reconnect needed, which the daily check tells again); media through
+  `webhookMediaAssets`, around `MediaAssets.update`. A bug in telling is
+  logged and never stops the fact; the database failing rolls both back.
+  A new event is told from the transaction that records its fact.
+- Deliveries follow the Standard Webhooks specification
+  (`#webhooks/domain/signature.ts`): `webhook-id` is the event's id, the
+  same on every attempt and on "send again", `webhook-timestamp` the
+  attempt's time, `webhook-signature` one `v1,<base64 HMAC-SHA256>` per
+  secret over `<id>.<timestamp>.<body>`, the body being `bodyOf`'s text
+  byte for byte. Order is not guaranteed and deliveries repeat: the docs
+  say so.
+- Secrets are `whsec_` and 32 random bytes, issued and used behind
+  `EndpointSecrets`, on the channels context's `TokenCipher`
+  (`webhook:<endpoint id>`), so without `PEAL_TOKEN_KEYS` creating an
+  endpoint answers `WebhooksNotConfigured` (503). The plain secret leaves
+  once, in the answer to create or rotate; a rotated one signs beside the
+  new one for 24 hours. Never log one, nor an endpoint's URL, whose path
+  or query may hold the receiver's secret: logs, notices and the staff
+  console name an endpoint by id and host.
+- `WebhookTransport` sends through `publicHttpClient` only (HTTPS on 443,
+  public addresses checked before every request, no redirect followed, no
+  trace context), with its spans off and 15 seconds for the whole exchange.
+  Any 2xx is success; of another answer the log keeps the status and
+  `excerptOf` its body (one cleaned line, 256 characters), nothing else.
+- `DeliverWebhookV1` (payload `deliveryId`, activities `attempt/<n>`, clocks
+  `retry/<n>`, results `retry` or `settled`) is persisted contract, with
+  fixtures in `test/webhooks/infrastructure/fixtures/persisted`. It makes 8
+  attempts over about a day (`retryDelays`), each recorded by
+  `DeliverWebhook.attempt` with its number, so one made twice counts once.
+  `410 Gone` fails the delivery and turns the endpoint off; so do 5 days of
+  failed attempts (`failing_since`, cleared by a success or by turning it
+  back on). Turning off happens once (`EndpointStore.disable`), and tells
+  the members with `webhook:manage` through the `WebhookEndpointDisabled`
+  notice, always emailed. A delivery whose endpoint is off fails without a
+  request.
+- The log keeps a delivery 30 days (`webhooks.delivery-retention` cron,
+  `PurgeDeliveries`), and an event while a delivery refers to it: the docs
+  say 30 days, change them together. Tests of the purge set the clock long
+  before any other suite's rows.
+- Tests use `WebhooksTest` (`test/webhooks/support.ts`): Postgres, real
+  secrets with the synthetic keyring, `FakeTransport` (hosts ending in
+  `.internal.example` are not public, `.invalid` unknown), `StartedJobs`
+  and `ToldNotices`; `eventsSentTo` reads what an endpoint was sent. The
+  transport itself is tested against a loopback receiver
+  (`fakes/fake-receiver.ts`).
+
 ### MCP endpoint
 
 - `src/app/mcp/` serves effect/ai's `McpServer.layerHttp` at `/api/mcp`
@@ -1278,7 +1353,7 @@ and no socket, for tests.
 - The use cases' permission checks refuse a client the user let read only.
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
-  `reports-tools.ts`, `people-tools.ts`) and its handlers beside it, merged
+  `reports-tools.ts`, `people-tools.ts`, `webhooks-tools.ts`) and its handlers beside it, merged
   into `PealTools`. Annotate every tool with `reading`, or
   `changing({ destructive, idempotent, openWorld })` from `annotations.ts`,
   and say in its description what it changes. `list_members` answers
@@ -1370,7 +1445,7 @@ self-hoster needs only Postgres and an S3-compatible store:
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/settings` (with `members`,
-  `invitations` and `api-keys`) and `…/billing`. The staff console is
+  `invitations`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]` and `admin/audit`:
   its layout and pages read the staff endpoints with the visitor's cookies
@@ -1503,7 +1578,7 @@ self-hoster needs only Postgres and an S3-compatible store:
   `http://localhost:3000`.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `analytics`, `billing`, `members` and `invitations`, which act in the
+  `analytics`, `billing`, `members`, `invitations` and `webhooks`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read

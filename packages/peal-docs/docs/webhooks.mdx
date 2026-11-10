@@ -51,6 +51,7 @@ Each delivery is a `POST` to the endpoint's address, with `content-type: applica
 POST /peal HTTP/1.1
 Host: hooks.example.com
 Content-Type: application/json
+User-Agent: Peal-Webhooks
 webhook-id: 019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e03
 webhook-timestamp: 1794301203
 webhook-signature: v1,Mfm1tWLUX4U95AK/DHjduW4e8bHrj/HztAOACn91BF4=
@@ -256,7 +257,7 @@ The post did not go out on the channel.
 
 ### post.unconfirmed [#post-unconfirmed]
 
-Peal cannot tell whether the post went live on the channel, and never sends it again on its own: someone checks the platform, then [confirms it or posts it again](/scheduling#follow-up).
+Peal cannot tell whether the post went live on the channel, and never sends it again on its own: someone checks the platform, then [confirms it or posts it again](/scheduling#follow-up). Once a member says what they found, a `post.published`, or a `post.failed` with the reason `notPublished`, follows for the same `round`; a repost brings the events of the next round.
 
 | Field         | Type           | What it holds                                                  |
 | ------------- | -------------- | -------------------------------------------------------------- |
@@ -297,7 +298,7 @@ Peal cannot tell whether the post went live on the channel, and never sends it a
 
 ### post.cancelled [#post-cancelled]
 
-The post was cancelled. `targets` are the channels it will not go out on; a channel it had already reached keeps its own event.
+The post was cancelled. `targets` are the channels it will not go out on; a channel it had already reached keeps its own event. A channel Peal was sending to at that moment ends with its own event: `post.published`, `post.failed` or `post.unconfirmed` if the platform was called, or a `post.cancelled` naming it alone if it was not.
 
 | Field         | Type   | What it holds                                                                        |
 | ------------- | ------ | ------------------------------------------------------------------------------------ |

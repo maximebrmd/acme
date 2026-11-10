@@ -175,6 +175,24 @@ peal invitations revoke <invitation-id>
 - `peal invitations revoke` arrête aussitôt le lien d’une invitation.
 - Changer le rôle d’un membre, ou retirer quelqu’un, se fait dans les **Paramètres** de l’espace de travail.
 
+## Webhooks [#webhooks]
+
+```sh
+peal webhooks list
+peal webhooks create --url https://hooks.example.com/peal --events post.published,post.failed
+peal webhooks update <endpoint-id> --events all --disable
+peal webhooks rotate-secret <endpoint-id>
+peal webhooks test <endpoint-id>
+peal webhooks deliveries <endpoint-id>
+peal webhooks redeliver <endpoint-id> <delivery-id>
+peal webhooks delete <endpoint-id>
+```
+
+- Les propriétaires et administrateurs lisent et gèrent les points de terminaison de [webhook](/webhooks) de l’espace de travail. `peal webhooks show <endpoint-id>` en affiche un.
+- `--events` prend des types d’événements séparés par des virgules, ou `all`. `create` prend aussi `--description` et `--disabled` ; `update` n’envoie que ce que vous lui donnez, avec `--enable` ou `--disable` pour activer ou désactiver le point de terminaison.
+- `create` et `rotate-secret` affichent le secret de signature, une seule fois : enregistrez-le à ce moment. Après un renouvellement, l’ancien secret signe encore pendant 24 heures, à côté du nouveau.
+- `test` envoie un événement `webhook.test` ; `deliveries` montre comment chaque livraison s’est terminée, la plus récente d’abord, et `redeliver` en renvoie une.
+
 ## Vos données [#account]
 
 ```sh
