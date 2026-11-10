@@ -9,6 +9,13 @@ import { Hex } from "effect/encoding";
  */
 export const graphApiVersion = "v27.0";
 
+/**
+ * Where Meta sends a member back after signing in to its ad network, on
+ * the web app: a redirect URI of Meta's main app, beside those of Facebook
+ * Pages and Instagram.
+ */
+export const metaAdsCallbackPath = "/connect/ads/meta/callback";
+
 /** The Threads API's version, which moves on its own. */
 export const threadsApiVersion = "v1.0";
 

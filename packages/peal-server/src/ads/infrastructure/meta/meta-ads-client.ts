@@ -20,6 +20,7 @@ import {
   appSecretProof,
   graphApiVersion,
   graphUrl,
+  metaAdsCallbackPath,
 } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 
@@ -53,9 +54,6 @@ import {
   UpdatedSchema,
   UserSchema,
 } from "./marketing-schemas.ts";
-
-/** Where Meta sends a member back after the ads sign-in. */
-export const metaAdsCallbackPath = "/connect/ads/meta/callback";
 
 // From Meta's "Authorization" page of the Marketing API: `ads_read` reads
 // ad accounts and their reports, `ads_management` makes and changes ads.

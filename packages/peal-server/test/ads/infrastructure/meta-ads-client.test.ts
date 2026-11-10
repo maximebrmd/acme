@@ -7,6 +7,7 @@ import { Audience } from "#ads/domain/audience.ts";
 import type { BoostBudget } from "#ads/domain/boost.ts";
 import { NetworkObjectIdSchema } from "#ads/domain/ids.ts";
 import { CurrencySchema } from "#ads/domain/money.ts";
+import { platformRegistrations } from "#channels/infrastructure/platforms/platform-addresses.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
   adAccountUsage,
@@ -75,6 +76,13 @@ describe("signing in to Meta for ads", () => {
       assert.strictEqual(
         url.searchParams.get("redirect_uri"),
         "https://peal.example/connect/ads/meta/callback"
+      );
+      // The address the operator is told to register for it.
+      assert.deepStrictEqual(
+        platformRegistrations("https://peal.example")
+          .filter(({ id }) => id === "metaAds")
+          .flatMap(({ addresses }) => addresses.map((address) => address.url)),
+        [url.searchParams.get("redirect_uri")]
       );
     }).pipe(Effect.scoped)
   );

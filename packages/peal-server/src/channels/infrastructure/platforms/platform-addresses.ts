@@ -2,6 +2,7 @@ import { DataDeletionApi } from "peal-contract";
 import type { MetaApp } from "peal-contract";
 
 import type { Platform } from "#channels/domain/platform.ts";
+import { metaAdsCallbackPath } from "#shared/infrastructure/platforms/meta-graph.ts";
 
 import { blueskyPaths } from "./bluesky/bluesky-client.ts";
 import { googleBusinessCallbackPath } from "./google-business/google-business-authorizer.ts";
@@ -42,6 +43,7 @@ export interface PlatformRegistration {
     | "linkedin"
     | "linkedinPages"
     | "mastodon"
+    | "metaAds"
     | "pinterest"
     | "threads"
     | "tiktok"
@@ -190,6 +192,18 @@ export const platformRegistrations = (
       platforms: ["facebook", "instagram"],
       registeredBy: "operator",
       settings: ["META_APP_ID", "META_APP_SECRET"],
+    },
+    {
+      addresses: [redirect("Valid OAuth redirect URIs", metaAdsCallbackPath)],
+      id: "metaAds",
+      name: "Meta: ads, on the same app as Facebook Login",
+      notes: [
+        "Only when PEAL_ADS is read or spend: the sign-in to Meta's ad network, which connects ad accounts, never a channel. Its data deletion and deauthorize callbacks are Facebook Login's.",
+      ],
+      // It connects ad accounts, which are no platform's channels.
+      platforms: [],
+      registeredBy: "operator",
+      settings: ["META_APP_ID", "META_APP_SECRET", "PEAL_ADS"],
     },
     {
       addresses: [
