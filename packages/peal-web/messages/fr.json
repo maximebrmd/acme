@@ -349,6 +349,12 @@
     "connect": "{connection, select, instagramLogin {Se connecter avec Instagram} facebookLogin {Passer par une Page Facebook} other {Connecter Instagram}}",
     "connecting": "Ouverture…"
   },
+  "LinkedInChannels": {
+    "title": "LinkedIn",
+    "description": "{connection, select, linkedinProfile {Votre propre profil. LinkedIn vous demande de vous reconnecter tous les 60 jours : Peal vous le rappelle une semaine avant.} linkedinPage {Les pages d’entreprise que vous administrez : connectez-vous, puis choisissez les pages. Vous devez être administrateur ou administrateur de contenu d’une page pour y publier.} other {Connectez-vous sur LinkedIn.}}",
+    "connect": "{connection, select, linkedinProfile {Connecter votre profil} linkedinPage {Connecter des pages d’entreprise} other {Connecter LinkedIn}}",
+    "connecting": "Ouverture…"
+  },
   "DataDeletionPage": {
     "title": "Demande de suppression des données",
     "description": "Où en est une demande de suppression des données que Peal détient sur vous.",

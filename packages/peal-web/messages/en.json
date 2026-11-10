@@ -349,6 +349,12 @@
     "connect": "{connection, select, instagramLogin {Connect with Instagram} facebookLogin {Connect through a Facebook Page} other {Connect Instagram}}",
     "connecting": "Opening…"
   },
+  "LinkedInChannels": {
+    "title": "LinkedIn",
+    "description": "{connection, select, linkedinProfile {Your own profile. LinkedIn asks you to sign in again every 60 days: Peal reminds you a week before.} linkedinPage {The company pages you administer: sign in, then choose the pages. You must be an administrator or a content administrator of a page to post to it.} other {Sign in on LinkedIn.}}",
+    "connect": "{connection, select, linkedinProfile {Connect your profile} linkedinPage {Connect company pages} other {Connect LinkedIn}}",
+    "connecting": "Opening…"
+  },
   "DataDeletionPage": {
     "title": "Data deletion request",
     "description": "Where a request to delete the data Peal holds about you stands.",
