@@ -13,7 +13,9 @@ import { TokenCipher } from "#channels/application/token-cipher.ts";
 import { ChannelsLive } from "#channels/container.ts";
 import { platforms } from "#channels/domain/platform.ts";
 import { platformRegistrations } from "#channels/infrastructure/platforms/platform-addresses.ts";
+import type { PlatformRegistration } from "#channels/infrastructure/platforms/platform-addresses.ts";
 import { Notify } from "#notifications/application/notify.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
 import {
   actorIn,
@@ -441,6 +443,20 @@ const syntheticSetting = (name: string, blueskyKey: string) => {
     : `synthetic-${name.toLowerCase()}`;
 };
 
+// The way in a registration's app connects, on the platforms that have
+// several.
+const connections: Partial<
+  Record<PlatformRegistration["id"], ChannelConnection>
+> = {
+  facebookLogin: "facebookLogin",
+  instagramLogin: "instagramLogin",
+  linkedin: "linkedinProfile",
+  linkedinPages: "linkedinPage",
+};
+
+const connectionOf = (id: PlatformRegistration["id"]) =>
+  Option.fromUndefinedOr(connections[id]);
+
 // The address the sign-in asks the platform to send the member back to.
 const redirectOf = (authorizationUrl: string) =>
   new URL(authorizationUrl).searchParams.get("redirect_uri");
@@ -489,6 +505,16 @@ layer(DatabaseTest)(
             platform
           );
         }
+
+        // Every way in of every platform has its app in the list.
+        assert.deepStrictEqual(authorizers.linkedinConnections, [
+          "linkedinProfile",
+          "linkedinPage",
+        ]);
+        assert.deepStrictEqual(authorizers.instagramConnections, [
+          "instagramLogin",
+          "facebookLogin",
+        ]);
       }).pipe(Effect.scoped)
     );
 
@@ -517,16 +543,7 @@ layer(DatabaseTest)(
             registration.registeredBy === "server"
               ? []
               : registration.platforms.map((platform) =>
-                  authorizers.for(
-                    platform,
-                    platform === "instagram"
-                      ? Option.some(
-                          registration.id === "instagramLogin"
-                            ? ("instagramLogin" as const)
-                            : ("facebookLogin" as const)
-                        )
-                      : Option.none()
-                  )
+                  authorizers.for(platform, connectionOf(registration.id))
                 );
 
           const listed = registration.addresses

@@ -89,6 +89,17 @@ describe("the addresses to register with each platform", () => {
     ]);
   });
 
+  it("list Pinterest's, Google Business Profile's and the LinkedIn pages app's redirects", () => {
+    expect(addressesOf("pinterest")).toStrictEqual([
+      "https://peal.example/connect/pinterest/callback",
+    ]);
+    expect(addressesOf("googleBusiness")).toStrictEqual([
+      "https://peal.example/connect/googleBusiness/callback",
+    ]);
+    // A second app, with the address the profiles' app has.
+    expect(addressesOf("linkedinPages")).toStrictEqual(addressesOf("linkedin"));
+  });
+
   it("give each of Meta's use cases its redirects and its two callbacks", () => {
     expect(addressesOf("facebookLogin")).toStrictEqual([
       "https://peal.example/connect/facebook/callback",
@@ -143,9 +154,18 @@ describe("the addresses to register with each platform", () => {
     ).toStrictEqual({
       bluesky: ["BLUESKY_CLIENT_KEYS"],
       facebookLogin: ["META_APP_ID", "META_APP_SECRET"],
+      googleBusiness: [
+        "GOOGLE_BUSINESS_CLIENT_ID",
+        "GOOGLE_BUSINESS_CLIENT_SECRET",
+      ],
       instagramLogin: ["INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET"],
       linkedin: ["LINKEDIN_CLIENT_ID", "LINKEDIN_CLIENT_SECRET"],
+      linkedinPages: [
+        "LINKEDIN_PAGES_CLIENT_ID",
+        "LINKEDIN_PAGES_CLIENT_SECRET",
+      ],
       mastodon: [],
+      pinterest: ["PINTEREST_APP_ID", "PINTEREST_APP_SECRET"],
       threads: ["THREADS_APP_ID", "THREADS_APP_SECRET"],
       tiktok: ["TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET"],
       x: ["X_CLIENT_ID", "X_CLIENT_SECRET"],
