@@ -100,6 +100,11 @@ const mostAtOnce = Ref.makeUnsafe(0);
 // The channel whose platform is down, in the test that has one.
 const downChannel = Ref.makeUnsafe(Option.none<Publication["channelId"]>());
 
+// The channels whose platform hangs, in the test that has some.
+const hangingChannels = Ref.makeUnsafe<ReadonlySet<Publication["channelId"]>>(
+  new Set()
+);
+
 // A run of the collection scheduled at `iso`, with the clock just after.
 const runAt = (iso: string) =>
   TestClock.setTime(DateTime.toEpochMillis(utc(iso)) + 1500).pipe(
@@ -872,6 +877,54 @@ describe("collecting post metrics at scale", () => {
                 )
               ),
             { channelsPerPage: 4 }
+          )
+        )
+      )
+  );
+
+  it.effect(
+    "starts a run where the last one stopped, so channels that hang never keep the others waiting run after run",
+    () =>
+      Effect.gen(function* takesTurns() {
+        // Three channels due first, each 20 minutes without an answer, one
+        // at a time: they take the first run's 50 minutes.
+        const hanging = yield* followed(3, 1);
+
+        yield* Ref.set(
+          hangingChannels,
+          new Set(hanging.map(({ channelId }) => channelId))
+        );
+        yield* followed(4, 1);
+
+        const first = yield* runAt("2026-11-02T11:07:00.000Z");
+
+        assert.deepStrictEqual(
+          { left: first.left, read: first.read },
+          { left: 7, read: 0 }
+        );
+
+        // The next run starts with the four the first never reached, then
+        // comes back to those that hang.
+        const second = yield* runAt("2026-11-02T12:07:00.000Z");
+
+        assert.deepStrictEqual(
+          { left: second.left, read: second.read },
+          { left: 3, read: 4 }
+        );
+      }).pipe(
+        Effect.provide(
+          collectionWith(
+            (request) =>
+              Ref.get(hangingChannels).pipe(
+                Effect.flatMap((hanging) =>
+                  hanging.has(request.channelId)
+                    ? TestClock.adjust(Duration.minutes(20)).pipe(
+                        Effect.andThen(Effect.fail(new PlatformUnavailable()))
+                      )
+                    : countingAll(request)
+                )
+              ),
+            { channelConcurrency: 1 }
           )
         )
       )

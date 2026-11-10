@@ -4,9 +4,11 @@ import {
   DateTime,
   Duration,
   Effect,
+  Function,
   Layer,
   Metric,
   Option,
+  Ref,
 } from "effect";
 
 import {
@@ -134,6 +136,19 @@ const batchSize = 25;
 const postsPerChannel = 1000;
 
 type Tally = Omit<CollectionReport, "discovered" | "left">;
+
+// Whether the channel comes no later than `until` in the order the due
+// channels are listed in: by how long they waited, then id, as Postgres
+// compares them.
+const comesBy = (channel: DueChannel, until: Option.Option<DueChannel>) =>
+  Option.match(until, {
+    onNone: () => true,
+    onSome: (end) => {
+      const order = DateTime.Order(channel.dueSince, end.dueSince);
+
+      return order < 0 || (order === 0 && channel.channelId <= end.channelId);
+    },
+  });
 
 const emptyTally: Tally = { deferred: 0, ended: 0, read: 0, skipped: 0 };
 
@@ -381,12 +396,21 @@ export class CollectMetrics extends Context.Service<
         }
       );
 
-      // Reads the posts due, a page of channels at a time, the channels
-      // that waited longest first and each once, until none is left or
-      // the run is out of time.
-      const collectDue = Effect.fn("CollectMetrics.due")(function* collectDue(
+      // Where the last run stopped at its budget, in this process: the
+      // next one starts after it. Without it, channels whose platform
+      // hangs, due longest run after run, would take every run whole, and
+      // those after them would never be read.
+      const stoppedAt = yield* Ref.make(Option.none<DueChannel>());
+
+      // Reads the posts due on the channels that come after `from`, up to
+      // `until` when given, a page of channels at a time, each channel
+      // once, until none is left or the run is out of time: it then says
+      // after which channel it stopped.
+      const collectLeg = Effect.fn("CollectMetrics.leg")(function* collectLeg(
         at: DateTime.Utc,
-        deadline: DateTime.Utc
+        deadline: DateTime.Utc,
+        from: Option.Option<DueChannel>,
+        until: Option.Option<DueChannel>
       ) {
         // A post whose reads kept being put off (its platform down, or
         // asking to slow down) is read no more once a day past its last
@@ -397,19 +421,42 @@ export class CollectMetrics extends Context.Service<
             DateTime.addDuration(collectionEnd(post.publishedAt), overdue)
           );
 
+        // A channel's turn, unless the run is out of time before it.
+        const turnOf = (posts: readonly TrackedPost[]) =>
+          Effect.gen(function* turn() {
+            if (!Arr.isReadonlyArrayNonEmpty(posts)) {
+              return { reached: true, tally: emptyTally };
+            }
+
+            if (
+              DateTime.isGreaterThanOrEqualTo(yield* DateTime.now, deadline)
+            ) {
+              const tally: Tally = { ...emptyTally, deferred: posts.length };
+
+              return { reached: false, tally };
+            }
+
+            return {
+              reached: true,
+              tally: yield* collectChannel(posts, at, deadline),
+            };
+          });
+
         let total = emptyTally;
-        let after = Option.none<DueChannel>();
+        let after = from;
 
         while (true) {
           if (DateTime.isGreaterThanOrEqualTo(yield* DateTime.now, deadline)) {
-            return { total, unfinished: true };
+            return { stopped: Option.some(after), total };
           }
 
-          const channels = yield* tracked.dueChannels(
+          const listed = yield* tracked.dueChannels(
             at,
             pace.channelsPerPage,
             after
           );
+
+          const channels = listed.filter((channel) => comesBy(channel, until));
 
           const found = yield* tracked.dueOn(
             at,
@@ -418,26 +465,75 @@ export class CollectMetrics extends Context.Service<
           );
 
           const expired = found.filter((post) => isExpired(post));
-          const due = found.filter((post) => !isExpired(post));
+
+          const due = Arr.groupBy(
+            found.filter((post) => !isExpired(post)),
+            (post) => post.channelId
+          );
 
           total = addTallies(total, yield* ending(expired, "window", at));
 
-          const tallies = yield* Effect.forEach(
-            Object.values(Arr.groupBy(due, (post) => post.channelId)),
-            (posts) => collectChannel(posts, at, deadline),
+          const turns = yield* Effect.forEach(
+            channels,
+            ({ channelId }) => turnOf(due[channelId] ?? []),
             { concurrency: pace.channelConcurrency }
           );
 
-          for (const tally of tallies) {
+          for (const { tally } of turns) {
             total = addTallies(total, tally);
           }
 
-          after = Option.fromUndefinedOr(channels.at(-1));
+          // Out of time: the next run starts after the last channel this
+          // one took.
+          const unreached = turns.findIndex(({ reached }) => !reached);
 
-          if (channels.length < pace.channelsPerPage) {
-            return { total, unfinished: false };
+          if (unreached !== -1) {
+            return {
+              stopped: Option.some(
+                Option.orElse(
+                  Option.fromUndefinedOr(channels[unreached - 1]),
+                  Function.constant(after)
+                )
+              ),
+              total,
+            };
+          }
+
+          after = Option.fromUndefinedOr(listed.at(-1));
+
+          if (
+            listed.length < pace.channelsPerPage ||
+            channels.length < listed.length
+          ) {
+            return { stopped: Option.none<Option.Option<DueChannel>>(), total };
           }
         }
+      });
+
+      // Reads the posts due, the channels that waited longest first and
+      // each once: those after where the last run stopped, then, from the
+      // one that waited longest, those up to there.
+      const collectDue = Effect.fn("CollectMetrics.due")(function* collectDue(
+        at: DateTime.Utc,
+        deadline: DateTime.Utc
+      ) {
+        const from = yield* Ref.get(stoppedAt);
+        const rest = yield* collectLeg(at, deadline, from, Option.none());
+
+        if (Option.isSome(rest.stopped) || Option.isNone(from)) {
+          yield* Ref.set(stoppedAt, Option.flatten(rest.stopped));
+
+          return { total: rest.total, unfinished: Option.isSome(rest.stopped) };
+        }
+
+        const start = yield* collectLeg(at, deadline, Option.none(), from);
+
+        yield* Ref.set(stoppedAt, Option.flatten(start.stopped));
+
+        return {
+          total: addTallies(rest.total, start.total),
+          unfinished: Option.isSome(start.stopped),
+        };
       });
 
       const run = Effect.fn("CollectMetrics.run")(function* run(
