@@ -1290,9 +1290,15 @@ and no socket, for tests.
 - A PDF is the `document` kind, which only a platform whose rules list
   `application/pdf` takes (LinkedIn, alone in its post); a platform
   without media rules refuses it too. It is probed without a PDF library
-  (`pdf-pages.ts`: the header, and the page objects counted in the clear
-  and in inflated object streams); pages that cannot be counted are none,
-  not a refusal. Never render or open a document: store it, hand it over.
+  (`pdf-pages.ts`: the header, and the `/Count` of the page tree's root,
+  the last one written, in the clear or in an inflated object stream,
+  never a count of page objects, which strings, comments and earlier
+  revisions repeat); pages that cannot be told are none, not a refusal.
+  The file is read once, in slices that yield (`sliceBytes`), with bounds
+  on object streams and on what they inflate to: keep every reader of
+  uploaded bytes linear and interruptible, as a synchronous loop holds the
+  whole server and no timeout fires in it. Never render or open a
+  document: store it, hand it over.
 - On a server that bills, `createUpload` checks the declared size against
   the plan's media storage (`StorageAllowance`) before the store opens an
   upload, and again as the asset is recorded (`MediaAssets.insertWithin`,

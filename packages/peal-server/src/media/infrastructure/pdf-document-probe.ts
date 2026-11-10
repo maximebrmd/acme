@@ -22,8 +22,9 @@ const tooLarge = (byteSize: number): boolean => byteSize > maxByteSize.document;
 /**
  * Reads a PDF without a PDF library: it fetches the file, which is at most
  * 100 MiB, checks that it starts as a PDF does (anything else was not the
- * type declared), and counts its pages from its page objects
- * (`countPdfPages`). A document of more pages than a platform shows is
+ * type declared), and reads its pages from its page tree's root
+ * (`countPdfPages`, which reads the file once, a slice at a time, so this
+ * probe's timeout fires on a file made to be slow). A document of more pages than a platform shows is
  * refused (`tooManyPages`); one whose pages cannot be counted, as an
  * encrypted file, is kept without a count, for the platform to judge. The
  * file is never rendered nor run: Peal only stores it and hands it over.
