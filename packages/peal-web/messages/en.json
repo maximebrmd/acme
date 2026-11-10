@@ -1254,7 +1254,10 @@
       "tooManyRequests": "Too many attempts. Wait a minute, then try again.",
       "unknown": "Something went wrong. Try again.",
       "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes.",
-      "storeUnavailable": "The deletion could not be recorded where backups cannot undo it, so nothing was deleted. Try again in a few minutes."
+      "storeUnavailable": "The deletion could not be recorded where backups cannot undo it, so nothing was deleted. Try again in a few minutes.",
+      "partnerClosed": "This server opens partner accounts through its staff: ask the people who run it for one.",
+      "partnerInvalid": "A value cannot be kept. Check the name, the logo’s address (HTTPS) and the origins: each as https://host, with nothing after, 20 at most.",
+      "partnerOwnsWorkspaces": "The partner account of a workspace this would delete still owns workspaces. Delete each through the partner API first."
     },
     "cancellation": {
       "title": "{count, plural, one {Deleting cancels a subscription} other {Deleting cancels # subscriptions}}",
@@ -1279,7 +1282,8 @@
       "members": "Members",
       "invitations": "Invitations",
       "apiKeys": "API keys",
-      "webhooks": "Webhooks"
+      "webhooks": "Webhooks",
+      "partner": "Partner"
     },
     "general": {
       "title": "Name",
@@ -1366,6 +1370,49 @@
       "copied": "Key copied.",
       "copyFailed": "The key could not be copied. Select it and copy it yourself.",
       "done": "I saved it"
+    },
+    "partner": {
+      "description": "A partner account lets a product of yours use Peal for its own customers: one workspace for each of them, created and used through the API with a partner key, and hosted links where they connect their social accounts without a Peal account.",
+      "askOperator": "This server opens partner accounts through its staff: ask the people who run it for one.",
+      "askOwner": "This workspace has no partner account. An owner or an admin can open one.",
+      "openIntro": "Open a partner account for this workspace: it becomes the account’s home workspace, and the workspaces the account creates share its plan.",
+      "name": "Name",
+      "nameHint": "What your customers read on the hosted pages, in 80 characters at most.",
+      "open": "Open the partner account",
+      "opening": "Opening…",
+      "usage": "{workspaces, plural, =0 {No workspace yet} one {# workspace} other {# workspaces}}, {channels, plural, =0 {no channel connected} one {# channel connected} other {# channels connected}} across them and this workspace.",
+      "accountTitle": "What your customers see",
+      "logo": "Logo address",
+      "logoHint": "An HTTPS address, shown from there on the hosted pages. Leave it empty to show the name alone.",
+      "origins": "Return origins",
+      "originsHint": "One a line, as https://app.example.com: scheme, host and port, with nothing after. A hosted page sends your customers back only to an address on one of these, exactly.",
+      "save": "Save",
+      "saved": "The partner account is saved.",
+      "keysTitle": "Partner keys",
+      "keysHint": "A partner key creates and reads the workspaces of this account, and acts inside each of them. It never acts in this workspace, nor in any the account does not own.",
+      "noKeys": "The account has no key.",
+      "keyName": "Name",
+      "keyNameHint": "What uses it, in 80 characters at most.",
+      "scopes": "What it may do with the workspaces",
+      "scopesHint": "workspaces:read lists and reads them, workspaces:write creates and changes them, workspaces:delete deletes them with everything they hold.",
+      "permissions": "What it may do inside each workspace",
+      "permissionsHint": "What a product does for its customers. Members, invitations, API keys and billing changes stay with people.",
+      "createKey": "Create the key",
+      "creatingKey": "Creating…",
+      "keyStartsWith": "Starts with {start}",
+      "keyCreated": "Created {created}",
+      "revoke": "Revoke",
+      "revokeKey": "Revoke the key {name}",
+      "revokingKey": "Revoking…",
+      "keyRevoked": "The key {name} is revoked.",
+      "workspacesTitle": "Workspaces",
+      "noWorkspaces": "The account owns no workspace yet. Create them through the API, with a partner key.",
+      "workspaceLine": "{channels, plural, =0 {No channel} one {# channel} other {# channels}} · {externalId, select, none {no external id} other {external id {externalId}}}",
+      "moreWorkspaces": "The {shown} newest of {total}. The API lists them all.",
+      "closeTitle": "Close the partner account",
+      "closeHint": "Its keys stop working at once. An account closes only once it owns no workspace: delete each through the API first.",
+      "close": "Close the partner account",
+      "closing": "Closing…"
     }
   },
   "Webhooks": {
@@ -1706,7 +1753,8 @@
       "self": "Staff do not do this to their own account.",
       "staff": "Staff never act as other staff.",
       "unknown": "That did not work. Try again.",
-      "verified": "This address is confirmed already."
+      "verified": "This address is confirmed already.",
+      "workspaceGone": "This workspace no longer exists, or a partner owns it."
     },
     "workspaces": {
       "title": "Workspaces",
@@ -1784,7 +1832,7 @@
       "noReason": "Not kept",
       "until": "Until",
       "workspace": "In a workspace",
-      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} other {{action}}}"
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} applyContractRequest {Applied a contract request} closeContractRequest {Closed a contract request} grantPartner {Granted a partner account} other {{action}}}"
     },
     "channelStatus": {
       "active": "Works",
@@ -1906,6 +1954,20 @@
         "now": "the answer",
         "returned": "{held, plural, =0 {No closed account} one {# closed account} other {# closed accounts}}, {connections, plural, =0 {no connection} one {# connection} other {# connections}}"
       }
+    },
+    "partner": {
+      "title": "Partner account",
+      "none": "This workspace has no partner account, and no partner owns it.",
+      "account": "Its partner account",
+      "workspaces": "Workspaces it owns",
+      "owned": "A partner owns this workspace.",
+      "home": "The partner’s home workspace",
+      "externalId": "The id the partner gave it",
+      "noExternalId": "None",
+      "grantHint": "Opens a partner account for this workspace, named after it. Its owners and admins then name it, create its keys and register where hosted pages send their customers back.",
+      "grant": "Grant a partner account",
+      "granting": "Granting…",
+      "granted": "The workspace has a partner account."
     }
   },
   "Impersonation": {

@@ -15,6 +15,7 @@ import {
 
 import { ChannelHealth } from "#components/staff/channel-health.tsx";
 import { Instant } from "#components/staff/instant.tsx";
+import { PartnerPosition } from "#components/staff/partner-position.tsx";
 import { Fact, Section } from "#components/staff/section.tsx";
 import { Link } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
@@ -43,11 +44,16 @@ const WorkspacePage = async ({
     staff.workspace({ params: { workspaceId } })
   );
 
+  const partner = await staffRead((staff) =>
+    staff.partner({ params: { workspaceId } })
+  );
+
   const t = await getTranslations("Staff.workspace");
   const staffT = await getTranslations("Staff");
   const posts = await getTranslations("Posts");
   const roles = await getTranslations("WorkspaceSettings");
   const billing = await getTranslations("Billing");
+  const partners = await getTranslations("Staff.partner");
   const { subscription } = workspace.billing;
 
   return (
@@ -94,6 +100,21 @@ const WorkspacePage = async ({
             ))}
           </TableBody>
         </Table>
+      </Section>
+      <Section title={partners("title")}>
+        <PartnerPosition
+          partner={partner}
+          workspaceId={workspace.id}
+          labels={{
+            account: partners("account"),
+            externalId: partners("externalId"),
+            home: partners("home"),
+            noExternalId: partners("noExternalId"),
+            none: partners("none"),
+            owned: partners("owned"),
+            workspaces: partners("workspaces"),
+          }}
+        />
       </Section>
       <Section title={t("billingTitle")}>
         {workspace.billing.plan === null ? (

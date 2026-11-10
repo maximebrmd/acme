@@ -30,6 +30,7 @@ const WorkspaceSettingsLayout = async ({
     general: true,
     invitations: may.has("invitation:create"),
     members: true,
+    partner: may.has("partner:read"),
     webhooks: may.has("webhook:read"),
   };
 
@@ -40,6 +41,7 @@ const WorkspaceSettingsLayout = async ({
       "invitations",
       "apiKeys",
       "webhooks",
+      "partner",
     ] satisfies SettingsSection[]
   ).filter((section) => allowed[section]);
 
