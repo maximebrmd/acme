@@ -29,7 +29,9 @@ export const notAllowed =
         refuse(
           Option.match(missingScope(member, permission), {
             onNone: () =>
-              `This connection may not ${doing} in this workspace: the user's role does not allow it (it takes the permission ${permission}). An owner or admin of the workspace can change their role, in the web app's settings.`,
+              member.principal._tag === "apiKey"
+                ? `This connection may not ${doing} in this workspace: its API key does not have the permission ${permission}. An owner or admin of the workspace creates a key that has it, in the web app's settings.`
+                : `This connection may not ${doing} in this workspace: the user's role does not allow it (it takes the permission ${permission}). An owner or admin of the workspace can change their role, in the web app's settings.`,
             onSome: (scope) =>
               `This connection may not ${doing} in this workspace: the user did not give this client the scope ${scope} (${scopeGrants[scope]}). To grant it, the user connects this client to Peal again and allows it there; a connection keeps the scopes it was given until then.`,
           })

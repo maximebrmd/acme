@@ -14,6 +14,7 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { freshChannel, syntheticCredentials } from "#test/channels/support.ts";
 import {
+  apiKeyOf,
   emailTo,
   newEmail,
   signedUpUnconfirmed,
@@ -35,6 +36,11 @@ import {
 
 interface Fixture {
   readonly channelId: string;
+  /**
+   * An API key of the workspace that reads and writes drafts and reads
+   * channels, and nothing else.
+   */
+  readonly draftingKey: string;
   /** A YouTube channel of the workspace. */
   readonly youtubeId: string;
   /**
@@ -96,8 +102,15 @@ const ToolsFixtureLive = Layer.effect(
       "openid workspace:read workspace:write workspace:publish"
     );
 
+    const { key } = yield* apiKeyOf(owner, workspaceId, [
+      "channel:read",
+      "post:read",
+      "post:create",
+    ]);
+
     return {
       channelId: channel.id,
+      draftingKey: key,
       publishing,
       reading,
       workspaceId,
@@ -235,6 +248,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // workspace.
           create_webhook: [false, false, false, true],
           discard_draft: [false, true, true, false],
+          find_tools: [true, false, true, false],
           get_billing: [true, false, true, false],
           get_post: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
@@ -266,6 +280,235 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.isNotEmpty(tool.description ?? "", tool.name);
         }
       })
+    );
+
+    it.effect(
+      "list themselves by area, with the scope each takes and whether the connection holds it",
+      () =>
+        Effect.gen(function* discovery() {
+          const fixture = yield* ToolsFixture;
+          const reader = yield* connected(fixture.reading);
+          const writer = yield* connected(fixture.writing);
+
+          const FoundSchema = Schema.Struct({
+            tools: Schema.Array(
+              Schema.Struct({
+                area: Schema.String,
+                changes: Schema.Boolean,
+                name: Schema.String,
+                reachesOutside: Schema.Boolean,
+                scope: Schema.String,
+                scopeGranted: Schema.NullOr(Schema.Boolean),
+                summary: Schema.String,
+              })
+            ),
+          });
+
+          // Every tool the endpoint lists is found, once, with an area and
+          // a sentence about it.
+          const all = yield* reader.call("find_tools", FoundSchema);
+
+          assert.deepStrictEqual(
+            all.tools.map(({ name }) => name).toSorted(),
+            reader.listed.map(({ name }) => name).toSorted()
+          );
+
+          for (const tool of all.tools) {
+            assert.match(tool.summary, /[.!?]$/u, tool.name);
+            assert.isBelow(tool.summary.length, 600, tool.name);
+          }
+
+          // What reading alone allows, and what it does not.
+          const granted = (found: typeof all, name: string) =>
+            found.tools.find((tool) => tool.name === name)?.scopeGranted;
+
+          assert.isTrue(granted(all, "list_posts"));
+          assert.isFalse(granted(all, "create_draft"));
+          assert.isFalse(granted(all, "schedule_post"));
+
+          // An area, and words in any order and case.
+          const media = yield* reader.call("find_tools", FoundSchema, {
+            area: "media",
+          });
+
+          assert.deepStrictEqual(
+            media.tools.map(({ name }) => name),
+            ["list_media", "import_media"]
+          );
+
+          const found = yield* writer.call("find_tools", FoundSchema, {
+            query: "Invitation REVOKE_invitation",
+          });
+
+          assert.deepStrictEqual(
+            found.tools.map(({ area, name, scope, scopeGranted }) => ({
+              area,
+              name,
+              scope,
+              scopeGranted,
+            })),
+            [
+              {
+                area: "people",
+                name: "revoke_invitation",
+                scope: "workspace:write",
+                scopeGranted: true,
+              },
+            ]
+          );
+
+          // The tools said to take workspace:publish refuse a connection
+          // without it, naming the scope, before reading anything.
+          const publishing = (yield* writer.call(
+            "find_tools",
+            FoundSchema
+          )).tools.filter(({ scope }) => scope === "workspace:publish");
+
+          const postId = "0190f3a0-0000-7000-8000-00000000c0de";
+
+          const bogus = {
+            cancel_post: { postId },
+            confirm_target: {
+              confirmation: { _tag: "notPublished" },
+              postId,
+              targetId: postId,
+            },
+            create_post: {
+              channelIds: [fixture.channelId],
+              content: content("Never sent."),
+              when: { _tag: "now" },
+            },
+            publish_post: { postId },
+            repost_target: { postId, targetId: postId },
+            reschedule_post: {
+              at: "2030-01-01T10:00:00Z",
+              postId,
+              timeZone: "Europe/Paris",
+            },
+            schedule_post: {
+              at: "2030-01-01T10:00:00Z",
+              postId,
+              timeZone: "Europe/Paris",
+            },
+            unschedule_post: { postId },
+          } satisfies Record<string, ToolArguments>;
+
+          assert.deepStrictEqual(
+            publishing.map(({ name }) => name).toSorted(),
+            Object.keys(bogus).toSorted()
+          );
+
+          for (const { name, scopeGranted } of publishing) {
+            assert.isFalse(scopeGranted, name);
+            assert.include(
+              yield* writer.refused(
+                name,
+                new Map<string, ToolArguments>(Object.entries(bogus)).get(name)
+              ),
+              "workspace:publish",
+              name
+            );
+          }
+
+          // An API key has permissions, not scopes.
+          const agent = yield* connected(fixture.draftingKey);
+          const keyed = yield* agent.call("find_tools", FoundSchema);
+
+          assert.isNull(granted(keyed, "list_posts"));
+        })
+    );
+
+    it.effect(
+      "act for an API key of the workspace, within the key's permissions",
+      () =>
+        Effect.gen(function* headless() {
+          const fixture = yield* ToolsFixture;
+          const agent = yield* connected(fixture.draftingKey);
+
+          // The same tools as any connection, and nobody behind them.
+          const who = yield* agent.call(
+            "whoami",
+            Schema.Struct({
+              apiKey: Schema.Struct({ id: Schema.String, name: Schema.String }),
+              user: Schema.Null,
+              workspace: Schema.Struct({
+                id: Schema.String,
+                name: Schema.String,
+                permissions: Schema.Array(Schema.String),
+                role: Schema.Null,
+              }),
+            })
+          );
+
+          assert.strictEqual(who.apiKey.name, "ci");
+          assert.strictEqual(who.workspace.id, fixture.workspaceId);
+          assert.strictEqual(who.workspace.name, "Atelier");
+          assert.deepStrictEqual(who.workspace.permissions, [
+            "channel:read",
+            "post:read",
+            "post:create",
+          ]);
+
+          const workspaces = yield* agent.call(
+            "list_workspaces",
+            Schema.Struct({
+              workspaces: Schema.Array(
+                Schema.Struct({ connected: Schema.Boolean, id: Schema.String })
+              ),
+            })
+          );
+
+          assert.deepStrictEqual(workspaces.workspaces, [
+            { connected: true, id: fixture.workspaceId },
+          ]);
+
+          // What the key was given works, and is kept as a change made
+          // through the MCP endpoint.
+          const before = yield* mcpConnections(fixture.workspaceId);
+
+          const created = yield* agent.call("create_draft", PostJsonSchema, {
+            channelIds: [fixture.channelId],
+            content: content("A synthetic draft from a headless agent."),
+          });
+
+          assert.strictEqual(created.status, "draft");
+          assert.isNull(created.authorId);
+          assert.strictEqual(
+            yield* mcpConnections(fixture.workspaceId),
+            before + 1
+          );
+
+          // What it was not given is refused, in words about the key: there
+          // is no scope to ask a user for.
+          const refusal = yield* agent.refused("schedule_post", {
+            at: "2030-01-01T10:00:00Z",
+            postId: created.id,
+            timeZone: "Europe/Paris",
+          });
+
+          assert.include(refusal, "API key");
+          assert.include(refusal, "post:schedule");
+          assert.notInclude(refusal, "scope");
+
+          // Members are listed to a person, never to a key.
+          assert.include(yield* agent.refused("list_members"), "person");
+        })
+    );
+
+    it.effect(
+      "refuses an API key that does not work, as a token that does not",
+      () =>
+        Effect.gen(function* unknownKey() {
+          const refused = yield* McpClient.McpClient.pipe(
+            Effect.provide(connect(Option.some("peal_notakeyofanyworkspace"))),
+            Effect.flip
+          );
+
+          assert.strictEqual(
+            refused.reason._tag === "HttpError" ? refused.reason.status : 0,
+            401
+          );
+        })
     );
 
     it.effect(

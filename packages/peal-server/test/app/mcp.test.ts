@@ -243,6 +243,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "create_post",
           "create_webhook",
           "discard_draft",
+          "find_tools",
           "get_billing",
           "get_post",
           "get_tiktok_creator",
