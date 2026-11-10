@@ -358,7 +358,7 @@
   },
   "Posts": {
     "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {{platform}}}",
-    "status": "{status, select, draft {Brouillon} scheduled {Programmé} publishing {En cours de publication} finished {Terminé} cancelled {Annulé} other {{status}}}",
+    "status": "{status, select, draft {Brouillon} awaitingApproval {En attente d’approbation} scheduled {Programmé} publishing {En cours de publication} finished {Terminé} cancelled {Annulé} other {{status}}}",
     "targetStatus": "{status, select, pending {En attente} publishing {En cours} published {Publié} failed {Échec} unconfirmed {À vérifier} cancelled {Annulé} other {{status}}}",
     "outcome": "{outcome, select, published {Publié} partiallyPublished {Publié en partie} unconfirmed {À vérifier} failed {Échec} cancelled {Annulé} other {{outcome}}}",
     "disconnectedChannel": "Un canal déconnecté",
@@ -442,7 +442,7 @@
         "generic": "Une erreur est survenue. Réessayez.",
         "forbidden": "Votre rôle ne le permet pas.",
         "notFound": "Cette publication n’existe plus.",
-        "conflict": "Cette publication est {status, select, draft {un brouillon} scheduled {programmée} publishing {en cours de publication} finished {terminée} cancelled {annulée} other {{status}}} et ne peut pas être modifiée ainsi.",
+        "conflict": "Cette publication est {status, select, draft {un brouillon} awaitingApproval {en attente d’approbation} scheduled {programmée} publishing {en cours de publication} finished {terminée} cancelled {annulée} other {{status}}} et ne peut pas être modifiée ainsi.",
         "inPast": "Cette heure est passée. Choisissez-en une plus tardive.",
         "timeZone": "Choisissez un fuseau horaire dans la liste.",
         "unknownChannels": "Certains de ces canaux ne sont plus connectés.",

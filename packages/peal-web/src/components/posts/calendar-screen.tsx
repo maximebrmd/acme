@@ -100,6 +100,7 @@ const firstLine = (post: Post) =>
   post.content.text.split("\n")[0]?.trim() ?? "";
 
 const chipTone: Record<Post["status"], string> = {
+  awaitingApproval: "border border-dashed border-border text-foreground",
   cancelled: "bg-muted text-muted-foreground",
   draft: "bg-muted text-muted-foreground",
   finished: "bg-muted text-muted-foreground",

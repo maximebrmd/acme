@@ -9,6 +9,7 @@ import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts"
 import { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   authorOf,
+  awaitApproval,
   cancelPost,
   createDraft,
   discardDraft,
@@ -19,6 +20,7 @@ import {
   moveToDraft,
   outcomeOf,
   Post,
+  releasePost,
   reopenPost,
   reviseOutcome,
   schedulePost,
@@ -62,6 +64,7 @@ const postIn = (status: PostStatus, scheduleRevision = 1): Post =>
   });
 
 const statuses = {
+  awaitingApproval: postIn({ _tag: "awaitingApproval", schedule: inAnHour }),
   cancelled: postIn({
     _tag: "cancelled",
     cancelledAt: now,
@@ -457,5 +460,111 @@ describe(reviseOutcome, () => {
     expect(
       failureOf(reviseOutcome(statuses.publishing, [published]))
     ).toMatchObject({ action: "finish", from: "publishing" });
+  });
+});
+
+describe(awaitApproval, () => {
+  it("holds a scheduled post at its time, keeping its revision", () => {
+    const held = successOf(awaitApproval(statuses.scheduled));
+
+    expect(held?.status).toStrictEqual({
+      _tag: "awaitingApproval",
+      schedule: inAnHour,
+    });
+    expect(held?.scheduleRevision).toBe(statuses.scheduled.scheduleRevision);
+  });
+
+  it.each([
+    { from: statuses.draft },
+    { from: statuses.awaitingApproval },
+    { from: statuses.publishing },
+    { from: statuses.finished },
+    { from: statuses.cancelled },
+  ])("refuses a post that is $from.status._tag", ({ from }) => {
+    expect(failureOf(awaitApproval(from))).toMatchObject({
+      _tag: "InvalidPostTransition",
+      action: "awaitApproval",
+      from: from.status._tag,
+    });
+  });
+});
+
+describe(releasePost, () => {
+  it("schedules a post approved before its time, at that time", () => {
+    const released = successOf(releasePost(statuses.awaitingApproval, now));
+
+    expect(released?.status).toStrictEqual({
+      _tag: "scheduled",
+      schedule: inAnHour,
+    });
+    expect(released?.scheduleRevision).toBe(2);
+  });
+
+  it("schedules a post approved a moment after its time at once", () => {
+    const moment = utc("2026-06-15T08:00:59Z");
+
+    expect(
+      successOf(releasePost(statuses.awaitingApproval, moment))?.status
+    ).toStrictEqual({
+      _tag: "scheduled",
+      schedule: new Schedule({ at: moment, timeZone: inAnHour.timeZone }),
+    });
+  });
+
+  it("takes a post approved after its time back to draft", () => {
+    const late = successOf(
+      releasePost(statuses.awaitingApproval, utc("2026-06-15T08:01:01Z"))
+    );
+
+    expect(late?.status).toStrictEqual({ _tag: "draft" });
+    expect(late?.scheduleRevision).toBe(2);
+  });
+
+  it.each([
+    { from: statuses.draft },
+    { from: statuses.scheduled },
+    { from: statuses.publishing },
+    { from: statuses.finished },
+    { from: statuses.cancelled },
+  ])("refuses a post that is $from.status._tag", ({ from }) => {
+    expect(failureOf(releasePost(from, now))).toMatchObject({
+      _tag: "InvalidPostTransition",
+      action: "release",
+      from: from.status._tag,
+    });
+  });
+});
+
+describe("a post waiting for an approval", () => {
+  it("goes back to draft, with a new revision", () => {
+    const draft = successOf(moveToDraft(statuses.awaitingApproval));
+
+    expect(draft?.status).toStrictEqual({ _tag: "draft" });
+    expect(draft?.scheduleRevision).toBe(2);
+  });
+
+  it("is cancelled with the time it had", () => {
+    expect(
+      successOf(cancelPost(statuses.awaitingApproval, now))?.status
+    ).toStrictEqual({
+      _tag: "cancelled",
+      cancelledAt: now,
+      schedule: Option.some(inAnHour),
+    });
+  });
+
+  it("is scheduled by whoever may, with a new revision", () => {
+    expect(
+      successOf(schedulePost(statuses.awaitingApproval, inAnHour, now))?.status
+    ).toStrictEqual({ _tag: "scheduled", schedule: inAnHour });
+  });
+
+  it("never starts publishing, nor takes new content", () => {
+    expect(
+      failureOf(startPublishing(statuses.awaitingApproval, inAnHour.at))
+    ).toMatchObject({ _tag: "InvalidPostTransition" });
+    expect(
+      failureOf(editDraft(statuses.awaitingApproval, emptyContent))
+    ).toMatchObject({ _tag: "InvalidPostTransition", action: "edit" });
   });
 });

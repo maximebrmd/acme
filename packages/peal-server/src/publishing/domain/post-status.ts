@@ -21,6 +21,12 @@ export type PostOutcome = typeof PostOutcomeSchema.Type;
 
 const DraftSchema = Schema.TaggedStruct("draft", {});
 
+// Waiting for someone to approve it, for the time it was asked for: no job
+// publishes it until then.
+const AwaitingApprovalSchema = Schema.TaggedStruct("awaitingApproval", {
+  schedule: Schedule,
+});
+
 const ScheduledSchema = Schema.TaggedStruct("scheduled", {
   schedule: Schedule,
 });
@@ -49,6 +55,7 @@ const CancelledSchema = Schema.TaggedStruct("cancelled", {
  */
 export const PostStatusSchema = Schema.Union([
   DraftSchema,
+  AwaitingApprovalSchema,
   ScheduledSchema,
   PublishingSchema,
   FinishedSchema,
@@ -59,6 +66,7 @@ export type PostStatus = typeof PostStatusSchema.Type;
 
 export const PostStatusNameSchema = Schema.Literals([
   "draft",
+  "awaitingApproval",
   "scheduled",
   "publishing",
   "finished",

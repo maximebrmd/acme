@@ -23,16 +23,22 @@ import { Schedule } from "./schedule.ts";
  * A post, sent to one or more channels (its targets, `./post-target.ts`), and
  * where it is in its life:
  *
- * | From       | To                                             |
- * | ---------- | ---------------------------------------------- |
- * | draft      | draft (edited), scheduled, cancelled,          |
- * |            | discarded (deleted)                            |
- * | scheduled  | scheduled (moved), draft, publishing,          |
- * |            | cancelled                                      |
- * | publishing | finished                                       |
- * | finished   | finished (a target confirmed), publishing (a   |
- * |            | target reposted)                               |
- * | cancelled  | nothing                                        |
+ * | From             | To                                       |
+ * | ---------------- | ---------------------------------------- |
+ * | draft            | draft (edited), awaitingApproval,        |
+ * |                  | scheduled, cancelled, discarded (deleted)|
+ * | awaitingApproval | awaitingApproval (moved), scheduled      |
+ * |                  | (approved, or scheduled by someone who   |
+ * |                  | may), draft, cancelled                   |
+ * | scheduled        | scheduled (moved), awaitingApproval,     |
+ * |                  | draft, publishing, cancelled             |
+ * | publishing       | finished                                 |
+ * | finished         | finished (a target confirmed),           |
+ * |                  | publishing (a target reposted)           |
+ * | cancelled        | nothing                                  |
+ *
+ * A post waits for an approval (`awaitingApproval`) when its workspace asks
+ * for one before it is scheduled: it has its time, and no job.
  *
  * What the post says is its content (`./post-content.ts`), which only a
  * draft may change. Its author is the member who created it, none when an
@@ -153,22 +159,13 @@ export const discardDraft = (post: Post): Transition =>
  */
 export const scheduleGrace = Duration.minutes(1);
 
-/**
- * Schedules a draft, or moves a scheduled post to another time. Either way the
- * post gets a new revision, which the job for its previous time does not
- * publish. A time up to `scheduleGrace` before `now` is scheduled at `now`.
- */
-export const schedulePost = (
+// The time a post takes when asked for `schedule` at `now`: `now` itself
+// for a time up to `scheduleGrace` before it, and none for an earlier one.
+const timeFrom = (
   post: Post,
   schedule: Schedule,
   now: DateTime.Utc
-): Transition<ScheduleInPast> => {
-  const { status } = post;
-
-  if (status._tag !== "draft" && status._tag !== "scheduled") {
-    return rejected(post, "schedule");
-  }
-
+): Result.Result<Schedule, ScheduleInPast> => {
   if (
     DateTime.isLessThan(
       schedule.at,
@@ -180,22 +177,90 @@ export const schedulePost = (
     );
   }
 
-  const at = DateTime.isLessThan(schedule.at, now)
-    ? new Schedule({ at: now, timeZone: schedule.timeZone })
-    : schedule;
-
   return Result.succeed(
-    withStatus(
-      post,
-      { _tag: "scheduled", schedule: at },
-      post.scheduleRevision + 1
-    )
+    DateTime.isLessThan(schedule.at, now)
+      ? new Schedule({ at: now, timeZone: schedule.timeZone })
+      : schedule
   );
 };
 
-/** Takes a scheduled post back to draft, with a new revision. */
-export const moveToDraft = (post: Post): Transition =>
+const hasNoTimeYet = ({ status }: Post) =>
+  status._tag !== "draft" &&
+  status._tag !== "scheduled" &&
+  status._tag !== "awaitingApproval";
+
+/**
+ * Schedules a draft or a post waiting for an approval, or moves a scheduled
+ * post to another time. Either way the post gets a new revision, which the
+ * job for its previous time does not publish. A time up to `scheduleGrace`
+ * before `now` is scheduled at `now`.
+ */
+export const schedulePost = (
+  post: Post,
+  schedule: Schedule,
+  now: DateTime.Utc
+): Transition<ScheduleInPast> =>
+  hasNoTimeYet(post)
+    ? rejected(post, "schedule")
+    : timeFrom(post, schedule, now).pipe(
+        Result.map((at) =>
+          withStatus(
+            post,
+            { _tag: "scheduled", schedule: at },
+            post.scheduleRevision + 1
+          )
+        )
+      );
+
+/**
+ * Holds a post that was just scheduled until someone approves it: it keeps
+ * its time and its revision, and gets no job. Scheduling a post that needs
+ * an approval is `schedulePost`, then this.
+ */
+export const awaitApproval = (post: Post): Transition =>
   post.status._tag === "scheduled"
+    ? Result.succeed(
+        withStatus(post, {
+          _tag: "awaitingApproval",
+          schedule: post.status.schedule,
+        })
+      )
+    : rejected(post, "awaitApproval");
+
+/**
+ * What becomes of a post waiting for an approval once it is approved: it is
+ * scheduled for the time it was asked for. An approval that comes after
+ * that time publishes nothing late: the post goes back to draft, for a
+ * member to give it a new time (a time up to `scheduleGrace` ago still means
+ * now). Either way it gets a new revision.
+ */
+export const releasePost = (post: Post, now: DateTime.Utc): Transition => {
+  const { status } = post;
+
+  if (status._tag !== "awaitingApproval") {
+    return rejected(post, "release");
+  }
+
+  return Result.succeed(
+    Result.match(timeFrom(post, status.schedule, now), {
+      onFailure: () =>
+        withStatus(post, { _tag: "draft" }, post.scheduleRevision + 1),
+      onSuccess: (at) =>
+        withStatus(
+          post,
+          { _tag: "scheduled", schedule: at },
+          post.scheduleRevision + 1
+        ),
+    })
+  );
+};
+
+/**
+ * Takes a scheduled post, or one waiting for an approval, back to draft,
+ * with a new revision.
+ */
+export const moveToDraft = (post: Post): Transition =>
+  post.status._tag === "scheduled" || post.status._tag === "awaitingApproval"
     ? Result.succeed(
         withStatus(post, { _tag: "draft" }, post.scheduleRevision + 1)
       )
@@ -318,7 +383,7 @@ export const reviseOutcome = (
 };
 
 /**
- * Cancels a draft or a scheduled post. A post already publishing is not
+ * Cancels a draft, a scheduled post or one waiting for an approval. A post already publishing is not
  * cancelled as a whole: its targets not yet sent are, and it finishes once the
  * others have.
  */
@@ -335,7 +400,7 @@ export const cancelPost = (post: Post, now: DateTime.Utc): Transition => {
     );
   }
 
-  if (status._tag === "scheduled") {
+  if (status._tag === "scheduled" || status._tag === "awaitingApproval") {
     return Result.succeed(
       withStatus(post, {
         _tag: "cancelled",

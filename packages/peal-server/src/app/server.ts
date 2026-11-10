@@ -44,6 +44,7 @@ import {
   NotificationsLive,
   NotificationsWorkersLive,
 } from "#notifications/container.ts";
+import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import {
   GatedMetricsReader,
   MediaInPostsLive,
@@ -139,6 +140,7 @@ const MediaContextLive = MediaLive.pipe(
 // Publishing posts to the channels the channels context lists, with the
 // media the media context holds.
 const PublishingContextLive = PublishingLive.pipe(
+  Layer.provide(ApprovalGate.open),
   Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, MediaContextLive))
 );
 

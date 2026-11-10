@@ -358,7 +358,7 @@
   },
   "Posts": {
     "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {{platform}}}",
-    "status": "{status, select, draft {Draft} scheduled {Scheduled} publishing {Publishing} finished {Finished} cancelled {Cancelled} other {{status}}}",
+    "status": "{status, select, draft {Draft} awaitingApproval {Awaiting approval} scheduled {Scheduled} publishing {Publishing} finished {Finished} cancelled {Cancelled} other {{status}}}",
     "targetStatus": "{status, select, pending {Waiting} publishing {Publishing} published {Published} failed {Failed} unconfirmed {To check} cancelled {Cancelled} other {{status}}}",
     "outcome": "{outcome, select, published {Published} partiallyPublished {Partly published} unconfirmed {To check} failed {Failed} cancelled {Cancelled} other {{outcome}}}",
     "disconnectedChannel": "A disconnected channel",
@@ -442,7 +442,7 @@
         "generic": "Something went wrong. Try again.",
         "forbidden": "Your role does not allow this.",
         "notFound": "This post no longer exists.",
-        "conflict": "This post is {status, select, draft {a draft} scheduled {scheduled} publishing {publishing} finished {finished} cancelled {cancelled} other {{status}}} and cannot be changed this way.",
+        "conflict": "This post is {status, select, draft {a draft} awaitingApproval {awaiting approval} scheduled {scheduled} publishing {publishing} finished {finished} cancelled {cancelled} other {{status}}} and cannot be changed this way.",
         "inPast": "This time has passed. Pick a later one.",
         "timeZone": "Pick a time zone from the list.",
         "unknownChannels": "Some of these channels are no longer connected.",
