@@ -4,7 +4,6 @@ import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import {
   Api,
-  Forbidden,
   PostNotFound,
   PostStatusConflict,
   TargetStatusConflict,
@@ -13,6 +12,7 @@ import type { Member, Permission, PostContent } from "peal-contract";
 
 import { PostsHandlers } from "#publishing/api/posts.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
+import { refused as forbiddenFor } from "#shared/api/forbidden.ts";
 import { newId } from "#shared/application/ids.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PostIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -140,7 +140,7 @@ describe("the drafts endpoints", () => {
             yield* colleague.posts
               .discard({ params: { postId: one.id, workspaceId } })
               .pipe(Effect.flip),
-            new Forbidden()
+            forbiddenFor("missingPermission", "post:delete")
           );
 
           const discarded = yield* author.posts.discard({
@@ -218,7 +218,7 @@ describe("the unschedule endpoint", () => {
 
           assert.deepStrictEqual(
             yield* contributor.posts.unschedule({ params }).pipe(Effect.flip),
-            new Forbidden()
+            forbiddenFor("missingPermission", "post:schedule")
           );
 
           const unscheduled = yield* editor.posts.unschedule({ params });
@@ -329,7 +329,7 @@ describe("the outcome endpoints", () => {
             yield* viewer.posts
               .repost({ params: { ...params, targetId: onRefused.id } })
               .pipe(Effect.flip),
-            new Forbidden()
+            forbiddenFor("missingPermission", "post:schedule")
           );
 
           // An editor of another workspace finds nothing of the post there.

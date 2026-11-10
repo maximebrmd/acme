@@ -327,5 +327,104 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
           );
         })
     );
+
+    it.effect("tell a refused caller what it lacks, and how to get it", () =>
+      Effect.gen(function* refusals() {
+        const app = yield* TestApp;
+        const owner = yield* signedUpUnconfirmed("refusal-owner");
+        const workspaceId = yield* workspaceOf(owner, "Refusals");
+        const other = yield* workspaceOf(owner, "Elsewhere");
+
+        const writer = yield* commandLine(
+          owner,
+          "offline_access workspace:read workspace:write"
+        );
+
+        const { key } = yield* apiKeyOf(owner, workspaceId, [
+          "post:read",
+          "post:create",
+        ]);
+
+        const send = (
+          headers: Readonly<Record<string, string>>,
+          workspace = workspaceId
+        ) =>
+          app.request(`/api/workspaces/${workspace}/posts/send`, {
+            body: {
+              channelIds: ["0190f3a0-0000-7000-8000-00000000c0de"],
+              content: { media: [], overrides: [], text: "Synthetic." },
+              when: { _tag: "now" },
+            },
+            headers,
+          });
+
+        const refusal = Schema.decodeUnknownSync(
+          Schema.Struct({
+            _tag: Schema.Literal("Forbidden"),
+            code: Schema.Literal("forbidden"),
+            message: Schema.String,
+            permission: Schema.optionalKey(Schema.String),
+            reason: Schema.String,
+            requestId: Schema.String,
+            scope: Schema.optionalKey(Schema.String),
+          })
+        );
+
+        // An application its user did not let publish: the scope to ask
+        // for, in the body and as RFC 6750 challenges.
+        const unscoped = yield* send(writer);
+        const lacking = refusal(unscoped.body);
+
+        assert.strictEqual(unscoped.status, 403);
+        assert.strictEqual(lacking.reason, "missingScope");
+        assert.strictEqual(lacking.scope, "workspace:publish");
+        assert.strictEqual(lacking.permission, "post:schedule");
+        assert.include(lacking.message, "workspace:publish");
+        assert.include(lacking.message, "peal login");
+        assert.strictEqual(
+          unscoped.headers.get("www-authenticate"),
+          'Bearer error="insufficient_scope", scope="workspace:publish"'
+        );
+
+        // A key made without the permission: nothing to sign in to.
+        const keyed = yield* send({ authorization: `Bearer ${key}` });
+        const unpermitted = refusal(keyed.body);
+
+        assert.strictEqual(keyed.status, 403);
+        assert.strictEqual(unpermitted.reason, "missingPermission");
+        assert.strictEqual(unpermitted.permission, "post:schedule");
+        assert.isUndefined(unpermitted.scope);
+        assert.include(unpermitted.message, "API key");
+        assert.include(unpermitted.message, "post:schedule");
+        assert.isNull(keyed.headers.get("www-authenticate"));
+
+        // The key in a workspace that is not its own.
+        const elsewhere = yield* send(
+          { authorization: `Bearer ${key}` },
+          other
+        );
+
+        assert.strictEqual(elsewhere.status, 403);
+        assert.strictEqual(refusal(elsewhere.body).reason, "wrongWorkspace");
+
+        // A cookie a browser sent from another site.
+        const foreign = yield* send({
+          cookie: owner.cookies,
+          origin: "https://elsewhere.example",
+        });
+
+        assert.strictEqual(foreign.status, 403);
+        assert.strictEqual(refusal(foreign.body).reason, "untrustedOrigin");
+
+        // What only the person does, asked by a key.
+        const person = yield* app.request(
+          `/api/workspaces/${workspaceId}/members`,
+          { headers: { authorization: `Bearer ${key}` } }
+        );
+
+        assert.strictEqual(person.status, 403);
+        assert.strictEqual(refusal(person.body).reason, "personRequired");
+      })
+    );
   }
 );

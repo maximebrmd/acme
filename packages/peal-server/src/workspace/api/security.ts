@@ -9,7 +9,6 @@ import {
   CurrentMember,
   CurrentPrincipal,
   CurrentStaff,
-  Forbidden,
   StaffAccess,
   Unauthenticated,
   WorkspaceAccess,
@@ -17,6 +16,7 @@ import {
 } from "peal-contract";
 import type { Member } from "peal-contract";
 
+import { forbidden, refused } from "#shared/api/forbidden.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
@@ -29,6 +29,7 @@ import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 
 import { memberOf, principalOf, toContractPrincipal } from "./principal.ts";
+import { explaining } from "./refusal.ts";
 
 // Reads change nothing; any other method needs a trusted origin when it
 // comes with cookies, which a browser sends to Peal from any site.
@@ -37,8 +38,6 @@ const safeMethods: ReadonlySet<string> = new Set(["GET", "HEAD", "OPTIONS"]);
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
 
 const unauthenticated = () => Effect.fail(new Unauthenticated());
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const as = (principal: Principal) =>
   Effect.provideService(CurrentPrincipal, toContractPrincipal(principal));
@@ -194,7 +193,7 @@ export const AuthenticationLive = Layer.effect(
               Option.fromNullishOr(request.headers["origin"])
             )
           ) {
-            return yield* new Forbidden();
+            return yield* refused("untrustedOrigin");
           }
 
           // A write reads the session from the database, so one revoked a
@@ -279,8 +278,13 @@ export const WorkspaceAccessLive = Layer.effect(
           })
         );
 
+        const current = memberOf(actor, principal);
+
+        // A refusal for a missing permission says whose it is: the
+        // application's scope, the key's or the role's.
         return yield* httpEffect.pipe(
-          Effect.provideService(CurrentMember, memberOf(actor, principal))
+          Effect.provideService(CurrentMember, current),
+          explaining(current)
         );
       })
     );

@@ -4,7 +4,6 @@ import {
   Api,
   CurrentMember,
   defaultWebhookDeliveryPageSize,
-  Forbidden,
   TooManyWebhookEndpoints,
   WebhookDeliveryNotFound,
   TooManyWebhookSends,
@@ -16,6 +15,7 @@ import {
 import type { WebhookUrlRefusal } from "peal-contract";
 
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
 import type { EndpointWithSecret } from "#webhooks/application/webhook-endpoints.ts";
@@ -24,8 +24,6 @@ import { WebhookDeliveryIdSchema } from "#webhooks/domain/webhook-delivery-id.ts
 import { toDeliveryView, toEndpointView } from "./webhook-view.ts";
 
 const decodeCursor = Schema.decodeUnknownOption(WebhookDeliveryIdSchema);
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const endpointNotFound = () => Effect.fail(new WebhookEndpointNotFound());
 

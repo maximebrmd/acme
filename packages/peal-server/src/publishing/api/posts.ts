@@ -4,7 +4,6 @@ import {
   Api,
   CurrentMember,
   defaultDraftPageSize,
-  Forbidden,
   IdempotencyKeyReused,
   InvalidTimeRange,
   PostContentInvalid,
@@ -25,6 +24,7 @@ import type { InvalidPostTransition } from "#publishing/domain/invalid-post-tran
 import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 
 import {
@@ -40,8 +40,6 @@ import {
 import { attemptView, postView } from "./post-view.ts";
 
 // How the use cases' failures answer. A database failure is a server error.
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const notFound = () => Effect.fail(new PostNotFound());
 

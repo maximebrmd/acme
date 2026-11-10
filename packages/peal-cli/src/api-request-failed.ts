@@ -2,6 +2,8 @@ import { Data, Option, Schema } from "effect";
 import { CliError } from "effect/cli";
 import type { HttpClientError } from "effect/http";
 
+import { requestLine } from "#refused.ts";
+
 // The request did not get an answer the command could use: the server is
 // unreachable (refused connection, unknown host), or it answered with an
 // error status or a body the contract does not describe.
@@ -10,12 +12,15 @@ import type { HttpClientError } from "effect/http";
 // never encoded, so it needs no schema.
 export class ApiRequestFailed extends Data.TaggedError("ApiRequestFailed")<{
   readonly detail: string;
+  // The id the server gave the request, when it answered.
+  readonly requestId?: string | undefined;
   readonly url: string;
 }> {
   override get [CliError.userMessage]() {
     return [
       `The Peal API at ${this.url} did not answer as expected (${this.detail}).`,
       "  Check that the server is running, or point --api-url or PEAL_API_URL at it.",
+      ...requestLine(this.requestId),
     ].join("\n");
   }
 }
@@ -45,5 +50,9 @@ export const requestFailed =
           })
         : `HTTP ${String(error.response.status)}`;
 
-    return new ApiRequestFailed({ detail, url });
+    return new ApiRequestFailed({
+      detail,
+      requestId: error.response?.headers["x-request-id"],
+      url,
+    });
   };

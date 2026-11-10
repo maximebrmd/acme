@@ -214,11 +214,7 @@ const sourceFailures: Readonly<Record<MediaSourceFailure, string>> = {
 
 const refused = (reason: string) => new Refused({ reason });
 
-/**
- * What a failed request means, as the user reads it: the sign-in to renew,
- * the server to check, or why it refused.
- */
-export const explain =
+const reasonOf =
   (url: string) =>
   (failure: ApiFailure): ApiRequestFailed | Refused | SignInExpired =>
     Match.valueTags(failure, {
@@ -238,9 +234,13 @@ export const explain =
         refused(
           "The workspace has no such channel, or it is not of this platform: peal channels list shows them."
         ),
-      Forbidden: () =>
+      // The server says what is missing and how to get it; one older than
+      // that says nothing.
+      Forbidden: ({ message }) =>
         refused(
-          "Peal refused: your role in this workspace does not allow it, or your account was suspended."
+          message === undefined || message === ""
+            ? "Peal refused: your role in this workspace does not allow it, or your account was suspended."
+            : `Peal refused: ${message}`
         ),
       HttpClientError: requestFailed(url),
       IdempotencyKeyReused: () =>
@@ -357,6 +357,27 @@ export const explain =
       WorkspaceNotFound: () =>
         refused("You do not belong to this workspace, or it no longer exists."),
     });
+
+// The request a refusal answers, as the API's errors name it.
+const requestOf = (failure: ApiFailure) =>
+  "requestId" in failure
+    ? { code: failure.code, requestId: failure.requestId }
+    : {};
+
+/**
+ * What a failed request means, as the user reads it: the sign-in to renew,
+ * the server to check, or why it refused, with the request's id when the
+ * server gave one.
+ */
+export const explain =
+  (url: string) =>
+  (failure: ApiFailure): ApiRequestFailed | Refused | SignInExpired => {
+    const explained = reasonOf(url)(failure);
+
+    return explained._tag === "Refused"
+      ? new Refused({ reason: explained.reason, ...requestOf(failure) })
+      : explained;
+  };
 
 /** The scope a sign-in needs to schedule, publish, move or cancel posts. */
 export const publishScope = "workspace:publish";

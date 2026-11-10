@@ -10,17 +10,11 @@ import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import type { PlanLimit } from "#shared/domain/plan-limit.ts";
 import type { Plan } from "#shared/domain/plan.ts";
 import { missingScope } from "#workspace/api/missing-scope.ts";
+import { scopeGrants } from "#workspace/api/refusal.ts";
 
 /** Fails the tool with a message the user can act on. */
 export const refuse = (message: string) =>
   Effect.fail(new ToolRefused({ message }));
-
-// What each scope lets a client do, as the consent page says it.
-const scopeGrants = {
-  "workspace:publish": "schedule and publish posts",
-  "workspace:read": "read the workspace",
-  "workspace:write": "write drafts and change the workspace",
-} as const;
 
 /**
  * The connection may not do this, and why: the user did not give the client
