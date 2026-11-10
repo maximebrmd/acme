@@ -2,13 +2,11 @@ import { Effect, Option, Redacted, Schema } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
 import { CurrentMember } from "peal-contract";
 
-import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ConnectionJournal } from "#workspace/application/connection-journal.ts";
 import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 
-import { recordToolCall } from "./activity-recording.ts";
 import { memberOf } from "./principal.ts";
 import { pastLimit, limitHeaders } from "./rate-limit.ts";
 import { contentChangeOf, journalled } from "./security.ts";
@@ -77,20 +75,14 @@ const forbidden = () =>
  * `Peal-Workspace` header, when its partner owns it. Routes behind it get
  * the member as CurrentMember.
  *
- * A request that calls one of `changingTools` is kept in the workspace's
- * activity log (ActivityJournal), by the tool's name.
- *
  * A request that calls one of `contentTools`, those that create, change or
  * delete content, is kept in the ConnectionJournal once answered without
  * an error, as the API's writes to posts and media are.
  */
 export const mcpAuthentication = ({
-  changingTools,
   contentTools,
 }: {
-  /** The tools that change something: their calls go to the activity log. */
-  readonly changingTools: ReadonlySet<string>;
-  /** Those of them that create, change or delete posts and media. */
+  /** The tools that create, change or delete posts and media. */
   readonly contentTools: ReadonlySet<string>;
 }) =>
   HttpRouter.middleware<{
@@ -101,7 +93,6 @@ export const mcpAuthentication = ({
       const members = yield* ResolveMember;
       const journal = yield* ConnectionJournal;
       const limits = yield* RequestLimits;
-      const activity = yield* ActivityJournal;
 
       return (httpEffect) =>
         Effect.gen(function* authenticated() {
@@ -158,18 +149,8 @@ export const mcpAuthentication = ({
                 )
               : [];
 
-          // Each call of a tool that changes something is kept in the
-          // workspace's activity log once the request is answered, as the
-          // API's writes are.
           const answered = httpEffect.pipe(
-            Effect.provideService(CurrentMember, member),
-            Effect.tap(() =>
-              Effect.forEach(
-                called.filter((name) => changingTools.has(name)),
-                (tool) => recordToolCall(activity, { member, tool }),
-                { discard: true }
-              )
-            )
+            Effect.provideService(CurrentMember, member)
           );
 
           const changesContent = called.some((name) => contentTools.has(name));

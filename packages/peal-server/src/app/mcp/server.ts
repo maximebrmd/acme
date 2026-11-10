@@ -5,6 +5,7 @@ import { toolCatalogue } from "#app/mcp/catalogue.ts";
 import { PealToolsLive } from "#app/mcp/handlers.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
+import { recordedCalls } from "#app/mcp/recorded-calls.ts";
 import { ReviewTools } from "#app/mcp/review-tools.ts";
 import { PealTools } from "#app/mcp/tools.ts";
 import { mcpAuthentication } from "#workspace/container.ts";
@@ -23,8 +24,8 @@ const contentTools: ReadonlySet<string> = new Set(
     .map((tool) => tool.name)
 );
 
-// Every tool that changes something: each call is kept in the workspace's
-// activity log, as the API's writes are.
+// Every tool that changes something: each call that ran is kept in the
+// workspace's activity log, as the API's writes are.
 const changingTools: ReadonlySet<string> = new Set(
   toolCatalogue()
     .filter(({ changes }) => changes)
@@ -75,7 +76,8 @@ export const McpLive = McpServer.layerHttp({
   path: mcpPath,
   protocols: [...protocols],
   registrations: McpServer.toolkit(PealTools).pipe(
+    Layer.provide(recordedCalls(changingTools)),
     Layer.provide(PealToolsLive)
   ),
   version: mcpServerVersion,
-}).pipe(Layer.provide(mcpAuthentication({ changingTools, contentTools })));
+}).pipe(Layer.provide(mcpAuthentication({ contentTools })));

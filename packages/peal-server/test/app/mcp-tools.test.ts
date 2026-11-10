@@ -615,6 +615,67 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.include(refusal, "post:schedule");
           assert.notInclude(refusal, "scope");
 
+          // The log says the tool refused: someone reading it before
+          // trying again does not take a refusal for a post scheduled.
+          const outcomes = Schema.decodeUnknownEffect(
+            Schema.Array(
+              Schema.Struct({
+                error_code: Schema.NullOr(Schema.String),
+                operation: Schema.String,
+              })
+            )
+          );
+
+          const ended =
+            yield* sql`SELECT operation, error_code FROM activity.events WHERE workspace_id = ${fixture.workspaceId} AND via = 'mcp'`.pipe(
+              Effect.flatMap(outcomes),
+              Effect.orDie
+            );
+
+          assert.deepInclude(ended, {
+            error_code: null,
+            operation: "mcp.create_draft",
+          });
+          assert.deepInclude(ended, {
+            error_code: "tool_refused",
+            operation: "mcp.schedule_post",
+          });
+
+          // Calls sent together in an array run none, as every revision
+          // of the protocol the endpoint speaks refuses a batch: the log
+          // keeps none of them.
+          const app = yield* TestApp;
+
+          const batch = yield* app.request("/api/mcp", {
+            body: JSON.stringify(
+              Array.from({ length: 5 }, (_, id) => ({
+                id,
+                jsonrpc: "2.0",
+                method: "tools/call",
+                params: {
+                  arguments: { postId: created.id },
+                  name: "discard_draft",
+                },
+              }))
+            ),
+            headers: {
+              accept: "application/json, text/event-stream",
+              authorization: `Bearer ${fixture.draftingKey}`,
+              "content-type": "application/json",
+            },
+            method: "POST",
+          });
+
+          assert.isAtLeast(batch.status, 400);
+
+          const after =
+            yield* sql`SELECT operation, error_code FROM activity.events WHERE workspace_id = ${fixture.workspaceId} AND operation = 'mcp.discard_draft'`.pipe(
+              Effect.flatMap(outcomes),
+              Effect.orDie
+            );
+
+          assert.deepStrictEqual(after, []);
+
           // Members are listed to a person, never to a key.
           assert.include(yield* agent.refused("list_members"), "person");
         })

@@ -320,8 +320,11 @@ and no socket, for tests.
   workspace's activity log by `WorkspaceAccess`, done, refused or failed
   (`recorded`, `#workspace/api/activity-recording.ts`, through
   `ActivityJournal`), and so is each call of an MCP tool that changes
-  something (`recordToolCall`, as `mcp.<tool>`, without a status). Keeping it
-  never changes an answer.
+  something (`recordToolCall`, as `mcp.<tool>`, without a status), by the
+  MCP middleware around the tool (`recordedCalls`, `src/app/mcp/`): only a
+  call that ran is kept, with `tool_refused` when the tool answered an
+  error and `tool_failed` when the call gave no answer, never what a
+  request's body names. Keeping it never changes an answer.
 - The discovery documents (`src/app/discovery/`) need no credentials and are
   written from `PUBLIC_URL`, `PEAL_DOCS_URL` and the contract: the API
   catalogue (RFC 9727, a Linkset), `/api/openapi.json`, the MCP server card
