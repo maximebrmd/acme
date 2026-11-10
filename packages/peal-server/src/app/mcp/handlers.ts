@@ -6,6 +6,7 @@ import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
 import { ReportToolsLive } from "#app/mcp/reports-handlers.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { BasicTools } from "#app/mcp/tools.ts";
+import { WebhookToolsLive } from "#app/mcp/webhooks-handlers.ts";
 import { toChannelView } from "#channels/api/channel-view.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { actorOf } from "#shared/api/actor.ts";
@@ -126,5 +127,6 @@ export const PealToolsLive = Layer.mergeAll(
   BasicToolsLive,
   PostToolsLive,
   ReportToolsLive,
-  PeopleToolsLive
+  PeopleToolsLive,
+  WebhookToolsLive
 );

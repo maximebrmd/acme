@@ -7,6 +7,7 @@ import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
+import { WebhookTools } from "#app/mcp/webhooks-tools.ts";
 
 const UserSchema = Schema.Struct({
   email: Schema.String,
@@ -98,5 +99,6 @@ export const PealTools = Toolkit.merge(
   BasicTools,
   PostTools,
   ReportTools,
-  PeopleTools
+  PeopleTools,
+  WebhookTools
 );

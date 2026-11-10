@@ -209,6 +209,9 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           analytics_summary: [true, false, true, false],
           confirm_target: [false, true, true, false],
           create_draft: [false, false, false, false],
+          // An endpoint is a server outside Peal, which then hears of the
+          // workspace.
+          create_webhook: [false, false, false, true],
           discard_draft: [false, true, true, false],
           get_billing: [true, false, true, false],
           get_post: [true, false, true, false],
@@ -218,6 +221,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_drafts: [true, false, true, false],
           list_invitations: [true, false, true, false],
           list_members: [true, false, true, false],
+          list_webhook_deliveries: [true, false, true, false],
+          list_webhooks: [true, false, true, false],
           list_workspaces: [true, false, true, false],
           post_analytics: [true, false, true, false],
           repost_target: [false, false, false, true],
@@ -518,6 +523,54 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               })
             ),
             { enabled: false, plan: null }
+          );
+        })
+    );
+
+    it.effect(
+      "read the workspace's webhooks, and refuse an endpoint Peal would not deliver to",
+      () =>
+        Effect.gen(function* webhooks() {
+          const fixture = yield* ToolsFixture;
+          const reader = yield* connected(fixture.reading);
+          const writer = yield* connected(fixture.writing);
+
+          const address = {
+            eventTypes: ["post.published"],
+            url: "https://hooks.example.com/peal",
+          };
+
+          assert.deepStrictEqual(
+            yield* reader.call(
+              "list_webhooks",
+              Schema.Struct({ endpoints: Schema.Array(Schema.Unknown) })
+            ),
+            { endpoints: [] }
+          );
+          assert.include(
+            yield* reader.refused("create_webhook", address),
+            "This connection may not manage webhooks"
+          );
+          // A documentation address (RFC 5737): never a public host.
+          assert.include(
+            yield* writer.refused("create_webhook", {
+              ...address,
+              url: "https://192.0.2.10/peal",
+            }),
+            "a host that is not public"
+          );
+          assert.include(
+            yield* writer.refused("create_webhook", {
+              ...address,
+              url: "http://hooks.example.com/peal",
+            }),
+            "must be HTTPS"
+          );
+          assert.include(
+            yield* reader.refused("list_webhook_deliveries", {
+              endpointId: "not-an-endpoint",
+            }),
+            "The workspace has no webhook endpoint with this id"
           );
         })
     );
