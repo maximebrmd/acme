@@ -463,6 +463,11 @@ describe("reading an account's numbers", () => {
                   uniqueImpressionsCount: 610,
                 },
               },
+              // A day whose start is no instant: left out, never a failure.
+              {
+                timeRange: { end: 1e300, start: 1e300 },
+                totalShareStatistics: { impressionCount: 1 },
+              },
             ],
           });
         });

@@ -225,12 +225,15 @@ export const linkedinAccounts = Effect.fn("LinkedInAccounts.make")(
         return [];
       }
 
-      return (answer.value.body.elements ?? []).map(
-        ({ timeRange, totalShareStatistics }): AccountDay => ({
-          day: utcDayOf(DateTime.makeUnsafe(timeRange.start)),
-          reach: countOf(totalShareStatistics.uniqueImpressionsCount),
-          views: countOf(totalShareStatistics.impressionCount),
-        })
+      // A day whose start is no instant is left out: one malformed day
+      // never fails the account's read.
+      return (answer.value.body.elements ?? []).flatMap(
+        ({ timeRange, totalShareStatistics }): AccountDay[] =>
+          Option.toArray(DateTime.make(timeRange.start)).map((begins) => ({
+            day: utcDayOf(begins),
+            reach: countOf(totalShareStatistics.uniqueImpressionsCount),
+            views: countOf(totalShareStatistics.impressionCount),
+          }))
       );
     });
 
