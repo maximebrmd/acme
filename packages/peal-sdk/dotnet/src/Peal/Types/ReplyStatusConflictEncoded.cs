@@ -14,6 +14,15 @@ public record ReplyStatusConflictEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required ReplyStatusConflictEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
     [JsonPropertyName("status")]
     public required string Status { get; set; }
 

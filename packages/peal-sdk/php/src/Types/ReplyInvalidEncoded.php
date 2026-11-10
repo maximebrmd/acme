@@ -14,6 +14,24 @@ class ReplyInvalidEncoded extends JsonSerializableType
     public string $tag;
 
     /**
+     * @var ?string $code
+     */
+    #[JsonProperty('code')]
+    public ?string $code;
+
+    /**
+     * @var ?string $message
+     */
+    #[JsonProperty('message')]
+    public ?string $message;
+
+    /**
+     * @var ?string $requestId
+     */
+    #[JsonProperty('requestId')]
+    public ?string $requestId;
+
+    /**
      * @var ?int $length
      */
     #[JsonProperty('length')]
@@ -41,6 +59,9 @@ class ReplyInvalidEncoded extends JsonSerializableType
      * @param array{
      *   tag: value-of<ReplyInvalidEncodedTag>,
      *   reason: value-of<ReplyInvalidEncodedReason>,
+     *   code?: ?string,
+     *   message?: ?string,
+     *   requestId?: ?string,
      *   length?: ?int,
      *   maximum?: ?int,
      *   unit?: ?string,
@@ -50,6 +71,9 @@ class ReplyInvalidEncoded extends JsonSerializableType
         array $values,
     ) {
         $this->tag = $values['tag'];
+        $this->code = $values['code'] ?? null;
+        $this->message = $values['message'] ?? null;
+        $this->requestId = $values['requestId'] ?? null;
         $this->length = $values['length'] ?? null;
         $this->maximum = $values['maximum'] ?? null;
         $this->reason = $values['reason'];

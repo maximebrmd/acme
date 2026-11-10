@@ -8,6 +8,7 @@ export interface ChannelPreview {
     links: Peal.LimitedCount;
     media: Peal.LimitedCount;
     mentions: Peal.LimitedCount;
+    parts: Peal.PartPreview[];
     platform: Peal.Platform;
     text: string;
     textCounts: Peal.TextCount[];

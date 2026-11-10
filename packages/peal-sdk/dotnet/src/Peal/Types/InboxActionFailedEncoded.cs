@@ -14,6 +14,15 @@ public record InboxActionFailedEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required InboxActionFailedEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
     [JsonPropertyName("reason")]
     public required string Reason { get; set; }
 

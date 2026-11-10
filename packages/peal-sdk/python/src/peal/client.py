@@ -18,6 +18,7 @@ if typing.TYPE_CHECKING:
     from .capabilities.client import AsyncCapabilitiesClient, CapabilitiesClient
     from .channels.client import AsyncChannelsClient, ChannelsClient
     from .connect_links.client import AsyncConnectLinksClient, ConnectLinksClient
+    from .inbox.client import AsyncInboxClient, InboxClient
     from .invitations.client import AsyncInvitationsClient, InvitationsClient
     from .lookups.client import AsyncLookupsClient, LookupsClient
     from .media.client import AsyncMediaClient, MediaClient
@@ -135,6 +136,7 @@ class Peal:
         self._capabilities: typing.Optional[CapabilitiesClient] = None
         self._lookups: typing.Optional[LookupsClient] = None
         self._webhooks: typing.Optional[WebhooksClient] = None
+        self._inbox: typing.Optional[InboxClient] = None
         self._activity: typing.Optional[ActivityClient] = None
         self._partner: typing.Optional[PartnerClient] = None
         self._partner_account: typing.Optional[PartnerAccountClient] = None
@@ -276,6 +278,14 @@ class Peal:
 
             self._webhooks = WebhooksClient(client_wrapper=self._client_wrapper)
         return self._webhooks
+
+    @property
+    def inbox(self):
+        if self._inbox is None:
+            from .inbox.client import InboxClient  # noqa: E402
+
+            self._inbox = InboxClient(client_wrapper=self._client_wrapper)
+        return self._inbox
 
     @property
     def activity(self):
@@ -440,6 +450,7 @@ class AsyncPeal:
         self._capabilities: typing.Optional[AsyncCapabilitiesClient] = None
         self._lookups: typing.Optional[AsyncLookupsClient] = None
         self._webhooks: typing.Optional[AsyncWebhooksClient] = None
+        self._inbox: typing.Optional[AsyncInboxClient] = None
         self._activity: typing.Optional[AsyncActivityClient] = None
         self._partner: typing.Optional[AsyncPartnerClient] = None
         self._partner_account: typing.Optional[AsyncPartnerAccountClient] = None
@@ -581,6 +592,14 @@ class AsyncPeal:
 
             self._webhooks = AsyncWebhooksClient(client_wrapper=self._client_wrapper)
         return self._webhooks
+
+    @property
+    def inbox(self):
+        if self._inbox is None:
+            from .inbox.client import AsyncInboxClient  # noqa: E402
+
+            self._inbox = AsyncInboxClient(client_wrapper=self._client_wrapper)
+        return self._inbox
 
     @property
     def activity(self):

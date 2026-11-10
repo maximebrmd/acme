@@ -2,6 +2,9 @@
 
 export interface InboxCommentGoneEncoded {
     _tag: InboxCommentGoneEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace InboxCommentGoneEncoded {

@@ -61,8 +61,7 @@ module Peal
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
-            401 => Peal::Types::UnauthenticatedEncoded,
-            403 => Peal::Types::ForbiddenEncoded
+            401 => Peal::Types::UnauthenticatedEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
@@ -109,8 +108,7 @@ module Peal
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
-            401 => Peal::Types::UnauthenticatedEncoded,
-            403 => Peal::Types::ForbiddenEncoded
+            401 => Peal::Types::UnauthenticatedEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
@@ -156,8 +154,7 @@ module Peal
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
-            401 => Peal::Types::UnauthenticatedEncoded,
-            403 => Peal::Types::ForbiddenEncoded
+            401 => Peal::Types::UnauthenticatedEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
@@ -214,8 +211,7 @@ module Peal
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
-            401 => Peal::Types::UnauthenticatedEncoded,
-            403 => Peal::Types::ForbiddenEncoded
+            401 => Peal::Types::UnauthenticatedEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
@@ -269,8 +265,7 @@ module Peal
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
-            401 => Peal::Types::UnauthenticatedEncoded,
-            403 => Peal::Types::ForbiddenEncoded
+            401 => Peal::Types::UnauthenticatedEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
@@ -325,8 +320,7 @@ module Peal
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
-            401 => Peal::Types::UnauthenticatedEncoded,
-            403 => Peal::Types::ForbiddenEncoded
+            401 => Peal::Types::UnauthenticatedEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
@@ -380,8 +374,7 @@ module Peal
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
-            401 => Peal::Types::UnauthenticatedEncoded,
-            403 => Peal::Types::ForbiddenEncoded
+            401 => Peal::Types::UnauthenticatedEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
@@ -428,8 +421,7 @@ module Peal
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
-            401 => Peal::Types::UnauthenticatedEncoded,
-            403 => Peal::Types::ForbiddenEncoded
+            401 => Peal::Types::UnauthenticatedEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
           raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)

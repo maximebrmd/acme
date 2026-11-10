@@ -19,6 +19,7 @@
 //! - **capabilities**
 //! - **lookups**
 //! - **webhooks**
+//! - **inbox**
 //! - **activity**
 //! - **partner**
 //! - **partnerAccount**
@@ -35,6 +36,7 @@ pub mod billing;
 pub mod capabilities;
 pub mod channels;
 pub mod connect_links;
+pub mod inbox;
 pub mod invitations;
 pub mod lookups;
 pub mod media;
@@ -68,6 +70,7 @@ pub struct PealClient {
     pub capabilities: CapabilitiesClient,
     pub lookups: LookupsClient,
     pub webhooks: WebhooksClient,
+    pub inbox: InboxClient,
     pub activity: ActivityClient,
     pub partner: PartnerClient,
     pub partner_account: PartnerAccountClient,
@@ -96,6 +99,7 @@ impl PealClient {
             capabilities: CapabilitiesClient::new(config.clone())?,
             lookups: LookupsClient::new(config.clone())?,
             webhooks: WebhooksClient::new(config.clone())?,
+            inbox: InboxClient::new(config.clone())?,
             activity: ActivityClient::new(config.clone())?,
             partner: PartnerClient::new(config.clone())?,
             partner_account: PartnerAccountClient::new(config.clone())?,
@@ -113,6 +117,7 @@ pub use billing::BillingClient;
 pub use capabilities::CapabilitiesClient;
 pub use channels::ChannelsClient;
 pub use connect_links::ConnectLinksClient;
+pub use inbox::InboxClient;
 pub use invitations::InvitationsClient;
 pub use lookups::LookupsClient;
 pub use media::MediaClient;

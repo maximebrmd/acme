@@ -11,6 +11,15 @@ public record InboxActionUnavailableEncoded : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
     [JsonPropertyName("ability")]
     public required string Ability { get; set; }
 

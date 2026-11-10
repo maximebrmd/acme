@@ -9,16 +9,24 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = InboxActionUnavailableEncoded.Builder.class)
 public final class InboxActionUnavailableEncoded {
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final String ability;
 
     private final InboxActionUnavailableEncodedStanding standing;
@@ -26,10 +34,33 @@ public final class InboxActionUnavailableEncoded {
     private final Map<String, Object> additionalProperties;
 
     private InboxActionUnavailableEncoded(
-            String ability, InboxActionUnavailableEncodedStanding standing, Map<String, Object> additionalProperties) {
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            String ability,
+            InboxActionUnavailableEncodedStanding standing,
+            Map<String, Object> additionalProperties) {
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.ability = ability;
         this.standing = standing;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("ability")
@@ -54,12 +85,16 @@ public final class InboxActionUnavailableEncoded {
     }
 
     private boolean equalTo(InboxActionUnavailableEncoded other) {
-        return ability.equals(other.ability) && standing.equals(other.standing);
+        return code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && ability.equals(other.ability)
+                && standing.equals(other.standing);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.ability, this.standing);
+        return Objects.hash(this.code, this.message, this.requestId, this.ability, this.standing);
     }
 
     @java.lang.Override
@@ -87,6 +122,18 @@ public final class InboxActionUnavailableEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -95,12 +142,21 @@ public final class InboxActionUnavailableEncoded {
 
         private InboxActionUnavailableEncodedStanding standing;
 
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(InboxActionUnavailableEncoded other) {
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             ability(other.getAbility());
             standing(other.getStanding());
             return this;
@@ -121,13 +177,56 @@ public final class InboxActionUnavailableEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public InboxActionUnavailableEncoded build() {
-            return new InboxActionUnavailableEncoded(ability, standing, additionalProperties);
+            return new InboxActionUnavailableEncoded(code, message, requestId, ability, standing, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("ability") || key.equalsIgnoreCase("standing")) {
+            if (key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("ability")
+                    || key.equalsIgnoreCase("standing")) {
                 return;
             }
             this.additionalProperties.put(key, value);

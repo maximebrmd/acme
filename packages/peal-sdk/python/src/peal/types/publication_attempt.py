@@ -12,6 +12,7 @@ from .attempt_result import AttemptResult
 class PublicationAttempt(UniversalBaseModel):
     attempt: int
     finished_at: typing_extensions.Annotated[str, FieldMetadata(alias="finishedAt"), pydantic.Field(alias="finishedAt")]
+    part: int
     refusal_code: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="refusalCode"), pydantic.Field(alias="refusalCode")
     ] = None

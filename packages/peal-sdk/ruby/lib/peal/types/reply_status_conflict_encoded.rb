@@ -7,6 +7,12 @@ module Peal
     class ReplyStatusConflictEncoded < Internal::Types::Model
       field :tag, -> { Peal::Types::ReplyStatusConflictEncodedTag }, optional: false, nullable: false, api_name: "_tag"
 
+      field :code, -> { String }, optional: true, nullable: false
+
+      field :message, -> { String }, optional: true, nullable: false
+
+      field :request_id, -> { String }, optional: true, nullable: false, api_name: "requestId"
+
       field :status, -> { String }, optional: false, nullable: false
     end
   end

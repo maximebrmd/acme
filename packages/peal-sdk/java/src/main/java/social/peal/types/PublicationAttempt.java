@@ -28,6 +28,8 @@ public final class PublicationAttempt {
 
     private final String finishedAt;
 
+    private final int part;
+
     private final Optional<String> refusalCode;
 
     private final AttemptResult result;
@@ -45,6 +47,7 @@ public final class PublicationAttempt {
     private PublicationAttempt(
             int attempt,
             String finishedAt,
+            int part,
             Optional<String> refusalCode,
             AttemptResult result,
             Optional<String> retryAt,
@@ -54,6 +57,7 @@ public final class PublicationAttempt {
             Map<String, Object> additionalProperties) {
         this.attempt = attempt;
         this.finishedAt = finishedAt;
+        this.part = part;
         this.refusalCode = refusalCode;
         this.result = result;
         this.retryAt = retryAt;
@@ -71,6 +75,11 @@ public final class PublicationAttempt {
     @JsonProperty("finishedAt")
     public String getFinishedAt() {
         return finishedAt;
+    }
+
+    @JsonProperty("part")
+    public int getPart() {
+        return part;
     }
 
     @JsonIgnore
@@ -135,6 +144,7 @@ public final class PublicationAttempt {
     private boolean equalTo(PublicationAttempt other) {
         return attempt == other.attempt
                 && finishedAt.equals(other.finishedAt)
+                && part == other.part
                 && refusalCode.equals(other.refusalCode)
                 && result.equals(other.result)
                 && retryAt.equals(other.retryAt)
@@ -148,6 +158,7 @@ public final class PublicationAttempt {
         return Objects.hash(
                 this.attempt,
                 this.finishedAt,
+                this.part,
                 this.refusalCode,
                 this.result,
                 this.retryAt,
@@ -172,7 +183,11 @@ public final class PublicationAttempt {
     }
 
     public interface FinishedAtStage {
-        ResultStage finishedAt(@NotNull String finishedAt);
+        PartStage finishedAt(@NotNull String finishedAt);
+    }
+
+    public interface PartStage {
+        ResultStage part(int part);
     }
 
     public interface ResultStage {
@@ -215,6 +230,7 @@ public final class PublicationAttempt {
     public static final class Builder
             implements AttemptStage,
                     FinishedAtStage,
+                    PartStage,
                     ResultStage,
                     RoundStage,
                     StartedAtStage,
@@ -223,6 +239,8 @@ public final class PublicationAttempt {
         private int attempt;
 
         private String finishedAt;
+
+        private int part;
 
         private AttemptResult result;
 
@@ -244,6 +262,7 @@ public final class PublicationAttempt {
         public Builder from(PublicationAttempt other) {
             attempt(other.getAttempt());
             finishedAt(other.getFinishedAt());
+            part(other.getPart());
             refusalCode(other.getRefusalCode());
             result(other.getResult());
             retryAt(other.getRetryAt());
@@ -262,8 +281,15 @@ public final class PublicationAttempt {
 
         @java.lang.Override
         @JsonSetter("finishedAt")
-        public ResultStage finishedAt(@NotNull String finishedAt) {
+        public PartStage finishedAt(@NotNull String finishedAt) {
             this.finishedAt = Objects.requireNonNull(finishedAt, "finishedAt must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("part")
+        public ResultStage part(int part) {
+            this.part = part;
             return this;
         }
 
@@ -350,6 +376,7 @@ public final class PublicationAttempt {
             return new PublicationAttempt(
                     attempt,
                     finishedAt,
+                    part,
                     refusalCode,
                     result,
                     retryAt,
@@ -363,6 +390,7 @@ public final class PublicationAttempt {
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("attempt")
                     || key.equalsIgnoreCase("finishedAt")
+                    || key.equalsIgnoreCase("part")
                     || key.equalsIgnoreCase("refusalCode")
                     || key.equalsIgnoreCase("result")
                     || key.equalsIgnoreCase("retryAt")

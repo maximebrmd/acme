@@ -8,6 +8,7 @@ import { BillingClient } from "./api/resources/billing/client/Client.js";
 import { CapabilitiesClient } from "./api/resources/capabilities/client/Client.js";
 import { ChannelsClient } from "./api/resources/channels/client/Client.js";
 import { ConnectLinksClient } from "./api/resources/connectLinks/client/Client.js";
+import { InboxClient } from "./api/resources/inbox/client/Client.js";
 import { InvitationsClient } from "./api/resources/invitations/client/Client.js";
 import { LookupsClient } from "./api/resources/lookups/client/Client.js";
 import { MediaClient } from "./api/resources/media/client/Client.js";
@@ -53,6 +54,7 @@ export class PealClient {
     protected _capabilities: CapabilitiesClient | undefined;
     protected _lookups: LookupsClient | undefined;
     protected _webhooks: WebhooksClient | undefined;
+    protected _inbox: InboxClient | undefined;
     protected _activity: ActivityClient | undefined;
     protected _partner: PartnerClient | undefined;
     protected _partnerAccount: PartnerAccountClient | undefined;
@@ -130,6 +132,10 @@ export class PealClient {
 
     public get webhooks(): WebhooksClient {
         return (this._webhooks ??= new WebhooksClient(this._options));
+    }
+
+    public get inbox(): InboxClient {
+        return (this._inbox ??= new InboxClient(this._options));
     }
 
     public get activity(): ActivityClient {

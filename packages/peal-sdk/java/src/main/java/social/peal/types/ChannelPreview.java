@@ -32,6 +32,8 @@ public final class ChannelPreview {
 
     private final LimitedCount mentions;
 
+    private final List<PartPreview> parts;
+
     private final Platform platform;
 
     private final String text;
@@ -48,6 +50,7 @@ public final class ChannelPreview {
             LimitedCount links,
             LimitedCount media,
             LimitedCount mentions,
+            List<PartPreview> parts,
             Platform platform,
             String text,
             List<TextCount> textCounts,
@@ -58,6 +61,7 @@ public final class ChannelPreview {
         this.links = links;
         this.media = media;
         this.mentions = mentions;
+        this.parts = parts;
         this.platform = platform;
         this.text = text;
         this.textCounts = textCounts;
@@ -88,6 +92,11 @@ public final class ChannelPreview {
     @JsonProperty("mentions")
     public LimitedCount getMentions() {
         return mentions;
+    }
+
+    @JsonProperty("parts")
+    public List<PartPreview> getParts() {
+        return parts;
     }
 
     @JsonProperty("platform")
@@ -127,6 +136,7 @@ public final class ChannelPreview {
                 && links.equals(other.links)
                 && media.equals(other.media)
                 && mentions.equals(other.mentions)
+                && parts.equals(other.parts)
                 && platform.equals(other.platform)
                 && text.equals(other.text)
                 && textCounts.equals(other.textCounts)
@@ -141,6 +151,7 @@ public final class ChannelPreview {
                 this.links,
                 this.media,
                 this.mentions,
+                this.parts,
                 this.platform,
                 this.text,
                 this.textCounts,
@@ -193,6 +204,12 @@ public final class ChannelPreview {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage parts(List<PartPreview> parts);
+
+        _FinalStage addParts(PartPreview parts);
+
+        _FinalStage addAllParts(List<PartPreview> parts);
+
         _FinalStage textCounts(List<TextCount> textCounts);
 
         _FinalStage addTextCounts(TextCount textCounts);
@@ -234,6 +251,8 @@ public final class ChannelPreview {
 
         private List<TextCount> textCounts = new ArrayList<>();
 
+        private List<PartPreview> parts = new ArrayList<>();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -245,6 +264,7 @@ public final class ChannelPreview {
             links(other.getLinks());
             media(other.getMedia());
             mentions(other.getMentions());
+            parts(other.getParts());
             platform(other.getPlatform());
             text(other.getText());
             textCounts(other.getTextCounts());
@@ -350,6 +370,30 @@ public final class ChannelPreview {
         }
 
         @java.lang.Override
+        public _FinalStage addAllParts(List<PartPreview> parts) {
+            if (parts != null) {
+                this.parts.addAll(parts);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addParts(PartPreview parts) {
+            this.parts.add(parts);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "parts", nulls = Nulls.SKIP)
+        public _FinalStage parts(List<PartPreview> parts) {
+            this.parts.clear();
+            if (parts != null) {
+                this.parts.addAll(parts);
+            }
+            return this;
+        }
+
+        @java.lang.Override
         public ChannelPreview build() {
             return new ChannelPreview(
                     channelId,
@@ -357,6 +401,7 @@ public final class ChannelPreview {
                     links,
                     media,
                     mentions,
+                    parts,
                     platform,
                     text,
                     textCounts,
@@ -371,6 +416,7 @@ public final class ChannelPreview {
                     || key.equalsIgnoreCase("links")
                     || key.equalsIgnoreCase("media")
                     || key.equalsIgnoreCase("mentions")
+                    || key.equalsIgnoreCase("parts")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("text")
                     || key.equalsIgnoreCase("textCounts")

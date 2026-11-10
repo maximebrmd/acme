@@ -15,6 +15,8 @@ module Peal
 
       field :mentions, -> { Peal::Types::LimitedCount }, optional: false, nullable: false
 
+      field :parts, -> { Internal::Types::Array[Peal::Types::PartPreview] }, optional: false, nullable: false
+
       field :platform, -> { Peal::Types::Platform }, optional: false, nullable: false
 
       field :text, -> { String }, optional: false, nullable: false

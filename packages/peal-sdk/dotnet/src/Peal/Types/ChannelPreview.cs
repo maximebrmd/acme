@@ -26,6 +26,9 @@ public record ChannelPreview : IJsonOnDeserialized
     [JsonPropertyName("mentions")]
     public required LimitedCount Mentions { get; set; }
 
+    [JsonPropertyName("parts")]
+    public IEnumerable<PartPreview> Parts { get; set; } = new List<PartPreview>();
+
     [JsonPropertyName("platform")]
     public required Platform Platform { get; set; }
 

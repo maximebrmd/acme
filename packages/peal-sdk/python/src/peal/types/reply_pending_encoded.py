@@ -9,6 +9,11 @@ from ..core.serialization import FieldMetadata
 
 
 class ReplyPendingEncoded(UniversalBaseModel):
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     reply_id: typing_extensions.Annotated[str, FieldMetadata(alias="replyId"), pydantic.Field(alias="replyId")]
 
     if IS_PYDANTIC_V2:

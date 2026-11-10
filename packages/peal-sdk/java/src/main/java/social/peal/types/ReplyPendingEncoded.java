@@ -9,23 +9,54 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ReplyPendingEncoded.Builder.class)
 public final class ReplyPendingEncoded {
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final String replyId;
 
     private final Map<String, Object> additionalProperties;
 
-    private ReplyPendingEncoded(String replyId, Map<String, Object> additionalProperties) {
+    private ReplyPendingEncoded(
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            String replyId,
+            Map<String, Object> additionalProperties) {
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.replyId = replyId;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("replyId")
@@ -45,12 +76,15 @@ public final class ReplyPendingEncoded {
     }
 
     private boolean equalTo(ReplyPendingEncoded other) {
-        return replyId.equals(other.replyId);
+        return code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && replyId.equals(other.replyId);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.replyId);
+        return Objects.hash(this.code, this.message, this.requestId, this.replyId);
     }
 
     @java.lang.Override
@@ -74,11 +108,29 @@ public final class ReplyPendingEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements ReplyIdStage, _FinalStage {
         private String replyId;
+
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -86,6 +138,9 @@ public final class ReplyPendingEncoded {
 
         @java.lang.Override
         public Builder from(ReplyPendingEncoded other) {
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             replyId(other.getReplyId());
             return this;
         }
@@ -98,13 +153,55 @@ public final class ReplyPendingEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public ReplyPendingEncoded build() {
-            return new ReplyPendingEncoded(replyId, additionalProperties);
+            return new ReplyPendingEncoded(code, message, requestId, replyId, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("replyId")) {
+            if (key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("replyId")) {
                 return;
             }
             this.additionalProperties.put(key, value);

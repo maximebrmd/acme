@@ -2,6 +2,9 @@
 
 export interface ReplyInvalidEncoded {
     _tag: ReplyInvalidEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     length: number | null;
     maximum: number | null;
     reason: ReplyInvalidEncoded.Reason;

@@ -35,6 +35,7 @@ export class InboxClient {
      * @throws {@link Peal.UnauthorizedError}
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -77,8 +78,9 @@ export class InboxClient {
             switch (_response.error.statusCode) {
                 case 400: throw new Peal.BadRequestError(_response.error.body as unknown, _response.rawResponse);
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
-                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -99,6 +101,7 @@ export class InboxClient {
      * @throws {@link Peal.UnauthorizedError}
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -134,8 +137,9 @@ export class InboxClient {
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
-                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -156,6 +160,7 @@ export class InboxClient {
      * @throws {@link Peal.UnauthorizedError}
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -191,8 +196,9 @@ export class InboxClient {
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
-                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -215,6 +221,7 @@ export class InboxClient {
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
      * @throws {@link Peal.UnprocessableEntityError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -254,10 +261,11 @@ export class InboxClient {
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
-                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
                 case 422: throw new Peal.UnprocessableEntityError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -279,6 +287,7 @@ export class InboxClient {
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -318,9 +327,10 @@ export class InboxClient {
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
-                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -342,6 +352,7 @@ export class InboxClient {
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link Peal.BadGatewayError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
@@ -382,9 +393,10 @@ export class InboxClient {
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
-                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 case 502: throw new Peal.BadGatewayError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
@@ -407,6 +419,7 @@ export class InboxClient {
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -446,9 +459,10 @@ export class InboxClient {
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
-                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -470,6 +484,7 @@ export class InboxClient {
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link Peal.BadGatewayError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
@@ -506,9 +521,10 @@ export class InboxClient {
         if (_response.error.reason === "status-code") {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
-                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 case 502: throw new Peal.BadGatewayError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,

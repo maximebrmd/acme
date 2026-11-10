@@ -66,6 +66,72 @@ public class ValidateTest : BaseMockServerTest
                     "count": 1,
                     "maximum": 1
                   },
+                  "parts": [
+                    {
+                      "hashtags": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "links": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "media": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "mentions": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "part": 1,
+                      "text": "text",
+                      "textCounts": [
+                        {
+                          "length": 1,
+                          "maximum": 1,
+                          "unit": "graphemes"
+                        },
+                        {
+                          "length": 1,
+                          "maximum": 1,
+                          "unit": "graphemes"
+                        }
+                      ]
+                    },
+                    {
+                      "hashtags": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "links": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "media": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "mentions": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "part": 1,
+                      "text": "text",
+                      "textCounts": [
+                        {
+                          "length": 1,
+                          "maximum": 1,
+                          "unit": "graphemes"
+                        },
+                        {
+                          "length": 1,
+                          "maximum": 1,
+                          "unit": "graphemes"
+                        }
+                      ]
+                    }
+                  ],
                   "platform": "x",
                   "text": "text",
                   "textCounts": [
@@ -107,6 +173,72 @@ public class ValidateTest : BaseMockServerTest
                     "count": 1,
                     "maximum": 1
                   },
+                  "parts": [
+                    {
+                      "hashtags": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "links": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "media": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "mentions": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "part": 1,
+                      "text": "text",
+                      "textCounts": [
+                        {
+                          "length": 1,
+                          "maximum": 1,
+                          "unit": "graphemes"
+                        },
+                        {
+                          "length": 1,
+                          "maximum": 1,
+                          "unit": "graphemes"
+                        }
+                      ]
+                    },
+                    {
+                      "hashtags": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "links": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "media": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "mentions": {
+                        "count": 1,
+                        "maximum": 1
+                      },
+                      "part": 1,
+                      "text": "text",
+                      "textCounts": [
+                        {
+                          "length": 1,
+                          "maximum": 1,
+                          "unit": "graphemes"
+                        },
+                        {
+                          "length": 1,
+                          "maximum": 1,
+                          "unit": "graphemes"
+                        }
+                      ]
+                    }
+                  ],
                   "platform": "x",
                   "text": "text",
                   "textCounts": [
@@ -194,6 +326,7 @@ public class ValidateTest : BaseMockServerTest
                 ChannelIds = new List<string>() { "channelIds", "channelIds" },
                 Content = new PostContent
                 {
+                    FollowUps = null,
                     Media = new List<MediaAttachment>()
                     {
                         new MediaAttachment { AltText = "altText", MediaId = "mediaId" },
@@ -257,6 +390,31 @@ public class ValidateTest : BaseMockServerTest
                   "mentions": {
                     "count": 1
                   },
+                  "parts": [
+                    {
+                      "hashtags": {
+                        "count": 1
+                      },
+                      "links": {
+                        "count": 1
+                      },
+                      "media": {
+                        "count": 1
+                      },
+                      "mentions": {
+                        "count": 1
+                      },
+                      "part": 1,
+                      "text": "text",
+                      "textCounts": [
+                        {
+                          "length": 1,
+                          "maximum": 1,
+                          "unit": "graphemes"
+                        }
+                      ]
+                    }
+                  ],
                   "platform": "x",
                   "text": "text",
                   "textCounts": [

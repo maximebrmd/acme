@@ -2,6 +2,9 @@
 
 export interface InboxActionFailedEncoded {
     _tag: InboxActionFailedEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     reason: string;
 }
 
