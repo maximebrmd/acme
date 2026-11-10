@@ -42,7 +42,7 @@ export { AnalyticsHandlers as AnalyticsApiLive } from "#analytics/api/analytics.
 export { CollectMetricsCron as AnalyticsCronsLive } from "#analytics/infrastructure/crons.ts";
 
 /**
- * The platforms' readers, Mastodon, Bluesky, TikTok and YouTube, which the
- * channels' gates run. Need the channels context's ChannelAccess, and Dns.
+ * The platforms' readers, Mastodon, Bluesky, TikTok, YouTube, Instagram and
+ * Pinterest, which the channels' gates run. Need the channels context's ChannelAccess, and Dns.
  */
 export { PlatformMetricsReaderLive } from "#analytics/infrastructure/platforms/platform-metrics-reader.ts";
