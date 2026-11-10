@@ -470,7 +470,9 @@ export const makeWorld = () => {
     PurgeEngagement.layer
   ).pipe(Layer.provideMerge(ports));
 
-  return { layer, state };
+  // `ports` alone, for a test that runs the use cases on other adapters:
+  // provide those first, then these for the rest.
+  return { layer, ports, state };
 };
 
 export type World = ReturnType<typeof makeWorld>;
