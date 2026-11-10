@@ -284,16 +284,18 @@ func (b *Billing) String() string {
 var (
 	billingSubscriptionFieldCancelAtPeriodEnd = big.NewInt(1 << 0)
 	billingSubscriptionFieldCurrentPeriodEnd  = big.NewInt(1 << 1)
-	billingSubscriptionFieldInterval          = big.NewInt(1 << 2)
-	billingSubscriptionFieldPlan              = big.NewInt(1 << 3)
-	billingSubscriptionFieldStartedAt         = big.NewInt(1 << 4)
-	billingSubscriptionFieldStatus            = big.NewInt(1 << 5)
-	billingSubscriptionFieldTrialEnd          = big.NewInt(1 << 6)
+	billingSubscriptionFieldEndsAt            = big.NewInt(1 << 2)
+	billingSubscriptionFieldInterval          = big.NewInt(1 << 3)
+	billingSubscriptionFieldPlan              = big.NewInt(1 << 4)
+	billingSubscriptionFieldStartedAt         = big.NewInt(1 << 5)
+	billingSubscriptionFieldStatus            = big.NewInt(1 << 6)
+	billingSubscriptionFieldTrialEnd          = big.NewInt(1 << 7)
 )
 
 // billingSubscriptionNullableFields maps the wire names of BillingSubscription's nullable fields (required or optional) to their field bits.
 var billingSubscriptionNullableFields = map[string]*big.Int{
 	"currentPeriodEnd": billingSubscriptionFieldCurrentPeriodEnd,
+	"endsAt":           billingSubscriptionFieldEndsAt,
 	"startedAt":        billingSubscriptionFieldStartedAt,
 	"trialEnd":         billingSubscriptionFieldTrialEnd,
 }
@@ -301,6 +303,7 @@ var billingSubscriptionNullableFields = map[string]*big.Int{
 type BillingSubscription struct {
 	CancelAtPeriodEnd bool               `json:"cancelAtPeriodEnd" url:"cancelAtPeriodEnd"`
 	CurrentPeriodEnd  *string            `json:"currentPeriodEnd,omitempty" url:"currentPeriodEnd,omitempty"`
+	EndsAt            *string            `json:"endsAt,omitempty" url:"endsAt,omitempty"`
 	Interval          BillingInterval    `json:"interval" url:"interval"`
 	Plan              PaidPlan           `json:"plan" url:"plan"`
 	StartedAt         *string            `json:"startedAt,omitempty" url:"startedAt,omitempty"`
@@ -326,6 +329,13 @@ func (b *BillingSubscription) GetCurrentPeriodEnd() *string {
 		return nil
 	}
 	return b.CurrentPeriodEnd
+}
+
+func (b *BillingSubscription) GetEndsAt() *string {
+	if b == nil {
+		return nil
+	}
+	return b.EndsAt
 }
 
 func (b *BillingSubscription) GetInterval() BillingInterval {
@@ -391,6 +401,13 @@ func (b *BillingSubscription) SetCancelAtPeriodEnd(cancelAtPeriodEnd bool) {
 func (b *BillingSubscription) SetCurrentPeriodEnd(currentPeriodEnd *string) {
 	b.CurrentPeriodEnd = currentPeriodEnd
 	b.require(billingSubscriptionFieldCurrentPeriodEnd)
+}
+
+// SetEndsAt sets the EndsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingSubscription) SetEndsAt(endsAt *string) {
+	b.EndsAt = endsAt
+	b.require(billingSubscriptionFieldEndsAt)
 }
 
 // SetInterval sets the Interval field and marks it as non-optional;
