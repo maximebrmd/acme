@@ -776,6 +776,134 @@ describe("peal analytics", () => {
   );
 });
 
+describe("peal analytics dashboard, channel and export", () => {
+  it.effect(
+    "shows the totals beside the range before, and followers with what they gained",
+    () =>
+      Effect.gen(function* dashboard() {
+        const session = yield* signedIn();
+
+        const shown = yield* session.printed([
+          "analytics",
+          "dashboard",
+          ...inStudio,
+          "--days",
+          "7",
+          "--time-zone",
+          "Europe/Paris",
+        ]);
+
+        assert.include(
+          shown,
+          "Studio, from 2026-11-03 to 2026-11-09 (Europe/Paris), against 2026-10-27 to 2026-11-02:"
+        );
+        assert.match(shown, /Likes\s+12\s+\+6/u);
+        assert.match(shown, /Impressions\s+–\s+–/u);
+        assert.match(shown, /Followers\s+320\s+\+12/u);
+        assert.include(
+          shown,
+          `${mastodonId} (mastodon @studio@social.example.test)`
+        );
+        assert.deepStrictEqual(yield* changes(session.studio), [
+          "dashboard:7:undefined:undefined:Europe/Paris",
+        ]);
+
+        yield* session.printed([
+          "analytics",
+          "dashboard",
+          ...inStudio,
+          "--from",
+          "2026-11-01",
+          "--to",
+          "2026-11-07",
+          "--time-zone",
+          "UTC",
+        ]);
+
+        assert.strictEqual(
+          (yield* changes(session.studio)).at(-1),
+          "dashboard:undefined:2026-11-01:2026-11-07:UTC"
+        );
+        assert.include(
+          yield* session.refused([
+            "analytics",
+            "dashboard",
+            ...inStudio,
+            "--days",
+            "7",
+            "--from",
+            "2026-11-01",
+          ]),
+          "Give --days, or --from and --to"
+        );
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("shows a channel day by day", () =>
+    Effect.gen(function* channel() {
+      const session = yield* signedIn();
+
+      const shown = yield* session.printed([
+        "analytics",
+        "channel",
+        mastodonId,
+        ...inStudio,
+        "--time-zone",
+        "UTC",
+      ]);
+
+      assert.include(shown, "Followers: 320 (+12)");
+      assert.match(shown, /2026-11-08\s+320\s+41\s+–\s+–\s+20/u);
+      assert.match(shown, /2026-11-09\s+–\s+–\s+–\s+–\s+0/u);
+      assert.deepStrictEqual(yield* changes(session.studio), [
+        `channel:${mastodonId}:30:UTC`,
+      ]);
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("saves an export to a new file, and replaces none unasked", () =>
+    Effect.gen(function* exporting() {
+      const session = yield* signedIn();
+      const fs = yield* FileSystem.FileSystem;
+      const path = yield* Path.Path;
+      const file = path.join(session.directory, "accounts.csv");
+
+      const shown = yield* session.printed([
+        "analytics",
+        "export",
+        "accounts",
+        ...inStudio,
+        "--output",
+        file,
+        "--time-zone",
+        "UTC",
+      ]);
+
+      assert.include(shown, `Saved to ${file}.`);
+      assert.strictEqual(
+        yield* fs.readFileString(file),
+        `date,channelId,platform,followers\r\n2026-11-08,${mastodonId},mastodon,320\r\n`
+      );
+      assert.deepStrictEqual(yield* changes(session.studio), [
+        "export:accounts:csv:30",
+      ]);
+      assert.include(
+        yield* session.refused([
+          "analytics",
+          "export",
+          "posts",
+          ...inStudio,
+          "--output",
+          file,
+          "--format",
+          "json",
+        ]),
+        `${file} exists already`
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
 describe("peal billing, members and invitations", () => {
   it.effect("shows the plan, its limits and what the workspace uses", () =>
     Effect.gen(function* plan() {

@@ -1,5 +1,7 @@
 import { DateTime, Effect, Option, Schema } from "effect";
 
+import type { LocalDate } from "#shared/domain/wall-clock.ts";
+
 import { CountSchema } from "./post-metrics.ts";
 
 // What a platform tells of an account itself, apart from its posts: how
@@ -17,6 +19,13 @@ export const UtcDaySchema = Schema.String.check(
 ).pipe(Schema.brand("UtcDay"));
 
 export type UtcDay = typeof UtcDaySchema.Type;
+
+const pad = (value: number, length = 2) =>
+  value.toString().padStart(length, "0");
+
+/** The UTC day of the same name as a calendar date. */
+export const utcDayFrom = ({ day, month, year }: LocalDate): UtcDay =>
+  UtcDaySchema.make(`${pad(year, 4)}-${pad(month)}-${pad(day)}`);
 
 /** The UTC day an instant falls on. */
 export const utcDayOf = (instant: DateTime.Utc): UtcDay =>

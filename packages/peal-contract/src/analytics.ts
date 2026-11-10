@@ -1,10 +1,16 @@
 import { DateTime, Option, Schema } from "effect";
-import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api";
+import {
+  HttpApiEndpoint,
+  HttpApiGroup,
+  HttpApiSchema,
+  OpenApi,
+} from "effect/http-api";
 
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
 import { InvalidDateRange } from "./invalid-date-range.ts";
 import { InvalidTimeZone } from "./invalid-time-zone.ts";
+import { PlatformSchema } from "./platform.ts";
 import type { Platform } from "./platform.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
@@ -182,6 +188,214 @@ export const AnalyticsSummarySchema = Schema.Struct({
 
 export type AnalyticsSummary = typeof AnalyticsSummarySchema.Type;
 
+/** How many posts a dashboard ranks at most. */
+export const maxTopPosts = 25;
+
+/** The ranges a dashboard offers by a number of days, today included. */
+export const dashboardPeriods = [7, 30, 90] as const;
+
+/**
+ * The latest counts of a range's posts, added up. Quotes, impressions,
+ * clicks, reach and saves are null when no post had any: unknown, never
+ * zero. Engagement is likes, reposts, replies and quotes together.
+ */
+export const DashboardTotalsSchema = Schema.Struct({
+  clicks: Schema.NullOr(CountSchema),
+  engagement: CountSchema,
+  impressions: Schema.NullOr(CountSchema),
+  likes: CountSchema,
+  // How many posts went live, counting each channel a post went out on.
+  posts: CountSchema,
+  quotes: Schema.NullOr(CountSchema),
+  reach: Schema.NullOr(CountSchema),
+  replies: CountSchema,
+  reposts: CountSchema,
+  saves: Schema.NullOr(CountSchema),
+}).annotate({ identifier: "DashboardTotals" });
+
+export type DashboardTotals = typeof DashboardTotalsSchema.Type;
+
+/**
+ * Followers over a range: how many at its end, and how many more than at
+ * its start (fewer, when negative). `gained` counts from the first day
+ * Peal read the account when that is within the range, as Peal keeps
+ * followers from the day a channel is connected. Null where Peal has read
+ * none.
+ */
+export const FollowerChangeSchema = Schema.Struct({
+  current: Schema.NullOr(CountSchema),
+  gained: Schema.NullOr(Schema.Int),
+}).annotate({ identifier: "FollowerChange" });
+
+export type FollowerChange = typeof FollowerChangeSchema.Type;
+
+const comparison = {
+  // Followers at the end of the range, and their change over it.
+  followers: FollowerChangeSchema,
+  // The same change over the range before.
+  previousFollowers: FollowerChangeSchema,
+  // The posts published over the range before, of the same length.
+  previousTotals: DashboardTotalsSchema,
+  totals: DashboardTotalsSchema,
+};
+
+/** A dashboard's numbers for one channel. */
+export const ChannelDashboardSchema = Schema.Struct({
+  ...comparison,
+  channelId: Schema.String,
+  // Null for a channel that left the workspace before Peal noted it.
+  platform: Schema.NullOr(PlatformSchema),
+}).annotate({ identifier: "ChannelDashboard" });
+
+export type ChannelDashboard = typeof ChannelDashboardSchema.Type;
+
+/** A dashboard's numbers for the channels of one platform. */
+export const PlatformDashboardSchema = Schema.Struct({
+  ...comparison,
+  platform: PlatformSchema,
+}).annotate({ identifier: "PlatformDashboard" });
+
+export type PlatformDashboard = typeof PlatformDashboardSchema.Type;
+
+/**
+ * One day of a dashboard: what the range's posts gained (a count can go
+ * down), the followers of the channels Peal had read by then, added up,
+ * and the views and reach the platforms counted for the accounts that day
+ * (a UTC day), null where none tells them.
+ */
+export const DashboardDaySchema = Schema.Struct({
+  date: CalendarDaySchema,
+  followers: Schema.NullOr(CountSchema),
+  likes: Schema.Int,
+  quotes: Schema.Int,
+  reach: Schema.NullOr(CountSchema),
+  replies: Schema.Int,
+  reposts: Schema.Int,
+  views: Schema.NullOr(CountSchema),
+}).annotate({ identifier: "DashboardDay" });
+
+export type DashboardDay = typeof DashboardDaySchema.Type;
+
+/**
+ * A workspace's analytics over a range of days, in one answer: the range
+ * and the one before it, the totals and followers of each with what
+ * changed, the same by channel and by platform, each day, and the posts
+ * people did the most with.
+ */
+export const AnalyticsDashboardSchema = Schema.Struct({
+  ...comparison,
+  channels: Schema.Array(ChannelDashboardSchema),
+  // Every day of the range, in order.
+  days: Schema.Array(DashboardDaySchema),
+  from: CalendarDaySchema,
+  platforms: Schema.Array(PlatformDashboardSchema),
+  // The range before, of the same length, which the trend compares with.
+  previous: Schema.Struct({ from: CalendarDaySchema, to: CalendarDaySchema }),
+  timeZone: Schema.String,
+  to: CalendarDaySchema,
+  topPosts: Schema.Array(TopPostSchema),
+}).annotate({ identifier: "AnalyticsDashboard" });
+
+export type AnalyticsDashboard = typeof AnalyticsDashboardSchema.Type;
+
+/**
+ * One day of a channel: its account as Peal read it that UTC day
+ * (followers, the accounts it follows, its posts), the views and reach its
+ * platform counted for the day, and what the channel's posts published in
+ * the range gained. Each account number is null where the platform gives
+ * none, or on a day Peal read nothing.
+ */
+export const ChannelDaySchema = Schema.Struct({
+  date: CalendarDaySchema,
+  followers: Schema.NullOr(CountSchema),
+  following: Schema.NullOr(CountSchema),
+  likes: Schema.Int,
+  posts: Schema.NullOr(CountSchema),
+  quotes: Schema.Int,
+  reach: Schema.NullOr(CountSchema),
+  replies: Schema.Int,
+  reposts: Schema.Int,
+  views: Schema.NullOr(CountSchema),
+}).annotate({ identifier: "ChannelDay" });
+
+export type ChannelDay = typeof ChannelDaySchema.Type;
+
+/** A channel's numbers day by day over a range. */
+export const ChannelSeriesSchema = Schema.Struct({
+  channelId: Schema.String,
+  // Every day of the range, in order.
+  days: Schema.Array(ChannelDaySchema),
+  followers: FollowerChangeSchema,
+  from: CalendarDaySchema,
+  platform: Schema.NullOr(PlatformSchema),
+  timeZone: Schema.String,
+  to: CalendarDaySchema,
+  totals: DashboardTotalsSchema,
+}).annotate({ identifier: "ChannelSeries" });
+
+export type ChannelSeries = typeof ChannelSeriesSchema.Type;
+
+/** What an export lists: each post of the range, or each channel's days. */
+export const ExportKindSchema = Schema.Literals(["posts", "accounts"]).annotate(
+  { identifier: "AnalyticsExportKind" }
+);
+
+export type ExportKind = typeof ExportKindSchema.Type;
+
+/** How an export is written: CSV, or JSON, one object a line. */
+export const ExportFormatSchema = Schema.Literals(["csv", "json"]).annotate({
+  identifier: "AnalyticsExportFormat",
+});
+
+export type ExportFormat = typeof ExportFormatSchema.Type;
+
+/** The columns of each kind of export, in the order a CSV writes them. */
+export const exportColumns = {
+  accounts: [
+    "date",
+    "channelId",
+    "platform",
+    "followers",
+    "following",
+    "posts",
+    "views",
+    "reach",
+  ],
+  posts: [
+    "publishedAt",
+    "postId",
+    "targetId",
+    "channelId",
+    "platform",
+    "permalink",
+    "likes",
+    "reposts",
+    "replies",
+    "quotes",
+    "impressions",
+    "clicks",
+    "reach",
+    "saves",
+    "lastCollectedAt",
+  ],
+} as const satisfies Readonly<Record<ExportKind, readonly string[]>>;
+
+// A range of days: `days` for the last 7, 30 or 90 ending today in the
+// zone, or `from` and `to`.
+const range = {
+  days: Schema.optionalKey(
+    Schema.NumberFromString.pipe(
+      Schema.decodeTo(Schema.Literals(dashboardPeriods))
+    )
+  ),
+  from: Schema.optionalKey(CalendarDaySchema),
+  timeZone: Schema.String,
+  to: Schema.optionalKey(CalendarDaySchema),
+};
+
+const rangeWords =
+  "The range is `days` (7, 30 or 90: that many days ending today in `timeZone`), or `from` and `to`, both included and at most 366 days; `timeZone` is an IANA zone such as Europe/Paris.";
+
 const workspace = { workspaceId: Schema.String };
 
 /** What a workspace's posts did on their platforms. */
@@ -201,6 +415,56 @@ export class AnalyticsApi extends HttpApiGroup.make("analytics")
         description:
           "Sums up the posts published from `from` to `to`, both included and at most 366 days, as days run in `timeZone` (an IANA zone such as Europe/Paris): their latest counts in all and by channel, what they gained each day, and the five with the most engagement (likes, reposts, replies and quotes). Counts are read from the platforms every hour for 48 hours after a post goes live, then every day until it is 30 days old. Needs analytics:read.",
         summary: "Summarize the workspace's analytics",
+      })
+    ),
+    HttpApiEndpoint.get("dashboard", "/dashboard", {
+      error: [Forbidden, InvalidDateRange, InvalidTimeZone],
+      params: workspace,
+      query: {
+        ...range,
+        topPosts: Schema.optionalKey(
+          Schema.NumberFromString.pipe(
+            Schema.decodeTo(
+              Schema.Int.check(
+                Schema.isBetween({ maximum: maxTopPosts, minimum: 0 })
+              )
+            )
+          )
+        ),
+      },
+      success: AnalyticsDashboardSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the \`topPosts\` (5 unless said, 25 at most) with the most engagement. ${rangeWords} Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.`,
+        summary: "Get the workspace's analytics dashboard",
+      })
+    ),
+    HttpApiEndpoint.get("channel", "/channels/:channelId", {
+      error: [Forbidden, InvalidDateRange, InvalidTimeZone],
+      params: { ...workspace, channelId: Schema.String },
+      query: range,
+      success: ChannelSeriesSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. ${rangeWords} A channel Peal has read nothing of answers days without numbers. Needs analytics:read.`,
+        summary: "Get a channel's analytics over time",
+      })
+    ),
+    HttpApiEndpoint.get("export", "/export", {
+      error: [Forbidden, InvalidDateRange, InvalidTimeZone],
+      params: workspace,
+      query: {
+        ...range,
+        format: Schema.optionalKey(ExportFormatSchema),
+        kind: ExportKindSchema,
+      },
+      success: HttpApiSchema.StreamUint8Array({
+        contentType: ["text/csv", "application/x-ndjson"],
+      }),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Streams the workspace's analytics as a file: \`kind=posts\` lists each post published in the range on each channel with its latest counts, \`kind=accounts\` each channel's account day by day. \`format=csv\` (the default) writes a header line then one line a row, as RFC 4180; \`format=json\` writes one JSON object a line (\`application/x-ndjson\`). A number a platform does not give is empty in CSV and null in JSON. ${rangeWords} Needs analytics:read.`,
+        summary: "Export the workspace's analytics",
       })
     ),
     HttpApiEndpoint.get("post", "/posts/:postId", {

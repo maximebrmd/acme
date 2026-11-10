@@ -239,9 +239,11 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
         // Read only, destructive, idempotent, open world.
         assert.deepStrictEqual(hints, {
+          analytics_dashboard: [true, false, true, false],
           analytics_summary: [true, false, true, false],
           approve_post: [false, false, false, true],
           cancel_post: [false, true, true, false],
+          channel_analytics: [true, false, true, false],
           confirm_target: [false, true, true, false],
           create_draft: [false, false, false, false],
           create_post: [false, false, false, true],
@@ -622,6 +624,54 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               { postId: "not-a-post" }
             ),
             { postId: "not-a-post", targets: [] }
+          );
+
+          const dashboard = yield* reader.call(
+            "analytics_dashboard",
+            Schema.Struct({
+              days: Schema.Array(Schema.Unknown),
+              followers: Schema.Struct({ current: Schema.Null }),
+              from: Schema.String,
+              previous: Schema.Struct({ from: Schema.String }),
+              totals: Schema.Struct({ posts: Schema.Int }),
+            }),
+            { from: "2026-11-01", timeZone: "Europe/Paris", to: "2026-11-07" }
+          );
+
+          assert.deepStrictEqual(
+            { ...dashboard, days: dashboard.days.length },
+            {
+              days: 7,
+              followers: { current: null },
+              from: "2026-11-01",
+              previous: { from: "2026-10-25" },
+              totals: { posts: 0 },
+            }
+          );
+          assert.include(
+            yield* reader.refused("analytics_dashboard", {
+              days: 7,
+              from: "2026-11-01",
+              timeZone: "Europe/Paris",
+              to: "2026-11-07",
+            }),
+            "Give `days`, or `from` and `to`"
+          );
+          assert.deepStrictEqual(
+            yield* reader.call(
+              "channel_analytics",
+              Schema.Struct({
+                channelId: Schema.String,
+                platform: Schema.Null,
+              }),
+              {
+                channelId: "not-a-channel",
+                from: "2026-11-01",
+                timeZone: "Europe/Paris",
+                to: "2026-11-02",
+              }
+            ),
+            { channelId: "not-a-channel", platform: null }
           );
 
           // Without a Stripe key, nothing is limited.

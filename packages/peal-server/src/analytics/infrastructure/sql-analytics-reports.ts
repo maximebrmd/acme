@@ -12,25 +12,35 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { DateTime, Effect, Layer, Schema } from "effect";
+import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { AnalyticsReports } from "#analytics/application/analytics-reports.ts";
 import type {
+  AccountDayRow,
+  AccountDaysAsked,
+  ChannelCounts,
   ChannelTotals,
   DayGains,
+  ExportedPost,
   PostHistory,
+  PostsAsked,
   ReportRows,
 } from "#analytics/application/analytics-reports.ts";
+import { UtcDaySchema } from "#analytics/domain/account-metrics.ts";
 import { PostMetrics } from "#analytics/domain/post-metrics.ts";
-import type { CollectionEnd } from "#analytics/domain/tracked-post.ts";
+import type {
+  CollectionEnd,
+  TrackedPost,
+} from "#analytics/domain/tracked-post.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
-import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import { PlatformSchema } from "#shared/domain/platform.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { trackedPostOf } from "./drizzle-tracked-posts.ts";
-import { metricSnapshots, trackedPosts } from "./schema.ts";
+import { metricSnapshots, trackedChannels, trackedPosts } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -63,6 +73,51 @@ const decodeChannels = Schema.decodeUnknownEffect(
 const decodeDays = Schema.decodeUnknownEffect(Schema.Array(DayRowSchema));
 
 const decodeMetrics = Schema.decodeUnknownEffect(PostMetrics);
+
+const optionalSum = Schema.OptionFromNullOr(Schema.Number);
+
+const decodeCounts = Schema.decodeUnknownEffect(
+  Schema.Array(
+    Schema.Struct({
+      ...ChannelRowSchema.fields,
+      clicks: optionalSum,
+      reach: optionalSum,
+      saves: optionalSum,
+    })
+  )
+);
+
+const decodeFollowed = Schema.decodeUnknownEffect(
+  Schema.Array(
+    Schema.Struct({ channelId: ChannelIdSchema, platform: PlatformSchema })
+  )
+);
+
+const optionalCount = Schema.OptionFromNullOr(Schema.Int);
+
+const decodeAccountDays = Schema.decodeUnknownEffect(
+  Schema.Array(
+    Schema.Struct({
+      channelId: ChannelIdSchema,
+      day: UtcDaySchema,
+      followers: optionalCount,
+      following: optionalCount,
+      platform: PlatformSchema,
+      posts: optionalCount,
+      reach: optionalCount,
+      views: optionalCount,
+    })
+  )
+);
+
+const decodePlatform = Schema.decodeUnknownOption(PlatformSchema);
+
+const iso = (instant: DateTime.Utc) => DateTime.formatIso(instant);
+
+const accountDayColumns = `
+  s.channel_id AS "channelId", s.day::text AS day, c.platform,
+  s.followers, s.following, s.posts, s.reach, s.views
+`;
 
 type SnapshotRow = typeof metricSnapshots.$inferSelect;
 
@@ -164,10 +219,14 @@ export const SqlAnalyticsReports = Layer.effect(
       return histories;
     });
 
-    const report = Effect.fn("AnalyticsReports.report")(function* report(
+    // What the posts published in the range gained each day: the last
+    // snapshot of each post in each day, less the one of its day before
+    // (none before the first, as a post starts from nothing). Day 1 is the
+    // range's first.
+    const gains = Effect.fn("AnalyticsReports.gains")(function* gains(
       workspaceId: WorkspaceId,
       starts: readonly DateTime.Utc[],
-      top: number
+      channelId: Option.Option<ChannelId>
     ) {
       const [first] = starts;
       const last = starts.at(-1);
@@ -179,36 +238,15 @@ export const SqlAnalyticsReports = Layer.effect(
       const start = date(first);
       const end = date(last);
       const bounds = starts.map(date);
+      const channel = Option.getOrNull(channelId);
 
-      // The posts published in the range, by channel, with their latest
-      // counts added up.
-      const channels: readonly ChannelTotals[] = yield* client`
-        SELECT
-          channel_id AS "channelId",
-          count(*)::int AS posts,
-          coalesce(sum(likes), 0)::float8 AS likes,
-          coalesce(sum(reposts), 0)::float8 AS reposts,
-          coalesce(sum(replies), 0)::float8 AS replies,
-          sum(quotes)::float8 AS quotes,
-          sum(impressions)::float8 AS impressions
-        FROM analytics.tracked_posts
-        WHERE workspace_id = ${workspaceId}
-          AND published_at >= ${start}
-          AND published_at < ${end}
-          AND end_reason IS DISTINCT FROM ${unreadable}
-        GROUP BY channel_id
-        ORDER BY channel_id
-      `.pipe(Effect.flatMap(decodeChannels), Effect.mapError(failed));
-
-      // What those posts gained each day: the last snapshot of each post
-      // in each day, less the one of its day before (none before the first,
-      // as a post starts from nothing). Day 1 is the range's first.
-      const days: readonly DayGains[] = yield* client`
+      const rows: readonly DayGains[] = yield* client`
         WITH posts AS (
           SELECT target_id FROM analytics.tracked_posts
           WHERE workspace_id = ${workspaceId}
             AND published_at >= ${start}
             AND published_at < ${end}
+            AND (${channel}::uuid IS NULL OR channel_id = ${channel}::uuid)
         ),
         daily AS (
           SELECT DISTINCT ON (s.target_id, day)
@@ -245,19 +283,64 @@ export const SqlAnalyticsReports = Layer.effect(
         ORDER BY day
       `.pipe(Effect.flatMap(decodeDays), Effect.mapError(failed));
 
-      // The posts of the range people did the most with, added up in
-      // bigint: one post's counts together can pass what an integer holds.
-      const engagement = sql`${trackedPosts.likes}::bigint + ${trackedPosts.reposts} + ${trackedPosts.replies} + coalesce(${trackedPosts.quotes}, 0)`;
+      return rows;
+    });
 
-      const topRows = yield* db
+    const counts = Effect.fn("AnalyticsReports.counts")(function* counts(
+      asked: PostsAsked
+    ) {
+      const channel = Option.getOrNull(asked.channelId);
+
+      const rows: readonly ChannelCounts[] = yield* client`
+        SELECT
+          channel_id AS "channelId",
+          count(*)::int AS posts,
+          coalesce(sum(likes), 0)::float8 AS likes,
+          coalesce(sum(reposts), 0)::float8 AS reposts,
+          coalesce(sum(replies), 0)::float8 AS replies,
+          sum(quotes)::float8 AS quotes,
+          sum(impressions)::float8 AS impressions,
+          sum(clicks)::float8 AS clicks,
+          sum(reach)::float8 AS reach,
+          sum(saves)::float8 AS saves
+        FROM analytics.tracked_posts
+        WHERE workspace_id = ${asked.workspaceId}
+          AND published_at >= ${date(asked.start)}
+          AND published_at < ${date(asked.end)}
+          AND end_reason IS DISTINCT FROM ${unreadable}
+          AND (${channel}::uuid IS NULL OR channel_id = ${channel}::uuid)
+        GROUP BY channel_id
+        ORDER BY channel_id
+      `.pipe(Effect.flatMap(decodeCounts), Effect.mapError(failed));
+
+      return rows;
+    });
+
+    // Added up in bigint: one post's counts together can pass what an
+    // integer holds.
+    const engagement = sql`${trackedPosts.likes}::bigint + ${trackedPosts.reposts} + ${trackedPosts.replies} + coalesce(${trackedPosts.quotes}, 0)`;
+
+    const top = Effect.fn("AnalyticsReports.top")(function* top(
+      asked: PostsAsked,
+      limit: number
+    ) {
+      if (limit === 0) {
+        return [];
+      }
+
+      const rows = yield* db
         .select()
         .from(trackedPosts)
         .where(
           and(
-            eq(trackedPosts.workspaceId, workspaceId),
-            gte(trackedPosts.publishedAt, start),
-            lt(trackedPosts.publishedAt, end),
-            isNotNull(trackedPosts.likes)
+            eq(trackedPosts.workspaceId, asked.workspaceId),
+            gte(trackedPosts.publishedAt, date(asked.start)),
+            lt(trackedPosts.publishedAt, date(asked.end)),
+            isNotNull(trackedPosts.likes),
+            asked.channelId.pipe(
+              Option.map((channelId) => eq(trackedPosts.channelId, channelId)),
+              Option.getOrUndefined
+            )
           )
         )
         .orderBy(
@@ -265,18 +348,189 @@ export const SqlAnalyticsReports = Layer.effect(
           desc(trackedPosts.publishedAt),
           asc(trackedPosts.targetId)
         )
-        .limit(top)
+        .limit(limit)
         .pipe(Effect.mapError(failed));
+
+      return yield* Effect.all(rows.map(trackedPostOf));
+    });
+
+    const followed = Effect.fn("AnalyticsReports.channels")(function* followed(
+      workspaceId: WorkspaceId
+    ) {
+      const rows = yield* client`
+          SELECT channel_id AS "channelId", platform
+          FROM analytics.tracked_channels
+          WHERE workspace_id = ${workspaceId}
+          ORDER BY channel_id
+        `.pipe(Effect.mapError(failed));
+
+      return yield* decodeFollowed(rows).pipe(Effect.orDie);
+    });
+
+    const accountDays = Effect.fn("AnalyticsReports.accountDays")(
+      function* accountDays(asked: AccountDaysAsked) {
+        const channel = Option.getOrNull(asked.channelId);
+
+        // The days of the span, and each channel's last day with followers
+        // before it: where a change over the span starts.
+        const rows = yield* client`
+          SELECT ${client.unsafe(accountDayColumns)}
+          FROM analytics.account_snapshots s
+          JOIN analytics.tracked_channels c ON c.channel_id = s.channel_id
+          WHERE c.workspace_id = ${asked.workspaceId}
+            AND (${channel}::uuid IS NULL OR c.channel_id = ${channel}::uuid)
+            AND (
+              (s.day >= ${asked.from}::date AND s.day <= ${asked.to}::date)
+              OR s.day = (
+                SELECT max(b.day) FROM analytics.account_snapshots b
+                WHERE b.channel_id = s.channel_id
+                  AND b.day < ${asked.from}::date
+                  AND b.followers IS NOT NULL
+              )
+            )
+          ORDER BY s.channel_id, s.day
+        `.pipe(Effect.mapError(failed));
+
+        return yield* decodeAccountDays(rows).pipe(Effect.orDie);
+      }
+    );
+
+    const postsPage = Effect.fn("AnalyticsReports.postsPage")(
+      function* postsPage(
+        asked: PostsAsked,
+        after: Option.Option<Pick<TrackedPost, "publishedAt" | "targetId">>,
+        limit: number
+      ) {
+        const rows = yield* db
+          .select({
+            platform: trackedChannels.platform,
+            post: trackedPosts,
+          })
+          .from(trackedPosts)
+          .leftJoin(
+            trackedChannels,
+            eq(trackedChannels.channelId, trackedPosts.channelId)
+          )
+          .where(
+            and(
+              eq(trackedPosts.workspaceId, asked.workspaceId),
+              gte(trackedPosts.publishedAt, date(asked.start)),
+              lt(trackedPosts.publishedAt, date(asked.end)),
+              readable,
+              after.pipe(
+                Option.map(
+                  (last) =>
+                    sql`(${trackedPosts.publishedAt}, ${trackedPosts.targetId}) > (${iso(last.publishedAt)}::timestamptz, ${last.targetId}::uuid)`
+                ),
+                Option.getOrUndefined
+              )
+            )
+          )
+          .orderBy(asc(trackedPosts.publishedAt), asc(trackedPosts.targetId))
+          .limit(limit)
+          .pipe(Effect.mapError(failed));
+
+        return yield* Effect.all(
+          rows.map(({ platform, post }) =>
+            trackedPostOf(post).pipe(
+              Effect.map((tracked): ExportedPost => ({
+                platform: decodePlatform(platform),
+                post: tracked,
+              }))
+            )
+          )
+        );
+      }
+    );
+
+    const accountDaysPage = Effect.fn("AnalyticsReports.accountDaysPage")(
+      function* accountDaysPage(
+        asked: AccountDaysAsked,
+        after: Option.Option<Pick<AccountDayRow, "channelId" | "day">>,
+        limit: number
+      ) {
+        const last = Option.getOrNull(after);
+
+        const rows = yield* client`
+          SELECT ${client.unsafe(accountDayColumns)}
+          FROM analytics.account_snapshots s
+          JOIN analytics.tracked_channels c ON c.channel_id = s.channel_id
+          WHERE c.workspace_id = ${asked.workspaceId}
+            AND s.day >= ${asked.from}::date
+            AND s.day <= ${asked.to}::date
+            AND (
+              ${last?.channelId ?? null}::uuid IS NULL
+              OR (s.channel_id, s.day) > (${last?.channelId ?? null}::uuid, ${last?.day ?? null}::date)
+            )
+          ORDER BY s.channel_id, s.day
+          LIMIT ${limit}
+        `.pipe(Effect.mapError(failed));
+
+        return yield* decodeAccountDays(rows).pipe(Effect.orDie);
+      }
+    );
+
+    const report = Effect.fn("AnalyticsReports.report")(function* report(
+      workspaceId: WorkspaceId,
+      starts: readonly DateTime.Utc[],
+      limit: number
+    ) {
+      const [first] = starts;
+      const last = starts.at(-1);
+
+      if (first === undefined || last === undefined) {
+        return yield* Effect.die("A report covers at least one day");
+      }
+
+      const start = date(first);
+      const end = date(last);
+
+      // The posts published in the range, by channel, with their latest
+      // counts added up.
+      const channels: readonly ChannelTotals[] = yield* client`
+        SELECT
+          channel_id AS "channelId",
+          count(*)::int AS posts,
+          coalesce(sum(likes), 0)::float8 AS likes,
+          coalesce(sum(reposts), 0)::float8 AS reposts,
+          coalesce(sum(replies), 0)::float8 AS replies,
+          sum(quotes)::float8 AS quotes,
+          sum(impressions)::float8 AS impressions
+        FROM analytics.tracked_posts
+        WHERE workspace_id = ${workspaceId}
+          AND published_at >= ${start}
+          AND published_at < ${end}
+          AND end_reason IS DISTINCT FROM ${unreadable}
+        GROUP BY channel_id
+        ORDER BY channel_id
+      `.pipe(Effect.flatMap(decodeChannels), Effect.mapError(failed));
+
+      const days = yield* gains(workspaceId, starts, Option.none());
+
+      const topRows = yield* top(
+        { channelId: Option.none(), end: last, start: first, workspaceId },
+        limit
+      );
 
       const found: ReportRows = {
         channels,
         days,
-        top: yield* Effect.all(topRows.map(trackedPostOf)),
+        top: topRows,
       };
 
       return found;
     });
 
-    return AnalyticsReports.of({ history, report });
+    return AnalyticsReports.of({
+      accountDays,
+      accountDaysPage,
+      channels: followed,
+      counts,
+      gains,
+      history,
+      postsPage,
+      report,
+      top,
+    });
   })
 );
