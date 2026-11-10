@@ -65,6 +65,15 @@ const kept = [
   ["engagement", "threads", "workspace_id"],
   ["engagement", "comments", "workspace_id"],
   ["engagement", "replies", "workspace_id"],
+  // What it saved to write and file its posts.
+  ["publishing", "tags", "workspace_id"],
+  ["publishing", "signatures", "workspace_id"],
+  ["publishing", "channel_sets", "workspace_id"],
+  // A sign-in to an ad network, with its token, the ad account it
+  // connects, and the audit trail's line of it.
+  ["ads", "grants", "workspace_id"],
+  ["ads", "accounts", "workspace_id"],
+  ["ads", "audit_events", "workspace_id"],
 ] as const;
 
 // Where analytics and the inbox record an erased workspace, so that a run
@@ -153,6 +162,23 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
               VALUES (${commentId}, ${threadId}, ${workspaceId}, ${uuid7()}, '113000000000000002', '7001', 'reader@social.example', 'A synthetic reader', 'A synthetic comment a restore brings back.', now(), now(), 'answered')`;
             yield* sql`INSERT INTO engagement.replies (id, thread_id, comment_id, workspace_id, channel_id, text, created_at, status, settled_at)
               VALUES (${uuid7()}, ${threadId}, ${commentId}, ${workspaceId}, ${uuid7()}, 'A synthetic reply', now(), 'sent', now())`;
+
+            yield* sql`INSERT INTO publishing.tags (id, workspace_id, name, name_key, colour, created_at)
+              VALUES (${uuid7()}, ${workspaceId}, 'Synthetic', 'synthetic', 'blue', now())`;
+            yield* sql`INSERT INTO publishing.signatures (id, workspace_id, name, name_key, text, scope, is_default, created_at)
+              VALUES (${uuid7()}, ${workspaceId}, 'Synthetic', 'synthetic', 'A synthetic signature', 'workspace', true, now())`;
+            yield* sql`INSERT INTO publishing.channel_sets (id, workspace_id, name, name_key, channel_ids, options, created_at)
+              VALUES (${uuid7()}, ${workspaceId}, 'Synthetic', 'synthetic', ARRAY[${uuid7()}]::uuid[], '[]'::jsonb, now())`;
+
+            const grantId = uuid7();
+            const adAccountId = uuid7();
+
+            yield* sql`INSERT INTO ads.grants (id, workspace_id, network, platform_user_id, token, token_key_id, scopes, access, created_at, updated_at)
+              VALUES (${grantId}, ${workspaceId}, 'meta', ${uuid7()}, 'synthetic.iv.ciphertext', 'synthetic', ARRAY['ads_read'], 'working', now(), now())`;
+            yield* sql`INSERT INTO ads.accounts (id, workspace_id, grant_id, network, external_id, name, currency, time_zone, status, connected_at, next_sync_at, spending_enabled)
+              VALUES (${adAccountId}, ${workspaceId}, ${grantId}, 'meta', '1001', 'Synthetic account', 'EUR', 'Europe/Paris', 'active', now(), now() + interval '1 day', false)`;
+            yield* sql`INSERT INTO ads.audit_events (id, workspace_id, account_id, action, amounts, at, by_kind, currency)
+              VALUES (${uuid7()}, ${workspaceId}, ${adAccountId}, 'spendingChanged', '{}'::jsonb, now(), 'user', 'EUR')`;
           }
 
           // The backup: what the database held before the erasures.

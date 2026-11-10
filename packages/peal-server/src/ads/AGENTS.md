@@ -92,7 +92,10 @@ weaken a rule below to make something pass.
   gave. Objects the network stops listing are kept as `archived`, only
   after a listing read whole. Ads are matched with the workspace's own
   published posts through `PromotablePosts` (publishing's
-  `PublishedTargets`). `BoostFollowUp` ends boosts past their end date and
+  `PublishedTargets`, ordered by `listed_at`). A target's
+  `platform_post_id` is its first part's, so a boost of a post in several
+  parts promotes the post itself, never a reply; Facebook and Instagram
+  take no parts so far. `BoostFollowUp` ends boosts past their end date and
   tells once when a total budget is spent.
 - Every decision about money and every change to a boost is in
   `ads.audit_events` with who made it (`audit`), read by owners alone, kept
