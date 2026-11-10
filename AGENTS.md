@@ -1381,9 +1381,9 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`, `legal`; the workspace context's are Better
-  Auth's, in `auth`). Effect creates its `cluster_*` tables in `public`; drizzle-kit
-  never manages them.
+  `analytics`, `billing`, `staff`, `legal`, `webhooks`; the workspace
+  context's are Better Auth's, in `auth`). Effect creates its `cluster_*`
+  tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
   run `nx run peal-server:db:generate`, which writes a migration folder under
   `packages/peal-server/drizzle/`. Commit the folder as drizzle-kit wrote it;
