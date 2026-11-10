@@ -1825,12 +1825,141 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"channels\": [\n    {\n      \"impressions\": 1,\n      \"likes\": 1,\n      \"posts\": 1,\n      \"quotes\": 1,\n      \"replies\": 1,\n      \"reposts\": 1,\n      \"channelId\": \"channelId\"\n    }\n  ],\n  \"days\": [\n    {\n      \"date\": \"date\",\n      \"likes\": 1,\n      \"quotes\": 1,\n      \"replies\": 1,\n      \"reposts\": 1\n    }\n  ],\n  \"from\": \"from\",\n  \"timeZone\": \"timeZone\",\n  \"to\": \"to\",\n  \"topPosts\": [\n    {\n      \"channelId\": \"channelId\",\n      \"engagement\": 1,\n      \"metrics\": {\n        \"impressions\": null,\n        \"likes\": 1,\n        \"quotes\": null,\n        \"replies\": 1,\n        \"reposts\": 1\n      },\n      \"permalink\": \"permalink\",\n      \"postId\": \"postId\",\n      \"publishedAt\": \"publishedAt\",\n      \"targetId\": \"targetId\"\n    }\n  ],\n  \"totals\": {\n    \"impressions\": 1,\n    \"likes\": 1,\n    \"posts\": 1,\n    \"quotes\": 1,\n    \"replies\": 1,\n    \"reposts\": 1\n  }\n}",
+        "body": "{\n  \"channels\": [\n    {\n      \"impressions\": 1,\n      \"likes\": 1,\n      \"posts\": 1,\n      \"quotes\": 1,\n      \"replies\": 1,\n      \"reposts\": 1,\n      \"channelId\": \"channelId\"\n    }\n  ],\n  \"days\": [\n    {\n      \"date\": \"date\",\n      \"likes\": 1,\n      \"quotes\": 1,\n      \"replies\": 1,\n      \"reposts\": 1\n    }\n  ],\n  \"from\": \"from\",\n  \"timeZone\": \"timeZone\",\n  \"to\": \"to\",\n  \"topPosts\": [\n    {\n      \"channelId\": \"channelId\",\n      \"engagement\": 1,\n      \"metrics\": {\n        \"clicks\": null,\n        \"impressions\": null,\n        \"likes\": 1,\n        \"quotes\": null,\n        \"reach\": null,\n        \"replies\": 1,\n        \"reposts\": 1,\n        \"saves\": null\n      },\n      \"permalink\": \"permalink\",\n      \"postId\": \"postId\",\n      \"publishedAt\": \"publishedAt\",\n      \"targetId\": \"targetId\"\n    }\n  ],\n  \"totals\": {\n    \"impressions\": 1,\n    \"likes\": 1,\n    \"posts\": 1,\n    \"quotes\": 1,\n    \"replies\": 1,\n    \"reposts\": 1\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
       },
       "uuid": "cbe4dd54-6c2c-4847-a425-b5926a5249b4",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "e9a5414d-a049-4bef-978a-42c332211a7a",
+      "name": "Get the workspace's analytics dashboard - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/analytics/dashboard",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        },
+        "queryParameters": {
+          "timeZone": {
+            "equalTo": "timeZone"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"followers\": {\n    \"current\": 1,\n    \"gained\": 1\n  },\n  \"previousFollowers\": {\n    \"current\": 1,\n    \"gained\": 1\n  },\n  \"previousTotals\": {\n    \"clicks\": 1,\n    \"engagement\": 1,\n    \"impressions\": 1,\n    \"likes\": 1,\n    \"posts\": 1,\n    \"quotes\": 1,\n    \"reach\": 1,\n    \"replies\": 1,\n    \"reposts\": 1,\n    \"saves\": 1\n  },\n  \"totals\": {\n    \"clicks\": 1,\n    \"engagement\": 1,\n    \"impressions\": 1,\n    \"likes\": 1,\n    \"posts\": 1,\n    \"quotes\": 1,\n    \"reach\": 1,\n    \"replies\": 1,\n    \"reposts\": 1,\n    \"saves\": 1\n  },\n  \"channels\": [\n    {\n      \"followers\": {\n        \"current\": null,\n        \"gained\": null\n      },\n      \"previousFollowers\": {\n        \"current\": null,\n        \"gained\": null\n      },\n      \"previousTotals\": {\n        \"clicks\": null,\n        \"engagement\": 1,\n        \"impressions\": null,\n        \"likes\": 1,\n        \"posts\": 1,\n        \"quotes\": null,\n        \"reach\": null,\n        \"replies\": 1,\n        \"reposts\": 1,\n        \"saves\": null\n      },\n      \"totals\": {\n        \"clicks\": null,\n        \"engagement\": 1,\n        \"impressions\": null,\n        \"likes\": 1,\n        \"posts\": 1,\n        \"quotes\": null,\n        \"reach\": null,\n        \"replies\": 1,\n        \"reposts\": 1,\n        \"saves\": null\n      },\n      \"channelId\": \"channelId\",\n      \"platform\": \"x\"\n    }\n  ],\n  \"days\": [\n    {\n      \"date\": \"date\",\n      \"followers\": 1,\n      \"likes\": 1,\n      \"quotes\": 1,\n      \"reach\": 1,\n      \"replies\": 1,\n      \"reposts\": 1,\n      \"views\": 1\n    }\n  ],\n  \"from\": \"from\",\n  \"platforms\": [\n    {\n      \"followers\": {\n        \"current\": null,\n        \"gained\": null\n      },\n      \"previousFollowers\": {\n        \"current\": null,\n        \"gained\": null\n      },\n      \"previousTotals\": {\n        \"clicks\": null,\n        \"engagement\": 1,\n        \"impressions\": null,\n        \"likes\": 1,\n        \"posts\": 1,\n        \"quotes\": null,\n        \"reach\": null,\n        \"replies\": 1,\n        \"reposts\": 1,\n        \"saves\": null\n      },\n      \"totals\": {\n        \"clicks\": null,\n        \"engagement\": 1,\n        \"impressions\": null,\n        \"likes\": 1,\n        \"posts\": 1,\n        \"quotes\": null,\n        \"reach\": null,\n        \"replies\": 1,\n        \"reposts\": 1,\n        \"saves\": null\n      },\n      \"platform\": \"x\"\n    }\n  ],\n  \"previous\": {\n    \"from\": \"from\",\n    \"to\": \"to\"\n  },\n  \"timeZone\": \"timeZone\",\n  \"to\": \"to\",\n  \"topPosts\": [\n    {\n      \"channelId\": \"channelId\",\n      \"engagement\": 1,\n      \"metrics\": {\n        \"clicks\": null,\n        \"impressions\": null,\n        \"likes\": 1,\n        \"quotes\": null,\n        \"reach\": null,\n        \"replies\": 1,\n        \"reposts\": 1,\n        \"saves\": null\n      },\n      \"permalink\": \"permalink\",\n      \"postId\": \"postId\",\n      \"publishedAt\": \"publishedAt\",\n      \"targetId\": \"targetId\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e9a5414d-a049-4bef-978a-42c332211a7a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "10754bbf-b71d-4636-b8a6-f0aa0f140140",
+      "name": "Get a channel's analytics over time - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/analytics/channels/{channelId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "channelId": {
+            "equalTo": "channelId"
+          }
+        },
+        "queryParameters": {
+          "timeZone": {
+            "equalTo": "timeZone"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channelId\": \"channelId\",\n  \"days\": [\n    {\n      \"date\": \"date\",\n      \"followers\": 1,\n      \"following\": 1,\n      \"likes\": 1,\n      \"posts\": 1,\n      \"quotes\": 1,\n      \"reach\": 1,\n      \"replies\": 1,\n      \"reposts\": 1,\n      \"views\": 1\n    }\n  ],\n  \"followers\": {\n    \"current\": 1,\n    \"gained\": 1\n  },\n  \"from\": \"from\",\n  \"platform\": \"x\",\n  \"timeZone\": \"timeZone\",\n  \"to\": \"to\",\n  \"totals\": {\n    \"clicks\": 1,\n    \"engagement\": 1,\n    \"impressions\": 1,\n    \"likes\": 1,\n    \"posts\": 1,\n    \"quotes\": 1,\n    \"reach\": 1,\n    \"replies\": 1,\n    \"reposts\": 1,\n    \"saves\": 1\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "10754bbf-b71d-4636-b8a6-f0aa0f140140",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "431b5524-3b90-44ed-85c4-4efce80febd5",
+      "name": "Export the workspace's analytics - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/analytics/export",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        },
+        "queryParameters": {
+          "timeZone": {
+            "equalTo": "timeZone"
+          },
+          "kind": {
+            "equalTo": "posts"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "base64Body": "JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDE1IDAwMDAwIG4gCjAwMDAwMDAwNjQgMDAwMDAgbiAKMDAwMDAwMDEyMSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjE5MgolJUVPRgo=",
+        "headers": {
+          "Content-Type": "application/octet-stream"
+        }
+      },
+      "uuid": "431b5524-3b90-44ed-85c4-4efce80febd5",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -1864,7 +1993,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"postId\": \"postId\",\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"collecting\": true,\n      \"lastCollectedAt\": \"lastCollectedAt\",\n      \"latest\": {\n        \"impressions\": null,\n        \"likes\": 1,\n        \"quotes\": null,\n        \"replies\": 1,\n        \"reposts\": 1\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"snapshots\": [\n        {\n          \"collectedAt\": \"collectedAt\",\n          \"metrics\": {\n            \"impressions\": null,\n            \"likes\": 1,\n            \"quotes\": null,\n            \"replies\": 1,\n            \"reposts\": 1\n          }\n        }\n      ],\n      \"targetId\": \"targetId\"\n    }\n  ]\n}",
+        "body": "{\n  \"postId\": \"postId\",\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"collecting\": true,\n      \"lastCollectedAt\": \"lastCollectedAt\",\n      \"latest\": {\n        \"clicks\": null,\n        \"impressions\": null,\n        \"likes\": 1,\n        \"quotes\": null,\n        \"reach\": null,\n        \"replies\": 1,\n        \"reposts\": 1,\n        \"saves\": null\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"snapshots\": [\n        {\n          \"collectedAt\": \"collectedAt\",\n          \"metrics\": {\n            \"clicks\": null,\n            \"impressions\": null,\n            \"likes\": 1,\n            \"quotes\": null,\n            \"reach\": null,\n            \"replies\": 1,\n            \"reposts\": 1,\n            \"saves\": null\n          }\n        }\n      ],\n      \"targetId\": \"targetId\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1939,7 +2068,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"analytics\": {\n      \"perPost\": true\n    },\n    \"followUps\": {\n      \"kind\": \"thread\",\n      \"maxCount\": 1\n    },\n    \"lookups\": [\n      {\n        \"fills\": [\n          \"fills\"\n        ],\n        \"input\": [\n          {\n            \"forbiddenCharacters\": [\n              \"forbiddenCharacters\"\n            ],\n            \"ifLeftOut\": null,\n            \"lookup\": null,\n            \"maxLength\": null,\n            \"maximum\": null,\n            \"minimum\": null,\n            \"name\": \"name\",\n            \"pattern\": null,\n            \"required\": true,\n            \"type\": \"boolean\",\n            \"values\": [\n              \"values\"\n            ]\n          }\n        ],\n        \"name\": \"youtubeVideoCategories\",\n        \"paged\": true,\n        \"platform\": \"x\"\n      }\n    ],\n    \"media\": {\n      \"altText\": {\n        \"maxLength\": 1,\n        \"shown\": null\n      },\n      \"formats\": [\n        {\n          \"contentType\": \"image/gif\",\n          \"kind\": \"image\",\n          \"maxAspectRatio\": null,\n          \"maxByteSize\": null,\n          \"maxDurationMs\": null,\n          \"maxMediaWith\": null,\n          \"maxPixels\": null,\n          \"maxSide\": null,\n          \"minAspectRatio\": null,\n          \"minByteSize\": null,\n          \"minDurationMs\": null,\n          \"minSide\": null\n        }\n      ],\n      \"maxCount\": 1,\n      \"maxVideos\": 1,\n      \"mixesKinds\": true,\n      \"required\": true\n    },\n    \"options\": {\n      \"constraints\": [\n        {\n          \"field\": \"field\",\n          \"oneOf\": [\n            \"oneOf\"\n          ],\n          \"_tag\": \"needsOneOf\"\n        }\n      ],\n      \"fields\": [\n        {\n          \"forbiddenCharacters\": [\n            \"forbiddenCharacters\"\n          ],\n          \"ifLeftOut\": null,\n          \"lookup\": null,\n          \"maxLength\": null,\n          \"maximum\": null,\n          \"minimum\": null,\n          \"name\": \"name\",\n          \"pattern\": null,\n          \"required\": true,\n          \"type\": \"boolean\",\n          \"values\": [\n            \"values\"\n          ]\n        }\n      ]\n    },\n    \"platform\": \"x\",\n    \"text\": {\n      \"forbiddenCharacters\": [\n        \"forbiddenCharacters\"\n      ],\n      \"limits\": [\n        {\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"maxHashtags\": 1,\n      \"maxLinks\": 1,\n      \"maxMentions\": 1\n    },\n    \"version\": 1\n  }\n]",
+        "body": "[\n  {\n    \"analytics\": {\n      \"accountNumbers\": [\n        \"followers\"\n      ],\n      \"perPost\": true,\n      \"postCounts\": [\n        \"likes\"\n      ]\n    },\n    \"followUps\": {\n      \"kind\": \"thread\",\n      \"maxCount\": 1\n    },\n    \"lookups\": [\n      {\n        \"fills\": [\n          \"fills\"\n        ],\n        \"input\": [\n          {\n            \"forbiddenCharacters\": [\n              \"forbiddenCharacters\"\n            ],\n            \"ifLeftOut\": null,\n            \"lookup\": null,\n            \"maxLength\": null,\n            \"maximum\": null,\n            \"minimum\": null,\n            \"name\": \"name\",\n            \"pattern\": null,\n            \"required\": true,\n            \"type\": \"boolean\",\n            \"values\": [\n              \"values\"\n            ]\n          }\n        ],\n        \"name\": \"youtubeVideoCategories\",\n        \"paged\": true,\n        \"platform\": \"x\"\n      }\n    ],\n    \"media\": {\n      \"altText\": {\n        \"maxLength\": 1,\n        \"shown\": null\n      },\n      \"formats\": [\n        {\n          \"contentType\": \"image/gif\",\n          \"kind\": \"image\",\n          \"maxAspectRatio\": null,\n          \"maxByteSize\": null,\n          \"maxDurationMs\": null,\n          \"maxMediaWith\": null,\n          \"maxPixels\": null,\n          \"maxSide\": null,\n          \"minAspectRatio\": null,\n          \"minByteSize\": null,\n          \"minDurationMs\": null,\n          \"minSide\": null\n        }\n      ],\n      \"maxCount\": 1,\n      \"maxVideos\": 1,\n      \"mixesKinds\": true,\n      \"required\": true\n    },\n    \"options\": {\n      \"constraints\": [\n        {\n          \"field\": \"field\",\n          \"oneOf\": [\n            \"oneOf\"\n          ],\n          \"_tag\": \"needsOneOf\"\n        }\n      ],\n      \"fields\": [\n        {\n          \"forbiddenCharacters\": [\n            \"forbiddenCharacters\"\n          ],\n          \"ifLeftOut\": null,\n          \"lookup\": null,\n          \"maxLength\": null,\n          \"maximum\": null,\n          \"minimum\": null,\n          \"name\": \"name\",\n          \"pattern\": null,\n          \"required\": true,\n          \"type\": \"boolean\",\n          \"values\": [\n            \"values\"\n          ]\n        }\n      ]\n    },\n    \"platform\": \"x\",\n    \"text\": {\n      \"forbiddenCharacters\": [\n        \"forbiddenCharacters\"\n      ],\n      \"limits\": [\n        {\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"maxHashtags\": 1,\n      \"maxLinks\": 1,\n      \"maxMentions\": 1\n    },\n    \"version\": 1\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1978,7 +2107,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"account\": {\n    \"_tag\": \"unrestricted\"\n  },\n  \"capabilities\": {\n    \"analytics\": {\n      \"perPost\": true\n    },\n    \"followUps\": {\n      \"kind\": \"thread\",\n      \"maxCount\": 1\n    },\n    \"lookups\": [\n      {\n        \"fills\": [\n          \"fills\"\n        ],\n        \"input\": [\n          {\n            \"forbiddenCharacters\": [\n              \"forbiddenCharacters\"\n            ],\n            \"ifLeftOut\": null,\n            \"lookup\": null,\n            \"maxLength\": null,\n            \"maximum\": null,\n            \"minimum\": null,\n            \"name\": \"name\",\n            \"pattern\": null,\n            \"required\": true,\n            \"type\": \"boolean\",\n            \"values\": [\n              \"values\"\n            ]\n          }\n        ],\n        \"name\": \"youtubeVideoCategories\",\n        \"paged\": true,\n        \"platform\": \"x\"\n      }\n    ],\n    \"media\": {\n      \"altText\": {\n        \"maxLength\": 1,\n        \"shown\": null\n      },\n      \"formats\": [\n        {\n          \"contentType\": \"image/gif\",\n          \"kind\": \"image\",\n          \"maxAspectRatio\": null,\n          \"maxByteSize\": null,\n          \"maxDurationMs\": null,\n          \"maxMediaWith\": null,\n          \"maxPixels\": null,\n          \"maxSide\": null,\n          \"minAspectRatio\": null,\n          \"minByteSize\": null,\n          \"minDurationMs\": null,\n          \"minSide\": null\n        }\n      ],\n      \"maxCount\": 1,\n      \"maxVideos\": 1,\n      \"mixesKinds\": true,\n      \"required\": true\n    },\n    \"options\": {\n      \"constraints\": [\n        {\n          \"field\": \"field\",\n          \"oneOf\": [\n            \"oneOf\"\n          ],\n          \"_tag\": \"needsOneOf\"\n        }\n      ],\n      \"fields\": [\n        {\n          \"forbiddenCharacters\": [\n            \"forbiddenCharacters\"\n          ],\n          \"ifLeftOut\": null,\n          \"lookup\": null,\n          \"maxLength\": null,\n          \"maximum\": null,\n          \"minimum\": null,\n          \"name\": \"name\",\n          \"pattern\": null,\n          \"required\": true,\n          \"type\": \"boolean\",\n          \"values\": [\n            \"values\"\n          ]\n        }\n      ]\n    },\n    \"platform\": \"x\",\n    \"text\": {\n      \"forbiddenCharacters\": [\n        \"forbiddenCharacters\"\n      ],\n      \"limits\": [\n        {\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"maxHashtags\": 1,\n      \"maxLinks\": 1,\n      \"maxMentions\": 1\n    },\n    \"version\": 1\n  },\n  \"channelId\": \"channelId\"\n}",
+        "body": "{\n  \"account\": {\n    \"_tag\": \"unrestricted\"\n  },\n  \"capabilities\": {\n    \"analytics\": {\n      \"accountNumbers\": [\n        \"followers\"\n      ],\n      \"perPost\": true,\n      \"postCounts\": [\n        \"likes\"\n      ]\n    },\n    \"followUps\": {\n      \"kind\": \"thread\",\n      \"maxCount\": 1\n    },\n    \"lookups\": [\n      {\n        \"fills\": [\n          \"fills\"\n        ],\n        \"input\": [\n          {\n            \"forbiddenCharacters\": [\n              \"forbiddenCharacters\"\n            ],\n            \"ifLeftOut\": null,\n            \"lookup\": null,\n            \"maxLength\": null,\n            \"maximum\": null,\n            \"minimum\": null,\n            \"name\": \"name\",\n            \"pattern\": null,\n            \"required\": true,\n            \"type\": \"boolean\",\n            \"values\": [\n              \"values\"\n            ]\n          }\n        ],\n        \"name\": \"youtubeVideoCategories\",\n        \"paged\": true,\n        \"platform\": \"x\"\n      }\n    ],\n    \"media\": {\n      \"altText\": {\n        \"maxLength\": 1,\n        \"shown\": null\n      },\n      \"formats\": [\n        {\n          \"contentType\": \"image/gif\",\n          \"kind\": \"image\",\n          \"maxAspectRatio\": null,\n          \"maxByteSize\": null,\n          \"maxDurationMs\": null,\n          \"maxMediaWith\": null,\n          \"maxPixels\": null,\n          \"maxSide\": null,\n          \"minAspectRatio\": null,\n          \"minByteSize\": null,\n          \"minDurationMs\": null,\n          \"minSide\": null\n        }\n      ],\n      \"maxCount\": 1,\n      \"maxVideos\": 1,\n      \"mixesKinds\": true,\n      \"required\": true\n    },\n    \"options\": {\n      \"constraints\": [\n        {\n          \"field\": \"field\",\n          \"oneOf\": [\n            \"oneOf\"\n          ],\n          \"_tag\": \"needsOneOf\"\n        }\n      ],\n      \"fields\": [\n        {\n          \"forbiddenCharacters\": [\n            \"forbiddenCharacters\"\n          ],\n          \"ifLeftOut\": null,\n          \"lookup\": null,\n          \"maxLength\": null,\n          \"maximum\": null,\n          \"minimum\": null,\n          \"name\": \"name\",\n          \"pattern\": null,\n          \"required\": true,\n          \"type\": \"boolean\",\n          \"values\": [\n            \"values\"\n          ]\n        }\n      ]\n    },\n    \"platform\": \"x\",\n    \"text\": {\n      \"forbiddenCharacters\": [\n        \"forbiddenCharacters\"\n      ],\n      \"limits\": [\n        {\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"maxHashtags\": 1,\n      \"maxLinks\": 1,\n      \"maxMentions\": 1\n    },\n    \"version\": 1\n  },\n  \"channelId\": \"channelId\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -3158,6 +3287,6 @@
     }
   ],
   "meta": {
-    "total": 84
+    "total": 87
   }
 }

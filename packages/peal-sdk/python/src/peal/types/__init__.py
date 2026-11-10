@@ -30,6 +30,10 @@ if typing.TYPE_CHECKING:
     from .already_member_encoded import AlreadyMemberEncoded
     from .alt_text_too_long_encoded import AltTextTooLongEncoded
     from .alt_text_too_long_encoded_tag import AltTextTooLongEncodedTag
+    from .analytics_dashboard import AnalyticsDashboard
+    from .analytics_dashboard_previous import AnalyticsDashboardPrevious
+    from .analytics_export_format import AnalyticsExportFormat
+    from .analytics_export_kind import AnalyticsExportKind
     from .analytics_summary import AnalyticsSummary
     from .api_key import ApiKey
     from .api_key_not_found_encoded import ApiKeyNotFoundEncoded
@@ -77,9 +81,12 @@ if typing.TYPE_CHECKING:
     from .channel_cannot_post_encoded_tag import ChannelCannotPostEncodedTag
     from .channel_capabilities import ChannelCapabilities
     from .channel_connection import ChannelConnection
+    from .channel_dashboard import ChannelDashboard
+    from .channel_day import ChannelDay
     from .channel_metrics import ChannelMetrics
     from .channel_not_found_encoded import ChannelNotFoundEncoded
     from .channel_options import ChannelOptions
+    from .channel_series import ChannelSeries
     from .channel_status import ChannelStatus, ChannelStatus_Active, ChannelStatus_Disabled, ChannelStatus_RefreshNeeded
     from .channel_status_active import ChannelStatusActive
     from .channel_status_disabled import ChannelStatusDisabled
@@ -165,6 +172,8 @@ if typing.TYPE_CHECKING:
     from .content_violation_video_too_short import ContentViolationVideoTooShort
     from .created_api_key import CreatedApiKey
     from .created_review_link import CreatedReviewLink
+    from .dashboard_day import DashboardDay
+    from .dashboard_totals import DashboardTotals
     from .database_unavailable_encoded import DatabaseUnavailableEncoded
     from .database_unavailable_encoded_tag import DatabaseUnavailableEncodedTag
     from .draft_page import DraftPage
@@ -178,6 +187,7 @@ if typing.TYPE_CHECKING:
     from .field_type import FieldType
     from .follow_up_capabilities import FollowUpCapabilities
     from .follow_up_capabilities_kind import FollowUpCapabilitiesKind
+    from .follower_change import FollowerChange
     from .forbidden_encoded import ForbiddenEncoded
     from .forbidden_encoded_tag import ForbiddenEncodedTag
     from .google_business_call_to_action import GoogleBusinessCallToAction
@@ -356,7 +366,10 @@ if typing.TYPE_CHECKING:
     from .platform import Platform
     from .platform_capabilities import PlatformCapabilities
     from .platform_capabilities_analytics import PlatformCapabilitiesAnalytics
+    from .platform_capabilities_analytics_account_numbers_item import PlatformCapabilitiesAnalyticsAccountNumbersItem
+    from .platform_capabilities_analytics_post_counts_item import PlatformCapabilitiesAnalyticsPostCountsItem
     from .platform_capabilities_options import PlatformCapabilitiesOptions
+    from .platform_dashboard import PlatformDashboard
     from .platform_rate_limited_encoded import PlatformRateLimitedEncoded
     from .platform_rate_limited_encoded_tag import PlatformRateLimitedEncodedTag
     from .platform_unreachable_encoded import PlatformUnreachableEncoded
@@ -524,6 +537,10 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AlreadyMemberEncoded": ".already_member_encoded",
     "AltTextTooLongEncoded": ".alt_text_too_long_encoded",
     "AltTextTooLongEncodedTag": ".alt_text_too_long_encoded_tag",
+    "AnalyticsDashboard": ".analytics_dashboard",
+    "AnalyticsDashboardPrevious": ".analytics_dashboard_previous",
+    "AnalyticsExportFormat": ".analytics_export_format",
+    "AnalyticsExportKind": ".analytics_export_kind",
     "AnalyticsSummary": ".analytics_summary",
     "ApiKey": ".api_key",
     "ApiKeyNotFoundEncoded": ".api_key_not_found_encoded",
@@ -569,9 +586,12 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ChannelCannotPostEncodedTag": ".channel_cannot_post_encoded_tag",
     "ChannelCapabilities": ".channel_capabilities",
     "ChannelConnection": ".channel_connection",
+    "ChannelDashboard": ".channel_dashboard",
+    "ChannelDay": ".channel_day",
     "ChannelMetrics": ".channel_metrics",
     "ChannelNotFoundEncoded": ".channel_not_found_encoded",
     "ChannelOptions": ".channel_options",
+    "ChannelSeries": ".channel_series",
     "ChannelStatus": ".channel_status",
     "ChannelStatusActive": ".channel_status_active",
     "ChannelStatusDisabled": ".channel_status_disabled",
@@ -658,6 +678,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ContentViolation_VideoTooShort": ".content_violation",
     "CreatedApiKey": ".created_api_key",
     "CreatedReviewLink": ".created_review_link",
+    "DashboardDay": ".dashboard_day",
+    "DashboardTotals": ".dashboard_totals",
     "DatabaseUnavailableEncoded": ".database_unavailable_encoded",
     "DatabaseUnavailableEncodedTag": ".database_unavailable_encoded_tag",
     "DraftPage": ".draft_page",
@@ -671,6 +693,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "FieldType": ".field_type",
     "FollowUpCapabilities": ".follow_up_capabilities",
     "FollowUpCapabilitiesKind": ".follow_up_capabilities_kind",
+    "FollowerChange": ".follower_change",
     "ForbiddenEncoded": ".forbidden_encoded",
     "ForbiddenEncodedTag": ".forbidden_encoded_tag",
     "GoogleBusinessCallToAction": ".google_business_call_to_action",
@@ -839,7 +862,10 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Platform": ".platform",
     "PlatformCapabilities": ".platform_capabilities",
     "PlatformCapabilitiesAnalytics": ".platform_capabilities_analytics",
+    "PlatformCapabilitiesAnalyticsAccountNumbersItem": ".platform_capabilities_analytics_account_numbers_item",
+    "PlatformCapabilitiesAnalyticsPostCountsItem": ".platform_capabilities_analytics_post_counts_item",
     "PlatformCapabilitiesOptions": ".platform_capabilities_options",
+    "PlatformDashboard": ".platform_dashboard",
     "PlatformRateLimitedEncoded": ".platform_rate_limited_encoded",
     "PlatformRateLimitedEncodedTag": ".platform_rate_limited_encoded_tag",
     "PlatformUnreachableEncoded": ".platform_unreachable_encoded",
@@ -1037,6 +1063,10 @@ __all__ = [
     "AlreadyMemberEncoded",
     "AltTextTooLongEncoded",
     "AltTextTooLongEncodedTag",
+    "AnalyticsDashboard",
+    "AnalyticsDashboardPrevious",
+    "AnalyticsExportFormat",
+    "AnalyticsExportKind",
     "AnalyticsSummary",
     "ApiKey",
     "ApiKeyNotFoundEncoded",
@@ -1082,9 +1112,12 @@ __all__ = [
     "ChannelCannotPostEncodedTag",
     "ChannelCapabilities",
     "ChannelConnection",
+    "ChannelDashboard",
+    "ChannelDay",
     "ChannelMetrics",
     "ChannelNotFoundEncoded",
     "ChannelOptions",
+    "ChannelSeries",
     "ChannelStatus",
     "ChannelStatusActive",
     "ChannelStatusDisabled",
@@ -1171,6 +1204,8 @@ __all__ = [
     "ContentViolation_VideoTooShort",
     "CreatedApiKey",
     "CreatedReviewLink",
+    "DashboardDay",
+    "DashboardTotals",
     "DatabaseUnavailableEncoded",
     "DatabaseUnavailableEncodedTag",
     "DraftPage",
@@ -1184,6 +1219,7 @@ __all__ = [
     "FieldType",
     "FollowUpCapabilities",
     "FollowUpCapabilitiesKind",
+    "FollowerChange",
     "ForbiddenEncoded",
     "ForbiddenEncodedTag",
     "GoogleBusinessCallToAction",
@@ -1352,7 +1388,10 @@ __all__ = [
     "Platform",
     "PlatformCapabilities",
     "PlatformCapabilitiesAnalytics",
+    "PlatformCapabilitiesAnalyticsAccountNumbersItem",
+    "PlatformCapabilitiesAnalyticsPostCountsItem",
     "PlatformCapabilitiesOptions",
+    "PlatformDashboard",
     "PlatformRateLimitedEncoded",
     "PlatformRateLimitedEncodedTag",
     "PlatformUnreachableEncoded",
