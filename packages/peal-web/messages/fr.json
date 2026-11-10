@@ -55,7 +55,9 @@
       "stopped": "Plus relevée : les publications sont suivies pendant 30 jours.",
       "tableCaption": "Chiffres de la publication sur {handle}, à chaque relevé",
       "readAtColumn": "Relevé",
-      "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Peal ne les relève pour l’instant que sur {counted}."
+      "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Peal ne les relève pour l’instant que sur {counted}.",
+      "countedName": "{platform, select, linkedin {les pages LinkedIn} other {{name}}}",
+      "uncountedName": "{platform, select, linkedin {les profils LinkedIn} other {{name}}}"
     }
   },
   "Assistant": {

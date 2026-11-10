@@ -221,7 +221,7 @@ describe(PostMetricsView, () => {
     );
 
     expect(html).toContain(
-      "Peal relève pour l’instant les chiffres sur Mastodon, Bluesky, TikTok, YouTube et Instagram, dans l’heure qui suit la parution."
+      "Peal relève pour l’instant les chiffres sur Mastodon, Bluesky, TikTok, YouTube, Instagram et les pages LinkedIn, dans l’heure qui suit la parution."
     );
   });
 
@@ -252,11 +252,11 @@ describe(PostMetricsView, () => {
     const french = await render("fr", view);
 
     expect(english).toContain(
-      "Counts are not available on LinkedIn and X: Peal reads them on Mastodon, Bluesky, TikTok, YouTube, and Instagram only, so far."
+      "Counts are not available on LinkedIn profiles and X: Peal reads them on Mastodon, Bluesky, TikTok, YouTube, Instagram, and LinkedIn pages only, so far."
     );
     expect(english).not.toContain("within the hour");
     expect(french).toContain(
-      "Les chiffres ne sont pas disponibles sur LinkedIn et X : Peal ne les relève pour l’instant que sur Mastodon, Bluesky, TikTok, YouTube et Instagram."
+      "Les chiffres ne sont pas disponibles sur les profils LinkedIn et X : Peal ne les relève pour l’instant que sur Mastodon, Bluesky, TikTok, YouTube, Instagram et les pages LinkedIn."
     );
     expect(french).not.toContain("dans l’heure");
   });
@@ -289,6 +289,28 @@ describe(PostMetricsView, () => {
     expect(html).not.toContain("Counts are not available");
   });
 
+  it("promises counts on a LinkedIn page, which Peal reads", async () => {
+    const page: Channel = {
+      ...channel,
+      connection: "linkedinPage",
+      handle: "example-bakery",
+      id: "01900000-0000-7000-8000-0000000000c7",
+      platform: "linkedin",
+    };
+
+    const html = await render(
+      "en",
+      <PostMetricsView
+        analytics={{ postId: analytics.postId, targets: [] }}
+        channels={[page]}
+        publishedOn={[page.id]}
+      />
+    );
+
+    expect(html).toContain("within the hour after a post goes live");
+    expect(html).not.toContain("Counts are not available");
+  });
+
   it("says so beside the counts of the channels Peal reads", async () => {
     const linkedin: Channel = {
       ...channel,
@@ -307,6 +329,6 @@ describe(PostMetricsView, () => {
     );
 
     expect(html).toContain(">12<");
-    expect(html).toContain("Counts are not available on LinkedIn:");
+    expect(html).toContain("Counts are not available on LinkedIn profiles:");
   });
 });

@@ -55,7 +55,9 @@
       "stopped": "No longer read: posts are followed for 30 days.",
       "tableCaption": "Counts of the post on {handle}, each time they were read",
       "readAtColumn": "Read",
-      "uncounted": "Counts are not available on {platforms}: Peal reads them on {counted} only, so far."
+      "uncounted": "Counts are not available on {platforms}: Peal reads them on {counted} only, so far.",
+      "countedName": "{platform, select, linkedin {LinkedIn pages} other {{name}}}",
+      "uncountedName": "{platform, select, linkedin {LinkedIn profiles} other {{name}}}"
     }
   },
   "Assistant": {
