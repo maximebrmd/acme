@@ -365,11 +365,18 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   everything at once (channels and media that are not the workspace's,
   violations by channel, the time, the plan's room, duplicates) with what
   each channel receives (`previewOn`). Its connection is not journaled
-  (`checksOnly` in `#workspace/api/security.ts`).
+  (`checksOnly` in `#workspace/api/security.ts`). A check reads every part
+  of a thread, as scheduling does: `checkRequestFrom` decodes `followUps`
+  with the first part, their media are looked for with it (`shownMedia`),
+  a violation of a later part names it by `part`, and each channel's
+  preview lists the later parts with their own counts (`parts`), whether
+  or not its platform takes any.
 - A post made in one call (`PostScheduling.send`: `posts.send`, bulk,
   import, `create_post`, `peal post`) is refused (`DuplicateContent`, 409
   `DuplicatePost`) when another post of the workspace sends the same content
-  (`contentOn`: the channel's text, NFC and trimmed, and its media ids) to
+  (`contentOn`: the channel's text, NFC and trimmed, and its media ids,
+  for every part of a thread in order, a post of one part reading as
+  before parts so the digests kept still match) to
   one of its channels less than `duplicateWindow` from its time: 23 hours,
   the shortest day, so a post that repeats daily passes (the contract's
   `duplicateWindowHours`, kept equal by the contract test). `allowDuplicate`
@@ -387,9 +394,16 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   (`maxOutcomeWait`): no transaction or lock is held while a request waits,
   and the durable job stays the only thing that publishes. A process lets
   `maxWaitingRequests` wait at once, `maxWaitingPerWorkspace` of them for
-  one workspace, and answers one more as if its time had run out. Keep the bound under what every proxy waits. In tests, never move virtual time while a
+  one workspace, and answers one more as if its time had run out. A
+  thread has its result on a channel once every part went out or one
+  ended the round: between two parts its target is `publishing`, with
+  its `liveParts`, so a wait shorter than a part's delay runs out first. Keep the bound under what every proxy waits. In tests, never move virtual time while a
   send is in flight, as a job that is starting can lose its wake-up: wait on
   a post already sent, and move time until the waiting fiber answers.
+- A CSV row is a post of one part with one text for all its channels: no
+  column carries a thread's parts, texts by channel or options (an
+  unknown column refuses the file), which go through `send` or `bulk`,
+  whose items take `followUps` like any post.
 - Several posts in one request (`PostBatches`: `posts.bulk`, 50 at most,
   `create_posts`; `posts.import`, 100 CSV rows) are each one
   `PostScheduling.send`, in its own transaction, in order, one at a time:

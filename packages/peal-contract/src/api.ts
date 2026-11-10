@@ -717,6 +717,7 @@ export type { DuplicateOnChannel } from "./duplicate-post.ts";
 export {
   ChannelPreviewSchema,
   LimitedCountSchema,
+  PartPreviewSchema,
   PlanShortfallSchema,
   PostValidationSchema,
   ScheduleCheckSchema,
@@ -726,6 +727,7 @@ export {
 export type {
   ChannelPreview,
   LimitedCount,
+  PartPreview,
   PlanShortfall,
   PostValidation,
   ScheduleCheck,

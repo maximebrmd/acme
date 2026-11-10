@@ -40,30 +40,55 @@ export const checkRequestFrom = (input: CheckInput) =>
   Effect.gen(function* decodingCheck() {
     const { content, options = [], when } = input;
 
+    // The post's parts, its first and those that follow, read alike.
+    const parts = [content, ...(content.followUps ?? [])];
+
     const named = [
       ...input.channelIds,
-      ...content.overrides.map(({ channelId }) => channelId),
+      ...parts.flatMap(({ overrides }) =>
+        overrides.map(({ channelId }) => channelId)
+      ),
       ...options.map(({ channelId }) => channelId),
     ];
+
+    const wellFormed = <
+      Part extends {
+        readonly media: readonly { readonly mediaId: string }[];
+        readonly overrides: readonly { readonly channelId: string }[];
+      },
+    >(
+      part: Part
+    ) => ({
+      ...part,
+      media: part.media.filter(({ mediaId }) => isMediaId(mediaId)),
+      overrides: part.overrides.filter(({ channelId }) =>
+        isChannelId(channelId)
+      ),
+    });
 
     const read: CheckInputRead = {
       malformedChannels: [
         ...new Set(named.filter((channelId) => !isChannelId(channelId))),
       ],
-      malformedMedia: content.media
-        .map(({ mediaId }) => mediaId)
-        .filter((mediaId) => !isMediaId(mediaId)),
+      malformedMedia: [
+        ...new Set(
+          parts
+            .flatMap(({ media }) => media.map(({ mediaId }) => mediaId))
+            .filter((mediaId) => !isMediaId(mediaId))
+        ),
+      ],
       request: {
         allowDuplicate: input.allowDuplicate ?? false,
         channelIds: yield* decodeChannelIds(
           input.channelIds.filter(isChannelId)
         ),
         content: yield* decodeContent({
-          media: content.media.filter(({ mediaId }) => isMediaId(mediaId)),
-          overrides: content.overrides.filter(({ channelId }) =>
-            isChannelId(channelId)
-          ),
-          text: content.text,
+          ...wellFormed({
+            media: content.media,
+            overrides: content.overrides,
+            text: content.text,
+          }),
+          followUps: (content.followUps ?? []).map(wellFormed),
         }),
         options: yield* decodeOptions(
           options.filter(({ channelId }) => isChannelId(channelId))

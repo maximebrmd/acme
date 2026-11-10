@@ -30,11 +30,31 @@ export const LimitedCountSchema = Schema.Struct({
 export type LimitedCount = typeof LimitedCountSchema.Type;
 
 /**
+ * What a part of a post after its first would be on a channel: its place,
+ * from 1 (the place a violation of that part names), the text the channel
+ * receives for it, counted as the platform counts it, and how many
+ * hashtags, mentions, different links and media it holds.
+ */
+export const PartPreviewSchema = Schema.Struct({
+  hashtags: LimitedCountSchema,
+  links: LimitedCountSchema,
+  media: LimitedCountSchema,
+  mentions: LimitedCountSchema,
+  part: Schema.Int,
+  text: Schema.String,
+  textCounts: Schema.Array(TextCountSchema),
+}).annotate({ identifier: "PartPreview" });
+
+export type PartPreview = typeof PartPreviewSchema.Type;
+
+/**
  * What a post would be on one of its channels: the text the channel
  * receives (its override there, or the post's own), counted as the
  * channel's platform counts it, against each of its limits; how many
  * hashtags, mentions, different links and media it holds; and everything
- * the platform, or the account, would refuse.
+ * the platform, or the account, would refuse. Those are the post's first
+ * part; `parts` are the parts after it (`content.followUps`), in order,
+ * each previewed the same way, and a violation of one names it by `part`.
  */
 export const ChannelPreviewSchema = Schema.Struct({
   channelId: Schema.String,
@@ -42,6 +62,10 @@ export const ChannelPreviewSchema = Schema.Struct({
   links: LimitedCountSchema,
   media: LimitedCountSchema,
   mentions: LimitedCountSchema,
+  // The parts after the first, in order; none for a post alone. They are
+  // previewed whether or not the platform takes parts: where it takes
+  // none, `violations` holds `tooManyParts`.
+  parts: Schema.Array(PartPreviewSchema),
   platform: PlatformSchema,
   text: Schema.String,
   // One per limit of the platform: Bluesky counts graphemes and bytes.

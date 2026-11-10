@@ -12,6 +12,7 @@ import type { PostCheck } from "#publishing/application/post-checks.ts";
 import type {
   ChannelPreview,
   LimitedCount,
+  PartCounts,
 } from "#publishing/domain/channel-preview.ts";
 import type { LimitRefusal } from "#shared/api/limit-reached.ts";
 
@@ -22,19 +23,27 @@ const countView = ({ count, maximum }: LimitedCount): CountView => ({
   maximum: maximum ?? null,
 });
 
-const previewView = (preview: ChannelPreview): PreviewView => ({
-  channelId: preview.channel.channelId,
-  hashtags: countView(preview.hashtags),
-  links: countView(preview.links),
-  media: countView(preview.media),
-  mentions: countView(preview.mentions),
-  platform: preview.channel.platform,
-  text: preview.text,
-  textCounts: preview.textCounts.map(({ length, maximum, unit }) => ({
+const countsView = (counts: PartCounts) => ({
+  hashtags: countView(counts.hashtags),
+  links: countView(counts.links),
+  media: countView(counts.media),
+  mentions: countView(counts.mentions),
+  text: counts.text,
+  textCounts: counts.textCounts.map(({ length, maximum, unit }) => ({
     length,
     maximum,
     unit,
   })),
+});
+
+const previewView = (preview: ChannelPreview): PreviewView => ({
+  ...countsView(preview),
+  channelId: preview.channel.channelId,
+  parts: preview.parts.map((part) => ({
+    ...countsView(part),
+    part: part.part,
+  })),
+  platform: preview.channel.platform,
   violations: [...preview.violations],
 });
 

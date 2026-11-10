@@ -234,7 +234,7 @@ const waitSeconds = Schema.optionalKey(
   description: `How long to wait for the post to go out before answering, in seconds: ${String(maxOutcomeWaitSeconds)} at most, none unless given.`,
 });
 
-const waitsForOutcome = `It answers while the post publishes, unless \`waitSeconds\` says to wait for the outcome of a post that goes out now: the answer is then the post once every channel has its result (\`status\` finished: each target published, with its \`permalink\`, or failed, with its \`failureReason\`), or as it stands when the time runs out, some targets still pending or publishing: it goes on publishing, and await_post waits for the rest.`;
+const waitsForOutcome = `It answers while the post publishes, unless \`waitSeconds\` says to wait for the outcome of a post that goes out now: the answer is then the post once every channel has its result (\`status\` finished: each target published, with its \`permalink\`, or failed, with its \`failureReason\`), or as it stands when the time runs out, some targets still pending or publishing: it goes on publishing, and await_post waits for the rest. A thread has its result on a channel once every part went out there or one failed; between two parts its target is publishing, and \`parts.live\` lists those that are out.`;
 
 export const ListPosts = Tool.make("list_posts", {
   dependencies: [CurrentMember],
@@ -387,7 +387,7 @@ export const CreatePosts = Tool.make("create_posts", {
 export const ValidatePost = Tool.make("validate_post", {
   dependencies: [CurrentMember],
   description:
-    "Checks a post without making it, and changes nothing: call it before create_post, create_posts or schedule_post to know what would be refused, and what each channel would receive. It answers `valid`, and everything that would refuse the post, all at once: per channel (`channels`), the text the channel receives, counted as its platform counts it against each of its limits (`textCounts`), its hashtags, mentions, links and media against the platform's maximum, and every violation of the platform's rules and of the account's own; `unknownChannels` and `unknownMedia`, which are not the workspace's; and, when `when` is given, `schedule` (ok, inPast or invalidTimeZone), `planLimit` (the plan's limit it would pass, or null) `duplicates` (the channels that already have the same content from another post near its time) and `awaitsApproval` (whether the post would be made and then wait for a person to approve it, which refuses nothing). Leave `when` out to check a draft's content alone. A post valid now can still be refused later: a channel disconnected, a month filled meanwhile.",
+    "Checks a post without making it, and changes nothing: call it before create_post, create_posts or schedule_post to know what would be refused, and what each channel would receive. It answers `valid`, and everything that would refuse the post, all at once: per channel (`channels`), the text the channel receives, counted as its platform counts it against each of its limits (`textCounts`), its hashtags, mentions, links and media against the platform's maximum, the same for each part after the first of a thread (`parts`, by its place from 1), and every violation of the platform's rules and of the account's own, in any part; `unknownChannels` and `unknownMedia`, which are not the workspace's; and, when `when` is given, `schedule` (ok, inPast or invalidTimeZone), `planLimit` (the plan's limit it would pass, or null) `duplicates` (the channels that already have the same content from another post near its time) and `awaitsApproval` (whether the post would be made and then wait for a person to approve it, which refuses nothing). Leave `when` out to check a draft's content alone. A post valid now can still be refused later: a channel disconnected, a month filled meanwhile.",
   failure: ToolRefused,
   parameters: Schema.Struct({
     allowDuplicate: NewPostSchema.fields.allowDuplicate,
@@ -410,7 +410,7 @@ export const ValidatePost = Tool.make("validate_post", {
 
 export const AwaitPost = Tool.make("await_post", {
   dependencies: [CurrentMember],
-  description: `Answers with a post once it has gone out: it waits up to \`waitSeconds\` (${String(maxOutcomeWaitSeconds)} at most) until every channel has its result, and answers the post then (\`status\` finished, each target published with its \`permalink\` or failed with its \`failureReason\`), or as it stands when the time runs out: call it again for the rest. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing.`,
+  description: `Answers with a post once it has gone out: it waits up to \`waitSeconds\` (${String(maxOutcomeWaitSeconds)} at most) until every channel has its result, and answers the post then (\`status\` finished, each target published with its \`permalink\` or failed with its \`failureReason\`), or as it stands when the time runs out: call it again for the rest. A thread whose parts wait longer than that between them is still publishing then, with \`parts.live\` listing those that are out. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing.`,
   failure: ToolRefused,
   parameters: Schema.Struct({ postId, waitSeconds }),
   success: PostSchema,

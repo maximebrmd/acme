@@ -146,6 +146,15 @@ describe(readImport, () => {
       column: "colour",
       problem: "unknownColumn",
     });
+
+    // A row is a post alone: no column names the parts of a thread, which
+    // go through send or bulk.
+    for (const column of ["then", "follow_ups", "parts"]) {
+      expect(
+        faultOf(`text,channels,at,${column}\na,b,now,A second part`)
+      ).toStrictEqual({ column, problem: "unknownColumn" });
+    }
+
     expect(faultOf("text,channels,at,text\na,b,now,c")).toStrictEqual({
       column: "text",
       problem: "repeatedColumn",

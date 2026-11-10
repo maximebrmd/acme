@@ -1590,43 +1590,53 @@ const scheduleCheck = (payload: Pick<NewPost, "when">) => {
   );
 };
 
-// What a post would be on one channel, counted as its platform counts it.
-const previewOn = (
+// A part's text on a channel and what it holds, counted as its platform
+// counts it.
+const countsOn = (
   channel: Channel,
-  postContent: PostContent,
-  options: readonly ChannelOptions[]
-): ChannelPreview => {
+  part: Pick<PostContent, "media" | "overrides" | "text">
+) => {
   const rules = platformRules[channel.platform];
 
   const text =
-    postContent.overrides.find(({ channelId }) => channelId === channel.id)
-      ?.text ?? postContent.text;
+    part.overrides.find(({ channelId }) => channelId === channel.id)?.text ??
+    part.text;
 
   return {
-    channelId: channel.id,
     hashtags: {
       count: countHashtags(text),
       maximum: rules.maxHashtags ?? null,
     },
     links: { count: countLinks(text), maximum: rules.maxLinks ?? null },
-    media: {
-      count: postContent.media.length,
-      maximum: rules.maxMedia ?? null,
-    },
+    media: { count: part.media.length, maximum: rules.maxMedia ?? null },
     mentions: {
       count: countMentions(text),
       maximum: rules.maxMentions ?? null,
     },
-    platform: channel.platform,
     text,
     textCounts: rules.textLimits.map(({ maximum, unit }) => ({
       length: measureText(text, unit),
       maximum,
       unit,
     })),
-    violations: violationsOf([channel.id], postContent, options),
   };
 };
+
+// What a post would be on one channel: its first part, then the others.
+const previewOn = (
+  channel: Channel,
+  postContent: PostContent,
+  options: readonly ChannelOptions[]
+): ChannelPreview => ({
+  ...countsOn(channel, postContent),
+  channelId: channel.id,
+  parts: (postContent.followUps ?? []).map((part, index) => ({
+    ...countsOn(channel, part),
+    part: index + 1,
+  })),
+  platform: channel.platform,
+  violations: violationsOf([channel.id], postContent, options),
+});
 
 const unknownMediaOf = (studio: Studio, postContent: PostContent) =>
   checkMedia(studio, postContent).pipe(

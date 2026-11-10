@@ -337,6 +337,33 @@ describe("peal post --dry-run", () => {
       }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect("shows each part of a thread under its channel", () =>
+    Effect.gen(function* thread() {
+      const session = yield* signedIn({ scope: withoutPublishing });
+
+      const printed = yield* session.printed(
+        note(
+          "--then",
+          "A second part.",
+          "--then",
+          "A third part, #last",
+          "--channel",
+          mastodonId,
+          "--now",
+          "--dry-run"
+        )
+      );
+
+      assert.include(
+        printed,
+        "Checked, and made nothing: the post would go through."
+      );
+      assert.match(printed, /part 2 +14 of 500 characters/u);
+      assert.match(printed, /part 3 +19 of 500 characters, .*1 hashtags/u);
+      assert.deepStrictEqual(yield* changes(session.studio), []);
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("lists every problem at once, and ends as a refusal", () =>
     Effect.gen(function* problems() {
       const session = yield* signedIn();
