@@ -615,6 +615,20 @@ and no socket, for tests.
   changing those options or upgrading Better Auth, then `db:generate`.
   `auth-schema-check`, a dependency of the server's tests, fails when the file
   is stale.
+- Better Auth's routes that count members or invitations
+  (`workspace/infrastructure/auth/routes.ts`) answer 400 `INVALID_ID` to an
+  `organizationId` or `invitationId` that is not a lower-case UUID, and
+  `checkMemberRoom` fails closed: an id the limit cannot be read for is
+  never let through. `WorkspacePeople.reseating` reads, decides and removes
+  under the workspace's invitations lock, so two owners keeping only
+  themselves never empty a workspace.
+- `DeleteWorkspace` and `CloseAccount` write the erasure ledger before
+  settling at Stripe, and run everything after settling uninterruptibly: a
+  client that goes away never leaves subscriptions cancelled and nothing
+  deleted, or rows deleted and their files kept. `ErasureLedger` skips
+  entries it cannot decode and counts them (`unreadable`); the replay then
+  exits non-zero. Replaying an account's erasure runs `planClosure` on what
+  the restore brought back, and refuses with `LastOwner`.
 
 ### Channels
 
@@ -791,6 +805,15 @@ and no socket, for tests.
   and logs an error (`event.name` `peal.app_refused`) at the first, then
   once an hour per code, never per post, which Grafana's `peal-app-refused`
   rule reports. A refresh answered so leaves the channel's token alone.
+- A platform's data deletion request disconnects channels as a member does:
+  `DrizzleDataDeletions` tells `ChannelEvents.disconnected` in its
+  transaction, once per signed request. `channel.reconnect_needed` is
+  published for a week after a channel enters `refreshNeeded` (`toldFor`),
+  not each time the daily check tells it: its key is purged with its event.
+- A token refresh run that stops at its budget makes the next one start
+  after where it stopped, then come back to the channels before (in this
+  process): channels whose platform hangs never take every run.
+  `CollectMetrics` does the same between channels.
 
 ### Publishing and the cluster
 
@@ -1014,6 +1037,12 @@ and no socket, for tests.
   use cases and workflows on an in-memory cluster. `AppLive` gives publishing
   an engine that runs no job, so scheduling through it fails. Only
   `test/app/cluster.test.ts` runs a SQL runner.
+- A time asked for is judged as of when the request came (`asReceived`):
+  account-rule checks that take minutes never turn "now" into
+  `ScheduleInPast`.
+- An adapter that streams a large file takes its upload slot before the
+  request is opened (`MediaForPublishing.held`), never inside it: a platform
+  drops a request left waiting.
 
 ### Media
 
@@ -1061,6 +1090,9 @@ and no socket, for tests.
   refuses the deletion (`MediaInUse`, listing the posts), and drafts lose
   the attachment in one transaction. `GET …/media/:id/usage` tells clients
   beforehand.
+- Imports from a link run two at once per workspace and eight per process
+  (`ImportSlots`, `importsAtOnce`); past it the answer is `MediaImportBusy`
+  (429), to retry.
 
 ### Notifications
 
@@ -1455,6 +1487,30 @@ and no socket, for tests.
   `test/billing/fixtures/webhooks`, signed in the test. The app's engine
   in tests runs no workflow, so what notifies (cancelling, withdrawing) is
   tested at the use cases and with `NoticesTest`.
+- Contract requests (cancel, withdraw) save their intent
+  (`contract_requests.intent`) before Stripe is called, and every Stripe
+  call they make carries a key of the request, never of the subscription
+  alone: a retry finds what was decided and finishes it, and a second
+  request after an undo is a new one. Credit notes carry `metadata.key` and
+  are looked for before one is made. A request Stripe refuses for good
+  (`StripeUnreachable.permanent`), or not applied within `applyingPatience`
+  (24 hours), is left to staff, who see it; one whose subscription ended
+  since it was received is settled against that contract (`contractAt`). A
+  desired end day is at most `desiredDayHorizonDays` ahead
+  (`DesiredDayTooFar`), and can be brought forward.
+- Refunds follow invoice lines: only lines whose period starts on or after
+  the request, on a paid invoice (`renewalRefund`); a subscription that
+  started after the request is not its contract (`NothingToCancel`).
+- `RecordSubscription` keeps the stored plan when an event's price is
+  unknown (a price since replaced), and never drops the event. The startup
+  price check fails the server on a refusal or an answer it cannot decode
+  (`StripePricesUnchecked`); only Stripe not answering is a warning.
+- An order is checked against the workspace's usage when it is taken
+  (`UsageAtCheckout`, bound once the contexts it reads are built): a plan
+  the workspace outgrew during its trial is `OrderRequired` again.
+- The contract form's intake decides by the matched endpoint, never the
+  path as written, and counts acknowledgements per address without case,
+  under a lock (`ContractRequests.claimAcknowledgement`).
 
 ### Analytics
 
@@ -1615,6 +1671,15 @@ and no socket, for tests.
   and `ToldNotices`; `eventsSentTo` reads what an endpoint was sent. The
   transport itself is tested against a loopback receiver
   (`fakes/fake-receiver.ts`).
+- `EndpointStore.update(endpoint, from)` writes the status and
+  `failingSince` only when the member toggled them: a change of description
+  never turns back on an endpoint a delivery just turned off. Test events
+  and resends are capped per workspace (`ManualSends`,
+  `manualSendsPerHour`, `TooManyWebhookSends` 429).
+- An attempt the database fails past its own retries is `unrecorded`: the
+  workflow sleeps `recoveryDelay` and makes the same attempt again
+  (`attempt/<n>/again/<k>`, `recover/<n>/<k>`, persisted contract),
+  `maxRecoveries` times.
 
 ### MCP endpoint
 
@@ -2203,6 +2268,15 @@ self-hoster needs only Postgres and an S3-compatible store:
   against, and roll back by releasing the previous commit.
 - Changing a server's size or adding any paid resource needs the owner's
   explicit approval.
+- `site.yml` restarts the server when the privacy declaration changes (the
+  server reads it at startup), refuses to remove the image's account while
+  connected as it, and takes a storage endpoint only in the EU: R2's `.eu.`
+  endpoints, or another store's host listed in `peal_storage_eu_hosts` once
+  the owner checked it; hosts are compared without case or port. A ledger
+  bucket that is the media bucket is not one of its own.
+- Every metric that says a job falls behind has an alert rule
+  (`packages/peal-docker/test/alerting.test.ts`): add the rule with the
+  metric.
 
 ## Public repository
 
