@@ -20,6 +20,8 @@ public readonly record struct MediaContentType : IStringEnum
 
     public static readonly MediaContentType VideoQuicktime = new(Values.VideoQuicktime);
 
+    public static readonly MediaContentType ApplicationPdf = new(Values.ApplicationPdf);
+
     public MediaContentType(string value)
     {
         Value = value;
@@ -127,5 +129,7 @@ public readonly record struct MediaContentType : IStringEnum
         public const string VideoMp4 = "video/mp4";
 
         public const string VideoQuicktime = "video/quicktime";
+
+        public const string ApplicationPdf = "application/pdf";
     }
 }

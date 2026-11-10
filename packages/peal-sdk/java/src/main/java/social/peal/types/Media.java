@@ -42,6 +42,8 @@ public final class Media {
 
     private final MediaKind kind;
 
+    private final Optional<Integer> pageCount;
+
     private final MediaStatus status;
 
     private final String updatedAt;
@@ -60,6 +62,7 @@ public final class Media {
             Optional<Integer> durationMs,
             String id,
             MediaKind kind,
+            Optional<Integer> pageCount,
             MediaStatus status,
             String updatedAt,
             Optional<String> url,
@@ -73,6 +76,7 @@ public final class Media {
         this.durationMs = durationMs;
         this.id = id;
         this.kind = kind;
+        this.pageCount = pageCount;
         this.status = status;
         this.updatedAt = updatedAt;
         this.url = url;
@@ -136,6 +140,14 @@ public final class Media {
         return kind;
     }
 
+    @JsonIgnore
+    public Optional<Integer> getPageCount() {
+        if (pageCount == null) {
+            return Optional.empty();
+        }
+        return pageCount;
+    }
+
     @JsonProperty("status")
     public MediaStatus getStatus() {
         return status;
@@ -179,6 +191,12 @@ public final class Media {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("pageCount")
+    private Optional<Integer> _getPageCount() {
+        return pageCount;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("url")
     private Optional<String> _getUrl() {
         return url;
@@ -205,6 +223,7 @@ public final class Media {
                 && durationMs.equals(other.durationMs)
                 && id.equals(other.id)
                 && kind.equals(other.kind)
+                && pageCount.equals(other.pageCount)
                 && status.equals(other.status)
                 && updatedAt.equals(other.updatedAt)
                 && url.equals(other.url);
@@ -222,6 +241,7 @@ public final class Media {
                 this.durationMs,
                 this.id,
                 this.kind,
+                this.pageCount,
                 this.status,
                 this.updatedAt,
                 this.url);
@@ -297,6 +317,12 @@ public final class Media {
 
         _FinalStage durationMs(Nullable<Integer> durationMs);
 
+        _FinalStage pageCount(Optional<Integer> pageCount);
+
+        _FinalStage pageCount(Integer pageCount);
+
+        _FinalStage pageCount(Nullable<Integer> pageCount);
+
         _FinalStage url(Optional<String> url);
 
         _FinalStage url(String url);
@@ -330,6 +356,8 @@ public final class Media {
 
         private Optional<String> url = Optional.empty();
 
+        private Optional<Integer> pageCount = Optional.empty();
+
         private Optional<Integer> durationMs = Optional.empty();
 
         private Optional<MediaDimensions> dimensions = Optional.empty();
@@ -353,6 +381,7 @@ public final class Media {
             durationMs(other.getDurationMs());
             id(other.getId());
             kind(other.getKind());
+            pageCount(other.getPageCount());
             status(other.getStatus());
             updatedAt(other.getUpdatedAt());
             url(other.getUrl());
@@ -430,6 +459,31 @@ public final class Media {
         @JsonSetter(value = "url", nulls = Nulls.SKIP)
         public _FinalStage url(Optional<String> url) {
             this.url = url;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage pageCount(Nullable<Integer> pageCount) {
+            if (pageCount.isNull()) {
+                this.pageCount = null;
+            } else if (pageCount.isEmpty()) {
+                this.pageCount = Optional.empty();
+            } else {
+                this.pageCount = Optional.of(pageCount.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage pageCount(Integer pageCount) {
+            this.pageCount = Optional.ofNullable(pageCount);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "pageCount", nulls = Nulls.SKIP)
+        public _FinalStage pageCount(Optional<Integer> pageCount) {
+            this.pageCount = pageCount;
             return this;
         }
 
@@ -545,6 +599,7 @@ public final class Media {
                     durationMs,
                     id,
                     kind,
+                    pageCount,
                     status,
                     updatedAt,
                     url,
@@ -562,6 +617,7 @@ public final class Media {
                     || key.equalsIgnoreCase("durationMs")
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("kind")
+                    || key.equalsIgnoreCase("pageCount")
                     || key.equalsIgnoreCase("status")
                     || key.equalsIgnoreCase("updatedAt")
                     || key.equalsIgnoreCase("url")) {

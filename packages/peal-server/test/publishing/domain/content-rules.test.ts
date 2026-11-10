@@ -339,3 +339,73 @@ describe(checkDraft, () => {
     ]);
   });
 });
+
+describe("a document in a post", () => {
+  const pdf = MediaAssetIdSchema.make("00000000-0000-7000-8000-0000000d0001");
+  const image = MediaAssetIdSchema.make("00000000-0000-7000-8000-0000000d0002");
+  const linkedin = channel("7", "linkedin");
+  const pinterest = channel("8", "pinterest");
+  const mebibyte = 1024 * 1024;
+
+  const document = (byteSize = 2 * mebibyte) =>
+    mediaFile(pdf, {
+      byteSize,
+      contentType: "application/pdf",
+      dimensions: Option.none(),
+    });
+
+  it("goes out on LinkedIn, alone, up to 100 MiB", () => {
+    const content = contentOf("Our menu", { media: [pdf] });
+
+    expect(
+      violationsOf(checkPublishable(content, [linkedin], [document()]))
+    ).toStrictEqual([]);
+    expect(
+      violationsOf(
+        checkPublishable(content, [linkedin], [document(100 * mebibyte + 1)])
+      )
+    ).toStrictEqual([
+      {
+        _tag: "mediaTooLarge",
+        ...linkedin,
+        byteSize: 100 * mebibyte + 1,
+        maximum: 100 * mebibyte,
+        mediaId: pdf,
+      },
+    ]);
+    expect(
+      violationsOf(
+        checkPublishable(
+          contentOf("Our menu", { media: [pdf, image] }),
+          [linkedin],
+          [document(), mediaFile(image)]
+        )
+      )
+    ).toStrictEqual([
+      { _tag: "tooManyMedia", ...linkedin, count: 2, maximum: 1 },
+    ]);
+  });
+
+  it("is refused everywhere else, where rules are not known too", () => {
+    const content = contentOf("Our menu", { media: [pdf] });
+
+    expect(
+      violationsOf(
+        checkPublishable(content, [mastodon, pinterest], [document()])
+      )
+    ).toStrictEqual([
+      {
+        _tag: "mediaTypeUnsupported",
+        ...mastodon,
+        contentType: "application/pdf",
+        mediaId: pdf,
+      },
+      {
+        _tag: "mediaTypeUnsupported",
+        ...pinterest,
+        contentType: "application/pdf",
+        mediaId: pdf,
+      },
+    ]);
+  });
+});

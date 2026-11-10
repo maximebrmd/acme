@@ -12,6 +12,8 @@ export interface PlatformRequest {
   readonly method: string;
   readonly path: string;
   readonly query: URLSearchParams;
+  /** The query as it was sent, undecoded, without its question mark. */
+  readonly search: string;
 }
 
 export type JsonValue = typeof Schema.Json.Type;
@@ -210,6 +212,7 @@ export const platformServer = (
           method: incoming.method ?? "GET",
           path: decodeURIComponent(url.pathname),
           query: url.searchParams,
+          search: (incoming.url ?? "").split("?").slice(1).join("?"),
         };
 
         received.push(request);

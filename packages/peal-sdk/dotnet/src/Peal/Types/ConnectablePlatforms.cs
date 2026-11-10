@@ -15,6 +15,10 @@ public record ConnectablePlatforms : IJsonOnDeserialized
     public IEnumerable<InstagramConnection> InstagramConnections { get; set; } =
         new List<InstagramConnection>();
 
+    [JsonPropertyName("linkedinConnections")]
+    public IEnumerable<LinkedInConnection> LinkedinConnections { get; set; } =
+        new List<LinkedInConnection>();
+
     [JsonPropertyName("platforms")]
     public IEnumerable<Platform> Platforms { get; set; } = new List<Platform>();
 

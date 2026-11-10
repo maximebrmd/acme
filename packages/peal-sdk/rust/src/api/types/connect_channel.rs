@@ -3,7 +3,7 @@ pub use crate::prelude::*;
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct ConnectChannel {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub connection: Option<InstagramConnection>,
+    pub connection: Option<ChannelConnection>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub handle: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -19,13 +19,13 @@ impl ConnectChannel {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct ConnectChannelBuilder {
-    connection: Option<InstagramConnection>,
+    connection: Option<ChannelConnection>,
     handle: Option<String>,
     instance: Option<String>,
 }
 
 impl ConnectChannelBuilder {
-    pub fn connection(mut self, value: InstagramConnection) -> Self {
+    pub fn connection(mut self, value: ChannelConnection) -> Self {
         self.connection = Some(value);
         self
     }

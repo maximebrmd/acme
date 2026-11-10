@@ -313,9 +313,10 @@ var (
 	mediaFieldDurationMs  = big.NewInt(1 << 6)
 	mediaFieldID          = big.NewInt(1 << 7)
 	mediaFieldKind        = big.NewInt(1 << 8)
-	mediaFieldStatus      = big.NewInt(1 << 9)
-	mediaFieldUpdatedAt   = big.NewInt(1 << 10)
-	mediaFieldURL         = big.NewInt(1 << 11)
+	mediaFieldPageCount   = big.NewInt(1 << 9)
+	mediaFieldStatus      = big.NewInt(1 << 10)
+	mediaFieldUpdatedAt   = big.NewInt(1 << 11)
+	mediaFieldURL         = big.NewInt(1 << 12)
 )
 
 // mediaNullableFields maps the wire names of Media's nullable fields (required or optional) to their field bits.
@@ -324,6 +325,7 @@ var mediaNullableFields = map[string]*big.Int{
 	"codec":      mediaFieldCodec,
 	"dimensions": mediaFieldDimensions,
 	"durationMs": mediaFieldDurationMs,
+	"pageCount":  mediaFieldPageCount,
 	"url":        mediaFieldURL,
 }
 
@@ -337,6 +339,7 @@ type Media struct {
 	DurationMs  *int             `json:"durationMs,omitempty" url:"durationMs,omitempty"`
 	ID          string           `json:"id" url:"id"`
 	Kind        MediaKind        `json:"kind" url:"kind"`
+	PageCount   *int             `json:"pageCount,omitempty" url:"pageCount,omitempty"`
 	Status      *MediaStatus     `json:"status" url:"status"`
 	UpdatedAt   string           `json:"updatedAt" url:"updatedAt"`
 	URL         *string          `json:"url,omitempty" url:"url,omitempty"`
@@ -409,6 +412,13 @@ func (m *Media) GetKind() MediaKind {
 		return ""
 	}
 	return m.Kind
+}
+
+func (m *Media) GetPageCount() *int {
+	if m == nil {
+		return nil
+	}
+	return m.PageCount
 }
 
 func (m *Media) GetStatus() *MediaStatus {
@@ -509,6 +519,13 @@ func (m *Media) SetID(id string) {
 func (m *Media) SetKind(kind MediaKind) {
 	m.Kind = kind
 	m.require(mediaFieldKind)
+}
+
+// SetPageCount sets the PageCount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Media) SetPageCount(pageCount *int) {
+	m.PageCount = pageCount
+	m.require(mediaFieldPageCount)
 }
 
 // SetStatus sets the Status field and marks it as non-optional;
@@ -1484,12 +1501,13 @@ func (p *PreparedUpload) String() string {
 type ProbeState string
 
 const (
-	ProbeStatePending     ProbeState = "pending"
-	ProbeStateUnavailable ProbeState = "unavailable"
-	ProbeStateUnreadable  ProbeState = "unreadable"
-	ProbeStateTimedOut    ProbeState = "timedOut"
-	ProbeStateTooLarge    ProbeState = "tooLarge"
-	ProbeStateToolFailed  ProbeState = "toolFailed"
+	ProbeStatePending      ProbeState = "pending"
+	ProbeStateUnavailable  ProbeState = "unavailable"
+	ProbeStateUnreadable   ProbeState = "unreadable"
+	ProbeStateTimedOut     ProbeState = "timedOut"
+	ProbeStateTooLarge     ProbeState = "tooLarge"
+	ProbeStateToolFailed   ProbeState = "toolFailed"
+	ProbeStateTooManyPages ProbeState = "tooManyPages"
 )
 
 func NewProbeStateFromString(s string) (ProbeState, error) {
@@ -1506,6 +1524,8 @@ func NewProbeStateFromString(s string) (ProbeState, error) {
 		return ProbeStateTooLarge, nil
 	case "toolFailed":
 		return ProbeStateToolFailed, nil
+	case "tooManyPages":
+		return ProbeStateTooManyPages, nil
 	}
 	var t ProbeState
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

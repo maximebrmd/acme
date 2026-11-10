@@ -12,6 +12,8 @@ export const countedPlatforms = [
   "youtube",
   "instagram",
   "pinterest",
+  // Company pages only: a member's profile has no counts Peal may read.
+  "linkedin",
 ] as const satisfies readonly Platform[];
 
 /** Whether Peal reads counts on the platform. */

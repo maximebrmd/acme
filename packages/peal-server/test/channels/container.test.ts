@@ -51,6 +51,8 @@ const withoutApps = {
   GOOGLE_BUSINESS_CLIENT_SECRET: "",
   LINKEDIN_CLIENT_ID: "",
   LINKEDIN_CLIENT_SECRET: "",
+  LINKEDIN_PAGES_CLIENT_ID: "",
+  LINKEDIN_PAGES_CLIENT_SECRET: "",
   PINTEREST_APP_ID: "",
   PINTEREST_APP_SECRET: "",
   TIKTOK_CLIENT_KEY: "",
@@ -236,6 +238,15 @@ layer(DatabaseTest)(
             "googleBusiness"
           );
           assert.isFalse(authorizers.unconfigured.has("googleBusiness"));
+          // The first app connects profiles, and no page.
+          assert.deepStrictEqual(authorizers.linkedinConnections, [
+            "linkedinProfile",
+          ]);
+          assert.isTrue(
+            Option.isNone(
+              authorizers.for("linkedin", Option.some("linkedinPage"))
+            )
+          );
           assert.isFalse(authorizers.unconfigured.has("linkedin"));
           assert.isFalse(authorizers.unconfigured.has("x"));
           assert.isFalse(authorizers.unconfigured.has("tiktok"));
@@ -243,10 +254,77 @@ layer(DatabaseTest)(
         }).pipe(Effect.scoped)
     );
 
+    it.effect(
+      "connect LinkedIn pages with the second app, beside profiles or alone",
+      () =>
+        Effect.gen(function* pages() {
+          const pagesApp = {
+            LINKEDIN_PAGES_CLIENT_ID: "88synthetic-pages",
+            LINKEDIN_PAGES_CLIENT_SECRET: "synthetic-linkedin-pages-secret",
+          };
+
+          const both = yield* PlatformAuthorizers.pipe(
+            Effect.provide(
+              channelsWithSettings({
+                ...withoutApps,
+                ...pagesApp,
+                BLUESKY_CLIENT_KEYS: "",
+                LINKEDIN_CLIENT_ID: "77synthetic",
+                LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
+              })
+            )
+          );
+
+          assert.deepStrictEqual(both.linkedinConnections, [
+            "linkedinProfile",
+            "linkedinPage",
+          ]);
+          // Without a way in named, the profile.
+          assert.strictEqual(
+            Option.getOrThrow(both.for("linkedin")).connection,
+            "linkedinProfile"
+          );
+          assert.strictEqual(
+            Option.getOrThrow(both.for("linkedin", Option.some("linkedinPage")))
+              .connection,
+            "linkedinPage"
+          );
+
+          const alone = yield* PlatformAuthorizers.pipe(
+            Effect.provide(
+              channelsWithSettings({
+                ...withoutApps,
+                ...pagesApp,
+                BLUESKY_CLIENT_KEYS: "",
+              })
+            )
+          );
+
+          assert.deepStrictEqual(alone.linkedinConnections, ["linkedinPage"]);
+          assert.strictEqual(
+            Option.getOrThrow(alone.for("linkedin")).connection,
+            "linkedinPage"
+          );
+          assert.isFalse(alone.unconfigured.has("linkedin"));
+          // A profile connected before the first app was removed cannot
+          // be reconnected through the pages app.
+          assert.isTrue(
+            Option.isNone(alone.for("linkedin", Option.some("linkedinProfile")))
+          );
+        }).pipe(Effect.scoped)
+    );
+
     it.effect("refuse to start with half of an app", () =>
       Effect.gen(function* refuses() {
         for (const [platform, settings] of [
           ["linkedin", { ...withoutApps, LINKEDIN_CLIENT_ID: "77synthetic" }],
+          [
+            "linkedin",
+            {
+              ...withoutApps,
+              LINKEDIN_PAGES_CLIENT_SECRET: "synthetic-linkedin-pages-secret",
+            },
+          ],
           ["x", { ...withoutApps, X_CLIENT_SECRET: "synthetic-x-secret" }],
           ["tiktok", { ...withoutApps, TIKTOK_CLIENT_KEY: "awsynthetic" }],
           [

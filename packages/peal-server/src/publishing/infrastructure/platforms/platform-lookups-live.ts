@@ -11,10 +11,12 @@ import type {
   LookupResultOf,
 } from "#publishing/domain/lookup.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
+import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 import { pinterestHostsConfig } from "#shared/infrastructure/platforms/pinterest-api.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 
+import { linkedinLookups } from "./linkedin/linkedin-lookups.ts";
 import { pinterestLookups } from "./pinterest/pinterest-lookups.ts";
 import { youtubeLookups } from "./youtube/youtube-lookups.ts";
 
@@ -35,6 +37,8 @@ type Adapters = {
  * platform added later adds its adapters to the registry below.
  */
 export const platformLookupsWith = (settings: {
+  /** LinkedIn's API origin. */
+  readonly linkedinApi: URL;
   /** Pinterest's API's origin. */
   readonly pinterestApi: URL;
   /** The YouTube Data API's origin. */
@@ -48,12 +52,22 @@ export const platformLookupsWith = (settings: {
       const api = yield* publicHttpClient;
       const youtube = youtubeLookups({ api, apiUrl: settings.youtubeApi });
 
+      const linkedin = linkedinLookups({
+        api,
+        apiUrl: settings.linkedinApi,
+        version: yield* linkedinVersionConfig,
+      });
+
       const pinterest = pinterestLookups({
         api,
         apiUrl: settings.pinterestApi,
       });
 
       const adapters: Adapters = {
+        linkedinOrganizations: (channelId, query) =>
+          credentials.withToken(channelId, (token) =>
+            linkedin.organizations(query, token)
+          ),
         pinterestBoardSections: (channelId, query) =>
           credentials.withToken(channelId, ({ accessToken }) =>
             pinterest.boardSections(query, accessToken)
@@ -83,6 +97,8 @@ export const platformLookupsWith = (settings: {
       return PlatformLookups.of({
         run: (channelId, query) =>
           Match.valueTags(query, {
+            linkedinOrganizations: (organizations) =>
+              adapters.linkedinOrganizations(channelId, organizations),
             pinterestBoardSections: (sections) =>
               adapters.pinterestBoardSections(channelId, sections),
             pinterestBoards: (boards) =>
@@ -107,6 +123,7 @@ export const PlatformLookupsLive = Layer.unwrap(
   pinterestHostsConfig.pipe(
     Effect.map((pinterest) =>
       platformLookupsWith({
+        linkedinApi: new URL("https://api.linkedin.com"),
         pinterestApi: pinterest.api,
         youtubeApi: new URL("https://www.googleapis.com"),
       })

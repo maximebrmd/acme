@@ -9,10 +9,12 @@ import type { MediaSource } from "#media/application/ports/media-probe.ts";
 import { kindOf } from "#media/domain/media-format.ts";
 
 import { makeFfprobeVideoProbe } from "./ffprobe-video-probe.ts";
+import { makePdfDocumentProbe } from "./pdf-document-probe.ts";
 import { loadSharp, makeSharpImageProbe } from "./sharp-image-probe.ts";
 
 /**
- * Images through sharp, videos through ffprobe. PEAL_FFPROBE_PATH names the
+ * Images through sharp, videos through ffprobe, PDFs by reading their own
+ * bytes. PEAL_FFPROBE_PATH names the
  * ffprobe program, "ffprobe" on the PATH by default. A kind whose tool is
  * missing is skipped, so the server runs without either.
  */
@@ -26,9 +28,18 @@ export const MediaProbeLive = Layer.effect(
     const image = yield* makeSharpImageProbe(yield* loadSharp);
     const video = yield* makeFfprobeVideoProbe(program);
 
+    const document = yield* makePdfDocumentProbe();
+
     return MediaProbe.of({
-      probe: (source: MediaSource) =>
-        kindOf(source.contentType) === "image" ? image(source) : video(source),
+      probe: (source: MediaSource) => {
+        const kind = kindOf(source.contentType);
+
+        if (kind === "document") {
+          return document(source);
+        }
+
+        return kind === "image" ? image(source) : video(source);
+      },
     });
   })
 ).pipe(

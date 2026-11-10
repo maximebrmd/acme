@@ -38,6 +38,9 @@ public record Media : IJsonOnDeserialized
     [JsonPropertyName("kind")]
     public required MediaKind Kind { get; set; }
 
+    [JsonPropertyName("pageCount")]
+    public int? PageCount { get; set; }
+
     [JsonPropertyName("status")]
     public required MediaStatus Status { get; set; }
 

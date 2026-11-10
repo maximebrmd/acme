@@ -3,9 +3,17 @@ import type { Schema, SchemaAST } from "effect";
 
 /**
  * What a field holds: a yes or no, a text, one of a few values (`choice`),
- * several texts (`textList`, as a video's tags) or a whole number.
+ * several texts (`textList`, as a video's tags), a whole number, or the
+ * accounts a text names (`mentionList`: each a `name` and the account's
+ * `urn`, as a lookup answers them).
  */
-export type FieldType = "boolean" | "choice" | "integer" | "text" | "textList";
+export type FieldType =
+  | "boolean"
+  | "choice"
+  | "integer"
+  | "mentionList"
+  | "text"
+  | "textList";
 
 /**
  * What a field's schema cannot say, declared beside it with the constants
@@ -63,6 +71,28 @@ const literalsOf = (union: SchemaAST.Union): readonly string[] | undefined => {
   return values.length === union.types.length ? values : undefined;
 };
 
+// A list of mentions: objects of a `name` and a `urn`, both texts.
+const isMentions = (ast: SchemaAST.AST): boolean => {
+  if (
+    ast._tag !== "Arrays" ||
+    ast.elements.length > 0 ||
+    ast.rest.length !== 1
+  ) {
+    return false;
+  }
+
+  const [item] = ast.rest;
+
+  return (
+    item?._tag === "Objects" &&
+    item.propertySignatures.length === 2 &&
+    item.propertySignatures.every(
+      ({ name, type }) =>
+        (name === "name" || name === "urn") && type._tag === "String"
+    )
+  );
+};
+
 // The kinds of field options and lookup inputs are made of. Anything else has no
 // description yet: describing it fails, so a test says so.
 const kindOf = (ast: SchemaAST.AST): Kind | undefined => {
@@ -95,6 +125,10 @@ const kindOf = (ast: SchemaAST.AST): Kind | undefined => {
     ast.rest[0]?._tag === "String"
   ) {
     return ofType("textList");
+  }
+
+  if (isMentions(ast)) {
+    return ofType("mentionList");
   }
 
   return undefined;

@@ -9,6 +9,7 @@ module Peal
 
       IMAGE = "image"
       VIDEO = "video"
+      DOCUMENT = "document"
     end
   end
 end

@@ -39,14 +39,14 @@ import { tiktokClient } from "#publishing/infrastructure/platforms/tiktok/tiktok
 import { xClient } from "#publishing/infrastructure/platforms/x/x-client.ts";
 import { youtubeClient } from "#publishing/infrastructure/platforms/youtube/youtube-client.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { connectionOf } from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import {
   ChannelIdSchema,
   MediaAssetIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import type { ChannelId, MediaAssetId } from "#shared/domain/ids.ts";
-import { connectionOf } from "#shared/domain/instagram-connection.ts";
-import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
@@ -94,7 +94,7 @@ export class CredentialLog extends Context.Service<
 export const credentialsOf = (
   given: {
     readonly accountId: string;
-    readonly connection?: Option.Option<InstagramConnection>;
+    readonly connection?: Option.Option<ChannelConnection>;
     readonly platform: Platform;
   },
   tokens: readonly string[]
@@ -180,10 +180,18 @@ export interface TestFile {
 let nextMedia = 0;
 
 /** A synthetic file of `size` bytes. */
+const defaultTypes = {
+  document: "application/pdf",
+  image: "image/png",
+  video: "video/mp4",
+} as const;
+
+const extensions = { document: "pdf", image: "png", video: "mp4" } as const;
+
 export const testFile = (
-  kind: "image" | "video",
+  kind: "document" | "image" | "video",
   size: number,
-  contentType = kind === "image" ? "image/png" : "video/mp4"
+  contentType: string = defaultTypes[kind]
 ): TestFile => {
   nextMedia += 1;
 
@@ -196,10 +204,13 @@ export const testFile = (
     media: {
       byteSize: size,
       contentType,
-      dimensions: Option.some({ height: 600, width: 800 }),
+      dimensions:
+        kind === "document"
+          ? Option.none()
+          : Option.some({ height: 600, width: 800 }),
       duration:
         kind === "video" ? Option.some(Duration.seconds(4)) : Option.none(),
-      fileName: `${mediaId}.${kind === "image" ? "png" : "mp4"}`,
+      fileName: `${mediaId}.${extensions[kind]}`,
       kind,
       mediaId,
     },

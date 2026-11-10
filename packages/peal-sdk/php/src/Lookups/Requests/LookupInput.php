@@ -38,12 +38,19 @@ class LookupInput extends JsonSerializableType
     public ?string $regionCode;
 
     /**
+     * @var ?string $vanityName
+     */
+    #[JsonProperty('vanityName')]
+    public ?string $vanityName;
+
+    /**
      * @param array{
      *   boardId?: ?string,
      *   cursor?: ?string,
      *   language?: ?string,
      *   limit?: ?int,
      *   regionCode?: ?string,
+     *   vanityName?: ?string,
      * } $values
      */
     public function __construct(
@@ -54,5 +61,6 @@ class LookupInput extends JsonSerializableType
         $this->language = $values['language'] ?? null;
         $this->limit = $values['limit'] ?? null;
         $this->regionCode = $values['regionCode'] ?? null;
+        $this->vanityName = $values['vanityName'] ?? null;
     }
 }

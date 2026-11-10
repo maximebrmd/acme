@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "a59e45b5-c1dd-4287-a95c-3085afd5f4ea",
+  "id": "52fc70a8-6f83-4127-abe0-a6af49141070",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -4030,6 +4030,19 @@
     {
       "schema": "billing",
       "table": "trials",
+      "name": "forgotten_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
       "name": "id",
       "type": "uuid",
       "typeSchema": null,
@@ -4070,19 +4083,6 @@
       "schema": "billing",
       "table": "trials",
       "name": "started_at",
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "entityType": "columns"
-    },
-    {
-      "schema": "billing",
-      "table": "trials",
-      "name": "forgotten_at",
       "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": false,
@@ -5332,6 +5332,19 @@
       "table": "media_assets",
       "name": "multipart_upload_id",
       "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "page_count",
+      "type": "integer",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,

@@ -9,6 +9,14 @@ const created = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
 
 const mebibyte = 1024 * 1024;
 
+const kindOf = (contentType: Media["contentType"]): Media["kind"] => {
+  if (contentType === "application/pdf") {
+    return "document";
+  }
+
+  return contentType.startsWith("video/") ? "video" : "image";
+};
+
 const file = (
   id: string,
   facts: Partial<
@@ -26,7 +34,8 @@ const file = (
     dimensions: facts.dimensions ?? { height: 800, width: 1200 },
     durationMs: facts.durationMs ?? null,
     id,
-    kind: contentType.startsWith("video/") ? "video" : "image",
+    kind: kindOf(contentType),
+    pageCount: null,
     status: { _tag: "ready" },
     updatedAt: created,
     url: null,
@@ -220,5 +229,35 @@ describe(mediaFitOn, () => {
     expect(
       mediaFitOn("facebook", [loaded(video("b", 7_200_000))]).problems
     ).toStrictEqual([]);
+  });
+});
+
+describe("a document attached to a post", () => {
+  const pdf = file("d1", {
+    byteSize: 2 * mebibyte,
+    contentType: "application/pdf",
+    dimensions: null,
+  });
+
+  const attachedPdf = { altText: "", media: Option.some(pdf), mediaId: "d1" };
+
+  it("fits LinkedIn alone, and needs no alt text", () => {
+    expect(mediaFitOn("linkedin", [attachedPdf])).toStrictEqual({
+      missingAltText: 0,
+      problems: [],
+    });
+  });
+
+  it("fits no other platform, known or not", () => {
+    for (const platform of ["mastodon", "pinterest"] as const) {
+      expect(mediaFitOn(platform, [attachedPdf]).problems).toStrictEqual([
+        {
+          _tag: "mediaTypeUnsupported",
+          contentType: "application/pdf",
+          kind: "document",
+          position: 1,
+        },
+      ]);
+    }
   });
 });

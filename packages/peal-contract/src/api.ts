@@ -266,6 +266,7 @@ export type { LookupName } from "./lookup-name.ts";
 export { LookupNotFound } from "./lookup-not-found.ts";
 
 export {
+  LinkedInOrganizationSchema,
   LookupDescriptionSchema,
   LookupInputSchema,
   LookupResultSchema,
@@ -481,9 +482,19 @@ export type { Permission } from "./permission.ts";
 
 export { PlanLimitReached } from "./plan-limit-reached.ts";
 
-export { InstagramConnectionSchema, PlatformSchema } from "./platform.ts";
+export {
+  ChannelConnectionSchema,
+  InstagramConnectionSchema,
+  LinkedInConnectionSchema,
+  PlatformSchema,
+} from "./platform.ts";
 
-export type { InstagramConnection, Platform } from "./platform.ts";
+export type {
+  ChannelConnection,
+  InstagramConnection,
+  LinkedInConnection,
+  Platform,
+} from "./platform.ts";
 
 export {
   ContentViolationSchema,
@@ -547,6 +558,15 @@ export {
   maxGoogleBusinessTitleLength,
   maxPinterestLinkLength,
   maxPinterestTitleLength,
+  LinkedInMentionSchema,
+  LinkedInOptionsSchema,
+  LinkedInVisibilitySchema,
+  maxLinkedInDocumentTitleLength,
+  maxLinkedInLinkDescriptionLength,
+  maxLinkedInLinkTitleLength,
+  maxLinkedInLinkUrlLength,
+  maxLinkedInMentionNameLength,
+  maxLinkedInMentions,
   maxYouTubeTagsLength,
   maxYouTubeTitleLength,
   optionsPlatforms,
@@ -564,6 +584,9 @@ export type {
   GoogleBusinessCallToAction,
   GoogleBusinessOptions,
   GoogleBusinessPostType,
+  LinkedInMention,
+  LinkedInOptions,
+  LinkedInVisibility,
   OptionsPlatform,
   PinterestOptions,
   TargetOptions,

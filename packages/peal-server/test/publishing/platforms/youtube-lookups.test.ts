@@ -55,6 +55,7 @@ const onYouTube = Effect.fn("test.lookupsOnYouTube")(function* onYouTube(
 
   const lookups = yield* Layer.build(
     platformLookupsWith({
+      linkedinApi: new URL(youtube.url),
       pinterestApi: new URL(youtube.url),
       youtubeApi: new URL(youtube.url),
     }).pipe(

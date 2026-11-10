@@ -4,12 +4,15 @@ import { LookupNameSchema } from "./lookup-name.ts";
 
 /**
  * What a field holds: a yes or no (`boolean`), a text, one of `values`
- * (`choice`), several texts (`textList`) or a whole number (`integer`).
+ * (`choice`), several texts (`textList`), a whole number (`integer`), or
+ * the accounts a text names (`mentionList`: objects of a `name` and a
+ * `urn`, as the field's lookup answers them).
  */
 export const FieldTypeSchema = Schema.Literals([
   "boolean",
   "choice",
   "integer",
+  "mentionList",
   "text",
   "textList",
 ]).annotate({ identifier: "FieldType" });

@@ -13,6 +13,7 @@ module Peal
       TIMED_OUT = "timedOut"
       TOO_LARGE = "tooLarge"
       TOOL_FAILED = "toolFailed"
+      TOO_MANY_PAGES = "tooManyPages"
     end
   end
 end

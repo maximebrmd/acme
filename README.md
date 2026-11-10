@@ -391,6 +391,7 @@ In development, these are the ones you may want:
 | `PEAL_TOKEN_KEYS`             | unset: channels cannot connect   | `keyId:base64key` entries that encrypt channel tokens          |
 | `BLUESKY_CLIENT_KEYS`         | unset: the loopback client       | Keys of the confidential Bluesky client                        |
 | `LINKEDIN_CLIENT_ID`          | unset: LinkedIn is not offered   | The LinkedIn app's client id, with `LINKEDIN_CLIENT_SECRET`    |
+| `LINKEDIN_PAGES_CLIENT_ID`    | unset: no LinkedIn company pages | A second LinkedIn app's client id, with `LINKEDIN_PAGES_CLIENT_SECRET` |
 | `X_CLIENT_ID`                 | unset: X is not offered          | The X app's OAuth 2.0 client id, with `X_CLIENT_SECRET`        |
 | `META_APP_ID`                 | unset: no Facebook nor Instagram | Meta's app, with `META_APP_SECRET`                             |
 | `INSTAGRAM_APP_ID`            | unset: Instagram through a Page  | The app's Instagram id, with `INSTAGRAM_APP_SECRET`            |

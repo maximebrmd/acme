@@ -219,6 +219,9 @@ const MediaCard = ({
             seconds: Math.round(media.durationMs / 100) / 10,
           }),
         ]),
+    ...(media.pageCount === null
+      ? []
+      : [t("library.pages", { count: media.pageCount })]),
   ];
 
   return (

@@ -14,6 +14,9 @@ pub struct LookupInput {
     #[serde(rename = "regionCode")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub region_code: Option<String>,
+    #[serde(rename = "vanityName")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vanity_name: Option<String>,
 }
 
 impl LookupInput {
@@ -30,6 +33,7 @@ pub struct LookupInputBuilder {
     language: Option<String>,
     limit: Option<i64>,
     region_code: Option<String>,
+    vanity_name: Option<String>,
 }
 
 impl LookupInputBuilder {
@@ -58,6 +62,11 @@ impl LookupInputBuilder {
         self
     }
 
+    pub fn vanity_name(mut self, value: impl Into<String>) -> Self {
+        self.vanity_name = Some(value.into());
+        self
+    }
+
     /// Consumes the builder and constructs a [`LookupInput`].
     pub fn build(self) -> Result<LookupInput, BuildError> {
         Ok(LookupInput {
@@ -66,6 +75,7 @@ impl LookupInputBuilder {
             language: self.language,
             limit: self.limit,
             region_code: self.region_code,
+            vanity_name: self.vanity_name,
         })
     }
 }

@@ -6,7 +6,7 @@ pub struct Channel {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub connection: Option<InstagramConnection>,
+    pub connection: Option<ChannelConnection>,
     #[serde(rename = "displayName")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
@@ -31,7 +31,7 @@ impl Channel {
 #[non_exhaustive]
 pub struct ChannelBuilder {
     avatar_url: Option<String>,
-    connection: Option<InstagramConnection>,
+    connection: Option<ChannelConnection>,
     display_name: Option<String>,
     handle: Option<String>,
     id: Option<String>,
@@ -46,7 +46,7 @@ impl ChannelBuilder {
         self
     }
 
-    pub fn connection(mut self, value: InstagramConnection) -> Self {
+    pub fn connection(mut self, value: ChannelConnection) -> Self {
         self.connection = Some(value);
         self
     }

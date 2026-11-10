@@ -6,8 +6,10 @@ import { Schema } from "effect";
  * channel's playlists (`youtubePlaylists`), a TikTok channel's creator
  * (`tiktokCreator`, whose audiences `privacyLevel` takes), a Pinterest
  * account's boards (`pinterestBoards`, whose ids `boardId` takes) and a
- * board's sections (`pinterestBoardSections`, for `boardSectionId`). The
- * server's list (src/publishing/domain/lookup.ts) is the source; a test keeps the
+ * board's sections (`pinterestBoardSections`, for `boardSectionId`), and
+ * the LinkedIn page of a vanity name (`linkedinOrganizations`, which
+ * `mentions` take; company page channels only). The server's list
+ * (src/publishing/domain/lookup.ts) is the source; a test keeps the
  * two equal.
  */
 export const LookupNameSchema = Schema.Literals([
@@ -16,6 +18,7 @@ export const LookupNameSchema = Schema.Literals([
   "tiktokCreator",
   "pinterestBoards",
   "pinterestBoardSections",
+  "linkedinOrganizations",
 ]).annotate({ identifier: "LookupName" });
 
 export type LookupName = typeof LookupNameSchema.Type;

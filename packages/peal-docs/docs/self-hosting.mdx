@@ -174,6 +174,18 @@ A server connects LinkedIn members once you register an app for it on LinkedIn's
 
 These apps get no refresh token: members reconnect their channel every 60 days, and are told a week before. Peal calls LinkedIn's API in the version `LINKEDIN_API_VERSION` names, a recent one unless set; LinkedIn retires each version a year after its release, and a retired one fails every post.
 
+### LinkedIn company pages [#linkedin-pages]
+
+Posting to company pages takes LinkedIn's **Community Management API**, which LinkedIn reviews, and grants only to an app that has no other product: it cannot be added to the app above. A server that has the first app alone keeps connecting profiles, unchanged.
+
+1. Create a second app on LinkedIn's developer portal, for the same LinkedIn page, with no product on it. LinkedIn asks that a super admin of that page verify the app.
+2. Request the **Community Management API** on it. LinkedIn grants it to registered legal organizations, for commercial uses, and checks a business email address, the organization, and its website; a personal email address does not pass. Its terms keep what the API serves for your own organization's clients: read them with the use you make of your server in mind.
+3. LinkedIn first grants the **Development tier**, for building: 500 calls a day for the app and 100 for each member, and no batch read, which Peal does not use. Ask for the **Standard tier** before real use: LinkedIn then asks for a screen recording of each use, here connecting a page, posting to it, and reading its posts' statistics, and for your privacy policy.
+4. Under **Auth**, add the same redirect URL, `PUBLIC_URL/connect/linkedin/callback`.
+5. Put the app's client id in `LINKEDIN_PAGES_CLIENT_ID` and its primary client secret in `LINKEDIN_PAGES_CLIENT_SECRET`.
+
+Peal asks members for `w_organization_social`, `r_organization_social` and `rw_organization_admin`, lists the pages each one administers, and posts to those they choose with their own access, which lasts 60 days. LinkedIn gives refresh tokens to approved partners only: when your app gets them, Peal renews a page's access by itself for a year after the sign-in; otherwise the page is reconnected every 60 days, like a profile. Pages are the only LinkedIn channels whose posts Peal reads counts on, and finds after a lost answer.
+
 ### X [#x]
 
 A server connects X accounts once you register an app for it in X's developer console:

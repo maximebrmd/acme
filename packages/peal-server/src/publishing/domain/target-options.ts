@@ -9,6 +9,7 @@ import type {
   UndescribedField,
 } from "./field-description.ts";
 import { GoogleBusinessOptions } from "./google-business-options.ts";
+import { LinkedInOptions } from "./linkedin-options.ts";
 import type { LookupName } from "./lookup.ts";
 import type { OptionConstraint } from "./option-constraint.ts";
 import type { OptionProblem } from "./option-problem.ts";
@@ -31,6 +32,7 @@ import { YouTubeOptions } from "./youtube-options.ts";
 export const TargetOptionsSchema = Schema.Union([
   YouTubeOptions,
   TikTokOptions,
+  LinkedInOptions,
   PinterestOptions,
   GoogleBusinessOptions,
 ]);

@@ -48,6 +48,7 @@ import type {
   OptionValues,
   OptionViolation,
   TagsField,
+  MentionsField,
   TextField,
   ToggleField,
   YesNoField,
@@ -163,7 +164,7 @@ const TextInput = ({
   limits,
   value,
   violation,
-}: FieldProps<LocalTimeField | TagsField | TextField>) => {
+}: FieldProps<LocalTimeField | MentionsField | TagsField | TextField>) => {
   const t = useTranslations("Posts.Options");
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -506,6 +507,7 @@ const FieldInput = (props: FieldProps<OptionField>) =>
       localTime: (field) => <TextInput {...props} field={field} />,
       lookup: (field) => <LookupInput {...props} field={field} />,
       number: (field) => <NumberInput {...props} field={field} />,
+      mentions: (field) => <TextInput {...props} field={field} />,
       tags: (field) => <TextInput {...props} field={field} />,
       text: (field) => <TextInput {...props} field={field} />,
       toggle: (field) => <ToggleInput {...props} field={field} />,

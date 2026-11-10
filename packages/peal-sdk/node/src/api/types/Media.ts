@@ -12,6 +12,7 @@ export interface Media {
     durationMs: number | null;
     id: string;
     kind: Peal.MediaKind;
+    pageCount: number | null;
     status: Peal.MediaStatus;
     updatedAt: string;
     url: string | null;

@@ -23,6 +23,8 @@ module Peal
 
       field :kind, -> { Peal::Types::MediaKind }, optional: false, nullable: false
 
+      field :page_count, -> { Integer }, optional: false, nullable: true, api_name: "pageCount"
+
       field :status, -> { Peal::Types::MediaStatus }, optional: false, nullable: false
 
       field :updated_at, -> { String }, optional: false, nullable: false, api_name: "updatedAt"

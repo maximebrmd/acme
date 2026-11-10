@@ -10,4 +10,5 @@ enum ProbeState: string
     case TimedOut = "timedOut";
     case TooLarge = "tooLarge";
     case ToolFailed = "toolFailed";
+    case TooManyPages = "tooManyPages";
 }

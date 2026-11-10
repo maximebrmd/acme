@@ -356,3 +356,37 @@ describe(violationsByField, () => {
     ]);
   });
 });
+
+describe("LinkedIn's mentions", () => {
+  const bakery = { name: "Example Bakery", urn: "urn:li:organization:2414183" };
+  const bikes = { name: "Example (UK)", urn: "urn:li:organization:5515715" };
+
+  it("show as names and URNs, and come back as the API takes them", () => {
+    const values = valuesOf("linkedin", {
+      mentions: [bakery, bikes],
+      platform: "linkedin",
+    });
+
+    expect(values["mentions"]).toBe(
+      "Example Bakery <urn:li:organization:2414183>; Example (UK) <urn:li:organization:5515715>"
+    );
+    expect(optionsOf("linkedin", values)).toStrictEqual(
+      Option.some({
+        disableReshare: false,
+        mentions: [bakery, bikes],
+        platform: "linkedin",
+      })
+    );
+  });
+
+  it("keep an entry typed without its URN, for scheduling to refuse", () => {
+    expect(
+      optionsOf("linkedin", { mentions: "Example Bakery;  " })
+    ).toStrictEqual(
+      Option.some({
+        mentions: [{ name: "Example Bakery", urn: "" }],
+        platform: "linkedin",
+      })
+    );
+  });
+});

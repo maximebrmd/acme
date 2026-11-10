@@ -14,11 +14,13 @@ import {
   unusable,
 } from "#analytics/infrastructure/platforms/channel-refusals.ts";
 import { instagramMetrics } from "#analytics/infrastructure/platforms/instagram/instagram-metrics.ts";
+import { linkedinMetrics } from "#analytics/infrastructure/platforms/linkedin/linkedin-metrics.ts";
 import { mastodonMetrics } from "#analytics/infrastructure/platforms/mastodon/mastodon-metrics.ts";
 import { pinterestMetrics } from "#analytics/infrastructure/platforms/pinterest/pinterest-metrics.ts";
 import { tiktokMetrics } from "#analytics/infrastructure/platforms/tiktok/tiktok-metrics.ts";
 import { youtubeMetrics } from "#analytics/infrastructure/platforms/youtube/youtube-metrics.ts";
 import { ChannelAccess } from "#channels/application/channel-access.ts";
+import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
@@ -31,6 +33,10 @@ import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 export interface MetricsReaderSettings {
   /** Bluesky's public AppView. */
   readonly blueskyAppView: URL;
+  /** LinkedIn's API. */
+  readonly linkedinApi: URL;
+  /** The version of LinkedIn's API calls name. */
+  readonly linkedinVersion: string;
   /** `https:`; `http:` only for tests against local fakes. */
   readonly mastodonScheme: "http:" | "https:";
   /**
@@ -80,6 +86,12 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
         metaAppSecret: settings.metaAppSecret,
       });
 
+      const linkedin = yield* linkedinMetrics({
+        api: settings.linkedinApi,
+        http,
+        version: settings.linkedinVersion,
+      });
+
       const youtube = yield* youtubeMetrics({
         api: settings.youtubeApi,
         http,
@@ -117,6 +129,10 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
           return yield* instagram.read(account, request.posts);
         }
 
+        if (account.platform === "linkedin") {
+          return yield* linkedin.read(account, request.posts);
+        }
+
         if (account.platform === "youtube") {
           return yield* youtube.read(account, request.posts);
         }
@@ -133,17 +149,21 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
   );
 
 /**
- * The platforms as production reaches them, with Meta's app secret and
- * whether Pinterest's calls go to its Sandbox read when the server starts. Needs ChannelAccess and Dns, which the
+ * The platforms as production reaches them, with Meta's app secret,
+ * LinkedIn's API version and whether Pinterest's calls go to its Sandbox
+ * read when the server starts. Needs ChannelAccess and Dns, which the
  * composition root provides.
  */
 export const PlatformMetricsReaderLive = Layer.unwrap(
   Effect.gen(function* PlatformMetricsReaderLive() {
     const meta = yield* metaAppConfig;
+    const linkedinVersion = yield* linkedinVersionConfig;
     const pinterest = yield* pinterestHostsConfig;
 
     return platformMetricsReaderWith({
       blueskyAppView: new URL("https://public.api.bsky.app"),
+      linkedinApi: new URL("https://api.linkedin.com"),
+      linkedinVersion,
       mastodonScheme: "https:",
       metaAppSecret: meta.pipe(Option.map(({ appSecret }) => appSecret)),
       metaHosts,

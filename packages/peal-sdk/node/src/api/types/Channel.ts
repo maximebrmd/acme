@@ -4,7 +4,7 @@ import * as Peal from "../index.js";
 
 export interface Channel {
     avatarUrl: string | null;
-    connection: Peal.InstagramConnection | null;
+    connection: Peal.ChannelConnection | null;
     displayName: string | null;
     handle: string;
     id: string;

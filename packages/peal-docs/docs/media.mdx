@@ -11,12 +11,13 @@ A post can show images and videos from its workspace's media library, in the ord
 
 From a workspace's card, **Media library** holds the workspace's images and videos. Drop files there, or choose them; large videos go up in parts, and an upload can be cancelled or tried again. Give each file a description for people who cannot see it, of up to 2,000 characters.
 
-| Kind   | Formats               | Largest file |
-| ------ | --------------------- | ------------ |
-| Images | JPEG, PNG, GIF, WebP  | 16 MiB       |
-| Videos | MP4, QuickTime (.mov) | 1 GiB        |
+| Kind      | Formats               | Largest file |
+| --------- | --------------------- | ------------ |
+| Images    | JPEG, PNG, GIF, WebP  | 16 MiB       |
+| Videos    | MP4, QuickTime (.mov) | 1 GiB        |
+| Documents | PDF, up to 300 pages  | 100 MiB      |
 
-Peal reads each file once it is stored: an image's dimensions, a video's dimensions, duration and codec. An image whose content is not of the type it was uploaded as is refused, and deleted. Contributors and above upload; editors and above delete.
+Peal reads each file once it is stored: an image's dimensions, a video's dimensions, duration and codec, a PDF's number of pages. A PDF is a document, which only LinkedIn shows, page by page: Peal stores it and hands it over, and never opens it. One of more than 300 pages, the most LinkedIn takes, is not ready for posts; one whose pages cannot be counted, such as an encrypted file, is kept, and LinkedIn judges it. An image whose content is not of the type it was uploaded as is refused, and deleted. Contributors and above upload; editors and above delete.
 
 On an instance that bills, each plan holds a number of bytes of media ([Plans and billing](/billing#limits)), uploads in progress included: an upload the workspace has no room for is refused before anything is sent, and deleting media makes room.
 
@@ -58,7 +59,7 @@ The Mastodon limits are those of a Mastodon server as it comes. When the post go
 | Images and a video together   | No                                                             | No                                                         |
 | Alt text                      | On images, shown to people who need it, up to 4,086 characters | Shown to people who need it, up to 1,000 characters        |
 
-X lets some accounts post longer videos; Peal checks the length every account may post. A GIF with other files on X, and a video under 75 KB (75,000 bytes) on LinkedIn, are refused when the post is scheduled.
+X lets some accounts post longer videos; Peal checks the length every account may post. A GIF with other files on X, and a video under 75 KB (75,000 bytes) on LinkedIn, are refused when the post is scheduled. On LinkedIn, a post can show one PDF of up to 100 MiB instead, alone, without alt text, under the title its options give or its file's name; every other platform refuses a PDF when the post is scheduled.
 
 On Meta's platforms:
 

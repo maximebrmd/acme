@@ -12,7 +12,8 @@ import type { TikTokBlock, TikTokCreator } from "./tiktok-creator.ts";
  * `categoryId` takes, and the channel's playlists; a TikTok creator's
  * posting settings, whose audiences `privacyLevel` takes; a Pinterest
  * account's boards, whose ids `boardId` takes, and a board's sections,
- * for `boardSectionId`.
+ * for `boardSectionId`; the LinkedIn page of a vanity name, which
+ * `mentions` take.
  *
  * A lookup is a name, the platform it reads, the input it takes (a struct
  * of optional fields, described to clients from the schema itself, of which
@@ -26,6 +27,7 @@ export const LookupNameSchema = Schema.Literals([
   "tiktokCreator",
   "pinterestBoards",
   "pinterestBoardSections",
+  "linkedinOrganizations",
 ]);
 
 export type LookupName = typeof LookupNameSchema.Type;
@@ -93,6 +95,19 @@ export const PinterestBoardSectionsInputSchema = Schema.Struct({
 /** Reading a TikTok creator takes nothing. */
 export const TikTokCreatorInputSchema = Schema.Struct({});
 
+// The name in a page's address, `linkedin.com/company/<vanity name>`.
+const vanityName = /^[^\s/?#]{1,100}$/u;
+
+/**
+ * What finding a LinkedIn page takes: the name in its address, whole.
+ * LinkedIn's search by keywords is closed to all but a few apps.
+ */
+export const LinkedInOrganizationsInputSchema = Schema.Struct({
+  vanityName: Schema.optionalKey(
+    Schema.String.check(Schema.isPattern(vanityName))
+  ),
+});
+
 /**
  * A lookup's input as a client sent it, before the lookup's own schema
  * reads it: an object of JSON values.
@@ -144,6 +159,15 @@ export interface PinterestBoardSection {
   readonly name: string;
 }
 
+/** A LinkedIn page a post can name. */
+export interface LinkedInOrganization {
+  /** The page's name, which a mention's `name` takes, as it is. */
+  readonly name: string;
+  /** What a mention's `urn` takes. */
+  readonly urn: string;
+  readonly vanityName: Option.Option<string>;
+}
+
 /** A lookup to run, with its input decoded. */
 export type LookupQuery =
   | {
@@ -167,7 +191,8 @@ export type LookupQuery =
       readonly boardId: string;
       readonly cursor: Option.Option<string>;
       readonly limit: number;
-    };
+    }
+  | { readonly _tag: "linkedinOrganizations"; readonly vanityName: string };
 
 interface Page<Tag extends LookupName, Item> {
   readonly _tag: Tag;
@@ -182,7 +207,8 @@ export type LookupResult =
   | Page<"youtubePlaylists", YouTubePlaylist>
   | Page<"tiktokCreator", TikTokCreatorItem>
   | Page<"pinterestBoards", PinterestBoard>
-  | Page<"pinterestBoardSections", PinterestBoardSection>;
+  | Page<"pinterestBoardSections", PinterestBoardSection>
+  | Page<"linkedinOrganizations", LinkedInOrganization>;
 
 /** The result of the lookup named `Name`. */
 export type LookupResultOf<Name extends LookupName> = Extract<
@@ -243,8 +269,28 @@ const decodeCreator = Schema.decodeUnknownOption(
   Schema.Record(Schema.String, Schema.Never)
 );
 
+const decodeOrganizations = Schema.decodeUnknownOption(
+  LinkedInOrganizationsInputSchema,
+  { onExcessProperty: "error" }
+);
+
 /** Every lookup, by name. */
 export const lookups = {
+  linkedinOrganizations: {
+    input: LinkedInOrganizationsInputSchema,
+    notes: { vanityName: { pattern: vanityName.source } },
+    paged: false,
+    platform: "linkedin",
+    // Without a name, there is nothing to find.
+    query: (input) =>
+      decodeOrganizations(input).pipe(
+        Option.flatMap(({ vanityName: name }) => Option.fromUndefinedOr(name)),
+        Option.map((name) => ({
+          _tag: "linkedinOrganizations" as const,
+          vanityName: name,
+        }))
+      ),
+  },
   pinterestBoardSections: {
     input: PinterestBoardSectionsInputSchema,
     notes: {

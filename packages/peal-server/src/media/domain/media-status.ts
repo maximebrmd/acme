@@ -43,6 +43,8 @@ export const ProbeFailureReasonSchema = Schema.Literals([
   "tooLarge",
   // The probing program could not run, or printed nothing it understands.
   "toolFailed",
+  // A document of more pages than any platform shows (`maxDocumentPages`).
+  "tooManyPages",
 ]);
 
 export type ProbeFailureReason = typeof ProbeFailureReasonSchema.Type;

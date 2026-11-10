@@ -30,6 +30,9 @@ public record LookupInput
     [JsonPropertyName("regionCode")]
     public string? RegionCode { get; set; }
 
+    [JsonPropertyName("vanityName")]
+    public string? VanityName { get; set; }
+
     /// <inheritdoc />
     public override string ToString()
     {

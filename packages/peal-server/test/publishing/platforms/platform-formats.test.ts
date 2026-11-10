@@ -3,16 +3,16 @@ import { DateTime, Duration, Effect, Option, Schema, Stream } from "effect";
 import { Headers } from "effect/http";
 
 import { inParts } from "#publishing/infrastructure/platforms/byte-parts.ts";
-import {
-  defaultLinkedInVersion,
-  LinkedInVersionSchema,
-} from "#publishing/infrastructure/platforms/linkedin/linkedin-version.ts";
 import { littleTextOf } from "#publishing/infrastructure/platforms/linkedin/little-text.ts";
 import {
   isSamePost,
   isSameText,
 } from "#publishing/infrastructure/platforms/x/x-post-match.ts";
 import { xRetryAfter } from "#publishing/infrastructure/platforms/x/x-refusal.ts";
+import {
+  defaultLinkedInVersion,
+  LinkedInVersionSchema,
+} from "#shared/infrastructure/platforms/linkedin-version.ts";
 
 // What the LinkedIn and X adapters write and read besides their requests.
 
@@ -32,6 +32,26 @@ describe("LinkedIn's little text format", () => {
   it("leaves what is not a hashtag as escaped text", () => {
     expect(littleTextOf("C# and #2026 and a#b")).toBe(
       "C\\# and \\#2026 and a\\#b"
+    );
+  });
+
+  it("writes the pages the text names as mentions, their names escaped", () => {
+    const mentions = [
+      { name: "Example Bakery", urn: "urn:li:organization:2414183" },
+      { name: "Example (UK)", urn: "urn:li:organization:5515715" },
+    ];
+
+    expect(
+      littleTextOf(
+        "Thanks @Example Bakery & @Example (UK)! #launch @someone",
+        mentions
+      )
+    ).toBe(
+      "Thanks @[Example Bakery](urn:li:organization:2414183) & @[Example \\(UK\\)](urn:li:organization:5515715)! {hashtag|\\#|launch} \\@someone"
+    );
+    // Without its page among the mentions, a name is plain text.
+    expect(littleTextOf("Thanks @Example Bakery", [])).toBe(
+      "Thanks \\@Example Bakery"
     );
   });
 

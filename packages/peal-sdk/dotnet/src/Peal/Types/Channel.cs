@@ -15,7 +15,7 @@ public record Channel : IJsonOnDeserialized
     public string? AvatarUrl { get; set; }
 
     [JsonPropertyName("connection")]
-    public InstagramConnection? Connection { get; set; }
+    public ChannelConnection? Connection { get; set; }
 
     [JsonPropertyName("displayName")]
     public string? DisplayName { get; set; }

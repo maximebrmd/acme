@@ -1,7 +1,12 @@
 import { Match, Option, Schema } from "effect";
 import type { useTranslations } from "next-intl";
 import {
+  LinkedInMentionSchema,
   maxGoogleBusinessTitleLength,
+  maxLinkedInDocumentTitleLength,
+  maxLinkedInLinkDescriptionLength,
+  maxLinkedInLinkTitleLength,
+  maxLinkedInLinkUrlLength,
   maxPinterestLinkLength,
   maxPinterestTitleLength,
   maxYouTubeTitleLength,
@@ -10,6 +15,7 @@ import {
 import type {
   ChannelOptions,
   ContentViolation,
+  LinkedInMention,
   OptionsPlatform,
   Platform,
   Post,
@@ -120,11 +126,20 @@ export interface NumberField extends Described {
   readonly minimum: number;
 }
 
+/**
+ * The pages a LinkedIn post names, typed as `Name <urn>` and separated by
+ * semicolons: each is linked where the text holds `@` and the name.
+ */
+export interface MentionsField extends Described {
+  readonly kind: "mentions";
+}
+
 export type OptionField =
   | ChoiceField
   | LocalTimeField
   | LookupField
   | NumberField
+  | MentionsField
   | TagsField
   | TextField
   | ToggleField
@@ -232,6 +247,61 @@ export const optionFields = {
       label: "googleBusiness.terms",
       name: "terms",
       shownWith: offered,
+    },
+  ],
+  linkedin: [
+    {
+      choices: [
+        { label: "linkedin.visibilityPublic", value: "public" },
+        { label: "linkedin.visibilityConnections", value: "connections" },
+        { label: "linkedin.visibilityLoggedIn", value: "loggedIn" },
+      ],
+      hint: "linkedin.visibilityHint",
+      kind: "choice",
+      label: "linkedin.visibility",
+      name: "visibility",
+    },
+    {
+      initial: false,
+      kind: "toggle",
+      label: "linkedin.disableReshare",
+      name: "disableReshare",
+    },
+    {
+      hint: "linkedin.mentionsHint",
+      invalid: "linkedin.mentionsInvalid",
+      kind: "mentions",
+      label: "linkedin.mentions",
+      name: "mentions",
+    },
+    {
+      hint: "linkedin.linkUrlHint",
+      invalid: "linkedin.linkUrlInvalid",
+      kind: "text",
+      label: "linkedin.linkUrl",
+      maxLength: maxLinkedInLinkUrlLength,
+      name: "linkUrl",
+    },
+    {
+      hint: "linkedin.linkTitleHint",
+      kind: "text",
+      label: "linkedin.linkTitle",
+      maxLength: maxLinkedInLinkTitleLength,
+      name: "linkTitle",
+    },
+    {
+      kind: "text",
+      label: "linkedin.linkDescription",
+      maxLength: maxLinkedInLinkDescriptionLength,
+      name: "linkDescription",
+    },
+    {
+      hint: "linkedin.documentTitleHint",
+      invalid: "linkedin.documentTitleInvalid",
+      kind: "text",
+      label: "linkedin.documentTitle",
+      maxLength: maxLinkedInDocumentTitleLength,
+      name: "documentTitle",
     },
   ],
   pinterest: [
@@ -440,11 +510,14 @@ const entry = (
   value: boolean | string
 ): readonly [string, boolean | string] => [name, value];
 
+const MentionsSchema = Schema.Array(LinkedInMentionSchema);
+
 const StoredValueSchema = Schema.Union([
   Schema.String,
   Schema.Boolean,
   Schema.Number,
   Schema.Array(Schema.String),
+  MentionsSchema,
 ]);
 
 // An option's value as the API holds it.
@@ -464,7 +537,38 @@ const decodeNumber = Schema.decodeUnknownOption(Schema.Number);
 
 const wholeNumber = /^\d+$/u;
 
+const decodeMentions = Schema.decodeUnknownOption(MentionsSchema);
+
 const tagSeparator = ", ";
+
+const mentionSeparator = "; ";
+
+// A mention as typed: the page's name, then its URN between angle
+// brackets.
+const typedMention = /^(?<name>.+?)\s*<(?<urn>[^<>\s]+)>$/u;
+
+/** The mentions as the field shows them: `Name <urn>; Name <urn>`. */
+export const mentionsText = (mentions: readonly LinkedInMention[]): string =>
+  mentions.map(({ name, urn }) => `${name} <${urn}>`).join(mentionSeparator);
+
+/**
+ * The mentions typed in the field. An entry without a URN between angle
+ * brackets is kept with an empty one, so scheduling says the field is
+ * wrong rather than dropping what was typed.
+ */
+export const mentionsOf = (typed: string): readonly LinkedInMention[] =>
+  typed
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => part !== "")
+    .map((part) => {
+      const groups = typedMention.exec(part)?.groups;
+
+      return {
+        name: (groups?.["name"] ?? part).trim(),
+        urn: groups?.["urn"] ?? "",
+      };
+    });
 
 // The value a stored option shows in its field.
 const valueOf = (
@@ -476,6 +580,7 @@ const valueOf = (
       choice: () => decodeText(stored),
       localTime: () => decodeText(stored),
       lookup: () => decodeText(stored),
+      mentions: () => decodeMentions(stored).pipe(Option.map(mentionsText)),
       number: () => decodeNumber(stored).pipe(Option.map(String)),
       tags: () =>
         decodeTags(stored).pipe(Option.map((tags) => tags.join(tagSeparator))),
@@ -618,7 +723,9 @@ const tagsOf = (typed: string): readonly string[] =>
 const optionOf = (
   field: OptionField,
   value: boolean | string | undefined
-): Option.Option<boolean | number | string | readonly string[]> => {
+): Option.Option<
+  boolean | number | string | readonly LinkedInMention[] | readonly string[]
+> => {
   if (value === undefined || value === "") {
     return Option.none();
   }
@@ -630,6 +737,13 @@ const optionOf = (
       Option.filter((typed) => wholeNumber.test(typed)),
       Option.map(Number),
       Option.filter((number) => Number.isSafeInteger(number))
+    );
+  }
+
+  if (field.kind === "mentions") {
+    return decodeText(value).pipe(
+      Option.map(mentionsOf),
+      Option.filter((mentions) => mentions.length > 0)
     );
   }
 

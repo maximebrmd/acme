@@ -66,6 +66,17 @@ const creator = new TikTokCreator({
 });
 
 const answers = {
+  linkedinOrganizations: {
+    _tag: "linkedinOrganizations",
+    items: [
+      {
+        name: "Example Bakery",
+        urn: "urn:li:organization:2414183",
+        vanityName: Option.some("example-bakery"),
+      },
+    ],
+    nextCursor: Option.none(),
+  },
   pinterestBoardSections: {
     _tag: "pinterestBoardSections",
     items: [{ id: "5000000000001", name: "Salads" }],

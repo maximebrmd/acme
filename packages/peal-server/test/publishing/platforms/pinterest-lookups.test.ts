@@ -44,6 +44,7 @@ const onPinterest = Effect.fn("test.lookupsOnPinterest")(function* onPinterest(
 
   const lookups = yield* Layer.build(
     platformLookupsWith({
+      linkedinApi: new URL(pinterest.url),
       pinterestApi: new URL(pinterest.url),
       youtubeApi: new URL(pinterest.url),
     }).pipe(

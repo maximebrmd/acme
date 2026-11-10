@@ -14,12 +14,25 @@ import type { PlatformAnswer, PlatformRequest } from "./platform-server.ts";
 /** The synthetic member the channel posts as: their OpenID subject. */
 export const linkedinMemberId = "aB3dE5fG7h";
 
+/** The synthetic page a channel posts as, and its URN. */
+export const linkedinPageId = 2_414_183;
+export const linkedinPageUrn = `urn:li:organization:${linkedinPageId}`;
+
+/** A page anyone may look up by the name in its address. */
+export const linkedinOtherPage = {
+  id: 5_515_715,
+  localizedName: "Example Bikes (UK)",
+  vanityName: "example-bikes",
+} as const;
+
 /** The API version the fake serves, as Peal pins it. */
 export const linkedinTestVersion = "202610";
 
 /** A post LinkedIn published. */
 export interface FakeLinkedInPost {
   readonly body: typeof PostBodySchema.Type;
+  /** When LinkedIn made it, in milliseconds. */
+  readonly createdAt: number;
   readonly urn: string;
 }
 
@@ -41,6 +54,18 @@ export type LinkedInScript =
   | { readonly _tag: "publishThenDrop" };
 
 export interface FakeLinkedInOptions {
+  /**
+   * How LinkedIn answers a page's commentary when read back: as it was
+   * sent by default.
+   */
+  readonly commentaryRead?: (sent: string) => string;
+  /** Whether a document's processing fails. */
+  readonly documentFails?: boolean;
+  /**
+   * Whether the token is the pages app's: it posts as the synthetic page,
+   * reads its posts back and looks pages up. A member's does none of it.
+   */
+  readonly page?: boolean;
   /** The size of each part LinkedIn asks a video in; 4 MiB as LinkedIn does. */
   readonly partSize?: number;
   /** Where the upload URLs point; the fake itself by default. */
@@ -56,6 +81,14 @@ export interface FakeLinkedInOptions {
 const MediaContentSchema = Schema.Struct({
   altText: Schema.optionalKey(Schema.String),
   id: Schema.String,
+  title: Schema.optionalKey(Schema.String),
+});
+
+const ArticleContentSchema = Schema.Struct({
+  description: Schema.optionalKey(Schema.String),
+  source: Schema.String,
+  thumbnail: Schema.optionalKey(Schema.String),
+  title: Schema.String,
 });
 
 const PostBodySchema = Schema.Struct({
@@ -63,6 +96,7 @@ const PostBodySchema = Schema.Struct({
   commentary: Schema.String,
   content: Schema.optionalKey(
     Schema.Struct({
+      article: Schema.optionalKey(ArticleContentSchema),
       media: Schema.optionalKey(MediaContentSchema),
       multiImage: Schema.optionalKey(
         Schema.Struct({ images: Schema.Array(MediaContentSchema) })
@@ -72,7 +106,7 @@ const PostBodySchema = Schema.Struct({
   distribution: Schema.Struct({ feedDistribution: Schema.String }),
   isReshareDisabledByAuthor: Schema.Boolean,
   lifecycleState: Schema.Literal("PUBLISHED"),
-  visibility: Schema.Literal("PUBLIC"),
+  visibility: Schema.Literals(["PUBLIC", "CONNECTIONS", "LOGGED_IN"]),
 });
 
 const postBodyOf = jsonBodyOf(PostBodySchema);
@@ -133,6 +167,14 @@ const routeOf = (request: PlatformRequest): Route => {
     ],
     ["PUT /dms-uploads/image/:urn", /^\/dms-uploads\/image\/(?<urn>.+)$/u],
     ["GET /rest/videos/:urn", /^\/rest\/videos\/(?<urn>urn:li:video:.+)$/u],
+    [
+      "PUT /dms-uploads/document/:urn",
+      /^\/dms-uploads\/document\/(?<urn>.+)$/u,
+    ],
+    [
+      "GET /rest/documents/:urn",
+      /^\/rest\/documents\/(?<urn>urn:li:document:.+)$/u,
+    ],
   ] as const;
 
   for (const [route, pattern] of patterns) {
@@ -145,6 +187,13 @@ const routeOf = (request: PlatformRequest): Route => {
 
   return { groups: {}, route: `${request.method} ${request.path}` };
 };
+
+interface Document {
+  bytes: number;
+  polls: number;
+  status: "AVAILABLE" | "PROCESSING" | "PROCESSING_FAILED" | "WAITING_UPLOAD";
+  readonly urn: string;
+}
 
 interface Video {
   readonly etags: string[];
@@ -167,6 +216,12 @@ export const fakeLinkedInApi = Effect.fnUntraced(function* fakeLinkedInApi(
 ) {
   const validTokens = new Set(["linkedin-token-1"]);
   const images = new Map<string, FakeLinkedInMedia>();
+  const documents = new Map<string, Document>();
+  const page = options.page === true;
+
+  // Who the token posts as: the page, for the pages app's, or the member.
+  const author = page ? linkedinPageUrn : `urn:li:person:${linkedinMemberId}`;
+
   const videos = new Map<string, Video>();
   const posts: FakeLinkedInPost[] = [];
   const scripts = scripted<LinkedInScript>();
@@ -197,8 +252,24 @@ export const fakeLinkedInApi = Effect.fnUntraced(function* fakeLinkedInApi(
       return { refused: error(422, "MEDIA_ASSET_WAITING_UPLOAD") };
     }
 
+    if (body.author !== author) {
+      return { refused: error(403, "ACCESS_DENIED") };
+    }
+
+    const document = media === undefined ? undefined : documents.get(media.id);
+
+    // A document shows under a title, once processed.
+    if (document !== undefined && (media?.title ?? "") === "") {
+      return { refused: error(400, "MISSING_FIELD") };
+    }
+
+    if (document !== undefined && document.status !== "AVAILABLE") {
+      return { refused: error(422, "MEDIA_ASSET_WAITING_UPLOAD") };
+    }
+
     const post: FakeLinkedInPost = {
       body,
+      createdAt: Date.now(),
       urn: `urn:li:share:72000000000000${String(posts.length + 1).padStart(5, "0")}`,
     };
 
@@ -222,7 +293,7 @@ export const fakeLinkedInApi = Effect.fnUntraced(function* fakeLinkedInApi(
   const initializeImage = (request: PlatformRequest) => {
     const { owner } = imageInitOf(request).initializeUploadRequest;
 
-    if (owner !== `urn:li:person:${linkedinMemberId}`) {
+    if (owner !== author) {
       return error(403, "ACCESS_DENIED");
     }
 
@@ -324,6 +395,109 @@ export const fakeLinkedInApi = Effect.fnUntraced(function* fakeLinkedInApi(
       : json({ id: urn, status: found.status });
   };
 
+  const initializeDocument = (request: PlatformRequest) => {
+    const { owner } = imageInitOf(request).initializeUploadRequest;
+
+    if (owner !== author) {
+      return error(403, "DOCUMENT_FORBIDDEN");
+    }
+
+    const urn = `urn:li:document:D5510AQ${documents.size + 1}`;
+
+    documents.set(urn, {
+      bytes: 0,
+      polls: 1,
+      status: "WAITING_UPLOAD",
+      urn,
+    });
+
+    return json({
+      value: {
+        document: urn,
+        uploadUrl: `${uploadOrigin}/dms-uploads/document/${encodeURIComponent(urn)}`,
+        uploadUrlExpiresAt: 1_781_000_000_000,
+      },
+    });
+  };
+
+  const uploadDocument = (request: PlatformRequest, urn: string) => {
+    const found = documents.get(urn);
+
+    if (found === undefined || !validTokens.has(tokenOf(request))) {
+      return error(404, "NOT_FOUND");
+    }
+
+    found.bytes = request.body.length;
+    found.status = "PROCESSING";
+
+    return empty(201);
+  };
+
+  // A member's token writes documents, and may not read them back.
+  const lookAtDocument = (urn: string) => {
+    const found = documents.get(urn);
+
+    if (found === undefined) {
+      return error(404, "NOT_FOUND");
+    }
+
+    if (found.status === "PROCESSING" && found.polls > 0) {
+      found.polls -= 1;
+    } else if (found.status === "PROCESSING") {
+      found.status =
+        options.documentFails === true ? "PROCESSING_FAILED" : "AVAILABLE";
+    }
+
+    return page
+      ? json({ id: urn, owner: author, status: found.status })
+      : error(403, "DOCUMENT_FORBIDDEN");
+  };
+
+  // The author's posts, newest first, as the finder answers them: only
+  // for a token that may read them (`r_organization_social`).
+  const findPosts = (request: PlatformRequest) => {
+    if (!page || headerOf(request, "x-restli-method") !== "FINDER") {
+      return error(403, "ACCESS_DENIED");
+    }
+
+    const asked = request.query.get("author");
+    const count = Number(request.query.get("count") ?? "10");
+
+    return json({
+      elements: posts
+        .filter(({ body }) => body.author === asked)
+        .toReversed()
+        .slice(0, count)
+        .map(({ body, createdAt, urn }) => ({
+          author: body.author,
+          commentary: (options.commentaryRead ?? ((sent) => sent))(
+            body.commentary
+          ),
+          createdAt,
+          id: urn,
+          lifecycleState: "PUBLISHED",
+          publishedAt: createdAt,
+          visibility: body.visibility,
+        })),
+      paging: { count, links: [], start: 0 },
+    });
+  };
+
+  // The page of a vanity name, with the fields anyone may read.
+  const findOrganizations = (request: PlatformRequest) => {
+    if (!page) {
+      return error(403, "ACCESS_DENIED");
+    }
+
+    return json({
+      elements:
+        request.query.get("vanityName") === linkedinOtherPage.vanityName
+          ? [{ ...linkedinOtherPage, primaryOrganizationType: "NONE" }]
+          : [],
+      paging: { count: 10, links: [], start: 0 },
+    });
+  };
+
   const uploadPart = (request: PlatformRequest, id: string, part: number) => {
     const video = videos.get(`urn:li:video:D5E10AQ${id}`);
 
@@ -385,6 +559,22 @@ export const fakeLinkedInApi = Effect.fnUntraced(function* fakeLinkedInApi(
         return answerPost(request, script);
       }
 
+      case "GET /rest/posts": {
+        return findPosts(request);
+      }
+
+      case "GET /rest/organizations": {
+        return findOrganizations(request);
+      }
+
+      case "POST /rest/documents?action=initializeUpload": {
+        return initializeDocument(request);
+      }
+
+      case "GET /rest/documents/:urn": {
+        return lookAtDocument(groups["urn"] ?? "");
+      }
+
       default: {
         return error(404, "NOT_FOUND");
       }
@@ -403,6 +593,10 @@ export const fakeLinkedInApi = Effect.fnUntraced(function* fakeLinkedInApi(
       return uploadPart(request, groups["id"] ?? "", Number(groups["part"]));
     }
 
+    if (route === "PUT /dms-uploads/document/:urn") {
+      return uploadDocument(request, groups["urn"] ?? "");
+    }
+
     return route === "PUT /dms-uploads/image/:urn"
       ? uploadImage(request, groups["urn"] ?? "")
       : rest(request, route, groups, script);
@@ -414,6 +608,8 @@ export const fakeLinkedInApi = Effect.fnUntraced(function* fakeLinkedInApi(
 
   return {
     ...server,
+    /** The documents taken, in order. */
+    documents: () => [...documents.values()].map((found) => ({ ...found })),
     /** The images taken, in order. */
     images: () => [...images.values()],
     /** The posts published, in order. */

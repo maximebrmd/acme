@@ -376,8 +376,21 @@ export const mediaViolationsOn = (
 ): readonly ContentViolation[] => {
   const rules = platformRules[channel.platform].media;
 
+  // A platform whose media rules are not known may take images and videos
+  // Peal cannot check; a document goes only where the rules say so.
   if (rules === undefined) {
-    return [];
+    return files.flatMap((file) =>
+      file.kind === "document"
+        ? [
+            {
+              _tag: "mediaTypeUnsupported" as const,
+              ...channel,
+              contentType: file.contentType,
+              mediaId: file.mediaId,
+            },
+          ]
+        : []
+    );
   }
 
   const altTexts = new Map(

@@ -78,6 +78,7 @@ Certaines options prennent des valeurs que seul le compte connaît. Une recherch
 | `youtubeVideoCategories` | YouTube    | `regionCode` (deux lettres capitales, `US` si omis), `language` | Les catégories où une vidéo peut être classée dans ce pays : `id`, que prend l’option `categoryId`, et `title`         |
 | `youtubePlaylists`       | YouTube    | `limit` (25 si omis, 50 au plus), `cursor`                      | Les playlists de la chaîne : `id`, `title` et `privacy`                                                                |
 | `tiktokCreator`          | TikTok     | aucune                                                          | Un seul élément : les réglages de publication du créateur, dont l’option `privacyLevel` prend l’un des `privacyLevels` |
+| `linkedinOrganizations`  | LinkedIn (canaux de page d’entreprise) | `vanityName`, le nom figurant dans l’adresse de la page         | La page de ce nom, s’il y en a une : `name` et `urn`, que prend une entrée de l’option `mentions`, et `vanityName`     |
 | `pinterestBoards`        | Pinterest  | `limit` (25 si omis, 50 au plus), `cursor`                      | Les tableaux du compte : `id`, que prend l’option `boardId`, `name` et `privacy`                                       |
 | `pinterestBoardSections` | Pinterest  | `boardId` (obligatoire), `limit`, `cursor`                      | Les sections de ce tableau : `id`, que prend l’option `boardSectionId`, et `name`                                      |
 

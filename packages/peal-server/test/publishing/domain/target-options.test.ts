@@ -67,8 +67,9 @@ const on = (target: ChannelOnPlatform, options: TargetOptions) =>
   new ChannelOptions({ channelId: target.channelId, options });
 
 describe("the platforms that take options", () => {
-  it("are TikTok, YouTube, Pinterest and Google Business Profile", () => {
+  it("are LinkedIn, TikTok, YouTube, Pinterest and Google Business Profile", () => {
     expect(optionsPlatforms).toStrictEqual([
+      "linkedin",
       "tiktok",
       "youtube",
       "pinterest",

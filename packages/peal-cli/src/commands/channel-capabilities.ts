@@ -170,6 +170,7 @@ const inputFlags: Readonly<Record<keyof LookupInput, string>> = {
   language: "--language",
   limit: "--limit",
   regionCode: "--region",
+  vanityName: "--vanity-name",
 };
 
 const isInput = (name: string): name is keyof LookupInput => name in inputFlags;
@@ -355,6 +356,16 @@ const resultLines = (
   creatorLines: CreatorLines
 ): readonly string[] =>
   Match.valueTags(result, {
+    linkedinOrganizations: ({ items }) =>
+      items.length === 0
+        ? ["LinkedIn has no page of that name."]
+        : columns(
+            items.map(({ name, urn, vanityName }) => [
+              urn,
+              name,
+              vanityName ?? "",
+            ])
+          ),
     pinterestBoardSections: ({ items }) =>
       items.length === 0
         ? ["The board has no sections on this page."]
@@ -423,6 +434,13 @@ export const lookupWith = (creatorLines: CreatorLines) =>
         ),
         Flag.optional
       ),
+      vanityName: Flag.String("vanity-name").pipe(
+        Flag.withMetavar("<name>"),
+        Flag.withDescription(
+          "The name in a LinkedIn page's address, linkedin.com/company/<name>, to find the page a post mentions."
+        ),
+        Flag.optional
+      ),
       workspace: workspaceFlag,
     },
     Effect.fn("channels.lookup")(function* lookup(given) {
@@ -479,6 +497,10 @@ export const lookupWith = (creatorLines: CreatorLines) =>
         ...Option.match(given.region, {
           onNone: () => ({}),
           onSome: (regionCode) => ({ regionCode }),
+        }),
+        ...Option.match(given.vanityName, {
+          onNone: () => ({}),
+          onSome: (vanityName) => ({ vanityName }),
         }),
       };
 

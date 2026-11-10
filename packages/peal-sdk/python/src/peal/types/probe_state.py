@@ -3,5 +3,6 @@
 import typing
 
 ProbeState = typing.Union[
-    typing.Literal["pending", "unavailable", "unreadable", "timedOut", "tooLarge", "toolFailed"], typing.Any
+    typing.Literal["pending", "unavailable", "unreadable", "timedOut", "tooLarge", "toolFailed", "tooManyPages"],
+    typing.Any,
 ]

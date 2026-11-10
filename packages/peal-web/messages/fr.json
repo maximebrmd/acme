@@ -55,7 +55,9 @@
       "stopped": "Plus relevée : les publications sont suivies pendant 30 jours.",
       "tableCaption": "Chiffres de la publication sur {handle}, à chaque relevé",
       "readAtColumn": "Relevé",
-      "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Peal ne les relève pour l’instant que sur {counted}."
+      "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Peal ne les relève pour l’instant que sur {counted}.",
+      "countedName": "{platform, select, linkedin {les pages LinkedIn} other {{name}}}",
+      "uncountedName": "{platform, select, linkedin {les profils LinkedIn} other {{name}}}"
     }
   },
   "Assistant": {
@@ -244,7 +246,7 @@
     "empty": "Aucun compte n’est encore connecté.",
     "listTitle": "Comptes connectés",
     "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
-    "platformVia": "{platform, select, instagram {Instagram} other {{platform}}} ({connection, select, instagramLogin {connexion Instagram} facebookLogin {via une Page Facebook} other {{connection}}})",
+    "platformVia": "{platform, select, instagram {Instagram} linkedin {LinkedIn} other {{platform}}} ({connection, select, instagramLogin {connexion Instagram} facebookLogin {via une Page Facebook} linkedinProfile {profil} linkedinPage {page d’entreprise} other {{connection}}})",
     "status": {
       "active": "Connecté",
       "refreshNeeded": "À reconnecter",
@@ -289,7 +291,7 @@
       "forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
       "notFound": "Ce canal n’est plus connecté.",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne ; sur Google Business Profile, il ne gère aucun établissement validé."
+      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne ; sur Google Business Profile, il ne gère aucun établissement validé ; sur LinkedIn, vous n’êtes administrateur ou administrateur de contenu d’aucune page."
     }
   },
   "PlatformConnect": {
@@ -341,8 +343,8 @@
     "description": "{platform, select, facebook {Connectez-vous avec Facebook, puis choisissez les Pages où cet espace de travail publie.} instagram {Comptes professionnels liés à une Page Facebook : connectez-vous avec Facebook, puis choisissez les comptes.} threads {Connectez-vous avec votre compte Threads.} other {Connectez-vous sur la plateforme.}}",
     "connect": "{platform, select, facebook {Connecter des Pages Facebook} instagram {Connecter Instagram} threads {Connecter Threads} other {Connecter}}",
     "connecting": "Ouverture…",
-    "chooseTitle": "{platform, select, facebook {Les Pages à connecter} instagram {Les comptes Instagram à connecter} googleBusiness {Les établissements à connecter} other {Les comptes à connecter}}",
-    "chooseDescription": "{platform, select, facebook {Votre connexion a atteint ces Pages.} instagram {Votre connexion a atteint ces comptes Instagram.} googleBusiness {Votre connexion a atteint ces établissements validés.} other {Votre connexion a atteint ces comptes.}} Choisissez ceux où cet espace de travail publie, dans le quart d’heure.",
+    "chooseTitle": "{platform, select, facebook {Les Pages à connecter} instagram {Les comptes Instagram à connecter} googleBusiness {Les établissements à connecter} linkedin {Les pages LinkedIn à connecter} other {Les comptes à connecter}}",
+    "chooseDescription": "{platform, select, facebook {Votre connexion a atteint ces Pages.} instagram {Votre connexion a atteint ces comptes Instagram.} googleBusiness {Votre connexion a atteint ces établissements validés.} linkedin {Vous administrez ces pages LinkedIn.} other {Votre connexion a atteint ces comptes.}} Choisissez ceux où cet espace de travail publie, dans le quart d’heure.",
     "alreadyConnected": "Connecté : le choisir le reconnecte",
     "connectChosen": "{count, plural, =0 {Connecter} one {Connecter # compte} other {Connecter # comptes}}",
     "connectingChosen": "Connexion…",
@@ -355,6 +357,12 @@
     "title": "Instagram",
     "description": "{connection, select, instagramLogin {Connectez-vous à votre compte professionnel (Entreprise ou Créateur) sur Instagram : aucune Page Facebook n’est nécessaire. Peal renouvelle son accès tous les 60 jours, sans vous.} facebookLogin {Ou, pour les comptes gérés depuis une Page Facebook : connectez-vous avec Facebook, puis choisissez les comptes liés à vos Pages.} other {Connectez-vous sur Instagram.}}",
     "connect": "{connection, select, instagramLogin {Se connecter avec Instagram} facebookLogin {Passer par une Page Facebook} other {Connecter Instagram}}",
+    "connecting": "Ouverture…"
+  },
+  "LinkedInChannels": {
+    "title": "LinkedIn",
+    "description": "{connection, select, linkedinProfile {Votre propre profil. LinkedIn vous demande de vous reconnecter tous les 60 jours : Peal vous le rappelle une semaine avant.} linkedinPage {Les pages d’entreprise que vous administrez : connectez-vous, puis choisissez les pages. Vous devez être administrateur ou administrateur de contenu d’une page pour y publier.} other {Connectez-vous sur LinkedIn.}}",
+    "connect": "{connection, select, linkedinProfile {Connecter votre profil} linkedinPage {Connecter des pages d’entreprise} other {Connecter LinkedIn}}",
     "connecting": "Ouverture…"
   },
   "DataDeletionPage": {
@@ -488,6 +496,26 @@
       "tooLong": "{length} sur {maximum} caractères.",
       "invalid": "Une valeur que la plateforme refuse.",
       "unknownField": "une option",
+      "linkedin": {
+        "visibility": "Qui peut voir cette publication",
+        "visibilityHint": "Tout le monde, sauf choix contraire. « Relations uniquement » vaut pour un profil : une page n’en a pas.",
+        "visibilityPublic": "Tout le monde",
+        "visibilityConnections": "Relations uniquement",
+        "visibilityLoggedIn": "Membres LinkedIn connectés",
+        "disableReshare": "Empêcher les autres de republier cette publication",
+        "mentions": "Pages à mentionner",
+        "mentionsHint": "Écrivez @ puis le nom complet de la page dans le texte, exactement comme LinkedIn l’affiche, et indiquez la page ici sous la forme Nom <urn:li:organization:numéro>, plusieurs séparées par des points-virgules. Un canal de page d’entreprise trouve le numéro d’une page à partir du nom figurant dans son adresse (recherche linkedinOrganizations). Les personnes ne peuvent pas être mentionnées.",
+        "mentionsInvalid": "Chaque mention comporte le nom d’une page et son URN, sous la forme Nom <urn:li:organization:numéro>, et un nom n’apparaît qu’une fois.",
+        "linkUrl": "Lien à afficher sous forme de carte",
+        "linkUrlHint": "Une adresse commençant par https://. LinkedIn ne lit pas la page : donnez son titre à la carte ci-dessous. Une image jointe devient l’image de la carte ; un lien ne peut pas accompagner une vidéo, un document ou plusieurs images.",
+        "linkUrlInvalid": "Un lien est une adresse web commençant par https:// ou http://.",
+        "linkTitle": "Titre du lien",
+        "linkTitleHint": "Nécessaire avec un lien.",
+        "linkDescription": "Description du lien",
+        "documentTitle": "Titre du document",
+        "documentTitleHint": "Affiché au-dessus d’un PDF joint à la publication. Le nom du fichier si le champ reste vide.",
+        "documentTitleInvalid": "Un titre ne peut pas se composer uniquement d’espaces."
+      },
       "lookupLoading": "Lecture de la liste sur la plateforme…",
       "lookupFailed": "{reason, select, reconnect {Reconnectez ce compte pour lire sa liste.} disabled {Ce canal est désactivé : déconnectez-le et connectez à nouveau le compte pour y publier.} rateLimited {La plateforme demande de ralentir. Réessayez dans un instant.} other {La liste n’a pas pu être lue sur la plateforme. Réessayez dans un instant.}}",
       "lookupRetry": "Réessayer",
@@ -697,7 +725,7 @@
       "description": "Les images et les vidéos vont directement dans le stockage. Décrivez chacune pour les personnes qui ne peuvent pas la voir.",
       "dropzone": "Déposez des images ou des vidéos ici, ou cliquez pour les choisir.",
       "choose": "Choisir des images ou des vidéos à importer",
-      "accepted": "Images JPEG, PNG, GIF et WebP jusqu’à 16 Mo, vidéos MP4 et QuickTime jusqu’à 1 Go.",
+      "accepted": "Images JPEG, PNG, GIF et WebP jusqu’à 16 Mo, vidéos MP4 et QuickTime jusqu’à 1 Go, documents PDF jusqu’à 100 Mo et 300 pages (pour LinkedIn).",
       "dropping": "Déposez pour importer",
       "uploads": "Imports",
       "phase": {
@@ -721,7 +749,7 @@
       "remove": "Retirer",
       "removeLabel": "Retirer {name} de la liste",
       "errors": {
-        "unsupportedType": "Peal ne prend pas ce type de fichier. Importez une image JPEG, PNG, GIF ou WebP, ou une vidéo MP4 ou QuickTime.",
+        "unsupportedType": "Peal ne prend pas ce type de fichier. Importez une image JPEG, PNG, GIF ou WebP, une vidéo MP4 ou QuickTime, ou un document PDF.",
         "tooLarge": "Ce fichier dépasse les {limit, number} Mo que Peal accepte pour ce type de média.",
         "storageFull": "L’abonnement de l’espace de travail n’a plus de place pour ce fichier : il permet {limit} Mo de médias. Supprimez des médias, ou demandez à un propriétaire ou un administrateur de passer à un abonnement supérieur.",
         "altTextTooLong": "La description dépasse {limit, number} caractères.",
@@ -750,7 +778,8 @@
       "unreadable": "Importé, mais le fichier n’a pas pu être lu : il est peut-être endommagé.",
       "timedOut": "Importé, mais la lecture du fichier a pris trop de temps.",
       "tooLarge": "Importé, mais le fichier stocké est plus gros que déclaré.",
-      "toolFailed": "Importé, mais le serveur n’a pas réussi à le lire."
+      "toolFailed": "Importé, mais le serveur n’a pas réussi à le lire.",
+      "tooManyPages": "Importé, mais le document compte plus de 300 pages, plus que LinkedIn n’en affiche."
     },
     "rejected": {
       "sizeMismatch": "Le fichier n’avait pas la taille déclarée, et a été supprimé.",
@@ -763,14 +792,15 @@
       "loadFailed": "Les médias n’ont pas pu être chargés.",
       "reload": "Réessayer",
       "loadMore": "Afficher plus",
-      "kind": "{kind, select, image {Image} other {Vidéo}}",
+      "kind": "{kind, select, image {Image} document {Document PDF} other {Vidéo}}",
+      "pages": "{count, plural, one {# page} other {# pages}}",
       "dimensions": "{width} × {height}",
       "duration": "{seconds, number} s",
       "noAltText": "Aucune description",
       "added": "Ajouté le {date, date, medium}",
       "delete": "Supprimer",
-      "deleteLabel": "Supprimer {kind, select, image {cette image} other {cette vidéo}}",
-      "deleteTitle": "Supprimer {kind, select, image {cette image} other {cette vidéo}} ?",
+      "deleteLabel": "Supprimer {kind, select, image {cette image} document {ce document} other {cette vidéo}}",
+      "deleteTitle": "Supprimer {kind, select, image {cette image} document {ce document} other {cette vidéo}} ?",
       "deleteDescription": "Son fichier est supprimé du stockage, et le média ne peut plus aller dans des publications. Les publications déjà parues le gardent sur leurs plateformes. Cette action est définitive.",
       "usageLoading": "Recherche des publications qui l’utilisent…",
       "usageFailed": "Peal n’a pas pu vérifier quelles publications l’utilisent. Réessayez.",
@@ -788,18 +818,18 @@
   "PostMedia": {
     "count": "{count, plural, =0 {Aucune image ni vidéo pour l’instant} one {# image ou vidéo} other {# images ou vidéos}}, {maximum} au plus.",
     "list": "Images et vidéos, dans l’ordre où la publication les montre",
-    "item": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}}",
+    "item": "{kind, select, image {Image {position}} video {Vidéo {position}} document {Document {position}} other {Média {position}}}",
     "loading": "Chargement…",
     "loadFailed": "Cette image ou vidéo n’a pas pu être chargée.",
     "altTextLabel": "Texte alternatif de {kind, select, image {l’image {position}} video {la vidéo {position}} other {le média {position}}}",
     "altTextHint": "Décrivez ce qu’elle montre pour les personnes qui ne peuvent pas la voir.",
     "altTextMissing": "Pas encore de texte alternatif : {platforms} le {count, plural, one {montre} other {montrent}} aux personnes qui ne peuvent pas voir {kind, select, video {la vidéo} other {l’image}}.",
     "altTextEncouraged": "Pas encore de texte alternatif. Écrivez-en un pour que tout le monde puisse suivre la publication.",
-    "moveEarlier": "Avancer {kind, select, image {l’image {position}} video {la vidéo {position}} other {le média {position}}}",
-    "moveLater": "Reculer {kind, select, image {l’image {position}} video {la vidéo {position}} other {le média {position}}}",
-    "remove": "Retirer {kind, select, image {l’image {position}} video {la vidéo {position}} other {le média {position}}} de la publication",
-    "moved": "{kind, select, image {Image déplacée} video {Vidéo déplacée} other {Média déplacé}} en position {position} sur {count}.",
-    "removed": "{kind, select, image {Image retirée} video {Vidéo retirée} other {Média retiré}} de la publication.",
+    "moveEarlier": "Avancer {kind, select, image {l’image {position}} video {la vidéo {position}} document {le document {position}} other {le média {position}}}",
+    "moveLater": "Reculer {kind, select, image {l’image {position}} video {la vidéo {position}} document {le document {position}} other {le média {position}}}",
+    "remove": "Retirer {kind, select, image {l’image {position}} video {la vidéo {position}} document {le document {position}} other {le média {position}}} de la publication",
+    "moved": "{kind, select, image {Image déplacée} video {Vidéo déplacée} document {Document déplacé} other {Média déplacé}} en position {position} sur {count}.",
+    "removed": "{kind, select, image {Image retirée} video {Vidéo retirée} document {Document retiré} other {Média retiré}} de la publication.",
     "attached": "{count, plural, one {# image ou vidéo ajoutée.} other {# images ou vidéos ajoutées.}}",
     "full": "Une publication montre {maximum} images ou vidéos au plus : {count, plural, one {# n’a pas été ajoutée.} other {# n’ont pas été ajoutées.}}",
     "notReady": "Le fichier a été envoyé, mais il ne peut pas aller dans une publication avant d’être traité.",

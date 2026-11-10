@@ -618,6 +618,27 @@ and no socket, for tests.
   through the one registry; the web app's connect forms offer only those.
   Map a platform's own denial codes (LinkedIn's `user_cancelled_*`) to
   `AuthorizationDenied` in `connect-channel.ts`.
+- A channel names the way in it came through on the platforms that have
+  several (`ChannelConnectionSchema`, `#shared/domain/channel-connection.ts`:
+  Instagram's two logins, LinkedIn's `linkedinProfile` and `linkedinPage`);
+  one stored without any came the first way there was (`connectionOf`).
+  The registry answers the authorizer of a platform and connection, and
+  `linkedinConnections` beside `instagramConnections`.
+- LinkedIn has two apps, as LinkedIn grants its Community Management API
+  only to an app with no other product: `LINKEDIN_CLIENT_ID` connects
+  members' profiles (OpenID Connect and `w_member_social`), and
+  `LINKEDIN_PAGES_CLIENT_ID`/`_SECRET` company pages
+  (`linkedin-pages-authorizer.ts`: `w_organization_social`,
+  `r_organization_social`, `rw_organization_admin`, nothing of the member's
+  profile). Both redirect to `/connect/linkedin/callback`; the attempt's
+  connection picks the authorizer. The pages sign-in lists the member's
+  approved roles (`organizationAcls`) and answers an `AccountChoice` of
+  the pages they administer or write content for (`postingRoles`), each
+  with the member's token and `urn:li:organization:<id>` as its account
+  id, which no profile's can equal. A page's token is renewed only when
+  LinkedIn gave a refresh token (approved partners): `tokenPolicies.linkedinPage`.
+  Use finders, never batch reads (`ids=List(…)` on a collection): the
+  Development tier refuses those, and gives 100 calls a member a day.
 - Facebook Pages and Instagram share Facebook Login
   (`infrastructure/platforms/meta/facebook-login.ts`): a long-lived user
   token lists the user's Pages with their tokens, which never expire; an
@@ -866,8 +887,28 @@ and no socket, for tests.
 - Large uploads go in parts read one at a time from the media stream
   (`inParts` in `platforms/byte-parts.ts`): LinkedIn's video parts, X's
   4 MiB appends. LinkedIn calls name `Linkedin-Version`
-  (`LINKEDIN_API_VERSION`, a default a test keeps within ten months), and
+  (`LINKEDIN_API_VERSION`, a default a test keeps within ten months, read
+  from `#shared/infrastructure/platforms/linkedin-version.ts` by every
+  context that calls LinkedIn), and
   send the member's token to LinkedIn's hosts only.
+- LinkedIn's adapter posts as the account's URN (`authorUrnOf`: a page's
+  account id is its URN) and builds two `sequenced` clients: a member's
+  post is confirmed by `none`, a page's by a `lookUp` that searches the
+  page's newest posts for the same commentary (`linkedin-confirmation.ts`),
+  `found` or `unknown`. Rest.li 2.0 lists keep their parentheses and commas
+  and encode each URN: write such a query whole, in a string URL, as
+  `setUrlParams` would encode the parentheses. On LinkedIn's versioned
+  API, only a 401 is a token to renew for a read (lookups, statistics): a
+  403 is about scopes or roles, and must never mark a channel to
+  reconnect.
+- A LinkedIn mention is data beside the text (`LinkedInOptions.mentions`:
+  the page's exact name and URN): the text keeps `@Name`, readable, which
+  counts as written, and `littleTextOf` writes `@[Name](urn)` where
+  `mentionSpans` finds it, every reserved character of little text escaped.
+  Pages only: no API open to Peal finds a member's URN. A link card is
+  LinkedIn's article (`linkUrl` with `linkTitle`; one image becomes its
+  thumbnail), and a PDF goes through the Documents API, alone
+  (`linkedin-documents.ts`).
 - Meta's adapters hand Meta public media URLs (`MediaForPublishing.publicUrl`,
   two hours), check the daily publishing quota before Threads and Instagram
   containers (Instagram's on the host its channel's connection names, from
@@ -1040,8 +1081,15 @@ and no socket, for tests.
   an `uploaded` asset carries its probe state (`pending`, `unavailable`, or why
   the probe failed).
 - Accepted media: JPEG, PNG, GIF and WebP images up to 16 MiB; MP4 and
-  QuickTime videos up to 1 GiB (`media/domain/media-format.ts`). Publishing
+  QuickTime videos up to 1 GiB; PDF documents up to 100 MiB and 300 pages
+  (`media/domain/media-format.ts`). Publishing
   checks per-platform limits when a post is scheduled.
+- A PDF is the `document` kind, which only a platform whose rules list
+  `application/pdf` takes (LinkedIn, alone in its post); a platform
+  without media rules refuses it too. It is probed without a PDF library
+  (`pdf-pages.ts`: the header, and the page objects counted in the clear
+  and in inflated object streams); pages that cannot be counted are none,
+  not a refusal. Never render or open a document: store it, hand it over.
 - On a server that bills, `createUpload` checks the declared size against
   the plan's media storage (`StorageAllowance`) before the store opens an
   upload, and again as the asset is recorded (`MediaAssets.insertWithin`,
@@ -1358,7 +1406,13 @@ and no socket, for tests.
   local posts' insights (`localPosts.reportInsights`, February 2023) with
   no replacement, and its Performance API counts a location's days, never
   a post.
-- Platforms without a reader (LinkedIn, X, Threads and Facebook Pages so
+- LinkedIn reads a company page's posts with
+  `organizationalEntityShareStatistics`, one finder call for the posts
+  asked, which needs `rw_organization_admin` and the page's ADMINISTRATOR:
+  a profile's channel, and a page LinkedIn answers 403 for, are
+  `unsupported`. Clients say "LinkedIn pages" where they list the counted
+  platforms.
+- Platforms without a reader (X, Threads and Facebook Pages so
   far) answer
   `ChannelUnreadable` `unsupported`: their posts end at their first turn,
   with no warning, and the reports leave them out. The platforms with one

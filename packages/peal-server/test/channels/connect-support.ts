@@ -14,6 +14,7 @@ import { googleBusinessAuthorizer } from "#channels/infrastructure/platforms/goo
 import type { GoogleBusinessEndpoints } from "#channels/infrastructure/platforms/google-business/google-business-authorizer.ts";
 import { linkedinAuthorizer } from "#channels/infrastructure/platforms/linkedin/linkedin-authorizer.ts";
 import type { LinkedInEndpoints } from "#channels/infrastructure/platforms/linkedin/linkedin-authorizer.ts";
+import { linkedinPagesAuthorizer } from "#channels/infrastructure/platforms/linkedin/linkedin-pages-authorizer.ts";
 import { MastodonApps } from "#channels/infrastructure/platforms/mastodon/mastodon-apps.ts";
 import { mastodonAuthorizer } from "#channels/infrastructure/platforms/mastodon/mastodon-authorizer.ts";
 import { pinterestAuthorizer } from "#channels/infrastructure/platforms/pinterest/pinterest-authorizer.ts";
@@ -29,7 +30,11 @@ import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.t
 import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
 import { googleClient } from "#test/channels/fakes/fake-google.ts";
-import { linkedinClient } from "#test/channels/fakes/fake-linkedin.ts";
+import {
+  linkedinClient,
+  linkedinFakeVersion,
+  linkedinPagesClient,
+} from "#test/channels/fakes/fake-linkedin.ts";
 import { pinterestClient } from "#test/channels/fakes/fake-pinterest.ts";
 import { tiktokClient } from "#test/channels/fakes/fake-tiktok.ts";
 import { xClient } from "#test/channels/fakes/fake-x.ts";
@@ -133,6 +138,30 @@ export const linkedinAuthorizerOn = (endpoints: LinkedInEndpoints) =>
         endpoints,
         http,
         publicUrl: testPublicUrl,
+      })
+    ),
+    Effect.provide(AuthorizerServicesTest)
+  );
+
+/**
+ * The LinkedIn pages authorizer with the synthetic Community Management
+ * app, on the fake's hosts, in the API version given.
+ */
+export const linkedinPagesAuthorizerOn = (
+  endpoints: LinkedInEndpoints,
+  version: string = linkedinFakeVersion
+) =>
+  publicHttpClient.pipe(
+    Effect.flatMap((http) =>
+      linkedinPagesAuthorizer({
+        client: {
+          clientId: linkedinPagesClient.clientId,
+          clientSecret: Redacted.make(linkedinPagesClient.clientSecret),
+        },
+        endpoints,
+        http,
+        publicUrl: testPublicUrl,
+        version,
       })
     ),
     Effect.provide(AuthorizerServicesTest)

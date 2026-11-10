@@ -14,7 +14,10 @@ import type { HttpClient, HttpClientError } from "effect/http";
 import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
 import type { PublishableMedia } from "#publishing/application/media-for-publishing.ts";
 import { OutcomeUnknown } from "#publishing/application/outcome-unknown.ts";
-import type { OutgoingPost } from "#publishing/application/platform-client.ts";
+import type {
+  OutgoingPost,
+  PlatformClient,
+} from "#publishing/application/platform-client.ts";
 import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
 import {
   defaultStepTiming,
@@ -32,6 +35,7 @@ import {
   commitUnanswered,
   unanswered,
 } from "#publishing/infrastructure/platforms/platform-exchange.ts";
+import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
@@ -40,9 +44,13 @@ import type { Published } from "#shared/domain/publish-result.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 
+import { pageLookUp } from "./linkedin-confirmation.ts";
+import { linkedinDocuments } from "./linkedin-documents.ts";
+import { documentTitleOf, linkOf, postBodyOf } from "./linkedin-post-body.ts";
+import type { LinkedInLink } from "./linkedin-post-body.ts";
 import { mediaRefusal, postRefusal } from "./linkedin-refusal.ts";
 import type { LinkedInRefusal } from "./linkedin-refusal.ts";
-import { littleTextOf } from "./little-text.ts";
+import { authorUrnOf, isOrganization } from "./linkedin-rest.ts";
 
 /** The HTTP client the adapter sends through: the public one. */
 export type LinkedInHttp = HttpClient.HttpClient.With<
@@ -124,7 +132,21 @@ interface LinkedInImage {
 /** What a post shows on LinkedIn, once uploaded. */
 type LinkedInMedia =
   | { readonly _tag: "text" }
+  // A link shown as a card, under an image of the post's when it has one.
+  | {
+      readonly _tag: "article";
+      readonly link: LinkedInLink;
+      readonly thumbnail: Option.Option<LinkedInImage>;
+    }
   | { readonly _tag: "images"; readonly images: readonly LinkedInImage[] }
+  // A PDF, shown page by page under its title. `unread` counts the waits
+  // while the token could not read it back.
+  | {
+      readonly _tag: "document";
+      readonly document: string;
+      readonly title: string;
+      readonly unread: number;
+    }
   // `unread` counts the waits while the token could not read it back.
   | { readonly _tag: "video"; readonly unread: number; readonly video: string };
 
@@ -185,9 +207,8 @@ const sizeOfPart = (part: UploadInstruction) =>
 // A post's URN, as `urn:li:share:<id>` or `urn:li:ugcPost:<id>`.
 const postUrnPattern = /^urn:li:[A-Za-z]+:[\w-]+$/u;
 
-// The member a post is by: the channels context keeps their OpenID Connect
-// subject, which their person URN takes.
-const authorOf = (post: OutgoingPost) => `urn:li:person:${post.accountId}`;
+// Who a post and its uploads are by: the member, or the page.
+const authorOf = (post: OutgoingPost) => authorUrnOf(post.accountId);
 
 // The post's page, which takes its URN as it is.
 const publishedAs = (urn: string): Published =>
@@ -222,9 +243,36 @@ const imagesContent = (images: readonly LinkedInImage[]) => {
   };
 };
 
-// What the post shows besides its text: one image, several, or a video.
+// An article: LinkedIn reads no page itself, so the title, and the
+// description and thumbnail when there are any, come with the address.
+const articleContent = (
+  link: LinkedInLink,
+  thumbnail: Option.Option<LinkedInImage>
+) => ({
+  content: {
+    article: {
+      source: link.source,
+      title: link.title,
+      ...Option.match(link.description, {
+        onNone: () => ({}),
+        onSome: (description) => ({ description }),
+      }),
+      ...Option.match(thumbnail, {
+        onNone: () => ({}),
+        onSome: ({ id }) => ({ thumbnail: id }),
+      }),
+    },
+  },
+});
+
+// What the post shows besides its text: one image, several, a video, or a
+// link's card.
 const contentOf = (prepared: LinkedInMedia) =>
   Match.valueTags(prepared, {
+    article: ({ link, thumbnail }) => articleContent(link, thumbnail),
+    document: ({ document, title }) => ({
+      content: { media: { id: document, title } },
+    }),
     images: ({ images }) => imagesContent(images),
     text: () => ({}),
     video: ({ video }) => ({ content: { media: { id: video } } }),
@@ -237,9 +285,19 @@ const contentOf = (prepared: LinkedInMedia) =>
  * ETags finalize it, then processing is polled; the post itself is one
  * POST /rest/posts, whose id comes back in `x-restli-id`.
  *
+ * It posts as the channel's account: a member (`urn:li:person:`), or a
+ * company page (`urn:li:organization:`, the account's id), whose uploads
+ * are the page's own. The target's options say who sees the post, whether
+ * it can be reshared, which pages its text names, and a link to show as a
+ * card (LinkedIn's article, with one image of the post as its thumbnail).
+ * A PDF goes up through the Documents API and shows alone, page by page,
+ * under the title the options give or its file's name.
+ *
  * LinkedIn has no idempotency key, and a member's token may not read posts
- * back (`r_member_social` is closed), so a post whose answer was lost is
- * unconfirmed at once: the member checks LinkedIn.
+ * back (`r_member_social` is closed), so a member's post whose answer was
+ * lost is unconfirmed at once: the member checks LinkedIn. A page's token
+ * reads the page's posts (`r_organization_social`): the post is looked for
+ * among them, and is unconfirmed only when it is not found.
  */
 export const linkedinClient = Effect.fn("LinkedInClient.make")(
   function* linkedinClient(options: LinkedInClientOptions) {
@@ -305,6 +363,15 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
           })
         )
       );
+
+    const documents = linkedinDocuments({
+      api,
+      apiUrl,
+      credentials,
+      media,
+      uploads,
+      version,
+    });
 
     const uploadImage = Effect.fn("LinkedInClient.uploadImage")(
       function* uploadImage(
@@ -499,9 +566,44 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
       }
     );
 
+    // A link's card takes one image at most, as its thumbnail: a post
+    // cannot show a link beside a video or several images.
+    const prepareArticle = Effect.fn("LinkedInClient.prepareArticle")(
+      function* prepareArticle(post: OutgoingPost, link: LinkedInLink) {
+        const [attachment, ...others] = post.media;
+
+        if (attachment === undefined) {
+          return ready({ _tag: "article", link, thumbnail: Option.none() });
+        }
+
+        const described = yield* media.describe(
+          post.workspaceId,
+          attachment.mediaId
+        );
+
+        if (others.length > 0 || described.kind !== "image") {
+          return yield* new BadRequest({ code: "linkWithMedia" });
+        }
+
+        const thumbnail = yield* uploadImage(post, attachment, described);
+
+        return ready({
+          _tag: "article",
+          link,
+          thumbnail: Option.some(thumbnail),
+        });
+      }
+    );
+
     const prepare = Effect.fn("LinkedInClient.prepare")(function* prepare(
       post: OutgoingPost
     ) {
+      const link = linkOf(post);
+
+      if (Option.isSome(link)) {
+        return yield* prepareArticle(post, link.value);
+      }
+
       if (post.media.length === 0) {
         return ready({ _tag: "text" });
       }
@@ -516,6 +618,26 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
       );
 
       const [first] = described;
+
+      // A post shows one document alone.
+      if (described.some((item) => item.described.kind === "document")) {
+        if (described.length !== 1 || first === undefined) {
+          return yield* new MediaRejected({ code: "documentWithOtherMedia" });
+        }
+
+        const document = yield* documents.upload(
+          post,
+          first.attachment,
+          first.described
+        );
+
+        return processing({
+          _tag: "document",
+          document,
+          title: documentTitleOf(post, first.described.fileName),
+          unread: 0,
+        });
+      }
 
       // A post shows one video alone, or images.
       if (described.some((item) => item.described.kind === "video")) {
@@ -540,6 +662,24 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
       post: OutgoingPost,
       prepared: LinkedInMedia
     ) {
+      if (prepared._tag === "document") {
+        const status = yield* documents.status(post, prepared.document);
+
+        if (Option.isNone(status)) {
+          return prepared.unread + 1 >= blindPolls
+            ? ready(prepared)
+            : processing({ ...prepared, unread: prepared.unread + 1 });
+        }
+
+        if (status.value === "PROCESSING_FAILED") {
+          return yield* new MediaRejected({ code: "processingFailed" });
+        }
+
+        return status.value === "AVAILABLE"
+          ? ready(prepared)
+          : processing(prepared);
+      }
+
       if (prepared._tag !== "video") {
         return ready(prepared);
       }
@@ -593,19 +733,9 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
           .execute(
             rest(
               HttpClientRequest.post(new URL("/rest/posts", apiUrl)).pipe(
-                HttpClientRequest.bodyJsonUnsafe({
-                  author: authorOf(post),
-                  commentary: littleTextOf(post.text),
-                  distribution: {
-                    feedDistribution: "MAIN_FEED",
-                    targetEntities: [],
-                    thirdPartyDistributionChannels: [],
-                  },
-                  isReshareDisabledByAuthor: false,
-                  lifecycleState: "PUBLISHED",
-                  visibility: "PUBLIC",
-                  ...contentOf(prepared),
-                })
+                HttpClientRequest.bodyJsonUnsafe(
+                  postBodyOf(post, contentOf(prepared))
+                )
               ),
               accessToken
             )
@@ -641,14 +771,46 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
       );
     });
 
-    const steps: PublicationSteps<LinkedInMedia> = {
+    const stepsWith = (
+      confirmation: PublicationSteps<LinkedInMedia>["confirmation"]
+    ): PublicationSteps<LinkedInMedia> => ({
       commit,
-      confirmation: { _tag: "none" },
+      confirmation,
       platform: "linkedin",
       poll,
       prepare,
+    });
+
+    const timing = options.timing ?? defaultStepTiming;
+
+    // A member's token may not read posts back: nothing confirms theirs.
+    const asMember = sequenced(stepsWith({ _tag: "none" }), timing);
+
+    // A page's can: a post whose answer was lost is looked for among the
+    // page's newest.
+    const asPage = sequenced(
+      stepsWith({
+        _tag: "lookUp",
+        lookUp: pageLookUp({
+          api,
+          apiUrl,
+          credentials,
+          published: publishedAs,
+          version,
+        }),
+      }),
+      timing
+    );
+
+    const clientFor = (post: OutgoingPost) =>
+      isOrganization(post.accountId) ? asPage : asMember;
+
+    const client: PlatformClient = {
+      platform: "linkedin",
+      publish: (post) => clientFor(post).publish(post),
+      resume: (post) => clientFor(post).resume(post),
     };
 
-    return sequenced(steps, options.timing ?? defaultStepTiming);
+    return client;
   }
 );
