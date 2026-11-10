@@ -3,7 +3,6 @@ import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   CurrentMember,
-  Forbidden,
   PartnerAccountsClosed,
   PartnerDetailsInvalid,
   PartnerKeyNotFound,
@@ -12,6 +11,7 @@ import {
 } from "peal-contract";
 
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { PartnerAccounts } from "#workspace/application/partner-accounts.ts";
 import { PartnerKeys } from "#workspace/application/partner-keys.ts";
 import { PartnerWorkspaces } from "#workspace/application/partner-workspaces.ts";
@@ -23,8 +23,6 @@ import {
   partnerView,
 } from "./partner-view.ts";
 import { listRequestOf } from "./partner.ts";
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const noPartner = () => Effect.fail(new PartnerNotFound());
 

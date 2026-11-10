@@ -1,13 +1,10 @@
 import { Effect, Layer, Metric, Option } from "effect";
 import { HttpServerRequest } from "effect/http";
 import { RateLimiter } from "effect/persistence";
-import {
-  ConnectLinkIntake,
-  Forbidden,
-  TooManyConnectAttempts,
-} from "peal-contract";
+import { ConnectLinkIntake, TooManyConnectAttempts } from "peal-contract";
 
 import { addressHeadersConfig, addressOf } from "#app/client-errors/intake.ts";
+import { refused } from "#shared/api/forbidden.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 
 /** How many times each address may open a connect link in an hour. */
@@ -62,7 +59,7 @@ export const ConnectLinkIntakeLive = Layer.effect(
         ) {
           yield* refuse("origin");
 
-          return yield* new Forbidden();
+          return yield* refused("untrustedOrigin");
         }
 
         yield* limiter

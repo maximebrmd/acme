@@ -12,7 +12,6 @@ import {
   ConnectFailed,
   ConnectLinkNotFound,
   CurrentMember,
-  Forbidden,
   HostedConnectFailed,
   ReturnUrlNotAllowed,
   TooManyConnectLinks,
@@ -24,11 +23,10 @@ import { ConnectLinks } from "#channels/application/connect-links.ts";
 import type { HostedOutcome } from "#channels/application/connect-links.ts";
 import type { HostedConnectFailed as HostedFailure } from "#channels/application/hosted-connect-failed.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 
 import { cookieOf, nonceOf } from "./connect-link-cookie.ts";
 import { toConnectLinkView } from "./connect-link-view.ts";
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const noLink = () => Effect.fail(new ConnectLinkNotFound());
 

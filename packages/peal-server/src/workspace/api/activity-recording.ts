@@ -134,6 +134,40 @@ export const recorded =
       )
     );
 
+/** A change a handler made for a principal, outside a workspace's path. */
+export interface MadeChange {
+  /** `group.endpoint`, from the contract. */
+  readonly operation: string;
+  readonly principal: Principal;
+  /** The status the request is answered with. */
+  readonly status: number;
+  readonly workspaceId: WorkspaceId;
+}
+
+/**
+ * Keeps a change made to a workspace by a request whose path is not under
+ * it, so WorkspaceAccess never saw it: the partner API's, which makes and
+ * renames the workspaces a partner owns. Never fails: a failure to keep it
+ * is logged.
+ */
+export const recordMade = (
+  journal: ActivityJournal["Service"],
+  change: MadeChange
+): Effect.Effect<void> =>
+  Effect.serviceOption(RequestId).pipe(
+    Effect.flatMap((requestId) =>
+      kept(journal, {
+        named: {},
+        operation: change.operation,
+        outcome: { _tag: "answered", status: change.status },
+        principal: change.principal,
+        requestId,
+        via: viaOf(change.principal),
+        workspaceId: change.workspaceId,
+      })
+    )
+  );
+
 /** A tool of the MCP endpoint a member's client called. */
 export interface ToolCall {
   /**

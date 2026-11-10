@@ -14,10 +14,13 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 
+import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { OffboardWorkspace } from "#workspace/application/offboard-workspace.ts";
 import { PartnerWorkspaces } from "#workspace/application/partner-workspaces.ts";
 import type { WorkspaceListRequest } from "#workspace/application/partner-workspaces.ts";
+import type { MissingPartnerScope } from "#workspace/domain/missing-partner-scope.ts";
 
+import { recordMade } from "./activity-recording.ts";
 import {
   customerWorkspacePageView,
   customerWorkspaceView,
@@ -28,6 +31,16 @@ import { partnerKeyPrincipalOf } from "./principal.ts";
 
 const forbidden = () => Effect.fail(new Forbidden());
 
+// A key without the scope a request takes is told which, and who gives it.
+const withoutScope = ({ scope }: MissingPartnerScope) =>
+  Effect.fail(
+    new Forbidden({
+      message: `This partner key was not given the scope ${scope}, which this request takes. An owner or an admin of the partner's workspace creates a key that has it.`,
+      reason: "missingScope",
+      scope,
+    })
+  );
+
 const notFound = () => Effect.fail(new WorkspaceNotFound());
 
 // The partner key a request to the partner API carries. Anything else, a
@@ -37,7 +50,10 @@ const currentKey = Effect.gen(function* currentKey() {
 
   return principal._tag === "partnerKey"
     ? partnerKeyPrincipalOf(principal)
-    : yield* new Forbidden();
+    : yield* new Forbidden({
+        message:
+          "The partner API takes a partner key, sent as a bearer token: not a session, a workspace's API key or an application's token.",
+      });
 });
 
 /** The filters and the page a list of workspaces was asked with. */
@@ -70,6 +86,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
   Effect.fn(function* partnerHandlers(handlers) {
     const workspaces = yield* PartnerWorkspaces;
     const offboarding = yield* OffboardWorkspace;
+    const activity = yield* ActivityJournal;
 
     return handlers.handleAll({
       account: () =>
@@ -116,9 +133,20 @@ export const PartnerHandlers = HttpApiBuilder.group(
                   Effect.fail(new ExternalIdTaken({ workspaceId })),
                 InvalidWorkspaceDetails: ({ field }) =>
                   Effect.fail(new PartnerDetailsInvalid({ field })),
-                MissingPartnerScope: forbidden,
+                MissingPartnerScope: withoutScope,
               })
             );
+
+          // The new workspace's log starts with its making; a request
+          // answered with the workspace it made before made nothing.
+          if (!created.replayed) {
+            yield* recordMade(activity, {
+              operation: "partner.createWorkspace",
+              principal: key,
+              status: 201,
+              workspaceId: created.workspace.id,
+            });
+          }
 
           return customerWorkspaceView({
             channels: 0,
@@ -151,7 +179,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
                 ).pipe(
                   Effect.andThen(Effect.fail(new MediaStoreUnavailable()))
                 ),
-              MissingPartnerScope: forbidden,
+              MissingPartnerScope: withoutScope,
               WorkspaceBusy: ({ workspaceId }) =>
                 Effect.fail(new WorkspaceBusy({ workspaceId })),
             })
@@ -165,7 +193,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
             Effect.catchTags({
               CustomerWorkspaceNotFound: notFound,
               DatabaseError: Effect.die,
-              MissingPartnerScope: forbidden,
+              MissingPartnerScope: withoutScope,
             })
           );
 
@@ -178,7 +206,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
           const page = yield* workspaces.list(key, listRequestOf(query)).pipe(
             Effect.catchTags({
               DatabaseError: Effect.die,
-              MissingPartnerScope: forbidden,
+              MissingPartnerScope: withoutScope,
             })
           );
 
@@ -198,9 +226,16 @@ export const PartnerHandlers = HttpApiBuilder.group(
                   Effect.fail(new ExternalIdTaken({ workspaceId })),
                 InvalidWorkspaceDetails: ({ field }) =>
                   Effect.fail(new PartnerDetailsInvalid({ field })),
-                MissingPartnerScope: forbidden,
+                MissingPartnerScope: withoutScope,
               })
             );
+
+          yield* recordMade(activity, {
+            operation: "partner.updateWorkspace",
+            principal: key,
+            status: 200,
+            workspaceId: changed.workspace.id,
+          });
 
           return customerWorkspaceView(changed);
         }),

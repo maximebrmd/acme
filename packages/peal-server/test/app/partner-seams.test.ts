@@ -249,6 +249,88 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
     );
 
     it.effect(
+      "is told why it is refused: the scope or the permission it lacks, or the origin",
+      () =>
+        Effect.gen(function* refusals() {
+          const app = yield* TestApp;
+          const { home, owner } = yield* partnerOf("seam-refusals");
+          const full = yield* keyOf(owner, home);
+          const customer = yield* customerOf(full.key, "Refused", "cus_seam_4");
+
+          const reading = yield* keyOf(owner, home, {
+            permissions: ["channel:read"],
+            scopes: ["workspaces:read"],
+          });
+
+          const RefusalSchema = Schema.Struct({
+            _tag: Schema.Literal("Forbidden"),
+            code: Schema.Literal("forbidden"),
+            message: Schema.String,
+            permission: Schema.optionalKey(Schema.String),
+            reason: Schema.optionalKey(Schema.String),
+            scope: Schema.optionalKey(Schema.String),
+          });
+
+          // A scope of the partner API.
+          const unscoped = yield* app.request("/api/partner/workspaces", {
+            body: { name: "Never made" },
+            headers: bearer(reading.key),
+          });
+
+          assert.strictEqual(unscoped.status, 403);
+
+          const scope = yield* bodyOf(RefusalSchema, unscoped);
+
+          assert.deepInclude(scope, {
+            reason: "missingScope",
+            scope: "workspaces:write",
+          });
+          assert.include(scope.message, "workspaces:write");
+
+          // A permission inside a workspace its partner owns.
+          const unpermitted = yield* app.request(
+            `/api/workspaces/${customer.id}/connect-links`,
+            { body: { platform: "mastodon" }, headers: bearer(reading.key) }
+          );
+
+          assert.strictEqual(unpermitted.status, 403);
+
+          const permission = yield* bodyOf(RefusalSchema, unpermitted);
+
+          assert.deepInclude(permission, {
+            permission: "channel:connect",
+            reason: "missingPermission",
+          });
+          assert.include(permission.message, "partner key");
+
+          // The partner API takes partner keys alone.
+          const inPerson = yield* app.request("/api/partner", {
+            headers: { cookie: owner.cookies },
+          });
+
+          assert.strictEqual(inPerson.status, 403);
+          assert.include(
+            (yield* bodyOf(RefusalSchema, inPerson)).message,
+            "partner key"
+          );
+
+          // A hosted page's step sent from another site.
+          const foreign = yield* app.request(
+            "/api/connect-links/synthetic-token-that-opens-nothing/start",
+            {
+              body: { instance: "social.example" },
+              headers: { origin: "https://evil.example.test" },
+            }
+          );
+
+          assert.strictEqual(foreign.status, 403);
+          assert.deepInclude(yield* bodyOf(RefusalSchema, foreign), {
+            reason: "untrustedOrigin",
+          });
+        })
+    );
+
+    it.effect(
       "leaves what it asked to change in the workspace's activity log, and reads it",
       () =>
         Effect.gen(function* logged() {
@@ -263,6 +345,14 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
           const channel = yield* seedChannel(customer.id, "log@social.test");
           const headers = bearer(key);
           const base = `/api/workspaces/${customer.id}`;
+
+          // Renamed through the partner API.
+          const renamed = yield* app.request(
+            `/api/partner/workspaces/${customer.id}`,
+            { body: { name: "Logged again" }, headers, method: "PATCH" }
+          );
+
+          assert.strictEqual(renamed.status, 200);
 
           // A draft, a check, a dry run and several posts at once.
           const drafted = yield* app.request(`${base}/posts`, {
@@ -317,11 +407,19 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
               status,
               via,
             })),
-            ["posts.bulk", "posts.create"].map((operation) => ({
+            (
+              [
+                ["posts.bulk", 200],
+                ["posts.create", 201],
+                // The workspace's own making and renaming, by the partner.
+                ["partner.updateWorkspace", 200],
+                ["partner.createWorkspace", 201],
+              ] as const
+            ).map(([operation, status]) => ({
               actor: { _tag: "apiKey" as const, apiKeyId: partnerKey.id },
               application: { id: partnerKey.id, name: "backend" },
               operation,
-              status: operation === "posts.bulk" ? 200 : 201,
+              status,
               via: "partnerKey" as const,
             }))
           );

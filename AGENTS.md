@@ -1835,7 +1835,10 @@ and no socket, for tests.
   `.choose` (`ConnectLinkJournal`, which the composition root backs with
   `LoggedConnectLinkJournal`): never anything of the visitor. A partner
   key may hold `activity:read`, as a workspace without members has no
-  owner to read its log.
+  owner to read its log. The partner API's `createWorkspace` and
+  `updateWorkspace` are kept in that workspace's log by their handlers
+  (`recordMade`), as its path is not under the workspace. Its refusals say
+  why, like any other: `missingScope` with the partner scope a key lacks.
 - A check leaves no event: `posts.validate` (`checksOnly` in
   `#workspace/api/security.ts`), and a request whose handler says first
   thing that it changes nothing (`changesNothing`, `#shared/api/change-mark.ts`:
