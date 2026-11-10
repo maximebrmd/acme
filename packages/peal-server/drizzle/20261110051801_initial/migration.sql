@@ -18,6 +18,8 @@ CREATE SCHEMA "staff";
 --> statement-breakpoint
 CREATE SCHEMA "webhooks";
 --> statement-breakpoint
+CREATE SCHEMA "workspace";
+--> statement-breakpoint
 CREATE SCHEMA "auth";
 --> statement-breakpoint
 CREATE TABLE "analytics"."erased_workspaces" (
@@ -485,6 +487,55 @@ CREATE TABLE "webhooks"."events" (
 	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "workspace"."partner_idempotency_keys" (
+	"created_at" timestamp with time zone NOT NULL,
+	"key_digest" text,
+	"partner_id" uuid,
+	"request_digest" text NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "partner_idempotency_keys_pkey" PRIMARY KEY("partner_id","key_digest")
+);
+--> statement-breakpoint
+CREATE TABLE "workspace"."partner_keys" (
+	"created_at" timestamp with time zone NOT NULL,
+	"created_by" uuid,
+	"expires_at" timestamp with time zone,
+	"id" uuid PRIMARY KEY,
+	"key_digest" text NOT NULL CONSTRAINT "partner_keys_digest" UNIQUE,
+	"name" text NOT NULL,
+	"partner_id" uuid NOT NULL,
+	"permissions" text[] NOT NULL,
+	"scopes" text[] NOT NULL,
+	"start" text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "workspace"."partner_usage_days" (
+	"channels" integer NOT NULL,
+	"day" date,
+	"partner_id" uuid,
+	"workspaces" integer NOT NULL,
+	CONSTRAINT "partner_usage_days_pkey" PRIMARY KEY("partner_id","day"),
+	CONSTRAINT "partner_usage_days_counts" CHECK ("channels" >= 0 AND "workspaces" >= 0)
+);
+--> statement-breakpoint
+CREATE TABLE "workspace"."partner_workspaces" (
+	"created_at" timestamp with time zone NOT NULL,
+	"external_id" text,
+	"partner_id" uuid NOT NULL,
+	"workspace_id" uuid PRIMARY KEY,
+	CONSTRAINT "partner_workspaces_external_id" UNIQUE("partner_id","external_id")
+);
+--> statement-breakpoint
+CREATE TABLE "workspace"."partners" (
+	"created_at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"logo_url" text,
+	"name" text NOT NULL,
+	"return_origins" text[] NOT NULL,
+	"updated_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid NOT NULL CONSTRAINT "partners_workspace" UNIQUE
+);
+--> statement-breakpoint
 CREATE TABLE "auth"."account" (
 	"id" uuid PRIMARY KEY DEFAULT pg_catalog.gen_random_uuid(),
 	"account_id" text NOT NULL,
@@ -820,6 +871,10 @@ CREATE INDEX "deliveries_created" ON "webhooks"."deliveries" ("created_at");--> 
 CREATE INDEX "deliveries_workspace" ON "webhooks"."deliveries" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "endpoints_workspace" ON "webhooks"."endpoints" ("workspace_id","id");--> statement-breakpoint
 CREATE INDEX "events_workspace" ON "webhooks"."events" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "partner_idempotency_keys_created" ON "workspace"."partner_idempotency_keys" ("created_at");--> statement-breakpoint
+CREATE INDEX "partner_keys_partner" ON "workspace"."partner_keys" ("partner_id","id");--> statement-breakpoint
+CREATE INDEX "partner_keys_created_by" ON "workspace"."partner_keys" ("created_by");--> statement-breakpoint
+CREATE INDEX "partner_workspaces_partner" ON "workspace"."partner_workspaces" ("partner_id","created_at");--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "auth"."account" ("user_id");--> statement-breakpoint
 CREATE INDEX "apikey_configId_idx" ON "auth"."apikey" ("config_id");--> statement-breakpoint
 CREATE INDEX "apikey_referenceId_idx" ON "auth"."apikey" ("reference_id");--> statement-breakpoint
@@ -855,6 +910,10 @@ ALTER TABLE "publishing"."publication_calls" ADD CONSTRAINT "publication_calls_t
 ALTER TABLE "publishing"."upload_sessions" ADD CONSTRAINT "upload_sessions_72ct0kRYe5re_fkey" FOREIGN KEY ("idempotency_key") REFERENCES "publishing"."publication_calls"("idempotency_key") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "webhooks"."deliveries" ADD CONSTRAINT "deliveries_endpoint_id_endpoints_id_fkey" FOREIGN KEY ("endpoint_id") REFERENCES "webhooks"."endpoints"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "webhooks"."deliveries" ADD CONSTRAINT "deliveries_event_id_events_id_fkey" FOREIGN KEY ("event_id") REFERENCES "webhooks"."events"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "workspace"."partner_idempotency_keys" ADD CONSTRAINT "partner_idempotency_keys_partner_id_partners_id_fkey" FOREIGN KEY ("partner_id") REFERENCES "workspace"."partners"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "workspace"."partner_keys" ADD CONSTRAINT "partner_keys_partner_id_partners_id_fkey" FOREIGN KEY ("partner_id") REFERENCES "workspace"."partners"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "workspace"."partner_usage_days" ADD CONSTRAINT "partner_usage_days_partner_id_partners_id_fkey" FOREIGN KEY ("partner_id") REFERENCES "workspace"."partners"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "workspace"."partner_workspaces" ADD CONSTRAINT "partner_workspaces_partner_id_partners_id_fkey" FOREIGN KEY ("partner_id") REFERENCES "workspace"."partners"("id");--> statement-breakpoint
 ALTER TABLE "auth"."account" ADD CONSTRAINT "account_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."invitation" ADD CONSTRAINT "invitation_organization_id_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "auth"."organization"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."invitation" ADD CONSTRAINT "invitation_inviter_id_user_id_fkey" FOREIGN KEY ("inviter_id") REFERENCES "auth"."user"("id") ON DELETE CASCADE;--> statement-breakpoint

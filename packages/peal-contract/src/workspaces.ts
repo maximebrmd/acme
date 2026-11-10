@@ -11,6 +11,7 @@ import { BillingUnavailable } from "./billing-unavailable.ts";
 import { DeletionIncomplete } from "./deletion-incomplete.ts";
 import { Forbidden } from "./forbidden.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
+import { PartnerOwnsWorkspaces } from "./partner-owns-workspaces.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 import { WorkspaceBusy } from "./workspace-busy.ts";
 import { WorkspaceNameMismatch } from "./workspace-name-mismatch.ts";
@@ -43,6 +44,7 @@ export class WorkspacesApi extends HttpApiGroup.make("workspaces")
         Forbidden,
         WorkspaceNameMismatch,
         WorkspaceBusy,
+        PartnerOwnsWorkspaces,
         WorkspaceSubscribed,
         BillingUnavailable,
         MediaStoreUnavailable,
@@ -54,7 +56,7 @@ export class WorkspacesApi extends HttpApiGroup.make("workspaces")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Deletes the workspace and everything in it, for good: its channels and their tokens, its posts, its media and their files, its analytics, its notices, its writing assistant usage, what billing recorded of its subscriptions, its members and invitations, and its API keys, which stop working at once. Needs organization:delete (owners), a signed-in member rather than an API key or an OAuth client, and the workspace's name in `name`. Answers 409 while a post of the workspace is being published (`WorkspaceBusy`). A workspace with a subscription Stripe may still bill answers 409 `WorkspaceSubscribed`, with its plan and the end of the period paid for, unless `cancelSubscriptions` is `true`: then the subscription is cancelled at Stripe at once, with no proration and no final invoice, so the period already paid for is not refunded, except where the law gives a refund (a consumer who withdraws within 14 days of subscribing), and nothing more is charged. Invoices stay with Stripe, as accounting law keeps them for 10 years: download them from the billing page first. Checkouts of the workspace still open at Stripe are expired, so none completes once it is gone; when Stripe cannot be reached, nothing is deleted (503 `BillingUnavailable`). The deletion is recorded by id in the object store before it is done, so that a restored backup deletes the workspace again; when the store cannot be reached, nothing is deleted (503 `MediaStoreUnavailable`). A deletion that fails once the subscription is cancelled, whatever stopped it, the object store included, says so (500 `DeletionIncomplete`): the cancellation stands, nothing was deleted, and deleting again cancels nothing more. The owner is emailed a confirmation.",
+          "Deletes the workspace and everything in it, for good: its channels and their tokens, its posts, its media and their files, its analytics, its notices, its writing assistant usage, what billing recorded of its subscriptions, its members and invitations, and its API keys, which stop working at once. Needs organization:delete (owners), a signed-in member rather than an API key or an OAuth client, and the workspace's name in `name`. Answers 409 while a post of the workspace is being published (`WorkspaceBusy`), and while its partner account still owns workspaces (`PartnerOwnsWorkspaces`): each is deleted through the partner API first. A workspace with a subscription Stripe may still bill answers 409 `WorkspaceSubscribed`, with its plan and the end of the period paid for, unless `cancelSubscriptions` is `true`: then the subscription is cancelled at Stripe at once, with no proration and no final invoice, so the period already paid for is not refunded, except where the law gives a refund (a consumer who withdraws within 14 days of subscribing), and nothing more is charged. Invoices stay with Stripe, as accounting law keeps them for 10 years: download them from the billing page first. Checkouts of the workspace still open at Stripe are expired, so none completes once it is gone; when Stripe cannot be reached, nothing is deleted (503 `BillingUnavailable`). The deletion is recorded by id in the object store before it is done, so that a restored backup deletes the workspace again; when the store cannot be reached, nothing is deleted (503 `MediaStoreUnavailable`). A deletion that fails once the subscription is cancelled, whatever stopped it, the object store included, says so (500 `DeletionIncomplete`): the cancellation stands, nothing was deleted, and deleting again cancels nothing more. The owner is emailed a confirmation.",
         summary: "Delete a workspace",
       })
     )

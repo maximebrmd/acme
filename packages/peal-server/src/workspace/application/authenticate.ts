@@ -1,14 +1,16 @@
 import { Context, Effect, Layer, Option, Redacted } from "effect";
 
 import type { ApiKeyPrincipal } from "#workspace/domain/api-key-principal.ts";
+import { partnerKeyPrefix } from "#workspace/domain/partner-key.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 import type { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 import { AuthGateway } from "./auth-gateway.ts";
 import type { AccessTokenRequest, BoundPrincipal } from "./auth-gateway.ts";
-import type { AuthUnavailable } from "./auth-unavailable.ts";
+import { AuthUnavailable } from "./auth-unavailable.ts";
 import type { InvalidAccessToken } from "./invalid-access-token.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
+import { PartnerKeys } from "./partner-keys.ts";
 
 const orNotSignedIn = <A, E>(
   found: Effect.Effect<Option.Option<A>, E>
@@ -33,8 +35,8 @@ const jwtSyntax = /^[\w-]+\.[\w-]+\.[\w-]+$/u;
 export type BearerRequest = Omit<AccessTokenRequest, "authorization">;
 
 /**
- * Who a request is, from its session cookie, its API key or its OAuth access
- * token.
+ * Who a request is, from its session cookie, its API key, its partner key
+ * or its OAuth access token.
  */
 export class Authenticate extends Context.Service<
   Authenticate,
@@ -44,7 +46,7 @@ export class Authenticate extends Context.Service<
     ) => Effect.Effect<ApiKeyPrincipal, AuthUnavailable | NotSignedIn>;
     /**
      * Who a bearer token sent to the HTTP API is: the user an OAuth access
-     * token acts for, or an API key.
+     * token acts for, an API key, or a partner key, told by its prefix.
      */
     readonly bearer: (
       token: Redacted.Redacted,
@@ -69,6 +71,7 @@ export class Authenticate extends Context.Service<
     Authenticate,
     Effect.gen(function* authenticate() {
       const gateway = yield* AuthGateway;
+      const partnerKeys = yield* PartnerKeys;
 
       const apiKey = (token: Redacted.Redacted) =>
         isEmpty(token)
@@ -91,12 +94,28 @@ export class Authenticate extends Context.Service<
             )
           );
 
+      // The partner keys are Peal's own, not the sign-in service's: the
+      // database not answering reads as the sign-in service not answering.
+      const partnerKey = (token: Redacted.Redacted) =>
+        orNotSignedIn(
+          partnerKeys
+            .verify(token)
+            .pipe(
+              Effect.mapError(({ cause }) => new AuthUnavailable({ cause }))
+            )
+        );
+
+      const keyOf = (token: Redacted.Redacted) =>
+        Redacted.value(token).startsWith(partnerKeyPrefix)
+          ? partnerKey(token)
+          : apiKey(token);
+
       return Authenticate.of({
         apiKey,
         bearer: (token, request) =>
           jwtSyntax.test(Redacted.value(token))
             ? accessToken(token, request)
-            : apiKey(token),
+            : keyOf(token),
         isTrustedOrigin: (origin) =>
           Option.exists(origin, (value) => gateway.isTrustedOrigin(value)),
         mcp: (request) => gateway.mcpToken(request),

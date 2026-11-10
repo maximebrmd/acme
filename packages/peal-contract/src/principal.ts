@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import { PartnerScopeSchema } from "./partner-scope.ts";
 import { PermissionSchema } from "./permission.ts";
 
 /**
@@ -16,7 +17,8 @@ export type OAuthGrant = typeof OAuthGrantSchema.Type;
 
 /**
  * Whoever a request authenticates as: a user, signed in or through an OAuth
- * client, or an API key.
+ * client, an API key of a workspace, or a partner key, which acts in the
+ * workspaces its partner owns.
  */
 export const PrincipalSchema = Schema.Union([
   Schema.TaggedStruct("user", {
@@ -31,6 +33,14 @@ export const PrincipalSchema = Schema.Union([
     apiKeyId: Schema.String,
     permissions: Schema.Array(PermissionSchema),
     workspaceId: Schema.String,
+  }),
+  Schema.TaggedStruct("partnerKey", {
+    partnerId: Schema.String,
+    partnerKeyId: Schema.String,
+    // What it may do in each workspace its partner owns.
+    permissions: Schema.Array(PermissionSchema),
+    // What it may do with those workspaces themselves.
+    scopes: Schema.Array(PartnerScopeSchema),
   }),
 ]);
 

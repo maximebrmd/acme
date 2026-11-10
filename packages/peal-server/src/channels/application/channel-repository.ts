@@ -66,6 +66,13 @@ export class ChannelRepository extends Context.Service<
     readonly list: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly Channel[], DatabaseError>;
+    /**
+     * How many channels each of these workspaces has; one without any is
+     * left out.
+     */
+    readonly countIn: (
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<ReadonlyMap<WorkspaceId, number>, DatabaseError>;
     readonly findById: (
       workspaceId: WorkspaceId,
       channelId: ChannelId

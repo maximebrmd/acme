@@ -9,6 +9,8 @@ import {
   InvitationsHandlers,
   MembersHandlers,
 } from "#workspace/api/members.ts";
+import { PartnerAccountHandlers } from "#workspace/api/partner-account.ts";
+import { PartnerHandlers } from "#workspace/api/partner.ts";
 import {
   AuthenticationLive,
   StaffAccessLive,
@@ -25,6 +27,12 @@ import { CloseAccount } from "#workspace/application/close-account.ts";
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
+import { MeterPartnerUsage } from "#workspace/application/meter-partner-usage.ts";
+import { OffboardWorkspace } from "#workspace/application/offboard-workspace.ts";
+import { PartnerAccounts } from "#workspace/application/partner-accounts.ts";
+import { PartnerKeys } from "#workspace/application/partner-keys.ts";
+import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
+import { PartnerWorkspaces } from "#workspace/application/partner-workspaces.ts";
 import { ReplayErasures } from "#workspace/application/replay-erasures.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
@@ -41,19 +49,43 @@ import { LegalConnectionJournal } from "#workspace/infrastructure/auth/legal-con
 import { PasswordCheckLive } from "#workspace/infrastructure/auth/password-check.ts";
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
 import { WorkspacePeopleLive } from "#workspace/infrastructure/auth/workspace-people.ts";
+import { ContextChannelCountsLive } from "#workspace/infrastructure/context-channel-counts.ts";
 import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts";
-import { ErasureLedgerRetentionCron } from "#workspace/infrastructure/crons.ts";
+import {
+  ErasureLedgerRetentionCron,
+  PartnerUsageCron,
+} from "#workspace/infrastructure/crons.ts";
 import { AccountDirectoryLive } from "#workspace/infrastructure/drizzle-account-directory.ts";
 import { DrizzleAccountStore } from "#workspace/infrastructure/drizzle-account-store.ts";
 import { DrizzleConnectedAppStore } from "#workspace/infrastructure/drizzle-connected-app-store.ts";
 import { DrizzleCredentialNames } from "#workspace/infrastructure/drizzle-credential-names.ts";
+import { DrizzleCustomerWorkspaces } from "#workspace/infrastructure/drizzle-customer-workspaces.ts";
 import { DrizzleImpersonationSessions } from "#workspace/infrastructure/drizzle-impersonation-sessions.ts";
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
+import { DrizzlePartnerStore } from "#workspace/infrastructure/drizzle-partner-store.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 import { EmailedAccountMail } from "#workspace/infrastructure/emailed-account-mail.ts";
+import { PartnerSettingsLive } from "#workspace/infrastructure/partner-settings.ts";
 import { PrivacyDeclarationLive } from "#workspace/infrastructure/privacy-declaration-file.ts";
+import { RandomPartnerKeyTokens } from "#workspace/infrastructure/random-partner-key-tokens.ts";
 import { S3ErasureLedger } from "#workspace/infrastructure/s3-erasure-ledger.ts";
 import { StaffImpersonationLog } from "#workspace/infrastructure/staff-impersonation-log.ts";
+
+// Where the partner accounts, their keys and the workspaces they own are
+// kept: the database alone.
+const PartnerStoresLive = Layer.mergeAll(
+  DrizzlePartnerStore,
+  DrizzleCustomerWorkspaces
+);
+
+/**
+ * Whose each workspace is, for the contexts that follow from it: billing,
+ * which the workspace context itself is built on, the channels context and
+ * the webhooks. Needs the database alone.
+ */
+export const PartnerOwnershipLive = PartnerOwnership.layer.pipe(
+  Layer.provide(PartnerStoresLive)
+);
 
 const AdaptersLive = Layer.mergeAll(
   AuthGatewayLive,
@@ -61,14 +93,20 @@ const AdaptersLive = Layer.mergeAll(
   WorkspaceRosterLive,
   ApiKeyIssuerLive,
   CliClientLive,
-  WorkspacePeopleLive
+  WorkspacePeopleLive,
+  PartnerStoresLive,
+  RandomPartnerKeyTokens,
+  PartnerSettingsLive,
+  DrizzleAccountStore
 );
 
 const UseCasesLive = Layer.mergeAll(
   Accounts.layer,
   AccountStanding.layer,
   ApiKeys.layer,
-  Authenticate.layer,
+  // A bearer token may be a partner key, which the partner's keys check.
+  Authenticate.layer.pipe(Layer.provideMerge(PartnerKeys.layer)),
+  PartnerAccounts.layer,
   ResolveMember.layer,
   StaffStanding.layer,
   WorkspaceContacts.layer,
@@ -106,8 +144,9 @@ const ImpersonationGuardLive = ImpersonationGuard.layer.pipe(
  * cases behind the API and the MCP endpoint, with the accounts and
  * workspaces the staff console reads and acts on (AccountDirectory,
  * AccountModeration), the guard of staff's impersonations, and the
- * journal of the connections that change content. It needs the database,
- * migrated, Ids, the notifications context's SendAuthEmail, the billing
+ * journal of the connections that change content, with the partner
+ * accounts and their keys (PartnerAccounts, PartnerKeys) and whose each
+ * workspace is (PartnerOwnership). It needs the database, migrated, Ids, the notifications context's SendAuthEmail, the billing
  * context's WorkspaceEntitlements and RecordSubscription, the staff
  * context's ImpersonationAudit and the legal context's LegalRecords.
  */
@@ -117,6 +156,7 @@ export const WorkspaceLive = Layer.mergeAll(
   DrizzleCredentialNames
 ).pipe(
   Layer.provide(AdaptersLive),
+  Layer.provideMerge(PartnerOwnershipLive),
   Layer.provideMerge(StaffToolsLive),
   Layer.provideMerge(BetterAuthLive),
   Layer.provideMerge(ImpersonationGuardLive),
@@ -127,7 +167,9 @@ export const WorkspaceLive = Layer.mergeAll(
 /**
  * What settings do beyond Better Auth's own routes, which reach every
  * context's data: deleting a workspace, copying out and deleting an account,
- * and the applications acting for a user. Needs what WorkspaceLive provides,
+ * the applications acting for a user, and the workspaces partners own,
+ * which are counted with their channels (the channels context's
+ * ChannelUsage) and offboarded as a workspace is deleted. Needs what WorkspaceLive provides,
  * the database, a TransactionRunner, and the other contexts' records
  * (ChannelRecords, PostRecords, MediaRecords, NoticeRecords, UsageRecords,
  * AnalyticsRecords, BillingRecords, StaffRecords, LegalRecords) and SendAuthEmail, which
@@ -137,11 +179,15 @@ export const WorkspaceSettingsLive = Layer.mergeAll(
   AccountData.layer,
   CloseAccount.layer,
   ConnectedApps.layer,
-  DeleteWorkspace.layer
+  DeleteWorkspace.layer,
+  OffboardWorkspace.layer,
+  MeterPartnerUsage.layer.pipe(Layer.provideMerge(PartnerWorkspaces.layer))
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
       ApiKeyIssuerLive,
+      PartnerStoresLive,
+      ContextChannelCountsLive,
       ContextRecordsLive.pipe(Layer.provide(KeyedPseudonymsLive)),
       DrizzleAccountStore,
       DrizzleConnectedAppStore,
@@ -170,10 +216,14 @@ export const ErasureReplayLive = ReplayErasures.layer.pipe(
 
 /**
  * The erasure ledger's daily retention, on the object store the settings
- * name: without them, in production, the server does not start.
+ * name: without them, in production, the server does not start; and the
+ * daily count of what each partner holds, which needs MeterPartnerUsage.
  */
-export const WorkspaceCronsLive = ErasureLedgerRetentionCron.pipe(
-  Layer.provide(S3ErasureLedger.pipe(Layer.orDie))
+export const WorkspaceCronsLive = Layer.mergeAll(
+  ErasureLedgerRetentionCron.pipe(
+    Layer.provide(S3ErasureLedger.pipe(Layer.orDie))
+  ),
+  PartnerUsageCron
 );
 
 /**
@@ -189,7 +239,9 @@ export const WorkspaceApiLive = Layer.mergeAll(
   ConnectedAppsHandlers,
   CaptchaHandlers,
   MembersHandlers,
-  InvitationsHandlers
+  InvitationsHandlers,
+  PartnerHandlers,
+  PartnerAccountHandlers
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(AuthenticationLive, StaffAccessLive, WorkspaceAccessLive)

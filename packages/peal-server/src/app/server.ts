@@ -79,6 +79,7 @@ import {
   AccountLookupLive,
   AuthRoutesLive,
   ErasureReplayLive,
+  PartnerOwnershipLive,
   StripeCheckoutsLive,
   WorkspaceApiLive,
   WorkspaceLive,
@@ -125,9 +126,9 @@ const ApiLive = HttpApiBuilder.layer(Api, {
 export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive, McpLive);
 
 // Billing, which reads the checkouts the workspace context's Stripe plugin
-// keeps.
+// keeps, and whose plan a partner's workspace is on.
 const BillingContextsLive = BillingLive.pipe(
-  Layer.provide(StripeCheckoutsLive)
+  Layer.provide(Layer.mergeAll(StripeCheckoutsLive, PartnerOwnershipLive))
 );
 
 // Webhooks, whose signing secrets the channels context's cipher encrypts.

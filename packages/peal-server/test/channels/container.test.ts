@@ -23,6 +23,7 @@ import {
   syntheticKeyring,
 } from "#test/channels/support.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
+import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
 
 // What the context needs from the rest of the server: names to resolve,
 // notices to send, which nothing here sends, and plans, which limit nothing.
@@ -36,7 +37,8 @@ const Neighbours = Layer.mergeAll(
     WebhookEvents,
     WebhookEvents.of({ publish: () => Effect.void })
   ),
-  UnmeteredTest
+  UnmeteredTest,
+  PartnerOwnership.layerNone
 );
 
 // The channels context as the server builds it, with these settings. A blank

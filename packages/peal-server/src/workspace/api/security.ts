@@ -84,6 +84,17 @@ export const contentChangeOf = (
     };
   }
 
+  // A partner key, in the workspace of its partner the path names.
+  if (principal._tag === "PartnerKeyPrincipal") {
+    return {
+      access,
+      apiKeyId: Option.some(principal.partnerKeyId),
+      origin,
+      userId: Option.none(),
+      workspaceId: workspaceId.pipe(Option.flatMap(decodeWorkspaceId)),
+    };
+  }
+
   return {
     access,
     apiKeyId: Option.none(),
@@ -169,7 +180,7 @@ export const AuthenticationLive = Layer.effect(
               journalled(journal, () =>
                 contentChangeOf(
                   principal,
-                  principal._tag === "ApiKeyPrincipal" ? "apiKey" : "oauth",
+                  principal._tag === "UserPrincipal" ? "oauth" : "apiKey",
                   request,
                   Option.fromNullishOr(params["workspaceId"])
                 )

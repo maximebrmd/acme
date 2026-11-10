@@ -17,6 +17,7 @@ export const statements = {
   media: ["read", "upload", "delete"],
   member: ["create", "update", "delete"],
   organization: ["update", "delete"],
+  partner: ["read", "manage"],
   post: [
     "read",
     "create",
@@ -61,6 +62,8 @@ export const PermissionSchema = Schema.Literals([
   "member:delete",
   "organization:update",
   "organization:delete",
+  "partner:read",
+  "partner:manage",
   "post:read",
   "post:create",
   "post:update",
@@ -114,7 +117,9 @@ export const grantOf = (
 
 /**
  * Who acts: a person, possibly impersonated by staff, or through an OAuth
- * client (`clientId`: the command line, an MCP client), or an API key.
+ * client (`clientId`: the command line, an MCP client), or an API key: the
+ * workspace's own, or its partner's, acting in a workspace the partner
+ * owns.
  */
 export const ActorSubjectSchema = Schema.Union([
   Schema.TaggedStruct("user", {

@@ -18,7 +18,7 @@ import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect
 import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-choices.ts";
 import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-deletions.ts";
 import { NotifiedChannelNotices } from "#channels/infrastructure/notified-channel-notices.ts";
-import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
+import { SharedChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { ChannelPlatformsLive } from "#channels/infrastructure/platforms/channel-platform-settings.ts";
 import { MetaSignedRequestsLive } from "#channels/infrastructure/platforms/meta/meta-signed-requests.ts";
 import { OAuthClientDocumentsLive } from "#channels/infrastructure/platforms/oauth-client-documents-live.ts";
@@ -66,7 +66,7 @@ const AdaptersLive = Layer.mergeAll(
   SqlChannelLocks,
   webhookChannelNotices(NotifiedChannelNotices),
   WebhookChannelEvents,
-  PlanChannelAllowanceLive,
+  SharedChannelAllowanceLive,
   PlatformsLive
 ).pipe(Layer.provideMerge(TokenCipherLive));
 
@@ -89,8 +89,9 @@ const UseCasesLive = Layer.mergeAll(
  * workers share, ChannelRecords for the workspace context, and
  * ChannelOversight for the staff console. Needs the
  * database (Drizzle and SqlClient), migrated, Ids, Dns, the notifications
- * context's Notify, the webhooks context's WebhookEvents and the billing
- * context's WorkspaceEntitlements.
+ * context's Notify, the webhooks context's WebhookEvents, the billing
+ * context's WorkspaceEntitlements and the workspace context's
+ * PartnerOwnership.
  */
 export const ChannelsLive = UseCasesLive.pipe(Layer.provideMerge(AdaptersLive));
 
