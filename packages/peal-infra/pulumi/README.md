@@ -46,17 +46,24 @@ grouped in a component (`peal:cloudflare:Account`,
 The state is in R2's EU jurisdiction, in `peal-infra-state`
 (`backend.url` in each `Pulumi.yaml`), and its secrets are encrypted with a
 passphrase. `scripts/pulumi.ts` runs the Pulumi CLI in a project with what
-it needs, read from `~/.config/peal/` unless already set in the
-environment:
+it needs, unless already set in the environment, read from one item of the
+owner's login keychain, `peal-pulumi`, and handed to Pulumi in its
+environment alone, never a file:
 
-| File                      | Becomes                                      | What it is                                                                                                                                                                  |
-| ------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cloudflare-pulumi.token` | `CLOUDFLARE_API_TOKEN`                       | An account API token: Access Edit, Cloudflare One Connector: cloudflared Edit, R2 Edit, Account API Tokens Edit; on the zone, DNS Edit, Zone Read, Email Routing Rules Edit |
-| `pulumi-state.env`        | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | An R2 key with Object Read & Write on `peal-infra-state` alone                                                                                                              |
-| `pulumi-passphrase`       | `PULUMI_CONFIG_PASSPHRASE_FILE`              | The passphrase of the stacks' secrets                                                                                                                                       |
+| Variable                                     | What it is                                                                                                                                                                  |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLOUDFLARE_API_TOKEN`                       | An account API token: Access Edit, Cloudflare One Connector: cloudflared Edit, R2 Edit, Account API Tokens Edit; on the zone, DNS Edit, Zone Read, Email Routing Rules Edit |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | An R2 key with Object Read & Write on `peal-infra-state` alone                                                                                                              |
+| `PULUMI_CONFIG_PASSPHRASE`                   | The passphrase of the stacks' secrets                                                                                                                                       |
 
-Keep a copy of each in a password manager: without the passphrase, the
-stacks' secrets cannot be read.
+The password manager holds them; the keychain item is a copy for the
+scripts, which a password manager's own keychain does not let them read.
+`bun scripts/keychain.ts` writes it: copy each value from the password
+manager when it asks, and it reads the clipboard, then empties it. The
+item trusts no application, so macOS asks before each run reads it: allow
+it once, never "Always Allow", which would let any program of the session
+read it unasked. Without the passphrase, the stacks' secrets cannot be
+read: keep it in the password manager.
 
 ```sh
 cd packages/peal-infra/pulumi

@@ -43,8 +43,8 @@ def inventory(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def run(inventory: Path, outputs: dict) -> int:
-    args = ["--group", "sandbox", "--vault-password-file", str(inventory / "password"), "--inventory", str(inventory)]
+def run(inventory: Path, outputs: dict, source: Path | None = None) -> int:
+    args = ["--vault-id", f"sandbox@{source or inventory / 'password'}", "--inventory", str(inventory)]
     return script.main(args, outputs_of=lambda _group: outputs)
 
 
@@ -110,3 +110,20 @@ def test_the_vault_waits_for_the_stack_s_keys(inventory: Path) -> None:
 def test_an_environment_no_stack_describes_is_refused(inventory: Path) -> None:
     with pytest.raises(SystemExit, match="production"):
         script.inventory_values("production", OUTPUTS)
+
+
+def test_the_vault_password_can_come_from_a_client_script(inventory: Path) -> None:
+    client = inventory / "fake-client.sh"
+    asked = inventory / "asked"
+    client.write_text(f'#!/bin/sh\nprintf "%s" "$*" > "{asked}"\nprintf "{PASSWORD.decode()}\\n"\n')
+    client.chmod(0o700)
+
+    run(inventory, OUTPUTS, client)
+
+    assert asked.read_text() == "--vault-id sandbox"
+    assert vault_of(inventory)["cloudflared_tunnel_token"] == "synthetic-tunnel-token"
+
+
+def test_a_vault_id_without_its_source_is_refused(inventory: Path) -> None:
+    with pytest.raises(SystemExit):
+        script.main(["--vault-id", "sandbox", "--inventory", str(inventory)], outputs_of=lambda _group: OUTPUTS)
