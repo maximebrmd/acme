@@ -162,7 +162,7 @@ def test_sandbox_lets_outside_services_call(rendered: Path, path: str) -> None:
     assert _audience(rule) == [], rule
 
 
-SERVER = INFRA.parent / "peal-server"
+SERVER = INFRA.parent.parent / "peal-server"
 BUN = shutil.which("bun")
 
 
@@ -184,7 +184,7 @@ def _platform_addresses(public_url: str) -> list[dict[str, str]]:
 
 
 @pytest.mark.skipif(
-    BUN is None or not (INFRA.parent.parent / "node_modules").is_dir(),
+    BUN is None or not (INFRA.parent.parent.parent / "node_modules").is_dir(),
     reason="Bun or the workspace's packages are not installed",
 )
 def test_sandbox_lets_through_every_address_the_platforms_call(rendered: Path) -> None:

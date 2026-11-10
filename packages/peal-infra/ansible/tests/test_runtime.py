@@ -119,7 +119,7 @@ def test_production_sends_its_heartbeat(rendered: Path) -> None:
 
     assert host_env["PEAL_GRAFANA_HEARTBEAT"] == "./config/production/grafana/alerting/heartbeat.yaml"
     assert host_env["PEAL_HEARTBEAT_URL"] == settings("production")["peal_heartbeat_url"]
-    assert (INFRA.parent / "peal-docker" / host_env["PEAL_GRAFANA_HEARTBEAT"]).is_file()
+    assert (INFRA.parent.parent / "peal-docker" / host_env["PEAL_GRAFANA_HEARTBEAT"]).is_file()
 
 
 def test_production_samples_one_trace_in_ten(rendered: Path) -> None:

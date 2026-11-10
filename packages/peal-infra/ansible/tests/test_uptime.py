@@ -206,7 +206,7 @@ def test_the_heartbeat_tolerates_a_missed_beat(rendered: Path) -> None:
     """Grafana repeats it every 5 minutes (heartbeat.yaml)."""
     (heartbeat,) = _config(rendered)["external-endpoints"]
     grafana = yaml.safe_load(
-        (INFRA.parent / "peal-docker" / "config" / "production" / "grafana" / "alerting" / "heartbeat.yaml").read_text()
+        (INFRA.parent.parent / "peal-docker" / "config" / "production" / "grafana" / "alerting" / "heartbeat.yaml").read_text()
     )
     (rule,) = grafana["groups"][0]["rules"]
 
@@ -217,7 +217,7 @@ def test_the_heartbeat_tolerates_a_missed_beat(rendered: Path) -> None:
 
 
 def test_grafana_heartbeat_reads_the_settings_compose_passes() -> None:
-    compose = yaml.safe_load((INFRA.parent / "peal-docker" / "compose.production.yaml").read_text())
+    compose = yaml.safe_load((INFRA.parent.parent / "peal-docker" / "compose.production.yaml").read_text())
     grafana = compose["services"]["grafana"]
 
     assert {"PEAL_HEARTBEAT_URL", "PEAL_HEARTBEAT_TOKEN"} <= set(grafana["environment"])
@@ -254,7 +254,7 @@ def test_gatus_runs_without_root(rendered: Path, service: str) -> None:
 
 
 def test_caddy_is_the_one_self_hosters_run(rendered: Path) -> None:
-    self_host = yaml.safe_load((INFRA.parent / "peal-docker" / "compose.self-host.yaml").read_text())
+    self_host = yaml.safe_load((INFRA.parent.parent / "peal-docker" / "compose.self-host.yaml").read_text())
 
     assert _compose(rendered)["services"]["caddy"]["image"] == self_host["services"]["caddy"]["image"]
 
