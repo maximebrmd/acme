@@ -2,17 +2,20 @@ import { Effect, Match, Option } from "effect";
 import type { Schema } from "effect";
 import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
-import { duplicateWindowHours } from "peal-contract";
+import { duplicateWindowHours, maxImportRows } from "peal-contract";
 import type {
   AlreadyMember,
   AltTextTooLong,
   ChannelCannotPost,
   ChannelNotFound,
   ContentViolation,
+  DuplicateOnChannel,
   DuplicatePost,
   Forbidden,
   IdempotencyKeyReused,
+  ImportUnreadable,
   InvalidDateRange,
+  InvalidTimeRange,
   InvalidTimeZone,
   InvitationNotFound,
   MediaNotFound,
@@ -66,7 +69,9 @@ export type ApiFailure =
   | HttpApiError.BadRequest
   | HttpClientError.HttpClientError
   | IdempotencyKeyReused
+  | ImportUnreadable
   | InvalidDateRange
+  | InvalidTimeRange
   | InvalidTimeZone
   | InvitationNotFound
   | MediaNotFound
@@ -107,8 +112,8 @@ const size = (bytes: number): string => `${(bytes / mebibyte).toFixed(1)} MiB`;
 const seconds = (milliseconds: number): string =>
   `${String(milliseconds / 1000)} s`;
 
-// What a platform counts a text in.
-const units: Readonly<Record<TextUnit, string>> = {
+/** What a platform counts a text in. */
+export const units: Readonly<Record<TextUnit, string>> = {
   codePoints: "characters",
   emojiBytes: "characters, an emoji counting for its bytes",
   graphemes: "characters",
@@ -198,12 +203,40 @@ const placeOf = (violation: ContentViolation): string =>
     .flat()
     .join(", ");
 
-// One violation on its line: its name, as the API gives it, where it is,
-// and what it means.
-const violationOf = (violation: ContentViolation): string => {
+/**
+ * One violation: its name, as the API gives it, where it is, and what it
+ * means.
+ */
+export const violationOf = (violation: ContentViolation): string => {
   const place = placeOf(violation);
 
-  return `  ${violation._tag}${place === "" ? "" : ` on ${place}`}: ${brokenRule(violation)}`;
+  return `${violation._tag}${place === "" ? "" : ` on ${place}`}: ${brokenRule(violation)}`;
+};
+
+/** The channels that already have a post's content, each with its post. */
+export const duplicateChannels = (
+  duplicates: readonly DuplicateOnChannel[]
+): string =>
+  duplicates
+    .map(({ channelId, postId }) => `channel ${channelId} (post ${postId})`)
+    .join(", ");
+
+// Why a file is not posts, and what would make it a list of them.
+const unreadableImport = ({ column, problem }: ImportUnreadable): string => {
+  const named = column === null ? "" : `, ${column}`;
+
+  const reasons: Readonly<Record<ImportUnreadable["problem"], string>> = {
+    empty:
+      "The file is empty: its first line names the columns, and each line under it is a post.",
+    missingColumn: `The file's first line lacks a column it needs${named}: text, channels and at are required.`,
+    repeatedColumn: `The file's first line names a column twice${named}.`,
+    tooManyRows: `The file has more than ${String(maxImportRows)} rows under its first line, the most one import takes: split it.`,
+    unknownColumn: `The file's first line names a column Peal does not know${named}: it reads text, channels, media, at, time_zone, allow_duplicate and idempotency_key.`,
+    unterminatedQuote:
+      'A quoted cell of the file never ends: close it with a double quote, and write a quote inside a cell twice ("").',
+  };
+
+  return `${reasons[problem]} Nothing was made.`;
 };
 
 const sourceFailures: Readonly<Record<MediaSourceFailure, string>> = {
@@ -243,13 +276,7 @@ export const explain =
         ),
       DuplicatePost: ({ duplicates }) =>
         refused(
-          `The same content already goes to ${duplicates
-            .map(
-              ({ channelId, postId }) => `channel ${channelId} (post ${postId})`
-            )
-            .join(
-              ", "
-            )}, less than ${String(duplicateWindowHours)} hours from this post's time: nothing was made. If you mean to post it twice, send it again with --allow-duplicate.`
+          `The same content already goes to ${duplicateChannels(duplicates)}, less than ${String(duplicateWindowHours)} hours from this post's time: nothing was made. If you mean to post it twice, send it again with --allow-duplicate.`
         ),
       Forbidden: () =>
         refused(
@@ -260,9 +287,14 @@ export const explain =
         refused(
           "This idempotency key was sent in the last 24 hours with another post: nothing was made. Send this one under a new --idempotency-key."
         ),
+      ImportUnreadable: (unreadable) => refused(unreadableImport(unreadable)),
       InvalidDateRange: () =>
         refused(
           "The range must end on or after the day it starts, and span 366 days at most."
+        ),
+      InvalidTimeRange: () =>
+        refused(
+          "The range ends before it starts: give a --to later than --from."
         ),
       InvalidTimeZone: ({ timeZone }) =>
         refused(
@@ -302,7 +334,7 @@ export const explain =
         refused(
           [
             "Peal refused the post, and made nothing:",
-            ...violations.map(violationOf),
+            ...violations.map((violation) => `  ${violationOf(violation)}`),
           ].join("\n")
         ),
       PostNotFound: () => refused("The workspace has no such post."),

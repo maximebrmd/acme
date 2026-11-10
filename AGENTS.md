@@ -2047,6 +2047,13 @@ self-hoster needs only Postgres and an S3-compatible store:
   with the refresh token. `CredentialStore` (`src/credentials.ts`) saves sign-ins by API URL in
   `credentials.json` (0600, in a 0700 folder). Keep tokens `Redacted`, and
   never print one.
+- `peal post --dry-run` checks a post through `posts.validate` and takes
+  media ids only, as a file or an address would be stored; `--wait` goes
+  with `--now`. `peal posts list`, `posts wait` and `posts import` follow
+  `posts.search`, `posts.outcome` and `posts.import`; an import that left a
+  row refused or unreadable ends as a refusal, after printing every row, and
+  never prints the file. No command sends `posts.bulk`: a CSV file is the
+  command line's way to several posts.
 - Test commands with `runWith` from `src/cli.ts` against the in-memory server
   in `test/support.ts` (the contract served by test handlers) and the
   authorization server in `test/authorization-server.ts`, never against a

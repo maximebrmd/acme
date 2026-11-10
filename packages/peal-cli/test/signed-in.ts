@@ -24,6 +24,13 @@ export interface SignedIn {
   readonly printed: (args: readonly string[]) => Effect.Effect<string, unknown>;
   /** Runs the command line, and answers with what it printed on stderr. */
   readonly refused: (args: readonly string[]) => Effect.Effect<string, unknown>;
+  /** Runs a command that is refused, and answers with both of them. */
+  readonly refusedAfter: (
+    args: readonly string[]
+  ) => Effect.Effect<
+    { readonly errors: string; readonly logs: string },
+    unknown
+  >;
   readonly studio: Studio;
 }
 
@@ -97,5 +104,25 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
       return (yield* output).errors.slice(before).join("\n");
     });
 
-  return { directory, printed, refused, studio } satisfies SignedIn;
+  const refusedAfter = (args: readonly string[]) =>
+    Effect.gen(function* runRefusedAfter() {
+      const before = yield* output;
+
+      yield* run(args).pipe(Effect.flip);
+
+      const after = yield* output;
+
+      return {
+        errors: after.errors.slice(before.errors.length).join("\n"),
+        logs: after.logs.slice(before.logs.length).join("\n"),
+      };
+    });
+
+  return {
+    directory,
+    printed,
+    refused,
+    refusedAfter,
+    studio,
+  } satisfies SignedIn;
 });
