@@ -929,7 +929,7 @@
       "managing": "Ouverture de l’espace de facturation…",
       "manageHint": "Changez de moyen de paiement, d’adresse de facturation ou de numéro de TVA, ou téléchargez les factures, dans l’espace de facturation de Stripe.",
       "trialEnds": "L’essai prend fin le {date}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement.",
-      "withdrawable": "Jusqu’au {date}, en tant que consommateur, vous pouvez vous rétracter du contrat : il prend fin immédiatement et la part non utilisée vous est remboursée.",
+      "withdrawable": "Jusqu’au {date}, en tant que consommateur, vous pouvez vous rétracter du contrat, ici ou avec « Renoncer au contrat ici » au pied de chaque page : il prend fin immédiatement et la part non utilisée vous est remboursée.",
       "trialHint": "Un abonnement commandé pendant l’essai y met fin une fois payé ; rien n’est facturé pour l’essai."
     },
     "usage": {
@@ -962,8 +962,8 @@
       "generic": "Stripe n’a pas pu être joint. Réessayez dans un instant.",
       "nothingToCancel": "L’abonnement est déjà résilié.",
       "trialUsed": "Cet espace de travail ou votre compte a déjà eu son essai : commandez plutôt un abonnement.",
-      "withdrawalBusiness": "Une entreprise avec un numéro de TVA vérifié n’a pas de droit de rétractation. Vous pouvez toujours résilier l’abonnement.",
-      "withdrawalExpired": "Les 14 jours pour vous rétracter sont passés. Vous pouvez toujours résilier l’abonnement."
+      "withdrawalBusiness": "Une entreprise avec un numéro de TVA vérifié n’a pas de droit de rétractation. Vous pouvez toujours résilier le contrat.",
+      "withdrawalExpired": "Les 14 jours pour vous rétracter sont passés. Vous pouvez toujours résilier le contrat."
     },
     "limitReached": "{limit, select, channels {L’abonnement de l’espace de travail ne permet pas d’autre canal. Passez à un abonnement supérieur, ou déconnectez d’abord un canal.} members {L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut passer à un abonnement supérieur.} scheduledPosts {L’abonnement de l’espace de travail ne permet pas d’autre publication ce mois-là. Choisissez un autre mois, annulez une publication, ou passez à un abonnement supérieur.} assistantRequests {L’abonnement de l’espace de travail ne permet plus de demande à l’assistant aujourd’hui.} mediaStorage {L’abonnement de l’espace de travail n’a plus de place pour ce fichier. Supprimez des médias, ou passez à un abonnement supérieur.} other {L’abonnement de l’espace de travail ne permet pas d’en ajouter.}}",
     "prices": {
@@ -977,9 +977,9 @@
       "intervalLabel": "Période de facturation"
     },
     "consent": {
-      "startNow": "Je demande que mon abonnement commence dès maintenant. Je sais qu’en tant que consommateur, je peux me rétracter dans les 14 jours et ne payer alors que les jours utilisés.",
-      "terms": "Commander vaut acceptation des conditions générales, qui indiquent comment résilier et comment se rétracter.",
-      "termsLink": "Commander vaut acceptation des conditions générales, qui indiquent comment résilier et comment se rétracter.",
+      "startNow": "Je demande que mon abonnement commence dès maintenant. Je sais qu’en tant que consommateur, je peux me rétracter dans les 14 jours, avec « Renoncer au contrat ici », au pied de chaque page et sur celle-ci, et ne payer alors que les jours utilisés.",
+      "terms": "Commander vaut acceptation des conditions générales, qui indiquent comment résilier et comment se rétracter, et contiennent le modèle de formulaire de rétractation.",
+      "termsLink": "Commander vaut acceptation des conditions générales, qui indiquent comment résilier et comment se rétracter, et contiennent le modèle de formulaire de rétractation.",
       "needed": "Cochez la case ci-dessus pour commander un abonnement ou commencer l’essai."
     },
     "trial": {
@@ -989,19 +989,19 @@
       "starting": "Ouverture du paiement…"
     },
     "cancel": {
-      "open": "Résilier l’abonnement",
-      "title": "Résilier l’abonnement",
-      "summary": "L’abonnement {plan} prend fin le {date}, et plus rien n’est facturé. D’ici là, l’espace de travail garde son abonnement ; il passe ensuite à l’offre gratuite, avec son contenu.",
+      "open": "Résilier votre contrat",
+      "title": "Résilier votre contrat",
+      "summary": "L’abonnement {plan} prend fin le {date}, et plus rien n’est facturé. D’ici là, l’espace de travail garde son abonnement ; il passe ensuite à l’offre gratuite, avec son contenu. Pour y mettre fin à une date ultérieure, utilisez « Résilier votre contrat » au pied de la page.",
       "summaryNow": "L’essai {plan} prend fin maintenant, et rien n’est facturé. L’espace de travail passe à l’offre gratuite, avec son contenu.",
-      "confirm": "Confirmer la résiliation",
+      "confirm": "Notification de la résiliation",
       "confirming": "Résiliation…",
       "doneTitle": "Abonnement résilié",
       "done": "Il prend fin le {date}. Une confirmation a été envoyée par e-mail aux membres qui gèrent la facturation."
     },
     "withdraw": {
-      "open": "Se rétracter du contrat ici",
+      "open": "Renoncer au contrat ici",
       "loading": "Chargement…",
-      "title": "Se rétracter du contrat",
+      "title": "Renoncer au contrat",
       "summary": "Vous avez souscrit à {plan} le {started}. Vous rétracter met fin à l’abonnement maintenant, et {refund} vous est remboursé sur votre moyen de paiement sous 14 jours.",
       "confirm": "Confirmer la rétractation",
       "confirming": "Rétractation…",
@@ -1009,6 +1009,92 @@
       "done": "L’abonnement a pris fin, et {refund} vous est remboursé sous 14 jours. Un accusé de réception, avec sa date et son heure, vous a été envoyé par e-mail."
     },
     "keep": "Garder l’abonnement"
+  },
+  "Contract": {
+    "cancel": {
+      "title": "Résilier votre contrat",
+      "description": "Résiliez ici un abonnement Peal, connecté ou non. Il n’y a ni préavis ni frais : le contrat prend fin à l’échéance de la période déjà payée, qui n’est pas remboursée, ou à la date ultérieure que vous indiquez ; un essai prend fin immédiatement. L’espace de travail passe ensuite à l’offre gratuite, avec son contenu.",
+      "notify": "Notification de la résiliation",
+      "notifying": "Notification en cours…",
+      "summaryTitle": "Récapitulatif de votre résiliation",
+      "doneTitle": "Résiliation notifiée"
+    },
+    "withdraw": {
+      "title": "Renoncer au contrat ici",
+      "description": "En tant que consommateur, vous pouvez vous rétracter d’un abonnement Peal dans les 14 jours suivant sa souscription, sans motif, connecté ou non. Le contrat prend fin immédiatement, et ce que vous avez payé pour le reste de la période vous est remboursé sur votre moyen de paiement sous 14 jours.",
+      "notify": "Confirmer la rétractation",
+      "notifying": "Confirmer la rétractation",
+      "summaryTitle": "Récapitulatif de votre rétractation",
+      "doneTitle": "Rétractation reçue"
+    },
+    "fields": {
+      "name": "Nom et prénom, ou dénomination sociale",
+      "email": "Adresse e-mail",
+      "emailHint": "L’accusé de réception y est envoyé.",
+      "contract": "Numéro de contrat, ou nom de l’espace de travail",
+      "contractHint": "Le numéro de contrat figure dans l’e-mail de confirmation de votre abonnement : avec lui, votre demande est appliquée immédiatement. Sans lui, nous vous envoyons un lien par e-mail pour terminer.",
+      "contractChoice": "Contrat",
+      "contractOf": "{workspace}",
+      "contractOther": "Un autre contrat",
+      "desiredOn": "Date de résiliation souhaitée (facultatif)",
+      "desiredOnHint": "Laissez vide pour une fin dès que le contrat le permet : à l’échéance de la période déjà payée. Une date ultérieure y met fin ce jour-là, la dernière période n’étant facturée que jusqu’à cette date."
+    },
+    "invalid": {
+      "name": "Indiquez votre nom avec des lettres, des chiffres, des espaces et ' , & ( ) - uniquement, 100 caractères au plus.",
+      "email": "Indiquez une adresse e-mail, comme vous@exemple.fr.",
+      "contract": "Désignez le contrat avec des lettres, des chiffres, des espaces et ' , & ( ) - uniquement, 100 caractères au plus."
+    },
+    "signedInAs": "Vous êtes connecté en tant que {email} : vos contrats sont listés, et votre demande est appliquée immédiatement.",
+    "continue": "Continuer",
+    "modify": "Modifier",
+    "summary": {
+      "name": "Nom",
+      "email": "Accusé de réception envoyé à",
+      "contract": "Contrat",
+      "contractNotGiven": "Non précisé : nous vous enverrons un lien par e-mail pour le choisir",
+      "desiredOn": "Date souhaitée",
+      "desiredOnNone": "Dès que le contrat le permet",
+      "refund": "Remboursé maintenant",
+      "effect": "{kind, select, cancellation {Le contrat prend fin à l’échéance de la période déjà payée, ou à la date souhaitée si elle est postérieure ; un essai prend fin immédiatement. Plus rien n’est prélevé.} other {Le contrat prend fin immédiatement, et le reste de la période payée est remboursé sous 14 jours.}}"
+    },
+    "done": {
+      "received": "Nous l’avons reçue le {receivedAt, date, long} à {receivedAt, time, short} : cette date fait foi. Un accusé de réception, qui reprend ce que vous avez envoyé, est en route vers {email}. Il indique la suite : avec le numéro de contrat, votre demande est appliquée immédiatement ; sinon, l’e-mail contient un lien pour terminer, ou une personne vous écrira.",
+      "cancelled": "Le contrat prend fin le {endsAt, date, long}. Jusque-là, l’espace de travail conserve son offre ; plus rien n’est prélevé. Une confirmation a été envoyée par e-mail aux membres qui gèrent la facturation.",
+      "withdrawn": "Le contrat a pris fin, et {refund} vous sont remboursés sur votre moyen de paiement sous 14 jours. Un accusé de réception, avec sa date et son heure, vous a été envoyé par e-mail.",
+      "billing": "Ouvrir la facturation"
+    },
+    "errors": {
+      "generic": "Votre demande n’a pas pu être envoyée. Réessayez dans un instant.",
+      "tooMany": "Trop de demandes sont venues de votre connexion depuis une heure. Réessayez plus tard, ou connectez-vous et utilisez cette page : aucune vérification n’est alors nécessaire.",
+      "captcha": "La vérification que vous êtes une personne a échoué. Réessayez.",
+      "notEnabled": "Ce serveur Peal ne vend pas d’abonnement : il n’y a aucun contrat à résilier ni dont se rétracter.",
+      "forbidden": "Seuls les propriétaires et administrateurs de l’espace de travail, dans leur propre session, peuvent mettre fin à son contrat.",
+      "nothingToCancel": "Cet espace de travail n’a pas d’abonnement à résilier, ou sa fin est déjà programmée.",
+      "withdrawalBusiness": "Une entreprise avec un numéro de TVA vérifié n’a pas de droit de rétractation. Vous pouvez toujours résilier le contrat.",
+      "withdrawalExpired": "Les 14 jours pour vous rétracter sont passés. Vous pouvez toujours résilier le contrat.",
+      "withdrawalNotSubscribed": "Cet espace de travail n’a pas d’abonnement dont se rétracter.",
+      "unavailable": "Stripe n’a pas pu être joint. Rien n’a changé : réessayez dans un instant."
+    },
+    "links": {
+      "label": "Votre contrat",
+      "cancel": "Résilier votre contrat",
+      "withdraw": "Renoncer au contrat ici"
+    },
+    "confirmation": {
+      "title": "Appliquer votre demande",
+      "description": "Vous avez suivi le lien que nous vous avons envoyé par e-mail, ce qui montre que la demande vient de vous. Choisissez le contrat concerné.",
+      "request": "{kind, select, cancellation {Résiliation} other {Rétractation}} reçue le {receivedAt, date, long} à {receivedAt, time, short} : elle est appliquée à cette date.",
+      "desiredOn": "Date de fin de contrat souhaitée : {date, date, long}.",
+      "contract": "{workspace} : {plan}{trial, select, true { (essai)} other {}}",
+      "none": "Le compte associé à cette adresse ne gère aucun abonnement à ce jour : il n’y a rien à quoi appliquer la demande.",
+      "apply": "{kind, select, cancellation {Notification de la résiliation} other {Confirmer la rétractation}}",
+      "applying": "Application en cours…",
+      "notFound": "Ce lien n’ouvre rien : il a déjà servi, il a expiré après 30 jours, ou il est incomplet. Renvoyez votre demande depuis le lien au pied de la page.",
+      "missing": "Cette page s’ouvre depuis le lien de l’e-mail que nous vous avons envoyé.",
+      "applied": "{kind, select, cancellation {Le contrat prend fin le {effectiveAt, date, long}. Plus rien n’est prélevé.} other {Le contrat a pris fin.}} Une confirmation a été envoyée par e-mail aux membres qui gèrent la facturation.",
+      "refunded": "{refund} sont remboursés sur le moyen de paiement utilisé.",
+      "refused": "{refusal, select, nothingToCancel {Il n’y avait rien à résilier : la fin de l’abonnement est déjà programmée, ou il a pris fin.} notSubscribed {Le contrat n’a pas d’abonnement dont se rétracter.} expired {Le délai de rétractation de 14 jours était écoulé à la réception de votre déclaration. Vous pouvez résilier le contrat.} business {Le contrat a été conclu par une entreprise avec un numéro de TVA vérifié, qui ne dispose pas du droit de rétractation. Vous pouvez le résilier.} other {La demande n’a pas pu être appliquée.}}"
+    }
   },
   "Captcha": {
     "label": "Vérifiez que vous n’êtes pas un robot"
@@ -1042,7 +1128,7 @@
       "ends": "{plan, select, other {L’abonnement {plan}} none {L’abonnement}} prend fin maintenant : plus rien n’est facturé.",
       "notRefunded": "La période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement.",
       "notRefundedUntil": "La période déjà payée, jusqu’au {date}, n’est pas remboursée, sauf lorsque la loi prévoit un remboursement.",
-      "withdrawal": "Si vous avez souscrit en tant que consommateur il y a moins de 14 jours, rétractez-vous d’abord avec Se rétracter du contrat ici, sur la page de facturation de l’espace de travail : la part non utilisée vous est alors remboursée. Une fois l’espace de travail supprimé, adressez-vous à la personne qui gère ce serveur Peal.",
+      "withdrawal": "Si vous avez souscrit en tant que consommateur il y a moins de 14 jours, rétractez-vous d’abord avec Renoncer au contrat ici, sur la page de facturation de l’espace de travail : la part non utilisée vous est alors remboursée. Une fois l’espace de travail supprimé, adressez-vous à la personne qui gère ce serveur Peal.",
       "invoices": "Téléchargez d’abord vos factures depuis la page de facturation : elle disparaît avec l’espace de travail. Les factures sont conservées comme le droit comptable l’exige, et une confirmation vous est envoyée par e-mail.",
       "agree": "{count, plural, one {Résilier l’abonnement maintenant} other {Résilier ces # abonnements maintenant}}, sans remboursement de la période payée, sauf lorsque la loi en prévoit un"
     }

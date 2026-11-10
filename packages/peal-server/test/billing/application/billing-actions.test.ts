@@ -329,7 +329,7 @@ layer(ActionsTest)("billing's actions", (it) => {
       const order = yield* orders.place(actorAs(), request);
 
       assert.isTrue(order.trial);
-      assert.strictEqual(order.consentVersion, "2026-11-09");
+      assert.strictEqual(order.consentVersion, "2026-11-10");
 
       yield* BillingLog.use(({ trials }) =>
         Ref.set(trials, [

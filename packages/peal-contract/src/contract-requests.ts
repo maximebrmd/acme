@@ -190,6 +190,10 @@ export class ContractRequestsApi extends HttpApiGroup.make("contractRequests")
   .add(
     HttpApiEndpoint.post("send", "/", {
       error: BillingNotEnabled,
+      headers: Schema.Struct({
+        // The Turnstile widget's token, on a server that asks for one.
+        "x-captcha-response": Schema.optionalKey(Schema.String),
+      }),
       payload: NewContractRequestSchema,
       success: ContractRequestReceiptSchema,
     }).annotateMerge(

@@ -211,7 +211,7 @@ const LoadedBilling = ({
 
   const confirmCancel = () => {
     run({ _tag: "cancel" }, async () => {
-      const done = await cancel({ params });
+      const done = await cancel({ params, payload: {} });
 
       if (Exit.isSuccess(done)) {
         setStep({ _tag: "cancelled", endsAt: done.value.endsAt });

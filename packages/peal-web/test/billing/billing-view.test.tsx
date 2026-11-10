@@ -200,8 +200,8 @@ describe(BillingView, () => {
         "Commander avec obligation de paiement",
         "9,00\u00A0€ TTC par mois",
         "7,50\u00A0€ HT",
-        "Résilier l’abonnement",
-        "Se rétracter du contrat ici",
+        "Résilier votre contrat",
+        "Renoncer au contrat ici",
         "Jusqu’au 23 novembre 2026",
         "Renouvelé le 9 décembre 2026, chaque mois",
       ])
@@ -218,7 +218,7 @@ describe(BillingView, () => {
     expect(
       missing(asking, [
         "L’abonnement Starter prend fin le 9 décembre 2026",
-        "Confirmer la résiliation",
+        "Notification de la résiliation",
         "Garder l’abonnement",
       ])
     ).toStrictEqual([]);

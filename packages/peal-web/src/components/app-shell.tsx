@@ -3,13 +3,15 @@ import { Suspense } from "react";
 import type { ReactNode } from "react";
 
 import { AccountMenu } from "#components/account-menu.tsx";
+import { ContractLinks } from "#components/contract/contract-links.tsx";
 import { ImpersonationBanner } from "#components/impersonation-banner.tsx";
 import { LanguageSwitcher } from "#components/language-switcher.tsx";
 import { Link } from "#i18n/navigation.ts";
 
 // The frame around every page: the impersonation banner while staff act as
 // someone, a header with the product name, the language switcher and the
-// account menu, then the page itself.
+// account menu, the page itself, then a footer with the functions to
+// cancel a contract and to withdraw from one, on every page.
 export const AppShell = ({ children }: { readonly children: ReactNode }) => {
   const t = useTranslations("AppShell");
 
@@ -34,6 +36,13 @@ export const AppShell = ({ children }: { readonly children: ReactNode }) => {
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
         {children}
       </main>
+      <footer className="border-t">
+        <div className="text-muted-foreground mx-auto w-full max-w-5xl px-4 py-6 text-sm">
+          <Suspense fallback={null}>
+            <ContractLinks />
+          </Suspense>
+        </div>
+      </footer>
     </div>
   );
 };
