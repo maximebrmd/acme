@@ -19,6 +19,7 @@ import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { PostId, UserId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import type { ApprovalNeedsPerson } from "./approval-needs-person.ts";
 import type { CommentNotFound } from "./comment-not-found.ts";
@@ -149,7 +150,11 @@ export class PostReview extends Context.Service<
       shown: ShownRequest
     ) => Effect.Effect<
       { readonly late: boolean; readonly request: ApprovalRequest },
-      ApprovalChanged | ApprovalNeedsPerson | ApprovalNotPending | Refused
+      | ApprovalChanged
+      | ApprovalNeedsPerson
+      | ApprovalNotPending
+      | PlanLimitReached
+      | Refused
     >;
     readonly requestChanges: (
       actor: Actor,

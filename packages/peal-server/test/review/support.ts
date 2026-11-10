@@ -142,7 +142,8 @@ const Gate = Layer.mergeAll(
 
 /** The review use cases, with `guard` before what visitors write. */
 export const reviewServerWith = <E, R>(
-  guard: Layer.Layer<VisitorGuard, E, R>
+  guard: Layer.Layer<VisitorGuard, E, R>,
+  allowance: ReturnType<typeof postAllowance> = postAllowance()
 ) =>
   Layer.mergeAll(
     ReviewSettings.layer,
@@ -162,7 +163,7 @@ export const reviewServerWith = <E, R>(
       )
     ),
     Layer.provideMerge(
-      postsServerBehind(Gate, attachableMedia(), postAllowance(), Hearing)
+      postsServerBehind(Gate, attachableMedia(), allowance, Hearing)
     )
   );
 

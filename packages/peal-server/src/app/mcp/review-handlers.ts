@@ -1,7 +1,7 @@
 import { Effect, Option } from "effect";
 import { CurrentMember } from "peal-contract";
 
-import { notAllowed, refuse } from "#app/mcp/refusals.ts";
+import { notAllowed, planRefusal, refuse } from "#app/mcp/refusals.ts";
 import { ReviewTools } from "#app/mcp/review-tools.ts";
 import { postIdOf, shownOf } from "#review/api/review-input.ts";
 import { approvalView, threadView } from "#review/api/review-view.ts";
@@ -45,6 +45,7 @@ const postOf = (raw: string) =>
 export const ReviewToolsLive = ReviewTools.toLayer(
   Effect.gen(function* reviewTools() {
     const review = yield* PostReview;
+    const refusedByPlan = yield* planRefusal;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
@@ -76,6 +77,10 @@ export const ReviewToolsLive = ReviewTools.toLayer(
                 ApprovalNotPending: notPending,
                 DatabaseError: Effect.die,
                 MissingPermission: notAllowed("approve posts"),
+                PlanLimitReached: refusedByPlan(
+                  member.workspaceId,
+                  "Nothing was approved, and the post still waits: its workspace schedules nothing while it holds more than its plan allows."
+                ),
                 ReviewPostNotFound: notFound,
               })
             );

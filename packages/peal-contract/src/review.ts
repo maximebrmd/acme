@@ -13,6 +13,7 @@ import { CommentInvalid } from "./comment-invalid.ts";
 import { CommentNotFound } from "./comment-not-found.ts";
 import { Forbidden } from "./forbidden.ts";
 import { MediaKindSchema } from "./media.ts";
+import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformSchema } from "./platform.ts";
 import { PostNotFound } from "./post-not-found.ts";
 import { PostNotReviewable } from "./post-not-reviewable.ts";
@@ -462,14 +463,20 @@ export class ReviewApi extends HttpApiGroup.make("review")
       })
     ),
     HttpApiEndpoint.post("approve", "/posts/:postId/approve", {
-      error: [Forbidden, PostNotFound, ApprovalNotPending, ApprovalChanged],
+      error: [
+        Forbidden,
+        PostNotFound,
+        ApprovalNotPending,
+        ApprovalChanged,
+        PlanLimitReached,
+      ],
       params: post,
       payload: ApprovalDecisionSchema,
       success: ApprovalOutcomeSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Approves a post that waits for an approval, as the reviewer was shown it: send the `id` and the `subjectHash` of the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.",
+          "Approves a post that waits for an approval, as the reviewer was shown it: send the `id` and the `subjectHash` of the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. In a workspace that holds more channels or members than its plan allows, which schedules nothing, nothing is approved (PlanLimitReached) and the post keeps waiting. Needs post:approve, and is refused to staff acting as a member.",
         summary: "Approve a post",
       })
     ),

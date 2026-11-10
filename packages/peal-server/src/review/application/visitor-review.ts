@@ -13,6 +13,7 @@ import type { LinkAccess, ReviewLink } from "#review/domain/review-link.ts";
 import type { Reviewer } from "#review/domain/reviewer.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { UserId } from "#shared/domain/ids.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import { CommentRejected } from "./comment-rejected.ts";
 import { LinkAccessDenied } from "./link-access-denied.ts";
@@ -84,7 +85,7 @@ export class VisitorReview extends Context.Service<
       shown: ShownRequest
     ) => Effect.Effect<
       { readonly late: boolean },
-      ApprovalChanged | ApprovalNotPending | Refusal
+      ApprovalChanged | ApprovalNotPending | PlanLimitReached | Refusal
     >;
     readonly requestChanges: (
       token: string,

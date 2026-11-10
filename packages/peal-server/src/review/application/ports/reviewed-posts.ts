@@ -9,6 +9,7 @@ import type {
   UserId,
   WorkspaceId,
 } from "#shared/domain/ids.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 
@@ -85,11 +86,19 @@ export class ReviewedPosts extends Context.Service<
       workspaceId: WorkspaceId,
       postId: PostId
     ) => Effect.Effect<Option.Option<ReviewedPost>, DatabaseError>;
-    /** Schedules an approved post, in the caller's transaction. */
+    /**
+     * Schedules an approved post, in the caller's transaction. In a
+     * workspace that holds more than its plan allows, nothing is scheduled
+     * (PlanLimitReached): the caller's transaction is undone, and the post
+     * keeps waiting.
+     */
     readonly release: (
       workspaceId: WorkspaceId,
       postId: PostId
-    ) => Effect.Effect<Option.Option<ReleasedPost>, DatabaseError>;
+    ) => Effect.Effect<
+      Option.Option<ReleasedPost>,
+      DatabaseError | PlanLimitReached
+    >;
     /** Takes a post that waits back to draft, in the caller's transaction. */
     readonly sendBack: (
       workspaceId: WorkspaceId,

@@ -18,6 +18,7 @@ import { PostReview } from "#review/application/post-review.ts";
 import { ReviewLinks } from "#review/application/review-links.ts";
 import { ReviewSettings } from "#review/application/review-settings.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { limitRefusal } from "#shared/api/limit-reached.ts";
 
 import {
   commentIdOf,
@@ -58,6 +59,7 @@ export const ReviewHandlers = HttpApiBuilder.group(
     const links = yield* ReviewLinks;
     const review = yield* PostReview;
     const settings = yield* ReviewSettings;
+    const limitReached = yield* limitRefusal;
 
     // The post's review as it is after a change, for its answer.
     const threadOf = (
@@ -89,6 +91,9 @@ export const ReviewHandlers = HttpApiBuilder.group(
                 ApprovalNotPending: notPending,
                 DatabaseError: Effect.die,
                 MissingPermission: forbidden,
+                // Nothing is scheduled in a workspace over its plan, so
+                // nothing was approved: the post still waits.
+                PlanLimitReached: limitReached,
                 ReviewPostNotFound: postNotFound,
               })
             );

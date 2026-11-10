@@ -1955,7 +1955,12 @@ and no socket, for tests.
   context backs the gate (`ReviewApprovalGate` over `ApprovalIntake`);
   `ApprovalGate.open` is for tests. `HeldPosts` is publishing's side of a
   decision (`release`, `sendBack`), for the review context only: `release`
-  starts the job, and dies unless the gate says an approval stands.
+  starts the job, and dies unless the gate says an approval stands. It
+  schedules, so it checks the plan as scheduling does (`withinPlan`): in a
+  workspace that went over its channels or members while the post waited,
+  the approval is refused (`PlanLimitReached`; `WorkspaceOverPlan` to a
+  link's holder, who is told nothing of the plan), nothing is recorded,
+  and the post keeps waiting.
 - The policy is per workspace (`review/domain/approval-policy.ts`): `never`,
   `contributorsAndApplications`, `always`. An application is an API key or
   an OAuth client (`Actor.subject.clientId`). Where posts wait, whoever has

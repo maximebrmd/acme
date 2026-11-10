@@ -39,7 +39,7 @@ import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { can } from "#shared/domain/access.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import { roomForOneMore, withinAllowance } from "#shared/domain/allowance.ts";
+import { roomForOneMore } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
@@ -63,6 +63,7 @@ import type { PostWithTargets, StoredPost } from "./post-repository.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
+import { withinPlan as withinPlanOf } from "./within-plan.ts";
 import type { WorkspaceChannels } from "./workspace-channels.ts";
 import {
   findInWorkspace,
@@ -385,26 +386,8 @@ export class PostScheduling extends Context.Service<
       // A workspace with more channels or members than its plan allows,
       // as after its trial, schedules and moves nothing until it is back
       // within it.
-      const withinPlan = Effect.fn("PostScheduling.withinPlan")(
-        function* withinPlan(post: Post) {
-          const channels = yield* PostAllowance.use((allowance) =>
-            allowance.channels(post.workspaceId)
-          );
-
-          yield* Effect.fromResult(
-            withinAllowance("channels", channels.allowed, channels.connected)
-          );
-
-          const members = yield* PostAllowance.use((allowance) =>
-            allowance.members(post.workspaceId)
-          );
-
-          yield* Effect.fromResult(
-            withinAllowance("members", members.allowed, members.taken)
-          );
-        },
-        withPorts
-      );
+      const withinPlan = (post: Post) =>
+        withinPlanOf(post.workspaceId).pipe(withPorts);
 
       // Room in the month the post goes out in, besides the post itself.
       // Run in the transaction that saves the post: the month stays claimed

@@ -4,6 +4,7 @@ import {
   Api,
   ApprovalChanged,
   ApprovalNotPending,
+  WorkspaceOverPlan,
   CommentInvalid,
   ReviewAccessDenied,
   ReviewCaptchaRequired,
@@ -116,6 +117,9 @@ export const ReviewLinkHandlers = HttpApiBuilder.group(
                 ...writeFailures,
                 ApprovalChanged: () => Effect.fail(new ApprovalChanged()),
                 ApprovalNotPending: () => Effect.fail(new ApprovalNotPending()),
+                // A visitor is told that nothing was approved and why,
+                // never what the workspace's plan holds.
+                PlanLimitReached: () => Effect.fail(new WorkspaceOverPlan()),
               })
             );
         }),

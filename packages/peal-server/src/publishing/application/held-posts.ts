@@ -6,13 +6,16 @@ import { moveToDraft, releasePost } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import { ApprovalGate } from "./approval-gate.ts";
+import type { PostAllowance } from "./post-allowance.ts";
 import { PostEvents } from "./post-events.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets } from "./post-repository.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
+import { withinPlan } from "./within-plan.ts";
 import { findInWorkspace, lockInWorkspace } from "./workspace-posts.ts";
 
 // A compare and set that misses under the row lock means the lock was not
@@ -48,14 +51,16 @@ export class HeldPosts extends Context.Service<
     /**
      * Schedules an approved post for the time it was asked for, starts its
      * job, and tells PostEvents it is scheduled, in one transaction. Approved after that time, it goes back to draft instead
-     * (`late`), and keeps its approval: a member gives it a new time.
+     * (`late`), and keeps its approval: a member gives it a new time. In a
+     * workspace that holds more channels or members than its plan allows,
+     * nothing is scheduled (PlanLimitReached), and the post keeps waiting.
      */
     readonly release: (
       workspaceId: WorkspaceId,
       postId: PostId
     ) => Effect.Effect<
       ReleasedPost,
-      DatabaseError | InvalidPostTransition | PostNotFound
+      DatabaseError | InvalidPostTransition | PlanLimitReached | PostNotFound
     >;
     /** Takes a post that waits back to draft, for its author to change. */
     readonly sendBack: (
@@ -75,7 +80,7 @@ export class HeldPosts extends Context.Service<
       const gate = yield* ApprovalGate;
       const events = yield* PostEvents;
       const { transaction } = yield* TransactionRunner;
-      const ports = yield* Effect.context<PostRepository>();
+      const ports = yield* Effect.context<PostAllowance | PostRepository>();
 
       const withPorts = Effect.provideContext(ports);
 
@@ -118,11 +123,18 @@ export class HeldPosts extends Context.Service<
               );
             }
 
-            yield* applied(yield* posts.update(released, current.post));
-
             if (released.status._tag !== "scheduled") {
+              yield* applied(yield* posts.update(released, current.post));
+
               return { late: true, post: released, targets };
             }
+
+            // An approval schedules the post: a workspace that went over
+            // its plan while the post waited schedules nothing, and the
+            // post keeps waiting, its approval undone with this
+            // transaction.
+            yield* withinPlan(workspaceId).pipe(withPorts);
+            yield* applied(yield* posts.update(released, current.post));
 
             const executionId = yield* scheduler.schedule({
               postId,

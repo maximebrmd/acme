@@ -28,6 +28,7 @@ import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import { requestKeyOf } from "./approval-intake.ts";
 import { ApprovalNeedsPerson } from "./approval-needs-person.ts";
@@ -143,7 +144,9 @@ export class ReviewDesk extends Context.Service<
     /**
      * Approves the post, which is then scheduled, or back to draft if
      * late. Through an application, only what a member asked for in person
-     * (`takesApplicationApproval`). Both decisions are for the request
+     * (`takesApplicationApproval`). In a workspace over its plan nothing is
+     * scheduled, so nothing is approved (PlanLimitReached): the post and
+     * its request keep waiting. Both decisions are for the request
      * the reviewer was shown (`asShown`): another one, or the same for a
      * post that says something else, is ApprovalChanged.
      */
@@ -154,7 +157,11 @@ export class ReviewDesk extends Context.Service<
       throughApplication: boolean
     ) => Effect.Effect<
       { readonly late: boolean; readonly request: ApprovalRequest },
-      ApprovalChanged | ApprovalNeedsPerson | ApprovalNotPending | DatabaseError
+      | ApprovalChanged
+      | ApprovalNeedsPerson
+      | ApprovalNotPending
+      | DatabaseError
+      | PlanLimitReached
     >;
     /** Sends the post back to draft, with a comment that says why. */
     readonly requestChanges: (

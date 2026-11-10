@@ -1,11 +1,13 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Option } from "effect";
+import { Effect, Layer, Option, Ref } from "effect";
 
+import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { ApprovalNeedsPerson } from "#review/application/approval-needs-person.ts";
 import { LinkAccessDenied } from "#review/application/link-access-denied.ts";
 import { ApprovalStore } from "#review/application/ports/approval-store.ts";
+import { VisitorGuard } from "#review/application/ports/visitor-guard.ts";
 import { PostReview } from "#review/application/post-review.ts";
 import { ReviewLinks } from "#review/application/review-links.ts";
 import { VisitorReview } from "#review/application/visitor-review.ts";
@@ -16,6 +18,7 @@ import type { Actor } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import {
   callsOn,
   eventually,
@@ -32,6 +35,7 @@ import { Heard } from "#test/review/heard.ts";
 import {
   impersonating,
   onReviewServerAt,
+  reviewServerWith,
   shown,
   throughClient,
   Told,
@@ -683,6 +687,100 @@ describe("a workspace where every post waits", () => {
 
           assert.strictEqual(yield* statusOf(post.id), "scheduled");
         })
+      ),
+    timeout
+  );
+});
+
+// A workspace whose members grow past what its plan allows while a post
+// waits: three seats, and as many members as the test says.
+const members = Ref.makeUnsafe(1);
+
+const SeatedServer = reviewServerWith(
+  VisitorGuard.open,
+  Layer.succeed(
+    PostAllowance,
+    PostAllowance.of({
+      channels: () => Effect.succeed({ allowed: Option.none(), connected: 1 }),
+      members: () =>
+        Ref.get(members).pipe(
+          Effect.map((taken) => ({ allowed: Option.some(3), taken }))
+        ),
+      scheduledPerMonth: () => Effect.succeed(Option.none()),
+    })
+  )
+);
+
+describe("a workspace that went over its plan while a post waited", () => {
+  it.effect(
+    "approves nothing, and says why, until it is back within its plan",
+    () =>
+      Effect.gen(function* overPlan() {
+        const scheduling = yield* PostScheduling;
+        const review = yield* PostReview;
+        const links = yield* ReviewLinks;
+        const visitors = yield* VisitorReview;
+        const { channelId, contributor, editor, workspaceId } = yield* team;
+
+        yield* withPolicy(workspaceId, "contributorsAndApplications");
+
+        const { post } = yield* scheduling.schedule(contributor, {
+          channelIds: [channelId],
+          content: contentOf("A synthetic post that waits past a trial."),
+          schedule: at8,
+        });
+
+        const { token } = yield* links.create(editor, post.id, {
+          access: "approve",
+          lifetime: Option.none(),
+        });
+
+        // A fourth member joins: the workspace schedules nothing now.
+        yield* Ref.set(members, 4);
+
+        const over = new PlanLimitReached({
+          allowed: 3,
+          limit: "members",
+          needed: 4,
+          used: 4,
+        });
+
+        assert.deepStrictEqual(
+          yield* Effect.flip(
+            review.approve(editor, post.id, yield* shown(post))
+          ),
+          over
+        );
+        assert.deepStrictEqual(
+          yield* Effect.flip(
+            visitors.approve(token, visitor(), yield* shown(post))
+          ),
+          over
+        );
+
+        // Nothing was decided: the post waits, its request too.
+        assert.strictEqual(yield* statusOf(post.id), "awaitingApproval");
+        assert.deepStrictEqual(
+          (yield* review.thread(editor, post.id)).requests.map(
+            ({ status }) => status
+          ),
+          ["pending"]
+        );
+        assert.notInclude(yield* kinds, "approved");
+
+        // Back within its plan, the same approval goes through.
+        yield* Ref.set(members, 3);
+
+        const { late } = yield* review.approve(
+          editor,
+          post.id,
+          yield* shown(post)
+        );
+
+        assert.isFalse(late);
+        assert.strictEqual(yield* statusOf(post.id), "scheduled");
+      }).pipe(Effect.provide(SeatedServer), (test) =>
+        setTime(start).pipe(Effect.andThen(test))
       ),
     timeout
   );

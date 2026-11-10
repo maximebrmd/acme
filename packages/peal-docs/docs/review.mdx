@@ -45,6 +45,8 @@ Owners, admins and editors may approve, on the post's page (**Approve**) or with
 
 An approval is for what its reviewer read. If the post was changed and asked again while their page was open, their click approves nothing: Peal says the post changed and shows it again, and they decide on what it says now. The same holds for a request for changes.
 
+Approving a post is what schedules it. If the workspace came to hold more channels or members than its [plan](/billing) allows while the post waited, as when a trial ends, it schedules nothing: the approval is refused, the reviewer is told so (someone who came through a link is told only that the team cannot schedule posts at the moment), and the post keeps waiting. Its author is not told again: the post's page still shows it awaiting approval, and the billing page shows what the plan allows. Once the workspace is back within its plan, the post is approved as usual.
+
 Whoever may approve may approve a post they wrote or asked to send: an approval says that someone allowed to has looked, not that two people have. If you need a second person, have contributors write and editors approve.
 
 An application does not approve what an application asked for. What an API key, the command line or an AI assistant scheduled waits for a person: a member in the web app, or a reviewer through a link a member created there. For the same reason, a link that lets its holders approve is created in the web app only, never with an API key, the command line or an AI assistant. An application may approve what a member asked for in the web app, when you let it schedule and publish (`workspace:publish`): approving a post is what sends it out, so an application that only writes drafts approves nothing.

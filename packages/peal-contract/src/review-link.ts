@@ -28,6 +28,7 @@ import {
   shownApprovalFields,
 } from "./review.ts";
 import { TooManyReviewRequests } from "./too-many-review-requests.ts";
+import { WorkspaceOverPlan } from "./workspace-over-plan.ts";
 
 /**
  * What a review link shows: one post as each of its channels will receive
@@ -134,7 +135,13 @@ export class ReviewLinkApi extends HttpApiGroup.make("reviewLink")
       })
     ),
     HttpApiEndpoint.post("approve", "/approve", {
-      error: [...refusals, CommentInvalid, ApprovalNotPending, ApprovalChanged],
+      error: [
+        ...refusals,
+        CommentInvalid,
+        ApprovalNotPending,
+        ApprovalChanged,
+        WorkspaceOverPlan,
+      ],
       headers: writeHeaders,
       payload: VisitorApprovalSchema,
       success: Schema.Struct({ late: Schema.Boolean }),

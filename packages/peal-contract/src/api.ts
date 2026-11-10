@@ -932,6 +932,8 @@ export { WorkspaceAccess } from "./workspace-access.ts";
 
 export { ApprovalChanged } from "./approval-changed.ts";
 
+export { WorkspaceOverPlan } from "./workspace-over-plan.ts";
+
 export { ApprovalNotPending } from "./approval-not-pending.ts";
 
 export { CommentInvalid, CommentProblemSchema } from "./comment-invalid.ts";
