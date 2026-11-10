@@ -219,6 +219,81 @@ describe(TargetOptionsPanel, () => {
     expect(offer).not.toContain("Lien du bouton");
   });
 
+  it("shows every platform's fields together, each kind of field in one panel", async () => {
+    const page = channel(
+      "00000000-0000-7000-8000-000000000005",
+      "linkedin",
+      "Example Bakery"
+    );
+
+    const pins = channel(
+      "00000000-0000-7000-8000-000000000006",
+      "pinterest",
+      "peal_pins"
+    );
+
+    const every = [youtube, tiktok, page, pins, location];
+
+    const filled = new Map<string, OptionValues>([
+      [location.id, { postType: "event" }],
+      [page.id, { mentions: "Example Bakery <urn:li:organization:2414183>" }],
+    ]);
+
+    const [english, french] = await Promise.all(
+      (["en", "fr"] as const).map(async (locale) =>
+        renderToStaticMarkup(
+          <NextIntlClientProvider
+            locale={locale}
+            messages={await loadMessages(locale)}
+          >
+            <TargetOptionsPanel
+              channels={every}
+              disabled={false}
+              valuesOf={(shown) =>
+                filled.get(shown.id) ?? initialValues(shown.platform)
+              }
+              violations={[]}
+              onChange={() => {
+                // Rendered once, never changed.
+              }}
+            />
+          </NextIntlClientProvider>
+        )
+      )
+    );
+
+    // A text, a choice, a yes or no and a box; mentions; a lookup still
+    // read and a number; a time on the location's clock, shown with its
+    // post type.
+    for (const label of [
+      "Title (required)",
+      "Who can view this post (required)",
+      "Who can see this post",
+      "Pages to mention",
+      "Example Bakery &lt;urn:li:organization:2414183&gt;",
+      "Board (required)",
+      "Reading the list on the platform…",
+      "Video cover, at second",
+      "Post type",
+      "Starts (required)",
+    ]) {
+      expect(english).toContain(label);
+    }
+
+    expect(english).toContain('type="datetime-local"');
+    expect(english).toContain('type="number"');
+
+    for (const label of [
+      "Qui peut voir cette publication",
+      "Pages à mentionner",
+      "Tableau (obligatoire)",
+      "Couverture de la vidéo, à la seconde",
+      "Type de publication",
+    ]) {
+      expect(french).toContain(label);
+    }
+  });
+
   it("shows only for platforms that take options", () => {
     expect(takesOptions([mastodon])).toBeFalsy();
     expect(takesOptions([mastodon, youtube])).toBeTruthy();

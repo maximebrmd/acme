@@ -39,6 +39,105 @@ describe("the options fields", () => {
     expect(Option.isNone(fieldOf("youtube", "privacyLevel"))).toBeTruthy();
   });
 
+  it("have a field for every option the contract takes, and no other", () => {
+    for (const platform of optionsPlatforms) {
+      const member = TargetOptionsSchema.members.find(
+        ({ fields }) => fields.platform.literal === platform
+      );
+
+      expect(
+        fieldsOf(platform)
+          .map(({ name }) => name)
+          .toSorted()
+      ).toStrictEqual(
+        Object.keys(member?.fields ?? {})
+          .filter((name) => name !== "platform")
+          .toSorted()
+      );
+    }
+  });
+
+  it.each([
+    [
+      "linkedin",
+      {
+        disableReshare: true,
+        documentTitle: "A synthetic deck",
+        linkDescription: "What ships",
+        linkTitle: "Launch day",
+        linkUrl: "https://example.test/launch",
+        mentions: "Example Bakery <urn:li:organization:2414183>",
+        visibility: "loggedIn",
+      },
+    ],
+    [
+      "tiktok",
+      { ...initialValues("tiktok"), privacyLevel: "PUBLIC_TO_EVERYONE" },
+    ],
+    [
+      "youtube",
+      {
+        ...initialValues("youtube"),
+        categoryId: "22",
+        madeForKids: false,
+        privacy: "unlisted",
+        tags: "launch, launch day",
+        title: "A synthetic launch video",
+      },
+    ],
+    [
+      "pinterest",
+      {
+        boardId: "549755885001",
+        boardSectionId: "5000000000001",
+        coverSecond: "12",
+        dominantColor: "#6E7874",
+        link: "https://example.test/recipes",
+        title: "Tomato salad",
+      },
+    ],
+    [
+      "googleBusiness",
+      {
+        couponCode: "SYNTHETIC-10",
+        endsAt: "2026-11-27T18:00",
+        postType: "offer",
+        redeemUrl: "https://example.test/redeem",
+        startsAt: "2026-11-27T09:00",
+        terms: "One per synthetic customer.",
+        title: "Synthetic open day",
+      },
+    ],
+  ] as const)(
+    "turn %s's fields, each kind filled in, into options the contract takes, and back",
+    (platform, values) => {
+      const options = optionsOf(platform, values);
+
+      expect(options.pipe(Option.map((given) => given.platform))).toStrictEqual(
+        Option.some(platform)
+      );
+      // Every field kept its value: nothing was dropped on the way.
+      expect(
+        options.pipe(Option.map((given) => Object.keys(given).toSorted()))
+      ).toStrictEqual(
+        Option.some([...Object.keys(values), "platform"].toSorted())
+      );
+      expect(
+        options.pipe(Option.map((given) => valuesOf(platform, given)))
+      ).toStrictEqual(Option.some(values));
+    }
+  );
+
+  it("cover every platform that takes options in the test above", () => {
+    expect([...optionsPlatforms].toSorted()).toStrictEqual([
+      "googleBusiness",
+      "linkedin",
+      "pinterest",
+      "tiktok",
+      "youtube",
+    ]);
+  });
+
   it("start TikTok's interactions off and its disclosure untold", () => {
     expect(initialValues("tiktok")).toStrictEqual({
       aiGenerated: false,
