@@ -36,8 +36,12 @@ import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
+import {
+  hasConnections,
+  isConnectionOf,
+} from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
-import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import type { Locale } from "#shared/domain/locale.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
@@ -77,7 +81,7 @@ export const linkListSize = 100;
 export interface NewConnectLink {
   /** The channel to reconnect, instead of connecting a new account. */
   readonly channelId: Option.Option<string>;
-  readonly connection: Option.Option<InstagramConnection>;
+  readonly connection: Option.Option<ChannelConnection>;
   /** How long it works, in hours; a week unless given. */
   readonly expiresInHours: Option.Option<number>;
   readonly locale: Option.Option<Locale>;
@@ -331,13 +335,25 @@ export class ConnectLinks extends Context.Service<
       ) {
         yield* Effect.fromResult(authorize(actor, "channel:connect"));
 
-        if (Option.isNone(authorizers.for(asked.platform, asked.connection))) {
+        // A way in that is another platform's, or given to a platform that
+        // has one way in, connects nothing.
+        const itsOwn = Option.match(asked.connection, {
+          onNone: () => true,
+          onSome: (connection) => isConnectionOf(asked.platform, connection),
+        });
+
+        if (
+          !itsOwn ||
+          Option.isNone(authorizers.for(asked.platform, asked.connection))
+        ) {
           return yield* new PlatformNotConnectable({
             platform: asked.platform,
             reason:
-              authorizers.unconfigured.has(asked.platform) ||
-              (asked.platform === "instagram" &&
-                Option.isSome(asked.connection))
+              itsOwn &&
+              (authorizers.unconfigured.has(asked.platform) ||
+                // The platform's other way in is set up, and not this one.
+                (hasConnections(asked.platform) &&
+                  Option.isSome(asked.connection)))
                 ? "notConfigured"
                 : "notSupported",
           });

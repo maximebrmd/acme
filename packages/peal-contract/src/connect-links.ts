@@ -12,7 +12,7 @@ import { ConnectFailed } from "./connect-failed.ts";
 import { ConnectLinkNotFound } from "./connect-link-not-found.ts";
 import { Forbidden } from "./forbidden.ts";
 import { HostedConnectFailureSchema } from "./hosted-connect-failed.ts";
-import { InstagramConnectionSchema, PlatformSchema } from "./platform.ts";
+import { ChannelConnectionSchema, PlatformSchema } from "./platform.ts";
 import { ReturnUrlNotAllowed } from "./return-url-not-allowed.ts";
 import { TooManyConnectLinks } from "./too-many-connect-links.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
@@ -87,8 +87,10 @@ export const NewConnectLinkSchema = Schema.Struct({
   // Reconnect this channel, instead of connecting a new account: only a
   // sign-in to the channel's own account goes through.
   channelId: Schema.optionalKey(Schema.String),
-  // Instagram only: Instagram Login or Facebook Login.
-  connection: Schema.optionalKey(InstagramConnectionSchema),
+  // The way in, on the platforms that have several: for Instagram,
+  // Instagram Login or Facebook Login; for LinkedIn, the member's profile
+  // or the company pages they manage. Left out, the server's first.
+  connection: Schema.optionalKey(ChannelConnectionSchema),
   expiresInHours: Schema.optionalKey(
     Schema.Int.check(
       Schema.isBetween({

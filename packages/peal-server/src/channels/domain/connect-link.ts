@@ -1,10 +1,10 @@
 import { DateTime, Duration, Option, Result, Schema } from "effect";
 
 import { Actor } from "#shared/domain/access.ts";
+import { ChannelConnectionSchema } from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
-import { InstagramConnectionSchema } from "#shared/domain/instagram-connection.ts";
-import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { LocaleSchema } from "#shared/domain/locale.ts";
 import type { Locale } from "#shared/domain/locale.ts";
 
@@ -77,7 +77,7 @@ export class ConnectLink extends Schema.Class<ConnectLink>(
   // The channel it reconnects; none when it connects a new account.
   channelId: Schema.Option(ChannelIdSchema),
   // The way in an Instagram sign-in takes; none for the server's own.
-  connection: Schema.Option(InstagramConnectionSchema),
+  connection: Schema.Option(ChannelConnectionSchema),
   createdAt: Schema.DateTimeUtc,
   // Who created it, as attempts name their starter; none once the member
   // who did closed their account.
@@ -120,7 +120,7 @@ const withFields = (link: ConnectLink, changed: Partial<Fields>) =>
 export const createLink = (
   link: {
     readonly channelId: Option.Option<ChannelId>;
-    readonly connection: Option.Option<InstagramConnection>;
+    readonly connection: Option.Option<ChannelConnection>;
     readonly createdBy: string;
     readonly id: ConnectLinkId;
     readonly lifetime: Duration.Duration;

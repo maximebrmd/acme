@@ -361,6 +361,47 @@ layer(LinksTest)("connect links", (it) => {
       }).pipe(Effect.scoped)
   );
 
+  it.effect("take a platform's own way in, and no other platform's", () =>
+    Effect.gen(function* waysIn() {
+      const links = yield* ConnectLinks;
+      const workspaceId = yield* freshWorkspace;
+
+      // A company page is LinkedIn's way in: Mastodon has one, and
+      // Instagram has its own two.
+      for (const platform of ["mastodon", "instagram"] as const) {
+        const refused = yield* links
+          .create(manager(workspaceId), {
+            ...mastodon,
+            connection: Option.some("linkedinPage"),
+            platform,
+          })
+          .pipe(Effect.flip);
+
+        assert.deepInclude(refused, {
+          _tag: "PlatformNotConnectable",
+          platform,
+          reason: "notSupported",
+        });
+      }
+
+      // LinkedIn's pages are asked of LinkedIn: a server without its app
+      // says so, rather than that it knows no such way in.
+      const unset = yield* links
+        .create(manager(workspaceId), {
+          ...mastodon,
+          connection: Option.some("linkedinPage"),
+          platform: "linkedin",
+        })
+        .pipe(Effect.flip);
+
+      assert.deepInclude(unset, {
+        _tag: "PlatformNotConnectable",
+        platform: "linkedin",
+        reason: "notConfigured",
+      });
+    })
+  );
+
   it.effect("stop working once revoked, expired, or started too often", () =>
     Effect.gen(function* ends() {
       const instance = yield* mastodonInstance();
