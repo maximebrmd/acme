@@ -16,8 +16,11 @@ An AI agent can post through Peal the way a member does: it reads the workspace'
 | Bring an image or a video in from a public address                            | `import_media`                                             |
 | Write a draft, change it or discard it                                        | `create_draft`, `update_draft`, `discard_draft`            |
 | Schedule a draft, publish a post now, or create and send one in a single call | `schedule_post`, `publish_post`, `create_post`             |
+| Check a post before sending it, and see what each channel would receive       | `validate_post`                                            |
+| Create and send up to 50 posts in one call                                    | `create_posts`                                             |
 | Move a scheduled post, take it back to draft or cancel it                     | `reschedule_post`, `unschedule_post`, `cancel_post`        |
 | Read how a post went on each channel, and every attempt Peal made             | `get_post`, `list_post_attempts`                           |
+| Wait until a post that goes out now has its result on every channel           | `await_post`                                               |
 | Post again where a post failed, or record what you found on the platform      | `repost_target`, `confirm_target`                          |
 
 [Connect an MCP client](/mcp#tools) lists every tool with what it changes. An agent connects no channel: you connect accounts in the web app, where you sign in on each platform ([Connect channels](/channels)). It acts in one workspace, as you, with no more than your [role](/scheduling#roles) allows: owners, admins and editors schedule and publish; contributors write drafts.
@@ -121,6 +124,10 @@ Here an agent posts a picture to two channels. Each step is a tool call with its
    }
    ```
 
+   Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused, naming the post that has it ([Duplicate posts](/posting-api#duplicates)). `allowDuplicate: true` lets it through: an agent passes it only when you mean to post the same twice. With `waitSeconds`, 60 at most, a post that goes out `now` is answered once every channel has its result, or as it stands when the time runs out; `await_post` waits for the rest.
+
+   `validate_post` takes the same arguments and makes nothing: it answers what would be refused, and what each channel would receive. `create_posts` sends up to 50 posts in one call, each as `create_post` would, and answers for each whether it was made or why it was refused.
+
 5. `get_post`, once its time has passed, to read the outcome. The post's `status` is `finished` when every channel is done; its `outcome` and each of its `targets` say how it went, with the post's address on the platform, or why it failed.
 
    ```json
@@ -189,11 +196,13 @@ An agent that runs commands in a terminal uses [`peal`](/cli), signed in as you 
 | `list_media`, `import_media`      | `peal media list`, `peal media import <url> --alt "…"`; `peal media upload <file>` sends a file from the disk |
 | `list_drafts`, `create_draft`     | `peal drafts list`, `peal drafts save --text "…" --channel <channel-id>`                                      |
 | `create_post`                     | `peal post "…" --channel <channel-id> --at <instant>`, or `--now`                                             |
+| `validate_post`                   | `peal post "…" --channel <channel-id> --at <instant> --dry-run`                                               |
 | `schedule_post`                   | `peal posts schedule <post-id> --at <instant>`                                                                |
 | `publish_post`                    | `peal posts publish <post-id>`                                                                                |
 | `reschedule_post`                 | `peal posts reschedule <post-id> --at <instant>`                                                              |
 | `unschedule_post`, `cancel_post`  | `peal posts unschedule <post-id>`, `peal posts cancel <post-id>`                                              |
 | `get_post`                        | `peal posts show <post-id>`                                                                                   |
+| `list_posts`, `await_post`        | `peal posts list`, `peal posts wait <post-id>`                                                                |
 | `repost_target`, `confirm_target` | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`               |
 
 ```sh
@@ -215,13 +224,16 @@ Your own agent or script can call the endpoints the tools are built on, under `/
 | --------------------------------- | -------------------------------------------------------------------- |
 | `list_channels`                   | `GET …/channels`                                                     |
 | `list_media`, `import_media`      | `GET …/media`, `POST …/media/import`                                 |
-| `list_drafts`, `list_posts`       | `GET …/posts/drafts`, `GET …/posts?from=…&to=…`                      |
+| `list_drafts`, `list_posts`       | `GET …/posts/drafts`, `GET …/posts/search`                           |
 | `create_draft`, `update_draft`    | `POST …/posts`, `PUT …/posts/{postId}`                               |
 | `create_post`                     | `POST …/posts/send`                                                  |
+| `create_posts`                    | `POST …/posts/bulk`                                                  |
+| `validate_post`                   | `POST …/posts/validate`                                              |
 | `schedule_post`                   | `POST …/posts/{postId}/schedule`                                     |
 | `reschedule_post`, `publish_post` | `POST …/posts/{postId}/reschedule`, with the present instant for now |
 | `unschedule_post`, `cancel_post`  | `POST …/posts/{postId}/unschedule`, `POST …/posts/{postId}/cancel`   |
 | `get_post`, `list_post_attempts`  | `GET …/posts/{postId}`, `GET …/posts/{postId}/attempts`              |
+| `await_post`                      | `GET …/posts/{postId}/outcome`                                       |
 | `repost_target`, `confirm_target` | `POST …/posts/{postId}/targets/{targetId}/repost`, `…/confirm`       |
 
 `POST …/posts/send` creates a post and sends it in one request. Send an `Idempotency-Key` header, any text of your choosing of 255 characters at most, such as a UUID, to make the request safe to send again:
@@ -245,6 +257,8 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send \
 - Within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other.
 - The same key with another body answers 409 `IdempotencyKeyReused`, and makes nothing: send a new request under a new key.
 - Once that post was deleted, the key answers `PostNotFound`. Keys are kept per workspace.
+
+[Posting through the API](/posting-api) shows the other requests with examples: checking a post without making it, waiting for the outcome of a post that goes out now, sending several posts at once, importing them from a CSV file, the duplicate refusal, and listing posts with filters.
 
 `POST …/media/import` takes `{ "url": "https://files.example/spring/cover.jpg", "altText": "…" }` and answers the media, as `import_media` does. It needs `media:upload`.
 

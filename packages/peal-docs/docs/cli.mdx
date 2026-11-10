@@ -136,6 +136,8 @@ peal post "Spring catalogue is out" --channels <channel-id>,<channel-id> --now
 peal post "Spring catalogue is out" --channel <channel-id> --at 2026-11-20T09:00:00Z \
   --media ./cover.jpg --alt "A paper catalogue open on a wooden table" \
   --idempotency-key spring-catalogue-2026-11-20
+peal post "Spring catalogue is out" --channel <channel-id> --at 2026-11-20T10:00 --time-zone Europe/Paris --dry-run
+peal post "Spring catalogue is out" --channel <channel-id> --now --wait 30
 ```
 
 `peal post` writes a post and sends it in one command, to the public of the accounts its channels connect. What goes out cannot be taken back from Peal.
@@ -145,13 +147,20 @@ peal post "Spring catalogue is out" --channel <channel-id> --at 2026-11-20T09:00
 - **Media.** Each `--media` is a file, uploaded first; an `https://` address, which the server imports; or the id of a media the workspace has, as `peal media list` shows it. They show in the order given, 20 at most. The first `--alt` describes the first `--media`, the second the second.
 - **Options.** `--options <channel-id>=<json>` sets a channel's [platform options](/scheduling#options), as `peal drafts save` takes them.
 - **Running it again.** `--idempotency-key` takes any text of your choosing, of 255 characters at most, such as a UUID: within 24 hours, the same key with the same post answers the post the first run made, and makes no other; with another post it is refused. Without it, `peal` sends no key. To run a post with media again, give `--media` as media ids: files and addresses are stored anew on each run, which makes it another post.
+- **The same post twice.** Apart from keys, a post whose content (the text the channel receives and the same media, in the same order) already goes to one of its channels less than 23 hours from its time is refused, and `peal` names the post that has it. `--allow-duplicate` lets it through, when you mean to post the same twice ([Duplicate posts](/posting-api#duplicates)).
+- **Checking first.** `--dry-run` checks the post and posts nothing: it tells what would be refused.
+- **Waiting for the outcome.** With `--now`, `--wait <seconds>` (60 at most) waits until every channel has its result before it answers. When the time runs out first, the post goes on publishing: `peal posts wait` waits for the rest.
 
 The post is checked against every channel's platform first. When it breaks a rule, nothing is posted, and `peal` lists every violation on a line of its own, with its channel, platform, option or media, and the limit.
 
 ## Posts [#posts]
 
 ```sh
+peal posts list
 peal posts show <post-id>
+peal posts wait <post-id> --seconds 30
+peal posts import posts.csv --dry-run
+peal posts import posts.csv --idempotency-key spring-campaign-2026-11
 peal posts schedule <post-id> --at 2026-11-20T10:00 --time-zone Europe/Paris
 peal posts schedule <post-id> --at 2026-11-20T09:00:00Z --channels <channel-id>,<channel-id>
 peal posts publish <post-id>
@@ -163,7 +172,10 @@ peal posts confirm <post-id> <target-id> published --permalink https://mastodon.
 peal posts confirm <post-id> <target-id> not-published
 ```
 
+- `peal posts list` lists the workspace's posts, whatever their state, a page at a time, with how each went ([List posts](/posting-api#search)).
 - `peal posts show` prints the post's status and time, then one line per channel, starting with its target id, with how it went there: failed and why, unconfirmed and why, or published at its address (and kept private, when YouTube kept a public or unlisted video private), then the post's options on each channel that has some.
+- `peal posts wait` waits until every channel of a post has its result, up to `--seconds` (60 at most), then shows the post as it stands. Waiting changes nothing: run it again when the time ran out first.
+- `peal posts import` creates and sends the posts a CSV file lists, one per row, with the columns `text`, `channels` and `at`, and optionally `media`, `time_zone`, `allow_duplicate` and `idempotency_key` ([Import posts from a CSV file](/posting-api#import)). Every row is checked first, and nothing is made unless every row is valid. `--dry-run` only checks the file. `--idempotency-key` makes the import safe to run again within 24 hours: the rows already made are not made twice.
 - `peal posts schedule` schedules a draft for `--at`, read as `peal post` reads it, on the channels it has, or on those `--channel` names. Its text, media and options must fit each platform's rules, or nothing is scheduled.
 - `peal posts publish` publishes a draft, or a scheduled post, now, on the channels it has. It reaches the accounts' public, and cannot be taken back from Peal once it is out.
 - `peal posts reschedule` moves a scheduled post to another time. A draft is scheduled then, on the channels it has.

@@ -1,0 +1,446 @@
+---
+title: Posting through the API
+description: Check a post before sending it, publish now and wait for the outcome, send several posts in one request, import them from a CSV file, understand the duplicate refusal, and list a workspace's posts with filters.
+sidebar:
+  order: 12
+---
+
+A script or an agent that posts through the [HTTP API](/api-overview) can check a post before it sends it, wait for the outcome of a post that goes out now, send up to 50 posts in one request, import posts from a CSV file, and list the workspace's posts with filters. This page shows each request with an example. The [API reference](/reference) has every field.
+
+## Before you start [#start]
+
+Every endpoint here is under `/api/workspaces/{workspaceId}/posts`. The examples read the workspace's id from `$WORKSPACE_ID` and an [API key](/settings#api-keys), which looks like `peal_…`, from `$PEAL_API_KEY`. Ids are made up, and answers are abridged: a post always comes whole, as `GET …/posts/{postId}` answers it.
+
+| Request                        | What it does                              | Needs                           |
+| ------------------------------ | ----------------------------------------- | ------------------------------- |
+| `POST …/posts/validate`        | Checks a post, and makes nothing          | `post:read`, `channel:read`     |
+| `POST …/posts/send`            | Creates a post and sends it, now or later | `post:schedule`, `channel:read` |
+| `GET …/posts/{postId}/outcome` | Waits until a post has gone out           | `post:read`                     |
+| `POST …/posts/bulk`            | Creates and sends up to 50 posts          | `post:schedule`, `channel:read` |
+| `POST …/posts/import`          | Creates and sends the posts of a CSV file | `post:schedule`, `channel:read` |
+| `GET …/posts/search`           | Lists the workspace's posts, with filters | `post:read`, `channel:read`     |
+
+A post that shows media also needs `media:read`. An OAuth access token needs the scope `workspace:publish` for `send`, `bulk` and `import` ([What each permission allows](/agents#scopes)).
+
+What `send`, `bulk` and `import` publish reaches the platforms' public, and cannot be taken back from Peal once it is out. Until its time, cancel or unschedule a post.
+
+## Check a post without making it [#validate]
+
+`POST …/posts/validate` takes what `send` takes, or a draft, which has no `when`. It writes nothing. It answers 200 whether or not the post would go through, with `valid` and everything that would refuse it, all at once.
+
+```bash
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/validate \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "channelIds": ["0190f3a0-0000-7000-8000-00000000c001"],
+    "content": {
+      "text": "Our spring catalogue is out. Read it at https://example.com/spring #spring",
+      "media": [],
+      "overrides": []
+    },
+    "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+  }'
+```
+
+```json
+{
+  "valid": true,
+  "channels": [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "platform": "bluesky",
+      "text": "Our spring catalogue is out. Read it at https://example.com/spring #spring",
+      "textCounts": [
+        { "length": 74, "maximum": 300, "unit": "graphemes" },
+        { "length": 74, "maximum": 3000, "unit": "utf8Bytes" }
+      ],
+      "hashtags": { "count": 1, "maximum": null },
+      "mentions": { "count": 0, "maximum": null },
+      "links": { "count": 1, "maximum": null },
+      "media": { "count": 0, "maximum": 4 },
+      "violations": []
+    }
+  ],
+  "violations": [],
+  "unknownChannels": [],
+  "unknownMedia": [],
+  "schedule": "ok",
+  "planLimit": null,
+  "duplicates": []
+}
+```
+
+| Field             | What it holds                                                                                                                                                                                      |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `valid`           | True when nothing below refuses the post                                                                                                                                                           |
+| `channels`        | One entry per channel of the workspace the post names, in the order given                                                                                                                          |
+| `violations`      | What is wrong whatever the channel: no channel at all, or a text or options for a channel the post does not go to                                                                                  |
+| `unknownChannels` | The channels it names that are not the workspace's                                                                                                                                                 |
+| `unknownMedia`    | The media it shows that are not the workspace's, or not ready                                                                                                                                      |
+| `schedule`        | `ok`; `inPast`, more than a minute ago; or `invalidTimeZone`, when the zone is no IANA zone. Null without `when`.                                                                                  |
+| `planLimit`       | The limit of the workspace's plan the post would pass, as `PlanLimitReached` tells it. Null when the plan has room, on an instance that does not bill, or without `when`.                          |
+| `duplicates`      | The channels that already have the same content from another post near its time, each with that post ([Duplicate posts](#duplicates)). None without `when`, or when the request allows duplicates. |
+
+Each entry of `channels` holds:
+
+- `text`: the text the channel receives, which is its override there, or the post's own;
+- `textCounts`: that text's length, counted as the channel's platform counts it, against each of its limits. Bluesky has two, in graphemes and in bytes;
+- `hashtags`, `mentions`, `links` and `media`: how many the post holds (`count`) and the most the platform takes (`maximum`, null when Peal knows no limit for it). `links` counts different links;
+- `violations`: every rule of the platform the post breaks (text, media formats, sizes, counts and durations, options), and the account's own where its platform tells them. They read as in `PostContentInvalid` ([How refusals read](/agents#refusals)).
+
+A post that would be refused answers 200 too, with `valid` false:
+
+```json
+{
+  "valid": false,
+  "channels": [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "platform": "bluesky",
+      "textCounts": [
+        { "length": 342, "maximum": 300, "unit": "graphemes" },
+        { "length": 342, "maximum": 3000, "unit": "utf8Bytes" }
+      ],
+      "violations": [
+        {
+          "_tag": "textTooLong",
+          "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+          "platform": "bluesky",
+          "length": 342,
+          "maximum": 300,
+          "unit": "graphemes"
+        }
+      ]
+    }
+  ],
+  "unknownChannels": ["0190f3a0-0000-7000-8000-00000000c009"],
+  "schedule": "inPast"
+}
+```
+
+Without `when`, the request is a draft's: neither the time, the plan's room nor duplicates are checked.
+
+A post that is valid now can still be refused later: a channel disconnected, a plan's month filled meanwhile.
+
+## Publish now and wait for the outcome [#wait]
+
+`POST …/posts/send` answers as soon as the post is made, while it publishes. With `wait`, a number of seconds from 0 to 60, a post that goes out now is answered once every channel has its result:
+
+```bash
+curl -X POST "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send?wait=30" \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 5f0c2b7e-3d1a-4e58-9a6b-2c4d8e1f7a90" \
+  -d '{
+    "channelIds": [
+      "0190f3a0-0000-7000-8000-00000000c001",
+      "0190f3a0-0000-7000-8000-00000000c002"
+    ],
+    "content": {
+      "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+      "media": [],
+      "overrides": []
+    },
+    "when": { "_tag": "now" }
+  }'
+```
+
+```json
+{
+  "id": "0190f3a0-0000-7000-8000-00000000b001",
+  "status": "finished",
+  "outcome": "partiallyPublished",
+  "targets": [
+    {
+      "id": "0190f3a0-0000-7000-8000-00000000d001",
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "status": "published",
+      "publishedAt": "2026-11-16T08:00:02.000Z",
+      "permalink": "https://social.example/@peal_example/115512345678901234",
+      "failureReason": null
+    },
+    {
+      "id": "0190f3a0-0000-7000-8000-00000000d002",
+      "channelId": "0190f3a0-0000-7000-8000-00000000c002",
+      "status": "failed",
+      "publishedAt": null,
+      "permalink": null,
+      "failureReason": "tokenExpired"
+    }
+  ]
+}
+```
+
+- The answer is 201 either way: the post was made.
+- When every channel has its result within the wait, the post's `status` is `finished`, with its `outcome`. Each target is `published`, with its `permalink`, or `failed`, with its `failureReason`.
+- When the time runs out first, the answer is the post as it stands, some targets still `pending` or `publishing`. It goes on publishing.
+
+`GET …/posts/{postId}/outcome` waits for the rest. It takes the same `wait`, and answers the post once every channel has its result, or as it stands when the time runs out: ask again then.
+
+```bash
+curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/0190f3a0-0000-7000-8000-00000000b001/outcome?wait=30" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+Without `wait`, it does not wait. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing and holds nothing: the post publishes in its own job either way, and [webhooks](/webhooks#events) still tell how it went on each channel.
+
+## Send several posts in one request [#bulk]
+
+`POST …/posts/bulk` creates and sends up to 50 posts, each as `send` would. Each item is one post, with its own channels, content, options and time. The same content at several times is several items, and so is a post that goes out at a time of its own on each channel.
+
+```bash
+curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/bulk \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 9b2e4d6f-1a3c-4b5d-8e7f-0a1b2c3d4e5f" \
+  -d '{
+    "posts": [
+      {
+        "channelIds": ["0190f3a0-0000-7000-8000-00000000c001"],
+        "content": {
+          "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+          "media": [],
+          "overrides": []
+        },
+        "when": { "_tag": "at", "at": "2026-11-16T08:00:00Z", "timeZone": "Europe/Paris" }
+      },
+      {
+        "channelIds": ["0190f3a0-0000-7000-8000-00000000c009"],
+        "content": {
+          "text": "Our spring catalogue is out. Read it at https://example.com/spring",
+          "media": [],
+          "overrides": []
+        },
+        "when": { "_tag": "at", "at": "2026-11-16T17:00:00Z", "timeZone": "America/New_York" }
+      }
+    ]
+  }'
+```
+
+```json
+{
+  "created": 1,
+  "refused": 1,
+  "items": [
+    {
+      "_tag": "created",
+      "index": 0,
+      "replayed": false,
+      "post": {
+        "id": "0190f3a0-0000-7000-8000-00000000b002",
+        "status": "scheduled",
+        "schedule": {
+          "at": "2026-11-16T08:00:00.000Z",
+          "timeZone": "Europe/Paris"
+        }
+      }
+    },
+    {
+      "_tag": "refused",
+      "index": 1,
+      "refusal": {
+        "_tag": "UnknownChannels",
+        "channelIds": ["0190f3a0-0000-7000-8000-00000000c009"]
+      }
+    }
+  ]
+}
+```
+
+- Items are taken in order, one at a time, each on its own. One refused keeps none of the others from being made, and nothing is undone.
+- The answer is 200 whenever the request itself was read, even if every item was refused. `items` says, for each item by its place in the request (`index`, from 0), `created` with its post, or `refused` with what `send` would have answered for it alone, as data: its content's violations, unknown channels or media, a time gone by, the plan's limit, a duplicate.
+- A request that cannot be read at all (malformed, no item, more than 50) answers 400, and makes nothing.
+- The plan's limits hold across the request: once the month has no room, the items left are refused.
+- Each item is checked against the posts made before it, the request's earlier items included, for the same content on the same channel ([Duplicate posts](#duplicates)).
+
+An `Idempotency-Key` header makes the whole request safe to send again within 24 hours. Each item is kept under the key and its place: the same request sent again answers the posts it made, with `replayed` true, and makes those that were not made the first time if they now can be. An item that changed under the same key is refused with `IdempotencyKeyReused`. An item may carry an `idempotencyKey` of its own, which is used instead of the header's for that item.
+
+## Import posts from a CSV file [#import]
+
+`POST …/posts/import` creates and sends the posts a CSV file lists, one per row. The file's first line names the columns, in any order:
+
+| Column            | Required | What it holds                                                                                                                                             |
+| ----------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`            | yes      | The post's text                                                                                                                                           |
+| `channels`        | yes      | Channel ids, separated by spaces, commas or semicolons                                                                                                    |
+| `at`              | yes      | `now`; an instant with its offset, such as `2026-11-20T09:00:00Z`; or a local time without one, such as `2026-11-20 10:00`, read in the row's `time_zone` |
+| `time_zone`       | no       | An IANA zone, such as `Europe/Paris`. UTC if left out.                                                                                                    |
+| `media`           | no       | Ids of ready media of the workspace                                                                                                                       |
+| `allow_duplicate` | no       | `true` or `false` ([Duplicate posts](#duplicates))                                                                                                        |
+| `idempotency_key` | no       | The row's own idempotency key                                                                                                                             |
+
+Cells follow RFC 4180: a cell with a comma, a quote or a line break is written between double quotes, and a quote inside it is doubled. A file holds at most 100 rows under its first line, and 1,000,000 characters.
+
+```csv title="posts.csv"
+text,channels,at,time_zone,media
+Our spring catalogue is out.,0190f3a0-0000-7000-8000-00000000c001 0190f3a0-0000-7000-8000-00000000c002,2026-11-20 10:00,Europe/Paris,0190f3a0-0000-7000-8000-00000000a001
+"Last days: the ""spring"" prices end on Sunday, at midnight.",0190f3a0-0000-7000-8000-00000000c001,2026-11-27T09:00:00Z,,
+```
+
+The request is JSON, with the file's text in `csv`. Here `jq` writes it from the file:
+
+```bash
+jq -Rs '{ csv: ., dryRun: true }' posts.csv |
+  curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/import \
+    -H "Authorization: Bearer $PEAL_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d @-
+```
+
+```json
+{
+  "created": 0,
+  "dryRun": true,
+  "rows": [
+    { "_tag": "valid", "row": 1 },
+    { "_tag": "valid", "row": 2 }
+  ]
+}
+```
+
+The file is checked first, every row, as `validate` checks a post. Unless every row is valid, nothing is made. `dryRun: true` stops there even when every row is valid. Otherwise the rows are then made in order, as `bulk` makes its items.
+
+`rows` holds one result per row, by its place under the first line, from 1:
+
+| `_tag`       | Meaning                                                                                                                                                                |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `created`    | The row's post was made: `post` holds it, and `replayed` says whether its idempotency key answered one made before.                                                    |
+| `valid`      | The row was checked and not made: a dry run, or another row kept the file from being imported.                                                                         |
+| `refused`    | `refusal` holds what `send` would have answered for it. A row that was valid is refused too when something changed since the check, or when it repeats an earlier row. |
+| `unreadable` | `problems` names the cells at fault: each `column`, `missing` when the row needs it, or `invalid` for what it holds.                                                   |
+
+```json
+{
+  "created": 0,
+  "dryRun": false,
+  "rows": [
+    { "_tag": "valid", "row": 1 },
+    {
+      "_tag": "unreadable",
+      "row": 2,
+      "problems": [{ "column": "at", "problem": "invalid" }]
+    }
+  ]
+}
+```
+
+The answer is 200 once the file was read. A file that cannot be read at all answers 422 `ImportUnreadable`, and nothing is made. `problem` says why, and `column` which column when it is about one:
+
+| `problem`           | The file                            |
+| ------------------- | ----------------------------------- |
+| `empty`             | is empty                            |
+| `unterminatedQuote` | has a quoted cell that never ends   |
+| `unknownColumn`     | names a column Peal does not know   |
+| `repeatedColumn`    | names the same column twice         |
+| `missingColumn`     | lacks a column it needs             |
+| `tooManyRows`       | has more rows than one import takes |
+
+```json
+{ "_tag": "ImportUnreadable", "problem": "missingColumn", "column": "at" }
+```
+
+An `Idempotency-Key` header works as on `bulk`, by row.
+
+## Duplicate posts [#duplicates]
+
+A post made in one call is refused when another post of the workspace already sends the same content to one of its channels less than 23 hours from its time. It answers 409 `DuplicatePost`, and nothing is made:
+
+```json
+{
+  "_tag": "DuplicatePost",
+  "duplicates": [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "postId": "0190f3a0-0000-7000-8000-00000000b001"
+    }
+  ]
+}
+```
+
+`duplicates` names each channel that has the content, with the post nearest in time that sends it there.
+
+- **The same content** is the text the channel receives and the same media, in the same order.
+- **23 hours** is the shortest day a time zone has, so a post that repeats every day at the same local time is never refused.
+- **Only posts that go out or went out count**: not drafts, cancelled posts, nor a channel where the post failed.
+- **What is checked**: `send`, each item of `bulk`, each row of `import`, the MCP tools `create_post` and `create_posts`, and `peal post`. Scheduling an existing draft, moving a post and reposting on a channel where it failed are never refused.
+- **When it is meant**, send the request again with `allowDuplicate: true`, on the post or on the bulk item, or `allow_duplicate` set to `true` on the CSV row.
+
+This is apart from idempotency keys. A key makes one request safe to send again. The duplicate refusal catches the request made twice.
+
+`validate` tells the same beforehand, in `duplicates`.
+
+## List posts [#search]
+
+`GET …/posts/search` lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` says otherwise, 100 at most. Every filter given must hold.
+
+| Parameter    | What it keeps                                                                                                                                        |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`     | `draft`, `scheduled`, `publishing`, `finished` or `cancelled`                                                                                        |
+| `outcome`    | How a finished post ended: `published`, `partiallyPublished`, `unconfirmed`, `failed` or `cancelled`                                                 |
+| `channelId`  | Posts with a target on that channel                                                                                                                  |
+| `platform`   | Posts with a target on a connected channel of that platform                                                                                          |
+| `from`, `to` | Posts scheduled from `from` (included) to `to` (excluded). Either leaves out posts without a time.                                                   |
+| `createdVia` | `web`, `apiKey` or `application`                                                                                                                     |
+| `authorId`   | Posts that user created                                                                                                                              |
+| `sort`       | `createdDesc` (the default) or `createdAsc`, by creation; `scheduledDesc` or `scheduledAsc`, by scheduled instant, which list only posts with a time |
+| `limit`      | How many posts a page holds, from 1 to 100                                                                                                           |
+| `cursor`     | The `nextCursor` of the page before                                                                                                                  |
+
+```bash
+curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/search?status=finished&outcome=failed&platform=bluesky&sort=scheduledDesc&limit=50" \
+  -H "Authorization: Bearer $PEAL_API_KEY"
+```
+
+```json
+{
+  "items": [
+    {
+      "id": "0190f3a0-0000-7000-8000-00000000b003",
+      "status": "finished",
+      "outcome": "failed",
+      "schedule": {
+        "at": "2026-11-12T08:00:00.000Z",
+        "timeZone": "Europe/Paris"
+      },
+      "targets": [
+        {
+          "id": "0190f3a0-0000-7000-8000-00000000d003",
+          "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+          "status": "failed",
+          "permalink": null,
+          "failureReason": "tokenExpired"
+        }
+      ]
+    }
+  ],
+  "channels": [
+    {
+      "channelId": "0190f3a0-0000-7000-8000-00000000c001",
+      "platform": "bluesky"
+    }
+  ],
+  "nextCursor": "eyJhZnRlciI6IjAxOTBmM2EwIn0"
+}
+```
+
+- Each post comes whole, with its targets, their status, address and failure reason.
+- `channels` gives the platform of each channel the page names that is still connected, so a client names each target without another request.
+- For the next page, pass `nextCursor` as `cursor`, with the same filters and sort. It is null on the last page.
+- A cursor marks where its page ended: posts created, moved or deleted meanwhile make no page repeat a post or skip one.
+- A cursor of another sort, or one no page gave, answers 400.
+
+`GET …/posts?from=…&to=…` stays, for calendars: it lists the posts scheduled between two instants, at most 62 days apart, by scheduled instant, in one answer. Drafts are not among them.
+
+## From MCP and the command line [#tools]
+
+| Request                        | MCP tool                          | Command                              |
+| ------------------------------ | --------------------------------- | ------------------------------------ |
+| `POST …/posts/validate`        | `validate_post`                   | `peal post … --dry-run`              |
+| `POST …/posts/send?wait=…`     | `create_post`, with `waitSeconds` | `peal post … --now --wait <seconds>` |
+| `GET …/posts/{postId}/outcome` | `await_post`                      | `peal posts wait <post-id>`          |
+| `POST …/posts/bulk`            | `create_posts`                    |                                      |
+| `POST …/posts/import`          |                                   | `peal posts import <file.csv>`       |
+| `GET …/posts/search`           | `list_posts`                      | `peal posts list`                    |
+
+[Connect an MCP client](/mcp#tools) describes the tools, and [Command line](/cli#post) the commands.
