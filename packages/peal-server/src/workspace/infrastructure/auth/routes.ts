@@ -43,25 +43,23 @@ const BodySchema = Schema.Struct({
 const decodeBody = Schema.decodeUnknownOption(BodySchema);
 
 // The ids a body names, whatever they are.
-const decodeNamed = Schema.decodeUnknownOption(
-  Schema.Struct({
-    invitationId: Schema.optionalKey(Schema.Unknown),
-    organizationId: Schema.optionalKey(Schema.Unknown),
-  })
-);
+const NamedSchema = Schema.Struct({
+  invitationId: Schema.optionalKey(Schema.Unknown),
+  organizationId: Schema.optionalKey(Schema.Unknown),
+});
+
+const decodeNamed = Schema.decodeUnknownOption(NamedSchema);
 
 // A counted route's body that names an id in another form than Better
 // Auth issues it: Postgres reads a UUID in any case, so capitals would
 // name the same workspace or invitation, while the turn and the plan's
 // check, which read the id as issued, would take it for none and let the
 // request past both. It is refused before Better Auth sees it.
-const namesAnotherForm = (json: unknown): boolean =>
-  Option.isNone(decodeBody(json)) &&
-  decodeNamed(json).pipe(
-    Option.exists(
-      ({ invitationId, organizationId }) =>
-        invitationId !== undefined || organizationId !== undefined
-    )
+const namesAnId = (named: Option.Option<typeof NamedSchema.Type>): boolean =>
+  Option.exists(
+    named,
+    ({ invitationId, organizationId }) =>
+      invitationId !== undefined || organizationId !== undefined
   );
 
 const malformedId = HttpServerResponse.jsonUnsafe(
@@ -131,13 +129,13 @@ export const AuthRoutesLive = Layer.unwrap(
         .json()
         .catch(() => null);
 
-      if (namesAnotherForm(json)) {
+      const issued = decodeBody(json);
+
+      if (Option.isNone(issued) && namesAnId(decodeNamed(json))) {
         return "refused";
       }
 
-      const body = decodeBody(json).pipe(
-        Option.getOrElse((): typeof BodySchema.Type => ({}))
-      );
+      const body = Option.getOrElse(issued, (): typeof BodySchema.Type => ({}));
 
       if (route === acceptRoute) {
         const found: unknown =

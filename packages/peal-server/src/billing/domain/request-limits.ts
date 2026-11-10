@@ -19,5 +19,20 @@ export const confirmationLifetime = Duration.days(30);
  */
 export const catchUpDelay = Duration.minutes(2);
 
+/**
+ * How long the sweep keeps asking Stripe to apply a request Stripe does
+ * not answer for. Past it, or at once when Stripe refuses the request
+ * itself, the request is left to staff and its sender told a person will
+ * look: it never waits unseen.
+ */
+export const applyingPatience = Duration.hours(24);
+
+/**
+ * How long the sweep keeps trying to send an acknowledgement the mail
+ * does not take. Past it, the acknowledgement is withheld, and a request
+ * that needed its link is left to staff.
+ */
+export const acknowledgingPatience = Duration.days(7);
+
 /** How many requests staff see, and the sweep takes, at once. */
 export const requestBatch = 200;

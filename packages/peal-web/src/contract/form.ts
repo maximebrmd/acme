@@ -37,6 +37,7 @@ export type FunctionStep =
 /** Why the last try failed. */
 export type FunctionError =
   | "captcha"
+  | "desiredDayTooFar"
   | "forbidden"
   | "generic"
   | "notEnabled"

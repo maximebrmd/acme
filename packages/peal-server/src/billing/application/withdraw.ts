@@ -6,6 +6,7 @@ import {
   ContractRequest,
   ContractRequestIdSchema,
 } from "#billing/domain/contract-request.ts";
+import type { RequestIntent } from "#billing/domain/contract-request.ts";
 import { inPerson } from "#billing/domain/in-person.ts";
 import type { PersonRequired } from "#billing/domain/person-required.ts";
 import { currency } from "#billing/domain/prices.ts";
@@ -21,7 +22,7 @@ import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
-import { currentSubscription } from "./current-subscription.ts";
+import { contractAt, subscriptionNamed } from "./current-subscription.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
 import { ContractRequests } from "./ports/contract-requests.ts";
@@ -58,6 +59,15 @@ export interface ReceivedWithdrawal extends WithdrawalDone {
 
 /** A withdrawal that came some time ago, to apply now. */
 export interface WithdrawalReceived {
+  /**
+   * Keeps what was decided for it, before Stripe is asked anything: a try
+   * that stops after Stripe is then taken up as decided.
+   */
+  readonly decided: (
+    intent: RequestIntent
+  ) => Effect.Effect<void, DatabaseError>;
+  /** What an earlier try decided for it, if one got that far. */
+  readonly intent: Option.Option<RequestIntent>;
   /** When it came: the day that counts, for the 14 days and the refund. */
   readonly receivedAt: DateTime.Utc;
   /** The subscription it named, when it named one. */
@@ -159,20 +169,26 @@ export class Withdraw extends Context.Service<
         function* withdrawableAt(
           workspaceId: WorkspaceId,
           at: DateTime.Utc,
-          named: Option.Option<string>
+          named: Option.Option<string>,
+          intent: Option.Option<RequestIntent> = Option.none()
         ) {
           if (!enabled) {
             return yield* new BillingOff();
           }
 
-          const current = (yield* currentSubscription(workspaceId)).pipe(
-            Option.filter(({ stripeSubscriptionId }) =>
-              Option.match(named, {
-                onNone: () => true,
-                onSome: (id) => id === stripeSubscriptionId,
-              })
-            )
-          );
+          // As an earlier try decided, whatever became of the subscription
+          // since; or the contract the statement speaks of, checked now.
+          const decided = yield* Option.match(intent, {
+            onNone: () => Effect.succeedNone,
+            onSome: ({ stripeSubscriptionId }) =>
+              subscriptionNamed(workspaceId, stripeSubscriptionId),
+          });
+
+          const current = yield* Option.match(decided, {
+            onNone: () => contractAt(workspaceId, named, at),
+            onSome: (subscription) =>
+              Effect.succeed(Option.some({ endedSince: true, subscription })),
+          });
 
           if (Option.isNone(current)) {
             return yield* new WithdrawalUnavailable({
@@ -180,17 +196,28 @@ export class Withdraw extends Context.Service<
             });
           }
 
-          const subscription: Subscription = current.value;
+          const { endedSince, subscription } = current.value;
 
-          const endsAt = yield* Effect.fromResult(
-            mayWithdraw(subscription, at)
-          );
+          const endsAt = yield* Option.match(decided, {
+            onNone: Effect.fnUntraced(function* check() {
+              const until = yield* Effect.fromResult(
+                mayWithdraw(subscription, at, endedSince)
+              );
 
-          if (
-            yield* stripe.isBusiness(workspaceId, subscription.stripeCustomerId)
-          ) {
-            return yield* new WithdrawalUnavailable({ reason: "business" });
-          }
+              if (
+                yield* stripe.isBusiness(
+                  workspaceId,
+                  subscription.stripeCustomerId
+                )
+              ) {
+                return yield* new WithdrawalUnavailable({ reason: "business" });
+              }
+
+              return until;
+            }),
+            // Decided then: the 14 days are not counted again.
+            onSome: () => Effect.succeed(at),
+          });
 
           // Every payment since the contract started, a change of plan's
           // included, each less the part of its period already supplied.
@@ -253,11 +280,20 @@ export class Withdraw extends Context.Service<
         const found = yield* withdrawableAt(
           workspaceId,
           withdrawal.receivedAt,
-          withdrawal.stripeSubscriptionId
+          withdrawal.stripeSubscriptionId,
+          withdrawal.intent
         );
 
         const { subscription } = found;
         const id = subscription.stripeSubscriptionId;
+
+        if (Option.isNone(withdrawal.intent)) {
+          yield* withdrawal.decided({
+            effect: null,
+            plan: subscription.plan,
+            stripeSubscriptionId: id,
+          });
+        }
 
         // Recorded first: a withdrawal tried again refunds what the first
         // try computed, under the same idempotency key.
@@ -275,7 +311,8 @@ export class Withdraw extends Context.Service<
           yield* stripe.credit(
             workspaceId,
             id,
-            creditsAt(found.invoices, subscription, recorded.requestedAt)
+            creditsAt(found.invoices, subscription, recorded.requestedAt),
+            { _tag: "withdrawal" }
           );
         }
 
@@ -317,7 +354,11 @@ export class Withdraw extends Context.Service<
         const { workspaceId } = actor;
         const receivedAt = yield* DateTime.now;
 
+        // The withdrawals record keeps what was decided: tried again, it
+        // answers the same.
         const done = yield* received({
+          decided: () => Effect.void,
+          intent: Option.none(),
           receivedAt,
           stripeSubscriptionId: Option.none(),
           userId: Option.some(userId),

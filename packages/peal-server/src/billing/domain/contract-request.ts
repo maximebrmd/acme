@@ -1,4 +1,4 @@
-import { Option, Schema } from "effect";
+import { Effect, Option, Schema } from "effect";
 import type { DateTime } from "effect";
 
 import {
@@ -8,6 +8,7 @@ import {
 } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { LocaleSchema } from "#shared/domain/locale.ts";
+import { PaidPlanSchema } from "#shared/domain/plan.ts";
 
 import { MoneySchema } from "./billing-notice.ts";
 import type { Money } from "./billing-notice.ts";
@@ -98,6 +99,30 @@ export const AcknowledgementSchema = Schema.Literals([
 
 export type Acknowledgement = typeof AcknowledgementSchema.Type;
 
+/**
+ * What was decided for a request before Stripe was asked anything: the
+ * subscription it ends, and how (a cancellation's effect; none for a
+ * withdrawal, whose refund the withdrawals record keeps). Kept with the
+ * request first, so a try that stopped between Stripe and the database is
+ * taken up as decided, under the same idempotency keys, and never decided
+ * again from a subscription Stripe has changed since. Instants are ISO
+ * strings: it is stored as JSON (`contract_requests.intent`), so it is
+ * persisted contract: add optional fields, never rename or remove one.
+ */
+export const RequestIntentSchema = Schema.Struct({
+  effect: Schema.NullOr(
+    Schema.Struct({
+      endsAt: Schema.String,
+      refundSince: Schema.NullOr(Schema.String),
+      tag: Schema.Literals(["atPeriodEnd", "onDate", "now"]),
+    })
+  ),
+  plan: PaidPlanSchema,
+  stripeSubscriptionId: Schema.NonEmptyString,
+});
+
+export type RequestIntent = typeof RequestIntentSchema.Type;
+
 /** The longest name or contract a request holds. */
 export const maxRequestTextLength = 100;
 
@@ -150,6 +175,10 @@ export class ContractRequest extends Schema.Class<ContractRequest>(
   // Where the acknowledgement goes.
   email: Schema.Option(Schema.String),
   id: ContractRequestIdSchema,
+  // What was decided for it, from just before Stripe is asked.
+  intent: Schema.Option(RequestIntentSchema).pipe(
+    Schema.withConstructorDefault(Effect.succeedNone)
+  ),
   kind: ContractRequestKindSchema,
   // The language of the page it was sent from.
   locale: LocaleSchema,
@@ -195,6 +224,7 @@ export const changed = (
     effectiveAt: request.effectiveAt,
     email: request.email,
     id: request.id,
+    intent: request.intent,
     kind: request.kind,
     locale: request.locale,
     name: request.name,

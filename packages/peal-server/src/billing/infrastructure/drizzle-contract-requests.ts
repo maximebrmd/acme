@@ -1,6 +1,7 @@
 import {
   and,
   asc,
+  desc,
   eq,
   gt,
   gte,
@@ -49,6 +50,7 @@ const requestOf = (row: Row) =>
     effectiveAt: instantOf(row.effectiveAt),
     email: Option.fromNullOr(row.email),
     id: row.id,
+    intent: Option.fromNullOr(row.intent),
     kind: row.kind,
     locale: row.locale,
     name: Option.fromNullOr(row.name),
@@ -77,6 +79,7 @@ const valuesOf = (request: ContractRequest) => ({
   desiredAt: dateOf(request.desiredAt),
   effectiveAt: dateOf(request.effectiveAt),
   email: Option.getOrNull(request.email),
+  intent: Option.getOrNull(request.intent),
   kind: request.kind,
   locale: request.locale,
   name: Option.getOrNull(request.name),
@@ -188,7 +191,11 @@ export const DrizzleContractRequestsLive = Layer.effect(
           Effect.withSpan("ContractRequests.acknowledgedTo")
         );
 
-    const pending = (before: DateTime.Utc, limit: number) =>
+    const pendingBy = (
+      before: DateTime.Utc,
+      limit: number,
+      order: typeof asc
+    ) =>
       db
         .select()
         .from(contractRequests)
@@ -198,13 +205,24 @@ export const DrizzleContractRequestsLive = Layer.effect(
             lt(contractRequests.receivedAt, date(before))
           )
         )
-        .orderBy(asc(contractRequests.receivedAt), asc(contractRequests.id))
+        .orderBy(order(contractRequests.receivedAt), order(contractRequests.id))
         .limit(limit)
-        .pipe(
-          Effect.mapError(failed),
-          Effect.flatMap(many),
-          Effect.withSpan("ContractRequests.pending")
-        );
+        .pipe(Effect.mapError(failed));
+
+    const pending = (before: DateTime.Utc, limit: number) =>
+      Effect.all([
+        pendingBy(before, Math.ceil(limit / 2), asc),
+        pendingBy(before, Math.floor(limit / 2), desc),
+      ]).pipe(
+        Effect.map(([oldest, newest]) => [
+          ...oldest,
+          ...newest.filter(
+            ({ id }) => !oldest.some((older) => older.id === id)
+          ),
+        ]),
+        Effect.flatMap(many),
+        Effect.withSpan("ContractRequests.pending")
+      );
 
     const open = (limit: number) =>
       db

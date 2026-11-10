@@ -282,6 +282,15 @@ layer(BillingApp, { excludeTestServices: true, timeout: "180 seconds" })(
         const noEmail = yield* send(address, { email: "not an address" });
 
         assert.strictEqual(noEmail.status, 400);
+
+        // A year mistyped would keep the plan renewing for decades.
+        const farAhead = yield* send(address, {
+          desiredOn: "2062-12-31",
+          email: newEmail("far"),
+        });
+
+        assert.strictEqual(farAhead.status, 400);
+        assert.deepInclude(farAhead.body, { _tag: "DesiredDayTooFar" });
       })
     );
 

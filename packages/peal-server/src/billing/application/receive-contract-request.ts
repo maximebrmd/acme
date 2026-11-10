@@ -11,7 +11,11 @@ import type {
   ContractRequestId,
   ContractRequestKind,
 } from "#billing/domain/contract-request.ts";
-import { catchUpDelay, requestBatch } from "#billing/domain/request-limits.ts";
+import {
+  applyingPatience,
+  catchUpDelay,
+  requestBatch,
+} from "#billing/domain/request-limits.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
@@ -178,6 +182,49 @@ export class ReceiveContractRequest extends Context.Service<
         }
       );
 
+      // Looked at, and left to staff when Stripe will not take it: at
+      // once when Stripe refuses the request itself, which asking again
+      // does not change, or once it has not answered for
+      // `applyingPatience`. Its sender is then told a person will look.
+      const seen = (request: ContractRequest) =>
+        looked(request).pipe(
+          Effect.catchTag(
+            "StripeUnreachable",
+            Effect.fnUntraced(function* leftToStaff(failure) {
+              const now = yield* DateTime.now;
+
+              const waited = DateTime.isGreaterThan(
+                now,
+                DateTime.addDuration(request.receivedAt, applyingPatience)
+              );
+
+              if (!failure.permanent && !waited) {
+                return yield* failure;
+              }
+
+              // As last kept: with what was decided for it, if anything.
+              const kept = Option.getOrElse(
+                yield* requests.byId(request.id),
+                () => request
+              );
+
+              const left = changed(kept, { status: "unmatched" });
+
+              yield* requests.save(left);
+              yield* Effect.logError(
+                "A contract request Stripe would not take is left to staff"
+              ).pipe(
+                Effect.annotateLogs({
+                  permanent: failure.permanent,
+                  requestId: request.id,
+                })
+              );
+
+              return left;
+            })
+          )
+        );
+
       const processed = Effect.fn("ReceiveContractRequest.processed")(
         function* processed(request: ContractRequest) {
           if (request.channel !== "form") {
@@ -185,7 +232,7 @@ export class ReceiveContractRequest extends Context.Service<
           }
 
           yield* settle.acknowledge(
-            request.status === "received" ? yield* looked(request) : request
+            request.status === "received" ? yield* seen(request) : request
           );
         }
       );

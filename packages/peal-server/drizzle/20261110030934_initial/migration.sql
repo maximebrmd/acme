@@ -85,6 +85,7 @@ CREATE TABLE "billing"."contract_requests" (
 	"email" text,
 	"erased_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY,
+	"intent" jsonb,
 	"kind" text NOT NULL,
 	"locale" text NOT NULL,
 	"name" text,

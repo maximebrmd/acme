@@ -5,12 +5,15 @@ import {
   BillingNotEnabled,
   BillingUnavailable,
   ContractRequestNotFound,
+  DesiredDayTooFar,
+  desiredDayHorizonDays,
 } from "peal-contract";
 
 import { outcomeView } from "#billing/api/contract-request-view.ts";
 import { ConfirmContractRequest } from "#billing/application/confirm-contract-request.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { ReceiveContractRequest } from "#billing/application/receive-contract-request.ts";
+import { withinHorizon } from "#billing/domain/desired-day.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { CaptchaChallenge } from "#workspace/application/captcha-challenge.ts";
 
@@ -57,12 +60,20 @@ export const ContractRequestsHandlers = HttpApiBuilder.group(
       )
       .handle("send", ({ payload }) =>
         Effect.gen(function* send() {
+          const desiredAt = Option.fromNullOr(payload.desiredOn).pipe(
+            Option.flatMap(endOfDay)
+          );
+
+          if (!withinHorizon(desiredAt, yield* DateTime.now)) {
+            return yield* new DesiredDayTooFar({
+              horizonDays: desiredDayHorizonDays,
+            });
+          }
+
           const received = yield* function_
             .receive({
               contract: Option.fromNullOr(payload.contract),
-              desiredAt: Option.fromNullOr(payload.desiredOn).pipe(
-                Option.flatMap(endOfDay)
-              ),
+              desiredAt,
               email: payload.email,
               kind: payload.kind,
               locale: payload.locale,

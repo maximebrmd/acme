@@ -44,6 +44,7 @@ const render = async (
         ready
         signedInAs={null}
         step={{ _tag: "form" }}
+        latest="2027-12-15"
         today="2026-11-10"
         values={values}
         onBack={ignore}

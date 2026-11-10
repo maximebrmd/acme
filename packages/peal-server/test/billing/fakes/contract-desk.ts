@@ -57,7 +57,8 @@ export class Desk extends Context.Service<
     readonly references: Ref.Ref<ReadonlyMap<string, NamedContract>>;
     readonly requests: Ref.Ref<ReadonlyMap<string, ContractRequest>>;
     readonly stripe: Ref.Ref<readonly string[]>;
-    readonly stripeDown: Ref.Ref<boolean>;
+    /** Whether Stripe answers: not at all, or by refusing the request. */
+    readonly stripeDown: Ref.Ref<boolean | "refusing">;
     readonly tokens: Ref.Ref<number>;
     readonly withdrawals: Ref.Ref<readonly Withdrawal[]>;
   }
@@ -83,7 +84,7 @@ const DeskLive = Layer.effect(
     references: Ref.make<ReadonlyMap<string, NamedContract>>(new Map()),
     requests: Ref.make<ReadonlyMap<string, ContractRequest>>(new Map()),
     stripe: Ref.make<readonly string[]>([]),
-    stripeDown: Ref.make(false),
+    stripeDown: Ref.make<boolean | "refusing">(false),
     tokens: Ref.make(0),
     withdrawals: Ref.make<readonly Withdrawal[]>([]),
   })
@@ -320,9 +321,14 @@ const PortsInMemory = Layer.mergeAll(
       const asked = (workspaceId: Subscription["workspaceId"], call: string) =>
         Ref.get(stripeDown).pipe(
           Effect.flatMap((down) =>
-            down
-              ? Effect.fail(new StripeUnreachable({ workspaceId }))
-              : Ref.update(stripe, (all) => [...all, call])
+            down === false
+              ? Ref.update(stripe, (all) => [...all, call])
+              : Effect.fail(
+                  new StripeUnreachable({
+                    permanent: down === "refusing",
+                    workspaceId,
+                  })
+                )
           )
         );
 

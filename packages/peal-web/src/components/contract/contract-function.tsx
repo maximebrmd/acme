@@ -3,6 +3,7 @@
 import { useAtomSet } from "@effect/atom-react";
 import { DateTime, Exit, Option } from "effect";
 import { useLocale } from "next-intl";
+import { desiredDayHorizonDays } from "peal-contract";
 import { useState, useTransition } from "react";
 
 import {
@@ -38,6 +39,14 @@ interface ContractFunctionProps {
 const form: FunctionStep = { _tag: "form" };
 
 const today = () => new Date().toISOString().slice(0, 10);
+
+const dayMs = 86_400_000;
+
+// The latest day a cancellation may ask its contract to end.
+const latest = () =>
+  new Date(Date.now() + desiredDayHorizonDays * dayMs)
+    .toISOString()
+    .slice(0, 10);
 
 /**
  * The function to cancel a contract or to withdraw from one, for anyone.
@@ -189,6 +198,7 @@ export const ContractFunction = ({
       ready={captcha.ready}
       signedInAs={signedIn?.email ?? null}
       step={step}
+      latest={latest()}
       today={today()}
       values={values}
       onBack={() => {

@@ -37,6 +37,12 @@ export interface NotifiedCancellation {
   readonly receivedAt: DateTime.Utc;
 }
 
+// Whether the contract started after `at`.
+const startedAfter = (subscription: Subscription, at: DateTime.Utc) =>
+  Option.exists(subscription.startedAt, (startedAt) =>
+    DateTime.isGreaterThan(startedAt, at)
+  );
+
 /**
  * What a cancellation received at `receivedAt` does to the subscription
  * when it is applied at `now`. The day it was received is the day that
@@ -44,24 +50,67 @@ export interface NotifiedCancellation {
  * for its sender to be told from a stranger, never costs them a renewal
  * charged meanwhile. The contract ends with the period paid for, which is
  * not refunded, or on the day asked for when that is later; a trial ends at
- * once. A subscription that gives no plan, is already set to end, or
- * started after the request came, has nothing to cancel.
+ * once. A subscription that gives no plan, or started after the request
+ * came, has nothing to cancel; nor one already set to end, unless on a
+ * later day than this request asks, which brings its end forward.
  */
 export const cancellationEffect = (
   subscription: Subscription,
   { desiredAt, receivedAt }: NotifiedCancellation,
   now: DateTime.Utc
 ): Result.Result<CancellationEffect, NothingToCancel> => {
-  if (!entitles(subscription) || subscription.cancelAtPeriodEnd) {
+  // The plan renewed after the request came, and its sender did not ask to
+  // stay into the new period.
+  const renewedSince = Option.exists(
+    subscription.currentPeriodStart,
+    (start) =>
+      DateTime.isGreaterThan(start, receivedAt) &&
+      !Option.exists(desiredAt, (desired) =>
+        DateTime.isGreaterThan(desired, start)
+      )
+  );
+
+  // Ended since the request came, as when it waited for its link: the
+  // renewal it should have stopped still goes back.
+  if (
+    subscription.status === "canceled" &&
+    renewedSince &&
+    !startedAfter(subscription, receivedAt)
+  ) {
+    return Result.succeed({
+      _tag: "now",
+      endsAt: now,
+      refundSince: Option.some(receivedAt),
+    });
+  }
+
+  if (!entitles(subscription)) {
     return Result.fail(new NothingToCancel());
   }
 
   // A contract that started after the request came is another one, ordered
   // since: the request never spoke of it, and applied to it would end it
   // and refund every period it charged.
+  if (startedAfter(subscription, receivedAt)) {
+    return Result.fail(new NothingToCancel());
+  }
+
+  const periodEnd = Option.getOrElse(subscription.currentPeriodEnd, () => now);
+
+  const later = desiredAt.pipe(
+    Option.filter((desired) => DateTime.isGreaterThan(desired, periodEnd))
+  );
+
+  // Already set to end: nothing to cancel, unless it is set to end on a
+  // later day than this request asks, as after a date mistyped: the end
+  // is then brought forward.
   if (
-    Option.exists(subscription.startedAt, (startedAt) =>
-      DateTime.isGreaterThan(startedAt, receivedAt)
+    subscription.cancelAtPeriodEnd &&
+    !Option.exists(subscription.cancelAt, (set) =>
+      DateTime.isGreaterThan(
+        set,
+        Option.getOrElse(later, () => periodEnd)
+      )
     )
   ) {
     return Result.fail(new NothingToCancel());
@@ -75,26 +124,9 @@ export const cancellationEffect = (
     });
   }
 
-  const periodEnd = Option.getOrElse(subscription.currentPeriodEnd, () => now);
-
-  const later = desiredAt.pipe(
-    Option.filter((desired) => DateTime.isGreaterThan(desired, periodEnd))
-  );
-
   if (Option.isSome(later)) {
     return Result.succeed({ _tag: "onDate", endsAt: later.value });
   }
-
-  // The plan renewed after the request came, and its sender did not ask to
-  // stay into the new period.
-  const renewedSince = Option.exists(
-    subscription.currentPeriodStart,
-    (start) =>
-      DateTime.isGreaterThan(start, receivedAt) &&
-      !Option.exists(desiredAt, (desired) =>
-        DateTime.isGreaterThan(desired, start)
-      )
-  );
 
   if (renewedSince) {
     return Result.succeed({

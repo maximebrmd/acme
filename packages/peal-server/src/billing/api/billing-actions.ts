@@ -5,6 +5,8 @@ import {
   BillingNotEnabled,
   BillingUnavailable,
   CurrentMember,
+  DesiredDayTooFar,
+  desiredDayHorizonDays,
   Forbidden,
   NothingToCancel,
   PlanTooSmall,
@@ -18,6 +20,7 @@ import { CancelSubscription } from "#billing/application/cancel-subscription.ts"
 import { PlaceOrder } from "#billing/application/place-order.ts";
 import { ReduceWorkspace } from "#billing/application/reduce-workspace.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
+import { withinHorizon } from "#billing/domain/desired-day.ts";
 import { actorOf } from "#shared/api/actor.ts";
 
 import { standingView } from "./billing-view.ts";
@@ -118,6 +121,12 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
             Option.flatMap((day) => DateTime.make(`${day}T00:00:00Z`)),
             Option.map((start) => DateTime.add(start, { days: 1 }))
           );
+
+          if (!withinHorizon(desiredAt, yield* DateTime.now)) {
+            return yield* new DesiredDayTooFar({
+              horizonDays: desiredDayHorizonDays,
+            });
+          }
 
           return yield* cancellations.cancel(actor, desiredAt).pipe(
             Effect.catchTags({

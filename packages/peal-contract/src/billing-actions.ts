@@ -14,6 +14,7 @@ import {
   WithdrawalPreviewSchema,
   WithdrawalSchema,
 } from "./billing.ts";
+import { DesiredDayTooFar } from "./desired-day-too-far.ts";
 import { Forbidden } from "./forbidden.ts";
 import { NothingToCancel } from "./nothing-to-cancel.ts";
 import { PlanTooSmall } from "./plan-too-small.ts";
@@ -57,6 +58,7 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
       error: [
         BillingNotEnabled,
         BillingUnavailable,
+        DesiredDayTooFar,
         Forbidden,
         NothingToCancel,
       ],

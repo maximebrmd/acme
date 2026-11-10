@@ -43,6 +43,8 @@ export interface ContractFunctionViewProps {
   readonly signedInAs: string | null;
   readonly step: FunctionStep;
   /** Today, as `2026-11-10`: the first day that can be asked for. */
+  /** The latest day a cancellation may ask for, as YYYY-MM-DD. */
+  readonly latest: string;
   readonly today: string;
   readonly values: FunctionValues;
 }
@@ -84,6 +86,7 @@ const Field = ({
   readonly hint?: string;
   readonly invalid?: string;
   readonly label: string;
+  readonly max?: string;
   readonly min?: string;
   readonly onChange: (value: string) => void;
   readonly required: boolean;
@@ -207,6 +210,7 @@ const Rubrics = ({
   onContinue,
   own,
   signedInAs,
+  latest,
   today,
   values,
 }: ContractFunctionViewProps) => {
@@ -259,6 +263,7 @@ const Rubrics = ({
           autoComplete="off"
           required={false}
           min={today}
+          max={latest}
           label={t("fields.desiredOn")}
           hint={t("fields.desiredOnHint")}
           value={values.desiredOn}

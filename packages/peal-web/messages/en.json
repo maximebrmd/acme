@@ -1083,6 +1083,7 @@
       "generic": "Your request could not be sent. Try again in a moment.",
       "tooMany": "Too many requests came from your connection in the last hour. Try again later, or sign in and use this page: it then needs no check.",
       "captcha": "The check that you are a person did not pass. Try again.",
+      "desiredDayTooFar": "The day you ask the contract to end on is more than 400 days ahead. Give a nearer day, or none to end it as soon as the contract allows.",
       "notEnabled": "This Peal server sells no subscription: there is no contract to cancel or withdraw from.",
       "forbidden": "Only owners and admins of the workspace, in their own session, can end its contract.",
       "nothingToCancel": "This workspace has no subscription to cancel, or it is already set to end.",

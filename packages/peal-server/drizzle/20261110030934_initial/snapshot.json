@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "a070fe1a-f334-4531-beae-e1ee7391b423",
+  "id": "1278723c-7a73-40ab-9039-f128523ebda6",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -4353,6 +4353,19 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "contract_requests",
+      "name": "intent",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,

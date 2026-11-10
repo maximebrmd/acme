@@ -1083,6 +1083,7 @@
       "generic": "Votre demande n’a pas pu être envoyée. Réessayez dans un instant.",
       "tooMany": "Trop de demandes sont venues de votre connexion depuis une heure. Réessayez plus tard, ou connectez-vous et utilisez cette page : aucune vérification n’est alors nécessaire.",
       "captcha": "La vérification que vous êtes une personne a échoué. Réessayez.",
+      "desiredDayTooFar": "La date de fin demandée est à plus de 400 jours. Indiquez une date plus proche, ou aucune pour mettre fin au contrat dès qu’il le permet.",
       "notEnabled": "Ce serveur Peal ne vend pas d’abonnement : il n’y a aucun contrat à résilier ni dont se rétracter.",
       "forbidden": "Seuls les propriétaires et administrateurs de l’espace de travail, dans leur propre session, peuvent mettre fin à son contrat.",
       "nothingToCancel": "Cet espace de travail n’a pas d’abonnement à résilier, ou sa fin est déjà programmée.",

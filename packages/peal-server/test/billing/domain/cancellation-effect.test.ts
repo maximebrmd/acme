@@ -173,7 +173,10 @@ describe(renewalRefund, () => {
   it("gives back a renewal charged after the request came, whole", () => {
     expect(
       renewalRefund(
-        { lines: [{ amount: 1250, start: at("2026-12-01T00:00:00Z") }], paid: 1500 },
+        {
+          lines: [{ amount: 1250, start: at("2026-12-01T00:00:00Z") }],
+          paid: 1500,
+        },
         since
       )
     ).toBe(1500);
@@ -200,7 +203,10 @@ describe(renewalRefund, () => {
   it("gives back nothing of an invoice for periods that began before the request", () => {
     expect(
       renewalRefund(
-        { lines: [{ amount: 1250, start: at("2026-11-01T00:00:00Z") }], paid: 1500 },
+        {
+          lines: [{ amount: 1250, start: at("2026-11-01T00:00:00Z") }],
+          paid: 1500,
+        },
         since
       )
     ).toBe(0);

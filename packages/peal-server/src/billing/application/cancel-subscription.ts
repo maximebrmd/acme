@@ -1,4 +1,4 @@
-import { Context, DateTime, Effect, Layer, Option } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
 
 import type { Money } from "#billing/domain/billing-notice.ts";
 import { BillingOff } from "#billing/domain/billing-off.ts";
@@ -8,8 +8,13 @@ import {
 } from "#billing/domain/cancellation-effect.ts";
 import type { CancellationEffect } from "#billing/domain/cancellation-effect.ts";
 import {
+  changed,
   ContractRequest,
   ContractRequestIdSchema,
+} from "#billing/domain/contract-request.ts";
+import type {
+  ContractRequestId,
+  RequestIntent,
 } from "#billing/domain/contract-request.ts";
 import { inPerson } from "#billing/domain/in-person.ts";
 import { NothingToCancel } from "#billing/domain/nothing-to-cancel.ts";
@@ -25,7 +30,7 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
-import { currentSubscription } from "./current-subscription.ts";
+import { contractAt } from "./current-subscription.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
 import { ContractRequests } from "./ports/contract-requests.ts";
@@ -51,10 +56,24 @@ export interface ReceivedCancellation extends Cancellation {
 
 /** A cancellation that came some time ago, to apply now. */
 export interface CancellationReceived {
+  /**
+   * Keeps what was decided for it, before Stripe is asked anything: a try
+   * that stops after Stripe is then taken up as decided.
+   */
+  readonly decided: (
+    intent: RequestIntent
+  ) => Effect.Effect<void, DatabaseError>;
   /** When its sender wants the contract to end, if they said. */
   readonly desiredAt: Option.Option<DateTime.Utc>;
+  /** What an earlier try decided for it, if one got that far. */
+  readonly intent: Option.Option<RequestIntent>;
   /** When it came: the day that counts. */
   readonly receivedAt: DateTime.Utc;
+  /**
+   * The request it is: it names what Stripe is asked, and what members are
+   * told, so another request for the same contract is another.
+   */
+  readonly requestId: ContractRequestId;
   /** The subscription it named, when it named one. */
   readonly stripeSubscriptionId: Option.Option<string>;
   readonly workspaceId: WorkspaceId;
@@ -75,6 +94,52 @@ const renewalsSince = (invoices: readonly PaidInvoice[], since: DateTime.Utc) =>
 
     return amount > 0 ? [{ amount, invoiceId }] : [];
   });
+
+const iso = (instant: DateTime.Utc) => DateTime.formatIso(instant);
+
+// What was decided, as the request keeps it.
+const intentOf = (decided: {
+  readonly effect: CancellationEffect;
+  readonly id: string;
+  readonly plan: PaidPlan;
+}): RequestIntent => ({
+  effect: {
+    endsAt: iso(decided.effect.endsAt),
+    refundSince:
+      decided.effect._tag === "now"
+        ? decided.effect.refundSince.pipe(Option.map(iso), Option.getOrNull)
+        : null,
+    tag: decided.effect._tag,
+  },
+  plan: decided.plan,
+  stripeSubscriptionId: decided.id,
+});
+
+// What a request kept of an earlier try, read back; none when it kept a
+// withdrawal's, or an instant that does not read.
+const decidedEffect = ({ effect, plan, stripeSubscriptionId }: RequestIntent) =>
+  Option.fromNullOr(effect).pipe(
+    Option.flatMap(({ endsAt, refundSince, tag }) =>
+      Option.all({
+        endsAt: DateTime.make(endsAt),
+        since:
+          refundSince === null
+            ? Option.some(Option.none<DateTime.Utc>())
+            : DateTime.make(refundSince).pipe(Option.map(Option.some)),
+      }).pipe(
+        Option.map(({ endsAt: at, since }): CancellationEffect =>
+          tag === "now"
+            ? { _tag: "now", endsAt: at, refundSince: since }
+            : { _tag: tag, endsAt: at }
+        )
+      )
+    ),
+    Option.map((decided) => ({
+      effect: decided,
+      id: stripeSubscriptionId,
+      plan,
+    }))
+  );
 
 /**
  * Cancels the workspace's subscription online, as French law asks it be
@@ -115,19 +180,23 @@ export class CancelSubscription extends Context.Service<
       // Asks Stripe for what the effect says; answers what went back.
       const carryOut = Effect.fn("CancelSubscription.carryOut")(
         function* carryOut(
-          subscription: Subscription,
-          effect: CancellationEffect
+          subscription: Pick<
+            Subscription,
+            "stripeSubscriptionId" | "workspaceId"
+          >,
+          effect: CancellationEffect,
+          requestKey: string
         ) {
           const { stripeSubscriptionId: id, workspaceId } = subscription;
 
           if (effect._tag === "atPeriodEnd") {
-            yield* stripe.cancelAtPeriodEnd(workspaceId, id);
+            yield* stripe.cancelAtPeriodEnd(workspaceId, id, requestKey);
 
             return Option.none<Money>();
           }
 
           if (effect._tag === "onDate") {
-            yield* stripe.cancelAt(workspaceId, id, effect.endsAt);
+            yield* stripe.cancelAt(workspaceId, id, effect.endsAt, requestKey);
 
             return Option.none<Money>();
           }
@@ -141,7 +210,10 @@ export class CancelSubscription extends Context.Service<
           const invoices = yield* stripe.paidInvoices(workspaceId, id);
           const credits = renewalsSince(invoices, effect.refundSince.value);
 
-          yield* stripe.credit(workspaceId, id, credits);
+          yield* stripe.credit(workspaceId, id, credits, {
+            _tag: "lateCancellation",
+            requestKey,
+          });
           yield* stripe.endNow(workspaceId, id, "cancelledLate");
 
           return Option.some<Money>({
@@ -157,40 +229,58 @@ export class CancelSubscription extends Context.Service<
             return yield* new BillingOff();
           }
 
-          const { workspaceId } = cancellation;
-
-          const current = (yield* currentSubscription(workspaceId)).pipe(
-            Option.filter(({ stripeSubscriptionId }) =>
-              Option.match(cancellation.stripeSubscriptionId, {
-                onNone: () => true,
-                onSome: (named) => named === stripeSubscriptionId,
-              })
-            )
-          );
-
-          if (Option.isNone(current)) {
-            return yield* new NothingToCancel();
-          }
-
-          const subscription = current.value;
+          const { requestId, workspaceId } = cancellation;
           const now = yield* DateTime.now;
-          const id = subscription.stripeSubscriptionId;
 
-          const effect = yield* Effect.fromResult(
-            cancellationEffect(subscription, cancellation, now)
+          // As decided by an earlier try, or decided now, and kept before
+          // Stripe is asked.
+          const { effect, id, plan } = yield* Option.match(
+            cancellation.intent.pipe(Option.flatMap(decidedEffect)),
+            {
+              onNone: Effect.fnUntraced(function* decide() {
+                const found = yield* contractAt(
+                  workspaceId,
+                  cancellation.stripeSubscriptionId,
+                  cancellation.receivedAt
+                );
+
+                if (Option.isNone(found)) {
+                  return yield* new NothingToCancel();
+                }
+
+                const { subscription } = found.value;
+
+                const decided = {
+                  effect: yield* Effect.fromResult(
+                    cancellationEffect(subscription, cancellation, now)
+                  ),
+                  id: subscription.stripeSubscriptionId,
+                  plan: subscription.plan,
+                };
+
+                yield* cancellation.decided(intentOf(decided));
+
+                return decided;
+              }),
+              onSome: Effect.succeed,
+            }
           );
 
-          const refunded = yield* carryOut(subscription, effect);
+          const refunded = yield* carryOut(
+            { stripeSubscriptionId: id, workspaceId },
+            effect,
+            requestId
+          );
 
           const done: ReceivedCancellation = {
             endsAt: effect.endsAt,
-            plan: subscription.plan,
+            plan,
             refunded,
             stripeSubscriptionId: id,
           };
 
           yield* notices.tell({
-            key: `subscription:${id}:cancelled`,
+            key: `subscription:${id}:cancelled:${requestId}`,
             notice: {
               _tag: "SubscriptionCancelled",
               endsAt: done.endsAt,
@@ -200,7 +290,7 @@ export class CancelSubscription extends Context.Service<
           });
 
           yield* Effect.logInfo("Cancelled a subscription").pipe(
-            Effect.annotateLogs({ plan: subscription.plan, workspaceId })
+            Effect.annotateLogs({ plan, workspaceId })
           );
 
           return done;
@@ -218,35 +308,64 @@ export class CancelSubscription extends Context.Service<
         const { workspaceId } = actor;
         const receivedAt = yield* DateTime.now;
 
-        const done = yield* received({
+        // The proof of what was asked, and when, kept before anything is
+        // asked of Stripe.
+        const request = new ContractRequest({
+          acknowledgedAt: Option.none(),
+          acknowledgement: "none",
+          channel: "session",
+          contract: Option.none(),
           desiredAt,
+          effectiveAt: Option.none(),
+          email: Option.none(),
+          id: yield* newId(ContractRequestIdSchema),
+          kind: "cancellation",
+          locale: "en",
+          name: Option.none(),
           receivedAt,
+          refunded: Option.none(),
+          refusal: Option.none(),
+          settledAt: Option.none(),
+          status: "received",
           stripeSubscriptionId: Option.none(),
-          workspaceId,
+          userId: Option.some(userId),
+          workspaceId: Option.some(workspaceId),
         });
 
-        // The proof of what was asked, and when.
+        // The request as last kept.
+        const kept = yield* Ref.make(request);
+
+        const done = yield* received({
+          decided: (intent) =>
+            Ref.updateAndGet(kept, (before) =>
+              changed(before, { intent: Option.some(intent) })
+            ).pipe(Effect.flatMap(requests.save)),
+          desiredAt,
+          intent: Option.none(),
+          receivedAt,
+          requestId: request.id,
+          stripeSubscriptionId: Option.none(),
+          workspaceId,
+        }).pipe(
+          // Stripe did not take it: staff see it, and apply it as of now,
+          // when it was asked.
+          Effect.tapErrorTag("StripeUnreachable", () =>
+            Ref.get(kept).pipe(
+              Effect.flatMap((before) =>
+                requests.save(changed(before, { status: "unmatched" }))
+              ),
+              Effect.ignore
+            )
+          )
+        );
+
         yield* requests.save(
-          new ContractRequest({
-            acknowledgedAt: Option.none(),
-            acknowledgement: "none",
-            channel: "session",
-            contract: Option.none(),
-            desiredAt,
+          changed(yield* Ref.get(kept), {
             effectiveAt: Option.some(done.endsAt),
-            email: Option.none(),
-            id: yield* newId(ContractRequestIdSchema),
-            kind: "cancellation",
-            locale: "en",
-            name: Option.none(),
-            receivedAt,
             refunded: done.refunded,
-            refusal: Option.none(),
             settledAt: Option.some(receivedAt),
             status: "applied",
             stripeSubscriptionId: Option.some(done.stripeSubscriptionId),
-            userId: Option.some(userId),
-            workspaceId: Option.some(workspaceId),
           })
         );
 

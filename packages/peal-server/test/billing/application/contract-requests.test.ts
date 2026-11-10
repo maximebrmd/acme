@@ -496,6 +496,68 @@ layer(RequestsTest)("requests to cancel or withdraw, from the form", (it) => {
   );
 
   it.effect(
+    "leaves to staff, and tells its sender, a request Stripe refuses or has not answered for a day",
+    () =>
+      Effect.gen(function* leftToStaff() {
+        yield* studio("2026-11-30T22:00:00Z");
+        yield* Desk.use((desk) => Ref.set(desk.stripeDown, "refusing"));
+
+        const function_ = yield* ReceiveContractRequest;
+        const refused = yield* send({ contract: Option.some(reference) });
+
+        // Asking again would change nothing: a person looks, and the
+        // sender is told so at once.
+        const left = yield* kept(refused);
+
+        assert.strictEqual(left.status, "unmatched");
+        assert.strictEqual(left.acknowledgement, "sent");
+        assert.deepStrictEqual(
+          (yield* ContractRequestDesk.use((desk) => desk.open)).map(
+            ({ id }) => id
+          ),
+          [refused]
+        );
+
+        // Stripe not answering is waited for, a day at most.
+        yield* Desk.use((desk) => Ref.set(desk.stripeDown, true));
+
+        const waiting = yield* send({ contract: Option.some(reference) });
+
+        yield* TestClock.adjust(Duration.hours(23));
+        yield* function_.catchUp;
+
+        assert.strictEqual((yield* kept(waiting)).status, "received");
+
+        yield* TestClock.adjust(Duration.hours(2));
+        yield* function_.catchUp;
+
+        assert.strictEqual((yield* kept(waiting)).status, "unmatched");
+        assert.strictEqual((yield* kept(waiting)).acknowledgement, "sent");
+
+        // The mail not taking an acknowledgement is tried for a week.
+        yield* Desk.use((desk) =>
+          Effect.all([
+            Ref.set(desk.stripeDown, false),
+            Ref.set(desk.mailDown, true),
+          ])
+        );
+
+        const unsent = yield* send({ email: "nobody@example.test" });
+
+        yield* TestClock.adjust(Duration.days(6));
+        yield* function_.catchUp;
+
+        assert.strictEqual((yield* kept(unsent)).acknowledgement, "pending");
+
+        yield* TestClock.adjust(Duration.days(2));
+        yield* function_.catchUp;
+
+        assert.strictEqual((yield* kept(unsent)).acknowledgement, "withheld");
+        assert.strictEqual(yield* function_.catchUp, 0);
+      })
+  );
+
+  it.effect(
     "lets staff apply a request to a contract, as of the day it came, or close it, each recorded first",
     () =>
       Effect.gen(function* staff() {

@@ -58,7 +58,8 @@ export class ContractRequests extends Context.Service<
     ) => Effect.Effect<readonly ContractRequest[], DatabaseError>;
     /**
      * The form's requests received before `before` whose acknowledgement
-     * has not left yet, oldest first.
+     * has not left yet: the oldest and the newest, half of `limit` each,
+     * so those that stay stuck never keep the sweep from the others.
      */
     readonly pending: (
       before: DateTime.Utc,

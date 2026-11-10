@@ -978,7 +978,10 @@ layer(BillingIntegration, {
         // Postgres reads a UUID in any case: an id written in capitals
         // names the same workspace, and takes no way around its plan.
         const shouted = yield* Effect.forEach([1, 2, 3], (index) =>
-          invite(newEmail(`shouted-${String(index)}`), workspaceId.toUpperCase())
+          invite(
+            newEmail(`shouted-${String(index)}`),
+            workspaceId.toUpperCase()
+          )
         );
 
         assert.deepStrictEqual(

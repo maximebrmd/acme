@@ -9,6 +9,7 @@ const byTag: ReadonlyMap<string, FunctionError> = new Map([
   ["BillingNotEnabled", "notEnabled"],
   ["BillingUnavailable", "unavailable"],
   ["CaptchaRefused", "captcha"],
+  ["DesiredDayTooFar", "desiredDayTooFar"],
   ["Forbidden", "forbidden"],
   ["NothingToCancel", "nothingToCancel"],
   ["TooManyContractRequests", "tooMany"],

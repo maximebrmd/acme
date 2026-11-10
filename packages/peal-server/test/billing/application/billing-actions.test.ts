@@ -34,7 +34,11 @@ import { SendBillingReminders } from "#billing/application/send-billing-reminder
 import { Withdraw } from "#billing/application/withdraw.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import type { BillingNotice } from "#billing/domain/billing-notice.ts";
-import type { ContractRequest } from "#billing/domain/contract-request.ts";
+import { ContractRequestIdSchema } from "#billing/domain/contract-request.ts";
+import type {
+  ContractRequest,
+  RequestIntent,
+} from "#billing/domain/contract-request.ts";
 import type { Order } from "#billing/domain/order.ts";
 import { PlanTooSmall } from "#billing/domain/plan-too-small.ts";
 import type { Holdings } from "#billing/domain/standing.ts";
@@ -91,6 +95,8 @@ class BillingLog extends Context.Service<
     readonly orders: Ref.Ref<readonly PlacedOrder[]>;
     readonly requests: Ref.Ref<readonly ContractRequest[]>;
     readonly invoices: Ref.Ref<readonly PaidInvoice[]>;
+    /** The request keys Stripe was asked under, in order. */
+    readonly keys: Ref.Ref<readonly string[]>;
     readonly stripe: Ref.Ref<readonly string[]>;
     readonly trials: Ref.Ref<readonly StartedTrial[]>;
     readonly withdrawals: Ref.Ref<readonly Withdrawal[]>;
@@ -105,6 +111,7 @@ const LogLive = Layer.effect(
     held: Ref.make<readonly Subscription[]>([]),
     holdings: Ref.make(small),
     invoices: Ref.make<readonly PaidInvoice[]>([]),
+    keys: Ref.make<readonly string[]>([]),
     notices: Ref.make<
       readonly { readonly key: string; readonly notice: BillingNotice }[]
     >([]),
@@ -246,16 +253,20 @@ const PortsInMemory = Layer.mergeAll(
   ),
   Layer.effect(
     StripeContracts,
-    BillingLog.use(({ business, invoices, stripe }) => {
+    BillingLog.use(({ business, invoices, keys, stripe }) => {
       const asked = (call: string) =>
         Ref.update(stripe, (all) => [...all, call]);
 
+      const keyed = (key: string) => Ref.update(keys, (all) => [...all, key]);
+
       return Effect.succeed(
         StripeContracts.of({
-          cancelAt: (_workspace, id, on) =>
-            asked(`cancelAt ${id} ${DateTime.formatIso(on)}`),
-          cancelAtPeriodEnd: (_workspace, id) =>
-            asked(`cancelAtPeriodEnd ${id}`),
+          cancelAt: (_workspace, id, on, key) =>
+            asked(`cancelAt ${id} ${DateTime.formatIso(on)}`).pipe(
+              Effect.andThen(keyed(key))
+            ),
+          cancelAtPeriodEnd: (_workspace, id, key) =>
+            asked(`cancelAtPeriodEnd ${id}`).pipe(Effect.andThen(keyed(key))),
           credit: (_workspace, id, credits) =>
             asked(
               `credit ${id} ${credits.map(({ amount, invoiceId }) => `${invoiceId}:${amount}`).join(" ")}`
@@ -294,7 +305,12 @@ const PortsInMemory = Layer.mergeAll(
           open: () => Effect.succeed([]),
           pending: () => Effect.succeed([]),
           purge: () => Effect.succeed(0),
-          save: (request) => Ref.update(requests, (all) => [...all, request]),
+          // As the table keeps them: one row a request, by its id.
+          save: (request) =>
+            Ref.update(requests, (all) => [
+              ...all.filter(({ id }) => id !== request.id),
+              request,
+            ]),
           setConfirmation: () => Effect.void,
         })
       )
@@ -341,6 +357,7 @@ const reset = BillingLog.use((log) =>
     Ref.set(log.orders, []),
     Ref.set(log.requests, []),
     Ref.set(log.invoices, []),
+    Ref.set(log.keys, []),
     Ref.set(log.stripe, []),
     Ref.set(log.trials, []),
     Ref.set(log.withdrawals, []),
@@ -374,6 +391,16 @@ const paid = (fields: Partial<Subscription> = {}) =>
     workspaceId,
     ...fields,
   });
+
+// A request that came earlier, with nothing decided for it yet.
+const statement = { decided: () => Effect.void, intent: Option.none() };
+
+const asRequest = {
+  ...statement,
+  requestId: ContractRequestIdSchema.make(
+    "0190f3a0-0000-7000-8000-00000000aa01"
+  ),
+};
 
 layer(ActionsTest)("billing's actions", (it) => {
   it.effect("orders the trial once per account and per workspace", () =>
@@ -607,9 +634,13 @@ layer(ActionsTest)("billing's actions", (it) => {
         assert.deepStrictEqual(yield* askedOfStripe, [
           "cancelAtPeriodEnd sub_synthetic_paid",
         ]);
+        const [asked] = yield* BillingLog.use((log) => Ref.get(log.requests));
+
+        // Told under the request's own key: cancelled again later, as
+        // after the cancellation was undone, the members are told again.
         assert.deepStrictEqual(yield* told, [
           {
-            key: "subscription:sub_synthetic_paid:cancelled",
+            key: `subscription:sub_synthetic_paid:cancelled:${asked?.id ?? ""}`,
             notice: {
               _tag: "SubscriptionCancelled",
               endsAt: at("2026-12-01T00:00:00Z"),
@@ -617,6 +648,16 @@ layer(ActionsTest)("billing's actions", (it) => {
             },
           },
         ]);
+
+        // Undone since, in Stripe's portal or by staff: cancelling again
+        // is another request, which Stripe is asked under another key.
+        yield* cancellations.cancel(actorAs());
+
+        const keys = yield* BillingLog.use((log) => Ref.get(log.keys));
+
+        assert.lengthOf(keys, 2);
+        assert.notStrictEqual(keys[0], keys[1]);
+        assert.lengthOf(yield* told, 2);
 
         yield* reset;
         yield* holding(
@@ -1120,6 +1161,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         const cancellations = yield* CancelSubscription;
 
         const done = yield* cancellations.received({
+          ...asRequest,
           desiredAt: Option.none(),
           receivedAt: at("2026-11-30T22:00:00Z"),
           stripeSubscriptionId: Option.some("sub_synthetic_paid"),
@@ -1145,6 +1187,7 @@ layer(ActionsTest)("billing's actions", (it) => {
 
         const other = yield* cancellations
           .received({
+            ...asRequest,
             desiredAt: Option.none(),
             receivedAt: at("2026-11-30T22:00:00Z"),
             stripeSubscriptionId: Option.some("sub_other"),
@@ -1154,6 +1197,178 @@ layer(ActionsTest)("billing's actions", (it) => {
 
         assert.strictEqual(other._tag, "NothingToCancel");
         assert.deepStrictEqual(yield* askedOfStripe, []);
+      })
+  );
+
+  it.effect(
+    "takes up a cancellation as it was decided, when a try stopped after Stripe: never 'nothing to cancel' for what it cancelled itself",
+    () =>
+      Effect.gen(function* takenUp() {
+        yield* setNow("2026-11-20T10:00:00Z");
+        yield* holding(paid());
+
+        const cancellations = yield* CancelSubscription;
+        const decided = yield* Ref.make(Option.none<RequestIntent>());
+
+        const request = {
+          ...asRequest,
+          decided: (intent: RequestIntent) =>
+            Ref.set(decided, Option.some(intent)),
+          desiredAt: Option.none(),
+          receivedAt: at("2026-11-20T10:00:00Z"),
+          stripeSubscriptionId: Option.none(),
+          workspaceId,
+        };
+
+        const first = yield* cancellations.received(request);
+
+        // What was decided is kept before Stripe is asked.
+        assert.deepStrictEqual(
+          yield* Ref.get(decided),
+          Option.some({
+            effect: {
+              endsAt: "2026-12-01T00:00:00.000Z",
+              refundSince: null,
+              tag: "atPeriodEnd" as const,
+            },
+            plan: "starter" as const,
+            stripeSubscriptionId: "sub_synthetic_paid",
+          })
+        );
+
+        // The database missed the answer; Stripe's event came meanwhile,
+        // and the subscription now reads as set to end.
+        yield* holding(paid({ cancelAtPeriodEnd: true }));
+
+        const again = yield* cancellations.received({
+          ...request,
+          intent: yield* Ref.get(decided),
+        });
+
+        assert.deepStrictEqual(again, first);
+
+        // Asked of Stripe again under the same key, which changes nothing.
+        const keys = yield* BillingLog.use((log) => Ref.get(log.keys));
+
+        assert.deepStrictEqual(keys, [
+          asRequest.requestId,
+          asRequest.requestId,
+        ]);
+      })
+  );
+
+  it.effect(
+    "applies a request that came in time to a contract that ended while it waited",
+    () =>
+      Effect.gen(function* endedSince() {
+        // A withdrawal statement of 10 November, ten days into the
+        // contract, applied on the 25th, after the plan was ended.
+        yield* setNow("2026-11-25T00:00:00Z");
+        yield* holding(paid({ status: "canceled" }));
+        yield* paying({
+          invoiceId: "in_synthetic",
+          lines: [],
+          paid: { amount: 900, currency: "eur" },
+          periodEnd: Option.none(),
+          periodStart: Option.none(),
+        });
+
+        const withdrawn = yield* (yield* Withdraw).received({
+          ...statement,
+          receivedAt: at("2026-11-10T00:00:00Z"),
+          stripeSubscriptionId: Option.none(),
+          userId: Option.none(),
+          workspaceId,
+        });
+
+        // 21 of 30 days left on the 10th: 900 × 21 / 30.
+        assert.deepStrictEqual(withdrawn.refunded, {
+          amount: 630,
+          currency: "eur",
+        });
+
+        // A cancellation of 30 November, applied after the plan renewed
+        // and was then ended: the renewal goes back all the same.
+        yield* setNow("2026-12-05T00:00:00Z");
+        yield* holding(
+          paid({
+            currentPeriodEnd: Option.some(at("2027-01-01T00:00:00Z")),
+            currentPeriodStart: Option.some(at("2026-12-01T00:00:00Z")),
+            status: "canceled",
+          })
+        );
+        yield* paying({
+          invoiceId: "in_december",
+          lines: [{ amount: 750, start: at("2026-12-01T00:00:00Z") }],
+          paid: { amount: 900, currency: "eur" },
+          periodEnd: Option.some(at("2027-01-01T00:00:00Z")),
+          periodStart: Option.some(at("2026-12-01T00:00:00Z")),
+        });
+
+        const cancelled = yield* (yield* CancelSubscription).received({
+          ...asRequest,
+          desiredAt: Option.none(),
+          receivedAt: at("2026-11-30T22:00:00Z"),
+          stripeSubscriptionId: Option.none(),
+          workspaceId,
+        });
+
+        assert.deepStrictEqual(
+          cancelled.refunded,
+          Option.some({ amount: 900, currency: "eur" })
+        );
+
+        // One that ended before the request came had nothing to cancel.
+        yield* holding(
+          paid({
+            currentPeriodEnd: Option.some(at("2026-11-15T00:00:00Z")),
+            status: "canceled",
+          })
+        );
+
+        const over = yield* (yield* CancelSubscription)
+          .received({
+            ...asRequest,
+            desiredAt: Option.none(),
+            receivedAt: at("2026-11-30T22:00:00Z"),
+            stripeSubscriptionId: Option.none(),
+            workspaceId,
+          })
+          .pipe(Effect.flip);
+
+        assert.strictEqual(over._tag, "NothingToCancel");
+      })
+  );
+
+  it.effect(
+    "brings forward an end set on a later day, as after a date mistyped",
+    () =>
+      Effect.gen(function* corrected() {
+        yield* setNow("2026-11-20T10:00:00Z");
+        // Set to end in 2062, by a cancellation whose date was mistyped.
+        yield* holding(
+          paid({
+            cancelAt: Option.some(at("2062-03-01T00:00:00Z")),
+            cancelAtPeriodEnd: true,
+          })
+        );
+
+        const cancellations = yield* CancelSubscription;
+        const sooner = yield* cancellations.cancel(actorAs());
+
+        assert.deepStrictEqual(sooner.endsAt, at("2026-12-01T00:00:00Z"));
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "cancelAtPeriodEnd sub_synthetic_paid",
+        ]);
+
+        // Once it ends with its period, there is nothing more to cancel.
+        yield* holding(paid({ cancelAtPeriodEnd: true }));
+
+        const nothing = yield* cancellations
+          .cancel(actorAs())
+          .pipe(Effect.flip);
+
+        assert.strictEqual(nothing._tag, "NothingToCancel");
       })
   );
 
@@ -1200,6 +1415,7 @@ layer(ActionsTest)("billing's actions", (it) => {
 
         const late = yield* withdrawals
           .received({
+            ...statement,
             receivedAt: at("2026-11-15T00:00:00Z"),
             stripeSubscriptionId: Option.none(),
             userId: Option.none(),
@@ -1213,6 +1429,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         });
 
         const done = yield* withdrawals.received({
+          ...statement,
           receivedAt: at("2026-11-14T00:00:00Z"),
           stripeSubscriptionId: Option.none(),
           userId: Option.none(),

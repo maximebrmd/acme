@@ -96,6 +96,11 @@ export { DeletionIncomplete } from "./deletion-incomplete.ts";
 
 export { BillingNotEnabled } from "./billing-not-enabled.ts";
 
+export {
+  DesiredDayTooFar,
+  desiredDayHorizonDays,
+} from "./desired-day-too-far.ts";
+
 export { NothingToCancel } from "./nothing-to-cancel.ts";
 
 export { ReductionRefused } from "./reduction-refused.ts";

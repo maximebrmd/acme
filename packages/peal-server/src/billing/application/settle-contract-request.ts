@@ -6,10 +6,14 @@ import {
   changed,
   refusedBy,
 } from "#billing/domain/contract-request.ts";
-import type { ContractRequest } from "#billing/domain/contract-request.ts";
+import type {
+  ContractRequest,
+  RequestIntent,
+} from "#billing/domain/contract-request.ts";
 import {
   acknowledgementsPerDay,
   acknowledgementWindow,
+  acknowledgingPatience,
   confirmationLifetime,
 } from "#billing/domain/request-limits.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -73,11 +77,25 @@ export class SettleContractRequest extends Context.Service<
           const now = yield* DateTime.now;
           const contract = { stripeSubscriptionId: named, workspaceId };
 
+          // Kept before Stripe is asked anything, with the contract it is
+          // for: taken up again, it is carried out as decided.
+          const decided = (intent: RequestIntent) =>
+            requests.save(
+              changed(request, {
+                intent: Option.some(intent),
+                stripeSubscriptionId: Option.some(intent.stripeSubscriptionId),
+                workspaceId: Option.some(workspaceId),
+              })
+            );
+
           if (request.kind === "cancellation") {
             return yield* cancellations
               .received({
+                decided,
                 desiredAt: request.desiredAt,
+                intent: request.intent,
                 receivedAt: request.receivedAt,
+                requestId: request.id,
                 stripeSubscriptionId: named,
                 workspaceId,
               })
@@ -108,6 +126,8 @@ export class SettleContractRequest extends Context.Service<
 
           return yield* withdrawals
             .received({
+              decided,
+              intent: request.intent,
               receivedAt: request.receivedAt,
               stripeSubscriptionId: named,
               userId: request.userId,
@@ -205,7 +225,32 @@ export class SettleContractRequest extends Context.Service<
           }
 
           if (!(yield* mail.acknowledge(request, token))) {
-            return request;
+            // The mail will not take it: tried again by the sweep, for
+            // `acknowledgingPatience`, then withheld, and a request that
+            // needed its link left to staff.
+            if (
+              DateTime.isLessThan(
+                now,
+                DateTime.addDuration(request.receivedAt, acknowledgingPatience)
+              )
+            ) {
+              return request;
+            }
+
+            const unsent = changed(request, {
+              acknowledgement: "withheld",
+              status:
+                request.status === "awaitingConfirmation"
+                  ? "unmatched"
+                  : request.status,
+            });
+
+            yield* requests.save(unsent);
+            yield* Effect.logError(
+              "A contract request's acknowledgement could not be sent"
+            ).pipe(Effect.annotateLogs({ requestId: request.id }));
+
+            return unsent;
           }
 
           const sent = changed(request, {

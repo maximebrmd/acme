@@ -6,6 +6,7 @@ import { MoneySchema, PaidPlanSchema } from "./billing-plans.ts";
 import { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContractRequestIntake } from "./contract-request-intake.ts";
 import { ContractRequestNotFound } from "./contract-request-not-found.ts";
+import { DesiredDayTooFar } from "./desired-day-too-far.ts";
 
 /**
  * What a customer asks of their contract: to cancel it, or, as a consumer
@@ -189,7 +190,7 @@ export class ContractRequestsApi extends HttpApiGroup.make("contractRequests")
   )
   .add(
     HttpApiEndpoint.post("send", "/", {
-      error: BillingNotEnabled,
+      error: [BillingNotEnabled, DesiredDayTooFar],
       headers: Schema.Struct({
         // The Turnstile widget's token, on a server that asks for one.
         "x-captcha-response": Schema.optionalKey(Schema.String),

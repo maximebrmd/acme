@@ -104,12 +104,12 @@ const run = <A, E>(
             pending("crown", "owner"),
             pending("desk", "editor"),
           ]),
-        reseating: (_workspace, change) => change,
         removeMembers: (_workspace, userIds) =>
           Ref.update(asked, (all) => [
             ...all,
             ...userIds.map((id) => `remove:${id}`),
           ]).pipe(Effect.as(userIds.length)),
+        reseating: (_workspace, change) => change,
         revoke: (_workspace, invitationId) =>
           Ref.update(asked, (all) => [...all, `revoke:${invitationId}`]).pipe(
             Effect.as(invitationId === "desk")
