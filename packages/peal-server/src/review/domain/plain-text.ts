@@ -24,7 +24,9 @@ const isControl = (code: number) =>
 const withoutControls = (text: string, keepLines: boolean): string => {
   let kept = "";
 
-  for (const character of text.replaceAll("\r\n", "\n")) {
+  // Well formed first: half a surrogate pair is no character, and no
+  // JSON a database takes.
+  for (const character of text.toWellFormed().replaceAll("\r\n", "\n")) {
     const code = character.codePointAt(0) ?? 0;
 
     if (code === tab || (code === lineFeed && !keepLines)) {

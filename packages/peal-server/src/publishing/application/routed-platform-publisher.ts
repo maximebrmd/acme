@@ -6,10 +6,15 @@ import { partsOn } from "#publishing/domain/post-content.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import { postingMonthOf } from "#publishing/domain/posting-month.ts";
+import {
+  storableFailure,
+  storableResult,
+} from "#publishing/domain/storable-outcome.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { withinAllowance } from "#shared/domain/allowance.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import type { PublishResult } from "#shared/domain/publish-result.ts";
 
 import { PlatformClients } from "./platform-client.ts";
@@ -59,6 +64,13 @@ const replyTargetOf = (
     ? Effect.succeed(Option.some({ parent: parent.value, root: root.value }))
     : Effect.fail(noReplyTarget);
 };
+
+// What the platform answered, as it is kept: the gate hands it to the
+// job, which stores it in its history, its journal and the post's rows.
+const storable = <R>(
+  call: Effect.Effect<PublishResult, PublishFailure, R>
+): Effect.Effect<PublishResult, PublishFailure, R> =>
+  call.pipe(Effect.map(storableResult), Effect.mapError(storableFailure));
 
 const interrupted: PublishResult = {
   _tag: "unconfirmed",
@@ -192,7 +204,8 @@ export const RoutedPlatformPublisher = Layer.effect(
                 )
               : Effect.void
           ),
-          Effect.flatMap(({ client, post }) => client.publish(post))
+          Effect.flatMap(({ client, post }) => client.publish(post)),
+          storable
         ),
       // Without the post or its channel, the earlier run cannot be checked.
       resume: (request) =>
@@ -200,7 +213,8 @@ export const RoutedPlatformPublisher = Layer.effect(
           Effect.matchEffect({
             onFailure: () => Effect.succeed(interrupted),
             onSuccess: ({ client, post }) => client.resume(post),
-          })
+          }),
+          storable
         ),
     });
   })

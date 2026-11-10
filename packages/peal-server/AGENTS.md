@@ -298,3 +298,17 @@ and no socket, for tests.
 - Every metric that says a job falls behind has an alert rule
   (`packages/peal-docker/test/alerting.test.ts`): add the rule with the
   metric.
+- Text Peal did not write is made storable before it is kept:
+  `storableText` and `storableLine` (`#shared/domain/platform-text.ts`)
+  make it well formed (Postgres takes no NUL, and no lone surrogate in
+  JSON), drop control characters, bound it by characters, and, for a name
+  or any single line, drop line breaks and the marks that reorder what is
+  around it. Clean where the text enters, before it is compared, stored or
+  put in a job's history: comments and their authors (`storableReading`),
+  what a sign-in says of an account (`storableAuthorized`), what a
+  platform answers a publishing call with (`storableResult`,
+  `storableFailure`, in the routed publisher), a file's codec, a webhook
+  receiver's answer (`excerptOf`) and what visitors type on a review page
+  (`review/domain/plain-text.ts`). A new place a platform's string is
+  kept goes through the helper, with a test that hands it a NUL and half
+  a surrogate pair.

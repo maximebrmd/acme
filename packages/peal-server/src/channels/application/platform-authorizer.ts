@@ -1,5 +1,5 @@
-import { Context } from "effect";
-import type { DateTime, Effect, Option, Redacted } from "effect";
+import { Context, Option } from "effect";
+import type { DateTime, Effect, Redacted } from "effect";
 
 import type { AvatarUrl } from "#channels/domain/avatar-url.ts";
 import type { Channel } from "#channels/domain/channel.ts";
@@ -11,6 +11,7 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import type { LinkedInConnection } from "#shared/domain/linkedin-connection.ts";
+import { storableLine } from "#shared/domain/platform-text.ts";
 import type { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { TokenExpired } from "#shared/domain/token-expired.ts";
 
@@ -102,6 +103,35 @@ export interface AccountChoice {
 
 /** What a completed sign-in handed over: an account, or a choice of them. */
 export type Authorized = AccountChoice | AuthorizedAccount;
+
+// The longest id, handle and name Peal keeps of an account.
+const maxAccountIdLength = 512;
+const maxHandleLength = 320;
+const maxDisplayNameLength = 200;
+
+/**
+ * An account as Peal keeps it: its platform wrote its id, its handle and
+ * its name, or let its owner write them, so each is made storable and
+ * bounded (`#shared/domain/platform-text.ts`) before it is compared with
+ * the channels the workspace has, stored, or shown.
+ */
+export const storableAccount = (
+  account: AuthorizedAccount
+): AuthorizedAccount => ({
+  ...account,
+  accountId: storableLine(account.accountId, maxAccountIdLength),
+  displayName: account.displayName.pipe(
+    Option.map((name) => storableLine(name, maxDisplayNameLength)),
+    Option.filter((name) => name !== "")
+  ),
+  handle: storableLine(account.handle, maxHandleLength),
+});
+
+/** What a sign-in handed over, each account as Peal keeps it. */
+export const storableAuthorized = (authorized: Authorized): Authorized =>
+  "_tag" in authorized
+    ? { _tag: "choice", accounts: authorized.accounts.map(storableAccount) }
+    : storableAccount(authorized);
 
 /** A channel's tokens, decrypted for the platform call that needs them. */
 export interface StoredTokens {

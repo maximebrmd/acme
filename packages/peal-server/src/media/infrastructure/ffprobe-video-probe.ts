@@ -10,6 +10,7 @@ import type {
   ProbeOutcome,
 } from "#media/application/ports/media-probe.ts";
 import { maxDuration, MediaMetadata } from "#media/domain/media-metadata.ts";
+import { storableLine } from "#shared/domain/platform-text.ts";
 
 // What `ffprobe -print_format json` prints for the entries asked for below.
 const FfprobeStreamSchema = Schema.Struct({
@@ -62,9 +63,11 @@ export const metadataFromFfprobe = (output: FfprobeOutput): MediaMetadata => {
   );
 
   return new MediaMetadata({
-    codec: Option.filter(
-      Option.fromUndefinedOr(video?.codec_name),
-      (codec) => codec.length > 0
+    // The file names its codec: kept as one short line, like any text
+    // Peal did not write.
+    codec: Option.fromUndefinedOr(video?.codec_name).pipe(
+      Option.map((codec) => storableLine(codec, 64)),
+      Option.filter((codec) => codec.length > 0)
     ),
     dimensions,
     duration: Option.filter(

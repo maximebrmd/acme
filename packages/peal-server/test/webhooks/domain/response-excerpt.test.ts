@@ -25,6 +25,16 @@ describe(excerptOf, () => {
     );
   });
 
+  it("keeps no half of a surrogate pair, a cut's or the receiver's own", () => {
+    const lone = String.fromCodePoint(0xd8_00);
+
+    const cut = excerptOf(`${"a".repeat(maxExcerptLength * 4 - 1)}👍`);
+    const given = excerptOf(`no${lone}pe`);
+
+    expect(Option.getOrThrow(cut).isWellFormed()).toBeTruthy();
+    expect(Option.getOrThrow(given).isWellFormed()).toBeTruthy();
+  });
+
   it("keeps nothing of an answer with nothing to read", () => {
     expect(excerptOf("")).toStrictEqual(Option.none());
     expect(excerptOf(" \n\u0000\t")).toStrictEqual(Option.none());
