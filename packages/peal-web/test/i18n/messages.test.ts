@@ -35,6 +35,26 @@ describe("message catalogues", () => {
     }
   );
 
+  it.each(routing.locales)(
+    "%s gives example addresses on reserved domains only",
+    async (locale) => {
+      // example.com, .org, .net and the .example and .test names belong
+      // to nobody (RFC 2606): any other domain is someone's.
+      const reserved =
+        /@(?:[\w-]+\.)*(?:example\.(?:com|org|net)|example|test)$/u;
+
+      const elsewhere = entries(await loadMessages(locale)).flatMap(
+        ([key, text]) =>
+          (text.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/gu) ?? [])
+            .map((address) => address.replace(/\.$/u, ""))
+            .filter((address) => !reserved.test(address))
+            .map((address) => `${key}: ${address}`)
+      );
+
+      expect(elsewhere).toStrictEqual([]);
+    }
+  );
+
   it.each(routing.locales)("%s has no empty message", async (locale) => {
     const empty = entries(await loadMessages(locale)).filter(
       ([, text]) => text.trim() === ""

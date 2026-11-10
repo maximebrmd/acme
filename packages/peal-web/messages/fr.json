@@ -1057,7 +1057,7 @@
     },
     "invalid": {
       "name": "Indiquez votre nom avec des lettres, des chiffres, des espaces et ' , & ( ) - uniquement, 100 caractères au plus.",
-      "email": "Indiquez une adresse e-mail, comme vous@exemple.fr.",
+      "email": "Indiquez une adresse e-mail, comme vous@example.com.",
       "contract": "Désignez le contrat avec des lettres, des chiffres, des espaces et ' , & ( ) - uniquement, 100 caractères au plus."
     },
     "signedInAs": "Vous êtes connecté en tant que {email} : vos contrats sont listés, et votre demande est appliquée immédiatement.",
