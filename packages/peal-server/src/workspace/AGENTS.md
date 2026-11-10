@@ -32,8 +32,10 @@ The staff context follows these rules too. What the law has a host keep is in
   plan's room) and sharing its constants and link (`invitationLifetime`,
   `pendingInvitationLimit`, `invitationUrl` in `options.ts`): change both
   together. The web app still invites through Better Auth's route.
-- API keys belong to workspaces, never carry more than their creator holds,
-  and are created only through `POST /api/workspaces/:workspaceId/api-keys`:
+- API keys belong to workspaces, never carry more than their creator holds
+  nor what only a person in their own session uses (`personOnlyPermissions`:
+  `ads:authorize`, refused with `PermissionNotGrantable`, 403
+  `personRequired`), and are created only through `POST /api/workspaces/:workspaceId/api-keys`:
   Better Auth's own key routes are disabled.
 - Staff (Better Auth's admin role) act through the staff context's use
   cases only (`StaffActions`): each checks `mayAct`

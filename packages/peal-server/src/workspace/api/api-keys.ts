@@ -38,6 +38,7 @@ export const ApiKeysHandlers = HttpApiBuilder.group(
               Effect.catchTags({
                 AuthUnavailable: Effect.die,
                 MissingPermission: forbidden,
+                PermissionNotGrantable: forbidden,
                 UserRequired: forbidden,
               })
             );

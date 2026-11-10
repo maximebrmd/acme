@@ -6,6 +6,7 @@ import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { ApiKeyNotFound } from "#workspace/domain/api-key-not-found.ts";
 import type { ApiKey } from "#workspace/domain/api-key.ts";
 import { grantableBy } from "#workspace/domain/api-key.ts";
+import type { PermissionNotGrantable } from "#workspace/domain/permission-not-grantable.ts";
 import { UserRequired } from "#workspace/domain/user-required.ts";
 
 import { ApiKeyIssuer } from "./api-key-issuer.ts";
@@ -27,7 +28,10 @@ export class ApiKeys extends Context.Service<
       key: NewApiKey
     ) => Effect.Effect<
       IssuedApiKey,
-      AuthUnavailable | MissingPermission | UserRequired
+      | AuthUnavailable
+      | MissingPermission
+      | PermissionNotGrantable
+      | UserRequired
     >;
     readonly list: (
       actor: Actor

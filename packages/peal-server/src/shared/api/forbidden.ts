@@ -26,6 +26,8 @@ const reasons = new Map<string, ForbiddenReason>([
   ["InboxAccessDenied", "personRequired"],
   ["MissingPermission", "missingPermission"],
   ["NotAMember", "missingPermission"],
+  // A permission only a person in their own session uses.
+  ["PermissionNotGrantable", "personRequired"],
   ["PersonRequired", "personRequired"],
   ["RoleNotInvitable", "missingPermission"],
   ["SessionRequired", "personRequired"],
