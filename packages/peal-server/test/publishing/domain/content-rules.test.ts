@@ -348,23 +348,26 @@ describe(checkDraft, () => {
   });
 });
 
+// A post on the channel that only its member's connections see.
+const toConnections = (channelId: ChannelOnPlatform["channelId"]) => [
+  {
+    channelId,
+    options: new LinkedInOptions({
+      platform: "linkedin",
+      visibility: "connections",
+    }),
+  },
+];
+
 describe("a post only a member's connections see", () => {
   const profile = channel("8", "linkedin");
+
   const page = {
     ...channel("9", "linkedin"),
     connection: "linkedinPage" as const,
   };
-  const content = contentOf("For those who know us.");
 
-  const toConnections = (channelId: ChannelOnPlatform["channelId"]) => [
-    {
-      channelId,
-      options: new LinkedInOptions({
-        platform: "linkedin",
-        visibility: "connections",
-      }),
-    },
-  ];
+  const content = contentOf("For those who know us.");
 
   it("goes out from a LinkedIn profile, and is refused on a page, which has no connections", () => {
     expect(
