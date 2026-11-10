@@ -247,6 +247,16 @@ const PortsLive = Layer.mergeAll(
             channels: [],
             media: [],
             posts: [],
+            webhooks: [
+              {
+                createdAt: at,
+                description: "Synthetic receiver",
+                enabled: true,
+                eventTypes: ["post.published"],
+                id: "00000000-0000-7000-8000-000000000061",
+                url: "https://hooks.example.com/peal",
+              },
+            ],
           }),
         holdIdentification: (held) =>
           record(`hold:${held.userId}:${held.email}`).pipe(provide),
@@ -645,18 +655,23 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
         );
         assert.strictEqual(body.user.email, "ana@example.test");
         assert.deepStrictEqual(
-          body.workspaces.map(({ assistantUsage, billing, name }) => ({
-            assistantUsage,
-            name,
-            plan: billing.plan,
-            statuses: billing.subscriptions.map(({ status }) => status),
-          })),
+          body.workspaces.map(
+            ({ assistantUsage, billing, name, webhooks }) => ({
+              assistantUsage,
+              name,
+              plan: billing.plan,
+              statuses: billing.subscriptions.map(({ status }) => status),
+              // Where the workspace is told, never the secret that signs it.
+              webhooks: webhooks.map(({ url }) => url),
+            })
+          ),
           [
             {
               assistantUsage: [{ day: "2026-11-09", requests: 3 }],
               name: "Harbour",
               plan: "pro",
               statuses: ["active"],
+              webhooks: ["https://hooks.example.com/peal"],
             },
           ]
         );

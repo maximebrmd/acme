@@ -1509,6 +1509,17 @@
       "noSubscription": "Aucun",
       "cancelsAtEnd": "Prend fin",
       "renews": "Se renouvelle",
+      "webhooksTitle": "Webhooks",
+      "webhooksHint": "L’hôte vers lequel chaque point de terminaison livre, jamais son adresse complète ni son secret.",
+      "noWebhook": "Aucun point de terminaison de webhook.",
+      "webhookColumns": {
+        "host": "Hôte",
+        "state": "État",
+        "events": "Types d’événements",
+        "failingSince": "En échec depuis"
+      },
+      "webhookState": "{state, select, enabled {Activé} manual {Désactivé par un membre} failing {Désactivé après des jours de livraisons en échec} gone {Désactivé, son destinataire a répondu 410 Gone} other {Désactivé}}",
+      "notFailing": "Aucun échec",
       "channelsTitle": "Canaux",
       "noChannel": "Aucun canal n’est connecté.",
       "channelColumns": {

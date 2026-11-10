@@ -1509,6 +1509,17 @@
       "noSubscription": "None",
       "cancelsAtEnd": "Ends",
       "renews": "Renews",
+      "webhooksTitle": "Webhooks",
+      "webhooksHint": "The host each endpoint delivers to, never its full address or its secret.",
+      "noWebhook": "No webhook endpoint.",
+      "webhookColumns": {
+        "host": "Host",
+        "state": "State",
+        "events": "Event types",
+        "failingSince": "Failing since"
+      },
+      "webhookState": "{state, select, enabled {On} manual {Turned off by a member} failing {Turned off after days of failed deliveries} gone {Turned off, its receiver answered 410 Gone} other {Off}}",
+      "notFailing": "Not failing",
       "channelsTitle": "Channels",
       "noChannel": "No channel is connected.",
       "channelColumns": {

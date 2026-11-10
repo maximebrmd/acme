@@ -259,6 +259,17 @@ const ExportedAnalyticsSchema = Schema.Struct({
   targetId: Schema.String,
 });
 
+// A webhook endpoint: where the workspace is told what happens in it,
+// without the secret that signs what it is sent.
+const ExportedWebhookSchema = Schema.Struct({
+  createdAt: instant,
+  description: Schema.String,
+  enabled: Schema.Boolean,
+  eventTypes: Schema.Array(Schema.String),
+  id: Schema.String,
+  url: Schema.String,
+});
+
 const ExportedWorkspaceSchema = Schema.Struct({
   analytics: Schema.Array(ExportedAnalyticsSchema),
   apiKeys: Schema.Array(ApiKeySchema),
@@ -271,6 +282,7 @@ const ExportedWorkspaceSchema = Schema.Struct({
   name: Schema.String,
   posts: Schema.Array(ExportedPostSchema),
   slug: Schema.String,
+  webhooks: Schema.Array(ExportedWebhookSchema),
 });
 
 /**
@@ -346,7 +358,7 @@ export class AccountApi extends HttpApiGroup.make("account")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, what staff did to their account (action, time and reason, not who), the posts they wrote in the workspaces they share, the connections that created, changed or deleted content (time, address, protocol), what the law has Peal keep once the account closes and for how long, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model. Each copy is emailed to the account's address, saying whether the web app or the command line took it.",
+          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, what staff did to their account (action, time and reason, not who), the posts they wrote in the workspaces they share, the connections that created, changed or deleted content (time, address, protocol), what the law has Peal keep once the account closes and for how long, and the channels, posts, media details, analytics, API keys, webhook endpoints, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model. Each copy is emailed to the account's address, saying whether the web app or the command line took it.",
         summary: "Export my data",
       })
     ),

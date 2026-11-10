@@ -113,6 +113,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
       name: workspace.name,
       posts: workspacePosts[index] ?? [],
       slug: workspace.slug,
+      webhooks: workspace.webhooks,
     })),
   };
 

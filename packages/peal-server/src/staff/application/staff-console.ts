@@ -23,6 +23,7 @@ import type {
   PostCounts,
   PostTrouble,
   WorkspaceBilling,
+  WebhookHealth,
 } from "./ports/workspace-health.ts";
 import { UserNotFound } from "./user-not-found.ts";
 import { WorkspaceNotFound } from "./workspace-not-found.ts";
@@ -57,6 +58,7 @@ export interface WorkspaceOverview extends WorkspaceProfile {
   readonly troubles: readonly (PostTrouble & {
     readonly platform: Option.Option<ChannelHealth["platform"]>;
   })[];
+  readonly webhooks: readonly WebhookHealth[];
 }
 
 /** The server's health. */
@@ -217,15 +219,17 @@ export class StaffConsole extends Context.Service<
           return yield* new WorkspaceNotFound({ workspaceId });
         }
 
-        const { billing, channels, posts, troubles } = yield* Effect.all(
-          {
-            billing: health.billing(workspaceId),
-            channels: health.channels(workspaceId),
-            posts: health.posts(workspaceId),
-            troubles: health.troubles(workspaceId, troublesShown),
-          },
-          { concurrency: "unbounded" }
-        );
+        const { billing, channels, posts, troubles, webhooks } =
+          yield* Effect.all(
+            {
+              billing: health.billing(workspaceId),
+              channels: health.channels(workspaceId),
+              posts: health.posts(workspaceId),
+              troubles: health.troubles(workspaceId, troublesShown),
+              webhooks: health.webhooks(workspaceId),
+            },
+            { concurrency: "unbounded" }
+          );
 
         const overview: WorkspaceOverview = {
           ...found.value,
@@ -238,6 +242,7 @@ export class StaffConsole extends Context.Service<
               channels.find(({ id }) => id === trouble.channelId)
             ).pipe(Option.map(({ platform }) => platform)),
           })),
+          webhooks,
         };
 
         return overview;

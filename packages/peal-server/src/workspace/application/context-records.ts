@@ -16,6 +16,7 @@ import type {
   PreferencesRecord,
   StaffActionRecord,
   UsageRecord,
+  WebhookRecord,
 } from "#shared/application/personal-data.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
@@ -47,6 +48,7 @@ export interface WorkspaceContent {
   readonly channels: readonly ChannelRecord[];
   readonly media: readonly MediaRecord[];
   readonly posts: readonly PostRecord[];
+  readonly webhooks: readonly WebhookRecord[];
 }
 
 /** What the other contexts keep about a user, wherever they are a member. */
@@ -68,7 +70,7 @@ export interface UserContent {
 /**
  * The data the other contexts keep about workspaces and users: channels,
  * posts and their authors, media, analytics, assistant usage, billing,
- * notices and preferences, the staff audit log, and what the law has Peal
+ * webhooks, notices and preferences, the staff audit log, and what the law has Peal
  * keep (`#legal`). Erasures run in the caller's transaction, except the media
  * files, which the store holds outside the database: remove them once the
  * rest is committed.

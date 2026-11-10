@@ -53,6 +53,7 @@ const schemas = [
   "notifications",
   "publishing",
   "staff",
+  "webhooks",
 ];
 
 // The rows of each table that name a workspace: none may be left once it is
@@ -115,6 +116,12 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.publication_calls c JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.upload_sessions": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.upload_sessions u JOIN publishing.publication_calls c ON c.idempotency_key = u.idempotency_key JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
+  "webhooks.deliveries": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM webhooks.deliveries WHERE workspace_id = ${id}`,
+  "webhooks.endpoints": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM webhooks.endpoints WHERE workspace_id = ${id}`,
+  "webhooks.events": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM webhooks.events WHERE workspace_id = ${id}`,
 } satisfies Readonly<Record<string, Count>>;
 
 // The rows of each table that name a user: none may be left once their
@@ -318,6 +325,19 @@ const fill = Effect.fn("fill")(function* fill(
   yield* seedOAuthGrant(person.id, workspaceId, "Synthetic erasure client");
   yield* seedConnectChoice(workspaceId, person.id);
   yield* seedNotice(person.id, workspaceId, "@erasure@social.example");
+
+  // A webhook endpoint, with an event on its way to it.
+  const endpointId = uuid7();
+  const eventId = uuid7();
+
+  yield* sql`INSERT INTO webhooks.endpoints (id, workspace_id, url, description, event_types, status, secret, created_at, updated_at)
+    VALUES (${endpointId}, ${workspaceId}, 'https://hooks.example.com/erasure', '', ARRAY['post.published'], 'enabled', 'synthetic.iv.ciphertext', now(), now())`;
+
+  yield* sql`INSERT INTO webhooks.events (id, workspace_id, type, key, data, occurred_at)
+    VALUES (${eventId}, ${workspaceId}, 'webhook.test', ${`webhook-test:${eventId}`}, ${JSON.stringify({ endpointId, workspaceId })}::jsonb, now())`;
+
+  yield* sql`INSERT INTO webhooks.deliveries (id, endpoint_id, event_id, workspace_id, event_type, status, attempts, created_at)
+    VALUES (${uuid7()}, ${endpointId}, ${eventId}, ${workspaceId}, 'webhook.test', 'pending', 0, now())`;
 
   yield* sql`INSERT INTO channels.connect_attempts (state_hash, workspace_id, started_by, platform, secret, created_at, expires_at)
     VALUES (${randomUUID().replaceAll("-", "")}, ${workspaceId}, ${`user:${person.id}`}, 'mastodon', 'synthetic.iv.ciphertext', now(), now() + interval '15 minutes')`;
