@@ -1,19 +1,33 @@
-import { Console, Effect, Option } from "effect";
+import { Console, Effect, Option, Schema } from "effect";
 import { Command, Flag } from "effect/cli";
+import {
+  CustomerWorkspacePageSchema,
+  PartnerKeySchema,
+  PartnerStandingSchema,
+} from "peal-contract";
 
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
 const show = Command.make(
   "show",
-  { workspace: workspaceFlag },
-  Effect.fn("partner.show")(function* show({ workspace: choice }) {
+  { json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("partner.show")(function* show({ json, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
-    const { canOpen, partner, usage } = yield* client.partnerAccount
+    const standing = yield* client.partnerAccount
       .get({ params: { workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(PartnerStandingSchema, standing);
+
+      return;
+    }
+
+    const { canOpen, partner, usage } = standing;
 
     if (partner === null) {
       yield* Console.log(
@@ -55,13 +69,19 @@ const show = Command.make(
 
 const keys = Command.make(
   "keys",
-  { workspace: workspaceFlag },
-  Effect.fn("partner.keys")(function* keys({ workspace: choice }) {
+  { json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("partner.keys")(function* keys({ json, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const listed = yield* client.partnerAccount
       .listKeys({ params: { workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(Schema.Array(PartnerKeySchema), listed);
+
+      return;
+    }
 
     if (listed.length === 0) {
       yield* Console.log(
@@ -101,6 +121,7 @@ const workspaces = Command.make(
       Flag.withDescription("The workspace with this external id, exactly."),
       Flag.optional
     ),
+    json: jsonFlag,
     name: Flag.String("name").pipe(
       Flag.withMetavar("<text>"),
       Flag.withDescription("The workspaces whose name holds this text."),
@@ -110,6 +131,7 @@ const workspaces = Command.make(
   },
   Effect.fn("partner.workspaces")(function* workspaces({
     externalId,
+    json,
     name,
     workspace: choice,
   }) {
@@ -130,6 +152,12 @@ const workspaces = Command.make(
         },
       })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(CustomerWorkspacePageSchema, page);
+
+      return;
+    }
 
     if (page.workspaces.length === 0) {
       yield* Console.log(

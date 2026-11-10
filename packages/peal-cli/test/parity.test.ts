@@ -18,6 +18,12 @@ const exempt = (reason: string): Coverage => ({ exempt: reason });
 const connecting =
   "Connecting an account is a sign-in on the platform, in a browser, which comes back to the web app's callback page.";
 
+const partnerApi =
+  "The partner API is called by a partner's own server, with its partner key, as its customers come and go; the command line acts for a member or with a workspace's key.";
+
+const partnerSettings =
+  "A partner account is opened, changed and closed, and its keys created and revoked, by an owner or an admin in the web app's settings, where a new key is shown once.";
+
 const inbox =
   "A person's own notices, which the web app shows them; an API key has none.";
 
@@ -53,6 +59,10 @@ const coverage = {
     "Only the web app's connect forms read which platforms the server connects."
   ),
   "channels.reconnect": exempt(connecting),
+  "connectLinks.create": by("links create"),
+  "connectLinks.get": by("links show"),
+  "connectLinks.list": by("links list"),
+  "connectLinks.revoke": by("links revoke"),
   "invitations.create": by("invitations send"),
   "invitations.list": by("invitations list"),
   "invitations.revoke": by("invitations revoke"),
@@ -77,20 +87,43 @@ const coverage = {
   "notices.unread": exempt(inbox),
   "notificationPreferences.get": exempt(inbox),
   "notificationPreferences.update": exempt(inbox),
+  "partner.account": exempt(partnerApi),
+  "partner.createWorkspace": exempt(partnerApi),
+  "partner.deleteWorkspace": exempt(partnerApi),
+  "partner.getWorkspace": exempt(partnerApi),
+  "partner.listWorkspaces": exempt(partnerApi),
+  "partner.updateWorkspace": exempt(partnerApi),
+  "partnerAccount.close": exempt(partnerSettings),
+  "partnerAccount.createKey": exempt(partnerSettings),
+  "partnerAccount.get": by("partner show"),
+  "partnerAccount.listKeys": by("partner keys"),
+  "partnerAccount.listWorkspaces": by("partner workspaces"),
+  "partnerAccount.open": exempt(partnerSettings),
+  "partnerAccount.revokeKey": exempt(partnerSettings),
+  "partnerAccount.update": exempt(partnerSettings),
   "posts.attempts": by("posts attempts"),
+  "posts.bulk": exempt(
+    "A CSV file is the command line's way to several posts, with peal posts import; a program that builds the JSON calls the API itself."
+  ),
   "posts.cancel": by("posts cancel"),
   "posts.confirm": by("posts confirm"),
   "posts.create": by("drafts save"),
   "posts.discard": by("drafts discard"),
   "posts.drafts": by("drafts list"),
   "posts.get": by("posts show"),
-  "posts.list": by("posts list"),
+  "posts.import": by("posts import"),
+  "posts.list": exempt(
+    "The command peal posts list reads posts.search, which lists the same posts over a range of time with --from and --to, and every other post too."
+  ),
+  "posts.outcome": by("posts wait"),
   "posts.repost": by("posts repost"),
   "posts.reschedule": by("posts reschedule"),
   "posts.schedule": by("posts schedule"),
+  "posts.search": by("posts list"),
   "posts.send": by("post"),
   "posts.unschedule": by("posts unschedule"),
   "posts.update": by("drafts save"),
+  "posts.validate": by("post"),
   "session.me": by("whoami"),
   "system.changelog": by("doctor"),
   "system.health": by("health"),

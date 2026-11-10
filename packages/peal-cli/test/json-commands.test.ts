@@ -139,12 +139,20 @@ describe("--json on what an agent reads", () => {
 
       const listed = yield* session.printed(["posts", "list", ...inStudio]);
 
-      assert.include(
-        listed,
-        "Posts of Studio scheduled from 2026-11-09T12:00:05Z"
-      );
+      assert.include(listed, "Posts of Studio:");
       assert.include(listed, scheduledId);
-      assert.notInclude(listed, finishedId);
+      assert.include(listed, finishedId);
+
+      const ahead = yield* session.printed([
+        "posts",
+        "list",
+        "--from",
+        "2026-11-09T12:00:05Z",
+        ...inStudio,
+      ]);
+
+      assert.include(ahead, scheduledId);
+      assert.notInclude(ahead, finishedId);
       assert.include(
         yield* session.printed([
           "posts",
@@ -168,7 +176,7 @@ describe("--json on what an agent reads", () => {
           "2026-11-01T00:00:00Z",
           ...inStudio,
         ]),
-        "The range must end after it starts, and span 62 days at most."
+        "The range ends before it starts: give a --to later than --from."
       );
 
       const attempts = yield* session.printed([

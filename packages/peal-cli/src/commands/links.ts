@@ -2,6 +2,8 @@ import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
   ConnectLinkLocaleSchema,
+  ConnectLinkSchema,
+  CreatedConnectLinkSchema,
   defaultConnectLinkHours,
   maxConnectLinkHours,
   minConnectLinkHours,
@@ -10,6 +12,7 @@ import {
 import type { ConnectLink, HostedConnectFailure } from "peal-contract";
 
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
@@ -108,6 +111,7 @@ const create = Command.make(
       ),
       Flag.optional
     ),
+    json: jsonFlag,
     locale: Flag.String("locale").pipe(
       Flag.withMetavar("<en|fr>"),
       Flag.withDescription(
@@ -133,6 +137,7 @@ const create = Command.make(
   Effect.fn("links.create")(function* create({
     channel,
     hours,
+    json,
     locale,
     platform,
     returnUrl,
@@ -168,6 +173,13 @@ const create = Command.make(
       })
       .pipe(Effect.mapError(explain(url)));
 
+    // The answer holds the link's address, which is shown this once.
+    if (json) {
+      yield* printJson(CreatedConnectLinkSchema, created);
+
+      return;
+    }
+
     yield* Console.log(
       `Created the connect link ${created.link.id} for ${workspace.name}.`
     );
@@ -190,13 +202,19 @@ const create = Command.make(
 
 const list = Command.make(
   "list",
-  { workspace: workspaceFlag },
-  Effect.fn("links.list")(function* list({ workspace: choice }) {
+  { json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("links.list")(function* list({ json, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const links = yield* client.connectLinks
       .list({ params: { workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(Schema.Array(ConnectLinkSchema), links);
+
+      return;
+    }
 
     if (links.length === 0) {
       yield* Console.log(`${workspace.name} has no connect link.`);
@@ -225,13 +243,19 @@ const list = Command.make(
 
 const show = Command.make(
   "show",
-  { link: linkArgument, workspace: workspaceFlag },
-  Effect.fn("links.show")(function* show({ link, workspace: choice }) {
+  { json: jsonFlag, link: linkArgument, workspace: workspaceFlag },
+  Effect.fn("links.show")(function* show({ json, link, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const found = yield* client.connectLinks
       .get({ params: { linkId: link, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(ConnectLinkSchema, found);
+
+      return;
+    }
 
     yield* Console.log(`Connect link ${found.id}:`);
 
@@ -247,13 +271,23 @@ const show = Command.make(
 
 const revoke = Command.make(
   "revoke",
-  { link: linkArgument, workspace: workspaceFlag },
-  Effect.fn("links.revoke")(function* revoke({ link, workspace: choice }) {
+  { json: jsonFlag, link: linkArgument, workspace: workspaceFlag },
+  Effect.fn("links.revoke")(function* revoke({
+    json,
+    link,
+    workspace: choice,
+  }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const revoked = yield* client.connectLinks
       .revoke({ params: { linkId: link, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(ConnectLinkSchema, revoked);
+
+      return;
+    }
 
     yield* Console.log(
       revoked.status === "revoked"

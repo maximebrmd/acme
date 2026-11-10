@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Ref } from "effect";
+import { Effect, Ref, Schema } from "effect";
 
 import { filesLayer, signedIn } from "./signed-in.ts";
 import { newLinkId, newLinkUrl, usedLinkId } from "./studio.ts";
@@ -13,6 +13,8 @@ const changes = (studio: Studio) =>
   Ref.get(studio.state).pipe(Effect.map(({ changes: made }) => made));
 
 const inStudio = ["--workspace", "studio"];
+
+const parsed = Schema.decodeUnknownSync(Schema.fromJsonString(Schema.Unknown));
 
 describe("peal links", () => {
   it.effect("creates a link, and shows its address once", () =>
@@ -217,6 +219,78 @@ describe("peal partner", () => {
       assert.include(
         yield* session.refused(["partner", "show", "--workspace", "shop"]),
         "Peal refused: your role in this workspace does not allow it"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
+describe("--json on links and the partner account", () => {
+  it.effect("prints the API's answers, a new link's address included", () =>
+    Effect.gen(function* json() {
+      const session = yield* signedIn();
+
+      const created = parsed(
+        yield* session.printed([
+          "links",
+          "create",
+          "--platform",
+          "mastodon",
+          "--json",
+          ...inStudio,
+        ])
+      );
+
+      assert.deepInclude(created, { url: newLinkUrl });
+
+      assert.deepInclude(
+        parsed(
+          yield* session.printed([
+            "links",
+            "show",
+            usedLinkId,
+            "--json",
+            ...inStudio,
+          ])
+        ),
+        { id: usedLinkId, status: "completed" }
+      );
+      assert.isArray(
+        parsed(yield* session.printed(["links", "list", "--json", ...inStudio]))
+      );
+      assert.deepInclude(
+        parsed(
+          yield* session.printed([
+            "links",
+            "revoke",
+            newLinkId,
+            "--json",
+            ...inStudio,
+          ])
+        ),
+        { id: newLinkId, status: "revoked" }
+      );
+
+      assert.deepInclude(
+        parsed(
+          yield* session.printed(["partner", "show", "--json", ...inStudio])
+        ),
+        { canOpen: false }
+      );
+      assert.isArray(
+        parsed(
+          yield* session.printed(["partner", "keys", "--json", ...inStudio])
+        )
+      );
+      assert.deepInclude(
+        parsed(
+          yield* session.printed([
+            "partner",
+            "workspaces",
+            "--json",
+            ...inStudio,
+          ])
+        ),
+        { total: 2 }
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
