@@ -85,7 +85,7 @@ const maxPages = 40;
 const insightPageSize = 500;
 const maxInsightPages = 200;
 
-// A lookup of a campaign by name reads the account's paused campaigns,
+// A lookup of a campaign by name reads the account's campaigns, in any status,
 // this many pages at most; past them it cannot tell.
 const maxLookUpPages = 30;
 
@@ -567,12 +567,14 @@ export const metaAdsClient = Effect.fn("MetaAds.client")(
       const fields = { fields: "id,name", limit: "100" };
 
       if (object._tag === "campaign") {
-        // Whatever Peal made is paused: only those are read.
+        // Whatever status the network gives it now: one Peal made paused
+        // may read as being processed, or with issues, and is still the
+        // one to go on with, never one to make again.
         return named(
           listed(
             `/act_${accountId}/campaigns`,
             token,
-            { ...fields, effective_status: '["PAUSED"]' },
+            fields,
             NamedSchema,
             maxLookUpPages
           ),

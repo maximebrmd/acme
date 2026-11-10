@@ -521,6 +521,27 @@ describe("the requests a boost is made of", () => {
   );
 
   it.live(
+    "finds a campaign it made whatever status the network gives it now",
+    () =>
+      Effect.gen(function* anyStatus() {
+        const { api, client } = yield* metaAgainstFake();
+
+        // Made, then reported as still being processed.
+        api.hold(
+          "campaign",
+          "1001",
+          { name: campaign._tag === "campaign" ? campaign.name : "" },
+          "IN_PROCESS"
+        );
+
+        assert.strictEqual(
+          (yield* client.find(token, account, campaign))._tag,
+          "found"
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
     "says the outcome is unknown on a failure of the network's own, and a lookup cannot tell while it is down",
     () =>
       Effect.gen(function* down() {
