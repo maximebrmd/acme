@@ -226,21 +226,30 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
         // Read only, destructive, idempotent, open world.
         assert.deepStrictEqual(hints, {
           analytics_summary: [true, false, true, false],
+          cancel_post: [false, true, true, false],
           confirm_target: [false, true, true, false],
           create_draft: [false, false, false, false],
+          create_post: [false, false, false, true],
           discard_draft: [false, true, true, false],
           get_billing: [true, false, true, false],
           get_post: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
+          import_media: [false, false, false, true],
           invite_member: [false, true, false, true],
           list_channels: [true, false, true, false],
           list_drafts: [true, false, true, false],
           list_invitations: [true, false, true, false],
+          list_media: [true, false, true, false],
           list_members: [true, false, true, false],
+          list_post_attempts: [true, false, true, false],
+          list_posts: [true, false, true, false],
           list_workspaces: [true, false, true, false],
           post_analytics: [true, false, true, false],
+          publish_post: [false, false, false, true],
           repost_target: [false, false, false, true],
+          reschedule_post: [false, true, true, true],
           revoke_invitation: [false, true, true, false],
+          schedule_post: [false, false, false, true],
           server_health: [true, false, true, false],
           unschedule_post: [false, true, true, false],
           update_draft: [false, true, true, false],
@@ -422,7 +431,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               options: [{ channelId: fixture.channelId, options: youtube }],
               postId: created.id,
             }),
-            `optionsForOtherPlatform on ${fixture.channelId}`
+            '"_tag":"optionsForOtherPlatform"'
           );
 
           // A channel's options come once: which of two would stand is
@@ -632,6 +641,163 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             []
           );
         })
+    );
+    it.effect(
+      "put posts out only with the publishing scope, and say all that is wrong at once",
+      () =>
+        Effect.gen(function* posting() {
+          const fixture = yield* ToolsFixture;
+          const writer = yield* connected(fixture.writing);
+          const publisher = yield* connected(fixture.publishing);
+
+          const draft = yield* writer.call("create_draft", PostJsonSchema, {
+            channelIds: [fixture.channelId, fixture.youtubeId],
+            content: content("a".repeat(600)),
+          });
+
+          // The post says which application wrote it, for whom.
+          assert.deepStrictEqual(draft.createdVia?.via, "application");
+          assert.strictEqual(draft.createdVia?.name, "Synthetic agent");
+          assert.isNull(draft.scheduledVia);
+
+          const schedule = {
+            at: "2031-06-15T08:00:00Z",
+            postId: draft.id,
+            timeZone: "Europe/Paris",
+          };
+
+          // Writing drafts is not putting them out.
+          for (const [tool, args] of [
+            ["schedule_post", schedule],
+            ["publish_post", { postId: draft.id }],
+            ["reschedule_post", schedule],
+            ["cancel_post", { postId: draft.id }],
+            [
+              "create_post",
+              {
+                channelIds: [fixture.channelId],
+                content: content("A synthetic post."),
+                when: { _tag: "now" },
+              },
+            ],
+          ] as const) {
+            const refusal = yield* writer.refused(tool, args);
+
+            assert.include(refusal, "scope workspace:publish", tool);
+            assert.include(refusal, "connects this client to Peal again", tool);
+          }
+
+          // Every violation comes in one refusal: the text on Mastodon, and
+          // on YouTube the text, the missing video and the missing options.
+          const violations = yield* publisher.refused(
+            "schedule_post",
+            schedule
+          );
+
+          assert.include(
+            violations,
+            "nothing was saved, scheduled or published"
+          );
+          assert.include(violations, '"_tag":"textTooLong"');
+          assert.include(violations, fixture.channelId);
+          assert.include(violations, '"_tag":"optionMissing"');
+          assert.include(violations, '"field":"title"');
+          assert.include(violations, fixture.youtubeId);
+
+          const sameAtOnce = yield* publisher.refused("create_post", {
+            channelIds: [fixture.channelId, fixture.youtubeId],
+            content: content("a".repeat(600)),
+            idempotencyKey: "synthetic-mcp-key",
+            when: {
+              _tag: "at",
+              at: "2031-06-15T08:00:00Z",
+              timeZone: "Mars/Olympus",
+            },
+          });
+
+          assert.include(sameAtOnce, "is not an IANA time zone");
+
+          assert.include(
+            yield* publisher.refused("reschedule_post", schedule),
+            "schedule it with schedule_post"
+          );
+          assert.include(
+            yield* publisher.refused("schedule_post", {
+              ...schedule,
+              at: "2020-01-01T00:00:00Z",
+              channelIds: [fixture.channelId],
+            }),
+            "The post was refused"
+          );
+
+          const listed = yield* publisher.call(
+            "list_posts",
+            Schema.toCodecJson(
+              Schema.Struct({ posts: Schema.Array(PostSchema) })
+            ),
+            { from: "2031-06-01T00:00:00Z", to: "2031-07-01T00:00:00Z" }
+          );
+
+          assert.deepStrictEqual(listed.posts, []);
+
+          const attempts = yield* publisher.call(
+            "list_post_attempts",
+            Schema.Struct({ attempts: Schema.Array(Schema.Unknown) }),
+            { postId: draft.id }
+          );
+
+          assert.deepStrictEqual(attempts.attempts, []);
+
+          // Cancelling is for good, and reaches no platform.
+          const cancelled = yield* publisher.call(
+            "cancel_post",
+            PostJsonSchema,
+            {
+              postId: draft.id,
+            }
+          );
+
+          assert.strictEqual(cancelled.status, "cancelled");
+        })
+    );
+
+    it.effect("list media, and import only from public addresses", () =>
+      Effect.gen(function* media() {
+        const fixture = yield* ToolsFixture;
+        const reader = yield* connected(fixture.reading);
+        const writer = yield* connected(fixture.writing);
+
+        const page = yield* reader.call(
+          "list_media",
+          Schema.Struct({
+            items: Schema.Array(Schema.Unknown),
+            nextCursor: Schema.NullOr(Schema.String),
+          }),
+          { limit: 5 }
+        );
+
+        assert.deepStrictEqual(page, { items: [], nextCursor: null });
+
+        assert.include(
+          yield* reader.refused("import_media", {
+            url: "https://127.0.0.1/picture.png",
+          }),
+          "scope workspace:write"
+        );
+
+        // The server's own network is not a place to fetch from.
+        for (const url of [
+          "https://127.0.0.1/picture.png",
+          "http://files.example/picture.png",
+          "https://169.254.169.254/latest/meta-data",
+        ]) {
+          assert.include(
+            yield* writer.refused("import_media", { url }),
+            "Peal does not fetch this address",
+            url
+          );
+        }
+      })
     );
   }
 );

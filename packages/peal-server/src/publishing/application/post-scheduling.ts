@@ -284,12 +284,18 @@ export class PostScheduling extends Context.Service<
           const channels = yield* channelsFor(actor, channelIds);
           const files = yield* mediaFor(actor, content);
 
-          yield* Effect.fromResult(
-            checkPublishable(content, channels, files, options)
+          // What the platforms' rules refuse, every violation of them.
+          const againstRules = Result.match(
+            checkPublishable(content, channels, files, options),
+            {
+              onFailure: (rejected) => rejected.violations,
+              onSuccess: () => [],
+            }
           );
 
-          // Then what each account's own settings refuse, which only its
-          // platform tells.
+          // And what each account's own settings refuse, which only its
+          // platform tells: both come in one answer, so whoever fixes the
+          // post fixes it once.
           const rules = yield* AccountRules;
 
           const refused = yield* Effect.forEach(
@@ -303,7 +309,7 @@ export class PostScheduling extends Context.Service<
             { concurrency: 4 }
           );
 
-          const violations = refused.flat();
+          const violations = [...againstRules, ...refused.flat()];
 
           if (Arr.isReadonlyArrayNonEmpty(violations)) {
             return yield* new PostContentRejected({ violations });

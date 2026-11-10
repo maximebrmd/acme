@@ -3,10 +3,14 @@ import { Tool, Toolkit } from "effect/ai";
 import {
   CurrentMember,
   DraftPageSchema,
+  idempotencyKeyLifetimeHours,
   maxDraftPageSize,
+  maxIdempotencyKeyLength,
+  NewPostSchema,
   PostContentSchema,
   PostDraftSchema,
   PostSchema,
+  PublicationAttemptSchema,
   TargetConfirmationSchema,
   TikTokAccountSchema,
 } from "peal-contract";
@@ -65,7 +69,7 @@ export const GetPost = Tool.make("get_post", {
 export const CreateDraft = Tool.make("create_draft", {
   dependencies: [CurrentMember],
   description:
-    "Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the channels it is for, and the options of those whose platform asks for more (YouTube, TikTok). A draft goes out at no time: scheduling it is for the user, in the web app. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.",
+    "Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the channels it is for, and the options of those whose platform asks for more (YouTube, TikTok). A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.",
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelIds,
@@ -113,7 +117,7 @@ export const DiscardDraft = Tool.make("discard_draft", {
 export const UnschedulePost = Tool.make("unschedule_post", {
   dependencies: [CurrentMember],
   description:
-    "Takes a scheduled post back to draft: it loses its time, and goes out at no time until someone schedules it again. A post already publishing is refused.",
+    "Takes a scheduled post back to draft: it loses its time, and goes out at no time until someone schedules it again. A post already publishing is refused. Needs the scope workspace:publish, as everything that decides what goes out does.",
   failure: ToolRefused,
   parameters: Schema.Struct({ postId }),
   success: PostSchema,
@@ -126,7 +130,7 @@ export const UnschedulePost = Tool.make("unschedule_post", {
 export const RepostTarget = Tool.make("repost_target", {
   dependencies: [CurrentMember],
   description:
-    "Publishes the post again, now, on one channel where it failed or is unconfirmed: everyone following that account sees it. When it is unconfirmed, ask the user to check the platform first: it may be live already, and would then appear twice. Only a failed or unconfirmed target is reposted.",
+    "Publishes the post again, now, on one channel where it failed or is unconfirmed: everyone following that account sees it. When it is unconfirmed, ask the user to check the platform first: it may be live already, and would then appear twice. Only a failed or unconfirmed target is reposted. Needs the scope workspace:publish.",
   failure: ToolRefused,
   parameters: Schema.Struct({ postId, targetId }),
   success: PostSchema,
@@ -169,15 +173,162 @@ export const GetTikTokCreator = Tool.make("get_tiktok_creator", {
   .annotateMerge(reading.pipe(Context.add(Tool.OpenWorld, true)))
   .annotate(Tool.Title, "Read a TikTok creator");
 
+// Instants come as text over MCP, and are read as the API reads them.
+const at = Schema.DateTimeUtcFromString.annotate({
+  description:
+    "The instant it goes out, as an ISO 8601 timestamp with its offset or Z, such as 2026-06-15T08:00:00Z. Compute it from the wall-clock time the user gave in their time zone; a time more than a minute in the past is refused.",
+});
+
+const timeZone = Schema.String.annotate({
+  description:
+    "The IANA time zone the time was chosen in, such as Europe/Paris, which calendars show the post in. Offsets such as +01:00 are refused.",
+});
+
+// When a new post goes out, as the API's `when`, its instant as text.
+const when = Schema.Union([
+  Schema.TaggedStruct("now", { timeZone: Schema.optionalKey(timeZone) }),
+  Schema.TaggedStruct("at", { at, timeZone }),
+]).annotate({
+  description:
+    "`now` publishes within seconds; `at` schedules for an instant. Either keeps the IANA time zone it was chosen in (UTC when `now` gives none).",
+});
+
+// What every tool that puts a post out says of it.
+const reachesThePublic =
+  "What goes out is public on the platforms and seen by the accounts' followers; Peal cannot take it back once it is out. Do it only when the user asked for this post to be scheduled or published, on these channels: when in doubt, save a draft with create_draft and let them decide.";
+
+// What every tool that checks a post against the platforms says of it.
+const refusedWhole =
+  "The post is checked against every channel's platform first (text length, media types, sizes and counts, required options, and what the account itself refuses): when anything is wrong, nothing is scheduled, and the refusal lists every violation at once, each with its channel, and its field or media, so one more call can fix them all.";
+
+const needsPublishing =
+  "Needs the scope workspace:publish, which the user grants when they connect this client, and a role that schedules posts (owner, admin or editor).";
+
+export const ListPosts = Tool.make("list_posts", {
+  dependencies: [CurrentMember],
+  description:
+    "Lists the workspace's posts scheduled from `from` (included) to `to` (excluded), at most 62 days apart, by scheduled instant: those still to go out, those that went out, with how each went on every channel, and cancelled ones with the time they had. Drafts have no time: list_drafts answers them.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    from: Schema.DateTimeUtcFromString.annotate({
+      description: "An ISO 8601 timestamp, such as 2026-06-01T00:00:00Z.",
+    }),
+    to: Schema.DateTimeUtcFromString.annotate({
+      description: "An ISO 8601 timestamp, such as 2026-07-01T00:00:00Z.",
+    }),
+  }),
+  success: Schema.Struct({ posts: Schema.Array(PostSchema) }),
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "List scheduled posts");
+
+export const ListPostAttempts = Tool.make("list_post_attempts", {
+  dependencies: [CurrentMember],
+  description:
+    "Lists every attempt Peal made at publishing a post, by channel (`targetId`), round and attempt, with how each ended and when Peal tried again: what happened to a post that went out late, failed or is unconfirmed. An attempt still in progress is not listed yet.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ postId }),
+  success: Schema.Struct({ attempts: Schema.Array(PublicationAttemptSchema) }),
+})
+  .annotateMerge(reading)
+  .annotate(Tool.Title, "List a post's attempts");
+
+export const SchedulePost = Tool.make("schedule_post", {
+  dependencies: [CurrentMember],
+  description: `Schedules a draft to go out at an instant: on \`channelIds\` when given, which become its channels (those it had keep their options, new ones have none), otherwise on the channels it has. ${reachesThePublic} ${refusedWhole} Until its time, unschedule_post takes it back to draft and cancel_post cancels it. On a server that bills, the month must have room for it in the workspace's plan. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    at,
+    channelIds: Schema.optionalKey(
+      Schema.NonEmptyArray(Schema.String).annotate({
+        description:
+          "The channels it goes out on, as list_channels answers their ids. Left out: the channels the draft has.",
+      })
+    ),
+    postId,
+    timeZone,
+  }),
+  success: PostSchema,
+})
+  // Scheduling the same draft again is refused: it is no longer a draft.
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Schedule a draft");
+
+export const PublishPost = Tool.make("publish_post", {
+  dependencies: [CurrentMember],
+  description: `Publishes a draft, or a post scheduled for later, now, on the channels it has: it goes out within seconds, and cannot be stopped once it started. ${reachesThePublic} ${refusedWhole} Then read it with get_post until its status is finished: its outcome and each target say how it went. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({ postId }),
+  success: PostSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Publish a post now");
+
+export const ReschedulePost = Tool.make("reschedule_post", {
+  dependencies: [CurrentMember],
+  description: `Moves a scheduled post to another instant, replacing the time it had; what it says and where it goes stay. A draft is scheduled with schedule_post, and a post already publishing or finished is refused. ${reachesThePublic} ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({ at, postId, timeZone }),
+  success: PostSchema,
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: true })
+  )
+  .annotate(Tool.Title, "Reschedule a post");
+
+export const CancelPost = Tool.make("cancel_post", {
+  dependencies: [CurrentMember],
+  description: `Cancels a draft or a scheduled post for good: it goes out at no time, stays in the calendar as cancelled, and cannot be scheduled again (to keep its text, use unschedule_post instead, which takes it back to draft). A post already publishing finishes with what its channels did: those not yet sent are cancelled, and what is out stays out. Nothing reaches a platform. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({ postId }),
+  success: PostSchema,
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Cancel a post");
+
+export const CreatePost = Tool.make("create_post", {
+  dependencies: [CurrentMember],
+  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. ${needsPublishing}`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelIds: NewPostSchema.fields.channelIds,
+    content: NewPostSchema.fields.content,
+    idempotencyKey: Schema.optionalKey(
+      Schema.String.check(Schema.isBetweenLength(1, maxIdempotencyKeyLength))
+    ),
+    options: NewPostSchema.fields.options,
+    when,
+  }),
+  success: PostSchema,
+})
+  // With a key, a call sent again makes nothing more; without one it does.
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: true })
+  )
+  .annotate(Tool.Title, "Create and send a post");
+
 /** The tools that read and change the workspace's posts. */
 export const PostTools = Toolkit.make(
   ListDrafts,
+  ListPosts,
   GetPost,
+  ListPostAttempts,
   CreateDraft,
   UpdateDraft,
   GetTikTokCreator,
   DiscardDraft,
+  SchedulePost,
+  PublishPost,
+  ReschedulePost,
+  CreatePost,
   UnschedulePost,
+  CancelPost,
   RepostTarget,
   ConfirmTarget
 );
