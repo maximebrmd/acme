@@ -29,6 +29,10 @@
 **/*.key
 **/*.p12
 
+# Agent guides, which sit beside the sources the images copy
+**/AGENTS.md
+**/CLAUDE.md
+
 # Editors and logs
 .idea
 .vscode
