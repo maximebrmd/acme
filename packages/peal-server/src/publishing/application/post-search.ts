@@ -5,6 +5,7 @@ import type {
   PostOutcome,
   PostStatusName,
 } from "#publishing/domain/post-status.ts";
+import type { TagId } from "#publishing/domain/tag-id.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
@@ -39,6 +40,8 @@ export interface PostSearchRequest {
   readonly platform: Option.Option<Platform>;
   readonly sort: PostSort;
   readonly status: Option.Option<PostStatusName>;
+  /** Posts filed under this tag. */
+  readonly tagId: Option.Option<TagId>;
   /** Scheduled before this instant, excluded. */
   readonly to: Option.Option<DateTime.Utc>;
 }
@@ -67,8 +70,8 @@ const encodeCursor = Schema.encodeEffect(CursorSchema);
 
 /**
  * Listing a workspace's posts, whatever their state: filtered by status,
- * outcome, channel, platform, scheduled time, author and how they were
- * created, ordered by creation or by scheduled time, a page at a time.
+ * outcome, channel, platform, tag, scheduled time, author and how they
+ * were created, ordered by creation or by scheduled time, a page at a time.
  * Needs post:read, and channel:read for the channels it names.
  *
  * A channel no longer connected has no platform any more: its posts are
@@ -173,6 +176,7 @@ export class PostSearch extends Context.Service<
             scheduledBefore: to,
             scheduledFrom: from,
             status: request.status,
+            tagIds: request.tagId.pipe(Option.map((tagId) => [tagId])),
           },
           limit: Math.min(Math.max(request.limit, 1), maxPostPageSize),
           sort: request.sort,

@@ -16,6 +16,16 @@ import { scopeGrants } from "#workspace/api/refusal.ts";
 export const refuse = (message: string) =>
   Effect.fail(new ToolRefused({ message }));
 
+/** Tags a call names that are not the workspace's. */
+export const unknownTags = ({
+  tagIds,
+}: {
+  readonly tagIds: readonly string[];
+}) =>
+  refuse(
+    `These tags are not the workspace's: ${tagIds.join(", ")}. list_tags answers its tags.`
+  );
+
 // Whose permission is missing, and who can do something about it: a
 // partner's key, a workspace's key, or the user's role.
 const whoseOf = (member: Member, doing: string, permission: Permission) => {
@@ -109,3 +119,21 @@ export const planRefusal = UpgradePaths.use((paths) =>
           )
   )
 );
+
+/** A channel set a post names is not the workspace's. */
+export const unknownChannelSet = () =>
+  refuse(
+    "A channel set this names is not the workspace's: list_channel_sets answers its sets, each with its id and its name. Nothing was made."
+  );
+
+/** A signature a post names is not the workspace's. */
+export const unknownSignature = () =>
+  refuse(
+    "The signature this names is not the workspace's: list_signatures answers its signatures. Nothing was made."
+  );
+
+/** What a post that names saved items is refused with when one is gone. */
+export const presetRefusals = {
+  ChannelSetNotFound: unknownChannelSet,
+  SignatureNotFound: unknownSignature,
+} as const;

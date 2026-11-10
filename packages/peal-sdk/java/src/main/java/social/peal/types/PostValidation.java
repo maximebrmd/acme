@@ -43,6 +43,8 @@ public final class PostValidation {
 
     private final List<ContentViolation> violations;
 
+    private final Optional<List<PostWarning>> warnings;
+
     private final Map<String, Object> additionalProperties;
 
     private PostValidation(
@@ -55,6 +57,7 @@ public final class PostValidation {
             List<String> unknownMedia,
             boolean valid,
             List<ContentViolation> violations,
+            Optional<List<PostWarning>> warnings,
             Map<String, Object> additionalProperties) {
         this.awaitsApproval = awaitsApproval;
         this.channels = channels;
@@ -65,6 +68,7 @@ public final class PostValidation {
         this.unknownMedia = unknownMedia;
         this.valid = valid;
         this.violations = violations;
+        this.warnings = warnings;
         this.additionalProperties = additionalProperties;
     }
 
@@ -119,6 +123,11 @@ public final class PostValidation {
         return violations;
     }
 
+    @JsonProperty("warnings")
+    public Optional<List<PostWarning>> getWarnings() {
+        return warnings;
+    }
+
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("planLimit")
     private Optional<PlanShortfall> _getPlanLimit() {
@@ -151,7 +160,8 @@ public final class PostValidation {
                 && unknownChannels.equals(other.unknownChannels)
                 && unknownMedia.equals(other.unknownMedia)
                 && valid == other.valid
-                && violations.equals(other.violations);
+                && violations.equals(other.violations)
+                && warnings.equals(other.warnings);
     }
 
     @java.lang.Override
@@ -165,7 +175,8 @@ public final class PostValidation {
                 this.unknownChannels,
                 this.unknownMedia,
                 this.valid,
-                this.violations);
+                this.violations,
+                this.warnings);
     }
 
     @java.lang.Override
@@ -235,6 +246,10 @@ public final class PostValidation {
         _FinalStage addViolations(ContentViolation violations);
 
         _FinalStage addAllViolations(List<ContentViolation> violations);
+
+        _FinalStage warnings(Optional<List<PostWarning>> warnings);
+
+        _FinalStage warnings(List<PostWarning> warnings);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -242,6 +257,8 @@ public final class PostValidation {
         private boolean awaitsApproval;
 
         private boolean valid;
+
+        private Optional<List<PostWarning>> warnings = Optional.empty();
 
         private List<ContentViolation> violations = new ArrayList<>();
 
@@ -272,6 +289,7 @@ public final class PostValidation {
             unknownMedia(other.getUnknownMedia());
             valid(other.getValid());
             violations(other.getViolations());
+            warnings(other.getWarnings());
             return this;
         }
 
@@ -286,6 +304,19 @@ public final class PostValidation {
         @JsonSetter("valid")
         public _FinalStage valid(boolean valid) {
             this.valid = valid;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage warnings(List<PostWarning> warnings) {
+            this.warnings = Optional.ofNullable(warnings);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "warnings", nulls = Nulls.SKIP)
+        public _FinalStage warnings(Optional<List<PostWarning>> warnings) {
+            this.warnings = warnings;
             return this;
         }
 
@@ -471,6 +502,7 @@ public final class PostValidation {
                     unknownMedia,
                     valid,
                     violations,
+                    warnings,
                     additionalProperties);
         }
 
@@ -484,7 +516,8 @@ public final class PostValidation {
                     || key.equalsIgnoreCase("unknownChannels")
                     || key.equalsIgnoreCase("unknownMedia")
                     || key.equalsIgnoreCase("valid")
-                    || key.equalsIgnoreCase("violations")) {
+                    || key.equalsIgnoreCase("violations")
+                    || key.equalsIgnoreCase("warnings")) {
                 return;
             }
             this.additionalProperties.put(key, value);

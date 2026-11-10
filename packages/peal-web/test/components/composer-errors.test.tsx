@@ -17,6 +17,7 @@ const bluesky: Channel = {
   displayName: null,
   handle: "@peal_bluesky",
   id: "00000000-0000-7000-8000-000000000001",
+  label: null,
   platform: "bluesky",
   status: { _tag: "active" },
   tokenExpiresAt: null,

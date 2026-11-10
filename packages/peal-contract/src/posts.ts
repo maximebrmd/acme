@@ -8,6 +8,11 @@ import {
 } from "effect/http-api";
 
 import { Authentication } from "./authentication.ts";
+import { ChannelSetNotFound } from "./channel-set-not-found.ts";
+import {
+  ChannelSetReferencesSchema,
+  PostWarningSchema,
+} from "./channel-sets.ts";
 import { DuplicatePost, duplicateWindowHours } from "./duplicate-post.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
@@ -37,11 +42,14 @@ import {
 } from "./post-text.ts";
 import { PostValidationSchema } from "./post-validation.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
+import { SignatureNotFound } from "./signature-not-found.ts";
+import { maxTagsPerPost, PostTagIdsSchema } from "./tags.ts";
 import { ChannelOptionsSchema, TargetOptionsSchema } from "./target-options.ts";
 import type { ChannelOptions } from "./target-options.ts";
 import { TargetStatusConflict } from "./target-status-conflict.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
 import { UnknownMedia } from "./unknown-media.ts";
+import { UnknownTags } from "./unknown-tags.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 const uniqueBy = <A>(key: (item: A) => string, expected: string) =>
@@ -314,8 +322,14 @@ export const PostSchema = Schema.Struct({
   // before this was kept.
   scheduledVia: Schema.NullOr(PostOriginSchema),
   status: PostStatusSchema,
+  // The workspace's tags it is filed under (`tags.list` names them).
+  tagIds: Schema.Array(Schema.String),
   // One per channel, oldest first.
   targets: Schema.Array(PostTargetSchema),
+  // What the request that made it should know of, on that request's
+  // answer alone: channels of a set it named that are no longer connected,
+  // which the post was made without. Left out when there is nothing to say.
+  warnings: Schema.optionalKey(Schema.Array(PostWarningSchema)),
 }).annotate({ identifier: "Post" });
 
 export type Post = typeof PostSchema.Type;
@@ -323,11 +337,20 @@ export type Post = typeof PostSchema.Type;
 /**
  * A draft: what it says, the channels it is for so far, and the options it
  * has on some of them, which its targets keep. Options left out are none:
- * an update replaces them all.
+ * an update replaces them all. Its tags (`tagIds`) are the workspace's:
+ * left out, a new draft has none and an update keeps those the draft has.
  */
 export const PostDraftSchema = Schema.Struct({
   channelIds: Schema.Array(Schema.String),
+  // The channel sets it goes to as well, each named by its id or its name
+  // whatever its case: their channels, with the options each set keeps for
+  // them where the post gives none.
+  channelSets: Schema.optionalKey(ChannelSetReferencesSchema),
   content: PostContentSchema,
+  // True to put each channel's default signature under its text: the
+  // workspace's under the post's text, and a platform's or a channel's own
+  // under the text that channel has instead.
+  defaultSignatures: Schema.optionalKey(Schema.Boolean),
   options: Schema.optionalKey(
     Schema.Array(ChannelOptionsSchema).check(
       uniqueBy(
@@ -336,9 +359,19 @@ export const PostDraftSchema = Schema.Struct({
       )
     )
   ),
+  // A signature of the workspace to put under its text, on every channel.
+  signatureId: Schema.optionalKey(Schema.String),
+  tagIds: Schema.optionalKey(PostTagIdsSchema),
 }).annotate({ identifier: "PostDraft" });
 
 export type PostDraft = typeof PostDraftSchema.Type;
+
+/** The tags to file a post under, instead of those it has. */
+export const PostTagsSchema = Schema.Struct({
+  tagIds: PostTagIdsSchema,
+}).annotate({ identifier: "PostTags" });
+
+export type PostTags = typeof PostTagsSchema.Type;
 
 /** A draft's time and channels. */
 export const SchedulePostSchema = Schema.Struct({
@@ -374,8 +407,17 @@ export const NewPostSchema = Schema.Struct({
   // True when the same content may go to a channel that already has it;
   // otherwise that is refused (DuplicatePost).
   allowDuplicate: Schema.optionalKey(Schema.Boolean),
-  channelIds: Schema.NonEmptyArray(Schema.String),
+  // One channel at least, unless `channelSets` names some.
+  channelIds: Schema.Array(Schema.String),
+  // The channel sets it goes to as well, each named by its id or its name
+  // whatever its case: their channels, with the options each set keeps for
+  // them where the post gives none.
+  channelSets: Schema.optionalKey(ChannelSetReferencesSchema),
   content: PostContentSchema,
+  // True to put each channel's default signature under its text: the
+  // workspace's under the post's text, and a platform's or a channel's own
+  // under the text that channel has instead.
+  defaultSignatures: Schema.optionalKey(Schema.Boolean),
   options: Schema.optionalKey(
     Schema.Array(ChannelOptionsSchema).check(
       uniqueBy(
@@ -384,6 +426,10 @@ export const NewPostSchema = Schema.Struct({
       )
     )
   ),
+  // A signature of the workspace to put under its text, on every channel.
+  signatureId: Schema.optionalKey(Schema.String),
+  // The workspace's tags it is filed under; left out, none.
+  tagIds: Schema.optionalKey(PostTagIdsSchema),
   when: PostTimingSchema,
 }).annotate({ identifier: "NewPost" });
 
@@ -399,7 +445,15 @@ export const PostToValidateSchema = Schema.Struct({
   // otherwise that is refused (DuplicatePost).
   allowDuplicate: Schema.optionalKey(Schema.Boolean),
   channelIds: Schema.Array(Schema.String),
+  // The channel sets it goes to as well, each named by its id or its name
+  // whatever its case: their channels, with the options each set keeps for
+  // them where the post gives none.
+  channelSets: Schema.optionalKey(ChannelSetReferencesSchema),
   content: PostContentSchema,
+  // True to put each channel's default signature under its text: the
+  // workspace's under the post's text, and a platform's or a channel's own
+  // under the text that channel has instead.
+  defaultSignatures: Schema.optionalKey(Schema.Boolean),
   options: Schema.optionalKey(
     Schema.Array(ChannelOptionsSchema).check(
       uniqueBy(
@@ -408,6 +462,8 @@ export const PostToValidateSchema = Schema.Struct({
       )
     )
   ),
+  // A signature of the workspace to put under its text, on every channel.
+  signatureId: Schema.optionalKey(Schema.String),
   when: Schema.optionalKey(PostTimingSchema),
 }).annotate({ identifier: "PostToValidate" });
 
@@ -748,24 +804,33 @@ export class PostsApi extends HttpApiGroup.make("posts")
         platform: Schema.optionalKey(PlatformSchema),
         sort: Schema.optionalKey(PostSortSchema),
         status: Schema.optionalKey(PostStatusSchema),
+        tagId: Schema.optionalKey(Schema.String),
         to: Schema.optionalKey(Schema.DateTimeUtc),
       },
       success: PostPageSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Lists the workspace's posts, whatever their state, a page at a time: ${defaultPostPageSize} unless \`limit\` (at most ${maxPostPageSize}) says otherwise. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended, such as \`failed\` or \`partiallyPublished\`), \`channelId\` (posts with a target on that channel), \`platform\` (posts with a target on a connected channel of that platform), \`from\` (included) and \`to\` (excluded), on the scheduled instant, which leave out posts without a time, \`createdVia\` (\`web\`, \`apiKey\` or \`application\`) and \`authorId\`. \`sort\` orders them by creation (\`createdDesc\`, the default, or \`createdAsc\`) or by scheduled instant (\`scheduledDesc\`, \`scheduledAsc\`, which list only posts with a time). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and \`channels\` gives the platform of each channel the page names. Needs post:read and channel:read.`,
+        description: `Lists the workspace's posts, whatever their state, a page at a time: ${defaultPostPageSize} unless \`limit\` (at most ${maxPostPageSize}) says otherwise. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended, such as \`failed\` or \`partiallyPublished\`), \`channelId\` (posts with a target on that channel), \`platform\` (posts with a target on a connected channel of that platform), \`tagId\` (posts filed under that tag), \`from\` (included) and \`to\` (excluded), on the scheduled instant, which leave out posts without a time, \`createdVia\` (\`web\`, \`apiKey\` or \`application\`) and \`authorId\`. \`sort\` orders them by creation (\`createdDesc\`, the default, or \`createdAsc\`) or by scheduled instant (\`scheduledDesc\`, \`scheduledAsc\`, which list only posts with a time). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and \`channels\` gives the platform of each channel the page names. Needs post:read and channel:read.`,
         summary: "List posts",
       })
     ),
     HttpApiEndpoint.post("create", "/", {
-      error: [Forbidden, PostContentInvalid, UnknownChannels, UnknownMedia],
+      error: [
+        Forbidden,
+        PostContentInvalid,
+        UnknownChannels,
+        UnknownMedia,
+        UnknownTags,
+        ChannelSetNotFound,
+        SignatureNotFound,
+      ],
       params: workspace,
       payload: PostDraftSchema,
       success: PostSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.",
+          "Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. It may name channel sets (`channelSets`, by id or name), whose connected channels it is for as well, with the options each set keeps; a channel of a set that is no longer connected is left out, and the answer says so (`warnings`). A channel on which it gives no options takes the channel's default options, if it has some. With `defaultSignatures`, each channel's default signature goes under its text, and `signatureId` puts one signature under it on every channel: a signature is then text of the post, never added under a text that already ends with it. Needs post:create, channel:read, and media:read when it shows media.",
         summary: "Create a draft",
       })
     ),
@@ -781,6 +846,9 @@ export class PostsApi extends HttpApiGroup.make("posts")
         IdempotencyKeyReused,
         PostNotFound,
         DuplicatePost,
+        UnknownTags,
+        ChannelSetNotFound,
+        SignatureNotFound,
       ],
       headers: {
         "idempotency-key": Schema.optionalKey(
@@ -795,7 +863,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
       success: PostSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Creates a post and sends it to some of the workspace's channels in one call: \`when\` is \`now\`, which publishes at once, or \`at\` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status \`awaitingApproval\`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an \`Idempotency-Key\` header (any text of your choosing, at most ${maxIdempotencyKeyLength} characters, such as a UUID) to make a request safe to send again: within ${idempotencyKeyLifetimeHours} hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than ${duplicateWindowHours} hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says \`allowDuplicate: true\`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless \`wait\` says to wait for the outcome: up to that many seconds (${maxOutcomeWaitSeconds} at most) for a post that goes out now, the answer is then the post once every channel has its result (\`status\` \`finished\`, with its \`outcome\`, each target \`published\` with its \`permalink\` or \`failed\` with its \`failureReason\`), or the post as it stands when the time runs out, some targets still \`pending\` or \`publishing\`: it goes on publishing, and \`GET …/posts/{postId}/outcome\` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.`,
+        description: `Creates a post and sends it to some of the workspace's channels in one call: \`when\` is \`now\`, which publishes at once, or \`at\` an instant, kept with its IANA time zone. Instead of listing channels, or beside them, it may name channel sets (\`channelSets\`, by id or name): it goes to their connected channels, with the options each set keeps where it gives none, and a channel of a set that is no longer connected is left out and told in the answer's \`warnings\`, never silently; a set none of whose channels is left, with no other channel, is refused (UnknownChannels). A channel on which it gives no options takes the channel's default options. \`defaultSignatures\` puts each channel's default signature under its text, and \`signatureId\` one signature on every channel: signatures are text of the post, counted against each platform's limit, and never added twice. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status \`awaitingApproval\`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an \`Idempotency-Key\` header (any text of your choosing, at most ${maxIdempotencyKeyLength} characters, such as a UUID) to make a request safe to send again: within ${idempotencyKeyLifetimeHours} hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than ${duplicateWindowHours} hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says \`allowDuplicate: true\`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless \`wait\` says to wait for the outcome: up to that many seconds (${maxOutcomeWaitSeconds} at most) for a post that goes out now, the answer is then the post once every channel has its result (\`status\` \`finished\`, with its \`outcome\`, each target \`published\` with its \`permalink\` or \`failed\` with its \`failureReason\`), or the post as it stands when the time runs out, some targets still \`pending\` or \`publishing\`: it goes on publishing, and \`GET …/posts/{postId}/outcome\` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.`,
         summary: "Create and send a post",
       })
     ),
@@ -836,7 +904,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
       })
     ),
     HttpApiEndpoint.post("validate", "/validate", {
-      error: [Forbidden],
+      error: [Forbidden, ChannelSetNotFound, SignatureNotFound],
       params: workspace,
       payload: PostToValidateSchema,
       success: PostValidationSchema,
@@ -898,6 +966,9 @@ export class PostsApi extends HttpApiGroup.make("posts")
         PostContentInvalid,
         UnknownChannels,
         UnknownMedia,
+        UnknownTags,
+        ChannelSetNotFound,
+        SignatureNotFound,
       ],
       params: post,
       payload: PostDraftSchema,
@@ -905,8 +976,30 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Replaces a draft's content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.",
+          "Replaces a draft's content, channels and options: options left out are removed. Its tags are replaced by `tagIds` when given, and kept otherwise. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.",
         summary: "Update a draft",
+      })
+    ),
+    HttpApiEndpoint.put("tag", "/:postId/tags", {
+      error: [Forbidden, PostNotFound, UnknownTags],
+      params: post,
+      payload: PostTagsSchema,
+      success: PostSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Files a post under these tags of the workspace, ${maxTagsPerPost} at most, instead of those it had; an empty list takes them all off. Tags say nothing to the platforms, so a post takes them whatever its status, sent or not. Needs post:update.`,
+        summary: "Set a post's tags",
+      })
+    ),
+    HttpApiEndpoint.post("duplicate", "/:postId/duplicate", {
+      error: [Forbidden, PostNotFound, PostContentInvalid],
+      params: post,
+      success: PostSchema.pipe(HttpApiSchema.status(201)),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Makes a new draft that says what the post says, whatever the post's status: its text, its media, its channels with their text and options, and its tags. What the workspace no longer has is left out rather than refused: a channel disconnected since, with the text the post had there, media deleted since, a tag deleted since. The copy has no time, and its author is whoever asked; the post itself is not changed. Needs post:read and post:create, and channel:read.",
+        summary: "Duplicate a post",
       })
     ),
     HttpApiEndpoint.post("schedule", "/:postId/schedule", {

@@ -10,16 +10,25 @@ import type {
 } from "peal-contract";
 
 import { PostTools } from "#app/mcp/posts-tools.ts";
-import { notAllowed, planRefusal, refuse } from "#app/mcp/refusals.ts";
+import {
+  notAllowed,
+  planRefusal,
+  presetRefusals,
+  refuse,
+  unknownSignature,
+  unknownTags,
+} from "#app/mcp/refusals.ts";
 import { keyAt, readPost, sendRead } from "#publishing/api/post-batch.ts";
 import { checkRequestFrom } from "#publishing/api/post-check-input.ts";
 import { validationOf } from "#publishing/api/post-check-view.ts";
 import {
   channelIdsFrom,
   contentFrom,
+  draftTagsFrom,
   optionsFrom,
   postIdFrom,
   postIdOption,
+  presetsFrom,
   scheduleFrom,
   sendRequestFrom,
   targetIdFrom,
@@ -269,34 +278,46 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(confirmed);
         }).pipe(Effect.catchTags(malformedPost)),
-      create_draft: ({ channelIds, content, options }) =>
+      create_draft: ({ channelIds, content, options, tagIds, ...saved }) =>
         Effect.gen(function* create() {
           const given = yield* givenOptions(options);
+          const tags = yield* draftTagsFrom(tagIds);
 
           const created = yield* drafts
             .create(yield* actor, {
               channelIds: yield* channelIdsFrom(channelIds),
               content: yield* contentFrom(content),
               options: Option.getOrElse(given, () => []),
+              presets: yield* presetsFrom(saved),
+              ...tags,
             })
             .pipe(
               Effect.catchTags({
+                ...presetRefusals,
                 DatabaseError: Effect.die,
                 MissingPermission: notAllowed("write drafts"),
                 PostContentRejected: contentRejected,
                 UnknownChannels: unknownChannels,
                 UnknownMedia: unknownMedia,
+                UnknownTags: unknownTags,
               })
             );
 
           return postView(created);
-        }).pipe(Effect.catchTags(malformedContent)),
+        }).pipe(
+          Effect.catchTags({
+            ...malformedContent,
+            SignatureNotFound: unknownSignature,
+            UnknownTags: unknownTags,
+          })
+        ),
       create_post: ({ idempotencyKey, waitSeconds = 0, ...post }) =>
         Effect.gen(function* createPost() {
           const request = yield* sendRequestFrom(post, idempotencyKey);
 
           const sent = yield* scheduling.send(yield* actor, request).pipe(
             Effect.catchTags({
+              ...presetRefusals,
               ...newPostFailures,
               DuplicateContent: ({ duplicates }) =>
                 refuse(
@@ -317,6 +338,7 @@ export const PostToolsLive = PostTools.toLayer(
                 refuse(
                   "The post this idempotencyKey made was deleted since: nothing was made. Use a new key to make it again."
                 ),
+              UnknownTags: unknownTags,
             })
           );
 
@@ -326,7 +348,14 @@ export const PostToolsLive = PostTools.toLayer(
             .pipe(Effect.orDie);
 
           return postView(awaited);
-        }).pipe(Effect.catchTags({ ...malformedContent, ...badZone })),
+        }).pipe(
+          Effect.catchTags({
+            ...malformedContent,
+            ...badZone,
+            SignatureNotFound: unknownSignature,
+            UnknownTags: unknownTags,
+          })
+        ),
       create_posts: ({ idempotencyKey, posts }) =>
         Effect.gen(function* createPosts() {
           const read = yield* Effect.all(
@@ -381,6 +410,21 @@ export const PostToolsLive = PostTools.toLayer(
 
           return { discarded: postId };
         }).pipe(Effect.catchTags(malformedPost)),
+      duplicate_post: ({ postId }) =>
+        Effect.gen(function* duplicate() {
+          const copy = yield* drafts
+            .duplicate(yield* actor, yield* postIdFrom(postId))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("duplicate posts"),
+                PostContentRejected: contentRejected,
+                PostNotFound: notFound,
+              })
+            );
+
+          return postView(copy);
+        }).pipe(Effect.catchTags(malformedPost)),
       get_post: ({ postId }) =>
         Effect.gen(function* get() {
           const found = yield* queries
@@ -403,7 +447,7 @@ export const PostToolsLive = PostTools.toLayer(
             BadRequest: ({ code }) =>
               code === ownRefusalCodes.channelDisabled
                 ? refuse(
-                    "This channel is turned off: the user disconnects it and connects the account again to post to it."
+                    "This channel is turned off: enable_channel turns it back on, to post to it."
                   )
                 : notTikTok(),
             DatabaseError: Effect.die,
@@ -598,11 +642,20 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(draft);
         }).pipe(Effect.catchTags(malformedPost)),
-      update_draft: ({ channelIds, content, options, postId }) =>
+      update_draft: ({
+        channelIds,
+        content,
+        options,
+        postId,
+        tagIds,
+        ...saved
+      }) =>
         Effect.gen(function* update() {
           const id = yield* postIdFrom(postId);
           const channels = yield* channelIdsFrom(channelIds);
           const given = yield* givenOptions(options);
+          // Without tags, the draft keeps those it has.
+          const tags = yield* draftTagsFrom(tagIds);
 
           // Without options, the draft keeps those it has on the channels
           // it keeps, rather than lose them as the API's update would.
@@ -615,9 +668,12 @@ export const PostToolsLive = PostTools.toLayer(
               channelIds: channels,
               content: yield* contentFrom(content),
               options: kept,
+              presets: yield* presetsFrom(saved),
+              ...tags,
             })
             .pipe(
               Effect.catchTags({
+                ...presetRefusals,
                 DatabaseError: Effect.die,
                 InvalidPostTransition: postConflict,
                 MissingPermission: notAllowed("change drafts"),
@@ -625,24 +681,33 @@ export const PostToolsLive = PostTools.toLayer(
                 PostNotFound: notFound,
                 UnknownChannels: unknownChannels,
                 UnknownMedia: unknownMedia,
+                UnknownTags: unknownTags,
               })
             );
 
           return postView(updated);
-        }).pipe(Effect.catchTags({ ...malformedPost, ...malformedContent })),
+        }).pipe(
+          Effect.catchTags({
+            ...malformedPost,
+            ...malformedContent,
+            SignatureNotFound: unknownSignature,
+            UnknownTags: unknownTags,
+          })
+        ),
       validate_post: (post) =>
         Effect.gen(function* validatePost() {
           const read = yield* checkRequestFrom(post);
 
           const check = yield* checks.check(yield* actor, read.request).pipe(
             Effect.catchTags({
+              ...presetRefusals,
               DatabaseError: Effect.die,
               MissingPermission: notAllowed("read posts"),
             })
           );
 
           return yield* toValidation(check, read);
-        }),
+        }).pipe(Effect.catchTag("SignatureNotFound", unknownSignature)),
     });
   })
 );

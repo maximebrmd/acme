@@ -19,6 +19,9 @@ class PostRefusal extends JsonSerializableType
      *   |'PostNotFound'
      *   |'DuplicatePost'
      *   |'Forbidden'
+     *   |'UnknownTags'
+     *   |'ChannelSetNotFound'
+     *   |'SignatureNotFound'
      *   |'_unknown'
      * ) $type
      */
@@ -36,6 +39,9 @@ class PostRefusal extends JsonSerializableType
      *   |PostNotFoundEncoded
      *   |DuplicatePostEncoded
      *   |ForbiddenEncoded
+     *   |UnknownTagsEncoded
+     *   |ChannelSetNotFoundEncoded
+     *   |SignatureNotFoundEncoded
      *   |mixed
      * ) $value
      */
@@ -54,6 +60,9 @@ class PostRefusal extends JsonSerializableType
      *   |'PostNotFound'
      *   |'DuplicatePost'
      *   |'Forbidden'
+     *   |'UnknownTags'
+     *   |'ChannelSetNotFound'
+     *   |'SignatureNotFound'
      *   |'_unknown'
      * ),
      *   value: (
@@ -67,6 +76,9 @@ class PostRefusal extends JsonSerializableType
      *   |PostNotFoundEncoded
      *   |DuplicatePostEncoded
      *   |ForbiddenEncoded
+     *   |UnknownTagsEncoded
+     *   |ChannelSetNotFoundEncoded
+     *   |SignatureNotFoundEncoded
      *   |mixed
      * ),
      * } $values
@@ -195,6 +207,42 @@ class PostRefusal extends JsonSerializableType
         return new PostRefusal([
             'type' => 'Forbidden',
             'value' => $forbidden,
+        ]);
+    }
+
+    /**
+     * @param UnknownTagsEncoded $unknownTags
+     * @return PostRefusal
+     */
+    public static function unknownTags(UnknownTagsEncoded $unknownTags): PostRefusal
+    {
+        return new PostRefusal([
+            'type' => 'UnknownTags',
+            'value' => $unknownTags,
+        ]);
+    }
+
+    /**
+     * @param ChannelSetNotFoundEncoded $channelSetNotFound
+     * @return PostRefusal
+     */
+    public static function channelSetNotFound(ChannelSetNotFoundEncoded $channelSetNotFound): PostRefusal
+    {
+        return new PostRefusal([
+            'type' => 'ChannelSetNotFound',
+            'value' => $channelSetNotFound,
+        ]);
+    }
+
+    /**
+     * @param SignatureNotFoundEncoded $signatureNotFound
+     * @return PostRefusal
+     */
+    public static function signatureNotFound(SignatureNotFoundEncoded $signatureNotFound): PostRefusal
+    {
+        return new PostRefusal([
+            'type' => 'SignatureNotFound',
+            'value' => $signatureNotFound,
         ]);
     }
 
@@ -419,6 +467,72 @@ class PostRefusal extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isUnknownTags(): bool
+    {
+        return $this->value instanceof UnknownTagsEncoded && $this->type === 'UnknownTags';
+    }
+
+    /**
+     * @return UnknownTagsEncoded
+     */
+    public function asUnknownTags(): UnknownTagsEncoded
+    {
+        if (!($this->value instanceof UnknownTagsEncoded && $this->type === 'UnknownTags')) {
+            throw new Exception(
+                "Expected UnknownTags; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isChannelSetNotFound(): bool
+    {
+        return $this->value instanceof ChannelSetNotFoundEncoded && $this->type === 'ChannelSetNotFound';
+    }
+
+    /**
+     * @return ChannelSetNotFoundEncoded
+     */
+    public function asChannelSetNotFound(): ChannelSetNotFoundEncoded
+    {
+        if (!($this->value instanceof ChannelSetNotFoundEncoded && $this->type === 'ChannelSetNotFound')) {
+            throw new Exception(
+                "Expected ChannelSetNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSignatureNotFound(): bool
+    {
+        return $this->value instanceof SignatureNotFoundEncoded && $this->type === 'SignatureNotFound';
+    }
+
+    /**
+     * @return SignatureNotFoundEncoded
+     */
+    public function asSignatureNotFound(): SignatureNotFoundEncoded
+    {
+        if (!($this->value instanceof SignatureNotFoundEncoded && $this->type === 'SignatureNotFound')) {
+            throw new Exception(
+                "Expected SignatureNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -476,6 +590,18 @@ class PostRefusal extends JsonSerializableType
                 break;
             case 'Forbidden':
                 $value = $this->asForbidden()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'UnknownTags':
+                $value = $this->asUnknownTags()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'ChannelSetNotFound':
+                $value = $this->asChannelSetNotFound()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'SignatureNotFound':
+                $value = $this->asSignatureNotFound()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -543,6 +669,15 @@ class PostRefusal extends JsonSerializableType
                 break;
             case 'Forbidden':
                 $args['value'] = ForbiddenEncoded::jsonDeserialize($data);
+                break;
+            case 'UnknownTags':
+                $args['value'] = UnknownTagsEncoded::jsonDeserialize($data);
+                break;
+            case 'ChannelSetNotFound':
+                $args['value'] = ChannelSetNotFoundEncoded::jsonDeserialize($data);
+                break;
+            case 'SignatureNotFound':
+                $args['value'] = SignatureNotFoundEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

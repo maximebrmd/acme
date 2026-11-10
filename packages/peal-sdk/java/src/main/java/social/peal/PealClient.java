@@ -12,7 +12,9 @@ import social.peal.resources.apikeys.ApiKeysClient;
 import social.peal.resources.assistant.AssistantClient;
 import social.peal.resources.billing.BillingClient;
 import social.peal.resources.capabilities.CapabilitiesClient;
+import social.peal.resources.channeldefaults.ChannelDefaultsClient;
 import social.peal.resources.channels.ChannelsClient;
+import social.peal.resources.channelsets.ChannelSetsClient;
 import social.peal.resources.connectlinks.ConnectLinksClient;
 import social.peal.resources.inbox.InboxClient;
 import social.peal.resources.invitations.InvitationsClient;
@@ -26,7 +28,9 @@ import social.peal.resources.partneraccount.PartnerAccountClient;
 import social.peal.resources.posts.PostsClient;
 import social.peal.resources.review.ReviewClient;
 import social.peal.resources.session.SessionClient;
+import social.peal.resources.signatures.SignaturesClient;
 import social.peal.resources.system.SystemClient;
+import social.peal.resources.tags.TagsClient;
 import social.peal.resources.tiktok.TiktokClient;
 import social.peal.resources.webhooks.WebhooksClient;
 
@@ -79,6 +83,14 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<ReviewClient> reviewClient;
 
+    protected final Supplier<TagsClient> tagsClient;
+
+    protected final Supplier<SignaturesClient> signaturesClient;
+
+    protected final Supplier<ChannelSetsClient> channelSetsClient;
+
+    protected final Supplier<ChannelDefaultsClient> channelDefaultsClient;
+
     public PealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new SystemClient(clientOptions));
@@ -104,6 +116,10 @@ public class PealClient implements AutoCloseable {
         this.partnerAccountClient = Suppliers.memoize(() -> new PartnerAccountClient(clientOptions));
         this.connectLinksClient = Suppliers.memoize(() -> new ConnectLinksClient(clientOptions));
         this.reviewClient = Suppliers.memoize(() -> new ReviewClient(clientOptions));
+        this.tagsClient = Suppliers.memoize(() -> new TagsClient(clientOptions));
+        this.signaturesClient = Suppliers.memoize(() -> new SignaturesClient(clientOptions));
+        this.channelSetsClient = Suppliers.memoize(() -> new ChannelSetsClient(clientOptions));
+        this.channelDefaultsClient = Suppliers.memoize(() -> new ChannelDefaultsClient(clientOptions));
     }
 
     public SystemClient system() {
@@ -196,6 +212,22 @@ public class PealClient implements AutoCloseable {
 
     public ReviewClient review() {
         return this.reviewClient.get();
+    }
+
+    public TagsClient tags() {
+        return this.tagsClient.get();
+    }
+
+    public SignaturesClient signatures() {
+        return this.signaturesClient.get();
+    }
+
+    public ChannelSetsClient channelSets() {
+        return this.channelSetsClient.get();
+    }
+
+    public ChannelDefaultsClient channelDefaults() {
+        return this.channelDefaultsClient.get();
     }
 
     /**

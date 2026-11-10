@@ -12,6 +12,7 @@ from .post_outcome import PostOutcome
 from .post_schedule import PostSchedule
 from .post_status import PostStatus
 from .post_target import PostTarget
+from .post_warning import PostWarning
 
 
 class Post(UniversalBaseModel):
@@ -32,7 +33,11 @@ class Post(UniversalBaseModel):
         typing.Optional[PostOrigin], FieldMetadata(alias="scheduledVia"), pydantic.Field(alias="scheduledVia")
     ] = None
     status: PostStatus
+    tag_ids: typing_extensions.Annotated[
+        typing.List[str], FieldMetadata(alias="tagIds"), pydantic.Field(alias="tagIds")
+    ]
     targets: typing.List[PostTarget]
+    warnings: typing.Optional[typing.List[PostWarning]] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

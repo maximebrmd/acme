@@ -22,6 +22,8 @@ module Peal
       field :valid, -> { Internal::Types::Boolean }, optional: false, nullable: false
 
       field :violations, -> { Internal::Types::Array[Peal::Types::ContentViolation] }, optional: false, nullable: false
+
+      field :warnings, -> { Internal::Types::Array[Peal::Types::PostWarning] }, optional: true, nullable: false
     end
   end
 end

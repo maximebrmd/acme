@@ -6,6 +6,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useFormatter, useTranslations } from "next-intl";
 import type { Channel, TopPost } from "peal-contract";
 
+import { channelName } from "#channels/channel-name.ts";
 import { MetricList } from "#components/analytics/metric-list.tsx";
 import { Link } from "#i18n/navigation.ts";
 import { workspacePost } from "#posts/api.ts";
@@ -61,7 +62,7 @@ export const TopPosts = ({ channels, posts, workspaceId }: TopPostsProps) => {
               <span className="font-medium">
                 {channel === undefined
                   ? tPosts("disconnectedChannel")
-                  : channel.handle}
+                  : channelName(channel)}
               </span>
               <span className="text-muted-foreground">
                 {t("top.publishedAt", {

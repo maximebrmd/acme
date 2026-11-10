@@ -38,6 +38,12 @@ class Channel extends JsonSerializableType
     public string $id;
 
     /**
+     * @var ?string $label
+     */
+    #[JsonProperty('label')]
+    public ?string $label;
+
+    /**
      * @var value-of<Platform> $platform
      */
     #[JsonProperty('platform')]
@@ -64,6 +70,7 @@ class Channel extends JsonSerializableType
      *   avatarUrl?: ?string,
      *   connection?: ?value-of<ChannelConnection>,
      *   displayName?: ?string,
+     *   label?: ?string,
      *   tokenExpiresAt?: ?string,
      * } $values
      */
@@ -75,6 +82,7 @@ class Channel extends JsonSerializableType
         $this->displayName = $values['displayName'] ?? null;
         $this->handle = $values['handle'];
         $this->id = $values['id'];
+        $this->label = $values['label'] ?? null;
         $this->platform = $values['platform'];
         $this->status = $values['status'];
         $this->tokenExpiresAt = $values['tokenExpiresAt'] ?? null;

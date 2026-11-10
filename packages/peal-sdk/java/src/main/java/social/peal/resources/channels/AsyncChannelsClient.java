@@ -8,15 +8,20 @@ import java.util.concurrent.CompletableFuture;
 import social.peal.core.ClientOptions;
 import social.peal.core.PealClientHttpResponse;
 import social.peal.core.RequestOptions;
+import social.peal.resources.channels.requests.ChannelUpdate;
 import social.peal.resources.channels.requests.ChooseAccounts;
 import social.peal.resources.channels.requests.ConnectCallback;
 import social.peal.resources.channels.requests.ConnectChannel;
+import social.peal.resources.channels.requests.DisableChannelsRequest;
 import social.peal.resources.channels.requests.DisconnectChannelsRequest;
+import social.peal.resources.channels.requests.EnableChannelsRequest;
+import social.peal.resources.channels.requests.FindChannelsRequest;
 import social.peal.resources.channels.requests.ListChannelsRequest;
 import social.peal.resources.channels.requests.PlatformsChannelsRequest;
 import social.peal.resources.channels.requests.ReconnectChannelsRequest;
 import social.peal.types.Authorization;
 import social.peal.types.Channel;
+import social.peal.types.ChannelPage;
 import social.peal.types.ConnectOutcome;
 import social.peal.types.ConnectablePlatforms;
 import social.peal.types.Platform;
@@ -89,6 +94,65 @@ public class AsyncChannelsClient {
         CompletableFuture<PealClientHttpResponse<List<Channel>>> rawFuture =
                 this.rawClient.list(workspaceId, request, requestOptions);
         CompletableFuture<List<Channel>> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the workspace's channels a page at a time, oldest first: 50 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>platform</code>, <code>status</code> (<code>active</code>, <code>refreshNeeded</code> or <code>disabled</code>) and <code>q</code>, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. <code>counts</code> says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+     */
+    public CompletableFuture<ChannelPage> find(String workspaceId) {
+        CompletableFuture<PealClientHttpResponse<ChannelPage>> rawFuture = this.rawClient.find(workspaceId);
+        CompletableFuture<ChannelPage> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the workspace's channels a page at a time, oldest first: 50 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>platform</code>, <code>status</code> (<code>active</code>, <code>refreshNeeded</code> or <code>disabled</code>) and <code>q</code>, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. <code>counts</code> says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+     */
+    public CompletableFuture<ChannelPage> find(String workspaceId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<ChannelPage>> rawFuture =
+                this.rawClient.find(workspaceId, requestOptions);
+        CompletableFuture<ChannelPage> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the workspace's channels a page at a time, oldest first: 50 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>platform</code>, <code>status</code> (<code>active</code>, <code>refreshNeeded</code> or <code>disabled</code>) and <code>q</code>, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. <code>counts</code> says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+     */
+    public CompletableFuture<ChannelPage> find(String workspaceId, FindChannelsRequest request) {
+        CompletableFuture<PealClientHttpResponse<ChannelPage>> rawFuture = this.rawClient.find(workspaceId, request);
+        CompletableFuture<ChannelPage> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Lists the workspace's channels a page at a time, oldest first: 50 unless <code>limit</code> (at most 100) says otherwise. Every filter given must hold: <code>platform</code>, <code>status</code> (<code>active</code>, <code>refreshNeeded</code> or <code>disabled</code>) and <code>q</code>, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. <code>counts</code> says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's <code>nextCursor</code> as <code>cursor</code>, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+     */
+    public CompletableFuture<ChannelPage> find(
+            String workspaceId, FindChannelsRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<ChannelPage>> rawFuture =
+                this.rawClient.find(workspaceId, request, requestOptions);
+        CompletableFuture<ChannelPage> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);
@@ -399,6 +463,157 @@ public class AsyncChannelsClient {
         CompletableFuture<PealClientHttpResponse<Void>> rawFuture =
                 this.rawClient.disconnect(workspaceId, channelId, request, requestOptions);
         CompletableFuture<Void> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Gives the channel the name the workspace calls it by (<code>label</code>, 60 characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.
+     */
+    public CompletableFuture<Channel> update(String workspaceId, String channelId, ChannelUpdate request) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture =
+                this.rawClient.update(workspaceId, channelId, request);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Gives the channel the name the workspace calls it by (<code>label</code>, 60 characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.
+     */
+    public CompletableFuture<Channel> update(
+            String workspaceId, String channelId, ChannelUpdate request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture =
+                this.rawClient.update(workspaceId, channelId, request, requestOptions);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (<code>channelDisabled</code>) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+     */
+    public CompletableFuture<Channel> disable(String workspaceId, String channelId) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture = this.rawClient.disable(workspaceId, channelId);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (<code>channelDisabled</code>) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+     */
+    public CompletableFuture<Channel> disable(String workspaceId, String channelId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture =
+                this.rawClient.disable(workspaceId, channelId, requestOptions);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (<code>channelDisabled</code>) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+     */
+    public CompletableFuture<Channel> disable(String workspaceId, String channelId, DisableChannelsRequest request) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture =
+                this.rawClient.disable(workspaceId, channelId, request);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (<code>channelDisabled</code>) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+     */
+    public CompletableFuture<Channel> disable(
+            String workspaceId, String channelId, DisableChannelsRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture =
+                this.rawClient.disable(workspaceId, channelId, request, requestOptions);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Turns a channel back on. It posts again at once, or has the status <code>refreshNeeded</code> when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+     */
+    public CompletableFuture<Channel> enable(String workspaceId, String channelId) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture = this.rawClient.enable(workspaceId, channelId);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Turns a channel back on. It posts again at once, or has the status <code>refreshNeeded</code> when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+     */
+    public CompletableFuture<Channel> enable(String workspaceId, String channelId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture =
+                this.rawClient.enable(workspaceId, channelId, requestOptions);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Turns a channel back on. It posts again at once, or has the status <code>refreshNeeded</code> when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+     */
+    public CompletableFuture<Channel> enable(String workspaceId, String channelId, EnableChannelsRequest request) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture =
+                this.rawClient.enable(workspaceId, channelId, request);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Turns a channel back on. It posts again at once, or has the status <code>refreshNeeded</code> when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+     */
+    public CompletableFuture<Channel> enable(
+            String workspaceId, String channelId, EnableChannelsRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Channel>> rawFuture =
+                this.rawClient.enable(workspaceId, channelId, request, requestOptions);
+        CompletableFuture<Channel> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);

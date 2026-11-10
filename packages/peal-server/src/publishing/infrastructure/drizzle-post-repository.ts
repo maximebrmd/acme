@@ -101,6 +101,7 @@ const toStored = (row: PostRow) =>
       id: row.id,
       scheduleRevision: row.scheduleRevision,
       status: postStatusOf(row),
+      tagIds: row.tagIds,
       workspaceId: row.workspaceId,
     }),
   }).pipe(Effect.orDie);
@@ -483,6 +484,7 @@ export const DrizzlePostRepository = Layer.effect(
             ...postColumns(post),
             authorId: Option.getOrNull(post.authorId),
             id: post.id,
+            tagIds: [...post.tagIds],
             workspaceId: post.workspaceId,
           });
 
@@ -563,9 +565,10 @@ export const DrizzlePostRepository = Layer.effect(
           .pipe(Effect.mapError(failed), Effect.asVoid),
       search: (page) =>
         Effect.gen(function* search() {
-          // No channel to be on: no post, and no query.
+          // No channel to be on, or no tag to have: no post, and no query.
           if (
-            Option.exists(page.filter.channelIds, (ids) => ids.length === 0)
+            Option.exists(page.filter.channelIds, (ids) => ids.length === 0) ||
+            Option.exists(page.filter.tagIds, (ids) => ids.length === 0)
           ) {
             return { items: [], next: Option.none() };
           }
@@ -614,6 +617,12 @@ export const DrizzlePostRepository = Layer.effect(
             Effect.mapError(failed),
             Effect.map((rows) => rows.length === 1)
           ),
+      setTags: (postId, tagIds) =>
+        db
+          .update(posts)
+          .set({ tagIds: [...tagIds] })
+          .where(eq(posts.id, postId))
+          .pipe(Effect.mapError(failed), Effect.asVoid),
       setTargets: (postId, targets) =>
         Effect.gen(function* setTargets() {
           const kept = targets.map(({ id }) => id);

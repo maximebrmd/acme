@@ -19,6 +19,7 @@ import type {
   PreferencesRecord,
   ReviewRecord,
   SentReplyRecord,
+  SavedItemsRecord,
   StaffActionRecord,
   UsageRecord,
   UserReviewRecord,
@@ -58,6 +59,8 @@ export interface WorkspaceContent {
   readonly posts: readonly PostRecord[];
   /** Its approval policy, review links, comments and approvals. */
   readonly review: ReviewRecord;
+  /** Its tags, signatures, channel sets and channels' default options. */
+  readonly saved: SavedItemsRecord;
   readonly webhooks: readonly WebhookRecord[];
 }
 

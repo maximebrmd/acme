@@ -292,6 +292,34 @@
     "disconnectDescription": "Peal supprime les jetons qu’il détient pour ce compte {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} et n’y publie plus rien. Vous pourrez le reconnecter plus tard.",
     "cancel": "Annuler",
     "disconnected": "{handle} est déconnecté.",
+    "offHint": "{who, select, you {Rien ne part sur ce canal tant qu’il est désactivé. Choisissez Réactiver pour y publier à nouveau.} other {Rien ne part sur ce canal tant qu’il est désactivé. Un propriétaire ou un administrateur de l’espace de travail peut le réactiver.}}{reconnect, select, yes { L’autorisation de son compte a cessé de fonctionner entre-temps : il faudra le reconnecter une fois le canal réactivé.} other {}}",
+    "rename": {
+      "open": "Renommer",
+      "account": "Renommer {handle}",
+      "title": "Renommer {handle}",
+      "description": "Donnez à ce canal le nom que votre espace de travail lui donne.",
+      "name": "Nom dans Peal",
+      "hint": "Affiché dans Peal seulement, à côté de l’identifiant du compte, et envoyé à aucune plateforme. {max, number} caractères au plus ; laissez vide pour retirer le nom.",
+      "tooLong": "Ce nom dépasse {max, number} caractères.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "clear": "Retirer le nom",
+      "close": "Fermer",
+      "saved": "{handle} s’appelle désormais {label} dans Peal.",
+      "cleared": "{handle} n’a plus de nom propre dans Peal."
+    },
+    "power": {
+      "off": "Désactiver",
+      "offAccount": "Désactiver {handle}",
+      "turningOff": "Désactivation…",
+      "offTitle": "Désactiver {handle} ?",
+      "offDescription": "Rien ne partira sur ce canal tant qu’il ne sera pas réactivé. Les publications qui arrivent à leur heure entre-temps échouent sur ce canal, et partent sur leurs autres canaux. Le canal reste connecté, et compte toujours dans votre abonnement.",
+      "on": "Réactiver",
+      "onAccount": "Réactiver {handle}",
+      "turningOn": "Réactivation…",
+      "turnedOff": "{handle} est désactivé : rien n’y part.",
+      "turnedOn": "{status, select, refreshNeeded {{handle} est réactivé, mais son autorisation a cessé de fonctionner entre-temps : reconnectez le compte.} other {{handle} est réactivé : les publications y partent à nouveau.}}"
+    },
     "connectTitle": "Connecter un compte",
     "connectDescription": "Vous vous connectez sur la plateforme, puis revenez ici.",
     "mastodonTitle": "Mastodon",
@@ -476,6 +504,12 @@
       "drafts": "Brouillons",
       "workspaceLinks": "Publications de {workspace}"
     },
+    "Duplicate": {
+      "open": "Dupliquer",
+      "working": "Duplication…",
+      "done": "Une copie a été créée comme brouillon. Elle n’a pas encore d’heure : choisissez-en une, puis programmez-la.",
+      "failed": "{reason, select, forbidden {Vous ne pouvez pas dupliquer de publications dans cet espace de travail.} notFound {Cette publication n’existe plus.} other {La publication n’a pas pu être dupliquée. Réessayez.}}"
+    },
     "Composer": {
       "newTitle": "Nouvelle publication",
       "editTitle": "Modifier le brouillon",
@@ -561,6 +595,9 @@
         "timeZone": "Choisissez un fuseau horaire dans la liste.",
         "unknownChannels": "Certains de ces canaux ne sont plus connectés.",
         "unknownMedia": "Certaines images ou vidéos ne peuvent plus être jointes.",
+        "unknownTags": "Certaines étiquettes n’existent plus. Choisissez à nouveau celles de la publication.",
+        "unknownChannelSet": "Ce groupe de canaux n’existe plus. Choisissez à nouveau les canaux de la publication.",
+        "unknownSignature": "Cette signature n’existe plus. Choisissez-en une autre.",
         "content": "À corriger avant de programmer :"
       },
       "violation": {
@@ -635,7 +672,7 @@
         "documentTitleInvalid": "Un titre ne peut pas se composer uniquement d’espaces."
       },
       "lookupLoading": "Lecture de la liste sur la plateforme…",
-      "lookupFailed": "{reason, select, reconnect {Reconnectez ce compte pour lire sa liste.} disabled {Ce canal est désactivé : déconnectez-le et connectez à nouveau le compte pour y publier.} rateLimited {La plateforme demande de ralentir. Réessayez dans un instant.} other {La liste n’a pas pu être lue sur la plateforme. Réessayez dans un instant.}}",
+      "lookupFailed": "{reason, select, reconnect {Reconnectez ce compte pour lire sa liste.} disabled {Ce canal est désactivé : réactivez-le, sur la page Canaux, pour y publier.} rateLimited {La plateforme demande de ralentir. Réessayez dans un instant.} other {La liste n’a pas pu être lue sur la plateforme. Réessayez dans un instant.}}",
       "lookupRetry": "Réessayer",
       "lookupNone": "Aucune",
       "lookupUnknown": "Absent de la liste ({value})",
@@ -732,7 +769,7 @@
         "postingAs": "Publication en tant que {nickname} (@{username}).",
         "postingAsNickname": "Publication en tant que {nickname}.",
         "blocked": "{reason, select, postLimit {Ce compte a publié aujourd’hui autant que TikTok le permet : réessayez plus tard.} banned {TikTok a interdit à ce compte de publier.} clientLimit {Aujourd’hui, TikTok n’accepte plus de comptes publiant par ce serveur : réessayez plus tard.} other {Ce compte ne peut pas publier pour le moment : réessayez plus tard.}}",
-        "creatorFailed": "{reason, select, reconnect {Reconnectez ce compte pour lire ses réglages sur TikTok.} disabled {Ce canal est désactivé : déconnectez-le et connectez à nouveau le compte pour y publier.} other {Les réglages du compte n’ont pas pu être lus sur TikTok. Réessayez plus tard : la programmation les vérifie aussi.}}",
+        "creatorFailed": "{reason, select, reconnect {Reconnectez ce compte pour lire ses réglages sur TikTok.} disabled {Ce canal est désactivé : réactivez-le, sur la page Canaux, pour y publier.} other {Les réglages du compte n’ont pas pu être lus sur TikTok. Réessayez plus tard : la programmation les vérifie aussi.}}",
         "turnedOff": "Désactivé dans les réglages TikTok du compte.",
         "brandedNotPrivate": "Un contenu de marque ne peut pas être privé.",
         "labelPromotional": "Votre {kind, select, photo {photo} other {vidéo}} portera la mention « Contenu promotionnel ».",
@@ -766,7 +803,18 @@
       "moveInPast": "Cette heure est passée : la publication reste où elle était.",
       "moveForbidden": "Votre rôle ne vous permet pas de déplacer des publications.",
       "moveHandle": "Déplacer la publication de {time} : {post}",
-      "hour": "Heure"
+      "hour": "Heure",
+      "tagNames": "{count, plural, =0 {Aucune étiquette.} one {Étiquette : {tags}.} other {Étiquettes : {tags}.}}",
+      "newPostAt": "Nouvelle publication le {date} à {time}",
+      "filterTags": "{count, plural, =0 {Étiquettes} other {Étiquettes (#)}}",
+      "filterTagsLabel": "Afficher les publications qui portent l’une de ces étiquettes",
+      "filterChannels": "{count, plural, =0 {Canaux} other {Canaux (#)}}",
+      "filterChannelsLabel": "Afficher les publications qui vont sur l’un de ces canaux",
+      "clearFilters": "Effacer les filtres",
+      "hiddenByFilters": "{count, plural, =0 {Aucune publication masquée par les filtres} one {# publication masquée par les filtres} other {# publications masquées par les filtres}}"
+    },
+    "Links": {
+      "suspicious": "Ceci ne ressemble pas à un lien qui fonctionne : {link}"
     }
   },
   "Drafts": {
@@ -780,7 +828,8 @@
     "noText": "Pas encore de texte",
     "channels": "{count, plural, =0 {Aucun canal pour l’instant} one {# canal} other {# canaux}}",
     "media": "{count, plural, =0 {Aucune image ni vidéo} one {# image ou vidéo} other {# images ou vidéos}}",
-    "newPost": "Nouvelle publication"
+    "newPost": "Nouvelle publication",
+    "tags": "Étiquettes"
   },
   "PostDetail": {
     "partsTitle": "Parties",
@@ -1093,7 +1142,7 @@
       "WebhookEndpointDisabled": "{reason, select, gone {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : il a répondu 410 Gone, ce qui demande de ne plus rien lui livrer.} other {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : toutes les livraisons échouaient depuis {days, number} jours. Corrigez le destinataire, puis réactivez-le.}}",
       "TrialEndingOver": "L’essai {plan} de {workspace} prend fin le {endsAt, date, long}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement. Il dépasse ce que permet l’offre gratuite ({over}) : à partir de ce jour, rien n’est programmé ni publié tant qu’il n’y est pas revenu."
     },
-    "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} partsNotSent {ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.} repliesNotAllowed {sa première partie est en ligne, et X n’a pas laissé l’application de ce serveur publier les suivantes en réponse : en accès libre-service, une application ne peut répondre qu’à une publication dont l’auteur a mentionné ou cité le compte. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur X, en réponse à la dernière partie en ligne.} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Réactivez le canal, sur la page Canaux, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} partsNotSent {ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.} repliesNotAllowed {sa première partie est en ligne, et X n’a pas laissé l’application de ce serveur publier les suivantes en réponse : en accès libre-service, une application ne peut répondre qu’à une publication dont l’auteur a mentionné ou cité le compte. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur X, en réponse à la dernière partie en ligne.} other {{reason}}}",
     "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} webhooks {Ouvrir les webhooks} inbox {Ouvrir les commentaires} other {Ouvrir les canaux}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # non lue} other {Notifications, # non lues}}",
@@ -1450,7 +1499,10 @@
       "invitations": "Invitations",
       "apiKeys": "Clés d’API",
       "webhooks": "Webhooks",
-      "partner": "Partenaire"
+      "partner": "Partenaire",
+      "tags": "Étiquettes",
+      "signatures": "Signatures",
+      "channelSets": "Groupes de canaux"
     },
     "general": {
       "title": "Nom",
@@ -1777,6 +1829,12 @@
       "exported": "Sur ce serveur, il liste aussi les connexions ayant créé du contenu, que la loi française impose à un hébergeur de conserver, avec ce qui reste une fois votre compte fermé.",
       "identification": "Comme la loi française l’impose à un hébergeur, Peal conserve à part, pour les seules autorités judiciaires, vos nom et adresse e-mail pendant {identityYears, plural, one {# an} other {# ans}}, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant {accountYears, plural, one {# an} other {# ans}}, puis les supprime.",
       "connections": "Ce serveur conservait ce que la loi française impose à un hébergeur, et ne le fait plus : les connexions ayant créé du contenu, conservées jusqu’ici, le restent {connectionYears, plural, one {# an} other {# ans}} à compter de chacune, à part, pour les seules autorités judiciaires, puis sont supprimées."
+    },
+    "timeFormat": {
+      "title": "Format de l’heure",
+      "description": "La façon dont ce navigateur écrit les heures, sur le calendrier et partout où une publication a une heure. Le choix reste dans ce navigateur : vos autres appareils gardent le leur.",
+      "legend": "Format de l’heure",
+      "option": "{format, select, auto {Automatique, comme votre langue l’écrit ({example})} h12 {12 heures ({example})} other {24 heures ({example})}}"
     }
   },
   "Staff": {
@@ -2322,6 +2380,118 @@
       "loadFailed": "Le paramètre n’a pas pu être chargé.",
       "readOnly": "Les propriétaires et les administrateurs le choisissent."
     }
+  },
+  "SavedItems": {
+    "delete": "Supprimer",
+    "deleting": "Suppression…",
+    "errors": {
+      "forbidden": "Votre rôle ne le permet pas.",
+      "invalid": "{kind, select, channelSet {Les options gardées pour l’un de ces canaux ne sont pas celles de sa plateforme. Choisissez à nouveau les canaux.} other {Impossible d’enregistrer cela tel quel.}}",
+      "nameTaken": "{kind, select, tag {L’espace de travail a déjà une étiquette de ce nom.} signature {L’espace de travail a déjà une signature de ce nom.} other {L’espace de travail a déjà un groupe de canaux de ce nom.}}",
+      "notFound": "{kind, select, tag {Cette étiquette n’existe plus.} signature {Cette signature n’existe plus.} other {Ce groupe de canaux n’existe plus.}}",
+      "tooMany": "{kind, select, tag {L’espace de travail a {allowed, number} étiquettes, le maximum. Supprimez-en une avant d’en ajouter une autre.} signature {L’espace de travail a {allowed, number} signatures, le maximum. Supprimez-en une avant d’en ajouter une autre.} other {L’espace de travail a {allowed, number} groupes de canaux, le maximum. Supprimez-en un avant d’en ajouter un autre.}}",
+      "unknown": "Une erreur est survenue. Réessayez.",
+      "unknownChannels": "Certains de ces canaux ne sont plus connectés. Choisissez à nouveau les canaux."
+    }
+  },
+  "Tags": {
+    "description": "Les étiquettes classent les publications de l’espace de travail : par campagne, par sujet, par client. Une étiquette a un nom et une couleur, s’affiche sur la publication dans les brouillons et sur le calendrier, et filtre le calendrier.",
+    "rules": "Un espace de travail a au plus {max, number} étiquettes, et une publication en a au plus {perPost, number}.",
+    "readOnly": "Vous pouvez consulter les étiquettes. En ajouter, en renommer ou en supprimer une demande la permission de modifier les publications.",
+    "listTitle": "Étiquettes",
+    "empty": "L’espace de travail n’a pas encore d’étiquette.",
+    "name": "Nom",
+    "nameHint": "{max, number} caractères au plus. Aucune autre étiquette de l’espace de travail ne porte le même nom.",
+    "colour": "Couleur",
+    "colourName": "{colour, select, gray {Gris} red {Rouge} orange {Orange} amber {Ambre} green {Vert} teal {Sarcelle} blue {Bleu} purple {Violet} pink {Rose} other {{colour}}}",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saved": "L’étiquette est enregistrée.",
+    "deleteTitle": "Supprimer l’étiquette « {name} » ?",
+    "deleteDescription": "L’étiquette est retirée de toutes les publications qui la portent. Les publications gardent tout le reste : leur texte, leurs médias, leurs canaux et leur heure. C’est définitif.",
+    "deleted": "L’étiquette est supprimée.",
+    "createTitle": "Ajouter une étiquette",
+    "create": "Ajouter l’étiquette",
+    "creating": "Ajout…",
+    "created": "L’étiquette est ajoutée.",
+    "postTitle": "Étiquettes",
+    "postEmpty": "Aucune étiquette.",
+    "postEdit": "Choisir les étiquettes",
+    "postCreate": "Nouvelle étiquette",
+    "postFull": "Une publication a au plus {max, number} étiquettes. Décochez-en une pour en choisir une autre."
+  },
+  "Signatures": {
+    "description": "Une signature est un texte que l’espace de travail garde pour terminer ses publications : une formule de fin, une mention obligatoire, une série de hashtags. Insérez-en une en écrivant une publication, ou faites-en une signature par défaut : une signature par défaut est ajoutée aux nouvelles publications à leur premier enregistrement. La signature par défaut d’une plateforme ou d’un canal y remplace celle de l’espace de travail.",
+    "rules": "Une fois ajoutée, une signature est du texte de la publication comme un autre : elle compte dans la limite de chaque plateforme, et modifier la signature ensuite laisse telles quelles les publications qui la contiennent. Un espace de travail a au plus {max, number} signatures.",
+    "readOnly": "Vous pouvez consulter les signatures. En ajouter, en modifier ou en supprimer une demande la permission de modifier les publications.",
+    "listTitle": "Signatures",
+    "empty": "L’espace de travail n’a pas encore de signature.",
+    "name": "Nom",
+    "nameHint": "Seuls les membres le voient : il distingue cette signature des autres.",
+    "text": "Texte",
+    "textCount": "{count, number} caractères sur {max, number}",
+    "scope": "À quoi elle sert",
+    "scopeOption": "{scope, select, workspace {Tous les canaux de l’espace de travail} platform {Les canaux d’une plateforme} other {Un seul canal}}",
+    "platform": "Plateforme",
+    "choosePlatform": "Choisissez une plateforme",
+    "channel": "Canal",
+    "chooseChannel": "Choisissez un canal",
+    "noChannels": "L’espace de travail n’a pas encore de canal connecté.",
+    "isDefault": "Ajouter par défaut aux nouvelles publications",
+    "isDefaultHint": "L’espace de travail, chaque plateforme et chaque canal ont une seule signature par défaut : en faire celle-ci remplace celle qui l’était.",
+    "scopeWorkspace": "Pour tous les canaux de l’espace de travail",
+    "scopePlatform": "Pour les canaux {platform}",
+    "scopeChannel": "Pour {handle} sur {platform}",
+    "scopeChannelGone": "Pour un canal qui n’est plus connecté",
+    "defaultBadge": "Par défaut",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saved": "La signature est enregistrée.",
+    "deleteTitle": "Supprimer la signature « {name} » ?",
+    "deleteDescription": "Les publications qui contiennent déjà son texte le gardent. C’est définitif.",
+    "deleted": "La signature est supprimée.",
+    "createTitle": "Ajouter une signature",
+    "create": "Ajouter la signature",
+    "creating": "Ajout…",
+    "created": "La signature est ajoutée.",
+    "menuTrigger": "Signature",
+    "menuAll": "Ajouter sous le texte de tous les canaux",
+    "menuOwn": "Ajouter sous le texte propre à un canal",
+    "addedCheck": "La publication a été enregistrée comme brouillon, avec la signature par défaut sous son texte. Rien n’est encore programmé : vérifiez le texte et le nombre de caractères, puis choisissez de nouveau {action}.",
+    "addDefault": "{count, plural, one {Ajouter la signature par défaut à l’enregistrement de la publication} other {Ajouter les signatures par défaut à l’enregistrement de la publication}}",
+    "addDefaultHint": "{count, plural, one {{names} est placée sous le texte au premier enregistrement de la publication. Vous voyez alors le texte tel qu’il partira, et pouvez encore le modifier.} other {{names} sont placées sous le texte, chacune sur les canaux auxquels elle est destinée, au premier enregistrement de la publication. Vous voyez alors les textes tels qu’ils partiront, et pouvez encore les modifier.}}"
+  },
+  "ChannelSets": {
+    "description": "Un groupe de canaux est une sélection de canaux de l’espace de travail gardée sous un nom, avec les options que les publications y prennent. Partez d’un groupe pour écrire une publication au lieu de cocher chaque fois les mêmes canaux.",
+    "rules": "Un groupe garde les canaux tels qu’ils ont été choisis : un canal déconnecté depuis est laissé de côté dans les publications qui partent du groupe, et l’éditeur le signale. Un espace de travail a au plus {max, number} groupes.",
+    "readOnly": "Vous pouvez consulter les groupes de canaux. En ajouter, en modifier ou en supprimer un demande la permission de modifier les publications.",
+    "listTitle": "Groupes de canaux",
+    "empty": "L’espace de travail n’a pas encore de groupe de canaux.",
+    "name": "Nom",
+    "channels": "Canaux",
+    "channelsHint": "Un canal au moins, {max, number} au plus.",
+    "channelsOf": "Canaux de {name}",
+    "noChannels": "L’espace de travail n’a pas encore de canal connecté.",
+    "noneLeft": "Plus aucun de ses canaux n’est connecté.",
+    "missing": "{count, plural, one {# canal de ce groupe n’est plus connecté : les publications qui partent du groupe s’en passent.} other {# canaux de ce groupe ne sont plus connectés : les publications qui partent du groupe s’en passent.}}",
+    "editDrops": "{count, plural, one {L’enregistrement retire le canal qui n’est plus connecté.} other {L’enregistrement retire les # canaux qui ne sont plus connectés.}}",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saved": "Le groupe de canaux est enregistré.",
+    "deleteTitle": "Supprimer le groupe de canaux « {name} » ?",
+    "deleteDescription": "Ses canaux restent connectés, et les publications parties de ce groupe gardent leurs canaux. C’est définitif.",
+    "deleted": "Le groupe de canaux est supprimé.",
+    "createTitle": "Ajouter un groupe de canaux",
+    "create": "Ajouter le groupe de canaux",
+    "creating": "Ajout…",
+    "created": "Le groupe de canaux est ajouté.",
+    "pickerTrigger": "Utiliser un groupe de canaux",
+    "pickerLabel": "Sélectionner les canaux d’un groupe",
+    "pickerItem": "{name} ({count, plural, =0 {aucun canal} one {# canal} other {# canaux}})",
+    "pickerDropped": "{count, plural, one {# canal de « {name} » n’est plus connecté et a été laissé de côté.} other {# canaux de « {name} » ne sont plus connectés et ont été laissés de côté.}}",
+    "saveSelection": "Enregistrer la sélection comme groupe",
+    "saveSelectionTitle": "Enregistrer la sélection comme groupe de canaux",
+    "saveSelectionDescription": "{count, plural, one {Le canal coché, avec les options remplies pour lui, est gardé sous ce nom.} other {Les # canaux cochés, avec les options remplies pour eux, sont gardés sous ce nom.}}"
   },
   "Inbox": {
     "open": "Boîte de réception",

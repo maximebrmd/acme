@@ -22,6 +22,7 @@ import {
 import { useMemo, useState } from "react";
 import { enUS, fr } from "react-day-picker/locale";
 
+import { useTimeOptions } from "#i18n/hour-cycle.ts";
 import {
   browserTimeZone,
   firstDayOfWeek,
@@ -74,6 +75,7 @@ export const ScheduleFields = ({
   const t = useTranslations("Posts.Composer");
   const format = useFormatter();
   const locale = useLocale();
+  const timeOptions = useTimeOptions();
   const [open, setOpen] = useState(false);
 
   const zones = useMemo(
@@ -167,6 +169,7 @@ export const ScheduleFields = ({
                 dateStyle: "full",
                 timeStyle: "short",
                 timeZone: value.timeZone,
+                ...timeOptions,
               }),
             }),
         })}

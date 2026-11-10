@@ -63,6 +63,12 @@ class PostValidation extends JsonSerializableType
     public array $violations;
 
     /**
+     * @var ?array<PostWarning> $warnings
+     */
+    #[JsonProperty('warnings'), ArrayType([PostWarning::class])]
+    public ?array $warnings;
+
+    /**
      * @param array{
      *   awaitsApproval: bool,
      *   channels: array<ChannelPreview>,
@@ -73,6 +79,7 @@ class PostValidation extends JsonSerializableType
      *   violations: array<ContentViolation>,
      *   planLimit?: ?PlanShortfall,
      *   schedule?: ?value-of<ScheduleCheck>,
+     *   warnings?: ?array<PostWarning>,
      * } $values
      */
     public function __construct(
@@ -87,6 +94,7 @@ class PostValidation extends JsonSerializableType
         $this->unknownMedia = $values['unknownMedia'];
         $this->valid = $values['valid'];
         $this->violations = $values['violations'];
+        $this->warnings = $values['warnings'] ?? null;
     }
 
     /**

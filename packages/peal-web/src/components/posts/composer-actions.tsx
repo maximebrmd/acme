@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "peal-ui/components/dialog";
+import type { ReactNode } from "react";
 
 /** What the composer is doing. */
 export type ComposerAction =
@@ -31,6 +32,8 @@ interface ComposerActionsProps {
   readonly canSave: boolean;
   readonly canSchedule: boolean;
   readonly canUnschedule: boolean;
+  /** Another action shown with these, such as copying the post. */
+  readonly extra?: ReactNode;
   readonly onAction: (action: ComposerAction) => void;
   /** Whether every channel's platform takes the post as it is. */
   readonly publishable: boolean;
@@ -89,6 +92,7 @@ export const ComposerActions = ({
   canSave,
   canSchedule,
   canUnschedule,
+  extra,
   onAction,
   publishable,
   willWait,
@@ -146,6 +150,7 @@ export const ComposerActions = ({
           {busy === "unschedule" ? t("unscheduling") : t("unschedule")}
         </Button>
       ) : null}
+      {extra}
       {canDiscard ? <DiscardDraft busy={busy} onAction={onAction} /> : null}
       {canCancel ? (
         <Dialog>

@@ -33,6 +33,11 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
+	400: func(apiError *core.APIError) error {
+		return &BadRequestError{
+			APIError: apiError,
+		}
+	},
 	402: func(apiError *core.APIError) error {
 		return &PaymentRequiredError{
 			APIError: apiError,
@@ -45,11 +50,6 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 	},
 	502: func(apiError *core.APIError) error {
 		return &BadGatewayError{
-			APIError: apiError,
-		}
-	},
-	400: func(apiError *core.APIError) error {
-		return &BadRequestError{
 			APIError: apiError,
 		}
 	},

@@ -30,6 +30,7 @@ public class ChooseAccountsTest : BaseMockServerTest
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",
+                "label": "label",
                 "platform": "x",
                 "status": {
                   "_tag": "active"
@@ -42,6 +43,7 @@ public class ChooseAccountsTest : BaseMockServerTest
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",
+                "label": "label",
                 "platform": "x",
                 "status": {
                   "_tag": "active"
@@ -99,6 +101,7 @@ public class ChooseAccountsTest : BaseMockServerTest
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",
+                "label": "label",
                 "platform": "x",
                 "status": {
                   "_tag": "active"

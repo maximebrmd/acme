@@ -23,8 +23,13 @@ pub struct Post {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scheduled_via: Option<PostOrigin>,
     pub status: PostStatus,
+    #[serde(rename = "tagIds")]
+    #[serde(default)]
+    pub tag_ids: Vec<String>,
     #[serde(default)]
     pub targets: Vec<PostTarget>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub warnings: Option<Vec<PostWarning>>,
 }
 
 impl Post {
@@ -45,7 +50,9 @@ pub struct PostBuilder {
     scheduled_by: Option<String>,
     scheduled_via: Option<PostOrigin>,
     status: Option<PostStatus>,
+    tag_ids: Option<Vec<String>>,
     targets: Option<Vec<PostTarget>>,
+    warnings: Option<Vec<PostWarning>>,
 }
 
 impl PostBuilder {
@@ -94,8 +101,18 @@ impl PostBuilder {
         self
     }
 
+    pub fn tag_ids(mut self, value: Vec<String>) -> Self {
+        self.tag_ids = Some(value);
+        self
+    }
+
     pub fn targets(mut self, value: Vec<PostTarget>) -> Self {
         self.targets = Some(value);
+        self
+    }
+
+    pub fn warnings(mut self, value: Vec<PostWarning>) -> Self {
+        self.warnings = Some(value);
         self
     }
 
@@ -104,6 +121,7 @@ impl PostBuilder {
     /// - [`content`](PostBuilder::content)
     /// - [`id`](PostBuilder::id)
     /// - [`status`](PostBuilder::status)
+    /// - [`tag_ids`](PostBuilder::tag_ids)
     /// - [`targets`](PostBuilder::targets)
     pub fn build(self) -> Result<Post, BuildError> {
         Ok(Post {
@@ -120,9 +138,13 @@ impl PostBuilder {
             status: self
                 .status
                 .ok_or_else(|| BuildError::missing_field("status"))?,
+            tag_ids: self
+                .tag_ids
+                .ok_or_else(|| BuildError::missing_field("tag_ids"))?,
             targets: self
                 .targets
                 .ok_or_else(|| BuildError::missing_field("targets"))?,
+            warnings: self.warnings,
         })
     }
 }

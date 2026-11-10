@@ -115,8 +115,13 @@ module Peal
 
       # Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform
       # takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text,
-      # media and options are checked against each platform's rules when it is scheduled, not before. Needs post:create,
-      # channel:read, and media:read when it shows media.
+      # media and options are checked against each platform's rules when it is scheduled, not before. It may name
+      # channel sets (`channelSets`, by id or name), whose connected channels it is for as well, with the options each
+      # set keeps; a channel of a set that is no longer connected is left out, and the answer says so (`warnings`). A
+      # channel on which it gives no options takes the channel's default options, if it has some. With
+      # `defaultSignatures`, each channel's default signature goes under its text, and `signatureId` puts one signature
+      # under it on every channel: a signature is then text of the post, never added under a text that already ends with
+      # it. Needs post:create, channel:read, and media:read when it shows media.
       #
       # @param request_options [Hash]
       # @param params [Peal::Types::PostDraft]
@@ -179,15 +184,15 @@ module Peal
       # Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says
       # otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome`
       # (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that
-      # channel), `platform` (posts with a target on a connected channel of that platform), `from` (included) and `to`
-      # (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or
-      # `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or
-      # by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's
-      # `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page
-      # ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort,
-      # or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and
-      # failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and
-      # channel:read.
+      # channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under
+      # that tag), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a
+      # time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation
+      # (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which
+      # list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the
+      # next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat
+      # or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its
+      # targets, their status, address and failure reason, and `channels` gives the platform of each channel the page
+      # names. Needs post:read and channel:read.
       #
       # @param request_options [Hash]
       # @param params [Hash]
@@ -207,6 +212,7 @@ module Peal
       # @option params [Peal::Types::Platform, nil] :platform
       # @option params [Peal::Types::PostSort, nil] :sort
       # @option params [Peal::Types::PostStatus, nil] :status
+      # @option params [String, nil] :tag_id
       # @option params [String, nil] :to
       #
       # @example
@@ -226,6 +232,7 @@ module Peal
         query_params["platform"] = params[:platform] if params.key?(:platform)
         query_params["sort"] = params[:sort] if params.key?(:sort)
         query_params["status"] = params[:status] if params.key?(:status)
+        query_params["tagId"] = params[:tag_id] if params.key?(:tag_id)
         query_params["to"] = params[:to] if params.key?(:to)
 
         request = Peal::Internal::JSON::Request.new(
@@ -254,25 +261,31 @@ module Peal
       end
 
       # Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at
-      # once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each
-      # platform's limits on text, media and options, the account's own, the plan's), and answers every violation at
-      # once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one
-      # is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it
-      # publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time,
-      # cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters,
-      # such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers
-      # the post the first request made, as it now stands, and makes no other; the same key with another body is refused
-      # (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as
-      # digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its
-      # time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says `allowDuplicate:
-      # true`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless
-      # `wait` says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the
-      # answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target
-      # `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time
-      # runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET
-      # …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs
-      # post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope
-      # workspace:publish.
+      # once, or `at` an instant, kept with its IANA time zone. Instead of listing channels, or beside them, it may name
+      # channel sets (`channelSets`, by id or name): it goes to their connected channels, with the options each set
+      # keeps where it gives none, and a channel of a set that is no longer connected is left out and told in the
+      # answer's `warnings`, never silently; a set none of whose channels is left, with no other channel, is refused
+      # (UnknownChannels). A channel on which it gives no options takes the channel's default options.
+      # `defaultSignatures` puts each channel's default signature under its text, and `signatureId` one signature on
+      # every channel: signatures are text of the post, counted against each platform's limit, and never added twice. It
+      # goes through every rule scheduling a draft does (each platform's limits on text, media and options, the
+      # account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a
+      # workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it
+      # keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and
+      # cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an
+      # `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request
+      # safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as
+      # it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers
+      # PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose
+      # content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a
+      # request made twice by mistake would be, unless it says `allowDuplicate: true`; scheduling a draft is not
+      # checked. It answers as soon as the post is made, while it publishes, unless `wait` says to wait for the outcome:
+      # up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every
+      # channel has its result (`status` `finished`, with its `outcome`, each target `published` with its `permalink` or
+      # `failed` with its `failureReason`), or the post as it stands when the time runs out, some targets still
+      # `pending` or `publishing`: it goes on publishing, and `GET …/posts/{postId}/outcome` waits for the rest. The
+      # answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows
+      # media; an OAuth client needs the scope workspace:publish.
       #
       # @param request_options [Hash]
       # @param params [Peal::Posts::Types::NewPost]
@@ -612,8 +625,9 @@ module Peal
         end
       end
 
-      # Replaces a draft's content, channels and options: options left out are removed. A post that is no longer a draft
-      # is a conflict. Needs post:update, channel:read, and media:read when it shows media.
+      # Replaces a draft's content, channels and options: options left out are removed. Its tags are replaced by
+      # `tagIds` when given, and kept otherwise. A post that is no longer a draft is a conflict. Needs post:update,
+      # channel:read, and media:read when it shows media.
       #
       # @param request_options [Hash]
       # @param params [Peal::Types::PostDraft]
@@ -808,6 +822,109 @@ module Peal
         code = response.code.to_i
         if code.between?(200, 299)
           Peal::Internal::Types::Utils.coerce(Internal::Types::Array[Peal::Types::PublicationAttempt], (response.body.to_s.empty? ? nil : JSON.parse(response.body, symbolize_names: true)))
+        else
+          error_class = Peal::Errors::ResponseError.subclass_for_code(code)
+          error_types = {
+            401 => Peal::Types::UnauthenticatedEncoded
+          }
+          error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
+          raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
+        end
+      end
+
+      # Files a post under these tags of the workspace, 10 at most, instead of those it had; an empty list takes them
+      # all off. Tags say nothing to the platforms, so a post takes them whatever its status, sent or not. Needs
+      # post:update.
+      #
+      # @param request_options [Hash]
+      # @param params [Peal::Posts::Types::PostTags]
+      # @option request_options [String] :base_url
+      # @option request_options [Hash{String => Object}] :additional_headers
+      # @option request_options [Hash{String => Object}] :additional_query_parameters
+      # @option request_options [Hash{String => Object}] :additional_body_parameters
+      # @option request_options [Integer] :timeout_in_seconds
+      # @option params [String] :workspace_id
+      # @option params [String] :post_id
+      #
+      # @example
+      #   client.posts.tag(
+      #     workspace_id: "workspaceId",
+      #     post_id: "postId",
+      #     tag_ids: ["tagIds"]
+      #   )
+      #
+      # @return [Peal::Types::Post]
+      def tag(request_options: {}, **params)
+        params = Peal::Internal::Types::Utils.normalize_keys(params)
+        request_data = Peal::Posts::Types::PostTags.new(params).to_h
+        non_body_param_names = %w[workspaceId postId]
+        body = request_data.except(*non_body_param_names)
+
+        request = Peal::Internal::JSON::Request.new(
+          base_url: request_options[:base_url],
+          method: "PUT",
+          path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/posts/#{URI.encode_uri_component(params[:post_id].to_s)}/tags",
+          body: body,
+          request_options: request_options
+        )
+        begin
+          response = @client.send(request)
+        rescue Net::HTTPRequestTimeout
+          raise Peal::Errors::TimeoutError
+        end
+        code = response.code.to_i
+        if code.between?(200, 299)
+          (response.body.to_s.empty? ? nil : Peal::Types::Post.load(response.body))
+        else
+          error_class = Peal::Errors::ResponseError.subclass_for_code(code)
+          error_types = {
+            401 => Peal::Types::UnauthenticatedEncoded
+          }
+          error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
+          raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
+        end
+      end
+
+      # Makes a new draft that says what the post says, whatever the post's status: its text, its media, its channels
+      # with their text and options, and its tags. What the workspace no longer has is left out rather than refused: a
+      # channel disconnected since, with the text the post had there, media deleted since, a tag deleted since. The copy
+      # has no time, and its author is whoever asked; the post itself is not changed. Needs post:read and post:create,
+      # and channel:read.
+      #
+      # @param request_options [Hash]
+      # @param params [Hash]
+      # @option request_options [String] :base_url
+      # @option request_options [Hash{String => Object}] :additional_headers
+      # @option request_options [Hash{String => Object}] :additional_query_parameters
+      # @option request_options [Hash{String => Object}] :additional_body_parameters
+      # @option request_options [Integer] :timeout_in_seconds
+      # @option params [String] :workspace_id
+      # @option params [String] :post_id
+      #
+      # @example
+      #   client.posts.duplicate(
+      #     workspace_id: "workspaceId",
+      #     post_id: "postId"
+      #   )
+      #
+      # @return [Peal::Types::Post]
+      def duplicate(request_options: {}, **params)
+        params = Peal::Internal::Types::Utils.normalize_keys(params)
+        request = Peal::Internal::JSON::Request.new(
+          base_url: request_options[:base_url],
+          method: "POST",
+          path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/posts/#{URI.encode_uri_component(params[:post_id].to_s)}/duplicate",
+          request_options: request_options,
+          max_retries: 0
+        )
+        begin
+          response = @client.send(request)
+        rescue Net::HTTPRequestTimeout
+          raise Peal::Errors::TimeoutError
+        end
+        code = response.code.to_i
+        if code.between?(200, 299)
+          (response.body.to_s.empty? ? nil : Peal::Types::Post.load(response.body))
         else
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {

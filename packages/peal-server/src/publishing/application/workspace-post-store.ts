@@ -7,6 +7,7 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   AuthoredPostRecord,
   PostRecord,
+  SavedItemsRecord,
 } from "#shared/application/personal-data.ts";
 import type { PostId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
@@ -57,7 +58,17 @@ export class WorkspacePostStore extends Context.Service<
     readonly exportAll: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly PostRecord[], DatabaseError>;
-    /** Deletes the workspace's posts, their targets and their history. */
+    /**
+     * What the workspace saved to write and file its posts, oldest first:
+     * its tags, signatures, channel sets and channels' default options.
+     */
+    readonly exportSaved: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<SavedItemsRecord, DatabaseError>;
+    /**
+     * Deletes the workspace's posts, their targets and their history, and
+     * what it saved to write and file them.
+     */
     readonly deleteAll: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;

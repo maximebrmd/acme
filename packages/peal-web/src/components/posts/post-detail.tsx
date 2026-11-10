@@ -48,9 +48,12 @@ import {
 import { Input } from "peal-ui/components/input";
 import { Label } from "peal-ui/components/label";
 import { useCallback, useId, useState, useTransition } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 
+import { channelName as nameOfChannel } from "#channels/channel-name.ts";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
+import { PostTagsField } from "#components/posts/post-tags-field.tsx";
 import { useRefreshWhileVisible } from "#notices/use-refresh-while-visible.ts";
 import {
   confirmTarget,
@@ -374,7 +377,7 @@ export const TargetView = ({
     channel === undefined
       ? tPosts("disconnectedChannel")
       : tPosts("Composer.channelDetail", {
-          handle: channel.handle,
+          handle: nameOfChannel(channel),
           platform,
         });
 
@@ -479,6 +482,10 @@ interface PostDetailViewProps {
   readonly channels: readonly Channel[];
   readonly onRequest: (request: TargetRequest) => void;
   readonly post: Post;
+  /** What a member may do with the whole post, such as copying it. */
+  readonly actions?: ReactNode;
+  /** The post's tags, with what changes them for a member who may. */
+  readonly tags?: ReactNode;
   /** The signed-in user, named in how the post came to be. */
   readonly viewerId: string | null;
 }
@@ -489,12 +496,14 @@ interface PostDetailViewProps {
  * check.
  */
 export const PostDetailView = ({
+  actions,
   attempts,
   busy,
   canAct,
   channels,
   onRequest,
   post,
+  tags,
   viewerId,
 }: PostDetailViewProps) => {
   const t = useTranslations("PostDetail");
@@ -524,6 +533,7 @@ export const PostDetailView = ({
           )}
         </div>
         <PostOrigins post={post} viewerId={viewerId} />
+        {actions === undefined ? null : <CardAction>{actions}</CardAction>}
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-6">
@@ -561,6 +571,7 @@ export const PostDetailView = ({
               </ol>
             )}
           </section>
+          {tags}
           <section
             aria-labelledby="post-channels"
             className="flex flex-col gap-3"
@@ -613,18 +624,26 @@ const failureText = (t: Translate, tag: string | undefined) => {
 // While the post goes out, how often the page asks how it is going.
 const refreshEvery = 5000;
 
+// The post is read again once its tags changed: nothing to keep here.
+const noChange = () => {
+  // The posts queries refresh.
+};
+
 /**
  * The detail of a post that went out, with what members with post:schedule
  * can do about each channel: repost it, or say what they found when Peal
  * could not tell. It updates while the post is publishing.
  */
 export const PostDetail = ({
+  actions,
   channels,
   permissions,
   post,
   userId,
   workspaceId,
 }: {
+  /** What a member may do with the whole post, such as copying it. */
+  readonly actions?: ReactNode;
   readonly channels: readonly Channel[];
   readonly permissions: readonly Permission[];
   readonly post: Post;
@@ -660,7 +679,7 @@ export const PostDetail = ({
     return channel === undefined
       ? tPosts("disconnectedChannel")
       : tPosts("Composer.channelDetail", {
-          handle: channel.handle,
+          handle: nameOfChannel(channel),
           platform: tPosts("platform", { platform: channel.platform }),
         });
   };
@@ -712,11 +731,22 @@ export const PostDetail = ({
 
   return (
     <PostDetailView
+      actions={actions}
       attempts={AsyncResult.isSuccess(attempts) ? attempts.value : undefined}
       busy={busy}
       canAct={permissions.includes("post:schedule")}
       channels={channels}
       post={post}
+      tags={
+        <PostTagsField
+          disabled={false}
+          permissions={permissions}
+          savedOn={post.id}
+          tagIds={post.tagIds}
+          workspaceId={workspaceId}
+          onChange={noChange}
+        />
+      }
       viewerId={userId}
       onRequest={handleRequest}
     />

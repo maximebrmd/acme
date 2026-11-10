@@ -138,6 +138,7 @@ export const ContextRecordsLive = Layer.effect(
           media: media.exportWorkspace(workspaceId),
           posts: posts.exportWorkspace(workspaceId),
           review: reviews.exportWorkspace(workspaceId),
+          saved: posts.exportSaved(workspaceId),
           webhooks: webhooks.exportWorkspace(workspaceId),
         }),
       holdIdentification: (record, closedAt) => legal.hold(record, closedAt),

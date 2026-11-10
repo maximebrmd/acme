@@ -21,6 +21,7 @@ import { LegalHoldNotice } from "#components/account/legal-hold-notice.tsx";
 import { PasswordForm } from "#components/account/password-form.tsx";
 import { ProfileForm } from "#components/account/profile-form.tsx";
 import { SessionsList } from "#components/account/sessions-list.tsx";
+import { TimeFormatForm } from "#components/account/time-format-form.tsx";
 import { redirect } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
 
@@ -83,6 +84,12 @@ const AccountPage = async ({ params }: PageProps<"/[locale]/app/account">) => {
         description={t("language.description")}
       >
         <LanguageForm saved={user.locale} />
+      </Section>
+      <Section
+        title={t("timeFormat.title")}
+        description={t("timeFormat.description")}
+      >
+        <TimeFormatForm />
       </Section>
       <Section
         title={t("password.title")}

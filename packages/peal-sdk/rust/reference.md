@@ -501,6 +501,119 @@ async fn main() {
 </dl>
 </details>
 
+<details><summary><code>client.channels.<a href="/src/api/resources/channels/client.rs">find</a>(workspace_id: String, cursor: Option&lt;Option&lt;String&gt;&gt;, limit: Option&lt;Option&lt;String&gt;&gt;, platform: Option&lt;Option&lt;Platform&gt;&gt;, q: Option&lt;Option&lt;String&gt;&gt;, status: Option&lt;Option&lt;ChannelStatusName&gt;&gt;) -> Result&lt;ChannelPage, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's channels a page at a time, oldest first: 50 unless `limit` (at most 100) says otherwise. Every filter given must hold: `platform`, `status` (`active`, `refreshNeeded` or `disabled`) and `q`, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. `counts` says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's `nextCursor` as `cursor`, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channels
+        .find(
+            &"workspaceId".to_string(),
+            &FindQueryRequest {
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**platform:** `Option<Platform>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**q:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `Option<ChannelStatusName>` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.channels.<a href="/src/api/resources/channels/client.rs">platforms</a>(workspace_id: String) -> Result&lt;ConnectablePlatforms, ApiError&gt;</code></summary>
 <dl>
 <dd>
@@ -1040,6 +1153,246 @@ async fn main() {
 </dl>
 </details>
 
+<details><summary><code>client.channels.<a href="/src/api/resources/channels/client.rs">update</a>(workspace_id: String, channel_id: String, request: ChannelUpdate) -> Result&lt;Channel, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Gives the channel the name the workspace calls it by (`label`, 60 characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channels
+        .update(
+            &"workspaceId".to_string(),
+            &"channelId".to_string(),
+            &ChannelUpdate {
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**label:** `Option<String>` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.channels.<a href="/src/api/resources/channels/client.rs">disable</a>(workspace_id: String, channel_id: String) -> Result&lt;Channel, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (`channelDisabled`) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channels
+        .disable(&"workspaceId".to_string(), &"channelId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.channels.<a href="/src/api/resources/channels/client.rs">enable</a>(workspace_id: String, channel_id: String) -> Result&lt;Channel, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Turns a channel back on. It posts again at once, or has the status `refreshNeeded` when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channels
+        .enable(&"workspaceId".to_string(), &"channelId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## posts
 <details><summary><code>client.posts.<a href="/src/api/resources/posts/client.rs">drafts</a>(workspace_id: String, cursor: Option&lt;Option&lt;String&gt;&gt;, limit: Option&lt;Option&lt;String&gt;&gt;) -> Result&lt;DraftPage, ApiError&gt;</code></summary>
 <dl>
@@ -1232,7 +1585,7 @@ async fn main() {
 <dl>
 <dd>
 
-Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.
+Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. It may name channel sets (`channelSets`, by id or name), whose connected channels it is for as well, with the options each set keeps; a channel of a set that is no longer connected is left out, and the answer says so (`warnings`). A channel on which it gives no options takes the channel's default options, if it has some. With `defaultSignatures`, each channel's default signature goes under its text, and `signatureId` puts one signature under it on every channel: a signature is then text of the post, never added under a text that already ends with it. Needs post:create, channel:read, and media:read when it shows media.
 </dd>
 </dl>
 </dd>
@@ -1308,7 +1661,7 @@ async fn main() {
 </dl>
 </details>
 
-<details><summary><code>client.posts.<a href="/src/api/resources/posts/client.rs">search</a>(workspace_id: String, author_id: Option&lt;Option&lt;String&gt;&gt;, channel_id: Option&lt;Option&lt;String&gt;&gt;, created_via: Option&lt;Option&lt;PostOriginVia&gt;&gt;, cursor: Option&lt;Option&lt;String&gt;&gt;, from: Option&lt;Option&lt;String&gt;&gt;, limit: Option&lt;Option&lt;String&gt;&gt;, outcome: Option&lt;Option&lt;PostOutcome&gt;&gt;, platform: Option&lt;Option&lt;Platform&gt;&gt;, sort: Option&lt;Option&lt;PostSort&gt;&gt;, status: Option&lt;Option&lt;PostStatus&gt;&gt;, to: Option&lt;Option&lt;String&gt;&gt;) -> Result&lt;PostPage, ApiError&gt;</code></summary>
+<details><summary><code>client.posts.<a href="/src/api/resources/posts/client.rs">search</a>(workspace_id: String, author_id: Option&lt;Option&lt;String&gt;&gt;, channel_id: Option&lt;Option&lt;String&gt;&gt;, created_via: Option&lt;Option&lt;PostOriginVia&gt;&gt;, cursor: Option&lt;Option&lt;String&gt;&gt;, from: Option&lt;Option&lt;String&gt;&gt;, limit: Option&lt;Option&lt;String&gt;&gt;, outcome: Option&lt;Option&lt;PostOutcome&gt;&gt;, platform: Option&lt;Option&lt;Platform&gt;&gt;, sort: Option&lt;Option&lt;PostSort&gt;&gt;, status: Option&lt;Option&lt;PostStatus&gt;&gt;, tag_id: Option&lt;Option&lt;String&gt;&gt;, to: Option&lt;Option&lt;String&gt;&gt;) -> Result&lt;PostPage, ApiError&gt;</code></summary>
 <dl>
 <dd>
 
@@ -1320,7 +1673,7 @@ async fn main() {
 <dl>
 <dd>
 
-Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `tagId` (posts filed under that tag), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
 </dd>
 </dl>
 </dd>
@@ -1457,6 +1810,14 @@ async fn main() {
 <dl>
 <dd>
 
+**tag_id:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **to:** `Option<String>` 
     
 </dd>
@@ -1481,7 +1842,7 @@ async fn main() {
 <dl>
 <dd>
 
-Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says `allowDuplicate: true`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless `wait` says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. Instead of listing channels, or beside them, it may name channel sets (`channelSets`, by id or name): it goes to their connected channels, with the options each set keeps where it gives none, and a channel of a set that is no longer connected is left out and told in the answer's `warnings`, never silently; a set none of whose channels is left, with no other channel, is refused (UnknownChannels). A channel on which it gives no options takes the channel's default options. `defaultSignatures` puts each channel's default signature under its text, and `signatureId` one signature on every channel: signatures are text of the post, counted against each platform's limit, and never added twice. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says `allowDuplicate: true`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless `wait` says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
 </dd>
 </dl>
 </dd>
@@ -1532,7 +1893,11 @@ async fn main() {
                 },
                 wait: None,
                 allow_duplicate: None,
+                channel_sets: None,
+                default_signatures: None,
                 options: None,
+                signature_id: None,
+                tag_ids: None,
             },
             None,
         )
@@ -1576,6 +1941,14 @@ async fn main() {
 <dl>
 <dd>
 
+**channel_sets:** `Option<Vec<String>>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **content:** `PostContent` 
     
 </dd>
@@ -1584,7 +1957,31 @@ async fn main() {
 <dl>
 <dd>
 
+**default_signatures:** `Option<bool>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **options:** `Option<Vec<ChannelOptions>>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**signature_id:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**tag_ids:** `Option<Vec<String>>` 
     
 </dd>
 </dl>
@@ -1656,6 +2053,7 @@ async fn main() {
                 posts: vec![BulkPost {
                     allow_duplicate: None,
                     channel_ids: vec!["channelIds".to_string()],
+                    channel_sets: None,
                     content: PostContent {
                         media: vec![MediaAttachment {
                             alt_text: "altText".to_string(),
@@ -1670,7 +2068,10 @@ async fn main() {
                         text: "text".to_string(),
                         ..Default::default()
                     },
+                    default_signatures: None,
                     options: None,
+                    signature_id: None,
+                    tag_ids: None,
                     when: PostTiming::Now {
                         data: PostTimingNow {
                             ..Default::default()
@@ -1864,7 +2265,10 @@ async fn main() {
                     ..Default::default()
                 },
                 allow_duplicate: None,
+                channel_sets: None,
+                default_signatures: None,
                 options: None,
+                signature_id: None,
                 when: None,
             },
             None,
@@ -1909,6 +2313,14 @@ async fn main() {
 <dl>
 <dd>
 
+**channel_sets:** `Option<Vec<String>>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **content:** `PostContent` 
     
 </dd>
@@ -1917,7 +2329,23 @@ async fn main() {
 <dl>
 <dd>
 
+**default_signatures:** `Option<bool>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **options:** `Option<Vec<ChannelOptions>>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**signature_id:** `Option<String>` 
     
 </dd>
 </dl>
@@ -2024,7 +2452,7 @@ async fn main() {
 <dl>
 <dd>
 
-Replaces a draft's content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
+Replaces a draft's content, channels and options: options left out are removed. Its tags are replaced by `tagIds` when given, and kept otherwise. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
 </dd>
 </dl>
 </dd>
@@ -2313,6 +2741,171 @@ async fn main() {
     client
         .posts
         .attempts(&"workspaceId".to_string(), &"postId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.<a href="/src/api/resources/posts/client.rs">tag</a>(workspace_id: String, post_id: String, request: PostTags) -> Result&lt;Post, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Files a post under these tags of the workspace, 10 at most, instead of those it had; an empty list takes them all off. Tags say nothing to the platforms, so a post takes them whatever its status, sent or not. Needs post:update.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .posts
+        .tag(
+            &"workspaceId".to_string(),
+            &"postId".to_string(),
+            &PostTags {
+                tag_ids: vec!["tagIds".to_string()],
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**post_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**tag_ids:** `Vec<String>` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.posts.<a href="/src/api/resources/posts/client.rs">duplicate</a>(workspace_id: String, post_id: String) -> Result&lt;Post, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Makes a new draft that says what the post says, whatever the post's status: its text, its media, its channels with their text and options, and its tags. What the workspace no longer has is left out rather than refused: a channel disconnected since, with the text the post had there, media deleted since, a tag deleted since. The copy has no time, and its author is whoever asked; the post itself is not changed. Needs post:read and post:create, and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .posts
+        .duplicate(&"workspaceId".to_string(), &"postId".to_string(), None)
         .await;
 }
 ```
@@ -9470,6 +10063,1156 @@ async fn main() {
 <dd>
 
 **link_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## tags
+<details><summary><code>client.tags.<a href="/src/api/resources/tags/client.rs">list</a>(workspace_id: String) -> Result&lt;Vec&lt;Tag&gt;, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's tags, oldest first. A post names its tags by id (`tagIds`). Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client.tags.list(&"workspaceId".to_string(), None).await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.tags.<a href="/src/api/resources/tags/client.rs">create</a>(workspace_id: String, request: TagDetails) -> Result&lt;Tag, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Adds a tag to the workspace: a name of 40 characters at most, on one line, which no other tag of the workspace has whatever its case, and a colour of the palette. A workspace keeps 100 tags at most. Needs post:update.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .tags
+        .create(
+            &"workspaceId".to_string(),
+            &TagDetails {
+                colour: TagColour::Gray,
+                name: "name".to_string(),
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.tags.<a href="/src/api/resources/tags/client.rs">delete</a>(workspace_id: String, tag_id: String) -> Result&lt;(), ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a tag, and takes it off every post that had it; the posts stay. Needs post:update.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .tags
+        .delete(&"workspaceId".to_string(), &"tagId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**tag_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.tags.<a href="/src/api/resources/tags/client.rs">update</a>(workspace_id: String, tag_id: String, request: TagDetails) -> Result&lt;Tag, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Gives a tag another name or colour. Its posts keep it. Needs post:update.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .tags
+        .update(
+            &"workspaceId".to_string(),
+            &"tagId".to_string(),
+            &TagDetails {
+                colour: TagColour::Gray,
+                name: "name".to_string(),
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**tag_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## signatures
+<details><summary><code>client.signatures.<a href="/src/api/resources/signatures/client.rs">list</a>(workspace_id: String) -> Result&lt;Vec&lt;Signature&gt;, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's signatures, oldest first. Needs post:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .signatures
+        .list(&"workspaceId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.signatures.<a href="/src/api/resources/signatures/client.rs">create</a>(workspace_id: String, request: SignatureDetails) -> Result&lt;Signature, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Adds a signature to the workspace: a name no other signature of the workspace has whatever its case, a text of 2000 characters at most, and the `scope` it is meant for (the whole `workspace`, a `platform`, or one `channel` of the workspace). With `isDefault`, new posts that ask for the default signatures take it in its scope, and the signature that was the default of that scope is one no longer. A signature is text of the post once added: it counts against each platform's limit when the post is scheduled. A workspace keeps 50 signatures at most. Needs post:update, and channel:read for a channel's.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .signatures
+        .create(
+            &"workspaceId".to_string(),
+            &SignatureDetails {
+                name: "name".to_string(),
+                text: "text".to_string(),
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.signatures.<a href="/src/api/resources/signatures/client.rs">update</a>(workspace_id: String, signature_id: String, request: SignatureDetails) -> Result&lt;Signature, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces a signature's name, text, scope and whether it is a default. Posts that already hold its text keep it as it was. Needs post:update, and channel:read for a channel's.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .signatures
+        .update(
+            &"workspaceId".to_string(),
+            &"signatureId".to_string(),
+            &SignatureDetails {
+                name: "name".to_string(),
+                text: "text".to_string(),
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**signature_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.signatures.<a href="/src/api/resources/signatures/client.rs">delete</a>(workspace_id: String, signature_id: String) -> Result&lt;(), ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a signature. Posts that already hold its text keep it. Needs post:update.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .signatures
+        .delete(&"workspaceId".to_string(), &"signatureId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**signature_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## channelSets
+<details><summary><code>client.channel_sets.<a href="/src/api/resources/channel_sets/client.rs">list</a>(workspace_id: String) -> Result&lt;Vec&lt;ChannelSet&gt;, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's channel sets, oldest first, each with the channels it keeps and those of them disconnected since (`unavailableChannelIds`). Needs post:read and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channel_sets
+        .list(&"workspaceId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.channel_sets.<a href="/src/api/resources/channel_sets/client.rs">create</a>(workspace_id: String, request: ChannelSetDetails) -> Result&lt;ChannelSet, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Saves a selection of the workspace's channels under a name no other set of the workspace has whatever its case, 50 channels at most, with the options posts take on those whose platform has some (`TargetOptions`, of the channel's platform; unfinished options are kept, and checked when a post that takes them is scheduled). A post names a set by its id or its name (`channelSets`) instead of listing its channels. A workspace keeps 50 sets at most. Needs post:update and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channel_sets
+        .create(
+            &"workspaceId".to_string(),
+            &ChannelSetDetails {
+                channel_ids: vec!["channelIds".to_string()],
+                name: "name".to_string(),
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.channel_sets.<a href="/src/api/resources/channel_sets/client.rs">update</a>(workspace_id: String, channel_set_id: String, request: ChannelSetDetails) -> Result&lt;ChannelSet, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces a set's name, channels and options: every channel must be connected now, so this is also how a disconnected one is taken out. Posts made with the set before keep their channels. Needs post:update and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channel_sets
+        .update(
+            &"workspaceId".to_string(),
+            &"channelSetId".to_string(),
+            &ChannelSetDetails {
+                channel_ids: vec!["channelIds".to_string()],
+                name: "name".to_string(),
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_set_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.channel_sets.<a href="/src/api/resources/channel_sets/client.rs">delete</a>(workspace_id: String, channel_set_id: String) -> Result&lt;(), ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a channel set. Its channels, and the posts made with it, stay. Needs post:update.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channel_sets
+        .delete(
+            &"workspaceId".to_string(),
+            &"channelSetId".to_string(),
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_set_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## channelDefaults
+<details><summary><code>client.channel_defaults.<a href="/src/api/resources/channel_defaults/client.rs">get</a>(workspace_id: String, channel_id: String) -> Result&lt;ChannelDefaults, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers the options new posts take on the channel when they give none there, or null. Needs post:read and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channel_defaults
+        .get(&"workspaceId".to_string(), &"channelId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.channel_defaults.<a href="/src/api/resources/channel_defaults/client.rs">set</a>(workspace_id: String, channel_id: String, request: NewChannelDefaults) -> Result&lt;ChannelDefaults, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Keeps these as the channel's default options, instead of any it had: options of the channel's own platform (`TargetOptions`), unfinished as a draft's may be. A new draft, and a post made in one call, takes them on the channel when it gives no options there and no channel set it names does; a draft that is updated keeps what it is given. Defaults are a starting point, never a way round the rules: a post that takes them is checked when it is scheduled as one that wrote them itself. Needs post:update and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channel_defaults
+        .set(
+            &"workspaceId".to_string(),
+            &"channelId".to_string(),
+            &NewChannelDefaults {
+                options: TargetOptions::Youtube {
+                    data: YouTubeOptions {
+                        ..Default::default()
+                    },
+                },
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**options:** `TargetOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.channel_defaults.<a href="/src/api/resources/channel_defaults/client.rs">clear</a>(workspace_id: String, channel_id: String) -> Result&lt;(), ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Leaves the channel without default options. Posts already made keep theirs. Needs post:update and channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .channel_defaults
+        .clear(&"workspaceId".to_string(), &"channelId".to_string(), None)
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_id:** `String` 
     
 </dd>
 </dl>

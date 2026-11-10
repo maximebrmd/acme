@@ -3,8 +3,16 @@
 import * as Peal from "../index.js";
 
 export interface PostContentInvalidEncoded {
+    _tag: PostContentInvalidEncoded.Tag;
     code?: string | undefined;
     message?: string | undefined;
     requestId?: string | undefined;
     violations: Peal.ContentViolation[];
+}
+
+export namespace PostContentInvalidEncoded {
+    export const Tag = {
+            PostContentInvalid: "PostContentInvalid"
+        } as const;
+    export type Tag = typeof Tag[keyof typeof Tag];
 }

@@ -26,6 +26,8 @@ module Peal
 
         field :status, -> { Peal::Types::PostStatus }, optional: true, nullable: false
 
+        field :tag_id, -> { String }, optional: true, nullable: false, api_name: "tagId"
+
         field :to, -> { String }, optional: true, nullable: false
       end
     end

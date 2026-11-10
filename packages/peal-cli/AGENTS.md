@@ -12,7 +12,8 @@
   allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `media`, `approvals`, `review`, `analytics`, `inbox`, `billing`,
+  `post`, `tags`, `signatures`, `sets`, `media`, `approvals`, `review`,
+  `analytics`, `inbox`, `billing`,
   `members`, `invitations` and `webhooks`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
@@ -67,6 +68,35 @@
   row refused or unreadable ends as a refusal, after printing every row, and
   never prints the file. No command sends `posts.bulk`: a CSV file is the
   command line's way to several posts.
+- `peal tags` (list, create, update, delete) keeps a workspace's tags, and
+  `peal posts tag`, `peal posts list --tag`, `peal drafts save --tag` and
+  `peal post --tag` file posts under them. Wherever a command takes a tag
+  it takes its id or its name, whatever its case, resolved through
+  `tags.list` (`src/tags.ts`: `tagNamed`, `tagsNamed`); `drafts save
+  --post` sends `tagIds` only when `--tag` is given, so a draft keeps its
+  tags. The MCP toolkit `tags-tools.ts` has the same (`list_tags`,
+  `create_tag`, `update_tag`, `delete_tag`, `tag_post`), by id alone.
+- `peal signatures` and `peal sets` (list, create, update, delete) keep a
+  workspace's signatures and channel sets, and `peal channels defaults`
+  (show, set, clear) a channel's default options; `update` reads the item
+  first and keeps what no flag names, and a set loses the channels that are
+  no longer connected. `peal post` and `peal drafts save` take `--set`,
+  `--signature` and `--default-signatures`: a set or a signature is named
+  by id or name and sent by id (`src/saved-items.ts`: `presetsOf`), looked
+  up before any media is stored. Whatever answer carries `warnings` prints
+  each in prose after the rest (`warningLines`); `--json` prints the answer
+  as it came. The MCP toolkit `saved-tools.ts` has the same, by id, and
+  its posts name sets by id or name.
+- `peal channels rename`, `disable` and `enable`
+  (`commands/channel-settings.ts`) name a channel and turn it off or back
+  on, and `peal posts duplicate` makes a draft of a post, reading it first
+  only to say what the copy left out. `peal channels list` reads
+  `channels.list`, and `channels.find` once a filter or a page is asked
+  (`--platform`, `--status`, `--search`, `--limit`, `--cursor`): `--json`
+  then prints the page, and the bare list keeps the array it always printed.
+  A channel is shown with its label first and its handle always
+  (`channelName`). The MCP tools are `rename_channel`, `disable_channel`,
+  `enable_channel` and `duplicate_post`.
 - The command line has `peal links` (create, list, show, revoke) and
   `peal partner` (show, keys, workspaces), which read; the MCP toolkit
   `connect-tools.ts` has the same, `create_connect_link` and

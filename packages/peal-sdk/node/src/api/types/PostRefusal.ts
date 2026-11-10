@@ -12,7 +12,10 @@ export type PostRefusal =
     | Peal.PostRefusal.IdempotencyKeyReused
     | Peal.PostRefusal.PostNotFound
     | Peal.PostRefusal.DuplicatePost
-    | Peal.PostRefusal.Forbidden;
+    | Peal.PostRefusal.Forbidden
+    | Peal.PostRefusal.UnknownTags
+    | Peal.PostRefusal.ChannelSetNotFound
+    | Peal.PostRefusal.SignatureNotFound;
 
 export namespace PostRefusal {
     export interface PostContentInvalid extends Peal.PostContentInvalidEncoded {
@@ -53,5 +56,17 @@ export namespace PostRefusal {
 
     export interface Forbidden extends Peal.ForbiddenEncoded {
         _tag: "Forbidden";
+    }
+
+    export interface UnknownTags extends Peal.UnknownTagsEncoded {
+        _tag: "UnknownTags";
+    }
+
+    export interface ChannelSetNotFound extends Peal.ChannelSetNotFoundEncoded {
+        _tag: "ChannelSetNotFound";
+    }
+
+    export interface SignatureNotFound extends Peal.SignatureNotFoundEncoded {
+        _tag: "SignatureNotFound";
     }
 }

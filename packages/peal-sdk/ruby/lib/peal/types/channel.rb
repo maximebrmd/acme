@@ -15,6 +15,8 @@ module Peal
 
       field :id, -> { String }, optional: false, nullable: false
 
+      field :label, -> { String }, optional: false, nullable: true
+
       field :platform, -> { Peal::Types::Platform }, optional: false, nullable: false
 
       field :status, -> { Peal::Types::ChannelStatus }, optional: false, nullable: false

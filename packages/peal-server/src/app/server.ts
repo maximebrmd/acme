@@ -67,6 +67,8 @@ import {
 import {
   CapabilitiesApiLive,
   GatedCommentSource,
+  ChannelDefaultsApiLive,
+  ChannelSetsApiLive,
   GatedMetricsReader,
   GatedReplySender,
   UnreadComments,
@@ -74,6 +76,8 @@ import {
   MediaInPostsLive,
   PostsApiLive,
   PublishingLive,
+  SignaturesApiLive,
+  TagsApiLive,
   TikTokApiLive,
   publishingWorkersReading,
 } from "#publishing/container.ts";
@@ -135,7 +139,11 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   WebhooksApiLive,
   ActivityApiLive,
   InboxApiLive,
-  ContractRequestsDeskApiLive
+  ContractRequestsDeskApiLive,
+  TagsApiLive,
+  SignaturesApiLive,
+  ChannelSetsApiLive,
+  ChannelDefaultsApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {

@@ -26,6 +26,9 @@ public record Channel : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    [JsonPropertyName("label")]
+    public string? Label { get; set; }
+
     [JsonPropertyName("platform")]
     public required Platform Platform { get; set; }
 

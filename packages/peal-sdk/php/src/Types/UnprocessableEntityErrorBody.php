@@ -9,8 +9,8 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'ConnectFailed'
-     *   |'ReturnUrlNotAllowed'
+     *    'UnknownChannels'
+     *   |'PostContentInvalid'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +18,8 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    ConnectFailedEncoded
-     *   |ReturnUrlNotAllowedEncoded
+     *    UnknownChannelsEncoded
+     *   |PostContentInvalidEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +28,13 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'ConnectFailed'
-     *   |'ReturnUrlNotAllowed'
+     *    'UnknownChannels'
+     *   |'PostContentInvalid'
      *   |'_unknown'
      * ),
      *   value: (
-     *    ConnectFailedEncoded
-     *   |ReturnUrlNotAllowedEncoded
+     *    UnknownChannelsEncoded
+     *   |PostContentInvalidEncoded
      *   |mixed
      * ),
      * } $values
@@ -47,45 +47,45 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param ConnectFailedEncoded $connectFailed
+     * @param UnknownChannelsEncoded $unknownChannels
      * @return UnprocessableEntityErrorBody
      */
-    public static function connectFailed(ConnectFailedEncoded $connectFailed): UnprocessableEntityErrorBody
+    public static function unknownChannels(UnknownChannelsEncoded $unknownChannels): UnprocessableEntityErrorBody
     {
         return new UnprocessableEntityErrorBody([
-            'type' => 'ConnectFailed',
-            'value' => $connectFailed,
+            'type' => 'UnknownChannels',
+            'value' => $unknownChannels,
         ]);
     }
 
     /**
-     * @param ReturnUrlNotAllowedEncoded $returnUrlNotAllowed
+     * @param PostContentInvalidEncoded $postContentInvalid
      * @return UnprocessableEntityErrorBody
      */
-    public static function returnUrlNotAllowed(ReturnUrlNotAllowedEncoded $returnUrlNotAllowed): UnprocessableEntityErrorBody
+    public static function postContentInvalid(PostContentInvalidEncoded $postContentInvalid): UnprocessableEntityErrorBody
     {
         return new UnprocessableEntityErrorBody([
-            'type' => 'ReturnUrlNotAllowed',
-            'value' => $returnUrlNotAllowed,
+            'type' => 'PostContentInvalid',
+            'value' => $postContentInvalid,
         ]);
     }
 
     /**
      * @return bool
      */
-    public function isConnectFailed(): bool
+    public function isUnknownChannels(): bool
     {
-        return $this->value instanceof ConnectFailedEncoded && $this->type === 'ConnectFailed';
+        return $this->value instanceof UnknownChannelsEncoded && $this->type === 'UnknownChannels';
     }
 
     /**
-     * @return ConnectFailedEncoded
+     * @return UnknownChannelsEncoded
      */
-    public function asConnectFailed(): ConnectFailedEncoded
+    public function asUnknownChannels(): UnknownChannelsEncoded
     {
-        if (!($this->value instanceof ConnectFailedEncoded && $this->type === 'ConnectFailed')) {
+        if (!($this->value instanceof UnknownChannelsEncoded && $this->type === 'UnknownChannels')) {
             throw new Exception(
-                "Expected ConnectFailed; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected UnknownChannels; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -95,19 +95,19 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isReturnUrlNotAllowed(): bool
+    public function isPostContentInvalid(): bool
     {
-        return $this->value instanceof ReturnUrlNotAllowedEncoded && $this->type === 'ReturnUrlNotAllowed';
+        return $this->value instanceof PostContentInvalidEncoded && $this->type === 'PostContentInvalid';
     }
 
     /**
-     * @return ReturnUrlNotAllowedEncoded
+     * @return PostContentInvalidEncoded
      */
-    public function asReturnUrlNotAllowed(): ReturnUrlNotAllowedEncoded
+    public function asPostContentInvalid(): PostContentInvalidEncoded
     {
-        if (!($this->value instanceof ReturnUrlNotAllowedEncoded && $this->type === 'ReturnUrlNotAllowed')) {
+        if (!($this->value instanceof PostContentInvalidEncoded && $this->type === 'PostContentInvalid')) {
             throw new Exception(
-                "Expected ReturnUrlNotAllowed; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected PostContentInvalid; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +134,12 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'ConnectFailed':
-                $value = $this->asConnectFailed()->jsonSerialize();
+            case 'UnknownChannels':
+                $value = $this->asUnknownChannels()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'ReturnUrlNotAllowed':
-                $value = $this->asReturnUrlNotAllowed()->jsonSerialize();
+            case 'PostContentInvalid':
+                $value = $this->asPostContentInvalid()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +178,11 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'ConnectFailed':
-                $args['value'] = ConnectFailedEncoded::jsonDeserialize($data);
+            case 'UnknownChannels':
+                $args['value'] = UnknownChannelsEncoded::jsonDeserialize($data);
                 break;
-            case 'ReturnUrlNotAllowed':
-                $args['value'] = ReturnUrlNotAllowedEncoded::jsonDeserialize($data);
+            case 'PostContentInvalid':
+                $args['value'] = PostContentInvalidEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

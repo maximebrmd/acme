@@ -77,6 +77,58 @@ func (r *RawClient) List(
 	}, nil
 }
 
+func (r *RawClient) Find(
+	ctx context.Context,
+	request *peal.FindChannelsRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*peal.ChannelPage], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https://app.peal.social",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/workspaces/%v/channels/search",
+		request.WorkspaceID,
+	)
+	queryParams, err := internal.QueryValues(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(queryParams) > 0 {
+		endpointURL += "?" + queryParams.Encode()
+	}
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	var response *peal.ChannelPage
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodGet,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  options.DisableRetries,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(peal.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*peal.ChannelPage]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
 func (r *RawClient) Platforms(
 	ctx context.Context,
 	request *peal.PlatformsChannelsRequest,
@@ -353,5 +405,145 @@ func (r *RawClient) Disconnect(
 		StatusCode: raw.StatusCode,
 		Header:     raw.Header,
 		Body:       nil,
+	}, nil
+}
+
+func (r *RawClient) Update(
+	ctx context.Context,
+	request *peal.ChannelUpdate,
+	opts ...option.RequestOption,
+) (*core.Response[*peal.Channel], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https://app.peal.social",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/workspaces/%v/channels/%v",
+		request.WorkspaceID,
+		request.ChannelID,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	headers.Add("Content-Type", "application/json")
+	var response *peal.Channel
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPatch,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  true,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Request:         request,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(peal.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*peal.Channel]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
+func (r *RawClient) Disable(
+	ctx context.Context,
+	request *peal.DisableChannelsRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*peal.Channel], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https://app.peal.social",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/workspaces/%v/channels/%v/disable",
+		request.WorkspaceID,
+		request.ChannelID,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	var response *peal.Channel
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  true,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(peal.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*peal.Channel]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
+	}, nil
+}
+
+func (r *RawClient) Enable(
+	ctx context.Context,
+	request *peal.EnableChannelsRequest,
+	opts ...option.RequestOption,
+) (*core.Response[*peal.Channel], error) {
+	options := core.NewRequestOptions(opts...)
+	baseURL := internal.ResolveBaseURL(
+		options.BaseURL,
+		r.baseURL,
+		"https://app.peal.social",
+	)
+	endpointURL := internal.EncodeURL(
+		baseURL+"/api/workspaces/%v/channels/%v/enable",
+		request.WorkspaceID,
+		request.ChannelID,
+	)
+	headers := internal.MergeHeaders(
+		r.options.ToHeader(),
+		options.ToHeader(),
+	)
+	var response *peal.Channel
+	raw, err := r.caller.Call(
+		ctx,
+		&internal.CallParams{
+			URL:             endpointURL,
+			Method:          http.MethodPost,
+			Headers:         headers,
+			MaxAttempts:     options.MaxAttempts,
+			DisableRetries:  true,
+			BodyProperties:  options.BodyProperties,
+			QueryParameters: options.QueryParameters,
+			Client:          options.HTTPClient,
+			Response:        &response,
+			ErrorDecoder:    internal.NewErrorDecoder(peal.ErrorCodes),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &core.Response[*peal.Channel]{
+		StatusCode: raw.StatusCode,
+		Header:     raw.Header,
+		Body:       response,
 	}, nil
 }

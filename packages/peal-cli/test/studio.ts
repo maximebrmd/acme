@@ -7,6 +7,8 @@ import {
   ApprovalChanged,
   ApprovalNotPending,
   ChannelNotFound,
+  ChannelSetNameTaken,
+  ChannelSetNotFound,
   ConnectFailed,
   ConnectLinkNotFound,
   CurrentMember,
@@ -20,7 +22,10 @@ import {
   InvalidTimeRange,
   InvalidTimeZone,
   InvitationNotFound,
+  maxChannelSetsPerWorkspace,
   maxImportRows,
+  maxSignaturesPerWorkspace,
+  maxTagsPerWorkspace,
   LookupInputInvalid,
   LookupNotFound,
   maxWebhookEndpoints,
@@ -34,11 +39,20 @@ import {
   ReturnUrlNotAllowed,
   ReviewLinkNotFound,
   ScheduleInPast,
+  SignatureNameTaken,
+  SignatureNotFound,
+  signedText,
+  TagNameTaken,
+  TagNotFound,
   TargetStatusConflict,
+  TooManyChannelSets,
+  TooManySignatures,
+  TooManyTags,
   TooManyWebhookEndpoints,
   Unauthenticated,
   UnknownChannels,
   UnknownMedia,
+  UnknownTags,
   UnsupportedMediaType,
   UploadIncomplete,
   WebhookDeliveryNotFound,
@@ -58,6 +72,7 @@ import type {
   Channel,
   ChannelOptions,
   ChannelPreview,
+  ChannelSet,
   ConnectedApp,
   ConnectLink,
   ContentViolation,
@@ -80,12 +95,17 @@ import type {
   PostSort,
   PostTarget,
   PostValidation,
+  PostWarning,
   PublicationAttempt,
   ScheduleCheck,
   ReviewComment,
   ReviewLink,
+  Signature,
+  SignatureScope,
   SignedRequest,
   Standing,
+  Tag,
+  TargetOptions,
   TikTokAccount,
   WebhookDelivery,
   WebhookEndpoint,
@@ -218,6 +238,7 @@ const channels: readonly Channel[] = [
     displayName: "Studio",
     handle: "@studio@social.example.test",
     id: mastodonId,
+    label: null,
     platform: "mastodon",
     status: { _tag: "active" },
     tokenExpiresAt: null,
@@ -228,6 +249,7 @@ const channels: readonly Channel[] = [
     displayName: null,
     handle: "studio.example.test",
     id: blueskyId,
+    label: null,
     platform: "bluesky",
     status: { _tag: "refreshNeeded" },
     tokenExpiresAt: null,
@@ -238,6 +260,7 @@ const channels: readonly Channel[] = [
     displayName: "Studio",
     handle: "@studio_example",
     id: tiktokId,
+    label: null,
     platform: "tiktok",
     status: { _tag: "active" },
     tokenExpiresAt: null,
@@ -248,6 +271,7 @@ const channels: readonly Channel[] = [
     displayName: "Studio videos",
     handle: "Studio videos",
     id: youtubeId,
+    label: null,
     platform: "youtube",
     status: { _tag: "active" },
     tokenExpiresAt: null,
@@ -258,6 +282,7 @@ const channels: readonly Channel[] = [
     displayName: "Studio",
     handle: "@studio_example",
     id: instagramId,
+    label: null,
     platform: "instagram",
     status: { _tag: "active" },
     tokenExpiresAt: null,
@@ -268,6 +293,7 @@ const channels: readonly Channel[] = [
     displayName: "Studio",
     handle: "@studioexample",
     id: pinterestId,
+    label: null,
     platform: "pinterest",
     status: { _tag: "active" },
     tokenExpiresAt: null,
@@ -325,6 +351,88 @@ const contributorId = "8d0f7780-8536-41ef-a55c-f18fd2a01bf8";
 
 const content = (text: string) => ({ media: [], overrides: [], text });
 
+export const campaignTagId = "0190f3a0-0000-7000-8000-00000000a001";
+
+export const evergreenTagId = "0190f3a0-0000-7000-8000-00000000a002";
+
+// The labels the studio files its posts under, oldest first.
+const tags: readonly Tag[] = [
+  {
+    colour: "green",
+    createdAt: at("2026-10-01T09:00:00Z"),
+    id: campaignTagId,
+    name: "Spring campaign",
+  },
+  {
+    colour: "blue",
+    createdAt: at("2026-10-02T09:00:00Z"),
+    id: evergreenTagId,
+    name: "Evergreen",
+  },
+];
+
+export const signOffId = "0190f3a0-0000-7000-8000-00000000a101";
+
+export const fediverseSignatureId = "0190f3a0-0000-7000-8000-00000000a102";
+
+// The texts the studio ends its posts with, oldest first: the workspace's
+// default, and one for Mastodon that is no default.
+const signatures: readonly Signature[] = [
+  {
+    createdAt: at("2026-10-03T09:00:00Z"),
+    id: signOffId,
+    isDefault: true,
+    name: "Sign-off",
+    scope: { _tag: "workspace" },
+    text: "The Studio team",
+  },
+  {
+    createdAt: at("2026-10-04T09:00:00Z"),
+    id: fediverseSignatureId,
+    isDefault: false,
+    name: "Fediverse",
+    scope: { _tag: "platform", platform: "mastodon" },
+    text: "#studio #synthetic",
+  },
+];
+
+/** A channel the studio had, and disconnected: a set still lists it. */
+export const goneChannelId = "0190f3a0-0000-7000-8000-00000000c0ff";
+
+export const launchSetId = "0190f3a0-0000-7000-8000-00000000a201";
+
+export const videosSetId = "0190f3a0-0000-7000-8000-00000000a202";
+
+/** A channel set as the studio keeps it: which channels are gone is told. */
+type StudioSet = Omit<ChannelSet, "unavailableChannelIds">;
+
+// The selections of channels the studio keeps, oldest first.
+const channelSets: readonly StudioSet[] = [
+  {
+    channelIds: [mastodonId, goneChannelId],
+    createdAt: at("2026-10-05T09:00:00Z"),
+    id: launchSetId,
+    name: "Launch",
+    options: [],
+  },
+  {
+    channelIds: [youtubeId],
+    createdAt: at("2026-10-06T09:00:00Z"),
+    id: videosSetId,
+    name: "Videos",
+    options: [
+      {
+        channelId: youtubeId,
+        options: {
+          madeForKids: false,
+          platform: "youtube",
+          title: "A synthetic video",
+        },
+      },
+    ],
+  },
+];
+
 const posts: readonly Post[] = [
   {
     authorId: userId,
@@ -336,6 +444,7 @@ const posts: readonly Post[] = [
     scheduledBy: null,
     scheduledVia: null,
     status: "draft",
+    tagIds: [],
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e010", mastodonId)],
   },
   {
@@ -348,6 +457,7 @@ const posts: readonly Post[] = [
     scheduledBy: null,
     scheduledVia: null,
     status: "scheduled",
+    tagIds: [campaignTagId],
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e011", mastodonId)],
   },
   {
@@ -360,6 +470,7 @@ const posts: readonly Post[] = [
     scheduledBy: contributorId,
     scheduledVia: null,
     status: "awaitingApproval",
+    tagIds: [],
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e012", mastodonId)],
   },
   {
@@ -372,6 +483,7 @@ const posts: readonly Post[] = [
     scheduledBy: null,
     scheduledVia: null,
     status: "finished",
+    tagIds: [],
     targets: [
       {
         ...pendingOn(failedTargetId, mastodonId),
@@ -850,7 +962,13 @@ const customers: readonly CustomerWorkspace[] = [
 export interface StudioState {
   readonly approvals: readonly ApprovalRequest[];
   readonly changes: readonly string[];
+  /** The studio's channels as they are now: named, turned off or on. */
+  readonly channels: readonly Channel[];
+  /** The workspace's channel sets, oldest first. */
+  readonly channelSets: readonly StudioSet[];
   readonly comments: readonly ReviewComment[];
+  /** The channels' default options, by channel. */
+  readonly defaults: Readonly<Record<string, TargetOptions>>;
   readonly deliveries: readonly StudioDelivery[];
   /** Whether the studio holds more than its plan allows, as a test sets it. */
   readonly overPlan: boolean;
@@ -865,9 +983,13 @@ export interface StudioState {
   readonly sent: Readonly<
     Record<string, { readonly body: string; readonly postId: string }>
   >;
+  /** The workspace's signatures, oldest first. */
+  readonly signatures: readonly Signature[];
   /** What the media store answers a signed request with. */
   readonly storeStatus: number;
   readonly stored: readonly StoredRequest[];
+  /** The workspace's tags, oldest first. */
+  readonly tags: readonly Tag[];
   /** Whether the server has the keys that encrypt signing secrets. */
   readonly signingKeys: boolean;
   readonly webhooks: readonly WebhookEndpoint[];
@@ -938,8 +1060,11 @@ export const makeStudio = (
     state: Ref.make<StudioState>({
       approvals: [approval],
       changes: [],
+      channelSets,
+      channels,
       comments: [comment],
       connectLinks: [usedLink],
+      defaults: {},
       deliveries,
       invitations: [invitation],
       links: [],
@@ -948,9 +1073,11 @@ export const makeStudio = (
       policy: "contributorsAndApplications",
       posts,
       sent: {},
+      signatures,
       signingKeys: true,
       storeStatus: 200,
       stored: [],
+      tags,
       webhooks,
     }),
     whileExporting: Ref.make<Effect.Effect<void>>(Effect.void),
@@ -983,6 +1110,50 @@ const channelIn = (params: {
     }
   );
 
+// The workspace's channels as they are now, oldest first.
+const channelsNow = (studio: Studio, workspaceId: string) =>
+  Ref.get(studio.state).pipe(
+    Effect.map(({ channels: all }) => (workspaceId === studioId ? all : []))
+  );
+
+// How many of these channels are in each status.
+const countsOf = (found: readonly Channel[]) => ({
+  active: found.filter(({ status }) => status._tag === "active").length,
+  disabled: found.filter(({ status }) => status._tag === "disabled").length,
+  refreshNeeded: found.filter(({ status }) => status._tag === "refreshNeeded")
+    .length,
+});
+
+// Whether a channel's handle or one of its names holds the text, whatever
+// its case.
+const holds = (channel: Channel, text: string): boolean =>
+  [channel.handle, channel.displayName ?? "", channel.label ?? ""].some(
+    (written) => written.toLowerCase().includes(text.toLowerCase())
+  );
+
+// A channel turned off keeps whether it must be reconnected, and has it
+// again once turned back on.
+const turnedOff = (channel: Channel): Channel =>
+  channel.status._tag === "disabled"
+    ? channel
+    : {
+        ...channel,
+        status: {
+          _tag: "disabled",
+          refreshNeeded: channel.status._tag === "refreshNeeded",
+        },
+      };
+
+const turnedOn = (channel: Channel): Channel =>
+  channel.status._tag === "disabled"
+    ? {
+        ...channel,
+        status: {
+          _tag: channel.status.refreshNeeded ? "refreshNeeded" : "active",
+        },
+      }
+    : channel;
+
 // The member a request acts as, if they may do this. A key is told what
 // it lacks, in the server's words.
 const allowed = (permission: Permission) =>
@@ -999,6 +1170,43 @@ const allowed = (permission: Permission) =>
       );
     })
   );
+
+// Names a channel, or turns it off or on, for a member who may connect
+// channels; one already as asked is answered as it is, and nothing is
+// recorded.
+const changingChannel = (
+  studio: Studio,
+  params: { readonly channelId: string; readonly workspaceId: string },
+  change: (channel: Channel) => Channel,
+  what: string
+) =>
+  Effect.gen(function* changing() {
+    yield* allowed("channel:connect");
+
+    const found = (yield* channelsNow(studio, params.workspaceId)).find(
+      ({ id }) => id === params.channelId
+    );
+
+    if (found === undefined) {
+      return yield* new ChannelNotFound();
+    }
+
+    const next = change(found);
+
+    if (next === found) {
+      return found;
+    }
+
+    yield* Ref.update(studio.state, (current) => ({
+      ...current,
+      channels: current.channels.map((channel) =>
+        channel.id === next.id ? next : channel
+      ),
+    }));
+    yield* record(studio, `channel:${what}:${next.id}`);
+
+    return next;
+  });
 
 const inStudio = (workspaceId: string) =>
   workspaceId === studioId ? Effect.void : Effect.fail(new PostNotFound());
@@ -1110,6 +1318,329 @@ const checkChannels = (channelIds: readonly string[]) => {
     ? Effect.void
     : Effect.fail(new UnknownChannels({ channelIds: unknown }));
 };
+
+// The tags a post names must be the workspace's.
+const checkTags = (studio: Studio, tagIds: readonly string[]) =>
+  Ref.get(studio.state).pipe(
+    Effect.flatMap(({ tags: all }) => {
+      const unknown = tagIds.filter(
+        (tagId) => !all.some(({ id }) => id === tagId)
+      );
+
+      return unknown.length === 0
+        ? Effect.void
+        : Effect.fail(new UnknownTags({ tagIds: unknown }));
+    })
+  );
+
+// The studio's tag a path names.
+const findTag = (
+  studio: Studio,
+  params: { readonly tagId: string; readonly workspaceId: string }
+) =>
+  Ref.get(studio.state).pipe(
+    Effect.flatMap(({ tags: all }) =>
+      Option.match(
+        Option.fromUndefinedOr(
+          params.workspaceId === studioId
+            ? all.find(({ id }) => id === params.tagId)
+            : undefined
+        ),
+        {
+          onNone: () => Effect.fail(new TagNotFound()),
+          onSome: (tag) => Effect.succeed(tag),
+        }
+      )
+    )
+  );
+
+// A name another tag of the workspace has, whatever its case.
+const checkTagName = (studio: Studio, name: string, but?: string) =>
+  Ref.get(studio.state).pipe(
+    Effect.flatMap(({ tags: all }) =>
+      all.some(
+        (tag) => tag.id !== but && tag.name.toLowerCase() === name.toLowerCase()
+      )
+        ? Effect.fail(new TagNameTaken())
+        : Effect.void
+    )
+  );
+
+const isConnected = (channelId: string): boolean =>
+  channels.some(({ id }) => id === channelId);
+
+// A set as the API answers it: with those of its channels disconnected
+// since.
+const setView = (set: StudioSet): ChannelSet => ({
+  ...set,
+  unavailableChannelIds: set.channelIds.filter(
+    (channelId) => !isConnected(channelId)
+  ),
+});
+
+// Options are of their channel's own platform.
+const checkOptions = (given: readonly ChannelOptions[]) => {
+  const violations = given.flatMap(
+    ({ channelId, options }): ContentViolation[] => {
+      const channel = channels.find(({ id }) => id === channelId);
+
+      return channel === undefined || channel.platform === options.platform
+        ? []
+        : [
+            {
+              _tag: "optionsForOtherPlatform",
+              channelId,
+              optionsPlatform: options.platform,
+              platform: channel.platform,
+            },
+          ];
+    }
+  );
+
+  return violations.length === 0
+    ? Effect.void
+    : Effect.fail(new PostContentInvalid({ violations }));
+};
+
+// Where a signature is meant for, in a word.
+const scopeKey = (scope: SignatureScope): string => {
+  if (scope._tag === "platform") {
+    return `platform:${scope.platform}`;
+  }
+
+  return scope._tag === "channel" ? `channel:${scope.channelId}` : "workspace";
+};
+
+// The studio's signature a path names.
+const findSignature = (
+  studio: Studio,
+  params: { readonly signatureId: string; readonly workspaceId: string }
+) =>
+  Ref.get(studio.state).pipe(
+    Effect.flatMap(({ signatures: all }) =>
+      Option.match(
+        Option.fromUndefinedOr(
+          params.workspaceId === studioId
+            ? all.find(({ id }) => id === params.signatureId)
+            : undefined
+        ),
+        {
+          onNone: () => Effect.fail(new SignatureNotFound()),
+          onSome: (signature) => Effect.succeed(signature),
+        }
+      )
+    )
+  );
+
+// A signature as a request writes it, once it may be kept: its channel is
+// the workspace's, and no other signature has its name, whatever its case.
+const checkSignature = (
+  studio: Studio,
+  details: { readonly name: string; readonly scope?: SignatureScope },
+  but?: string
+) =>
+  Effect.gen(function* checkingSignature() {
+    const scope = details.scope ?? { _tag: "workspace" };
+
+    if (scope._tag === "channel" && !isConnected(scope.channelId)) {
+      return yield* new UnknownChannels({ channelIds: [scope.channelId] });
+    }
+
+    const { signatures: all } = yield* Ref.get(studio.state);
+
+    if (
+      all.some(
+        (signature) =>
+          signature.id !== but &&
+          signature.name.toLowerCase() === details.name.toLowerCase()
+      )
+    ) {
+      return yield* new SignatureNameTaken();
+    }
+
+    return scope;
+  });
+
+// The signatures with this one among them: a default is the only one of
+// its scope.
+const withSignature = (
+  all: readonly Signature[],
+  kept: Signature
+): Signature[] => {
+  const beside = (other: Signature): Signature =>
+    kept.isDefault && scopeKey(other.scope) === scopeKey(kept.scope)
+      ? { ...other, isDefault: false }
+      : other;
+
+  return all.some(({ id }) => id === kept.id)
+    ? all.map((found) => (found.id === kept.id ? kept : beside(found)))
+    : [...all.map(beside), kept];
+};
+
+// The studio's channel set a path names.
+const findSet = (
+  studio: Studio,
+  params: { readonly channelSetId: string; readonly workspaceId: string }
+) =>
+  Ref.get(studio.state).pipe(
+    Effect.flatMap(({ channelSets: all }) =>
+      Option.match(
+        Option.fromUndefinedOr(
+          params.workspaceId === studioId
+            ? all.find(({ id }) => id === params.channelSetId)
+            : undefined
+        ),
+        {
+          onNone: () => Effect.fail(new ChannelSetNotFound()),
+          onSome: (set) => Effect.succeed(set),
+        }
+      )
+    )
+  );
+
+// A set as a request writes it, once it may be kept: its channels are
+// connected, its options theirs, and no other set has its name.
+const checkSet = (
+  studio: Studio,
+  details: {
+    readonly channelIds: readonly string[];
+    readonly name: string;
+    readonly options?: readonly ChannelOptions[];
+  },
+  but?: string
+) =>
+  Effect.gen(function* checkingSet() {
+    yield* checkChannels(details.channelIds);
+    yield* checkOptions(details.options ?? []);
+
+    const { channelSets: all } = yield* Ref.get(studio.state);
+
+    yield* all.some(
+      (set) =>
+        set.id !== but && set.name.toLowerCase() === details.name.toLowerCase()
+    )
+      ? Effect.fail(new ChannelSetNameTaken())
+      : Effect.void;
+  });
+
+// The set a post names, by its id or its name, whatever its case.
+const setNamed = (all: readonly StudioSet[], reference: string) =>
+  all.find(
+    (set) =>
+      set.id === reference || set.name.toLowerCase() === reference.toLowerCase()
+  );
+
+/** What a post asks of what the studio saved. */
+interface Asking {
+  readonly channelIds: readonly string[];
+  readonly channelSets?: readonly string[];
+  readonly content: PostContent;
+  readonly defaultSignatures?: boolean;
+  readonly options?: readonly ChannelOptions[];
+  readonly signatureId?: string;
+}
+
+// A post once everything it names is filled in, as the server fills it:
+// the connected channels of its sets, with a warning for those that are
+// gone; on a channel without options, a set's, then for a new post the
+// channel's defaults; and its signatures under its text, never twice. Of
+// the default signatures, the studio adds the workspace's.
+const filled = <P extends Asking>(studio: Studio, asked: P, fresh: boolean) =>
+  Effect.gen(function* filling() {
+    const state = yield* Ref.get(studio.state);
+    const named: StudioSet[] = [];
+
+    for (const reference of asked.channelSets ?? []) {
+      const set = setNamed(state.channelSets, reference);
+
+      if (set === undefined) {
+        return yield* new ChannelSetNotFound();
+      }
+
+      named.push(set);
+    }
+
+    const warnings = named.flatMap((set): PostWarning[] => {
+      const gone = setView(set).unavailableChannelIds;
+
+      return gone.length === 0
+        ? []
+        : [
+            {
+              _tag: "channelsDropped",
+              channelIds: gone,
+              channelSetId: set.id,
+              channelSetName: set.name,
+            },
+          ];
+    });
+
+    const channelIds = [
+      ...new Set([
+        ...asked.channelIds,
+        ...named.flatMap((set) => set.channelIds.filter(isConnected)),
+      ]),
+    ];
+
+    const given = asked.options ?? [];
+    const kept = named.flatMap((set) => set.options);
+
+    const saved = channelIds.flatMap((channelId): ChannelOptions[] => {
+      const own = state.defaults[channelId];
+
+      const chosen =
+        kept.find((options) => options.channelId === channelId) ??
+        (fresh && own !== undefined ? { channelId, options: own } : undefined);
+
+      return chosen === undefined ||
+        given.some((options) => options.channelId === channelId)
+        ? []
+        : [chosen];
+    });
+
+    const signature =
+      asked.signatureId === undefined
+        ? Option.none<Signature>()
+        : Option.fromUndefinedOr(
+            state.signatures.find(({ id }) => id === asked.signatureId)
+          );
+
+    if (asked.signatureId !== undefined && Option.isNone(signature)) {
+      return yield* new SignatureNotFound();
+    }
+
+    const under = [
+      ...Option.toArray(signature),
+      ...(asked.defaultSignatures === true
+        ? state.signatures.filter(
+            ({ isDefault, scope }) => isDefault && scope._tag === "workspace"
+          )
+        : []),
+    ];
+
+    let { text } = asked.content;
+
+    for (const added of under) {
+      text = signedText(text, added.text);
+    }
+
+    return {
+      post: {
+        ...asked,
+        channelIds,
+        content: { ...asked.content, text },
+        options: [...given, ...saved],
+      },
+      warnings,
+    };
+  });
+
+const noWarnings: readonly PostWarning[] = [];
+
+// A post as the request that made it is answered: with what it should
+// know of, when there is something to say.
+const told = (post: Post, warnings: readonly PostWarning[]): Post =>
+  warnings.length === 0 ? post : { ...post, warnings };
 
 const mastodonLimit = 500;
 
@@ -1428,10 +1959,21 @@ const timeOf = ({ when }: Pick<NewPost, "when">) =>
 // Everything sending a post checks before making it, in the order the
 // server answers: its channels, its media, its time, what its platforms
 // refuse, and the posts that already send it.
-const checkNewPost = (studio: Studio, payload: NewPost) =>
+const checkNewPost = (studio: Studio, asked: NewPost) =>
   Effect.gen(function* checkingNewPost() {
+    const { post: payload, warnings } = yield* filled(studio, asked, true);
+
     yield* checkChannels(payload.channelIds);
+
+    // A set none of whose channels is left, and no other channel.
+    if (payload.channelIds.length === 0) {
+      return yield* new UnknownChannels({
+        channelIds: warnings.flatMap(({ channelIds }) => channelIds),
+      });
+    }
+
     yield* checkMedia(studio, payload.content);
+    yield* checkTags(studio, payload.tagIds ?? []);
 
     const when = timeOf(payload);
     const status = yield* checkTime(when.at, when.timeZone);
@@ -1449,7 +1991,7 @@ const checkNewPost = (studio: Studio, payload: NewPost) =>
       return yield* new DuplicatePost({ duplicates });
     }
 
-    return { status, when };
+    return { payload, status, warnings, when };
   });
 
 // The post a first request made under the key, if one did: the same key
@@ -1479,13 +2021,14 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
       return {
         post: yield* findPost(studio, studioId, first.value),
         replayed: true,
+        warnings: noWarnings,
       };
     }
 
     const body = JSON.stringify(payload);
     const before = yield* Ref.get(studio.state);
     const checked = yield* checkNewPost(studio, payload);
-    const { when } = checked;
+    const { payload: written, warnings, when } = checked;
 
     // Where every post waits, this one does: nothing goes out.
     const status =
@@ -1506,7 +2049,7 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
 
     const post = yield* savePost(studio, {
       authorId: userId,
-      content: payload.content,
+      content: written.content,
       createdVia: viaCommandLine,
       id,
       outcome: null,
@@ -1514,10 +2057,11 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
       scheduledBy: userId,
       scheduledVia: viaCommandLine,
       status,
-      targets: targetsOf(id, payload),
+      tagIds: payload.tagIds ?? [],
+      targets: targetsOf(id, written),
     });
 
-    return { post, replayed: false };
+    return { post, replayed: false, warnings };
   });
 
 // How a post ended, by how many of its channels have it.
@@ -1870,9 +2414,21 @@ type ImportedRow =
     };
 
 // A row's post, or the cells that cannot be read, in the columns' order.
-const rowOf = (cells: ReadonlyMap<ImportColumn, string>): ImportedRow => {
+// What its channels cell lists is a channel's id, or one of the
+// workspace's channel sets, by id or by name.
+const rowOf = (
+  cells: ReadonlyMap<ImportColumn, string>,
+  sets: readonly StudioSet[]
+): ImportedRow => {
   const cell = (column: ImportColumn) => cells.get(column) ?? "";
   const channelIds = idsIn(cell("channels"));
+
+  const named = channelIds.filter(
+    (entry) => setNamed(sets, entry) !== undefined
+  );
+
+  const fromSets = named.length === 0 ? {} : { channelSets: named };
+
   const media = idsIn(cell("media"));
   const when = whenOf(cell("at"), cell("time_zone") || "UTC");
   const duplicate = cell("allow_duplicate");
@@ -1899,7 +2455,8 @@ const rowOf = (cells: ReadonlyMap<ImportColumn, string>): ImportedRow => {
     key: cell("idempotency_key") || undefined,
     post: {
       allowDuplicate: duplicate === "true",
-      channelIds: [first, ...others],
+      channelIds: [first, ...others].filter((entry) => !named.includes(entry)),
+      ...fromSets,
       content: {
         media: media.map((mediaId) => ({ altText: "", mediaId })),
         overrides: [],
@@ -1958,9 +2515,10 @@ const madeRow = (
             refusal,
             row,
           }),
-          onSuccess: (made): ImportRowResult => ({
+          onSuccess: ({ post, replayed, warnings }): ImportRowResult => ({
             _tag: "created",
-            ...made,
+            post: told(post, warnings),
+            replayed,
             row,
           }),
         })
@@ -1979,13 +2537,70 @@ export const studioGroupsLive = (studio: Studio) =>
         chooseAccounts: () => refusing,
         completeConnect: () => refusing,
         connect: () => refusing,
+        disable: ({ params }) =>
+          changingChannel(studio, params, turnedOff, "disable"),
         disconnect: () => refusing,
+        enable: ({ params }) =>
+          changingChannel(studio, params, turnedOn, "enable"),
+        find: ({ params, query }) =>
+          Effect.gen(function* find() {
+            yield* allowed("channel:read");
+
+            // The platform and the text narrow the counts; the status
+            // narrows the list alone.
+            const matching = (yield* channelsNow(
+              studio,
+              params.workspaceId
+            )).filter(
+              (channel) =>
+                (query.platform === undefined ||
+                  channel.platform === query.platform) &&
+                (query.q === undefined || holds(channel, query.q))
+            );
+
+            const listed = matching.filter(
+              ({ status }) =>
+                query.status === undefined || status._tag === query.status
+            );
+
+            // A cursor is the id of the last channel of the page before.
+            const start =
+              query.cursor === undefined
+                ? 0
+                : listed.findIndex(({ id }) => id === query.cursor) + 1;
+
+            if (query.cursor !== undefined && start === 0) {
+              return yield* new HttpApiError.BadRequest();
+            }
+
+            const items = listed.slice(start, start + (query.limit ?? 50));
+            const last = items.at(-1);
+
+            return {
+              counts: countsOf(matching),
+              items,
+              nextCursor:
+                last !== undefined && start + items.length < listed.length
+                  ? last.id
+                  : null,
+            };
+          }),
         list: ({ params }) =>
           allowed("channel:read").pipe(
-            Effect.as(params.workspaceId === studioId ? channels : [])
+            Effect.andThen(channelsNow(studio, params.workspaceId))
           ),
         platforms: () => refusing,
         reconnect: () => refusing,
+        update: ({ params, payload }) =>
+          changingChannel(
+            studio,
+            params,
+            (channel) =>
+              channel.label === payload.label
+                ? channel
+                : { ...channel, label: payload.label },
+            "rename"
+          ),
       })
     ),
     HttpApiBuilder.group(Api, "posts", (handlers) =>
@@ -2095,14 +2710,22 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new Forbidden();
             }
 
+            yield* checkTags(studio, payload.tagIds ?? []);
+
+            const { post: written, warnings } = yield* filled(
+              studio,
+              payload,
+              true
+            );
+
             const { posts: all } = yield* Ref.get(studio.state);
             const id = `0190f3a0-0000-7000-8000-${String(all.length + 1).padStart(12, "0")}`;
 
             yield* record(studio, `create:${id}`);
 
-            return yield* savePost(studio, {
+            const saved = yield* savePost(studio, {
               authorId: userId,
-              content: payload.content,
+              content: written.content,
               createdVia: null,
               id,
               outcome: null,
@@ -2110,8 +2733,11 @@ export const studioGroupsLive = (studio: Studio) =>
               scheduledBy: null,
               scheduledVia: null,
               status: "draft",
-              targets: targetsOf(id, payload),
+              tagIds: payload.tagIds ?? [],
+              targets: targetsOf(id, written),
             });
+
+            return told(saved, warnings);
           }),
         discard: ({ params }) =>
           Effect.gen(function* discard() {
@@ -2161,6 +2787,55 @@ export const studioGroupsLive = (studio: Studio) =>
                   : null,
             };
           }),
+        duplicate: ({ params }) =>
+          Effect.gen(function* duplicate() {
+            yield* allowed("post:read");
+            yield* allowed("post:create");
+            yield* allowed("channel:read");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const current = yield* Ref.get(studio.state);
+            const id = `0190f3a0-0000-7000-8000-${String(current.posts.length + 1).padStart(12, "0")}`;
+
+            // What the workspace no longer has is left out.
+            const kept = post.targets.filter(({ channelId }) =>
+              current.channels.some((channel) => channel.id === channelId)
+            );
+
+            yield* record(studio, `duplicate:${post.id}:${id}`);
+
+            return yield* savePost(studio, {
+              authorId: userId,
+              content: {
+                media: post.content.media.filter(({ mediaId }) =>
+                  current.media.some((media) => media.id === mediaId)
+                ),
+                overrides: post.content.overrides.filter(({ channelId }) =>
+                  kept.some((target) => target.channelId === channelId)
+                ),
+                text: post.content.text,
+              },
+              createdVia: null,
+              id,
+              outcome: null,
+              schedule: null,
+              scheduledBy: null,
+              scheduledVia: null,
+              status: "draft",
+              tagIds: post.tagIds.filter((tagId) =>
+                current.tags.some((tag) => tag.id === tagId)
+              ),
+              targets: kept.map((target, index) => ({
+                ...pendingOn(`${id}-${String(index)}`, target.channelId),
+                options: target.options,
+              })),
+            });
+          }),
         get: ({ params }) =>
           allowed("post:read").pipe(
             Effect.andThen(findPost(studio, params.workspaceId, params.postId))
@@ -2173,7 +2848,12 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new Forbidden();
             }
 
-            const read = (yield* importRows(payload.csv)).map(rowOf);
+            const { channelSets: sets } = yield* Ref.get(studio.state);
+
+            const read = (yield* importRows(payload.csv)).map((cells) =>
+              rowOf(cells, sets)
+            );
+
             const key = headers["idempotency-key"];
 
             // Every row is checked first: nothing is made unless all of
@@ -2345,6 +3025,7 @@ export const studioGroupsLive = (studio: Studio) =>
                   post.createdVia?.via === query.createdVia,
                 query.authorId === undefined ||
                   post.authorId === query.authorId,
+                query.tagId === undefined || post.tagIds.includes(query.tagId),
               ].every(Boolean)
             );
 
@@ -2375,13 +3056,34 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new Forbidden();
             }
 
-            const { post } = yield* makePost(
+            const { post, warnings } = yield* makePost(
               studio,
               payload,
               headers["idempotency-key"]
             );
 
-            return yield* afterWaiting(studio, post, query.wait);
+            return told(
+              yield* afterWaiting(studio, post, query.wait),
+              warnings
+            );
+          }),
+        tag: ({ params, payload }) =>
+          Effect.gen(function* tag() {
+            yield* allowed("post:update");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            yield* checkTags(studio, payload.tagIds);
+            yield* record(studio, `tag:${post.id}:${payload.tagIds.join(",")}`);
+
+            return yield* savePost(studio, {
+              ...post,
+              tagIds: payload.tagIds,
+            });
           }),
         unschedule: ({ params }) =>
           Effect.gen(function* unschedule() {
@@ -2419,15 +3121,28 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new PostStatusConflict({ status: post.status });
             }
 
+            yield* checkTags(studio, payload.tagIds ?? []);
+
+            // A draft that changes keeps what it is given: no defaults.
+            const { post: written, warnings } = yield* filled(
+              studio,
+              payload,
+              false
+            );
+
             yield* record(studio, `update:${post.id}`);
 
-            return yield* savePost(studio, {
+            const saved = yield* savePost(studio, {
               ...post,
-              content: payload.content,
-              targets: targetsOf(post.id, payload),
+              content: written.content,
+              // Tags left out are kept.
+              tagIds: payload.tagIds ?? post.tagIds,
+              targets: targetsOf(post.id, written),
             });
+
+            return told(saved, warnings);
           }),
-        validate: ({ params, payload }) =>
+        validate: ({ params, payload: asked }) =>
           Effect.gen(function* validate() {
             yield* allowed("post:read");
             yield* allowed("channel:read");
@@ -2436,10 +3151,18 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new Forbidden();
             }
 
+            const { post: payload, warnings } = yield* filled(
+              studio,
+              asked,
+              true
+            );
+
             const { when } = payload;
             const { policy, posts: all } = yield* Ref.get(studio.state);
 
-            const validation: Omit<PostValidation, "valid"> = {
+            const warned = warnings.length === 0 ? {} : { warnings };
+
+            const validation: Omit<PostValidation, "valid" | "warnings"> = {
               // Where every post waits, this one would.
               awaitsApproval: when !== undefined && policy === "always",
               channels: payload.channelIds.flatMap((channelId) => {
@@ -2482,6 +3205,7 @@ export const studioGroupsLive = (studio: Studio) =>
                 validation.unknownChannels.length === 0 &&
                 validation.unknownMedia.length === 0 &&
                 validation.violations.length === 0,
+              ...warned,
             };
           }),
       })
@@ -3743,6 +4467,332 @@ export const studioGroupsLive = (studio: Studio) =>
       })
     ),
     studioInboxLive(studio.inbox),
+    HttpApiBuilder.group(Api, "tags", (handlers) =>
+      handlers.handleAll({
+        create: ({ params, payload }) =>
+          Effect.gen(function* create() {
+            yield* allowed("post:update");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            yield* checkTagName(studio, payload.name);
+
+            const { changes, tags: all } = yield* Ref.get(studio.state);
+
+            if (all.length >= maxTagsPerWorkspace) {
+              return yield* new TooManyTags({ allowed: maxTagsPerWorkspace });
+            }
+
+            // An id no tag had, deleted ones included.
+            const made =
+              changes.filter((change) => change.startsWith("tag:create:"))
+                .length +
+              tags.length +
+              1;
+
+            const tag: Tag = {
+              colour: payload.colour,
+              createdAt: studioNow,
+              id: `0190f3a0-0000-7000-8000-00000000a${String(made).padStart(3, "0")}`,
+              name: payload.name,
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              tags: [...current.tags, tag],
+            }));
+            yield* record(studio, `tag:create:${tag.name}:${tag.colour}`);
+
+            return tag;
+          }),
+        delete: ({ params }) =>
+          Effect.gen(function* remove() {
+            yield* allowed("post:update");
+
+            const tag = yield* findTag(studio, params);
+
+            // Its posts lose it, and stay.
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              posts: current.posts.map((post) => ({
+                ...post,
+                tagIds: post.tagIds.filter((tagId) => tagId !== tag.id),
+              })),
+              tags: current.tags.filter(({ id }) => id !== tag.id),
+            }));
+            yield* record(studio, `tag:delete:${tag.id}`);
+          }),
+        list: ({ params }) =>
+          allowed("post:read").pipe(
+            Effect.andThen(Ref.get(studio.state)),
+            Effect.map(({ tags: all }) =>
+              params.workspaceId === studioId ? all : []
+            )
+          ),
+        update: ({ params, payload }) =>
+          Effect.gen(function* update() {
+            yield* allowed("post:update");
+
+            const tag = yield* findTag(studio, params);
+
+            yield* checkTagName(studio, payload.name, tag.id);
+
+            const changed: Tag = { ...tag, ...payload };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              tags: current.tags.map((found) =>
+                found.id === tag.id ? changed : found
+              ),
+            }));
+            yield* record(
+              studio,
+              `tag:update:${tag.id}:${changed.name}:${changed.colour}`
+            );
+
+            return changed;
+          }),
+      })
+    ),
+    HttpApiBuilder.group(Api, "signatures", (handlers) =>
+      handlers.handleAll({
+        create: ({ params, payload }) =>
+          Effect.gen(function* create() {
+            yield* allowed("post:update");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const scope = yield* checkSignature(studio, payload);
+            const { changes, signatures: all } = yield* Ref.get(studio.state);
+
+            if (all.length >= maxSignaturesPerWorkspace) {
+              return yield* new TooManySignatures({
+                allowed: maxSignaturesPerWorkspace,
+              });
+            }
+
+            // An id no signature had, deleted ones included.
+            const made =
+              changes.filter((change) => change.startsWith("signature:create:"))
+                .length +
+              signatures.length +
+              1;
+
+            const kept: Signature = {
+              createdAt: studioNow,
+              id: `0190f3a0-0000-7000-8000-00000000a1${String(made).padStart(2, "0")}`,
+              isDefault: payload.isDefault ?? false,
+              name: payload.name,
+              scope,
+              text: payload.text,
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              signatures: withSignature(current.signatures, kept),
+            }));
+            yield* record(
+              studio,
+              `signature:create:${kept.name}:${scopeKey(scope)}:${kept.isDefault ? "default" : "plain"}`
+            );
+
+            return kept;
+          }),
+        delete: ({ params }) =>
+          Effect.gen(function* remove() {
+            yield* allowed("post:update");
+
+            const gone = yield* findSignature(studio, params);
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              signatures: current.signatures.filter(({ id }) => id !== gone.id),
+            }));
+            yield* record(studio, `signature:delete:${gone.id}`);
+          }),
+        list: ({ params }) =>
+          allowed("post:read").pipe(
+            Effect.andThen(Ref.get(studio.state)),
+            Effect.map(({ signatures: all }) =>
+              params.workspaceId === studioId ? all : []
+            )
+          ),
+        update: ({ params, payload }) =>
+          Effect.gen(function* update() {
+            yield* allowed("post:update");
+
+            const kept = yield* findSignature(studio, params);
+            const scope = yield* checkSignature(studio, payload, kept.id);
+
+            const changed: Signature = {
+              ...kept,
+              isDefault: payload.isDefault ?? false,
+              name: payload.name,
+              scope,
+              text: payload.text,
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              signatures: withSignature(current.signatures, changed),
+            }));
+            yield* record(
+              studio,
+              `signature:update:${changed.id}:${changed.name}:${scopeKey(scope)}:${changed.isDefault ? "default" : "plain"}`
+            );
+
+            return changed;
+          }),
+      })
+    ),
+    HttpApiBuilder.group(Api, "channelSets", (handlers) =>
+      handlers.handleAll({
+        create: ({ params, payload }) =>
+          Effect.gen(function* create() {
+            yield* allowed("post:update");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            yield* checkSet(studio, payload);
+
+            const { changes, channelSets: all } = yield* Ref.get(studio.state);
+
+            if (all.length >= maxChannelSetsPerWorkspace) {
+              return yield* new TooManyChannelSets({
+                allowed: maxChannelSetsPerWorkspace,
+              });
+            }
+
+            // An id no set had, deleted ones included.
+            const made =
+              changes.filter((change) => change.startsWith("set:create:"))
+                .length +
+              channelSets.length +
+              1;
+
+            const set: StudioSet = {
+              channelIds: payload.channelIds,
+              createdAt: studioNow,
+              id: `0190f3a0-0000-7000-8000-00000000a2${String(made).padStart(2, "0")}`,
+              name: payload.name,
+              options: payload.options ?? [],
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              channelSets: [...current.channelSets, set],
+            }));
+            yield* record(
+              studio,
+              `set:create:${set.name}:${set.channelIds.join(",")}`
+            );
+
+            return setView(set);
+          }),
+        delete: ({ params }) =>
+          Effect.gen(function* remove() {
+            yield* allowed("post:update");
+
+            const set = yield* findSet(studio, params);
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              channelSets: current.channelSets.filter(
+                ({ id }) => id !== set.id
+              ),
+            }));
+            yield* record(studio, `set:delete:${set.id}`);
+          }),
+        list: ({ params }) =>
+          allowed("post:read").pipe(
+            Effect.andThen(allowed("channel:read")),
+            Effect.andThen(Ref.get(studio.state)),
+            Effect.map(({ channelSets: all }) =>
+              params.workspaceId === studioId ? all.map(setView) : []
+            )
+          ),
+        update: ({ params, payload }) =>
+          Effect.gen(function* update() {
+            yield* allowed("post:update");
+
+            const set = yield* findSet(studio, params);
+
+            yield* checkSet(studio, payload, set.id);
+
+            const changed: StudioSet = {
+              ...set,
+              channelIds: payload.channelIds,
+              name: payload.name,
+              options: payload.options ?? [],
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              channelSets: current.channelSets.map((found) =>
+                found.id === set.id ? changed : found
+              ),
+            }));
+            yield* record(
+              studio,
+              `set:update:${set.id}:${changed.name}:${changed.channelIds.join(",")}`
+            );
+
+            return setView(changed);
+          }),
+      })
+    ),
+    HttpApiBuilder.group(Api, "channelDefaults", (handlers) =>
+      handlers.handleAll({
+        clear: ({ params }) =>
+          Effect.gen(function* clear() {
+            yield* allowed("post:update");
+
+            const channel = yield* channelIn(params);
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              defaults: Object.fromEntries(
+                Object.entries(current.defaults).filter(
+                  ([channelId]) => channelId !== channel.id
+                )
+              ),
+            }));
+            yield* record(studio, `defaults:clear:${channel.id}`);
+          }),
+        get: ({ params }) =>
+          Effect.gen(function* get() {
+            yield* allowed("post:read");
+
+            const channel = yield* channelIn(params);
+            const { defaults } = yield* Ref.get(studio.state);
+
+            return { options: defaults[channel.id] ?? null };
+          }),
+        set: ({ params, payload }) =>
+          Effect.gen(function* set() {
+            yield* allowed("post:update");
+
+            const channel = yield* channelIn(params);
+
+            yield* checkOptions([
+              { channelId: channel.id, options: payload.options },
+            ]);
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              defaults: { ...current.defaults, [channel.id]: payload.options },
+            }));
+            yield* record(studio, `defaults:set:${channel.id}`);
+
+            return { options: payload.options };
+          }),
+      })
+    ),
     HttpApiBuilder.group(Api, "activity", (handlers) =>
       handlers.handleAll({
         list: ({ params, query }) =>

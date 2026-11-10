@@ -17,6 +17,7 @@ import type {
 import type { LimitRefusal } from "#shared/api/limit-reached.ts";
 
 import type { CheckInputRead } from "./post-check-input.ts";
+import { droppedWarnings } from "./post-view.ts";
 
 const countView = ({ count, maximum }: LimitedCount): CountView => ({
   count,
@@ -61,7 +62,7 @@ const validationView = (
     ? Option.getOrNull(check.schedule)
     : "invalidTimeZone";
 
-  return {
+  const view: PostValidation = {
     awaitsApproval: check.awaitsApproval,
     channels: check.channels.map(previewView),
     duplicates: check.duplicates.map(({ channelId, postId }) => ({
@@ -83,6 +84,10 @@ const validationView = (
       ({ _tag }) => _tag !== "noChannels" || read.malformedChannels.length === 0
     ),
   };
+
+  return check.dropped.length === 0
+    ? view
+    : { ...view, warnings: droppedWarnings(check.dropped) };
 };
 
 /**

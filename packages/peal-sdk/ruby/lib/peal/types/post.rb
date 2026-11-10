@@ -23,7 +23,11 @@ module Peal
 
       field :status, -> { Peal::Types::PostStatus }, optional: false, nullable: false
 
+      field :tag_ids, -> { Internal::Types::Array[String] }, optional: false, nullable: false, api_name: "tagIds"
+
       field :targets, -> { Internal::Types::Array[Peal::Types::PostTarget] }, optional: false, nullable: false
+
+      field :warnings, -> { Internal::Types::Array[Peal::Types::PostWarning] }, optional: true, nullable: false
     end
   end
 end

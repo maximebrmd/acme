@@ -11,6 +11,8 @@ import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
 import { ReviewTools } from "#app/mcp/review-tools.ts";
+import { SavedTools } from "#app/mcp/saved-tools.ts";
+import { TagTools } from "#app/mcp/tags-tools.ts";
 import { BasicTools } from "#app/mcp/tools.ts";
 import { WebhookTools } from "#app/mcp/webhooks-tools.ts";
 import type { WorkspaceScope } from "#workspace/domain/oauth-grant.ts";
@@ -39,6 +41,8 @@ export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
   posts: Object.values(PostTools.tools),
   reports: Object.values(ReportTools.tools),
   review: Object.values(ReviewTools.tools),
+  saved: Object.values(SavedTools.tools),
+  tags: Object.values(TagTools.tools),
   webhooks: Object.values(WebhookTools.tools),
 };
 

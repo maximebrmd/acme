@@ -183,6 +183,10 @@ public class BulkTest : BaseMockServerTest
                       "via": "web"
                     },
                     "status": "draft",
+                    "tagIds": [
+                      "tagIds",
+                      "tagIds"
+                    ],
                     "targets": [
                       {
                         "channelId": "channelId",
@@ -265,6 +269,26 @@ public class BulkTest : BaseMockServerTest
                         "round": 1,
                         "status": "pending",
                         "unconfirmedReason": "noResponse"
+                      }
+                    ],
+                    "warnings": [
+                      {
+                        "_tag": "channelsDropped",
+                        "channelIds": [
+                          "channelIds",
+                          "channelIds"
+                        ],
+                        "channelSetId": "channelSetId",
+                        "channelSetName": "channelSetName"
+                      },
+                      {
+                        "_tag": "channelsDropped",
+                        "channelIds": [
+                          "channelIds",
+                          "channelIds"
+                        ],
+                        "channelSetId": "channelSetId",
+                        "channelSetName": "channelSetName"
                       }
                     ]
                   },
@@ -366,6 +390,10 @@ public class BulkTest : BaseMockServerTest
                       "via": "web"
                     },
                     "status": "draft",
+                    "tagIds": [
+                      "tagIds",
+                      "tagIds"
+                    ],
                     "targets": [
                       {
                         "channelId": "channelId",
@@ -449,6 +477,26 @@ public class BulkTest : BaseMockServerTest
                         "status": "pending",
                         "unconfirmedReason": "noResponse"
                       }
+                    ],
+                    "warnings": [
+                      {
+                        "_tag": "channelsDropped",
+                        "channelIds": [
+                          "channelIds",
+                          "channelIds"
+                        ],
+                        "channelSetId": "channelSetId",
+                        "channelSetName": "channelSetName"
+                      },
+                      {
+                        "_tag": "channelsDropped",
+                        "channelIds": [
+                          "channelIds",
+                          "channelIds"
+                        ],
+                        "channelSetId": "channelSetId",
+                        "channelSetName": "channelSetName"
+                      }
                     ]
                   },
                   "replayed": true
@@ -484,6 +532,7 @@ public class BulkTest : BaseMockServerTest
                     {
                         AllowDuplicate = null,
                         ChannelIds = new List<string>() { "channelIds", "channelIds" },
+                        ChannelSets = null,
                         Content = new PostContent
                         {
                             FollowUps = null,
@@ -499,7 +548,10 @@ public class BulkTest : BaseMockServerTest
                             },
                             Text = "text",
                         },
+                        DefaultSignatures = null,
                         Options = null,
+                        SignatureId = null,
+                        TagIds = null,
                         When = new PostTiming(
                             new PostTiming.Now(new PostTimingNow { TimeZone = null })
                         ),
@@ -509,6 +561,7 @@ public class BulkTest : BaseMockServerTest
                     {
                         AllowDuplicate = null,
                         ChannelIds = new List<string>() { "channelIds", "channelIds" },
+                        ChannelSets = null,
                         Content = new PostContent
                         {
                             FollowUps = null,
@@ -524,7 +577,10 @@ public class BulkTest : BaseMockServerTest
                             },
                             Text = "text",
                         },
+                        DefaultSignatures = null,
                         Options = null,
+                        SignatureId = null,
+                        TagIds = null,
                         When = new PostTiming(
                             new PostTiming.Now(new PostTimingNow { TimeZone = null })
                         ),
@@ -594,6 +650,9 @@ public class BulkTest : BaseMockServerTest
                     },
                     "id": "id",
                     "status": "draft",
+                    "tagIds": [
+                      "tagIds"
+                    ],
                     "targets": [
                       {
                         "channelId": "channelId",

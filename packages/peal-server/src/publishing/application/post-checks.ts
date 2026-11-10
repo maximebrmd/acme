@@ -28,10 +28,14 @@ import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import type { AccountRules } from "./account-rules.ts";
 import { ApprovalGate } from "./approval-gate.ts";
 import { AttachableMedia } from "./attachable-media.ts";
+import type { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import { ContentFingerprints } from "./content-fingerprints.ts";
 import { PostAllowance } from "./post-allowance.ts";
+import { nothingAsked, PostPresets } from "./post-presets.ts";
+import type { DroppedChannels, PresetAsk } from "./post-presets.ts";
 import { PostRepository } from "./post-repository.ts";
 import { violationsOf } from "./publishability.ts";
+import type { SignatureNotFound } from "./signature-not-found.ts";
 import { WorkspaceChannels } from "./workspace-channels.ts";
 
 /** A post to check: what `send` takes, or a draft, which has no time. */
@@ -42,6 +46,11 @@ export interface CheckPostRequest {
   readonly content: PostContent;
   // The options it has on some channels, one at most per channel.
   readonly options?: readonly ChannelOptions[];
+  /**
+   * What it takes from what the workspace saved: channel sets, and
+   * signatures, filled in before anything is checked. Left out, nothing.
+   */
+  readonly presets?: PresetAsk;
   /**
    * When it would go out, if the request says: at an instant, or now. None
    * is a draft, whose time and room in the plan are not checked.
@@ -64,6 +73,19 @@ export interface PostCheck {
    * near its time, when it has one and does not allow them.
    */
   readonly duplicates: readonly Duplicate[];
+  /**
+   * Channels of the sets it names that it would be made without, as the
+   * workspace no longer has them.
+   */
+  readonly dropped: readonly DroppedChannels[];
+  /**
+   * What was checked, once the sets and signatures it names are filled
+   * in: the channels it would go to and what it would say.
+   */
+  readonly filled: {
+    readonly channelIds: readonly ChannelId[];
+    readonly content: PostContent;
+  };
   /** The limit of the plan it would pass, when it has a time. */
   readonly planLimit: Option.Option<PlanLimitReached>;
   /** Whether its time can be kept, when it has one. */
@@ -90,6 +112,7 @@ type Ports =
   | AttachableMedia
   | ContentFingerprints
   | PostAllowance
+  | PostPresets
   | PostRepository
   | WorkspaceChannels;
 
@@ -108,7 +131,10 @@ export class PostChecks extends Context.Service<
     readonly check: (
       actor: Actor,
       request: CheckPostRequest
-    ) => Effect.Effect<PostCheck, DatabaseError | MissingPermission>;
+    ) => Effect.Effect<
+      PostCheck,
+      ChannelSetNotFound | DatabaseError | MissingPermission | SignatureNotFound
+    >;
   }
 >()("peal-server/publishing/application/PostChecks") {
   static readonly layer = Layer.effect(
@@ -165,15 +191,20 @@ export class PostChecks extends Context.Service<
 
       const check = Effect.fn("PostChecks.check")(function* check(
         actor: Actor,
-        {
-          allowDuplicate = false,
-          channelIds,
-          content,
-          options = [],
-          when,
-        }: CheckPostRequest
+        { allowDuplicate = false, when, ...asked }: CheckPostRequest
       ) {
         yield* Effect.fromResult(authorize(actor, "post:read"));
+
+        const { channelIds, content, dropped, options } =
+          yield* PostPresets.use((presets) =>
+            presets.fill(actor, {
+              ...(asked.presets ?? nothingAsked),
+              channelIds: asked.channelIds,
+              content: asked.content,
+              defaultOptions: true,
+              options: asked.options ?? [],
+            })
+          ).pipe(Effect.provideContext(ports));
 
         const requested = Arr.dedupe(channelIds);
 
@@ -278,7 +309,9 @@ export class PostChecks extends Context.Service<
               )
             )
           ),
+          dropped,
           duplicates,
+          filled: { channelIds: requested, content },
           planLimit,
           schedule,
           unknownChannels,

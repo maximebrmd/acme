@@ -38,8 +38,14 @@ public record Post : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required PostStatus Status { get; set; }
 
+    [JsonPropertyName("tagIds")]
+    public IEnumerable<string> TagIds { get; set; } = new List<string>();
+
     [JsonPropertyName("targets")]
     public IEnumerable<PostTarget> Targets { get; set; } = new List<PostTarget>();
+
+    [JsonPropertyName("warnings")]
+    public IEnumerable<PostWarning>? Warnings { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

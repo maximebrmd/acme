@@ -11,15 +11,20 @@ import type {
   AuthoredPostRecord,
   PostOriginRecord,
   PostRecord,
+  SavedItemsRecord,
 } from "#shared/application/personal-data.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import {
+  channelDefaults,
+  channelSets,
   idempotencyKeys,
-  posts,
   postTargets,
+  posts,
   publicationCalls,
+  signatures,
+  tags,
 } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
@@ -101,6 +106,12 @@ const originRecord = (row: PostRow, column: "createdVia" | "scheduledVia") =>
     )
   );
 
+// A row with the instant it was made at, as records hold instants.
+const dated = <Row extends { readonly createdAt: Date }>(row: Row) => ({
+  ...row,
+  createdAt: DateTime.fromDateUnsafe(row.createdAt),
+});
+
 const utcOrNull = (date: Date | null) =>
   date === null ? null : DateTime.fromDateUnsafe(date);
 
@@ -155,6 +166,7 @@ const recordOf = Effect.fnUntraced(function* recordOf(
     scheduledAt: utcOrNull(row.scheduledAt),
     scheduledVia: yield* originRecord(row, "scheduledVia"),
     status: row.status,
+    tagIds: row.tagIds,
     targets,
     text: row.text,
     textOverrides: overrides,
@@ -282,6 +294,59 @@ export const DrizzleWorkspacePostStore = Layer.effect(
       }
     );
 
+    const exportSaved = Effect.fn("WorkspacePostStore.exportSaved")(
+      function* exportSaved(workspaceId: string) {
+        const saved: SavedItemsRecord = {
+          channelDefaults: yield* db
+            .select({
+              channelId: channelDefaults.channelId,
+              options: channelDefaults.options,
+            })
+            .from(channelDefaults)
+            .where(eq(channelDefaults.workspaceId, workspaceId))
+            .orderBy(asc(channelDefaults.channelId)),
+          channelSets: (yield* db
+            .select({
+              channelIds: channelSets.channelIds,
+              createdAt: channelSets.createdAt,
+              id: channelSets.id,
+              name: channelSets.name,
+              options: channelSets.options,
+            })
+            .from(channelSets)
+            .where(eq(channelSets.workspaceId, workspaceId))
+            .orderBy(asc(channelSets.id))).map(dated),
+          signatures: (yield* db
+            .select({
+              createdAt: signatures.createdAt,
+              id: signatures.id,
+              isDefault: signatures.isDefault,
+              name: signatures.name,
+              scope: signatures.scope,
+              scopeChannelId: signatures.scopeChannelId,
+              scopePlatform: signatures.scopePlatform,
+              text: signatures.text,
+            })
+            .from(signatures)
+            .where(eq(signatures.workspaceId, workspaceId))
+            .orderBy(asc(signatures.id))).map(dated),
+          tags: (yield* db
+            .select({
+              colour: tags.colour,
+              createdAt: tags.createdAt,
+              id: tags.id,
+              name: tags.name,
+            })
+            .from(tags)
+            .where(eq(tags.workspaceId, workspaceId))
+            .orderBy(asc(tags.id))).map(dated),
+        };
+
+        return saved;
+      },
+      Effect.mapError(failed)
+    );
+
     const deleteAll = Effect.fn("WorkspacePostStore.deleteAll")(
       function* deleteAll(workspaceId: string) {
         yield* db
@@ -293,6 +358,29 @@ export const DrizzleWorkspacePostStore = Layer.effect(
         yield* db
           .delete(idempotencyKeys)
           .where(eq(idempotencyKeys.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        // And the tags they were filed under.
+        yield* db
+          .delete(tags)
+          .where(eq(tags.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        // And what the workspace saved to write them: its signatures, its
+        // channel sets and its channels' default options.
+        yield* db
+          .delete(signatures)
+          .where(eq(signatures.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        yield* db
+          .delete(channelSets)
+          .where(eq(channelSets.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        yield* db
+          .delete(channelDefaults)
+          .where(eq(channelDefaults.workspaceId, workspaceId))
           .pipe(Effect.mapError(failed));
       }
     );
@@ -351,6 +439,7 @@ export const DrizzleWorkspacePostStore = Layer.effect(
       deleteAll,
       exportAll,
       exportAuthored,
+      exportSaved,
       lockAll,
       lockRounds,
     });

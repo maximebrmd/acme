@@ -1,8 +1,18 @@
 import { Schema } from "effect";
 import { Tool, Toolkit } from "effect/ai";
-import { ChannelSchema, CurrentMember, PermissionSchema } from "peal-contract";
+import {
+  ChannelPageSchema,
+  ChannelSchema,
+  ChannelStatusNameSchema,
+  ChannelUpdateSchema,
+  CurrentMember,
+  maxChannelLabelLength,
+  maxChannelQueryLength,
+  PermissionSchema,
+  PlatformSchema,
+} from "peal-contract";
 
-import { reading } from "#app/mcp/annotations.ts";
+import { changing, reading } from "#app/mcp/annotations.ts";
 import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { ConnectTools } from "#app/mcp/connect-tools.ts";
 import { FindTools } from "#app/mcp/discovery-tools.ts";
@@ -12,6 +22,8 @@ import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
 import { ReviewTools } from "#app/mcp/review-tools.ts";
+import { SavedTools } from "#app/mcp/saved-tools.ts";
+import { TagTools } from "#app/mcp/tags-tools.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { WebhookTools } from "#app/mcp/webhooks-tools.ts";
 
@@ -76,15 +88,91 @@ export const ListWorkspaces = Tool.make("list_workspaces", {
   .annotateMerge(reading)
   .annotate(Tool.Title, "List workspaces");
 
+const channelId = Schema.String.annotate({
+  description: "The channel's id, as list_channels answers it.",
+});
+
+const StatusCountsSchema = ChannelPageSchema.fields.counts.annotate({
+  description:
+    "How many channels the platform and text asked for match in each status, whatever the status asked for.",
+});
+
 export const ListChannels = Tool.make("list_channels", {
   dependencies: [CurrentMember],
   description:
-    "Lists the social accounts (channels) connected to the workspace, oldest first, with whether each one posts or needs to be reconnected, and for Instagram its `connection`: `instagramLogin` (the professional account itself) or `facebookLogin` (through a Facebook Page), and for LinkedIn `linkedinProfile` (a member's own profile) or `linkedinPage` (a company page, the only LinkedIn channels with post counts and lookups). Their tokens are never shown. Accounts are connected in the web app, where the member signs in on the platform.",
+    "Lists the social accounts (channels) connected to the workspace, oldest first, each with whether it posts, is turned off or needs to be reconnected, and the name the workspace gave it. `status` is `active` (it posts), `disabled` (turned off: nothing goes out on it until enable_channel turns it back on) or `refreshNeeded` (the user reconnects the account in the web app). `label` is the name the workspace gave the channel, null when it gave none: a name of Peal's own, beside the `handle` and `displayName` its platform gives the account. Instagram channels have a `connection`: `instagramLogin` (the professional account itself) or `facebookLogin` (through a Facebook Page), and LinkedIn ones `linkedinProfile` (a member's own profile) or `linkedinPage` (a company page, the only LinkedIn channels with post counts and lookups). `platform`, `status` and `search` narrow the list, every one given holding, and the answer then has `counts` too: how many channels the platform and text match in each status. Their tokens are never shown. Accounts are connected in the web app, where the member signs in on the platform.",
   failure: ToolRefused,
-  success: Schema.Struct({ channels: Schema.Array(ChannelSchema) }),
+  parameters: Schema.Struct({
+    platform: Schema.optionalKey(
+      PlatformSchema.annotate({
+        description: "Only the channels of this platform.",
+      })
+    ),
+    search: Schema.optionalKey(
+      Schema.String.check(
+        Schema.isBetweenLength(1, maxChannelQueryLength)
+      ).annotate({
+        description:
+          "Only the channels whose handle, the name their platform shows or the name the workspace gave them holds this text, whatever its case.",
+      })
+    ),
+    status: Schema.optionalKey(
+      ChannelStatusNameSchema.annotate({
+        description:
+          "Only the channels that post (`active`), are turned off (`disabled`) or need to be reconnected (`refreshNeeded`).",
+      })
+    ),
+  }),
+  success: Schema.Struct({
+    channels: Schema.Array(ChannelSchema),
+    counts: Schema.optionalKey(StatusCountsSchema),
+  }),
 })
   .annotateMerge(reading)
   .annotate(Tool.Title, "List channels");
+
+export const RenameChannel = Tool.make("rename_channel", {
+  dependencies: [CurrentMember],
+  description: `Gives a channel of the workspace the name the workspace calls it by (\`label\`), instead of any it had, for every member, or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. The same name again changes nothing more.`,
+  failure: ToolRefused,
+  parameters: Schema.Struct({
+    channelId,
+    label: ChannelUpdateSchema.fields.label.annotate({
+      description: `The name: ${String(maxChannelLabelLength)} characters at most, on one line, without spaces around it. Null takes the channel's name back.`,
+    }),
+  }),
+  success: ChannelSchema,
+})
+  .annotateMerge(
+    changing({ destructive: true, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Rename a channel");
+
+export const DisableChannel = Tool.make("disable_channel", {
+  dependencies: [CurrentMember],
+  description:
+    "Turns a channel of the workspace off, for every member: nothing goes out on it until enable_channel turns it back on. A post that reaches its time while the channel is off fails on that channel (`channelDisabled`), goes out on its other channels, and is not sent later: scheduled posts for this channel will fail there, so do it only when the user asked for this channel to be turned off. Nothing is deleted: the channel keeps its connection, its history, its name and its place in the plan's count. A channel already off stays as it is.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ channelId }),
+  success: ChannelSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Turn a channel off");
+
+export const EnableChannel = Tool.make("enable_channel", {
+  dependencies: [CurrentMember],
+  description:
+    "Turns a channel of the workspace back on, for every member: posts go out on it again at once, the scheduled ones at their time. Its status is `refreshNeeded` instead when its platform stopped accepting its token while it was off: the user then reconnects the account in the web app. The posts that failed on it while it was off are not sent: they are scheduled anew. A channel that is on stays as it is.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ channelId }),
+  success: ChannelSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: true, openWorld: false })
+  )
+  .annotate(Tool.Title, "Turn a channel back on");
 
 export const ServerHealth = Tool.make("server_health", {
   description:
@@ -98,14 +186,18 @@ export const ServerHealth = Tool.make("server_health", {
   .annotate(Tool.Title, "Server health");
 
 /**
- * Who the connection is, its workspaces and channels, the server, and the
- * list of the tools themselves.
+ * Who the connection is, its workspaces and channels, with the name each
+ * channel has and whether it is on, the server, and the list of the tools
+ * themselves.
  */
 export const BasicTools = Toolkit.make(
   FindTools,
   WhoAmI,
   ListWorkspaces,
   ListChannels,
+  RenameChannel,
+  DisableChannel,
+  EnableChannel,
   ServerHealth
 );
 
@@ -118,6 +210,8 @@ export const BasicTools = Toolkit.make(
 export const PealTools = Toolkit.merge(
   BasicTools,
   PostTools,
+  TagTools,
+  SavedTools,
   MediaTools,
   ReportTools,
   PeopleTools,

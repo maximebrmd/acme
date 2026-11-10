@@ -66,6 +66,18 @@ public final class PostRefusal {
         return new PostRefusal(new ForbiddenValue(value));
     }
 
+    public static PostRefusal unknownTags(UnknownTagsEncoded value) {
+        return new PostRefusal(new UnknownTagsValue(value));
+    }
+
+    public static PostRefusal channelSetNotFound(ChannelSetNotFoundEncoded value) {
+        return new PostRefusal(new ChannelSetNotFoundValue(value));
+    }
+
+    public static PostRefusal signatureNotFound(SignatureNotFoundEncoded value) {
+        return new PostRefusal(new SignatureNotFoundValue(value));
+    }
+
     public boolean isPostContentInvalid() {
         return value instanceof PostContentInvalidValue;
     }
@@ -104,6 +116,18 @@ public final class PostRefusal {
 
     public boolean isForbidden() {
         return value instanceof ForbiddenValue;
+    }
+
+    public boolean isUnknownTags() {
+        return value instanceof UnknownTagsValue;
+    }
+
+    public boolean isChannelSetNotFound() {
+        return value instanceof ChannelSetNotFoundValue;
+    }
+
+    public boolean isSignatureNotFound() {
+        return value instanceof SignatureNotFoundValue;
     }
 
     public boolean _isUnknown() {
@@ -180,6 +204,27 @@ public final class PostRefusal {
         return Optional.empty();
     }
 
+    public Optional<UnknownTagsEncoded> getUnknownTags() {
+        if (isUnknownTags()) {
+            return Optional.of(((UnknownTagsValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ChannelSetNotFoundEncoded> getChannelSetNotFound() {
+        if (isChannelSetNotFound()) {
+            return Optional.of(((ChannelSetNotFoundValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<SignatureNotFoundEncoded> getSignatureNotFound() {
+        if (isSignatureNotFound()) {
+            return Optional.of(((SignatureNotFoundValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<Object> _getUnknown() {
         if (_isUnknown()) {
             return Optional.of(((_UnknownValue) value).value);
@@ -229,6 +274,12 @@ public final class PostRefusal {
 
         T visitForbidden(ForbiddenEncoded forbidden);
 
+        T visitUnknownTags(UnknownTagsEncoded unknownTags);
+
+        T visitChannelSetNotFound(ChannelSetNotFoundEncoded channelSetNotFound);
+
+        T visitSignatureNotFound(SignatureNotFoundEncoded signatureNotFound);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -243,7 +294,10 @@ public final class PostRefusal {
         @JsonSubTypes.Type(IdempotencyKeyReusedValue.class),
         @JsonSubTypes.Type(PostNotFoundValue.class),
         @JsonSubTypes.Type(DuplicatePostValue.class),
-        @JsonSubTypes.Type(ForbiddenValue.class)
+        @JsonSubTypes.Type(ForbiddenValue.class),
+        @JsonSubTypes.Type(UnknownTagsValue.class),
+        @JsonSubTypes.Type(ChannelSetNotFoundValue.class),
+        @JsonSubTypes.Type(SignatureNotFoundValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -636,6 +690,126 @@ public final class PostRefusal {
         }
 
         private boolean equalTo(ForbiddenValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "PostRefusal{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("UnknownTags")
+    @JsonIgnoreProperties("_tag")
+    private static final class UnknownTagsValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private UnknownTagsEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private UnknownTagsValue() {}
+
+        private UnknownTagsValue(UnknownTagsEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitUnknownTags(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof UnknownTagsValue && equalTo((UnknownTagsValue) other);
+        }
+
+        private boolean equalTo(UnknownTagsValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "PostRefusal{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("ChannelSetNotFound")
+    @JsonIgnoreProperties("_tag")
+    private static final class ChannelSetNotFoundValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ChannelSetNotFoundEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private ChannelSetNotFoundValue() {}
+
+        private ChannelSetNotFoundValue(ChannelSetNotFoundEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitChannelSetNotFound(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof ChannelSetNotFoundValue && equalTo((ChannelSetNotFoundValue) other);
+        }
+
+        private boolean equalTo(ChannelSetNotFoundValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "PostRefusal{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("SignatureNotFound")
+    @JsonIgnoreProperties("_tag")
+    private static final class SignatureNotFoundValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private SignatureNotFoundEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private SignatureNotFoundValue() {}
+
+        private SignatureNotFoundValue(SignatureNotFoundEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitSignatureNotFound(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof SignatureNotFoundValue && equalTo((SignatureNotFoundValue) other);
+        }
+
+        private boolean equalTo(SignatureNotFoundValue other) {
             return value.equals(other.value);
         }
 

@@ -17,11 +17,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = PostContentInvalidEncoded.Builder.class)
 public final class PostContentInvalidEncoded {
+    private final PostContentInvalidEncodedTag tag;
+
     private final Optional<String> code;
 
     private final Optional<String> message;
@@ -33,16 +36,23 @@ public final class PostContentInvalidEncoded {
     private final Map<String, Object> additionalProperties;
 
     private PostContentInvalidEncoded(
+            PostContentInvalidEncodedTag tag,
             Optional<String> code,
             Optional<String> message,
             Optional<String> requestId,
             List<ContentViolation> violations,
             Map<String, Object> additionalProperties) {
+        this.tag = tag;
         this.code = code;
         this.message = message;
         this.requestId = requestId;
         this.violations = violations;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("_tag")
+    public PostContentInvalidEncodedTag getTag() {
+        return tag;
     }
 
     @JsonProperty("code")
@@ -77,7 +87,8 @@ public final class PostContentInvalidEncoded {
     }
 
     private boolean equalTo(PostContentInvalidEncoded other) {
-        return code.equals(other.code)
+        return tag.equals(other.tag)
+                && code.equals(other.code)
                 && message.equals(other.message)
                 && requestId.equals(other.requestId)
                 && violations.equals(other.violations);
@@ -85,7 +96,7 @@ public final class PostContentInvalidEncoded {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.code, this.message, this.requestId, this.violations);
+        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.violations);
     }
 
     @java.lang.Override
@@ -93,25 +104,61 @@ public final class PostContentInvalidEncoded {
         return ObjectMappers.stringify(this);
     }
 
-    public static Builder builder() {
+    public static TagStage builder() {
         return new Builder();
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder {
-        private Optional<String> code = Optional.empty();
+    public interface TagStage {
+        _FinalStage tag(@NotNull PostContentInvalidEncodedTag tag);
 
-        private Optional<String> message = Optional.empty();
+        Builder from(PostContentInvalidEncoded other);
+    }
+
+    public interface _FinalStage {
+        PostContentInvalidEncoded build();
+
+        _FinalStage additionalProperty(String key, Object value);
+
+        _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
+
+        _FinalStage violations(List<ContentViolation> violations);
+
+        _FinalStage addViolations(ContentViolation violations);
+
+        _FinalStage addAllViolations(List<ContentViolation> violations);
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static final class Builder implements TagStage, _FinalStage {
+        private PostContentInvalidEncodedTag tag;
+
+        private List<ContentViolation> violations = new ArrayList<>();
 
         private Optional<String> requestId = Optional.empty();
 
-        private List<ContentViolation> violations = new ArrayList<>();
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
+        @java.lang.Override
         public Builder from(PostContentInvalidEncoded other) {
+            tag(other.getTag());
             code(other.getCode());
             message(other.getMessage());
             requestId(other.getRequestId());
@@ -119,41 +166,30 @@ public final class PostContentInvalidEncoded {
             return this;
         }
 
-        @JsonSetter(value = "code", nulls = Nulls.SKIP)
-        public Builder code(Optional<String> code) {
-            this.code = code;
+        @java.lang.Override
+        @JsonSetter("_tag")
+        public _FinalStage tag(@NotNull PostContentInvalidEncodedTag tag) {
+            this.tag = Objects.requireNonNull(tag, "tag must not be null");
             return this;
         }
 
-        public Builder code(String code) {
-            this.code = Optional.ofNullable(code);
+        @java.lang.Override
+        public _FinalStage addAllViolations(List<ContentViolation> violations) {
+            if (violations != null) {
+                this.violations.addAll(violations);
+            }
             return this;
         }
 
-        @JsonSetter(value = "message", nulls = Nulls.SKIP)
-        public Builder message(Optional<String> message) {
-            this.message = message;
+        @java.lang.Override
+        public _FinalStage addViolations(ContentViolation violations) {
+            this.violations.add(violations);
             return this;
         }
 
-        public Builder message(String message) {
-            this.message = Optional.ofNullable(message);
-            return this;
-        }
-
-        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
-        public Builder requestId(Optional<String> requestId) {
-            this.requestId = requestId;
-            return this;
-        }
-
-        public Builder requestId(String requestId) {
-            this.requestId = Optional.ofNullable(requestId);
-            return this;
-        }
-
+        @java.lang.Override
         @JsonSetter(value = "violations", nulls = Nulls.SKIP)
-        public Builder violations(List<ContentViolation> violations) {
+        public _FinalStage violations(List<ContentViolation> violations) {
             this.violations.clear();
             if (violations != null) {
                 this.violations.addAll(violations);
@@ -161,25 +197,54 @@ public final class PostContentInvalidEncoded {
             return this;
         }
 
-        public Builder addViolations(ContentViolation violations) {
-            this.violations.add(violations);
+        @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
             return this;
         }
 
-        public Builder addAllViolations(List<ContentViolation> violations) {
-            if (violations != null) {
-                this.violations.addAll(violations);
-            }
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
             return this;
         }
 
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public PostContentInvalidEncoded build() {
-            return new PostContentInvalidEncoded(code, message, requestId, violations, additionalProperties);
+            return new PostContentInvalidEncoded(tag, code, message, requestId, violations, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("code")
+            if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("code")
                     || key.equalsIgnoreCase("message")
                     || key.equalsIgnoreCase("requestId")
                     || key.equalsIgnoreCase("violations")) {
@@ -188,11 +253,13 @@ public final class PostContentInvalidEncoded {
             this.additionalProperties.put(key, value);
         }
 
+        @java.lang.Override
         public Builder additionalProperty(String key, Object value) {
             this.additionalProperties.put(key, value);
             return this;
         }
 
+        @java.lang.Override
         public Builder additionalProperties(Map<String, Object> additionalProperties) {
             this.additionalProperties.putAll(additionalProperties);
             return this;

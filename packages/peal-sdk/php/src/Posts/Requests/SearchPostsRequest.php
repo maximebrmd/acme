@@ -62,6 +62,11 @@ class SearchPostsRequest extends JsonSerializableType
     public ?string $status;
 
     /**
+     * @var ?string $tagId
+     */
+    public ?string $tagId;
+
+    /**
      * @var ?string $to
      */
     public ?string $to;
@@ -78,6 +83,7 @@ class SearchPostsRequest extends JsonSerializableType
      *   platform?: ?value-of<Platform>,
      *   sort?: ?value-of<PostSort>,
      *   status?: ?value-of<PostStatus>,
+     *   tagId?: ?string,
      *   to?: ?string,
      * } $values
      */
@@ -94,6 +100,7 @@ class SearchPostsRequest extends JsonSerializableType
         $this->platform = $values['platform'] ?? null;
         $this->sort = $values['sort'] ?? null;
         $this->status = $values['status'] ?? null;
+        $this->tagId = $values['tagId'] ?? null;
         $this->to = $values['to'] ?? null;
     }
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Post } from "peal-contract";
+import type { Post, Tag } from "peal-contract";
 import type { ReactNode } from "react";
+
+import { TagList } from "#components/tags/tag-views.tsx";
 
 /** What a draft is called in the list: the start of its text. */
 export const useDraftTitle = (post: Post): string => {
@@ -12,16 +14,21 @@ export const useDraftTitle = (post: Post): string => {
   return text === "" ? t("noText") : text;
 };
 
+const noTags: readonly Tag[] = [];
+
 /**
  * One draft: its title (`children`, which links it to the composer), then
- * how many channels it goes to and what it shows.
+ * how many channels it goes to and what it shows, and its tags.
  */
 export const DraftItemView = ({
   children,
   post,
+  tags = noTags,
 }: {
   readonly children: ReactNode;
   readonly post: Post;
+  /** The post's tags, among the workspace's. */
+  readonly tags?: readonly Tag[];
 }) => {
   const t = useTranslations("Drafts");
 
@@ -32,6 +39,7 @@ export const DraftItemView = ({
         {t("channels", { count: post.targets.length })} ·{" "}
         {t("media", { count: post.content.media.length })}
       </p>
+      <TagList label={t("tags")} tags={tags} />
     </li>
   );
 };

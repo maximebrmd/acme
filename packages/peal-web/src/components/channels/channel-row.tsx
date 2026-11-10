@@ -23,12 +23,19 @@ import { toast } from "sonner";
 
 import { useChannelErrorText } from "#channels/channel-error-text.ts";
 import {
+  channelInitial,
+  channelName,
+  channelTitle,
+} from "#channels/channel-name.ts";
+import {
   channelsChanged,
   disconnectChannel,
   failureOf,
   reconnectChannel,
 } from "#channels/channels-api.ts";
 import { rememberConnection } from "#channels/pending-connection.ts";
+import { ChannelPower } from "#components/channels/channel-power.tsx";
+import { RenameChannel } from "#components/channels/rename-channel.tsx";
 
 const badgeVariant = {
   active: "outline",
@@ -44,7 +51,8 @@ interface ChannelRowProps {
 }
 
 // One connected account: who it is, whether it posts, and what the member
-// may do with it.
+// may do with it. The name the workspace gave it comes first; the platform's
+// handle, and the name it shows there, stay beside it.
 export const ChannelRow = ({
   canConnect,
   canDisconnect,
@@ -58,7 +66,15 @@ export const ChannelRow = ({
   const [isReconnecting, startReconnect] = useTransition();
   const [isDisconnecting, startDisconnect] = useTransition();
   const params = { channelId: channel.id, workspaceId };
-  const name = channel.displayName ?? channel.handle;
+  const name = channelTitle(channel);
+  const handle = channelName(channel);
+
+  // Under a name of the workspace's, the platform's own name is still told.
+  const account =
+    channel.label === null || channel.displayName === null
+      ? channel.handle
+      : `${channel.displayName} · ${channel.handle}`;
+
   const needsReconnect = channel.status._tag === "refreshNeeded";
 
   // Instagram's way in tells which sign-in reconnecting opens.
@@ -97,7 +113,7 @@ export const ChannelRow = ({
 
       Option.match(failureOf(exit), {
         onNone: () => {
-          toast.success(t("disconnected", { handle: channel.handle }));
+          toast.success(t("disconnected", { handle }));
         },
         onSome: (key) => {
           toast.error(errorText(key));
@@ -112,7 +128,7 @@ export const ChannelRow = ({
         {channel.avatarUrl === null ? null : (
           <AvatarImage src={channel.avatarUrl} alt="" />
         )}
-        <AvatarFallback>{name.slice(0, 1).toUpperCase()}</AvatarFallback>
+        <AvatarFallback>{channelInitial(channel)}</AvatarFallback>
       </Avatar>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -122,8 +138,16 @@ export const ChannelRow = ({
           </Badge>
         </div>
         <span className="text-muted-foreground truncate text-sm">
-          {platformName} · {channel.handle}
+          {platformName} · {account}
         </span>
+        {channel.status._tag === "disabled" ? (
+          <span className="text-muted-foreground text-sm">
+            {t("offHint", {
+              reconnect: channel.status.refreshNeeded ? "yes" : "no",
+              who: canConnect ? "you" : "other",
+            })}
+          </span>
+        ) : null}
         {channel.tokenExpiresAt === null ? null : (
           <span className="text-muted-foreground text-sm">
             {t("expires", {
@@ -132,7 +156,13 @@ export const ChannelRow = ({
           </span>
         )}
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
+        {canConnect ? (
+          <ChannelPower channel={channel} workspaceId={workspaceId} />
+        ) : null}
+        {canConnect ? (
+          <RenameChannel channel={channel} workspaceId={workspaceId} />
+        ) : null}
         {canConnect ? (
           <Button
             variant={needsReconnect ? "default" : "outline"}
@@ -141,9 +171,7 @@ export const ChannelRow = ({
             focusableWhenDisabled
             onClick={handleReconnect}
             aria-label={
-              isReconnecting
-                ? undefined
-                : t("reconnectAccount", { handle: channel.handle })
+              isReconnecting ? undefined : t("reconnectAccount", { handle })
             }
           >
             {isReconnecting ? t("reconnecting") : t("reconnect")}
@@ -161,7 +189,7 @@ export const ChannelRow = ({
                   aria-label={
                     isDisconnecting
                       ? undefined
-                      : t("disconnectAccount", { handle: channel.handle })
+                      : t("disconnectAccount", { handle })
                   }
                 />
               }
@@ -171,7 +199,7 @@ export const ChannelRow = ({
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>
-                  {t("disconnectTitle", { handle: channel.handle })}
+                  {t("disconnectTitle", { handle })}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   {t("disconnectDescription", { platform: channel.platform })}

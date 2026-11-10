@@ -39,6 +39,9 @@ public record PostValidation : IJsonOnDeserialized
     [JsonPropertyName("violations")]
     public IEnumerable<ContentViolation> Violations { get; set; } = new List<ContentViolation>();
 
+    [JsonPropertyName("warnings")]
+    public IEnumerable<PostWarning>? Warnings { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

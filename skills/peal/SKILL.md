@@ -139,8 +139,25 @@ peal media list --json
 peal media show <media-id> --json
 ```
 
-A channel whose `status._tag` is not `active` cannot post: tell the user, who
-reconnects it in the web app. Store media before attaching it:
+A channel whose `status._tag` is not `active` cannot post. `refreshNeeded`:
+tell the user, who reconnects it in the web app. `disabled`: someone turned
+it off, and `peal channels enable` turns it back on. A channel's `label` is
+the name the workspace gave it, beside its `handle`; `--search` finds a
+channel by either, and a filter makes `--json` answer a page (`items`,
+`nextCursor`, `counts` by status):
+
+```sh
+peal channels list --platform youtube --status active --search "client a" --json
+peal channels rename <channel-id> "Client A" --json
+peal channels disable <channel-id> --json
+peal channels enable <channel-id> --json
+```
+
+Turn a channel off only when the user asked: nothing is deleted, but a post
+that reaches its time on it meanwhile fails there (`channelDisabled`) and is
+not sent later. Once it is back on, schedule such a post anew.
+
+Store media before attaching it:
 
 ```sh
 peal media upload ./cover.png --alt "The spring catalogue's cover" --json
@@ -177,8 +194,21 @@ peal drafts discard <post-id> --json
 `drafts save` answers the post, with its `id`. Saving a draft again makes
 another draft: keep the id, and change the draft with `--post`.
 
+To write a post like one the workspace has, whatever its status, duplicate
+it: the new draft has its text, media, channels with their options, and
+tags, without what the workspace no longer has, and no time. Each call makes
+another draft.
+
+```sh
+peal posts duplicate <post-id> --json
+```
+
 A draft is not checked against the platforms. A draft that saves can still be
 refused when it is scheduled.
+
+A workspace files its posts under tags, and saves signatures, channel sets
+and channels' default options to write them with: read
+[references/saved.md](references/saved.md) before naming one.
 
 ## Schedule or publish
 

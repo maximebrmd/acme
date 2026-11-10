@@ -184,7 +184,11 @@ The staff context follows these rules too. What the law has a host keep is in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and
   billing state (plan and subscription statuses, never a card or Stripe's
-  ids): those `CloseAccount` deletes. Posts come with each target's
+  ids): those `CloseAccount` deletes. Such a workspace comes with what it
+  saved to write and file posts (`saved`, from `PostRecords.exportSaved`:
+  its tags, signatures, channel sets and channels' default options), and
+  each channel with the name the workspace gave it. Posts come with their
+  tags' ids, each target's
   platform options and whether YouTube kept the video private, and the
   export lists what staff did to the account (action, time, reason, and
   for changes made as it the operation, workspace and object ids),

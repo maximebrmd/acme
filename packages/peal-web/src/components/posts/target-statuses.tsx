@@ -4,6 +4,8 @@ import { useTranslations } from "next-intl";
 import type { Channel, Post } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
 
+import { channelName } from "#channels/channel-name.ts";
+
 interface TargetStatusesProps {
   readonly channels: readonly Channel[];
   readonly post: Post;
@@ -23,7 +25,11 @@ export const TargetStatuses = ({ channels, post }: TargetStatusesProps) => {
             key={target.id}
             className="flex flex-wrap items-center justify-between gap-2 text-sm"
           >
-            <span>{channel?.handle ?? t("disconnectedChannel")}</span>
+            <span>
+              {channel === undefined
+                ? t("disconnectedChannel")
+                : channelName(channel)}
+            </span>
             <Badge
               variant={target.status === "failed" ? "destructive" : "outline"}
             >

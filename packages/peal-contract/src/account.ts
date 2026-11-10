@@ -91,6 +91,8 @@ const ExportedChannelSchema = Schema.Struct({
   displayName: nullable(Schema.String),
   handle: Schema.String,
   id: Schema.String,
+  // The name the workspace gave it; null when it gave none.
+  label: nullable(Schema.String),
   platform: Schema.String,
   status: Schema.String,
 });
@@ -133,6 +135,8 @@ const ExportedPostSchema = Schema.Struct({
   // How it was last scheduled; null on a draft, or when it was not kept.
   scheduledVia: nullable(ExportedPostOriginSchema),
   status: Schema.String,
+  // The workspace's tags it is filed under (`saved.tags` names them).
+  tagIds: Schema.Array(Schema.String),
   targets: Schema.Array(
     Schema.Struct({
       channelId: Schema.String,
@@ -517,6 +521,45 @@ const ExportedAccountDaySchema = Schema.Struct({
   views: nullable(Schema.Int),
 });
 
+// What a workspace saved to write and file its posts.
+const ExportedSavedItemsSchema = Schema.Struct({
+  // The options new posts take on a channel when they give none.
+  channelDefaults: Schema.Array(
+    Schema.Struct({ channelId: Schema.String, options: Schema.Unknown })
+  ),
+  channelSets: Schema.Array(
+    Schema.Struct({
+      channelIds: Schema.Array(Schema.String),
+      createdAt: instant,
+      id: Schema.String,
+      name: Schema.String,
+      // The options posts take on some of its channels.
+      options: Schema.Unknown,
+    })
+  ),
+  signatures: Schema.Array(
+    Schema.Struct({
+      createdAt: instant,
+      id: Schema.String,
+      isDefault: Schema.Boolean,
+      name: Schema.String,
+      // `workspace`, `platform` or `channel`.
+      scope: Schema.String,
+      scopeChannelId: nullable(Schema.String),
+      scopePlatform: nullable(Schema.String),
+      text: Schema.String,
+    })
+  ),
+  tags: Schema.Array(
+    Schema.Struct({
+      colour: Schema.String,
+      createdAt: instant,
+      id: Schema.String,
+      name: Schema.String,
+    })
+  ),
+});
+
 const ExportedWorkspaceSchema = Schema.Struct({
   accountAnalytics: Schema.Array(ExportedAccountDaySchema),
   analytics: Schema.Array(ExportedAnalyticsSchema),
@@ -530,6 +573,8 @@ const ExportedWorkspaceSchema = Schema.Struct({
   name: Schema.String,
   posts: Schema.Array(ExportedPostSchema),
   review: ExportedReviewSchema,
+  // Its tags, signatures, channel sets and channels' default options.
+  saved: ExportedSavedItemsSchema,
   slug: Schema.String,
   webhooks: Schema.Array(ExportedWebhookSchema),
 });

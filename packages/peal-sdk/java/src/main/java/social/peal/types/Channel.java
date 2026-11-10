@@ -34,6 +34,8 @@ public final class Channel {
 
     private final String id;
 
+    private final Optional<String> label;
+
     private final Platform platform;
 
     private final ChannelStatus status;
@@ -48,6 +50,7 @@ public final class Channel {
             Optional<String> displayName,
             String handle,
             String id,
+            Optional<String> label,
             Platform platform,
             ChannelStatus status,
             Optional<String> tokenExpiresAt,
@@ -57,6 +60,7 @@ public final class Channel {
         this.displayName = displayName;
         this.handle = handle;
         this.id = id;
+        this.label = label;
         this.platform = platform;
         this.status = status;
         this.tokenExpiresAt = tokenExpiresAt;
@@ -97,6 +101,14 @@ public final class Channel {
         return id;
     }
 
+    @JsonIgnore
+    public Optional<String> getLabel() {
+        if (label == null) {
+            return Optional.empty();
+        }
+        return label;
+    }
+
     @JsonProperty("platform")
     public Platform getPlatform() {
         return platform;
@@ -134,6 +146,12 @@ public final class Channel {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("label")
+    private Optional<String> _getLabel() {
+        return label;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("tokenExpiresAt")
     private Optional<String> _getTokenExpiresAt() {
         return tokenExpiresAt;
@@ -156,6 +174,7 @@ public final class Channel {
                 && displayName.equals(other.displayName)
                 && handle.equals(other.handle)
                 && id.equals(other.id)
+                && label.equals(other.label)
                 && platform.equals(other.platform)
                 && status.equals(other.status)
                 && tokenExpiresAt.equals(other.tokenExpiresAt);
@@ -169,6 +188,7 @@ public final class Channel {
                 this.displayName,
                 this.handle,
                 this.id,
+                this.label,
                 this.platform,
                 this.status,
                 this.tokenExpiresAt);
@@ -226,6 +246,12 @@ public final class Channel {
 
         _FinalStage displayName(Nullable<String> displayName);
 
+        _FinalStage label(Optional<String> label);
+
+        _FinalStage label(String label);
+
+        _FinalStage label(Nullable<String> label);
+
         _FinalStage tokenExpiresAt(Optional<String> tokenExpiresAt);
 
         _FinalStage tokenExpiresAt(String tokenExpiresAt);
@@ -245,6 +271,8 @@ public final class Channel {
 
         private Optional<String> tokenExpiresAt = Optional.empty();
 
+        private Optional<String> label = Optional.empty();
+
         private Optional<String> displayName = Optional.empty();
 
         private Optional<ChannelConnection> connection = Optional.empty();
@@ -262,6 +290,7 @@ public final class Channel {
             displayName(other.getDisplayName());
             handle(other.getHandle());
             id(other.getId());
+            label(other.getLabel());
             platform(other.getPlatform());
             status(other.getStatus());
             tokenExpiresAt(other.getTokenExpiresAt());
@@ -318,6 +347,31 @@ public final class Channel {
         @JsonSetter(value = "tokenExpiresAt", nulls = Nulls.SKIP)
         public _FinalStage tokenExpiresAt(Optional<String> tokenExpiresAt) {
             this.tokenExpiresAt = tokenExpiresAt;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage label(Nullable<String> label) {
+            if (label.isNull()) {
+                this.label = null;
+            } else if (label.isEmpty()) {
+                this.label = Optional.empty();
+            } else {
+                this.label = Optional.of(label.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage label(String label) {
+            this.label = Optional.ofNullable(label);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "label", nulls = Nulls.SKIP)
+        public _FinalStage label(Optional<String> label) {
+            this.label = label;
             return this;
         }
 
@@ -404,6 +458,7 @@ public final class Channel {
                     displayName,
                     handle,
                     id,
+                    label,
                     platform,
                     status,
                     tokenExpiresAt,
@@ -417,6 +472,7 @@ public final class Channel {
                     || key.equalsIgnoreCase("displayName")
                     || key.equalsIgnoreCase("handle")
                     || key.equalsIgnoreCase("id")
+                    || key.equalsIgnoreCase("label")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("status")
                     || key.equalsIgnoreCase("tokenExpiresAt")) {

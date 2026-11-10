@@ -5,26 +5,15 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum UnprocessableEntityErrorBody {
     #[non_exhaustive]
-    ConnectFailed {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        code: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        message: Option<String>,
-        #[serde(rename = "requestId")]
-        #[serde(skip_serializing_if = "Option::is_none")]
-        request_id: Option<String>,
-        reason: ConnectFailureReason,
+    UnknownChannels {
+        #[serde(flatten)]
+        data: UnknownChannelsEncoded,
     },
 
     #[non_exhaustive]
-    ReturnUrlNotAllowed {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        code: Option<String>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        message: Option<String>,
-        #[serde(rename = "requestId")]
-        #[serde(skip_serializing_if = "Option::is_none")]
-        request_id: Option<String>,
+    PostContentInvalid {
+        #[serde(flatten)]
+        data: PostContentInvalidEncoded,
     },
 
     /// Catch-all variant for unrecognized discriminant values.
@@ -35,99 +24,12 @@ pub enum UnprocessableEntityErrorBody {
 }
 
 impl UnprocessableEntityErrorBody {
-    pub fn connect_failed(reason: ConnectFailureReason) -> Self {
-        Self::ConnectFailed {
-            code: None,
-            message: None,
-            request_id: None,
-            reason,
-        }
+    pub fn unknown_channels(data: UnknownChannelsEncoded) -> Self {
+        Self::UnknownChannels { data }
     }
 
-    pub fn return_url_not_allowed() -> Self {
-        Self::ReturnUrlNotAllowed {
-            code: None,
-            message: None,
-            request_id: None,
-        }
-    }
-
-    pub fn connect_failed_with_code(
-        code: String,
-        message: Option<String>,
-        request_id: Option<String>,
-        reason: ConnectFailureReason,
-    ) -> Self {
-        Self::ConnectFailed {
-            code: Some(code),
-            message,
-            request_id,
-            reason,
-        }
-    }
-
-    pub fn connect_failed_with_message(
-        code: Option<String>,
-        message: String,
-        request_id: Option<String>,
-        reason: ConnectFailureReason,
-    ) -> Self {
-        Self::ConnectFailed {
-            code,
-            message: Some(message),
-            request_id,
-            reason,
-        }
-    }
-
-    pub fn connect_failed_with_request_id(
-        code: Option<String>,
-        message: Option<String>,
-        request_id: String,
-        reason: ConnectFailureReason,
-    ) -> Self {
-        Self::ConnectFailed {
-            code,
-            message,
-            request_id: Some(request_id),
-            reason,
-        }
-    }
-
-    pub fn return_url_not_allowed_with_code(
-        code: String,
-        message: Option<String>,
-        request_id: Option<String>,
-    ) -> Self {
-        Self::ReturnUrlNotAllowed {
-            code: Some(code),
-            message,
-            request_id,
-        }
-    }
-
-    pub fn return_url_not_allowed_with_message(
-        code: Option<String>,
-        message: String,
-        request_id: Option<String>,
-    ) -> Self {
-        Self::ReturnUrlNotAllowed {
-            code,
-            message: Some(message),
-            request_id,
-        }
-    }
-
-    pub fn return_url_not_allowed_with_request_id(
-        code: Option<String>,
-        message: Option<String>,
-        request_id: String,
-    ) -> Self {
-        Self::ReturnUrlNotAllowed {
-            code,
-            message,
-            request_id: Some(request_id),
-        }
+    pub fn post_content_invalid(data: PostContentInvalidEncoded) -> Self {
+        Self::PostContentInvalid { data }
     }
 
     pub fn unknown(value: serde_json::Value) -> Self {

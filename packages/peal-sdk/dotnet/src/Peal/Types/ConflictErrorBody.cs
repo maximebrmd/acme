@@ -19,20 +19,20 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.PostNotReviewable"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.ChannelSetNameTaken"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.PostNotReviewable value)
+    public ConflictErrorBody(ConflictErrorBody.ChannelSetNameTaken value)
     {
-        Type = "PostNotReviewable";
+        Type = "ChannelSetNameTaken";
         Value = value.Value;
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyReviewLinks"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyChannelSets"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.TooManyReviewLinks value)
+    public ConflictErrorBody(ConflictErrorBody.TooManyChannelSets value)
     {
-        Type = "TooManyReviewLinks";
+        Type = "TooManyChannelSets";
         Value = value.Value;
     }
 
@@ -48,64 +48,64 @@ public record ConflictErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "PostNotReviewable"
+    /// Returns true if <see cref="Type"/> is "ChannelSetNameTaken"
     /// </summary>
-    public bool IsPostNotReviewable => Type == "PostNotReviewable";
+    public bool IsChannelSetNameTaken => Type == "ChannelSetNameTaken";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "TooManyReviewLinks"
+    /// Returns true if <see cref="Type"/> is "TooManyChannelSets"
     /// </summary>
-    public bool IsTooManyReviewLinks => Type == "TooManyReviewLinks";
+    public bool IsTooManyChannelSets => Type == "TooManyChannelSets";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.PostNotReviewableEncoded"/> if <see cref="Type"/> is 'PostNotReviewable', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.ChannelSetNameTakenEncoded"/> if <see cref="Type"/> is 'ChannelSetNameTaken', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostNotReviewable'.</exception>
-    public Peal.PostNotReviewableEncoded AsPostNotReviewable() =>
-        IsPostNotReviewable
-            ? (Peal.PostNotReviewableEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ChannelSetNameTaken'.</exception>
+    public Peal.ChannelSetNameTakenEncoded AsChannelSetNameTaken() =>
+        IsChannelSetNameTaken
+            ? (Peal.ChannelSetNameTakenEncoded)Value!
             : throw new global::System.Exception(
-                "ConflictErrorBody.Type is not 'PostNotReviewable'"
+                "ConflictErrorBody.Type is not 'ChannelSetNameTaken'"
             );
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.TooManyReviewLinksEncoded"/> if <see cref="Type"/> is 'TooManyReviewLinks', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.TooManyChannelSetsEncoded"/> if <see cref="Type"/> is 'TooManyChannelSets', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyReviewLinks'.</exception>
-    public Peal.TooManyReviewLinksEncoded AsTooManyReviewLinks() =>
-        IsTooManyReviewLinks
-            ? (Peal.TooManyReviewLinksEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyChannelSets'.</exception>
+    public Peal.TooManyChannelSetsEncoded AsTooManyChannelSets() =>
+        IsTooManyChannelSets
+            ? (Peal.TooManyChannelSetsEncoded)Value!
             : throw new global::System.Exception(
-                "ConflictErrorBody.Type is not 'TooManyReviewLinks'"
+                "ConflictErrorBody.Type is not 'TooManyChannelSets'"
             );
 
     public T Match<T>(
-        Func<Peal.PostNotReviewableEncoded, T> onPostNotReviewable,
-        Func<Peal.TooManyReviewLinksEncoded, T> onTooManyReviewLinks,
+        Func<Peal.ChannelSetNameTakenEncoded, T> onChannelSetNameTaken,
+        Func<Peal.TooManyChannelSetsEncoded, T> onTooManyChannelSets,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "PostNotReviewable" => onPostNotReviewable(AsPostNotReviewable()),
-            "TooManyReviewLinks" => onTooManyReviewLinks(AsTooManyReviewLinks()),
+            "ChannelSetNameTaken" => onChannelSetNameTaken(AsChannelSetNameTaken()),
+            "TooManyChannelSets" => onTooManyChannelSets(AsTooManyChannelSets()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.PostNotReviewableEncoded> onPostNotReviewable,
-        Action<Peal.TooManyReviewLinksEncoded> onTooManyReviewLinks,
+        Action<Peal.ChannelSetNameTakenEncoded> onChannelSetNameTaken,
+        Action<Peal.TooManyChannelSetsEncoded> onTooManyChannelSets,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "PostNotReviewable":
-                onPostNotReviewable(AsPostNotReviewable());
+            case "ChannelSetNameTaken":
+                onChannelSetNameTaken(AsChannelSetNameTaken());
                 break;
-            case "TooManyReviewLinks":
-                onTooManyReviewLinks(AsTooManyReviewLinks());
+            case "TooManyChannelSets":
+                onTooManyChannelSets(AsTooManyChannelSets());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -114,13 +114,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.PostNotReviewableEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.ChannelSetNameTakenEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsPostNotReviewable(out Peal.PostNotReviewableEncoded? value)
+    public bool TryAsChannelSetNameTaken(out Peal.ChannelSetNameTakenEncoded? value)
     {
-        if (Type == "PostNotReviewable")
+        if (Type == "ChannelSetNameTaken")
         {
-            value = (Peal.PostNotReviewableEncoded)Value!;
+            value = (Peal.ChannelSetNameTakenEncoded)Value!;
             return true;
         }
         value = null;
@@ -128,13 +128,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.TooManyReviewLinksEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.TooManyChannelSetsEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsTooManyReviewLinks(out Peal.TooManyReviewLinksEncoded? value)
+    public bool TryAsTooManyChannelSets(out Peal.TooManyChannelSetsEncoded? value)
     {
-        if (Type == "TooManyReviewLinks")
+        if (Type == "TooManyChannelSets")
         {
-            value = (Peal.TooManyReviewLinksEncoded)Value!;
+            value = (Peal.TooManyChannelSetsEncoded)Value!;
             return true;
         }
         value = null;
@@ -143,10 +143,11 @@ public record ConflictErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.PostNotReviewable value) =>
-        new(value);
+    public static implicit operator ConflictErrorBody(
+        ConflictErrorBody.ChannelSetNameTaken value
+    ) => new(value);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.TooManyReviewLinks value) =>
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.TooManyChannelSets value) =>
         new(value);
 
     [Serializable]
@@ -190,15 +191,14 @@ public record ConflictErrorBody
 
             var value = discriminator switch
             {
-                "PostNotReviewable" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.PostNotReviewableEncoded?>(options)
+                "ChannelSetNameTaken" => json.Deserialize<Peal.ChannelSetNameTakenEncoded?>(options)
+                    ?? throw new JsonException(
+                        "Failed to deserialize Peal.ChannelSetNameTakenEncoded"
+                    ),
+                "TooManyChannelSets" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyChannelSetsEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.PostNotReviewableEncoded"
-                        ),
-                "TooManyReviewLinks" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyReviewLinksEncoded?>(options)
-                        ?? throw new JsonException(
-                            "Failed to deserialize Peal.TooManyReviewLinksEncoded"
+                            "Failed to deserialize Peal.TooManyChannelSetsEncoded"
                         ),
                 _ => json.Deserialize<object?>(options),
             };
@@ -214,8 +214,8 @@ public record ConflictErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "PostNotReviewable" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "TooManyReviewLinks" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "ChannelSetNameTaken" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "TooManyChannelSets" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -245,42 +245,42 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for PostNotReviewable
+    /// Discriminated union type for ChannelSetNameTaken
     /// </summary>
     [Serializable]
-    public struct PostNotReviewable
+    public struct ChannelSetNameTaken
     {
-        public PostNotReviewable(Peal.PostNotReviewableEncoded value)
+        public ChannelSetNameTaken(Peal.ChannelSetNameTakenEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.PostNotReviewableEncoded Value { get; set; }
+        internal Peal.ChannelSetNameTakenEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.PostNotReviewable(
-            Peal.PostNotReviewableEncoded value
+        public static implicit operator ConflictErrorBody.ChannelSetNameTaken(
+            Peal.ChannelSetNameTakenEncoded value
         ) => new(value);
     }
 
     /// <summary>
-    /// Discriminated union type for TooManyReviewLinks
+    /// Discriminated union type for TooManyChannelSets
     /// </summary>
     [Serializable]
-    public struct TooManyReviewLinks
+    public struct TooManyChannelSets
     {
-        public TooManyReviewLinks(Peal.TooManyReviewLinksEncoded value)
+        public TooManyChannelSets(Peal.TooManyChannelSetsEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.TooManyReviewLinksEncoded Value { get; set; }
+        internal Peal.TooManyChannelSetsEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.TooManyReviewLinks(
-            Peal.TooManyReviewLinksEncoded value
+        public static implicit operator ConflictErrorBody.TooManyChannelSets(
+            Peal.TooManyChannelSetsEncoded value
         ) => new(value);
     }
 }

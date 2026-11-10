@@ -25,6 +25,10 @@
 //! - **partnerAccount**
 //! - **connectLinks**
 //! - **review**
+//! - **tags**
+//! - **signatures**
+//! - **channelSets**
+//! - **channelDefaults**
 
 use crate::{ApiError, ClientConfig};
 
@@ -34,6 +38,8 @@ pub mod api_keys;
 pub mod assistant;
 pub mod billing;
 pub mod capabilities;
+pub mod channel_defaults;
+pub mod channel_sets;
 pub mod channels;
 pub mod connect_links;
 pub mod inbox;
@@ -48,7 +54,9 @@ pub mod partner_account;
 pub mod posts;
 pub mod review;
 pub mod session;
+pub mod signatures;
 pub mod system;
+pub mod tags;
 pub mod tiktok;
 pub mod webhooks;
 pub struct PealClient {
@@ -76,6 +84,10 @@ pub struct PealClient {
     pub partner_account: PartnerAccountClient,
     pub connect_links: ConnectLinksClient,
     pub review: ReviewClient,
+    pub tags: TagsClient,
+    pub signatures: SignaturesClient,
+    pub channel_sets: ChannelSetsClient,
+    pub channel_defaults: ChannelDefaultsClient,
 }
 
 impl PealClient {
@@ -105,6 +117,10 @@ impl PealClient {
             partner_account: PartnerAccountClient::new(config.clone())?,
             connect_links: ConnectLinksClient::new(config.clone())?,
             review: ReviewClient::new(config.clone())?,
+            tags: TagsClient::new(config.clone())?,
+            signatures: SignaturesClient::new(config.clone())?,
+            channel_sets: ChannelSetsClient::new(config.clone())?,
+            channel_defaults: ChannelDefaultsClient::new(config.clone())?,
         })
     }
 }
@@ -115,6 +131,8 @@ pub use api_keys::ApiKeysClient;
 pub use assistant::AssistantClient;
 pub use billing::BillingClient;
 pub use capabilities::CapabilitiesClient;
+pub use channel_defaults::ChannelDefaultsClient;
+pub use channel_sets::ChannelSetsClient;
 pub use channels::ChannelsClient;
 pub use connect_links::ConnectLinksClient;
 pub use inbox::InboxClient;
@@ -129,6 +147,8 @@ pub use partner_account::PartnerAccountClient;
 pub use posts::PostsClient;
 pub use review::ReviewClient;
 pub use session::SessionClient;
+pub use signatures::SignaturesClient;
 pub use system::SystemClient;
+pub use tags::TagsClient;
 pub use tiktok::TiktokClient;
 pub use webhooks::WebhooksClient;

@@ -14,6 +14,7 @@ import type {
   PostPage,
   PostSearchRequest,
 } from "#publishing/application/post-search.ts";
+import { TagIdSchema } from "#publishing/domain/tag-id.ts";
 import { ChannelIdSchema, UserIdSchema } from "#shared/domain/ids.ts";
 
 import { postView } from "./post-view.ts";
@@ -30,6 +31,7 @@ export interface SearchInput {
   readonly platform?: Platform;
   readonly sort?: PostSort;
   readonly status?: PostStatus;
+  readonly tagId?: string;
   readonly to?: DateTime.Utc;
 }
 
@@ -42,6 +44,10 @@ const decodeUserId = Schema.decodeUnknownOption(UserIdSchema);
 const nobody = UserIdSchema.make("00000000-0000-0000-0000-000000000000");
 
 const nowhere = ChannelIdSchema.make("00000000-0000-7000-8000-000000000000");
+
+const decodeTagId = Schema.decodeUnknownOption(TagIdSchema);
+
+const noTag = TagIdSchema.make("00000000-0000-7000-8000-000000000000");
 
 /** What to list, with ids decoded and defaults filled in. */
 export const searchRequestFrom = (input: SearchInput): PostSearchRequest => ({
@@ -59,6 +65,9 @@ export const searchRequestFrom = (input: SearchInput): PostSearchRequest => ({
   platform: Option.fromUndefinedOr(input.platform),
   sort: input.sort ?? "createdDesc",
   status: Option.fromUndefinedOr(input.status),
+  tagId: Option.fromUndefinedOr(input.tagId).pipe(
+    Option.map((id) => Option.getOrElse(decodeTagId(id), () => noTag))
+  ),
   to: Option.fromUndefinedOr(input.to),
 });
 

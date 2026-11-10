@@ -166,18 +166,28 @@ Each command does what your role allows there, as the web app does: a viewer rea
 
 ```sh
 peal channels list
+peal channels list --platform youtube --status disabled --search "client a"
+peal channels rename <channel-id> "Client A"
+peal channels rename <channel-id> --clear
+peal channels disable <channel-id>
+peal channels enable <channel-id>
 peal channels capabilities [<channel-id>] [--json]
 peal channels lookup <channel-id> [<lookup>] [--region <country>] [--language <tag>] [--vanity-name <name>] [--limit <n>] [--cursor <cursor>] [--json]
 peal channels tiktok <channel-id>
+peal channels defaults show <channel-id>
 ```
 
-`peal channels list` lists the workspace's channels with their ids, which drafts and posts take, and whether each one posts or must be reconnected. Connecting a channel is for the web app.
+`peal channels list` lists the workspace's channels with their ids, which drafts and posts take, the [name the workspace gave each](/channels#name) before its handle, and whether each one posts, is turned off or must be reconnected; a closing line counts them by status. `--platform`, `--status` (`active`, `disabled` or `refreshNeeded`) and `--search`, text the channel's handle or one of its names holds, narrow the list, every filter holding, a page at a time (`--limit`, then the `--cursor` the page before printed); the counts then tell of every status, whatever `--status` asked for. With one of those flags, `--json` prints the page (`items`, `nextCursor`, `counts`); without any, it prints the list of channels, as it always did. Connecting a channel is for the web app.
+
+`peal channels rename` gives a channel the name your workspace calls it by, 60 characters at most, shown in Peal beside the handle its platform gives the account and sent to no platform; without a name, or with `--clear`, it takes that name back. `peal channels disable` [turns a channel off](/channels#turn-off): nothing goes out on it, and a post that reaches its time meanwhile fails on that channel, goes out on its others, and is not sent later. The channel keeps its connection, its history and its place in your plan. `peal channels enable` turns it back on: it posts again, or says it must be reconnected when its platform stopped accepting Peal's access meanwhile. All three need the right to connect channels.
 
 `peal channels capabilities` shows [what a channel takes](/api-overview#capabilities): how its text is counted and limited, the media it takes with each file type's limits, its platform's options (which `peal drafts save --options` sets) and what the account itself restricts, read from the platform at that moment. Without a channel, it sums up every platform on a line each.
 
 `peal channels lookup` asks a channel's platform for account data its options refer to: without a lookup, it lists those the channel has; with one, it runs it, such as `peal channels lookup <channel-id> youtubeVideoCategories --region FR` for the categories a YouTube video can be filed under in France. `peal channels lookup <channel-id> pinterestBoards` lists a Pinterest account's boards, and `pinterestBoardSections --board <board-id>` a board's sections. A paged lookup ends with the `--cursor` that reads its next page. It changes nothing. With `--json`, both commands print the server's answer as JSON, for scripts.
 
 `peal channels tiktok` reads a TikTok channel's settings from TikTok, as TikTok asks before a post: who it posts as, the audiences a post may choose (its `privacyLevel`, with no default), the interactions the account turned off, which stay off, and its longest video, or why it cannot post today. Posting to TikTok means agreeing to its Music Usage Confirmation, and to its Branded Content Policy for branded content.
+
+`peal channels defaults` shows, sets and clears a channel's [default options](#default-options): what a new post takes there when it gives none.
 
 ## Drafts [#drafts]
 
@@ -186,12 +196,18 @@ peal drafts list                  # newest first; --limit and --cursor page thro
 peal drafts save --text "Spring catalogue is out" --channel <channel-id> --channel <channel-id>
 peal drafts save --post <post-id> --text "Spring catalogue is out today"
 peal drafts save --post <post-id> --options '<channel-id>={"platform":"youtube","title":"Spring catalogue","madeForKids":false}'
+peal drafts save --post <post-id> --tag "Spring campaign"
+peal drafts save --text "Spring catalogue is out" --set Launch --default-signatures
 peal drafts discard <post-id>
 ```
 
 - `peal drafts save` without `--post` writes a new draft, for the channels `--channel` names (none yet is fine). With `--post`, it changes that draft: the text, when `--text` is given, and the channels, when any `--channel` is. What you leave out stays as it was, its media and its [platform options](/scheduling#options) on the channels it keeps included.
 - `--then <text>`, repeated, gives the draft the parts that follow it, as `peal post` takes them, with `--then-delay <seconds>` between them. A draft you change keeps its parts without `--then`, and takes the new ones instead with it.
 - `--options <channel-id>=<json>` sets a channel's platform options, as JSON with its `platform`: for YouTube, `title` and `madeForKids` (both needed to schedule), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia`; for TikTok, `privacyLevel` (needed, one `peal channels tiktok` lists), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated`; for Pinterest, `boardId` (needed, one `peal channels lookup` lists), `boardSectionId`, `title`, `link`, `coverSecond`, `dominantColor`; for LinkedIn, `visibility` (`public` when left out, `connections` on a profile, or `loggedIn`), `disableReshare`, `mentions` (company pages, each a `name` and a `urn` that `peal channels lookup` finds on a company page channel), `linkUrl` with its `linkTitle` and a `linkDescription`, and a PDF document's `documentTitle`; for Google Business Profile, `postType` (`standard` when left out, `event` or `offer`), `title`, `startsAt` and `endsAt` (needed for an event or an offer, as `2026-11-27T09:00`, on the location's clock), `callToAction` with `callToActionUrl`, and an offer's `couponCode`, `redeemUrl` and `terms`. Repeat it for several channels; it replaces that channel's options whole.
+- `--tag <id-or-name>` files the draft under one of the workspace's [tags](#tags); repeat it for several. A draft you change keeps its tags without it, and takes those given instead of them with it.
+- `--set <id-or-name>` names one of the workspace's [channel sets](#sets) instead of listing its channels; repeat it for several. The draft is for the set's connected channels as well, with the options the set keeps for them where `--options` gives none. A channel of the set that is no longer connected is left out, and `peal` says which.
+- `--signature <id-or-name>` puts one of the workspace's [signatures](#signatures) under the draft's text, on every channel, and `--default-signatures` each channel's default one. A signature is then text of the draft, and is never added under a text that already ends with it.
+- A new draft takes a channel's [default options](#default-options) on a channel where it gives none; a draft you change keeps what it has.
 - A draft goes out at no time. Its text, media and options are checked against each platform's rules when it is scheduled, with `peal posts schedule` or in the web app.
 - `peal drafts discard` deletes a draft for good. A post that is scheduled or went out is not a draft: unschedule or cancel it instead.
 
@@ -210,13 +226,15 @@ peal post "Spring catalogue is out" --channel <channel-id> --now --wait 30
 `peal post` writes a post and sends it in one command, to the public of the accounts its channels connect. What goes out cannot be taken back from Peal.
 
 - **When.** `--at` schedules it, `--now` publishes it at once, and one of the two is required: publishing is never the default. `--at` takes an instant with its offset, such as `2026-11-20T09:00:00Z` or `2026-11-20T10:00:00+01:00`, or a local time without one, such as `2026-11-20T10:00`, read in `--time-zone` (or `--zone`), an IANA zone such as `Europe/Paris`. Without the flag, the zone is `TZ`, then your computer's. A local time the clocks skip or repeat in that zone is refused: give the instant with its offset.
-- **Where.** `--channel` (or `--channels`) names a channel by its id; repeat it, or separate ids with commas. At least one.
+- **Where.** `--channel` (or `--channels`) names a channel by its id; repeat it, or separate ids with commas. `--set <id-or-name>` names a [channel set](#sets), and stands for its connected channels: at least one channel or one set. A channel of a set that is no longer connected is left out, and `peal` says which after the post; when none of them is left and no `--channel` is given, nothing is posted.
 - **Media.** Each `--media` is a file, uploaded first; an `https://` address, which the server imports; or the id of a media the workspace has, as `peal media list` shows it. They show in the order given, 20 at most. The first `--alt` describes the first `--media`, the second the second.
 - **Thread.** Each `--then <text>` adds a part after the post, in the order given, text alone: a reply to the part before it on the platforms with [threads](/scheduling#threads). `--then-delay <seconds>` makes each part wait that long after the part before it went out, a day (86400) at most; without it they follow one another. A platform that takes a post alone refuses the post.
-- **Options.** `--options <channel-id>=<json>` sets a channel's [platform options](/scheduling#options), as `peal drafts save` takes them.
+- **Options.** `--options <channel-id>=<json>` sets a channel's [platform options](/scheduling#options), as `peal drafts save` takes them. A channel on which you give none takes the options of a set you name, then the channel's [default options](#default-options).
+- **Signatures.** `--signature <id-or-name>` puts one of the workspace's [signatures](#signatures) under the text, on every channel; `--default-signatures` puts each channel's default one. A signature is text of the post: it counts against each platform's limit, and is never added twice.
+- **Tags.** `--tag <id-or-name>` files the post under one of the workspace's [tags](#tags); repeat it for several.
 - **Running it again.** `--idempotency-key` takes any text of your choosing, of 255 characters at most, such as a UUID: within 24 hours, the same key with the same post answers the post the first run made, and makes no other; with another post it is refused. Without it, `peal` sends no key. To run a post with media again, give `--media` as media ids: files and addresses are stored anew on each run, which makes it another post.
 - **The same post twice.** Apart from keys, a post whose content (the text the channel receives and the same media, in the same order) already goes to one of its channels less than 23 hours from its time is refused, and `peal` names the post that has it. `--allow-duplicate` lets it through, when you mean to post the same twice ([Duplicate posts](/posting-api#duplicates)).
-- **Checking first.** `--dry-run` checks the post and posts nothing: it tells what would be refused.
+- **Checking first.** `--dry-run` checks the post and posts nothing: it tells what would be refused, and which channels of a set would be left out.
 - **Waiting for the outcome.** With `--now`, `--wait <seconds>` (60 at most) waits until every channel has its result before it answers. When the time runs out first, the post goes on publishing: `peal posts wait` waits for the rest.
 
 The post is checked against every channel's platform first. When it breaks a rule, nothing is posted, and `peal` lists every violation on a line of its own, with its channel, platform, option or media, and the limit.
@@ -226,6 +244,7 @@ The post is checked against every channel's platform first. When it breaks a rul
 ```sh
 peal posts list
 peal posts list --from 2026-11-01T00:00:00Z --to 2026-12-01T00:00:00Z
+peal posts list --tag "Spring campaign"
 peal posts show <post-id>
 peal posts attempts <post-id>
 peal posts wait <post-id> --seconds 30
@@ -240,13 +259,15 @@ peal posts cancel <post-id>
 peal posts repost <post-id> <target-id>
 peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
 peal posts confirm <post-id> <target-id> not-published
+peal posts tag <post-id> --tag "Spring campaign" --tag Evergreen
+peal posts duplicate <post-id>
 ```
 
-- `peal posts list` lists the workspace's posts, whatever their state, a page at a time, with how each went ([List posts](/posting-api#search)).
+- `peal posts list` lists the workspace's posts, whatever their state, a page at a time, with how each went ([List posts](/posting-api#search)). `--tag` keeps the posts filed under a [tag](#tags).
 - `peal posts attempts` lists every attempt Peal made at publishing the post, by channel, round and attempt: when it started, how it ended, the code behind a refusal, the platform's own or Peal's, and when Peal tried again.
-- `peal posts show` prints the post's status and time, then one line per channel, starting with its target id, with how it went there: failed and why, unconfirmed and why, or published at its address (and kept private, when YouTube kept a public or unlisted video private), then the post's options on each channel that has some.
+- `peal posts show` prints the post's status and time, its tags when it has some, then one line per channel, starting with its target id, with how it went there: failed and why, unconfirmed and why, or published at its address (and kept private, when YouTube kept a public or unlisted video private), then the post's options on each channel that has some.
 - `peal posts wait` waits until every channel of a post has its result, up to `--seconds` (60 at most), then shows the post as it stands. Waiting changes nothing: run it again when the time ran out first.
-- `peal posts import` creates and sends the posts a CSV file lists, one per row, with the columns `text`, `channels` and `at`, and optionally `media`, `time_zone`, `allow_duplicate` and `idempotency_key` ([Import posts from a CSV file](/posting-api#import)). Every row is checked first, and nothing is made unless every row is valid. `--dry-run` only checks the file. `--idempotency-key` makes the import safe to run again within 24 hours: the rows already made are not made twice.
+- `peal posts import` creates and sends the posts a CSV file lists, one per row, with the columns `text`, `channels` (channel ids, or a [channel set](#sets) by its id or by a name without spaces, commas or semicolons) and `at`, and optionally `media`, `time_zone`, `allow_duplicate` and `idempotency_key` ([Import posts from a CSV file](/posting-api#import)). Every row is checked first, and nothing is made unless every row is valid. `--dry-run` only checks the file. `--idempotency-key` makes the import safe to run again within 24 hours: the rows already made are not made twice.
 - `peal posts schedule` schedules a draft for `--at`, read as `peal post` reads it, on the channels it has, or on those `--channel` names. Its text, media and options must fit each platform's rules, or nothing is scheduled.
 - `peal posts publish` publishes a draft, or a scheduled post, now, on the channels it has. It reaches the accounts' public, and cannot be taken back from Peal once it is out.
 - `peal posts reschedule` moves a scheduled post to another time. A draft is scheduled then, on the channels it has.
@@ -254,6 +275,73 @@ peal posts confirm <post-id> <target-id> not-published
 - `peal posts cancel` cancels a draft or a scheduled post for good: it goes out on no channel. A post already publishing finishes with what its channels did, and those not yet sent are cancelled. To change a scheduled post and keep it, unschedule it instead.
 - `peal posts repost` sends the post again, now, on one channel where it failed or is unconfirmed. When it is unconfirmed, check the platform first: it may be live already.
 - `peal posts confirm` records what you found on the platform for a post Peal could not confirm: `published`, with its address if you have it, or `not-published`, which fails it there so `peal posts repost` can send it again. See [Scheduling](/scheduling) for how posts end.
+- `peal posts duplicate` makes a new draft that says what a post says ([Duplicate a post](/organise#duplicate)), whatever the post's status: its text, its media, its channels with their text and options, and its tags. What the workspace no longer has (a channel disconnected, media or a tag deleted) is left out, and `peal` says so. The draft has no time, and the post itself does not change.
+
+## Tags [#tags]
+
+```sh
+peal tags list
+peal tags create "Spring campaign" --colour green
+peal tags update "Spring campaign" --name "Spring 2027" --colour teal
+peal tags delete "Spring 2027"
+peal posts tag <post-id> --tag Evergreen
+```
+
+- Tags are the labels a workspace files its posts under, 100 at most. They say nothing to the platforms: nothing of a tag goes out with a post.
+- `peal tags create` takes a name of 40 characters at most, which no other tag of the workspace has, whatever its case, and a `--colour` (`gray` unless you say otherwise, `red`, `orange`, `amber`, `green`, `teal`, `blue`, `purple` or `pink`).
+- Wherever a command takes a tag, give its id or its name, whatever its case: `peal tags list` shows both.
+- `peal tags update` changes the name, the colour or both, and keeps what you leave out. Its posts keep the tag.
+- `peal tags delete` deletes a tag for good and takes it off every post that had it; the posts stay.
+- `peal posts tag` files a post under the tags `--tag` names, 10 at most, instead of those it had; without `--tag`, it takes them all off. A post takes tags whatever its status, sent or not.
+- Every member who reads posts reads the tags; creating, changing and deleting a tag, and tagging a post, need the right to change posts.
+
+## Signatures [#signatures]
+
+```sh
+peal signatures list
+peal signatures create "Sign-off" --text "The Studio team" --default
+peal signatures create "Fediverse" --text "#studio" --platform mastodon
+peal signatures update "Sign-off" --text "See you next week"
+peal signatures delete "Fediverse"
+```
+
+- A signature is a text a workspace keeps to end its posts with, 2000 characters at most; a workspace keeps 50. It is meant for every channel, for the channels of one platform (`--platform`) or for one channel (`--channel <channel-id>`).
+- `--default` makes it the default where it is meant for: posts that ask for the default signatures (`--default-signatures`) take it there, the workspace's under the post's text, a platform's or a channel's own under the text that channel has instead. The signature that was the default there is one no longer.
+- Once under a post's text, a signature is text of the post: it counts against each platform's limit when the post is scheduled, and it is never added under a text that already ends with it.
+- Wherever a command takes a signature, give its id or its name, whatever its case: `peal signatures list` shows both.
+- `peal signatures update` changes what its flags name (`--name`, `--text`, `--whole-workspace`, `--platform` or `--channel`, `--default` or `--no-default`) and keeps the rest. Posts that already hold the signature's text keep it as it was.
+- `peal signatures delete` deletes a signature for good; posts that already hold its text keep it.
+- Every member who reads posts reads the signatures; creating, changing and deleting one need the right to change posts.
+
+## Channel sets [#sets]
+
+```sh
+peal sets list
+peal sets create "Launch" --channel <channel-id> --channel <channel-id>
+peal sets create "Videos" --channel <channel-id> --options '<channel-id>={"platform":"youtube","madeForKids":false}'
+peal sets update "Launch" --name "Launch day"
+peal sets delete "Videos"
+peal post "Spring catalogue is out" --set Launch --at 2026-11-20T09:00:00Z
+```
+
+- A channel set is a selection of the workspace's channels kept under a name, 50 channels at most, with the options posts take on some of them (`--options`, as `peal drafts save` takes them); a workspace keeps 50 sets. `peal post --set` and `peal drafts save --set` name a set instead of listing its channels.
+- Wherever a command takes a set, give its id or its name, whatever its case: `peal sets list` shows both. A CSV import names a set only by its id or by a name without spaces, commas or semicolons.
+- `peal sets list` shows each set's channels, and says which are no longer connected. A post made with the set leaves those out and says so; it is never sent to fewer channels silently.
+- `peal sets update` changes the name, the channels (those `--channel` names replace the set's) or the options, and keeps what you leave out, but the channels that are no longer connected: a set is saved with connected channels only, so this is also how one is taken out. Posts made with the set before keep their channels.
+- `peal sets delete` deletes a set for good; its channels, and the posts made with it, stay.
+
+## Default options [#default-options]
+
+```sh
+peal channels defaults show <channel-id>
+peal channels defaults set <channel-id> --options '{"platform":"youtube","madeForKids":false,"privacy":"unlisted"}'
+peal channels defaults clear <channel-id>
+```
+
+- A channel's default options are what a new post takes on it when it gives no [platform options](/scheduling#options) there and no channel set it names does: a new draft, and a post made in one command. A draft you change keeps what it has.
+- `--options <json>` takes the options of the channel's platform, as JSON with its `platform`, as `peal drafts save --options` takes them after the channel's id. They replace any the channel had, and may be unfinished.
+- Defaults are a starting point, never a way round the rules: a post that takes them is checked when it is scheduled as one that wrote them itself.
+- `peal channels defaults clear` leaves the channel without default options; posts already made keep theirs.
 
 ## Media [#media]
 

@@ -26,6 +26,9 @@ pub struct SearchQueryRequest {
     pub sort: Option<PostSort>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status: Option<PostStatus>,
+    #[serde(rename = "tagId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tag_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub to: Option<String>,
 }
@@ -49,6 +52,7 @@ pub struct SearchQueryRequestBuilder {
     platform: Option<Platform>,
     sort: Option<PostSort>,
     status: Option<PostStatus>,
+    tag_id: Option<String>,
     to: Option<String>,
 }
 
@@ -103,6 +107,11 @@ impl SearchQueryRequestBuilder {
         self
     }
 
+    pub fn tag_id(mut self, value: impl Into<String>) -> Self {
+        self.tag_id = Some(value.into());
+        self
+    }
+
     pub fn to(mut self, value: impl Into<String>) -> Self {
         self.to = Some(value.into());
         self
@@ -121,6 +130,7 @@ impl SearchQueryRequestBuilder {
             platform: self.platform,
             sort: self.sort,
             status: self.status,
+            tag_id: self.tag_id,
             to: self.to,
         })
     }

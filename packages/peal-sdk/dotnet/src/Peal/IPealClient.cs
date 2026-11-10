@@ -25,4 +25,8 @@ public partial interface IPealClient
     public IPartnerAccountClient PartnerAccount { get; }
     public IConnectLinksClient ConnectLinks { get; }
     public IReviewClient Review { get; }
+    public ITagsClient Tags { get; }
+    public ISignaturesClient Signatures { get; }
+    public IChannelSetsClient ChannelSets { get; }
+    public IChannelDefaultsClient ChannelDefaults { get; }
 }

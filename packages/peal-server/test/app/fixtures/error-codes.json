@@ -75,6 +75,16 @@
     "tag": "ChannelNotFound"
   },
   {
+    "code": "channel_set_name_taken",
+    "status": 409,
+    "tag": "ChannelSetNameTaken"
+  },
+  {
+    "code": "channel_set_not_found",
+    "status": 404,
+    "tag": "ChannelSetNotFound"
+  },
+  {
     "code": "client_error_too_large",
     "status": 413,
     "tag": "ClientErrorTooLarge"
@@ -435,6 +445,16 @@
     "tag": "ServiceUnavailable"
   },
   {
+    "code": "signature_name_taken",
+    "status": 409,
+    "tag": "SignatureNameTaken"
+  },
+  {
+    "code": "signature_not_found",
+    "status": 404,
+    "tag": "SignatureNotFound"
+  },
+  {
     "code": "signed_request_refused",
     "status": 400,
     "tag": "SignedRequestRefused"
@@ -445,9 +465,24 @@
     "tag": "StaffActionRefused"
   },
   {
+    "code": "tag_name_taken",
+    "status": 409,
+    "tag": "TagNameTaken"
+  },
+  {
+    "code": "tag_not_found",
+    "status": 404,
+    "tag": "TagNotFound"
+  },
+  {
     "code": "target_status_conflict",
     "status": 409,
     "tag": "TargetStatusConflict"
+  },
+  {
+    "code": "too_many_channel_sets",
+    "status": 409,
+    "tag": "TooManyChannelSets"
   },
   {
     "code": "too_many_client_errors",
@@ -495,6 +530,16 @@
     "tag": "TooManyReviewRequests"
   },
   {
+    "code": "too_many_signatures",
+    "status": 409,
+    "tag": "TooManySignatures"
+  },
+  {
+    "code": "too_many_tags",
+    "status": 409,
+    "tag": "TooManyTags"
+  },
+  {
     "code": "too_many_webhook_endpoints",
     "status": 409,
     "tag": "TooManyWebhookEndpoints"
@@ -523,6 +568,11 @@
     "code": "unknown_media",
     "status": 422,
     "tag": "UnknownMedia"
+  },
+  {
+    "code": "unknown_tags",
+    "status": 422,
+    "tag": "UnknownTags"
   },
   {
     "code": "unsupported_media_type",

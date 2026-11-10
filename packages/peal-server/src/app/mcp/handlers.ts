@@ -9,15 +9,24 @@ import { InboxToolsLive } from "#app/mcp/inbox-handlers.ts";
 import { MediaToolsLive } from "#app/mcp/media-handlers.ts";
 import { PeopleToolsLive } from "#app/mcp/people-handlers.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
+import { notAllowed } from "#app/mcp/refusals.ts";
 import { ReportToolsLive } from "#app/mcp/reports-handlers.ts";
 import { ReviewToolsLive } from "#app/mcp/review-handlers.ts";
+import { SavedToolsLive } from "#app/mcp/saved-handlers.ts";
+import { TagToolsLive } from "#app/mcp/tags-handlers.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { BasicTools } from "#app/mcp/tools.ts";
 import { WebhookToolsLive } from "#app/mcp/webhooks-handlers.ts";
 import { toChannelView } from "#channels/api/channel-view.ts";
-import { ListChannels } from "#channels/application/list-channels.ts";
+import type { ChannelPage } from "#channels/application/channel-repository.ts";
+import { ChannelSettings } from "#channels/application/channel-settings.ts";
+import {
+  ListChannels,
+  maxChannelPageSize,
+} from "#channels/application/list-channels.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { ChannelId } from "#shared/domain/ids.ts";
 import { makeDatabasePing } from "#shared/infrastructure/database-ping.ts";
 import { userPrincipalOf } from "#workspace/api/principal.ts";
 import { AccountDirectory } from "#workspace/application/account-directory.ts";
@@ -27,12 +36,30 @@ import { CredentialNames } from "#workspace/application/credential-names.ts";
 const refuse = (message: string) => () =>
   Effect.fail(new ToolRefused({ message }));
 
+const readingFailures = {
+  DatabaseError: Effect.die,
+  MissingPermission: refuse(
+    "This connection may not see the workspace's channels."
+  ),
+} as const;
+
+// How naming a channel, or turning it off or on, is refused.
+const settingFailures = (doing: string) =>
+  ({
+    ChannelNotFound: refuse(
+      "The workspace has no channel with this id: list_channels answers its channels. Nothing was changed."
+    ),
+    DatabaseError: Effect.die,
+    MissingPermission: notAllowed(doing),
+  }) as const;
+
 const BasicToolsLive = BasicTools.toLayer(
   Effect.gen(function* pealTools() {
     const accounts = yield* Accounts;
     const directory = yield* AccountDirectory;
     const names = yield* CredentialNames;
     const listChannels = yield* ListChannels;
+    const settings = yield* ChannelSettings;
     const pingDatabase = yield* makeDatabasePing;
 
     // The user's account, as this connection sees it; none for an API
@@ -94,6 +121,22 @@ const BasicToolsLive = BasicTools.toLayer(
     });
 
     return BasicTools.of({
+      disable_channel: ({ channelId }) =>
+        CurrentMember.pipe(
+          Effect.flatMap((member) =>
+            settings.turnOff(actorOf(member), channelId)
+          ),
+          Effect.map(toChannelView),
+          Effect.catchTags(settingFailures("turn channels off"))
+        ),
+      enable_channel: ({ channelId }) =>
+        CurrentMember.pipe(
+          Effect.flatMap((member) =>
+            settings.turnOn(actorOf(member), channelId)
+          ),
+          Effect.map(toChannelView),
+          Effect.catchTags(settingFailures("turn channels on"))
+        ),
       find_tools: (search) =>
         CurrentMember.pipe(
           Effect.map(({ principal }) => ({
@@ -108,20 +151,49 @@ const BasicToolsLive = BasicTools.toLayer(
             })),
           }))
         ),
-      list_channels: () =>
+      list_channels: ({ platform, search, status }) =>
         Effect.gen(function* channels() {
           const actor = actorOf(yield* CurrentMember);
 
-          const found = yield* listChannels.list(actor).pipe(
-            Effect.catchTags({
-              DatabaseError: Effect.die,
-              MissingPermission: refuse(
-                "This connection may not see the workspace's channels."
-              ),
-            })
-          );
+          // Without a filter, every channel at once, as before the search.
+          if (
+            platform === undefined &&
+            search === undefined &&
+            status === undefined
+          ) {
+            const found = yield* listChannels
+              .list(actor)
+              .pipe(Effect.catchTags(readingFailures));
 
-          return { channels: found.map(toChannelView) };
+            return { channels: found.map(toChannelView) };
+          }
+
+          // Every page of those that match: a tool's answer has no cursor.
+          const matching = Effect.fn("matching")(function* matching(
+            after: Option.Option<ChannelId>
+          ): Effect.fn.Return<ChannelPage, ToolRefused, CurrentMember> {
+            const page = yield* listChannels
+              .search(actor, {
+                after,
+                limit: maxChannelPageSize,
+                platform: Option.fromUndefinedOr(platform),
+                query: Option.fromUndefinedOr(search),
+                status: Option.fromUndefinedOr(status),
+              })
+              .pipe(Effect.catchTags(readingFailures));
+
+            if (Option.isNone(page.next)) {
+              return page;
+            }
+
+            const rest = yield* matching(page.next);
+
+            return { ...rest, items: [...page.items, ...rest.items] };
+          });
+
+          const { counts, items } = yield* matching(Option.none());
+
+          return { channels: items.map(toChannelView), counts };
         }),
       list_workspaces: () =>
         Effect.gen(function* workspaces() {
@@ -153,6 +225,18 @@ const BasicToolsLive = BasicTools.toLayer(
             })),
           };
         }),
+      rename_channel: ({ channelId, label }) =>
+        CurrentMember.pipe(
+          Effect.flatMap((member) =>
+            settings.rename(
+              actorOf(member),
+              channelId,
+              Option.fromNullOr(label)
+            )
+          ),
+          Effect.map(toChannelView),
+          Effect.catchTags(settingFailures("rename channels"))
+        ),
       server_health: () =>
         pingDatabase.pipe(
           Effect.tapError((failure) =>
@@ -224,6 +308,8 @@ const BasicToolsLive = BasicTools.toLayer(
 export const PealToolsLive = Layer.mergeAll(
   BasicToolsLive,
   PostToolsLive,
+  TagToolsLive,
+  SavedToolsLive,
   MediaToolsLive,
   ReportToolsLive,
   PeopleToolsLive,

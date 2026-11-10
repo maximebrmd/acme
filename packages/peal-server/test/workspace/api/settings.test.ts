@@ -211,6 +211,7 @@ const PortsLive = Layer.mergeAll(
                 scheduledAt: null,
                 scheduledVia: null,
                 status: "draft",
+                tagIds: [],
                 targets: [],
                 text: "A synthetic post of Ana's.",
                 textOverrides: [],
@@ -278,6 +279,19 @@ const PortsLive = Layer.mergeAll(
               approvals: [],
               comments: [],
               links: [],
+            },
+            saved: {
+              channelDefaults: [],
+              channelSets: [],
+              signatures: [],
+              tags: [
+                {
+                  colour: "blue",
+                  createdAt: at,
+                  id: "019a6f10-0000-7000-8000-0000000000a1",
+                  name: "Launch",
+                },
+              ],
             },
             webhooks: [
               {

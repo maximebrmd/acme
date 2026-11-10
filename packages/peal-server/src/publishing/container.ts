@@ -6,7 +6,9 @@ import { AccountRules } from "#publishing/application/account-rules.ts";
 import { AccountStandings } from "#publishing/application/account-standings.ts";
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
+import { ChannelDefaults } from "#publishing/application/channel-defaults.ts";
 import { ChannelLookups } from "#publishing/application/channel-lookups.ts";
+import { ChannelSets } from "#publishing/application/channel-sets.ts";
 import { HeldPosts } from "#publishing/application/held-posts.ts";
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import { pacedLookups } from "#publishing/application/paced-lookups.ts";
@@ -19,13 +21,16 @@ import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostOrigins } from "#publishing/application/post-origins.ts";
 import { PostOutcomesLive } from "#publishing/application/post-outcomes.ts";
+import { PostPresets } from "#publishing/application/post-presets.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PostSearch } from "#publishing/application/post-search.ts";
+import { PostTags } from "#publishing/application/post-tags.ts";
 import { PostUsage } from "#publishing/application/post-usage.ts";
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
+import { Signatures } from "#publishing/application/signatures.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import type { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
 import { AnalyticsCountedPlatforms } from "#publishing/infrastructure/analytics-counted-platforms.ts";
@@ -36,6 +41,8 @@ import {
   UnreadComments,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
+import { DrizzleChannelDefaultsStore } from "#publishing/infrastructure/drizzle-channel-defaults-store.ts";
+import { DrizzleChannelSetStore } from "#publishing/infrastructure/drizzle-channel-set-store.ts";
 import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
@@ -45,6 +52,8 @@ import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-pu
 import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
 import { DrizzlePublishedTargets } from "#publishing/infrastructure/drizzle-published-targets.ts";
 import { DrizzleRecordedPosts } from "#publishing/infrastructure/drizzle-recorded-posts.ts";
+import { DrizzleSignatureStore } from "#publishing/infrastructure/drizzle-signature-store.ts";
+import { DrizzleTagStore } from "#publishing/infrastructure/drizzle-tag-store.ts";
 import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
 import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
@@ -93,18 +102,27 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
     PostQueries.layer,
     PostRecords.layer,
     PostSearch.layer,
+    PostTags.layer,
+    Signatures.layer,
+    ChannelSets.layer,
+    ChannelDefaults.layer,
     HeldPosts.layer,
     PostFollowUp.layer,
     PostUsage.layer
   ).pipe(
+    Layer.provideMerge(PostPresets.layer),
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzleChannelDefaultsStore,
+        DrizzleChannelSetStore,
         DrizzleContentFingerprints,
         DrizzleIdempotencyKeys,
         DrizzlePostOversight,
         DrizzlePostRepository,
         DrizzlePublicationJournal,
         DrizzlePublishedTargets,
+        DrizzleSignatureStore,
+        DrizzleTagStore,
         DrizzleWorkspacePostStore,
         LoggedChannelHealth,
         LoggedOperatorAlerts,
@@ -120,7 +138,9 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
 /**
  * The publishing context's use cases (`PostBatches`, `PostChecks`,
  * `PostDrafts`, `PostOutcomes`, `PostQueries`, `PostSearch`,
- * `PostScheduling`, `PostFollowUp`, for the handlers; `HeldPosts`, for the
+ * `PostScheduling`, `PostFollowUp`, `PostTags`, `Signatures`, `ChannelSets`,
+ * `ChannelDefaults`, for the handlers, and `PostPresets`, which fills a
+ * new post in from them; `HeldPosts`, for the
  * review context; `PostRecords`, for the workspace context's exports and
  * erasures; `PostUsage`, for billing; `PublishedTargets`, which analytics
  * follows; `PostOversight`, for the staff console; in `PublishingLive`,
@@ -254,6 +274,16 @@ export const MediaInPostsLive = MediaInPosts.layer.pipe(
 // the Authentication and WorkspaceAccess middleware of the workspace context,
 // which the composition root brings.
 export { PostsHandlers as PostsApiLive } from "#publishing/api/posts.ts";
+
+// The workspace's signatures and channel sets, behind the same middleware.
+export { SignaturesHandlers as SignaturesApiLive } from "#publishing/api/signatures.ts";
+
+export { ChannelSetsHandlers as ChannelSetsApiLive } from "#publishing/api/channel-sets.ts";
+
+export { ChannelDefaultsHandlers as ChannelDefaultsApiLive } from "#publishing/api/channel-defaults.ts";
+
+// The workspace's tags, behind the same middleware.
+export { TagsHandlers as TagsApiLive } from "#publishing/api/tags.ts";
 
 // TikTok's creator info for the composer, behind the same middleware.
 export { TikTokHandlers as TikTokApiLive } from "#publishing/api/tiktok.ts";

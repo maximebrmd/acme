@@ -292,6 +292,34 @@
     "disconnectDescription": "Peal deletes the tokens it holds for this {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account and posts nothing more on it. You can connect it again later.",
     "cancel": "Cancel",
     "disconnected": "{handle} is disconnected.",
+    "offHint": "{who, select, you {Nothing goes out on this channel while it is off. Choose Turn on to post on it again.} other {Nothing goes out on this channel while it is off. An owner or an admin of the workspace can turn it back on.}}{reconnect, select, yes { Its account’s authorization stopped working meanwhile: it will need reconnecting once the channel is on.} other {}}",
+    "rename": {
+      "open": "Rename",
+      "account": "Rename {handle}",
+      "title": "Rename {handle}",
+      "description": "Give this channel the name your workspace calls it by.",
+      "name": "Name in Peal",
+      "hint": "Shown in Peal only, beside the account’s handle, and sent to no platform. {max, number} characters at most; leave it empty to remove the name.",
+      "tooLong": "This name is longer than {max, number} characters.",
+      "save": "Save",
+      "saving": "Saving…",
+      "clear": "Remove the name",
+      "close": "Close",
+      "saved": "{handle} is now named {label} in Peal.",
+      "cleared": "{handle} has no name of its own in Peal any more."
+    },
+    "power": {
+      "off": "Turn off",
+      "offAccount": "Turn off {handle}",
+      "turningOff": "Turning off…",
+      "offTitle": "Turn off {handle}?",
+      "offDescription": "Nothing will go out on this channel until it is turned back on. Posts that reach their time meanwhile fail on it, and go out on their other channels. The channel stays connected, and still counts in your plan.",
+      "on": "Turn on",
+      "onAccount": "Turn on {handle}",
+      "turningOn": "Turning on…",
+      "turnedOff": "{handle} is off: nothing goes out on it.",
+      "turnedOn": "{status, select, refreshNeeded {{handle} is on, but its authorization stopped working meanwhile: reconnect the account.} other {{handle} is on: posts go out on it again.}}"
+    },
     "connectTitle": "Connect an account",
     "connectDescription": "You sign in on the platform, then come back here.",
     "mastodonTitle": "Mastodon",
@@ -476,6 +504,12 @@
       "drafts": "Drafts",
       "workspaceLinks": "Posts of {workspace}"
     },
+    "Duplicate": {
+      "open": "Duplicate",
+      "working": "Duplicating…",
+      "done": "A copy was made as a draft. It has no time yet: choose one, then schedule it.",
+      "failed": "{reason, select, forbidden {You may not copy posts in this workspace.} notFound {This post no longer exists.} other {The post could not be copied. Try again.}}"
+    },
     "Composer": {
       "newTitle": "New post",
       "editTitle": "Edit the draft",
@@ -561,6 +595,9 @@
         "timeZone": "Pick a time zone from the list.",
         "unknownChannels": "Some of these channels are no longer connected.",
         "unknownMedia": "Some images or videos can no longer be attached.",
+        "unknownTags": "Some tags no longer exist. Choose the post's tags again.",
+        "unknownChannelSet": "This channel set no longer exists. Choose the post's channels again.",
+        "unknownSignature": "This signature no longer exists. Choose another one.",
         "content": "Fix these before scheduling:"
       },
       "violation": {
@@ -635,7 +672,7 @@
         "documentTitleInvalid": "A title cannot be only spaces."
       },
       "lookupLoading": "Reading the list on the platform…",
-      "lookupFailed": "{reason, select, reconnect {Reconnect this account to read its list.} disabled {This channel is turned off: disconnect it and connect the account again to post to it.} rateLimited {The platform asked to slow down. Try again in a moment.} other {The list could not be read from the platform. Try again in a moment.}}",
+      "lookupFailed": "{reason, select, reconnect {Reconnect this account to read its list.} disabled {This channel is turned off: turn it back on, on the Channels page, to post to it.} rateLimited {The platform asked to slow down. Try again in a moment.} other {The list could not be read from the platform. Try again in a moment.}}",
       "lookupRetry": "Try again",
       "lookupNone": "None",
       "lookupUnknown": "Not in the list ({value})",
@@ -732,7 +769,7 @@
         "postingAs": "Posting as {nickname} (@{username}).",
         "postingAsNickname": "Posting as {nickname}.",
         "blocked": "{reason, select, postLimit {This account has made as many posts today as TikTok allows: try again later.} banned {TikTok has banned this account from posting.} clientLimit {Today, TikTok takes no more accounts posting through this server: try again later.} other {This account cannot post right now: try again later.}}",
-        "creatorFailed": "{reason, select, reconnect {Reconnect this account to read its settings on TikTok.} disabled {This channel is turned off: disconnect it and connect the account again to post to it.} other {The account’s settings could not be read from TikTok. Try again later: scheduling checks them too.}}",
+        "creatorFailed": "{reason, select, reconnect {Reconnect this account to read its settings on TikTok.} disabled {This channel is turned off: turn it back on, on the Channels page, to post to it.} other {The account’s settings could not be read from TikTok. Try again later: scheduling checks them too.}}",
         "turnedOff": "Turned off in the account’s TikTok settings.",
         "brandedNotPrivate": "Branded content visibility cannot be set to private.",
         "labelPromotional": "Your {kind, select, photo {photo} other {video}} will be labeled “Promotional content”.",
@@ -766,7 +803,18 @@
       "moveInPast": "This time has passed: the post stays where it was.",
       "moveForbidden": "Your role does not let you move posts.",
       "moveHandle": "Move the post at {time}: {post}",
-      "hour": "Time"
+      "hour": "Time",
+      "tagNames": "{count, plural, =0 {No tag.} one {Tag: {tags}.} other {Tags: {tags}.}}",
+      "newPostAt": "New post on {date} at {time}",
+      "filterTags": "{count, plural, =0 {Tags} other {Tags (#)}}",
+      "filterTagsLabel": "Show the posts with one of these tags",
+      "filterChannels": "{count, plural, =0 {Channels} other {Channels (#)}}",
+      "filterChannelsLabel": "Show the posts that go to one of these channels",
+      "clearFilters": "Clear filters",
+      "hiddenByFilters": "{count, plural, =0 {No post hidden by filters} one {# post hidden by filters} other {# posts hidden by filters}}"
+    },
+    "Links": {
+      "suspicious": "This does not look like a working link: {link}"
     }
   },
   "Drafts": {
@@ -780,7 +828,8 @@
     "noText": "No text yet",
     "channels": "{count, plural, =0 {No channel yet} one {# channel} other {# channels}}",
     "media": "{count, plural, =0 {No image or video} one {# image or video} other {# images or videos}}",
-    "newPost": "New post"
+    "newPost": "New post",
+    "tags": "Tags"
   },
   "PostDetail": {
     "partsTitle": "Parts",
@@ -1093,7 +1142,7 @@
       "WebhookEndpointDisabled": "{reason, select, gone {The webhook endpoint at {host} in {workspace} was turned off: it answered 410 Gone, which asks for no more deliveries.} other {The webhook endpoint at {host} in {workspace} was turned off: every delivery had failed for {days, number} days. Fix the receiver, then turn it back on.}}",
       "TrialEndingOver": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan. It holds more than the free plan allows ({over}): from that day nothing is scheduled or published until it is back within it."
     },
-    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} partsNotSent {its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. It cannot be sent again from Peal: post the rest on the platform, as replies to the last part that is live.} repliesNotAllowed {its first part is live, and X did not let this server’s app post the parts after it as replies: on self-serve access, an app may reply only to a post whose author mentioned or quoted the account. It cannot be sent again from Peal: post the rest on X, as replies to the last part that is live.} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn the channel back on, on the Channels page, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} partsNotSent {its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. It cannot be sent again from Peal: post the rest on the platform, as replies to the last part that is live.} repliesNotAllowed {its first part is live, and X did not let this server’s app post the parts after it as replies: on self-serve access, an app may reply only to a post whose author mentioned or quoted the account. It cannot be sent again from Peal: post the rest on X, as replies to the last part that is live.} other {{reason}}}",
     "open": "{page, select, post {Open the post} billing {Open billing} webhooks {Open the webhooks} inbox {Open the comments} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
@@ -1450,7 +1499,10 @@
       "invitations": "Invitations",
       "apiKeys": "API keys",
       "webhooks": "Webhooks",
-      "partner": "Partner"
+      "partner": "Partner",
+      "tags": "Tags",
+      "signatures": "Signatures",
+      "channelSets": "Channel sets"
     },
     "general": {
       "title": "Name",
@@ -1777,6 +1829,12 @@
       "exported": "On this server, it also lists the connections that created content, which French law has a host keep, with what stays once your account is closed.",
       "identification": "As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for {identityYears, plural, one {# year} other {# years}}, and how you signed in and the connections that created content for {accountYears, plural, one {# year} other {# years}}, then deletes them.",
       "connections": "This server kept what French law requires of a host, and no longer does: the connections that created content, kept so far, stay {connectionYears, plural, one {# year} other {# years}} from each, apart, for judicial authorities only, then are deleted."
+    },
+    "timeFormat": {
+      "title": "Time format",
+      "description": "How this browser writes times of day, on the calendar and wherever a post has a time. The choice stays in this browser: your other devices keep their own.",
+      "legend": "Time format",
+      "option": "{format, select, auto {Automatic, as your language writes it ({example})} h12 {12-hour ({example})} other {24-hour ({example})}}"
     }
   },
   "Staff": {
@@ -2322,6 +2380,118 @@
       "loadFailed": "The setting could not be loaded.",
       "readOnly": "Owners and admins choose this."
     }
+  },
+  "SavedItems": {
+    "delete": "Delete",
+    "deleting": "Deleting…",
+    "errors": {
+      "forbidden": "Your role does not allow this.",
+      "invalid": "{kind, select, channelSet {The options kept for one of these channels are not those of its platform. Choose the channels again.} other {This could not be saved as it is.}}",
+      "nameTaken": "{kind, select, tag {The workspace already has a tag of this name.} signature {The workspace already has a signature of this name.} other {The workspace already has a channel set of this name.}}",
+      "notFound": "{kind, select, tag {This tag no longer exists.} signature {This signature no longer exists.} other {This channel set no longer exists.}}",
+      "tooMany": "{kind, select, tag {The workspace keeps {allowed, number} tags, the most it may. Delete one before adding another.} signature {The workspace keeps {allowed, number} signatures, the most it may. Delete one before adding another.} other {The workspace keeps {allowed, number} channel sets, the most it may. Delete one before adding another.}}",
+      "unknown": "Something went wrong. Try again.",
+      "unknownChannels": "Some of these channels are no longer connected. Choose the channels again."
+    }
+  },
+  "Tags": {
+    "description": "Tags file the workspace’s posts: by campaign, by subject, by client. A tag has a name and a colour, shows on the post in the drafts and on the calendar, and filters the calendar.",
+    "rules": "A workspace keeps {max, number} tags at most, and a post has {perPost, number} at most.",
+    "readOnly": "You can see the tags. Adding, renaming or deleting one takes the permission to change posts.",
+    "listTitle": "Tags",
+    "empty": "The workspace has no tag yet.",
+    "name": "Name",
+    "nameHint": "{max, number} characters at most. No other tag of the workspace has the same name.",
+    "colour": "Colour",
+    "colourName": "{colour, select, gray {Grey} red {Red} orange {Orange} amber {Amber} green {Green} teal {Teal} blue {Blue} purple {Purple} pink {Pink} other {{colour}}}",
+    "edit": "Edit",
+    "save": "Save",
+    "saved": "The tag is saved.",
+    "deleteTitle": "Delete the tag “{name}”?",
+    "deleteDescription": "The tag is taken off every post that has it. The posts keep everything else: their text, their media, their channels and their time. This is final.",
+    "deleted": "The tag is deleted.",
+    "createTitle": "Add a tag",
+    "create": "Add the tag",
+    "creating": "Adding…",
+    "created": "The tag is added.",
+    "postTitle": "Tags",
+    "postEmpty": "No tag.",
+    "postEdit": "Choose tags",
+    "postCreate": "New tag",
+    "postFull": "A post has {max, number} tags at most. Untick one to choose another."
+  },
+  "Signatures": {
+    "description": "A signature is text the workspace keeps to end its posts with: a sign-off, a disclosure, a set of hashtags. Insert one while you write a post, or make it a default: a default signature is added to new posts when they are first saved. A platform’s or a channel’s own default replaces the workspace’s there.",
+    "rules": "Once added, a signature is text of the post like any other: it counts against each platform’s limit, and changing the signature later leaves the posts that hold it as they are. A workspace keeps {max, number} signatures at most.",
+    "readOnly": "You can see the signatures. Adding, changing or deleting one takes the permission to change posts.",
+    "listTitle": "Signatures",
+    "empty": "The workspace has no signature yet.",
+    "name": "Name",
+    "nameHint": "Only members see it: it tells this signature from the others.",
+    "text": "Text",
+    "textCount": "{count, number} of {max, number} characters",
+    "scope": "What it is for",
+    "scopeOption": "{scope, select, workspace {Every channel of the workspace} platform {The channels of one platform} other {One channel}}",
+    "platform": "Platform",
+    "choosePlatform": "Choose a platform",
+    "channel": "Channel",
+    "chooseChannel": "Choose a channel",
+    "noChannels": "The workspace has no connected channel yet.",
+    "isDefault": "Add to new posts by default",
+    "isDefaultHint": "One signature is the default of the workspace, of each platform and of each channel: making this one the default replaces the one that was.",
+    "scopeWorkspace": "For every channel of the workspace",
+    "scopePlatform": "For the {platform} channels",
+    "scopeChannel": "For {handle} on {platform}",
+    "scopeChannelGone": "For a channel that is no longer connected",
+    "defaultBadge": "Default",
+    "edit": "Edit",
+    "save": "Save",
+    "saved": "The signature is saved.",
+    "deleteTitle": "Delete the signature “{name}”?",
+    "deleteDescription": "Posts that already hold its text keep it. This is final.",
+    "deleted": "The signature is deleted.",
+    "createTitle": "Add a signature",
+    "create": "Add the signature",
+    "creating": "Adding…",
+    "created": "The signature is added.",
+    "menuTrigger": "Signature",
+    "menuAll": "Add under the text for all channels",
+    "menuOwn": "Add under one channel’s own text",
+    "addedCheck": "The post was saved as a draft, with the default signature under its text. Nothing is scheduled yet: check the text and the character counts, then choose {action} again.",
+    "addDefault": "{count, plural, one {Add the default signature when the post is saved} other {Add the default signatures when the post is saved}}",
+    "addDefaultHint": "{count, plural, one {{names} goes under the text when the post is first saved. You then see the text as it will go out, and can still change it.} other {{names} go under the text, each on the channels it is for, when the post is first saved. You then see the texts as they will go out, and can still change them.}}"
+  },
+  "ChannelSets": {
+    "description": "A channel set is a selection of the workspace’s channels kept under a name, with the options posts take on them. Start a post from a set instead of ticking the same channels each time.",
+    "rules": "A set keeps the channels as they were chosen: one disconnected since is left out of the posts started from the set, and the composer says so. A workspace keeps {max, number} sets at most.",
+    "readOnly": "You can see the channel sets. Adding, changing or deleting one takes the permission to change posts.",
+    "listTitle": "Channel sets",
+    "empty": "The workspace has no channel set yet.",
+    "name": "Name",
+    "channels": "Channels",
+    "channelsHint": "One channel at least, {max, number} at most.",
+    "channelsOf": "Channels of {name}",
+    "noChannels": "The workspace has no connected channel yet.",
+    "noneLeft": "None of its channels is connected any more.",
+    "missing": "{count, plural, one {# channel of this set is no longer connected: posts started from the set go without it.} other {# channels of this set are no longer connected: posts started from the set go without them.}}",
+    "editDrops": "{count, plural, one {Saving takes out the channel that is no longer connected.} other {Saving takes out the # channels that are no longer connected.}}",
+    "edit": "Edit",
+    "save": "Save",
+    "saved": "The channel set is saved.",
+    "deleteTitle": "Delete the channel set “{name}”?",
+    "deleteDescription": "Its channels stay connected, and the posts started from it keep their channels. This is final.",
+    "deleted": "The channel set is deleted.",
+    "createTitle": "Add a channel set",
+    "create": "Add the channel set",
+    "creating": "Adding…",
+    "created": "The channel set is added.",
+    "pickerTrigger": "Use a channel set",
+    "pickerLabel": "Select the channels of a set",
+    "pickerItem": "{name} ({count, plural, =0 {no channel} one {# channel} other {# channels}})",
+    "pickerDropped": "{count, plural, one {# channel of “{name}” is no longer connected and was left out.} other {# channels of “{name}” are no longer connected and were left out.}}",
+    "saveSelection": "Save selection as a set",
+    "saveSelectionTitle": "Save the selection as a channel set",
+    "saveSelectionDescription": "{count, plural, one {The channel ticked, with the options filled for it, is kept under this name.} other {The # channels ticked, with the options filled for them, are kept under this name.}}"
   },
   "Inbox": {
     "open": "Inbox",
