@@ -375,7 +375,14 @@ and no socket, for tests.
   test`) compares the SDKs' document with the last released one
   (`packages/peal-sdk/released/openapi.json`, `scripts/api-changes.ts`) and
   fails on anything a client could break on; a break that is decided on goes
-  into `released/accepted-changes.json` with its reason. Deprecate with
+  into `released/accepted-changes.json` with its reason (the 64-bit
+  byte counts are there: the same number on the wire, a wider type in the
+  typed SDKs). It also refuses a tighter limit on what is sent, a way of
+  signing in that goes, a value or a union member no longer answered,
+  null where there was always a value, and a baseline that lists nothing
+  or is not the one the last release recorded (`released/openapi.sha256`).
+  The target runs through `nx:run-commands`: `commands` outside `options`
+  makes an `nx:noop` target that passes without running. Deprecate with
   `.annotateMerge(deprecated({ since, sunset?, link? }))`
   (`peal-contract/deprecation`): the document marks it and every answer
   carries `Deprecation` (RFC 9745) and `Sunset` (RFC 8594). `GET

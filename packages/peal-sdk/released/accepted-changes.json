@@ -1,1 +1,58 @@
-[]
+[
+  {
+    "change": "ContentViolationMediaTooLarge.byteSize was integer, and is integer (int64)",
+    "reason": "A file's size in bytes passes what 32 bits hold (a video may be 1 GiB and more), so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "ContentViolationMediaTooLarge.maximum was integer, and is integer (int64)",
+    "reason": "A file's size in bytes passes what 32 bits hold (a video may be 1 GiB and more), so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "ContentViolationMediaTooSmall.byteSize was integer, and is integer (int64)",
+    "reason": "A file's size in bytes passes what 32 bits hold (a video may be 1 GiB and more), so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "ContentViolationMediaTooSmall.minimum was integer, and is integer (int64)",
+    "reason": "A file's size in bytes passes what 32 bits hold (a video may be 1 GiB and more), so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "Media.byteSize was integer, and is integer (int64)",
+    "reason": "A file's size in bytes passes what 32 bits hold (a video may be 1 GiB and more), so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "MediaTooLargeEncoded.byteSize was integer, and is integer (int64)",
+    "reason": "A file's size in bytes passes what 32 bits hold (a video may be 1 GiB and more), so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "MediaTooLargeEncoded.maxByteSize was integer, and is integer (int64)",
+    "reason": "A file's size in bytes passes what 32 bits hold (a video may be 1 GiB and more), so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "NewUpload.byteSize was integer, and is integer (int64)",
+    "reason": "A file's size in bytes passes what 32 bits hold (a video may be 1 GiB and more), so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "PlanAllowances.assistantRequests (integer) was integer, and is integer (int64)",
+    "reason": "A plan's allowance may be media storage counted in bytes, which passes what 32 bits hold, so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "PlanAllowances.channels (integer) was integer, and is integer (int64)",
+    "reason": "A plan's allowance may be media storage counted in bytes, which passes what 32 bits hold, so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "PlanAllowances.members (integer) was integer, and is integer (int64)",
+    "reason": "A plan's allowance may be media storage counted in bytes, which passes what 32 bits hold, so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "PlanAllowances.scheduledPosts (integer) was integer, and is integer (int64)",
+    "reason": "A plan's allowance may be media storage counted in bytes, which passes what 32 bits hold, so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "PlanLimitReachedEncoded.allowed was integer, and is integer (int64)",
+    "reason": "A plan's allowance may be media storage counted in bytes, which passes what 32 bits hold, so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  },
+  {
+    "change": "UploadPart.byteSize was integer, and is integer (int64)",
+    "reason": "A file's size in bytes passes what 32 bits hold (a video may be 1 GiB and more), so the document now says it is a 64-bit integer. Nothing changes on the wire: the JSON number is the same. The typed SDKs widen the field (Go int to int64, Java Integer to Long, .NET int to long, Rust i32 to i64): code that keeps the value in a 32-bit variable changes its type."
+  }
+]

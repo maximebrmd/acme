@@ -142,9 +142,11 @@ const enumOf = (schema: JsonObject): readonly string[] | undefined => {
 const gained = (before: readonly string[], after: readonly string[]) =>
   after.filter((name) => !before.includes(name));
 
-// The values of an enum, or the members of a union, that came and went: a
-// value the server no longer sends breaks no client; one it no longer takes
-// does.
+// The values of an enum, or the members of a union, that came and went.
+// One that goes breaks a client either way: what it sent is refused, or
+// the SDKs' type loses a value its code names. One that comes is an
+// addition, but null where there was always a value, which no client
+// written against the first document expects.
 const listChanges = (
   before: readonly string[],
   after: readonly string[],
@@ -154,15 +156,87 @@ const listChanges = (
 ): readonly ApiChange[] => [
   ...gained(after, before).map((name) =>
     change(
-      sent ? "breaking" : "addition",
+      "breaking",
       where,
       `no longer ${sent ? "takes" : "answers"} ${noun}${name}`
     )
   ),
   ...gained(before, after).map((name) =>
-    change("addition", where, `${sent ? "takes" : "may answer"} ${noun}${name}`)
+    !sent && name === "null"
+      ? change("breaking", where, "may now answer null")
+      : change(
+          "addition",
+          where,
+          `${sent ? "takes" : "may answer"} ${noun}${name}`
+        )
   ),
 ];
+
+const isNumber = Schema.is(Schema.Number);
+
+// The limits on a value, and which way each tightens.
+const upperLimits = ["maxLength", "maxItems", "maximum", "exclusiveMaximum"];
+const lowerLimits = ["minLength", "minItems", "minimum", "exclusiveMinimum"];
+
+// What a client sends may not be held to a tighter limit than before: a
+// lower maximum, a higher minimum, a pattern it did not have to match.
+const limitChanges = (
+  before: JsonObject,
+  after: JsonObject,
+  where: string
+): readonly ApiChange[] => {
+  const tighter = (name: string, most: boolean): readonly ApiChange[] => {
+    const now = after[name];
+    const was = before[name];
+
+    if (!isNumber(now)) {
+      return [];
+    }
+
+    const words = most ? "at most" : "at least";
+
+    if (!isNumber(was)) {
+      return [
+        change(
+          "breaking",
+          where,
+          `takes ${words} ${String(now)} (${name}), where it took any`
+        ),
+      ];
+    }
+
+    return (most ? now < was : now > was)
+      ? [
+          change(
+            "breaking",
+            where,
+            `takes ${words} ${String(now)} (${name}), where it took ${String(was)}`
+          ),
+        ]
+      : [];
+  };
+
+  const { pattern } = after;
+
+  return [
+    ...upperLimits.flatMap((name) => tighter(name, true)),
+    ...lowerLimits.flatMap((name) => tighter(name, false)),
+    ...(isString(pattern) && pattern !== before["pattern"]
+      ? [change("breaking", where, `must now match a pattern, ${pattern}`)]
+      : []),
+  ];
+};
+
+// The tags a discriminator maps to schemas: the SDKs read a union by them.
+const mappingChanges = (
+  before: JsonObject,
+  after: JsonObject,
+  where: string
+): readonly ApiChange[] =>
+  gained(
+    Object.keys(objectAt(objectAt(after, "discriminator"), "mapping")),
+    Object.keys(objectAt(objectAt(before, "discriminator"), "mapping"))
+  ).map((tag) => change("breaking", where, `no longer maps the tag ${tag}`));
 
 const enumChanges = (
   before: JsonObject,
@@ -313,6 +387,8 @@ export const schemaChanges: Compare = (before, after, direction, where) => {
   }
 
   return [
+    ...(direction === "request" ? limitChanges(before, after, where) : []),
+    ...mappingChanges(before, after, where),
     ...enumChanges(before, after, direction === "request", where),
     ...unionChanges(schemaChanges, before, after, direction, where),
     ...schemaChanges(before["items"], after["items"], direction, `${where}[]`),
@@ -442,6 +518,12 @@ const bodyChanges = (
   const required = objectAt(after, "requestBody")["required"] === true;
 
   return [
+    ...(bodyBefore.size > 0 &&
+    bodyAfter.size > 0 &&
+    objectAt(before, "requestBody")["required"] !== true &&
+    required
+      ? [change("breaking", place, "was optional, and is now required")]
+      : []),
     ...[...bodyBefore].flatMap(([type, schema]) =>
       bodyAfter.has(type)
         ? schemaChanges(schema, bodyAfter.get(type), "request", place)
@@ -489,6 +571,72 @@ const answerChanges = (
     : schemaChanges(before, after, "response", place);
 };
 
+// The errors an answer holds, by name.
+const errorsOf = (answer: Json | undefined): readonly string[] =>
+  [...contentOf(answer).values()].flatMap((schema) =>
+    isJsonObject(schema) ? (unionOf(schema) ?? [schema]).map(memberName) : []
+  );
+
+// The errors of a status that is gone which another error status answers
+// now.
+const movedErrors = (
+  answer: Json | undefined,
+  answersAfter: JsonObject,
+  status: string,
+  place: string
+): readonly ApiChange[] =>
+  errorsOf(answer).flatMap((name) => {
+    const [now] = Object.entries(answersAfter).filter(
+      ([other, after]) =>
+        Number(other) >= 400 &&
+        other !== status &&
+        errorsOf(after).includes(name)
+    );
+
+    return now === undefined
+      ? []
+      : [
+          change(
+            "breaking",
+            `${place} ${name}`,
+            `is now answered with the status ${now[0]}`
+          ),
+        ];
+  });
+
+// The credentials an operation takes, by scheme; none when it is open.
+const credentialsOf = (operation: JsonObject): readonly string[] => {
+  const { security } = operation;
+
+  return (isJsonArray(security) ? security : []).flatMap((requirement) =>
+    isJsonObject(requirement) ? Object.keys(requirement) : []
+  );
+};
+
+// A way of signing in that an operation took and no longer takes, or a
+// credential asked where none was.
+const securityChanges = (
+  before: JsonObject,
+  after: JsonObject,
+  id: string
+): readonly ApiChange[] => {
+  const took = credentialsOf(before);
+  const takes = credentialsOf(after);
+
+  if (took.length === 0) {
+    return takes.length === 0
+      ? []
+      : [change("breaking", id, "now needs a credential, where it took none")];
+  }
+
+  // An operation that opens to everyone refuses nobody.
+  return takes.length === 0
+    ? []
+    : gained(takes, took).map((scheme) =>
+        change("breaking", id, `no longer takes the credential ${scheme}`)
+      );
+};
+
 const answersChanges = (
   before: JsonObject,
   after: JsonObject,
@@ -502,10 +650,11 @@ const answersChanges = (
       const place = `${id}: ${status} answer`;
 
       if (!(status in answersAfter)) {
-        // An error the server no longer answers breaks no client.
+        // An error the server no longer answers breaks no client; one it
+        // answers under another status breaks those that tell by status.
         return Number(status) < 400
           ? [change("breaking", place, "is no longer answered")]
-          : [];
+          : movedErrors(answer, answersAfter, status, place);
       }
 
       const contentAfter = contentOf(answersAfter[status]);
@@ -539,6 +688,7 @@ const operationChanges = (
   ...(before["deprecated"] !== true && after["deprecated"] === true
     ? [change("deprecation", id, "is deprecated")]
     : []),
+  ...securityChanges(before, after, id),
   ...parameterChanges(before, after, id),
   ...bodyChanges(before, after, id),
   ...answersChanges(before, after, id),
@@ -665,6 +815,13 @@ export const apiChanges = (
     return first;
   });
 };
+
+/**
+ * How many operations a document lists: a baseline that lists none is no
+ * baseline, and every document passes against it.
+ */
+export const operationCount = (document: JsonObject): number =>
+  operationsOf(document).size;
 
 /** A change on one line, as the check prints it and exceptions name it. */
 export const lineOf = ({ what, where }: ApiChange): string =>

@@ -9,8 +9,9 @@
 //                                     changed to the changelog the API
 //                                     serves (peal-contract's
 //                                     api-changelog.json), makes
-//                                     openapi.json the released document
-//                                     and empties the exceptions
+//                                     openapi.json the released document,
+//                                     with its SHA-256 beside it, and
+//                                     empties the exceptions
 //
 // released/accepted-changes.json lists the breaking changes that were
 // decided on, each with its reason: a change of the API that is not an
@@ -20,12 +21,16 @@ import path from "node:path";
 
 import { Schema } from "effect";
 
-import { apiChanges, lineOf } from "./api-changes.ts";
+import { apiChanges, lineOf, operationCount } from "./api-changes.ts";
 
 const root = path.join(import.meta.dirname, "..");
 const current = path.join(root, "openapi.json");
 const released = path.join(root, "released", "openapi.json");
 const accepted = path.join(root, "released", "accepted-changes.json");
+
+// The SHA-256 of released/openapi.json, written with it by a release: the
+// baseline changes only when a release is recorded.
+const fingerprint = path.join(root, "released", "openapi.sha256");
 
 const changelog = path.join(
   root,
@@ -61,8 +66,27 @@ if (!(await Bun.file(current).exists())) {
   );
 }
 
+const sha256 = (text: string) =>
+  new Bun.CryptoHasher("sha256").update(text).digest("hex");
+
+const baseline = await read(released);
+
+// Every document passes against a baseline that lists nothing, and one
+// edited by hand no longer is what was released.
+if (operationCount(decodeDocument(baseline)) === 0) {
+  throw new Error(
+    "packages/peal-sdk/released/openapi.json lists no operation: it is not the released API. Restore it from Git."
+  );
+}
+
+if (sha256(baseline) !== (await read(fingerprint)).trim()) {
+  throw new Error(
+    "packages/peal-sdk/released/openapi.json is not the document the last release recorded (released/openapi.sha256): only `bun scripts/compat.ts --release` writes it. Restore it from Git."
+  );
+}
+
 const changes = apiChanges(
-  decodeDocument(await read(released)),
+  decodeDocument(baseline),
   decodeDocument(await read(current))
 );
 
@@ -163,6 +187,7 @@ if (process.argv.includes("--release")) {
   );
 
   await Bun.write(released, await read(current));
+  await Bun.write(fingerprint, `${sha256(await read(current))}\n`);
   await Bun.write(accepted, "[]\n");
 
   console.log(

@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test";
 import { Predicate, Schema as SchemaModule } from "effect";
 import type { Schema } from "effect";
 
-import { apiChanges, lineOf } from "./api-changes.ts";
+import { apiChanges, lineOf, operationCount } from "./api-changes.ts";
 
 type JsonObject = Schema.JsonObject;
 
@@ -315,5 +315,135 @@ describe("changes between two documents of the API", () => {
       "addition: Post.state may answer paused",
       "breaking: Post.state (disabled).since is no longer answered",
     ]);
+  });
+});
+
+describe("what a client sends may not be narrowed, nor what it is promised taken away", () => {
+  it("refuses a tighter limit on what is sent, and lets a looser one through", () => {
+    const limited = (limits: JsonObject): Edit => [
+      `${newPost}>properties>text`,
+      { maxLength: 500, minLength: 1, type: "string", ...limits },
+    ];
+
+    const before = changed(limited({}));
+
+    const lines = (after: JsonObject) =>
+      apiChanges(before, after)
+        .filter(({ kind }) => kind === "breaking")
+        .map(lineOf);
+
+    expect(lines(changed(limited({ maxLength: 280 })))).toEqual([
+      "NewPost.text takes at most 280 (maxLength), where it took 500",
+    ]);
+    expect(lines(changed(limited({ minLength: 2 })))).toEqual([
+      "NewPost.text takes at least 2 (minLength), where it took 1",
+    ]);
+    expect(lines(changed(limited({ pattern: "^\\S" })))).toEqual([
+      "NewPost.text must now match a pattern, ^\\S",
+    ]);
+    expect(lines(changed(limited({ maxLength: 1000, minLength: 0 })))).toEqual(
+      []
+    );
+    // A limit where there was none.
+    expect(
+      breaking(changed([`${newPost}>properties>text>maxLength`, 100]))
+    ).toEqual([
+      "NewPost.text takes at most 100 (maxLength), where it took any",
+    ]);
+    // On a parameter and an array too.
+    expect(
+      breaking(
+        changed([
+          `${list}>parameters>1>schema`,
+          { maximum: 50, type: "integer" },
+        ])
+      )
+    ).toEqual([
+      "posts.list: query parameter limit takes at most 50 (maximum), where it took any",
+    ]);
+  });
+
+  it("refuses a body that becomes required, and a way of signing in that goes", () => {
+    const optional = changed([`${create}>requestBody>required`, false]);
+
+    expect(
+      apiChanges(optional, released())
+        .filter(({ kind }) => kind === "breaking")
+        .map(lineOf)
+    ).toEqual(["posts.create: body was optional, and is now required"]);
+
+    const signed = changed([
+      `${list}>security`,
+      [{ bearer: [] }, { cookie: [] }],
+    ]);
+
+    expect(
+      apiChanges(signed, changed([`${list}>security`, [{ cookie: [] }]]))
+        .filter(({ kind }) => kind === "breaking")
+        .map(lineOf)
+    ).toEqual(["posts.list no longer takes the credential bearer"]);
+    // Open before, and now asking for a credential.
+    expect(breaking(changed([`${list}>security`, [{ bearer: [] }]]))).toEqual([
+      "posts.list now needs a credential, where it took none",
+    ]);
+  });
+
+  it("refuses a value or a member no longer answered, and null where there was always a value", () => {
+    expect(
+      breaking(changed([`${post}>properties>status>enum`, ["draft"]]))
+    ).toEqual(['Post.status no longer answers the value "scheduled"']);
+
+    const before = withState(tagged("idle"), tagged("busy"));
+
+    const lines = (after: JsonObject) =>
+      apiChanges(before, after)
+        .filter(({ kind }) => kind === "breaking")
+        .map(lineOf);
+
+    expect(lines(withState(tagged("idle")))).toEqual([
+      "Post.state no longer answers busy",
+    ]);
+    expect(
+      lines(withState(tagged("idle"), tagged("busy"), { type: "null" }))
+    ).toEqual(["Post.state may now answer null"]);
+  });
+
+  it("refuses a tag a discriminator no longer maps, and an error that moves to another status", () => {
+    const mapped = (mapping: JsonObject) =>
+      changed([
+        `${post}>properties>state`,
+        {
+          discriminator: { mapping, propertyName: "type" },
+          oneOf: [reference("Post"), reference("NewPost")],
+        },
+      ]);
+
+    const both = {
+      made: "#/components/schemas/Post",
+      new: "#/components/schemas/NewPost",
+    };
+
+    expect(
+      apiChanges(mapped(both), mapped({ made: both.made }))
+        .filter(({ kind }) => kind === "breaking")
+        .map(lineOf)
+    ).toEqual(["Post.state no longer maps the tag new"]);
+
+    const moved = changed(
+      [`${list}>responses>404`, undefined],
+      [
+        `${list}>responses>410`,
+        { content: { "application/json": { schema: reference("Post") } } },
+      ]
+    );
+
+    expect(breaking(moved)).toEqual([
+      "posts.list: 404 answer Post is now answered with the status 410",
+    ]);
+  });
+
+  it("finds a document that lists no operation at all", () => {
+    expect(operationCount({})).toBe(0);
+    expect(operationCount(released())).toBe(2);
   });
 });
