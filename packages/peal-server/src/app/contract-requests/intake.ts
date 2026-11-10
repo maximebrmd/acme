@@ -29,8 +29,11 @@ export const refusedContractRequests = Metric.counter(
 const refuse = (reason: "captcha" | "rateLimited") =>
   Metric.update(Metric.withAttributes(refusedContractRequests, { reason }), 1);
 
-// The path a new request is sent to; the others open or follow a link.
-const sendPath = "/api/contract-requests";
+// The endpoint a new request is sent to; the others open or follow a
+// link. Told by the endpoint the router matched, never by the path as it
+// was written: the router reads a path in any case and with any number of
+// slashes, and a check that read it otherwise would let those through.
+const sendEndpoint = "send";
 
 const captchaHeader = "x-captcha-response";
 
@@ -47,7 +50,7 @@ export const ContractRequestIntakeLive = Layer.effect(
     const headers = yield* addressHeadersConfig;
     const captcha = yield* CaptchaChallenge;
 
-    return ContractRequestIntake.of((httpEffect) =>
+    return ContractRequestIntake.of((httpEffect, { endpoint }) =>
       Effect.gen(function* intake() {
         const request = yield* HttpServerRequest.HttpServerRequest;
 
@@ -55,8 +58,7 @@ export const ContractRequestIntakeLive = Layer.effect(
           return yield* httpEffect;
         }
 
-        const path = request.url.split("?")[0]?.replace(/\/+$/u, "") ?? "";
-        const sending = path === sendPath;
+        const sending = endpoint.identifier === sendEndpoint;
 
         yield* limiter
           .consume({

@@ -344,6 +344,37 @@ layer(appWithTurnstile(passingSecretKey), { timeout: "120 seconds" })(
           _tag: "CaptchaRefused",
         });
 
+        // However the path is written: the router reads it in any case,
+        // with any number of slashes, and so does the check.
+        const app2 = yield* TestApp;
+
+        const variants = yield* Effect.forEach(
+          [
+            "/api/Contract-Requests",
+            "/api//contract-requests",
+            "/API/contract-requests/",
+          ],
+          (path) =>
+            app2.request(path, {
+              body: {
+                contract: null,
+                desiredOn: null,
+                email: newEmail("variant"),
+                kind: "cancellation",
+                locale: "en",
+                name: "Camille Synthetic",
+              },
+              headers: { "x-forwarded-for": address },
+            })
+        );
+
+        assert.notInclude(
+          variants.map(({ body }) =>
+            Schema.is(TaggedSchema)(body) ? body._tag : ""
+          ),
+          "BillingNotEnabled"
+        );
+
         // Past the captcha, the server says it has no contract to end.
         const passed = yield* send(
           address,
