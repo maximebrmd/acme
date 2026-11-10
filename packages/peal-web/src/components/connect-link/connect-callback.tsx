@@ -3,9 +3,8 @@
 import { constVoid } from "effect/Function";
 import type { ConnectCallback, Platform } from "peal-contract";
 import { useSyncExternalStore } from "react";
+import type { ReactElement } from "react";
 
-import { UpgradePrompts } from "#components/billing/upgrade-prompts.tsx";
-import { CompleteConnection } from "#components/channels/complete-connection.tsx";
 import { pendingLink } from "#connect-link/pending-link.ts";
 
 import { CompleteHostedConnection } from "./complete-hosted-connection.tsx";
@@ -22,13 +21,16 @@ const unknownOnServer = () => notYetKnown;
 /**
  * What the platform's callback completes: the sign-in of the connect link
  * this tab came from, when it came from one, or the connection a member
- * started in the app.
+ * started in the app: `member`, which the page renders, as it reads the
+ * member's session on the server.
  */
 export const ConnectCallbackView = ({
   callback,
+  member,
   platform,
 }: {
   readonly callback: ConnectCallback | null;
+  readonly member: ReactElement;
   readonly platform: Platform;
 }) => {
   const token = useSyncExternalStore(
@@ -47,9 +49,5 @@ export const ConnectCallbackView = ({
     );
   }
 
-  return (
-    <UpgradePrompts current={null}>
-      <CompleteConnection platform={platform} callback={callback} />
-    </UpgradePrompts>
-  );
+  return member;
 };

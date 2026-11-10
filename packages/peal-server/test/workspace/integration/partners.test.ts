@@ -303,15 +303,20 @@ layer(StaffOnlyLive, { excludeTestServices: true, timeout: "180 seconds" })(
             headers: staff,
           });
 
-          const [latest] = (yield* bodyOf(AuditSchema, audit)).items;
+          // The log is every workspace's, and other suites write to it.
+          const grants = (yield* bodyOf(AuditSchema, audit)).items.filter(
+            (event) => event.workspaceId === home
+          );
 
-          assert.deepStrictEqual(latest, {
-            action: "grantPartner",
-            reason: "Synthetic partnership",
-            staffId: operator.id,
-            targetId: null,
-            workspaceId: home,
-          });
+          assert.deepStrictEqual(grants, [
+            {
+              action: "grantPartner",
+              reason: "Synthetic partnership",
+              staffId: operator.id,
+              targetId: null,
+              workspaceId: home,
+            },
+          ]);
 
           // The owner names it and creates its keys; the key's workspaces
           // show, to staff, whose they are.
