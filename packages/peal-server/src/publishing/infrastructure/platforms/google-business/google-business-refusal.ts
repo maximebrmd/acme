@@ -117,8 +117,10 @@ const describedCode = (
  *   project's requests a minute are spent
  *   (300 once Google gave access, 0 before), for as long as the answer
  *   says, a minute otherwise.
- * - 401, `UNAUTHENTICATED`, or a scope the token lacks: the token, which a
- *   renewal or a reconnection replaces.
+ * - 401, `UNAUTHENTICATED`, or a scope the token lacks, in Google's own
+ *   error (one that names a `status`): the token, which a renewal or a
+ *   reconnection replaces. A 401 or a 403 that is not Google's own came
+ *   from a server on the way: unavailable, for now.
  * - 403 naming the project (the API not enabled): the operator's to fix,
  *   retried as Google being unavailable.
  * - Any other 403: the Google user may no longer manage the location.
@@ -145,6 +147,13 @@ export const refusalOf = (
     const invalid = details.flatMap(({ errorDetails }) => errorDetails ?? []);
     const codes = invalid.flatMap(({ code }) => code ?? []);
     const now = yield* DateTime.now;
+
+    // Google's errors name a `status`. A 401 or a 403 without one came from
+    // a server on the way: unavailable for now, never the token refused
+    // nor the member's permission lost, which would stop the channel.
+    if ((status === 401 || status === 403) && Option.isNone(named)) {
+      return new PlatformUnavailable();
+    }
 
     if (
       status === 429 ||

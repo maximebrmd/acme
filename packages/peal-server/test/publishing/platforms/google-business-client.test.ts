@@ -18,7 +18,11 @@ import {
   validationError,
 } from "#test/publishing/fakes/fake-google-business-api.ts";
 import type { FakeGoogleBusinessOptions } from "#test/publishing/fakes/fake-google-business-api.ts";
-import { dropped, headerOf } from "#test/publishing/fakes/platform-server.ts";
+import {
+  dropped,
+  headerOf,
+  json,
+} from "#test/publishing/fakes/platform-server.ts";
 import type { PlatformServer } from "#test/publishing/fakes/platform-server.ts";
 
 import {
@@ -419,6 +423,27 @@ describe("publishing on a Google Business Profile location", () => {
         // A scope the token lacks is the token's: renewed, then expired.
         assert.deepStrictEqual(yield* refused(), new TokenExpired());
         assert.strictEqual(yield* log.renewals, 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "takes a 401 or a 403 that is not Google's own for a server on the way, never for the token or the permission",
+    () =>
+      Effect.gen(function* proxies() {
+        const { client, google, log } = yield* onGoogle();
+
+        google.script(`POST ${google.collection}`, [
+          json({ message: "Unauthorized" }, 401),
+          json({ error: "Forbidden" }, 403),
+        ]);
+
+        const refused = () =>
+          post().pipe(Effect.flatMap(client.publish), Effect.flip);
+
+        assert.deepStrictEqual(yield* refused(), new PlatformUnavailable());
+        assert.deepStrictEqual(yield* refused(), new PlatformUnavailable());
+        // The token was not renewed, nor the channel asked to reconnect.
+        assert.strictEqual(yield* log.renewals, 0);
       }).pipe(Effect.scoped)
   );
 

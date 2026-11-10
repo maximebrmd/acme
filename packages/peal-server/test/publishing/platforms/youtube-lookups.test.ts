@@ -231,6 +231,38 @@ describe("YouTube's lookups", () => {
     })
   );
 
+  // A 403 is about what the channel or the project may read, and a 401
+  // without Google's error came from a server on the way: neither says
+  // the token is refused, which would stop the channel's uploads.
+  it.effect(
+    "never take a 403, or a 401 that is not Google's own, for a token to reconnect",
+    () =>
+      Effect.gen(function* notTheToken() {
+        const { run, youtube } = yield* onYouTube(["token-2"]);
+
+        youtube.script.push("GET /youtube/v3/playlists", [
+          youtube.googleError(403, "insufficientPermissions"),
+          json({ message: "Unauthorized" }, 401),
+        ]);
+
+        const failures = yield* Effect.forEach([1, 2], () =>
+          run(playlistsFrom(Option.none())).pipe(Effect.flip)
+        );
+
+        assert.deepStrictEqual(
+          failures.map(({ _tag }) => _tag),
+          ["PlatformUnavailable", "PlatformUnavailable"]
+        );
+        // Asked once each: nothing renewed the token to try again.
+        assert.lengthOf(
+          youtube
+            .requests()
+            .filter(({ path }) => path === "/youtube/v3/playlists"),
+          2
+        );
+      })
+  );
+
   it.effect(
     "be unavailable when YouTube fails, answers nonsense or forbids",
     () =>

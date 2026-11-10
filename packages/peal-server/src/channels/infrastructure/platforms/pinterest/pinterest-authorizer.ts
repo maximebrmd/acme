@@ -24,6 +24,7 @@ import type {
 } from "#channels/infrastructure/platforms/oauth-exchange.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
+import { pinterestErrorCodeOf } from "#shared/infrastructure/platforms/pinterest-api.ts";
 import type { PinterestHosts } from "#shared/infrastructure/platforms/pinterest-api.ts";
 
 export const pinterestCallbackPath = "/connect/pinterest/callback";
@@ -226,10 +227,16 @@ export const pinterestAuthorizer = Effect.fn("PinterestAuthorizer.make")(
           ).pipe(Effect.andThen(Effect.fail(new PlatformUnavailable())));
         }
 
-        // Any other refusal is of the refresh token: revoked, or past its
-        // 60 days, which only reconnecting replaces.
+        // Any other refusal in Pinterest's own words is of the refresh
+        // token: revoked, or past its 60 days, which only reconnecting
+        // replaces. One that is not Pinterest's came from a server on the
+        // way, and says nothing of the token: tried again later.
         if (response.status !== 200 && response.status !== 201) {
-          return yield* new TokenExpired();
+          const own = yield* pinterestErrorCodeOf(response);
+
+          return yield* Option.isSome(own)
+            ? new TokenExpired()
+            : new PlatformUnavailable();
         }
 
         // Whether the refresh token sent still works is not known: an

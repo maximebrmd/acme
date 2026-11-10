@@ -58,18 +58,33 @@ const PlaylistsSchema = Schema.Struct({
   nextPageToken: Schema.optionalKey(Schema.String),
 });
 
-// What YouTube's refusal of a read means. A 400 refuses what the input
-// asked (a region it does not know, a page token it never gave); any other
-// refusal that is neither the token's nor a rate limit (a closed or
-// suspended channel) leaves the lookup without an answer, and is logged by
-// its code.
+// Google's errors are JSON with an `error` that holds its code.
+const GoogleErrorSchema = Schema.Struct({
+  error: Schema.Struct({ code: Schema.Number }),
+});
+
+// Whether a refusal is Google's own word, not a page of a server on the
+// way.
+const isGoogles = (response: HttpClientResponse.HttpClientResponse) =>
+  HttpClientResponse.schemaBodyJson(GoogleErrorSchema)(response).pipe(
+    Effect.as(true),
+    Effect.orElseSucceed(() => false)
+  );
+
+// What YouTube's refusal of a read means. Only a 401 in Google's own error
+// refuses the token: a 403 is about what the channel or the project may
+// read, and must not ask to reconnect a channel that uploads. A 400
+// refuses what the input asked (a region it does not know, a page token it
+// never gave); any other refusal that is not a rate limit (a closed or
+// suspended channel, a permission the token lacks) leaves the lookup
+// without an answer, and is logged by its code.
 const refused = (
   response: HttpClientResponse.HttpClientResponse
 ): Effect.Effect<never, ReadFailure> =>
-  refusalOf(response).pipe(
-    Effect.flatMap(({ failure }): Effect.Effect<never, ReadFailure> => {
+  Effect.all([refusalOf(response), isGoogles(response)]).pipe(
+    Effect.flatMap(([{ failure }, own]): Effect.Effect<never, ReadFailure> => {
       if (
-        failure._tag === "TokenRejected" ||
+        (failure._tag === "TokenRejected" && response.status === 401 && own) ||
         failure._tag === "RateLimited" ||
         failure._tag === "PlatformUnavailable"
       ) {

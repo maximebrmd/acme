@@ -1,5 +1,6 @@
+import { Effect, Schema } from "effect";
 import type { Redacted } from "effect";
-import { HttpClientRequest } from "effect/http";
+import { HttpClientRequest, HttpClientResponse } from "effect/http";
 
 /**
  * A call to LinkedIn's versioned REST API with the channel's token: every
@@ -37,3 +38,18 @@ export const isOrganization = (accountId: string): boolean =>
  */
 export const authorUrnOf = (accountId: string): string =>
   isOrganization(accountId) ? accountId : `urn:li:person:${accountId}`;
+
+// LinkedIn's errors are JSON that repeats the HTTP status.
+const LinkedInErrorSchema = Schema.Struct({ status: Schema.Number });
+
+/**
+ * Whether a refusal is LinkedIn's own word, not the page of a server on
+ * the way, which says nothing of the token.
+ */
+export const isLinkedInError = (
+  response: HttpClientResponse.HttpClientResponse
+): Effect.Effect<boolean> =>
+  HttpClientResponse.schemaBodyJson(LinkedInErrorSchema)(response).pipe(
+    Effect.map(({ status }) => status === response.status),
+    Effect.orElseSucceed(() => false)
+  );

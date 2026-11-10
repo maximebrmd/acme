@@ -243,6 +243,26 @@ describe("publishing on a LinkedIn page", () => {
       }).pipe(Effect.scoped)
   );
 
+  it.live(
+    "does not ask to reconnect a page whose posts it may not read back",
+    () =>
+      Effect.gen(function* forbidden() {
+        const { client, linkedin, log, post } = yield* onLinkedIn();
+
+        linkedin.script("POST /rest/posts", [{ _tag: "publishThenDrop" }]);
+        linkedin.script("GET /rest/posts", [
+          json({ code: "ACCESS_DENIED", status: 403 }, 403),
+          json({ code: "ACCESS_DENIED", status: 403 }, 403),
+          json({ code: "ACCESS_DENIED", status: 403 }, 403),
+        ]);
+
+        const result = yield* client.publish(yield* post({ text: "Open" }));
+
+        assert.strictEqual(result._tag, "unconfirmed");
+        assert.strictEqual(yield* log.renewals, 0);
+      }).pipe(Effect.scoped)
+  );
+
   it.live("resumes an interrupted attempt by looking the post up", () =>
     Effect.gen(function* resumes() {
       const { client, linkedin, post } = yield* onLinkedIn();

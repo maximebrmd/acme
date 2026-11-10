@@ -130,6 +130,8 @@ describe("LinkedIn's lookups", () => {
       const { linkedin, log, run } = yield* onLinkedIn(true);
 
       linkedin.script("GET /rest/organizations", [
+        // A proxy's page, not LinkedIn's word on the token.
+        json({ error: "Unauthorized" }, 401),
         json({ code: "ACCESS_DENIED", status: 403 }, 403),
         json({ message: "Too many requests", status: 429 }, 429),
         json({ code: "NONEXISTENT_VERSION", status: 426 }, 426),
@@ -137,11 +139,12 @@ describe("LinkedIn's lookups", () => {
 
       const tags = [];
 
-      for (let call = 0; call < 3; call += 1) {
+      for (let call = 0; call < 4; call += 1) {
         tags.push((yield* run(pageOf("example-bikes")).pipe(Effect.flip))._tag);
       }
 
       assert.deepStrictEqual(tags, [
+        "PlatformUnavailable",
         "PlatformUnavailable",
         "RateLimited",
         "PlatformUnavailable",

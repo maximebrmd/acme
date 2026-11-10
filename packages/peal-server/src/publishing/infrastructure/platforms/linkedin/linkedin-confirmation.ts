@@ -8,14 +8,14 @@ import type { LookUp } from "#publishing/application/publication-steps.ts";
 import type { RecordedPosts } from "#publishing/application/recorded-posts.ts";
 import { attemptAmong } from "#publishing/infrastructure/platforms/attempt-match.ts";
 import { unanswered } from "#publishing/infrastructure/platforms/platform-exchange.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
-import type { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 
 import { commentaryOf } from "./linkedin-post-body.ts";
-import { mediaRefusal } from "./linkedin-refusal.ts";
-import { authorUrnOf, restCall } from "./linkedin-rest.ts";
+import { authorUrnOf, isLinkedInError, restCall } from "./linkedin-rest.ts";
 
 type Http = HttpClient.HttpClient.With<
   HttpClientError.HttpClientError | OutboundRequestRefused
@@ -43,6 +43,22 @@ const RecentPostsSchema = Schema.Struct({
     )
   ),
 });
+
+// A read LinkedIn refused. Only a 401 in LinkedIn's own error is the
+// token's: a 403 is about what the page's token may read, and a 401 from a
+// server on the way says nothing, so neither asks to reconnect a channel
+// whose post may well be live.
+const unread = (
+  response: HttpClientResponse.HttpClientResponse
+): Effect.Effect<never, PublishFailure | TokenRejected> =>
+  isLinkedInError(response).pipe(
+    Effect.flatMap(
+      (own): Effect.Effect<never, PublishFailure | TokenRejected> =>
+        response.status === 401 && own
+          ? Effect.fail(new TokenRejected())
+          : Effect.fail(new PlatformUnavailable())
+    )
+  );
 
 /**
  * Looks a page's post up after its answer was lost, among the page's
@@ -117,7 +133,7 @@ export const pageLookUp =
                   ? HttpClientResponse.schemaBodyJson(RecentPostsSchema)(
                       response
                     )
-                  : mediaRefusal(response)
+                  : unread(response)
             ),
             Effect.catchTags({
               HttpClientError: unanswered,

@@ -391,6 +391,9 @@ layer(AdaptersTest)("connecting a Pinterest account", (it) => {
           { body: { code: 8, message: "Rate limit exceeded" }, status: 429 },
           // The app's own credentials refused: the operator's to fix.
           { body: { code: 2, message: "Authentication failed." }, status: 401 },
+          // Pages of a server on the way, which say nothing of the token.
+          { body: { error: "Forbidden" }, status: 403 },
+          { body: { error: "Not found" }, status: 404 },
         ]);
         yield* makeDue(channel);
 
@@ -398,9 +401,10 @@ layer(AdaptersTest)("connecting a Pinterest account", (it) => {
           tokens.refresh(channel.id)
         ).pipe(Effect.provide(tokenJobs(workspaceId, on.authorizer)));
 
-        assert.strictEqual(yield* refresh, "unavailable");
-        assert.strictEqual(yield* refresh, "unavailable");
-        assert.strictEqual(yield* refresh, "unavailable");
+        for (const _answer of [503, 429, 401, 403, 404]) {
+          assert.strictEqual(yield* refresh, "unavailable");
+        }
+
         assert.deepStrictEqual(yield* statusOf(channel), Option.some("active"));
 
         // Pinterest answered none: the refresh token still works.

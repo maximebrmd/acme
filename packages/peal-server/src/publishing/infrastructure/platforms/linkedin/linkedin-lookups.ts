@@ -16,7 +16,7 @@ import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
 
-import { restCall } from "./linkedin-rest.ts";
+import { isLinkedInError, restCall } from "./linkedin-rest.ts";
 
 /** The HTTP client LinkedIn's lookups send through: the public one. */
 export type LinkedInLookupHttp = HttpClient.HttpClient.With<
@@ -65,29 +65,33 @@ const rateLimited = (response: HttpClientResponse.HttpClientResponse) =>
     )
   );
 
-// Only a token LinkedIn no longer knows (401) asks to reconnect. A 403 is
-// about what the app or the member may read, which reconnecting does not
-// change, and must not stop the channel's posts.
+// Only a token LinkedIn no longer knows (a 401 in LinkedIn's own error)
+// asks to reconnect. A 403 is about what the app or the member may read,
+// which reconnecting does not change, and a 401 that is not LinkedIn's
+// came from a server on the way: neither must stop the channel's posts.
 const refused = (
   response: HttpClientResponse.HttpClientResponse
-): Effect.Effect<never, ReadFailure> => {
-  if (response.status === 401) {
-    return Effect.fail(new TokenRejected());
-  }
+): Effect.Effect<never, ReadFailure> =>
+  isLinkedInError(response).pipe(
+    Effect.flatMap((own): Effect.Effect<never, ReadFailure> => {
+      if (response.status === 401 && own) {
+        return Effect.fail(new TokenRejected());
+      }
 
-  if (response.status === 429) {
-    return rateLimited(response);
-  }
+      if (response.status === 429) {
+        return rateLimited(response);
+      }
 
-  if (response.status === 400) {
-    return Effect.fail(new LookupInputRejected());
-  }
+      if (response.status === 400) {
+        return Effect.fail(new LookupInputRejected());
+      }
 
-  return Effect.logWarning("LinkedIn refused a lookup").pipe(
-    Effect.annotateLogs({ status: response.status }),
-    Effect.andThen(Effect.fail(new PlatformUnavailable()))
+      return Effect.logWarning("LinkedIn refused a lookup").pipe(
+        Effect.annotateLogs({ status: response.status }),
+        Effect.andThen(Effect.fail(new PlatformUnavailable()))
+      );
+    })
   );
-};
 
 /**
  * LinkedIn's lookups, on the versioned REST API:
