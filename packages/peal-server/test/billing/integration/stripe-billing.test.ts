@@ -911,6 +911,55 @@ layer(BillingIntegration, {
     })
   );
   it.effect(
+    "keeps a member when two owners each choose to keep only themselves, at once",
+    () =>
+      Effect.gen(function* together() {
+        const sql = yield* SqlClient.SqlClient;
+        const first = yield* signedUp("keeper-a");
+        const second = yield* signedUp("keeper-b");
+        const editor = yield* signedUp("keeper-c");
+
+        const outcomes = yield* Effect.forEach(
+          Array.from({ length: 8 }),
+          Effect.fnUntraced(function* once() {
+            // Over the free plan's two members, as after a trial: put
+            // there directly, since no route lets a workspace get there.
+            const workspaceId = randomUUID();
+
+            yield* sql`INSERT INTO auth.organization (id, name, slug, created_at) VALUES (${workspaceId}, 'Keepers', ${`keepers-${workspaceId}`}, now())`;
+            yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${first.id}, 'owner', now()), (${workspaceId}, ${second.id}, 'owner', now()), (${workspaceId}, ${editor.id}, 'editor', now())`;
+
+            const keepOnly = (who: typeof first) =>
+              post(who, `/api/workspaces/${workspaceId}/billing/reduction`, {
+                keepChannelIds: [],
+                keepMemberIds: [who.id],
+              });
+
+            const answers = yield* Effect.all(
+              [keepOnly(first), keepOnly(second)],
+              { concurrency: 2 }
+            );
+
+            const left =
+              yield* sql`SELECT count(*)::int AS count FROM auth.member WHERE organization_id = ${workspaceId} AND role = 'owner'`;
+
+            return {
+              left,
+              served: answers.filter(({ status }) => status === 200).length,
+            };
+          })
+        );
+
+        // One choice is made, and the other finds its chooser gone: an
+        // owner stays, whoever came first.
+        assert.deepStrictEqual(
+          outcomes,
+          outcomes.map(() => ({ left: [{ count: 1 }], served: 1 }))
+        );
+      })
+  );
+
+  it.effect(
     "counts an invitation or a member whatever the case its ids are written in",
     () =>
       Effect.gen(function* written() {

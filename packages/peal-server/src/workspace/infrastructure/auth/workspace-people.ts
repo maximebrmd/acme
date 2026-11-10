@@ -370,11 +370,31 @@ export const WorkspacePeopleLive = Layer.effect(
       }
     );
 
+    // Under the lock invitations and Better Auth's counted routes take
+    // their turn on (`turns.ts`, the same key), for the transaction.
+    const reseating = <A, E, R>(
+      workspaceId: WorkspaceId,
+      change: Effect.Effect<A, E, R>
+    ): Effect.Effect<A, DirectoryUnavailable | E, R> =>
+      client
+        .withTransaction(
+          client`SELECT pg_advisory_xact_lock(hashtext('peal-server/workspace/invitations'), hashtext(${workspaceId}))`.pipe(
+            unavailable,
+            Effect.andThen(change)
+          )
+        )
+        .pipe(
+          Effect.catchIf(SqlError.isSqlError, (cause) =>
+            Effect.fail(new DirectoryUnavailable({ cause }))
+          )
+        );
+
     return WorkspacePeople.of({
       invite,
       members,
       pendingInvitations,
       removeMembers,
+      reseating,
       revoke,
       revokeAll,
     });

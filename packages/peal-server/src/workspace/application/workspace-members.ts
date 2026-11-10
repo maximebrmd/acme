@@ -216,20 +216,31 @@ export class WorkspaceMembers extends Context.Service<
             return yield* new MembersNotRemovable({ reason: "unknownMember" });
           }
 
-          const leaving = yield* Effect.fromResult(
-            membersToRemove(
-              userId,
-              yield* people.members(actor.workspaceId),
-              staying.flatMap(Option.toArray)
-            )
+          // Read, decided and written alone on the workspace's seats: of
+          // two members choosing at once, the second finds what the first
+          // left, itself gone included, and never removes on top of it.
+          return yield* people.reseating(
+            actor.workspaceId,
+            Effect.gen(function* choosing() {
+              const leaving = yield* Effect.fromResult(
+                membersToRemove(
+                  userId,
+                  yield* people.members(actor.workspaceId),
+                  staying.flatMap(Option.toArray)
+                )
+              );
+
+              const freed: SeatsFreed = {
+                removed: yield* people.removeMembers(
+                  actor.workspaceId,
+                  leaving
+                ),
+                revoked: yield* people.revokeAll(actor.workspaceId),
+              };
+
+              return freed;
+            })
           );
-
-          const freed: SeatsFreed = {
-            removed: yield* people.removeMembers(actor.workspaceId, leaving),
-            revoked: yield* people.revokeAll(actor.workspaceId),
-          };
-
-          return freed;
         }
       );
 

@@ -104,6 +104,7 @@ const run = <A, E>(
             pending("crown", "owner"),
             pending("desk", "editor"),
           ]),
+        reseating: (_workspace, change) => change,
         removeMembers: (_workspace, userIds) =>
           Ref.update(asked, (all) => [
             ...all,

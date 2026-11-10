@@ -77,6 +77,16 @@ export class WorkspacePeople extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<number, DirectoryUnavailable>;
     /**
+     * Runs `change` alone on the workspace's seats, in one transaction: no
+     * invitation, acceptance or other change of its members goes on
+     * meanwhile, and what `change` reads is what it then writes over. All
+     * of it is kept, or none.
+     */
+    readonly reseating: <A, E, R>(
+      workspaceId: WorkspaceId,
+      change: Effect.Effect<A, E, R>
+    ) => Effect.Effect<A, DirectoryUnavailable | E, R>;
+    /**
      * Revokes a pending invitation of the workspace, and says whether there
      * was one.
      */
