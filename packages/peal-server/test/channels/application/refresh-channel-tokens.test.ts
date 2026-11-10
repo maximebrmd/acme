@@ -739,6 +739,99 @@ layer(FileTest, { excludeTestServices: true })(
   }
 );
 
+// On the real clock, like the budget above.
+layer(FileTest, { excludeTestServices: true })(
+  "refresh runs that channels hold up",
+  (it) => {
+    it.effect(
+      "start where the last one stopped, so channels whose platform hangs never keep the others waiting run after run",
+      () =>
+        Effect.gen(function* takesTurns() {
+          const workspaceId = yield* freshWorkspace;
+          const now = yield* DateTime.now;
+
+          const some = (expiry: Duration.Input) =>
+            Effect.forEach(
+              Array.from({ length: 6 }, (_, index) => index),
+              () =>
+                stored(workspaceId, {
+                  platform: "threads",
+                  token: {
+                    _tag: "refreshable",
+                    expiresAt: expiringIn(now, expiry),
+                  },
+                }),
+              { concurrency: 6 }
+            );
+
+          // Six channels due first, whose platform takes 200 ms not to
+          // answer, then six that renew at once.
+          const hanging = new Set(
+            (yield* some("2 minutes")).map(({ id }) => id)
+          );
+
+          const others = yield* some("5 minutes");
+
+          const renewed = yield* Ref.make(0);
+
+          const authorizer: PlatformAuthorizer = {
+            begin: () => Effect.die("not used"),
+            complete: () => Effect.die("not used"),
+            platform: "threads",
+            policy: aheadOfExpiry,
+            refresh: (channel) =>
+              Effect.gen(function* refreshing() {
+                if (hanging.has(channel.id)) {
+                  yield* Effect.sleep("200 millis");
+
+                  return yield* new PlatformUnavailable();
+                }
+
+                const call = yield* Ref.updateAndGet(
+                  renewed,
+                  (count) => count + 1
+                );
+
+                const issued: IssuedTokens = {
+                  accessToken: Redacted.make(`rotated-access-${call}`),
+                  expiresAt: Option.some(
+                    DateTime.addDuration(yield* DateTime.now, Duration.hours(2))
+                  ),
+                  refreshToken: Option.some(
+                    Redacted.make(`rotated-refresh-${call}`)
+                  ),
+                  renewable: true,
+                  scopes: [],
+                };
+
+                return issued;
+              }),
+          };
+
+          // Two runs of one server, each with time for the six that hang,
+          // three at a time, and no more.
+          const [first, second] = yield* Effect.gen(function* twoRuns() {
+            const refresh = yield* RefreshChannelTokens;
+            const run = refresh.sweep({ budget: Duration.millis(350) });
+
+            return [yield* run, yield* run] as const;
+          }).pipe(Effect.provide(refresherFor(workspaceId, authorizer)));
+
+          assert.strictEqual(first.unavailable, 6);
+          assert.strictEqual(first.refreshed, 0);
+          assert.strictEqual(first.left, 12);
+
+          // The second run begins with the channels the first never
+          // reached, then comes back to those that hang.
+          assert.strictEqual(second.refreshed, others.length);
+          assert.strictEqual(yield* Ref.get(renewed), others.length);
+          assert.isAtLeast(second.unavailable, 3);
+        }),
+      60_000
+    );
+  }
+);
+
 // On the real clock: the second refresh polls for the lock while the first
 // waits on the platform.
 layer(FileTest, { excludeTestServices: true })(

@@ -3,9 +3,11 @@ import {
   DateTime,
   Duration,
   Effect,
+  Function,
   Layer,
   Metric,
   Option,
+  Ref,
   Schedule,
 } from "effect";
 
@@ -122,6 +124,18 @@ const done = (outcome: RefreshOutcome): Locked => ({
   outcome,
 });
 
+// Whether the channel comes no later than `until` in the order the due
+// channels are listed in: by expiry, then id, as Postgres compares them.
+const withinLeg = (channel: Channel, until: Option.Option<RefreshCursor>) =>
+  Option.match(
+    Option.zipWith(refreshCursorOf(channel), until, (at, end) => {
+      const order = DateTime.Order(at.expiresAt, end.expiresAt);
+
+      return order < 0 || (order === 0 && at.channelId <= end.channelId);
+    }),
+    { onNone: () => true, onSome: (within) => within }
+  );
+
 /**
  * Renews the tokens that only a refresh keeps working, through each
  * platform's authorizer and under each channel's lock, so a rotating refresh
@@ -143,7 +157,9 @@ export class RefreshChannelTokens extends Context.Service<
      * Refreshes every channel due now, a few at a time, those whose token
      * is about to lapse before those only kept alive, for at most `budget`:
      * past it, it starts no refresh and says how many channels it left.
-     * Never fails.
+     * The run after one that stopped starts where it stopped, then comes
+     * back to the channels before, so channels whose platform hangs never
+     * keep the same others waiting. Never fails.
      */
     readonly sweep: (options: {
       readonly budget: Duration.Duration;
@@ -344,45 +360,106 @@ export class RefreshChannelTokens extends Context.Service<
           )
         );
 
-      // Every channel due before the cutoffs, soonest first, a page at a
-      // time from where the last one ended: a channel whose platform did
-      // not answer stays due, and is tried again by the next run, not this
-      // one. Stops at the deadline.
-      const sweepDue = Effect.fn("RefreshChannelTokens.sweepDue")(
-        function* sweepDue(
+      // Where the last run of each sweep stopped at its budget, in this
+      // process: the next one starts after it. Without it, channels whose
+      // platform hangs, due first run after run, would take every run
+      // whole, and those after them would lapse unrefreshed.
+      const stoppedAt = {
+        ahead: yield* Ref.make(Option.none<RefreshCursor>()),
+        idle: yield* Ref.make(Option.none<RefreshCursor>()),
+      };
+
+      // The channels due before the cutoffs that come after `from`,
+      // soonest first, a page at a time, up to `until` when given. Stops
+      // at the deadline, and says after which channel.
+      const sweepLeg = Effect.fn("RefreshChannelTokens.sweepLeg")(
+        function* sweepLeg(
           cutoffs: readonly RefreshCutoff[],
-          deadline: DateTime.Utc
+          deadline: DateTime.Utc,
+          from: Option.Option<RefreshCursor>,
+          until: Option.Option<RefreshCursor>
         ) {
           const outcomes: Swept[] = [];
-          let after = Option.none<RefreshCursor>();
+          let after = from;
 
           while (cutoffs.length > 0) {
-            const page = yield* channels.dueForRefresh({
+            const listed = yield* channels.dueForRefresh({
               after,
               cutoffs,
               limit: pageSize,
             });
+
+            const page = listed.filter((channel) => withinLeg(channel, until));
 
             const swept = yield* Effect.forEach(page, refreshBy(deadline), {
               concurrency,
             });
 
             outcomes.push(...swept);
+
+            // The run is out of time: the next one starts after the last
+            // channel this one took.
+            if (swept.includes("left")) {
+              const taken = page[swept.indexOf("left") - 1];
+
+              return {
+                outcomes,
+                stopped: Option.some(
+                  taken === undefined
+                    ? after
+                    : Option.orElse(
+                        refreshCursorOf(taken),
+                        Function.constant(after)
+                      )
+                ),
+              };
+            }
+
             after = Option.flatMap(
-              Option.fromUndefinedOr(page.at(-1)),
+              Option.fromUndefinedOr(listed.at(-1)),
               refreshCursorOf
             );
 
             if (
-              page.length < pageSize ||
-              Option.isNone(after) ||
-              swept.includes("left")
+              listed.length < pageSize ||
+              page.length < listed.length ||
+              Option.isNone(after)
             ) {
               break;
             }
           }
 
-          return outcomes;
+          return {
+            outcomes,
+            stopped: Option.none<Option.Option<RefreshCursor>>(),
+          };
+        }
+      );
+
+      // Every channel due before the cutoffs, each once: those after where
+      // the last run stopped, then, from the soonest due, those up to
+      // there. A channel whose platform did not answer stays due, and is
+      // tried again by the next run, not this one. Stops at the deadline.
+      const sweepDue = Effect.fn("RefreshChannelTokens.sweepDue")(
+        function* sweepDue(
+          cutoffs: readonly RefreshCutoff[],
+          deadline: DateTime.Utc,
+          resume: Ref.Ref<Option.Option<RefreshCursor>>
+        ) {
+          const from = yield* Ref.get(resume);
+          const rest = yield* sweepLeg(cutoffs, deadline, from, Option.none());
+
+          if (Option.isSome(rest.stopped) || Option.isNone(from)) {
+            yield* Ref.set(resume, Option.flatten(rest.stopped));
+
+            return rest.outcomes;
+          }
+
+          const start = yield* sweepLeg(cutoffs, deadline, Option.none(), from);
+
+          yield* Ref.set(resume, Option.flatten(start.stopped));
+
+          return [...rest.outcomes, ...start.outcomes];
         }
       );
 
@@ -392,11 +469,15 @@ export class RefreshChannelTokens extends Context.Service<
           const deadline = DateTime.addDuration(startedAt, budget);
           const cutoffs = cutoffsAt(startedAt);
 
-          const ahead = yield* sweepDue(cutoffs.ahead, deadline);
+          const ahead = yield* sweepDue(
+            cutoffs.ahead,
+            deadline,
+            stoppedAt.ahead
+          );
 
           const idle = ahead.includes("left")
             ? []
-            : yield* sweepDue(cutoffs.idle, deadline);
+            : yield* sweepDue(cutoffs.idle, deadline, stoppedAt.idle);
 
           const outcomes = [...ahead, ...idle];
           const unfinished = outcomes.includes("left");
