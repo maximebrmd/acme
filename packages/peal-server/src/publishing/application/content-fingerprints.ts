@@ -52,7 +52,19 @@ export class ContentFingerprints extends Context.Service<
     readonly duplicatesOf: (
       search: FingerprintSearch
     ) => Effect.Effect<readonly Duplicate[], DatabaseError>;
-    /** Keeps what each target sends, over what it kept before. */
+    /**
+     * The same search for a check, which holds nothing and waits for
+     * nothing: how things stand now, as another request may change them.
+     */
+    readonly glance: (
+      search: FingerprintSearch
+    ) => Effect.Effect<readonly Duplicate[], DatabaseError>;
+    /**
+     * Keeps what each target sends, over what it kept before. In a
+     * transaction, it takes its turn with the searches for the same
+     * content on the same channel, as `duplicatesOf` does, so a search
+     * made meanwhile finds it once it is committed.
+     */
     readonly record: (
       targets: readonly TargetContent[]
     ) => Effect.Effect<void, DatabaseError>;

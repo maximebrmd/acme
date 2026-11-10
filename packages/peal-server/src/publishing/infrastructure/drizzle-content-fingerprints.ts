@@ -4,10 +4,14 @@ import { Digest } from "effect/crypto";
 import { SqlClient } from "effect/sql";
 
 import { ContentFingerprints } from "#publishing/application/content-fingerprints.ts";
-import type { ChannelContent } from "#publishing/application/content-fingerprints.ts";
+import type {
+  ChannelContent,
+  FingerprintSearch,
+} from "#publishing/application/content-fingerprints.ts";
 import type { Duplicate } from "#publishing/domain/duplicate-window.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
+import type { ChannelId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { posts, postTargets } from "./schema.ts";
@@ -39,23 +43,44 @@ export const DrizzleContentFingerprints = Layer.effect(
         )
       );
 
-    return ContentFingerprints.of({
-      duplicatesOf: ({ after, before, contents, except, workspaceId }) =>
-        Effect.gen(function* duplicatesOf() {
-          // In one order, so two posts for the same channels never wait
-          // for each other.
-          const wanted = (yield* digested(contents)).toSorted((left, right) =>
+    // The turn of whoever searches for, or keeps, this content on this
+    // channel, until its transaction ends.
+    const turnFor = ({
+      channelId,
+      contentDigest,
+    }: {
+      readonly channelId: ChannelId;
+      readonly contentDigest: string;
+    }) =>
+      client`SELECT pg_advisory_xact_lock(hashtext('peal-server/publishing/duplicate-content'), hashtext(${`${channelId}:${contentDigest}`}))`.pipe(
+        Effect.mapError(failed)
+      );
+
+    // In one order, so two posts for the same channels never wait for
+    // each other.
+    const inOrder = <A extends ChannelContent>(targets: readonly A[]) =>
+      digested(targets).pipe(
+        Effect.map((found) =>
+          found.toSorted((left, right) =>
             `${left.channelId}:${left.contentDigest}`.localeCompare(
               `${right.channelId}:${right.contentDigest}`
             )
-          );
+          )
+        )
+      );
+
+    const searching =
+      (holding: boolean) =>
+      ({ after, before, contents, except, workspaceId }: FingerprintSearch) =>
+        Effect.gen(function* duplicatesOf() {
+          const wanted = yield* inOrder(contents);
 
           const found: Duplicate[] = [];
 
           for (const { channelId, contentDigest } of wanted) {
-            yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/publishing/duplicate-content'), hashtext(${`${channelId}:${contentDigest}`}))`.pipe(
-              Effect.mapError(failed)
-            );
+            if (holding) {
+              yield* turnFor({ channelId, contentDigest });
+            }
 
             const [nearest] = yield* db
               .select({ postId: posts.id })
@@ -104,16 +129,24 @@ export const DrizzleContentFingerprints = Layer.effect(
           return contents.flatMap(({ channelId }) =>
             found.filter((duplicate) => duplicate.channelId === channelId)
           );
-        }).pipe(Effect.withSpan("ContentFingerprints.duplicatesOf")),
+        }).pipe(Effect.withSpan("ContentFingerprints.duplicatesOf"));
+
+    return ContentFingerprints.of({
+      duplicatesOf: searching(true),
+      glance: searching(false),
       record: (targets) =>
-        digested(targets).pipe(
+        inOrder(targets).pipe(
           Effect.flatMap(
-            Effect.forEach(({ contentDigest, targetId }) =>
-              db
-                .update(postTargets)
-                .set({ contentDigest })
-                .where(eq(postTargets.id, targetId))
-                .pipe(Effect.mapError(failed))
+            Effect.forEach((target) =>
+              turnFor(target).pipe(
+                Effect.andThen(
+                  db
+                    .update(postTargets)
+                    .set({ contentDigest: target.contentDigest })
+                    .where(eq(postTargets.id, target.targetId))
+                    .pipe(Effect.mapError(failed))
+                )
+              )
             )
           ),
           Effect.asVoid,

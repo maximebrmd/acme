@@ -249,7 +249,7 @@ export class PostChecks extends Context.Service<
           onSome: (instant) =>
             allowDuplicate
               ? Effect.succeed([])
-              : fingerprints.duplicatesOf({
+              : fingerprints.glance({
                   ...duplicateRange(instant),
                   contents: channels.map(({ channelId }) => ({
                     channelId,
