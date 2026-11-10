@@ -64,6 +64,14 @@ export class BoostGateway extends Context.Service<
       readonly accountId: typeof AdAccountIdSchema.Type;
       readonly boostId: typeof BoostIdSchema.Type;
     }) => Effect.Effect<PlaceResult>;
+    /**
+     * Fails a boost its job gave up placing, in turn with the account's
+     * other calls: never while a placement of it may be turning it on.
+     */
+    readonly giveUp: (request: {
+      readonly accountId: typeof AdAccountIdSchema.Type;
+      readonly boostId: typeof BoostIdSchema.Type;
+    }) => Effect.Effect<void>;
     /** Pauses, resumes or stops a boost. */
     readonly control: (
       request: ControlRequest

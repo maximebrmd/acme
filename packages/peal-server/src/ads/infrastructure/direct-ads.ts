@@ -24,6 +24,7 @@ export const DirectAds = Layer.effectContext(
         BoostGateway,
         BoostGateway.of({
           control: (request) => operations.control(request),
+          giveUp: ({ boostId }) => operations.giveUp(boostId),
           place: ({ boostId }) => operations.place(boostId),
         })
       )

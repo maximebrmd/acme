@@ -77,6 +77,10 @@ const done = <A>(value: A): StepEnd<A> => ({ _tag: "done", value });
 const retry: StepEnd<never> = { _tag: "retry" };
 const settled: StepEnd<never> = { _tag: "settled" };
 
+// What the last check before the campaign runs found against it: a reason
+// to fail the boost, or `gone`, settled or erased elsewhere meanwhile.
+type LastCheck = BoostFailureReason | "gone";
+
 const unavailable = () => Effect.fail(new AdNetworkUnavailable({}));
 
 // Where a boost already stands when an action asked again has nothing
@@ -391,7 +395,11 @@ export class BoostOperations extends Context.Service<
           const now = yield* DateTime.now;
           const next = withObjects(boost, keep(id), now);
 
-          yield* boosts.save(next, boost.state._tag);
+          // Settled elsewhere meanwhile: the object stays paused, and
+          // nothing more is made or turned on.
+          if (!(yield* boosts.save(next, boost.state._tag))) {
+            return settled;
+          }
 
           return done({ boost: next, id });
         });
@@ -632,10 +640,24 @@ export class BoostOperations extends Context.Service<
         accounts.spendingOn(
           account.id,
           Effect.gen(function* checking() {
+            // The boost as it stands now: failed, stopped or erased since,
+            // by the job giving up, a member, a workspace's erasure or a
+            // platform's deletion request, it starts nothing, as nothing
+            // would count what it spends.
+            const now = yield* boosts.get(whole.id);
+
+            if (
+              Option.isNone(now) ||
+              now.value.state._tag !== "requested" ||
+              now.value.committed !== whole.committed
+            ) {
+              return Option.some<LastCheck>("gone");
+            }
+
             const current = yield* accounts.get(account.id);
 
             if (Option.isNone(current)) {
-              return Option.some<BoostFailureReason>("accountUnusable");
+              return Option.some<LastCheck>("accountUnusable");
             }
 
             return yield* ensureRoom(
@@ -649,20 +671,14 @@ export class BoostOperations extends Context.Service<
               }
             ).pipe(
               Effect.provide(ports),
-              Effect.as(Option.none<BoostFailureReason>()),
+              Effect.as(Option.none<LastCheck>()),
               Effect.catchTags({
                 AccountSpendCapExceeded: () =>
-                  Effect.succeed(
-                    Option.some<BoostFailureReason>("accountSpendCap")
-                  ),
+                  Effect.succeed(Option.some<LastCheck>("accountSpendCap")),
                 SpendCeilingExceeded: () =>
-                  Effect.succeed(
-                    Option.some<BoostFailureReason>("ceilingExceeded")
-                  ),
+                  Effect.succeed(Option.some<LastCheck>("ceilingExceeded")),
                 SpendingNotEnabled: () =>
-                  Effect.succeed(
-                    Option.some<BoostFailureReason>("spendingOff")
-                  ),
+                  Effect.succeed(Option.some<LastCheck>("spendingOff")),
               })
             );
           })
@@ -704,7 +720,7 @@ export class BoostOperations extends Context.Service<
             : unconfirmed(whole, now);
 
         if (Result.isSuccess(next)) {
-          yield* settle(
+          const saved = yield* settle(
             account,
             whole,
             next.success,
@@ -712,6 +728,25 @@ export class BoostOperations extends Context.Service<
               ? { action: "boostStarted", news: "started" }
               : { action: "boostUnconfirmed", news: "unconfirmed" }
           );
+
+          // The boost was settled or erased in the moment the campaign was
+          // turned on: nothing would count what it spends, so it is told
+          // to stop at once.
+          if (!saved) {
+            yield* Effect.logError(
+              "A boost's campaign was turned on as the boost was settled elsewhere: it is paused again"
+            ).pipe(Effect.annotateLogs({ boostId: whole.id }));
+            yield* reach.client
+              .setRunning(reach.token, campaignId, false)
+              .pipe(
+                Effect.catch((error) =>
+                  Effect.logError(
+                    "A boost's campaign could not be paused again: pause it at the network",
+                    error._tag
+                  ).pipe(Effect.annotateLogs({ boostId: whole.id }))
+                )
+              );
+          }
         }
 
         return settled;
@@ -754,7 +789,12 @@ export class BoostOperations extends Context.Service<
 
         const refusal = yield* lastCheck(reach.account, whole);
 
-        if (Option.isSome(refusal)) {
+        // Settled elsewhere meanwhile: nothing more to do here.
+        if (Option.contains(refusal, "gone")) {
+          return settled;
+        }
+
+        if (Option.isSome(refusal) && refusal.value !== "gone") {
           yield* fail(reach.account, whole, refusal.value);
 
           return settled;

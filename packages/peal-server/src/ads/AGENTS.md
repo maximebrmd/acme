@@ -67,6 +67,13 @@ weaken a rule below to make something pass.
     never an amount or an audience);
   - everything is made paused (campaign, ad set, ad), then turned on from
     the innermost out; `activateCampaign` is the one request that spends;
+  - nothing turns the campaign on unless the boost is still `requested`
+    and counted: the last check reads the boost again under the account's
+    spending lock; a save that finds it settled elsewhere stops the
+    placement, and a campaign turned on as it was settled is paused again.
+    Giving up (`give-up`) goes through the gate (`GiveUp`), and a
+    workspace's erasure and Meta's deletion request take the spending lock
+    of each account they remove (`spending-locks.ts`);
   - a request whose answer was lost (`OutcomeUnknown`) is never sent again
     as it is: the object is looked up by the name Peal chose
     (`networkNameOf`), made again only when the network says it is absent,

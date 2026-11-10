@@ -96,7 +96,10 @@ export interface FakeInsight {
  * - `dropped`: the connection is cut before the request is handled.
  */
 export interface Scripted {
-  readonly answer: PlatformAnswer | "dropped" | "lost";
+  /** The answer, or `handled`: the request is handled as any other. */
+  readonly answer: PlatformAnswer | "dropped" | "handled" | "lost";
+  /** What happens elsewhere while the request waits for its answer. */
+  readonly meanwhile?: () => Promise<void>;
   readonly when: (request: PlatformRequest) => boolean;
 }
 
@@ -613,11 +616,17 @@ export const fakeMarketingApi = (options: FakeMarketingOptions = {}) =>
         : ofObject(request, object, onObject?.["edge"]);
     };
 
-    const server = yield* platformServer((request) => {
+    const server = yield* platformServer(async (request) => {
       const index = scripts.findIndex(({ when }) => when(request));
       const [script] = index === -1 ? [] : scripts.splice(index, 1);
 
       if (script === undefined) {
+        return withUsage(handled(request));
+      }
+
+      await script.meanwhile?.();
+
+      if (script.answer === "handled") {
         return withUsage(handled(request));
       }
 

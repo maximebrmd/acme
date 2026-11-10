@@ -10,6 +10,7 @@ import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { date, dateOrNull, failed, utc, utcOrNone } from "./rows.ts";
 import { accounts, grants } from "./schema.ts";
+import { spendingLockName } from "./spending-locks.ts";
 
 type Row = typeof accounts.$inferSelect;
 
@@ -295,7 +296,7 @@ export const DrizzleAccountStore = Layer.effect(
           .where(eq(accounts.id, accountId))
           .pipe(Effect.mapError(failed), Effect.asVoid),
       spendingOn: (accountId, spending) =>
-        locked("peal-server/ads/spending", accountId, spending).pipe(
+        locked(spendingLockName, accountId, spending).pipe(
           Effect.withSpan("AccountStore.spendingOn")
         ),
     });

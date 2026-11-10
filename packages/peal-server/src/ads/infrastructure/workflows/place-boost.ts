@@ -1,7 +1,6 @@
 import { Duration, Effect, Option } from "effect";
 import { Activity, DurableClock, Workflow } from "effect/workflow";
 
-import { BoostOperations } from "#ads/application/boost-operations.ts";
 import {
   BoostGateway,
   PlaceResultSchema,
@@ -52,9 +51,23 @@ const attempt = (boostId: BoostId, number: number) =>
     success: PlaceResultSchema,
   });
 
+// Through the account's gate, in turn with its other calls: never while a
+// placement of the boost, which an attempt took for one to try again, may
+// still be turning it on.
 const giveUp = (boostId: BoostId) =>
   Activity.make({
-    execute: BoostOperations.use((operations) => operations.giveUp(boostId)),
+    execute: Effect.gen(function* givingUp() {
+      const boosts = yield* BoostStore;
+      const gateway = yield* BoostGateway;
+      const boost = yield* boosts.get(boostId).pipe(Effect.orDie);
+
+      if (Option.isSome(boost)) {
+        yield* gateway.giveUp({
+          accountId: boost.value.adAccountId,
+          boostId,
+        });
+      }
+    }),
     name: "give-up",
   });
 

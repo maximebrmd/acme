@@ -37,6 +37,9 @@ export const AdGate = Entity.make("AdGate", [
     payload: { boostId: BoostIdSchema },
     success: PlaceResultSchema,
   }),
+  Rpc.make("GiveUp", {
+    payload: { boostId: BoostIdSchema },
+  }),
   Rpc.make("Control", {
     error: ControlFailureSchema,
     payload: { request: ControlRequestSchema },
@@ -55,6 +58,7 @@ export const AdGateLive = AdGate.toLayer(
 
     return AdGate.of({
       Control: ({ payload }) => operations.control(payload.request),
+      GiveUp: ({ payload }) => operations.giveUp(payload.boostId),
       Place: ({ payload }) => operations.place(payload.boostId),
       Sync: ({ payload }) => sync.run(payload.accountId),
     });
@@ -125,6 +129,18 @@ export const GatedAds = Layer.effectContext(
                 cause
               ).pipe(Effect.andThen(Effect.fail(new AdNetworkUnavailable({}))))
             )
+          ),
+      giveUp: ({ accountId, boostId }) =>
+        gateFor(accountId)
+          .GiveUp({ boostId })
+          .pipe(
+            Effect.retry({
+              schedule: notTakenRetry,
+              times: 4,
+              while: notTaken,
+            }),
+            // Not taken: the job's activity fails, and is run again.
+            Effect.orDie
           ),
       place: ({ accountId, boostId }) =>
         gateFor(accountId)

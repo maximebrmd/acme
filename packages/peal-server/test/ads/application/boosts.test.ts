@@ -1234,6 +1234,54 @@ layer(AdsTest, { excludeTestServices: true })(
         }).pipe(Effect.scoped)
     );
 
+    it.effect(
+      "starts no campaign for a boost given up on while it was being made",
+      () =>
+        Effect.gen(function* raced() {
+          const api = yield* onMeta();
+          const { account, owner } = yield* spendingOwner();
+          const operations = yield* BoostOperations;
+          const { boost } = yield* requested(owner, account);
+
+          // The first object turned on, while the job gives the boost up
+          // on elsewhere.
+          api.script({
+            answer: "handled",
+            meanwhile: async () => {
+              await Effect.runPromise(operations.giveUp(boost.id));
+            },
+            when: (request) =>
+              request.method === "POST" &&
+              new URLSearchParams(new TextDecoder().decode(request.body)).get(
+                "status"
+              ) === "ACTIVE",
+          });
+
+          assert.strictEqual(yield* operations.place(boost.id), "settled");
+
+          const campaigns = new Set(
+            api.objects("campaign").map(({ id }) => id)
+          );
+
+          // The campaign, the one request that spends, was never turned on.
+          assert.isFalse(
+            api
+              .writes()
+              .some(
+                ({ params, path }) =>
+                  campaigns.has(path.slice(1)) && params["status"] === "ACTIVE"
+              )
+          );
+
+          const { boost: after } = yield* Boosts.use((boosts) =>
+            boosts.get(owner, boost.id)
+          );
+
+          assert.strictEqual(after.state._tag, "failed");
+          assert.strictEqual(after.committed, 0);
+        }).pipe(Effect.scoped)
+    );
+
     it.effect("given up on, fails with its campaign told to stay paused", () =>
       Effect.gen(function* givenUp() {
         const api = yield* onMeta();

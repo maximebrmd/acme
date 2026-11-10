@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { Effect, Layer } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { AdRecords } from "#ads/application/ad-records.ts";
 import { BoostsRunning } from "#ads/application/boosts-running.ts";
@@ -18,16 +19,23 @@ import {
   signInAttempts,
   spendCalls,
 } from "./schema.ts";
+import { lockWorkspaceSpending } from "./spending-locks.ts";
 
 /** AdRecords on the ads schema. */
 export const DrizzleAdRecords = Layer.effect(
   AdRecords,
   Effect.gen(function* DrizzleAdRecords() {
     const db = yield* Drizzle;
+    const client = yield* SqlClient.SqlClient;
 
     return AdRecords.of({
       ensureErasable: Effect.fn("AdRecords.ensureErasable")(
         function* ensureErasable(workspaceId) {
+          // In the erasure's transaction, after any boost being asked for
+          // or checked before it runs: one asked for after it finds no
+          // account.
+          yield* lockWorkspaceSpending(client, workspaceId);
+
           const [open] = yield* db
             .select({ count: sql<number>`count(*)::int` })
             .from(boosts)

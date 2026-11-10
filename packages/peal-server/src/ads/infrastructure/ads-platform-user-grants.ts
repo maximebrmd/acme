@@ -1,11 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { PlatformUserGrants } from "#channels/application/platform-user-grants.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { date, failed } from "./rows.ts";
 import { grants } from "./schema.ts";
+import { lockUserSpending } from "./spending-locks.ts";
 
 // The sign-ins to Meta's ad network of one Facebook user.
 const ofUser = (platformUserId: string) =>
@@ -23,6 +25,7 @@ export const AdsPlatformUserGrants = Layer.effect(
   PlatformUserGrants,
   Effect.gen(function* AdsPlatformUserGrants() {
     const db = yield* Drizzle;
+    const client = yield* SqlClient.SqlClient;
 
     return {
       deauthorized: (app, platformUserId) =>
@@ -38,23 +41,28 @@ export const AdsPlatformUserGrants = Layer.effect(
               Effect.asVoid
             )
           : Effect.void,
+      // After any boost of the user's accounts being asked for or checked
+      // before it runs, which then finds no account.
       erase: (app, platformUserId) =>
         app === "facebook"
-          ? db
-              .delete(grants)
-              .where(ofUser(platformUserId))
-              .returning({ id: grants.id })
-              .pipe(
-                Effect.mapError(failed),
-                Effect.tap((erased) =>
-                  erased.length > 0
-                    ? Effect.logInfo(
-                        "Erased ad network sign-ins on a platform's data deletion request"
-                      ).pipe(Effect.annotateLogs({ grants: erased.length }))
-                    : Effect.void
-                ),
-                Effect.asVoid
-              )
+          ? lockUserSpending(client, platformUserId).pipe(
+              Effect.andThen(
+                db
+                  .delete(grants)
+                  .where(ofUser(platformUserId))
+                  .returning({ id: grants.id })
+              ),
+              client.withTransaction,
+              Effect.mapError(failed),
+              Effect.tap((erased) =>
+                erased.length > 0
+                  ? Effect.logInfo(
+                      "Erased ad network sign-ins on a platform's data deletion request"
+                    ).pipe(Effect.annotateLogs({ grants: erased.length }))
+                  : Effect.void
+              ),
+              Effect.asVoid
+            )
           : Effect.void,
     };
   })
