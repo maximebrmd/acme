@@ -13,8 +13,8 @@ module Peal
       # Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer
       # first, then by latest comment, 30 a page unless `limit` (at most 100) says otherwise. `channelId`, `postId` and
       # `unanswered` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Peal reads comments on
-      # mastodon and bluesky, for 30 days after a post went live, and keeps a thread 30 days after that. Needs
-      # engagement:read.
+      # mastodon and bluesky, for 30 days after a post went live by default (the server's operator may set another
+      # window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
       #
       # @param request_options [Hash]
       # @param params [Hash]
@@ -165,7 +165,11 @@ module Peal
       # checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the
       # thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the
       # platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment
-      # is refused (409 `ReplyPending`). Needs engagement:reply, which an OAuth client holds only with the scope
+      # is refused (409 `ReplyPending`), whichever request came first when two are sent together. With an
+      # `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is
+      # safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the
+      # reply the first request made, however it stands, and makes no other; with another comment or text it is refused
+      # (409 `IdempotencyKeyReused`). Needs engagement:reply, which an OAuth client holds only with the scope
       # workspace:publish, and which staff acting as a member never hold.
       #
       # @param request_options [Hash]
@@ -177,6 +181,7 @@ module Peal
       # @option request_options [Integer] :timeout_in_seconds
       # @option params [String] :workspace_id
       # @option params [String] :comment_id
+      # @option params [String, nil] :idempotency_key
       #
       # @example
       #   client.inbox.reply(
@@ -189,13 +194,17 @@ module Peal
       def reply(request_options: {}, **params)
         params = Peal::Internal::Types::Utils.normalize_keys(params)
         request_data = Peal::Inbox::Types::NewInboxReply.new(params).to_h
-        non_body_param_names = %w[workspaceId commentId]
+        non_body_param_names = %w[workspaceId commentId idempotency-key]
         body = request_data.except(*non_body_param_names)
+
+        headers = {}
+        headers["idempotency-key"] = params[:idempotency_key] if params[:idempotency_key]
 
         request = Peal::Internal::JSON::Request.new(
           base_url: request_options[:base_url],
           method: "POST",
           path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/inbox/comments/#{URI.encode_uri_component(params[:comment_id].to_s)}/replies",
+          headers: headers,
           body: body,
           request_options: request_options,
           max_retries: 0

@@ -286,15 +286,17 @@ func (m *ModerateInboxRequest) MarshalJSON() ([]byte, error) {
 }
 
 var (
-	newInboxReplyFieldWorkspaceID = big.NewInt(1 << 0)
-	newInboxReplyFieldCommentID   = big.NewInt(1 << 1)
-	newInboxReplyFieldText        = big.NewInt(1 << 2)
+	newInboxReplyFieldIdempotencyKey = big.NewInt(1 << 0)
+	newInboxReplyFieldWorkspaceID    = big.NewInt(1 << 1)
+	newInboxReplyFieldCommentID      = big.NewInt(1 << 2)
+	newInboxReplyFieldText           = big.NewInt(1 << 3)
 )
 
 type NewInboxReply struct {
-	WorkspaceID string `json:"-" url:"-"`
-	CommentID   string `json:"-" url:"-"`
-	Text        string `json:"text" url:"-"`
+	IdempotencyKey *string `json:"-" url:"-"`
+	WorkspaceID    string  `json:"-" url:"-"`
+	CommentID      string  `json:"-" url:"-"`
+	Text           string  `json:"text" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -307,6 +309,13 @@ func (n *NewInboxReply) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	n.explicitFields = next
+}
+
+// SetIdempotencyKey sets the IdempotencyKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewInboxReply) SetIdempotencyKey(idempotencyKey *string) {
+	n.IdempotencyKey = idempotencyKey
+	n.require(newInboxReplyFieldIdempotencyKey)
 }
 
 // SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;

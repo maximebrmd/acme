@@ -22,6 +22,7 @@ public class DashboardTest : BaseMockServerTest
                 "current": 1,
                 "gained": 1
               },
+              "previousKept": true,
               "previousTotals": {
                 "clicks": 1,
                 "engagement": 1,
@@ -56,6 +57,7 @@ public class DashboardTest : BaseMockServerTest
                     "current": 1,
                     "gained": 1
                   },
+                  "previousKept": true,
                   "previousTotals": {
                     "clicks": 1,
                     "engagement": 1,
@@ -92,6 +94,7 @@ public class DashboardTest : BaseMockServerTest
                     "current": 1,
                     "gained": 1
                   },
+                  "previousKept": true,
                   "previousTotals": {
                     "clicks": 1,
                     "engagement": 1,
@@ -153,6 +156,7 @@ public class DashboardTest : BaseMockServerTest
                     "current": 1,
                     "gained": 1
                   },
+                  "previousKept": true,
                   "previousTotals": {
                     "clicks": 1,
                     "engagement": 1,
@@ -188,6 +192,7 @@ public class DashboardTest : BaseMockServerTest
                     "current": 1,
                     "gained": 1
                   },
+                  "previousKept": true,
                   "previousTotals": {
                     "clicks": 1,
                     "engagement": 1,
@@ -296,6 +301,7 @@ public class DashboardTest : BaseMockServerTest
                 "current": 1,
                 "gained": 1
               },
+              "previousKept": true,
               "previousTotals": {
                 "clicks": 1,
                 "engagement": 1,
@@ -324,6 +330,7 @@ public class DashboardTest : BaseMockServerTest
                 {
                   "followers": {},
                   "previousFollowers": {},
+                  "previousKept": true,
                   "previousTotals": {
                     "engagement": 1,
                     "likes": 1,
@@ -359,6 +366,7 @@ public class DashboardTest : BaseMockServerTest
                 {
                   "followers": {},
                   "previousFollowers": {},
+                  "previousKept": true,
                   "previousTotals": {
                     "engagement": 1,
                     "likes": 1,

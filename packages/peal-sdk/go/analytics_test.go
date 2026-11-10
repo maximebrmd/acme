@@ -1031,6 +1031,14 @@ func TestSettersAnalyticsDashboard(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetPreviousKept", func(t *testing.T) {
+		obj := &AnalyticsDashboard{}
+		var fernTestValuePreviousKept bool
+		obj.SetPreviousKept(fernTestValuePreviousKept)
+		assert.Equal(t, fernTestValuePreviousKept, obj.PreviousKept)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetPreviousTotals", func(t *testing.T) {
 		obj := &AnalyticsDashboard{}
 		var fernTestValuePreviousTotals *DashboardTotals
@@ -1178,6 +1186,29 @@ func TestGettersAnalyticsDashboard(t *testing.T) {
 			}
 		}()
 		_ = obj.GetPreviousFollowers() // Should return zero value
+	})
+
+	t.Run("GetPreviousKept", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &AnalyticsDashboard{}
+		var expected bool
+		obj.PreviousKept = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetPreviousKept(), "getter should return the property value")
+	})
+
+	t.Run("GetPreviousKept_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *AnalyticsDashboard
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetPreviousKept() // Should return zero value
 	})
 
 	t.Run("GetPreviousTotals", func(t *testing.T) {
@@ -1522,6 +1553,37 @@ func TestSettersMarkExplicitAnalyticsDashboard(t *testing.T) {
 
 		// Act
 		obj.SetPreviousFollowers(fernTestValuePreviousFollowers)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetPreviousKept_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &AnalyticsDashboard{}
+		var fernTestValuePreviousKept bool
+
+		// Act
+		obj.SetPreviousKept(fernTestValuePreviousKept)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -2490,6 +2552,14 @@ func TestSettersChannelDashboard(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetPreviousKept", func(t *testing.T) {
+		obj := &ChannelDashboard{}
+		var fernTestValuePreviousKept bool
+		obj.SetPreviousKept(fernTestValuePreviousKept)
+		assert.Equal(t, fernTestValuePreviousKept, obj.PreviousKept)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetPreviousTotals", func(t *testing.T) {
 		obj := &ChannelDashboard{}
 		var fernTestValuePreviousTotals *DashboardTotals
@@ -2589,6 +2659,29 @@ func TestGettersChannelDashboard(t *testing.T) {
 			}
 		}()
 		_ = obj.GetPreviousFollowers() // Should return zero value
+	})
+
+	t.Run("GetPreviousKept", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ChannelDashboard{}
+		var expected bool
+		obj.PreviousKept = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetPreviousKept(), "getter should return the property value")
+	})
+
+	t.Run("GetPreviousKept_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ChannelDashboard
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetPreviousKept() // Should return zero value
 	})
 
 	t.Run("GetPreviousTotals", func(t *testing.T) {
@@ -2755,6 +2848,37 @@ func TestSettersMarkExplicitChannelDashboard(t *testing.T) {
 
 		// Act
 		obj.SetPreviousFollowers(fernTestValuePreviousFollowers)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetPreviousKept_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ChannelDashboard{}
+		var fernTestValuePreviousKept bool
+
+		// Act
+		obj.SetPreviousKept(fernTestValuePreviousKept)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -6838,6 +6962,14 @@ func TestSettersPlatformDashboard(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetPreviousKept", func(t *testing.T) {
+		obj := &PlatformDashboard{}
+		var fernTestValuePreviousKept bool
+		obj.SetPreviousKept(fernTestValuePreviousKept)
+		assert.Equal(t, fernTestValuePreviousKept, obj.PreviousKept)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetPreviousTotals", func(t *testing.T) {
 		obj := &PlatformDashboard{}
 		var fernTestValuePreviousTotals *DashboardTotals
@@ -6929,6 +7061,29 @@ func TestGettersPlatformDashboard(t *testing.T) {
 			}
 		}()
 		_ = obj.GetPreviousFollowers() // Should return zero value
+	})
+
+	t.Run("GetPreviousKept", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformDashboard{}
+		var expected bool
+		obj.PreviousKept = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetPreviousKept(), "getter should return the property value")
+	})
+
+	t.Run("GetPreviousKept_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PlatformDashboard
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetPreviousKept() // Should return zero value
 	})
 
 	t.Run("GetPreviousTotals", func(t *testing.T) {
@@ -7062,6 +7217,37 @@ func TestSettersMarkExplicitPlatformDashboard(t *testing.T) {
 
 		// Act
 		obj.SetPreviousFollowers(fernTestValuePreviousFollowers)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetPreviousKept_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformDashboard{}
+		var fernTestValuePreviousKept bool
+
+		// Act
+		obj.SetPreviousKept(fernTestValuePreviousKept)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)

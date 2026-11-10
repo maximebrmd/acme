@@ -7,6 +7,10 @@ pub struct ChannelDashboard {
     #[serde(rename = "previousFollowers")]
     #[serde(default)]
     pub previous_followers: FollowerChange,
+    /// Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.
+    #[serde(rename = "previousKept")]
+    #[serde(default)]
+    pub previous_kept: bool,
     #[serde(rename = "previousTotals")]
     #[serde(default)]
     pub previous_totals: DashboardTotals,
@@ -30,6 +34,7 @@ impl ChannelDashboard {
 pub struct ChannelDashboardBuilder {
     followers: Option<FollowerChange>,
     previous_followers: Option<FollowerChange>,
+    previous_kept: Option<bool>,
     previous_totals: Option<DashboardTotals>,
     totals: Option<DashboardTotals>,
     channel_id: Option<String>,
@@ -44,6 +49,11 @@ impl ChannelDashboardBuilder {
 
     pub fn previous_followers(mut self, value: FollowerChange) -> Self {
         self.previous_followers = Some(value);
+        self
+    }
+
+    pub fn previous_kept(mut self, value: bool) -> Self {
+        self.previous_kept = Some(value);
         self
     }
 
@@ -71,6 +81,7 @@ impl ChannelDashboardBuilder {
     /// This method will fail if any of the following fields are not set:
     /// - [`followers`](ChannelDashboardBuilder::followers)
     /// - [`previous_followers`](ChannelDashboardBuilder::previous_followers)
+    /// - [`previous_kept`](ChannelDashboardBuilder::previous_kept)
     /// - [`previous_totals`](ChannelDashboardBuilder::previous_totals)
     /// - [`totals`](ChannelDashboardBuilder::totals)
     /// - [`channel_id`](ChannelDashboardBuilder::channel_id)
@@ -82,6 +93,9 @@ impl ChannelDashboardBuilder {
             previous_followers: self
                 .previous_followers
                 .ok_or_else(|| BuildError::missing_field("previous_followers"))?,
+            previous_kept: self
+                .previous_kept
+                .ok_or_else(|| BuildError::missing_field("previous_kept"))?,
             previous_totals: self
                 .previous_totals
                 .ok_or_else(|| BuildError::missing_field("previous_totals"))?,

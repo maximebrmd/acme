@@ -23,6 +23,8 @@ public final class PlatformDashboard {
 
     private final FollowerChange previousFollowers;
 
+    private final boolean previousKept;
+
     private final DashboardTotals previousTotals;
 
     private final DashboardTotals totals;
@@ -34,12 +36,14 @@ public final class PlatformDashboard {
     private PlatformDashboard(
             FollowerChange followers,
             FollowerChange previousFollowers,
+            boolean previousKept,
             DashboardTotals previousTotals,
             DashboardTotals totals,
             Platform platform,
             Map<String, Object> additionalProperties) {
         this.followers = followers;
         this.previousFollowers = previousFollowers;
+        this.previousKept = previousKept;
         this.previousTotals = previousTotals;
         this.totals = totals;
         this.platform = platform;
@@ -54,6 +58,14 @@ public final class PlatformDashboard {
     @JsonProperty("previousFollowers")
     public FollowerChange getPreviousFollowers() {
         return previousFollowers;
+    }
+
+    /**
+     * @return Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.
+     */
+    @JsonProperty("previousKept")
+    public boolean getPreviousKept() {
+        return previousKept;
     }
 
     @JsonProperty("previousTotals")
@@ -85,6 +97,7 @@ public final class PlatformDashboard {
     private boolean equalTo(PlatformDashboard other) {
         return followers.equals(other.followers)
                 && previousFollowers.equals(other.previousFollowers)
+                && previousKept == other.previousKept
                 && previousTotals.equals(other.previousTotals)
                 && totals.equals(other.totals)
                 && platform.equals(other.platform);
@@ -92,7 +105,13 @@ public final class PlatformDashboard {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.followers, this.previousFollowers, this.previousTotals, this.totals, this.platform);
+        return Objects.hash(
+                this.followers,
+                this.previousFollowers,
+                this.previousKept,
+                this.previousTotals,
+                this.totals,
+                this.platform);
     }
 
     @java.lang.Override
@@ -111,7 +130,14 @@ public final class PlatformDashboard {
     }
 
     public interface PreviousFollowersStage {
-        PreviousTotalsStage previousFollowers(@NotNull FollowerChange previousFollowers);
+        PreviousKeptStage previousFollowers(@NotNull FollowerChange previousFollowers);
+    }
+
+    public interface PreviousKeptStage {
+        /**
+         * <p>Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.</p>
+         */
+        PreviousTotalsStage previousKept(boolean previousKept);
     }
 
     public interface PreviousTotalsStage {
@@ -138,6 +164,7 @@ public final class PlatformDashboard {
     public static final class Builder
             implements FollowersStage,
                     PreviousFollowersStage,
+                    PreviousKeptStage,
                     PreviousTotalsStage,
                     TotalsStage,
                     PlatformStage,
@@ -145,6 +172,8 @@ public final class PlatformDashboard {
         private FollowerChange followers;
 
         private FollowerChange previousFollowers;
+
+        private boolean previousKept;
 
         private DashboardTotals previousTotals;
 
@@ -160,6 +189,7 @@ public final class PlatformDashboard {
         public Builder from(PlatformDashboard other) {
             followers(other.getFollowers());
             previousFollowers(other.getPreviousFollowers());
+            previousKept(other.getPreviousKept());
             previousTotals(other.getPreviousTotals());
             totals(other.getTotals());
             platform(other.getPlatform());
@@ -175,8 +205,19 @@ public final class PlatformDashboard {
 
         @java.lang.Override
         @JsonSetter("previousFollowers")
-        public PreviousTotalsStage previousFollowers(@NotNull FollowerChange previousFollowers) {
+        public PreviousKeptStage previousFollowers(@NotNull FollowerChange previousFollowers) {
             this.previousFollowers = Objects.requireNonNull(previousFollowers, "previousFollowers must not be null");
+            return this;
+        }
+
+        /**
+         * <p>Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
+        @java.lang.Override
+        @JsonSetter("previousKept")
+        public PreviousTotalsStage previousKept(boolean previousKept) {
+            this.previousKept = previousKept;
             return this;
         }
 
@@ -204,13 +245,14 @@ public final class PlatformDashboard {
         @java.lang.Override
         public PlatformDashboard build() {
             return new PlatformDashboard(
-                    followers, previousFollowers, previousTotals, totals, platform, additionalProperties);
+                    followers, previousFollowers, previousKept, previousTotals, totals, platform, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("followers")
                     || key.equalsIgnoreCase("previousFollowers")
+                    || key.equalsIgnoreCase("previousKept")
                     || key.equalsIgnoreCase("previousTotals")
                     || key.equalsIgnoreCase("totals")
                     || key.equalsIgnoreCase("platform")) {

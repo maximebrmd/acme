@@ -12,6 +12,9 @@ public record NewInboxReply
     [JsonIgnore]
     public required string CommentId { get; set; }
 
+    [JsonIgnore]
+    public string? IdempotencyKey { get; set; }
+
     [JsonPropertyName("text")]
     public required string Text { get; set; }
 

@@ -28,6 +28,8 @@ public final class ChannelDashboard {
 
     private final FollowerChange previousFollowers;
 
+    private final boolean previousKept;
+
     private final DashboardTotals previousTotals;
 
     private final DashboardTotals totals;
@@ -41,6 +43,7 @@ public final class ChannelDashboard {
     private ChannelDashboard(
             FollowerChange followers,
             FollowerChange previousFollowers,
+            boolean previousKept,
             DashboardTotals previousTotals,
             DashboardTotals totals,
             String channelId,
@@ -48,6 +51,7 @@ public final class ChannelDashboard {
             Map<String, Object> additionalProperties) {
         this.followers = followers;
         this.previousFollowers = previousFollowers;
+        this.previousKept = previousKept;
         this.previousTotals = previousTotals;
         this.totals = totals;
         this.channelId = channelId;
@@ -63,6 +67,14 @@ public final class ChannelDashboard {
     @JsonProperty("previousFollowers")
     public FollowerChange getPreviousFollowers() {
         return previousFollowers;
+    }
+
+    /**
+     * @return Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.
+     */
+    @JsonProperty("previousKept")
+    public boolean getPreviousKept() {
+        return previousKept;
     }
 
     @JsonProperty("previousTotals")
@@ -108,6 +120,7 @@ public final class ChannelDashboard {
     private boolean equalTo(ChannelDashboard other) {
         return followers.equals(other.followers)
                 && previousFollowers.equals(other.previousFollowers)
+                && previousKept == other.previousKept
                 && previousTotals.equals(other.previousTotals)
                 && totals.equals(other.totals)
                 && channelId.equals(other.channelId)
@@ -119,6 +132,7 @@ public final class ChannelDashboard {
         return Objects.hash(
                 this.followers,
                 this.previousFollowers,
+                this.previousKept,
                 this.previousTotals,
                 this.totals,
                 this.channelId,
@@ -141,7 +155,14 @@ public final class ChannelDashboard {
     }
 
     public interface PreviousFollowersStage {
-        PreviousTotalsStage previousFollowers(@NotNull FollowerChange previousFollowers);
+        PreviousKeptStage previousFollowers(@NotNull FollowerChange previousFollowers);
+    }
+
+    public interface PreviousKeptStage {
+        /**
+         * <p>Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.</p>
+         */
+        PreviousTotalsStage previousKept(boolean previousKept);
     }
 
     public interface PreviousTotalsStage {
@@ -174,6 +195,7 @@ public final class ChannelDashboard {
     public static final class Builder
             implements FollowersStage,
                     PreviousFollowersStage,
+                    PreviousKeptStage,
                     PreviousTotalsStage,
                     TotalsStage,
                     ChannelIdStage,
@@ -181,6 +203,8 @@ public final class ChannelDashboard {
         private FollowerChange followers;
 
         private FollowerChange previousFollowers;
+
+        private boolean previousKept;
 
         private DashboardTotals previousTotals;
 
@@ -198,6 +222,7 @@ public final class ChannelDashboard {
         public Builder from(ChannelDashboard other) {
             followers(other.getFollowers());
             previousFollowers(other.getPreviousFollowers());
+            previousKept(other.getPreviousKept());
             previousTotals(other.getPreviousTotals());
             totals(other.getTotals());
             channelId(other.getChannelId());
@@ -214,8 +239,19 @@ public final class ChannelDashboard {
 
         @java.lang.Override
         @JsonSetter("previousFollowers")
-        public PreviousTotalsStage previousFollowers(@NotNull FollowerChange previousFollowers) {
+        public PreviousKeptStage previousFollowers(@NotNull FollowerChange previousFollowers) {
             this.previousFollowers = Objects.requireNonNull(previousFollowers, "previousFollowers must not be null");
+            return this;
+        }
+
+        /**
+         * <p>Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
+        @java.lang.Override
+        @JsonSetter("previousKept")
+        public PreviousTotalsStage previousKept(boolean previousKept) {
+            this.previousKept = previousKept;
             return this;
         }
 
@@ -268,13 +304,21 @@ public final class ChannelDashboard {
         @java.lang.Override
         public ChannelDashboard build() {
             return new ChannelDashboard(
-                    followers, previousFollowers, previousTotals, totals, channelId, platform, additionalProperties);
+                    followers,
+                    previousFollowers,
+                    previousKept,
+                    previousTotals,
+                    totals,
+                    channelId,
+                    platform,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("followers")
                     || key.equalsIgnoreCase("previousFollowers")
+                    || key.equalsIgnoreCase("previousKept")
                     || key.equalsIgnoreCase("previousTotals")
                     || key.equalsIgnoreCase("totals")
                     || key.equalsIgnoreCase("channelId")

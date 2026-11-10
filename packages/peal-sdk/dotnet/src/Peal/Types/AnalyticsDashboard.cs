@@ -17,6 +17,12 @@ public record AnalyticsDashboard : IJsonOnDeserialized
     [JsonPropertyName("previousFollowers")]
     public required FollowerChange PreviousFollowers { get; set; }
 
+    /// <summary>
+    /// Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.
+    /// </summary>
+    [JsonPropertyName("previousKept")]
+    public required bool PreviousKept { get; set; }
+
     [JsonPropertyName("previousTotals")]
     public required DashboardTotals PreviousTotals { get; set; }
 

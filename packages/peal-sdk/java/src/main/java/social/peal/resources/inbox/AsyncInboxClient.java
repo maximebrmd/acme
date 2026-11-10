@@ -39,7 +39,7 @@ public class AsyncInboxClient {
     }
 
     /**
-     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live, and keeps a thread 30 days after that. Needs engagement:read.
+     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
      */
     public CompletableFuture<InboxThreadPage> listThreads(String workspaceId) {
         CompletableFuture<PealClientHttpResponse<InboxThreadPage>> rawFuture = this.rawClient.listThreads(workspaceId);
@@ -53,7 +53,7 @@ public class AsyncInboxClient {
     }
 
     /**
-     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live, and keeps a thread 30 days after that. Needs engagement:read.
+     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
      */
     public CompletableFuture<InboxThreadPage> listThreads(String workspaceId, RequestOptions requestOptions) {
         CompletableFuture<PealClientHttpResponse<InboxThreadPage>> rawFuture =
@@ -68,7 +68,7 @@ public class AsyncInboxClient {
     }
 
     /**
-     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live, and keeps a thread 30 days after that. Needs engagement:read.
+     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
      */
     public CompletableFuture<InboxThreadPage> listThreads(String workspaceId, ListThreadsInboxRequest request) {
         CompletableFuture<PealClientHttpResponse<InboxThreadPage>> rawFuture =
@@ -83,7 +83,7 @@ public class AsyncInboxClient {
     }
 
     /**
-     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live, and keeps a thread 30 days after that. Needs engagement:read.
+     * Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless <code>limit</code> (at most 100) says otherwise. <code>channelId</code>, <code>postId</code> and <code>unanswered</code> narrow the list. Pass the page's <code>nextCursor</code> as <code>cursor</code> for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
      */
     public CompletableFuture<InboxThreadPage> listThreads(
             String workspaceId, ListThreadsInboxRequest request, RequestOptions requestOptions) {
@@ -225,7 +225,7 @@ public class AsyncInboxClient {
     }
 
     /**
-     * Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply <code>sending</code>, and the thread shows how it ended. A reply whose outcome is unknown is <code>unconfirmed</code> and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 <code>ReplyPending</code>). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply <code>sending</code>, and the thread shows how it ended. A reply whose outcome is unknown is <code>unconfirmed</code> and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 <code>ReplyPending</code>), whichever request came first when two are sent together. With an <code>Idempotency-Key</code> header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 <code>IdempotencyKeyReused</code>). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      */
     public CompletableFuture<InboxReply> reply(String workspaceId, String commentId, NewInboxReply request) {
         CompletableFuture<PealClientHttpResponse<InboxReply>> rawFuture =
@@ -240,7 +240,7 @@ public class AsyncInboxClient {
     }
 
     /**
-     * Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply <code>sending</code>, and the thread shows how it ended. A reply whose outcome is unknown is <code>unconfirmed</code> and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 <code>ReplyPending</code>). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+     * Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply <code>sending</code>, and the thread shows how it ended. A reply whose outcome is unknown is <code>unconfirmed</code> and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 <code>ReplyPending</code>), whichever request came first when two are sent together. With an <code>Idempotency-Key</code> header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 <code>IdempotencyKeyReused</code>). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
      */
     public CompletableFuture<InboxReply> reply(
             String workspaceId, String commentId, NewInboxReply request, RequestOptions requestOptions) {

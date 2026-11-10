@@ -13,6 +13,9 @@ public final class AttemptResult {
 
     public static final AttemptResult UNAVAILABLE = new AttemptResult(Value.UNAVAILABLE, "unavailable");
 
+    public static final AttemptResult REPLIES_NOT_ALLOWED =
+            new AttemptResult(Value.REPLIES_NOT_ALLOWED, "repliesNotAllowed");
+
     public static final AttemptResult MEDIA_REJECTED = new AttemptResult(Value.MEDIA_REJECTED, "mediaRejected");
 
     public static final AttemptResult PARTS_NOT_SENT = new AttemptResult(Value.PARTS_NOT_SENT, "partsNotSent");
@@ -76,6 +79,8 @@ public final class AttemptResult {
                 return visitor.visitMediaRemoved();
             case UNAVAILABLE:
                 return visitor.visitUnavailable();
+            case REPLIES_NOT_ALLOWED:
+                return visitor.visitRepliesNotAllowed();
             case MEDIA_REJECTED:
                 return visitor.visitMediaRejected();
             case PARTS_NOT_SENT:
@@ -115,6 +120,8 @@ public final class AttemptResult {
                 return MEDIA_REMOVED;
             case "unavailable":
                 return UNAVAILABLE;
+            case "repliesNotAllowed":
+                return REPLIES_NOT_ALLOWED;
             case "mediaRejected":
                 return MEDIA_REJECTED;
             case "partsNotSent":
@@ -175,6 +182,8 @@ public final class AttemptResult {
 
         PARTS_NOT_SENT,
 
+        REPLIES_NOT_ALLOWED,
+
         UNKNOWN
     }
 
@@ -208,6 +217,8 @@ public final class AttemptResult {
         T visitPlanLimit();
 
         T visitPartsNotSent();
+
+        T visitRepliesNotAllowed();
 
         T visitUnknown(String unknownType);
     }

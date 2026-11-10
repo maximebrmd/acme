@@ -16,6 +16,18 @@ class ChannelDashboard(UniversalBaseModel):
     previous_followers: typing_extensions.Annotated[
         FollowerChange, FieldMetadata(alias="previousFollowers"), pydantic.Field(alias="previousFollowers")
     ]
+    previous_kept: typing_extensions.Annotated[
+        bool,
+        FieldMetadata(alias="previousKept"),
+        pydantic.Field(
+            alias="previousKept",
+            description="Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.",
+        ),
+    ]
+    """
+    Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.
+    """
+
     previous_totals: typing_extensions.Annotated[
         DashboardTotals, FieldMetadata(alias="previousTotals"), pydantic.Field(alias="previousTotals")
     ]

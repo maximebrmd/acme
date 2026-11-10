@@ -44,7 +44,7 @@ class InboxClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> InboxThreadPage:
         """
-        Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless `limit` (at most 100) says otherwise. `channelId`, `postId` and `unanswered` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live, and keeps a thread 30 days after that. Needs engagement:read.
+        Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless `limit` (at most 100) says otherwise. `channelId`, `postId` and `unanswered` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
 
         Parameters
         ----------
@@ -161,10 +161,16 @@ class InboxClient:
         return _response.data
 
     def reply(
-        self, workspace_id: str, comment_id: str, *, text: str, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        comment_id: str,
+        *,
+        text: str,
+        idempotency_key: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> InboxReply:
         """
-        Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+        Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`), whichever request came first when two are sent together. With an `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 `IdempotencyKeyReused`). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
 
         Parameters
         ----------
@@ -173,6 +179,8 @@ class InboxClient:
         comment_id : str
 
         text : str
+
+        idempotency_key : typing.Optional[str]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -195,7 +203,9 @@ class InboxClient:
             text="text",
         )
         """
-        _response = self._raw_client.reply(workspace_id, comment_id, text=text, request_options=request_options)
+        _response = self._raw_client.reply(
+            workspace_id, comment_id, text=text, idempotency_key=idempotency_key, request_options=request_options
+        )
         return _response.data
 
     def set_answered(
@@ -387,7 +397,7 @@ class AsyncInboxClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> InboxThreadPage:
         """
-        Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless `limit` (at most 100) says otherwise. `channelId`, `postId` and `unanswered` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live, and keeps a thread 30 days after that. Needs engagement:read.
+        Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless `limit` (at most 100) says otherwise. `channelId`, `postId` and `unanswered` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
 
         Parameters
         ----------
@@ -528,10 +538,16 @@ class AsyncInboxClient:
         return _response.data
 
     async def reply(
-        self, workspace_id: str, comment_id: str, *, text: str, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        comment_id: str,
+        *,
+        text: str,
+        idempotency_key: typing.Optional[str] = None,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> InboxReply:
         """
-        Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+        Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`), whichever request came first when two are sent together. With an `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 `IdempotencyKeyReused`). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
 
         Parameters
         ----------
@@ -540,6 +556,8 @@ class AsyncInboxClient:
         comment_id : str
 
         text : str
+
+        idempotency_key : typing.Optional[str]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -570,7 +588,9 @@ class AsyncInboxClient:
 
         asyncio.run(main())
         """
-        _response = await self._raw_client.reply(workspace_id, comment_id, text=text, request_options=request_options)
+        _response = await self._raw_client.reply(
+            workspace_id, comment_id, text=text, idempotency_key=idempotency_key, request_options=request_options
+        )
         return _response.data
 
     async def set_answered(

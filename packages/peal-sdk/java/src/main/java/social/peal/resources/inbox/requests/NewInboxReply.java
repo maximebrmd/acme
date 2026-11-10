@@ -5,6 +5,7 @@ package social.peal.resources.inbox.requests;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -13,19 +14,28 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = NewInboxReply.Builder.class)
 public final class NewInboxReply {
+    private final Optional<String> idempotencyKey;
+
     private final String text;
 
     private final Map<String, Object> additionalProperties;
 
-    private NewInboxReply(String text, Map<String, Object> additionalProperties) {
+    private NewInboxReply(Optional<String> idempotencyKey, String text, Map<String, Object> additionalProperties) {
+        this.idempotencyKey = idempotencyKey;
         this.text = text;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonIgnore
+    public Optional<String> getIdempotencyKey() {
+        return idempotencyKey;
     }
 
     @JsonProperty("text")
@@ -45,12 +55,12 @@ public final class NewInboxReply {
     }
 
     private boolean equalTo(NewInboxReply other) {
-        return text.equals(other.text);
+        return idempotencyKey.equals(other.idempotencyKey) && text.equals(other.text);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.text);
+        return Objects.hash(this.idempotencyKey, this.text);
     }
 
     @java.lang.Override
@@ -74,11 +84,17 @@ public final class NewInboxReply {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage idempotencyKey(Optional<String> idempotencyKey);
+
+        _FinalStage idempotencyKey(String idempotencyKey);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements TextStage, _FinalStage {
         private String text;
+
+        private Optional<String> idempotencyKey = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -86,6 +102,7 @@ public final class NewInboxReply {
 
         @java.lang.Override
         public Builder from(NewInboxReply other) {
+            idempotencyKey(other.getIdempotencyKey());
             text(other.getText());
             return this;
         }
@@ -98,8 +115,20 @@ public final class NewInboxReply {
         }
 
         @java.lang.Override
+        public _FinalStage idempotencyKey(String idempotencyKey) {
+            this.idempotencyKey = Optional.ofNullable(idempotencyKey);
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage idempotencyKey(Optional<String> idempotencyKey) {
+            this.idempotencyKey = idempotencyKey;
+            return this;
+        }
+
+        @java.lang.Override
         public NewInboxReply build() {
-            return new NewInboxReply(text, additionalProperties);
+            return new NewInboxReply(idempotencyKey, text, additionalProperties);
         }
 
         @JsonAnySetter

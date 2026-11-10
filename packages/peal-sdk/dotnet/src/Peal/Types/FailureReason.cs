@@ -38,6 +38,8 @@ public readonly record struct FailureReason : IStringEnum
 
     public static readonly FailureReason PartsNotSent = new(Values.PartsNotSent);
 
+    public static readonly FailureReason RepliesNotAllowed = new(Values.RepliesNotAllowed);
+
     public FailureReason(string value)
     {
         Value = value;
@@ -163,5 +165,7 @@ public readonly record struct FailureReason : IStringEnum
         public const string PlanLimit = "planLimit";
 
         public const string PartsNotSent = "partsNotSent";
+
+        public const string RepliesNotAllowed = "repliesNotAllowed";
     }
 }

@@ -327,31 +327,34 @@ func (s *SummaryAnalyticsRequest) SetTo(to CalendarDay) {
 var (
 	analyticsDashboardFieldFollowers         = big.NewInt(1 << 0)
 	analyticsDashboardFieldPreviousFollowers = big.NewInt(1 << 1)
-	analyticsDashboardFieldPreviousTotals    = big.NewInt(1 << 2)
-	analyticsDashboardFieldTotals            = big.NewInt(1 << 3)
-	analyticsDashboardFieldChannels          = big.NewInt(1 << 4)
-	analyticsDashboardFieldDays              = big.NewInt(1 << 5)
-	analyticsDashboardFieldFrom              = big.NewInt(1 << 6)
-	analyticsDashboardFieldPlatforms         = big.NewInt(1 << 7)
-	analyticsDashboardFieldPrevious          = big.NewInt(1 << 8)
-	analyticsDashboardFieldTimeZone          = big.NewInt(1 << 9)
-	analyticsDashboardFieldTo                = big.NewInt(1 << 10)
-	analyticsDashboardFieldTopPosts          = big.NewInt(1 << 11)
+	analyticsDashboardFieldPreviousKept      = big.NewInt(1 << 2)
+	analyticsDashboardFieldPreviousTotals    = big.NewInt(1 << 3)
+	analyticsDashboardFieldTotals            = big.NewInt(1 << 4)
+	analyticsDashboardFieldChannels          = big.NewInt(1 << 5)
+	analyticsDashboardFieldDays              = big.NewInt(1 << 6)
+	analyticsDashboardFieldFrom              = big.NewInt(1 << 7)
+	analyticsDashboardFieldPlatforms         = big.NewInt(1 << 8)
+	analyticsDashboardFieldPrevious          = big.NewInt(1 << 9)
+	analyticsDashboardFieldTimeZone          = big.NewInt(1 << 10)
+	analyticsDashboardFieldTo                = big.NewInt(1 << 11)
+	analyticsDashboardFieldTopPosts          = big.NewInt(1 << 12)
 )
 
 type AnalyticsDashboard struct {
-	Followers         *FollowerChange             `json:"followers" url:"followers"`
-	PreviousFollowers *FollowerChange             `json:"previousFollowers" url:"previousFollowers"`
-	PreviousTotals    *DashboardTotals            `json:"previousTotals" url:"previousTotals"`
-	Totals            *DashboardTotals            `json:"totals" url:"totals"`
-	Channels          []*ChannelDashboard         `json:"channels" url:"channels"`
-	Days              []*DashboardDay             `json:"days" url:"days"`
-	From              CalendarDay                 `json:"from" url:"from"`
-	Platforms         []*PlatformDashboard        `json:"platforms" url:"platforms"`
-	Previous          *AnalyticsDashboardPrevious `json:"previous" url:"previous"`
-	TimeZone          string                      `json:"timeZone" url:"timeZone"`
-	To                CalendarDay                 `json:"to" url:"to"`
-	TopPosts          []*TopPost                  `json:"topPosts" url:"topPosts"`
+	Followers         *FollowerChange `json:"followers" url:"followers"`
+	PreviousFollowers *FollowerChange `json:"previousFollowers" url:"previousFollowers"`
+	// Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.
+	PreviousKept   bool                        `json:"previousKept" url:"previousKept"`
+	PreviousTotals *DashboardTotals            `json:"previousTotals" url:"previousTotals"`
+	Totals         *DashboardTotals            `json:"totals" url:"totals"`
+	Channels       []*ChannelDashboard         `json:"channels" url:"channels"`
+	Days           []*DashboardDay             `json:"days" url:"days"`
+	From           CalendarDay                 `json:"from" url:"from"`
+	Platforms      []*PlatformDashboard        `json:"platforms" url:"platforms"`
+	Previous       *AnalyticsDashboardPrevious `json:"previous" url:"previous"`
+	TimeZone       string                      `json:"timeZone" url:"timeZone"`
+	To             CalendarDay                 `json:"to" url:"to"`
+	TopPosts       []*TopPost                  `json:"topPosts" url:"topPosts"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -372,6 +375,13 @@ func (a *AnalyticsDashboard) GetPreviousFollowers() *FollowerChange {
 		return nil
 	}
 	return a.PreviousFollowers
+}
+
+func (a *AnalyticsDashboard) GetPreviousKept() bool {
+	if a == nil {
+		return false
+	}
+	return a.PreviousKept
 }
 
 func (a *AnalyticsDashboard) GetPreviousTotals() *DashboardTotals {
@@ -472,6 +482,13 @@ func (a *AnalyticsDashboard) SetFollowers(followers *FollowerChange) {
 func (a *AnalyticsDashboard) SetPreviousFollowers(previousFollowers *FollowerChange) {
 	a.PreviousFollowers = previousFollowers
 	a.require(analyticsDashboardFieldPreviousFollowers)
+}
+
+// SetPreviousKept sets the PreviousKept field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AnalyticsDashboard) SetPreviousKept(previousKept bool) {
+	a.PreviousKept = previousKept
+	a.require(analyticsDashboardFieldPreviousKept)
 }
 
 // SetPreviousTotals sets the PreviousTotals field and marks it as non-optional;
@@ -919,10 +936,11 @@ type CalendarDay = string
 var (
 	channelDashboardFieldFollowers         = big.NewInt(1 << 0)
 	channelDashboardFieldPreviousFollowers = big.NewInt(1 << 1)
-	channelDashboardFieldPreviousTotals    = big.NewInt(1 << 2)
-	channelDashboardFieldTotals            = big.NewInt(1 << 3)
-	channelDashboardFieldChannelID         = big.NewInt(1 << 4)
-	channelDashboardFieldPlatform          = big.NewInt(1 << 5)
+	channelDashboardFieldPreviousKept      = big.NewInt(1 << 2)
+	channelDashboardFieldPreviousTotals    = big.NewInt(1 << 3)
+	channelDashboardFieldTotals            = big.NewInt(1 << 4)
+	channelDashboardFieldChannelID         = big.NewInt(1 << 5)
+	channelDashboardFieldPlatform          = big.NewInt(1 << 6)
 )
 
 // channelDashboardNullableFields maps the wire names of ChannelDashboard's nullable fields (required or optional) to their field bits.
@@ -931,12 +949,14 @@ var channelDashboardNullableFields = map[string]*big.Int{
 }
 
 type ChannelDashboard struct {
-	Followers         *FollowerChange  `json:"followers" url:"followers"`
-	PreviousFollowers *FollowerChange  `json:"previousFollowers" url:"previousFollowers"`
-	PreviousTotals    *DashboardTotals `json:"previousTotals" url:"previousTotals"`
-	Totals            *DashboardTotals `json:"totals" url:"totals"`
-	ChannelID         string           `json:"channelId" url:"channelId"`
-	Platform          *Platform        `json:"platform,omitempty" url:"platform,omitempty"`
+	Followers         *FollowerChange `json:"followers" url:"followers"`
+	PreviousFollowers *FollowerChange `json:"previousFollowers" url:"previousFollowers"`
+	// Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.
+	PreviousKept   bool             `json:"previousKept" url:"previousKept"`
+	PreviousTotals *DashboardTotals `json:"previousTotals" url:"previousTotals"`
+	Totals         *DashboardTotals `json:"totals" url:"totals"`
+	ChannelID      string           `json:"channelId" url:"channelId"`
+	Platform       *Platform        `json:"platform,omitempty" url:"platform,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -957,6 +977,13 @@ func (c *ChannelDashboard) GetPreviousFollowers() *FollowerChange {
 		return nil
 	}
 	return c.PreviousFollowers
+}
+
+func (c *ChannelDashboard) GetPreviousKept() bool {
+	if c == nil {
+		return false
+	}
+	return c.PreviousKept
 }
 
 func (c *ChannelDashboard) GetPreviousTotals() *DashboardTotals {
@@ -1015,6 +1042,13 @@ func (c *ChannelDashboard) SetFollowers(followers *FollowerChange) {
 func (c *ChannelDashboard) SetPreviousFollowers(previousFollowers *FollowerChange) {
 	c.PreviousFollowers = previousFollowers
 	c.require(channelDashboardFieldPreviousFollowers)
+}
+
+// SetPreviousKept sets the PreviousKept field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelDashboard) SetPreviousKept(previousKept bool) {
+	c.PreviousKept = previousKept
+	c.require(channelDashboardFieldPreviousKept)
 }
 
 // SetPreviousTotals sets the PreviousTotals field and marks it as non-optional;
@@ -2752,17 +2786,20 @@ func (m *MetricsSnapshot) String() string {
 var (
 	platformDashboardFieldFollowers         = big.NewInt(1 << 0)
 	platformDashboardFieldPreviousFollowers = big.NewInt(1 << 1)
-	platformDashboardFieldPreviousTotals    = big.NewInt(1 << 2)
-	platformDashboardFieldTotals            = big.NewInt(1 << 3)
-	platformDashboardFieldPlatform          = big.NewInt(1 << 4)
+	platformDashboardFieldPreviousKept      = big.NewInt(1 << 2)
+	platformDashboardFieldPreviousTotals    = big.NewInt(1 << 3)
+	platformDashboardFieldTotals            = big.NewInt(1 << 4)
+	platformDashboardFieldPlatform          = big.NewInt(1 << 5)
 )
 
 type PlatformDashboard struct {
-	Followers         *FollowerChange  `json:"followers" url:"followers"`
-	PreviousFollowers *FollowerChange  `json:"previousFollowers" url:"previousFollowers"`
-	PreviousTotals    *DashboardTotals `json:"previousTotals" url:"previousTotals"`
-	Totals            *DashboardTotals `json:"totals" url:"totals"`
-	Platform          Platform         `json:"platform" url:"platform"`
+	Followers         *FollowerChange `json:"followers" url:"followers"`
+	PreviousFollowers *FollowerChange `json:"previousFollowers" url:"previousFollowers"`
+	// Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.
+	PreviousKept   bool             `json:"previousKept" url:"previousKept"`
+	PreviousTotals *DashboardTotals `json:"previousTotals" url:"previousTotals"`
+	Totals         *DashboardTotals `json:"totals" url:"totals"`
+	Platform       Platform         `json:"platform" url:"platform"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2783,6 +2820,13 @@ func (p *PlatformDashboard) GetPreviousFollowers() *FollowerChange {
 		return nil
 	}
 	return p.PreviousFollowers
+}
+
+func (p *PlatformDashboard) GetPreviousKept() bool {
+	if p == nil {
+		return false
+	}
+	return p.PreviousKept
 }
 
 func (p *PlatformDashboard) GetPreviousTotals() *DashboardTotals {
@@ -2834,6 +2878,13 @@ func (p *PlatformDashboard) SetFollowers(followers *FollowerChange) {
 func (p *PlatformDashboard) SetPreviousFollowers(previousFollowers *FollowerChange) {
 	p.PreviousFollowers = previousFollowers
 	p.require(platformDashboardFieldPreviousFollowers)
+}
+
+// SetPreviousKept sets the PreviousKept field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformDashboard) SetPreviousKept(previousKept bool) {
+	p.PreviousKept = previousKept
+	p.require(platformDashboardFieldPreviousKept)
 }
 
 // SetPreviousTotals sets the PreviousTotals field and marks it as non-optional;

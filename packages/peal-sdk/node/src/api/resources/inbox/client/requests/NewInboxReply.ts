@@ -11,5 +11,6 @@
 export interface NewInboxReply {
     workspaceId: string;
     commentId: string;
+    "idempotency-key"?: string;
     text: string;
 }

@@ -38,6 +38,8 @@ public readonly record struct AttemptResult : IStringEnum
 
     public static readonly AttemptResult PartsNotSent = new(Values.PartsNotSent);
 
+    public static readonly AttemptResult RepliesNotAllowed = new(Values.RepliesNotAllowed);
+
     public AttemptResult(string value)
     {
         Value = value;
@@ -163,5 +165,7 @@ public readonly record struct AttemptResult : IStringEnum
         public const string PlanLimit = "planLimit";
 
         public const string PartsNotSent = "partsNotSent";
+
+        public const string RepliesNotAllowed = "repliesNotAllowed";
     }
 }

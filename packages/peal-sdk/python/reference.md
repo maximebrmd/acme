@@ -2815,7 +2815,7 @@ client.posts.unschedule(
 <dl>
 <dd>
 
-Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.
+Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. A post of several parts goes on from the part after the last that is live; one failed as `partsNotSent` is refused (TargetStatusConflict), as Peal has no post to send the rest under: a part found by hand has no id, or the part to reply to is gone. Needs post:schedule.
 </dd>
 </dl>
 </dd>
@@ -6666,7 +6666,7 @@ client.webhooks.redeliver(
 <dl>
 <dd>
 
-Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless `limit` (at most 100) says otherwise. `channelId`, `postId` and `unanswered` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live, and keeps a thread 30 days after that. Needs engagement:read.
+Lists the threads that have comments, one per post and channel: those with a comment waiting for an answer first, then by latest comment, 30 a page unless `limit` (at most 100) says otherwise. `channelId`, `postId` and `unanswered` narrow the list. Pass the page's `nextCursor` as `cursor` for the next one. Peal reads comments on mastodon and bluesky, for 30 days after a post went live by default (the server's operator may set another window, up to 90 days), and keeps a thread 30 days after that. Needs engagement:read.
 </dd>
 </dl>
 </dd>
@@ -6931,7 +6931,7 @@ client.inbox.get_abilities(
 </dl>
 </details>
 
-<details><summary><code>client.inbox.<a href="src/peal/inbox/client.py#L163-L199">reply</a>(...) -> InboxReply</code></summary>
+<details><summary><code>client.inbox.<a href="src/peal/inbox/client.py#L163-L209">reply</a>(...) -> InboxReply</code></summary>
 <dl>
 <dd>
 
@@ -6943,7 +6943,7 @@ client.inbox.get_abilities(
 <dl>
 <dd>
 
-Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
+Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply `sending`, and the thread shows how it ended. A reply whose outcome is unknown is `unconfirmed` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 `ReplyPending`), whichever request came first when two are sent together. With an `Idempotency-Key` header (any text of your choosing, 255 characters at most, new for each reply), the request is safe to send again after a lost answer: within 24 hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 `IdempotencyKeyReused`). Needs engagement:reply, which an OAuth client holds only with the scope workspace:publish, and which staff acting as a member never hold.
 </dd>
 </dl>
 </dd>
@@ -7010,6 +7010,14 @@ client.inbox.reply(
 <dl>
 <dd>
 
+**idempotency_key:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
     
 </dd>
@@ -7022,7 +7030,7 @@ client.inbox.reply(
 </dl>
 </details>
 
-<details><summary><code>client.inbox.<a href="src/peal/inbox/client.py#L201-L244">set_answered</a>(...) -> InboxComment</code></summary>
+<details><summary><code>client.inbox.<a href="src/peal/inbox/client.py#L211-L254">set_answered</a>(...) -> InboxComment</code></summary>
 <dl>
 <dd>
 
@@ -7113,7 +7121,7 @@ client.inbox.set_answered(
 </dl>
 </details>
 
-<details><summary><code>client.inbox.<a href="src/peal/inbox/client.py#L246-L287">moderate</a>(...) -> InboxComment</code></summary>
+<details><summary><code>client.inbox.<a href="src/peal/inbox/client.py#L256-L297">moderate</a>(...) -> InboxComment</code></summary>
 <dl>
 <dd>
 
@@ -7204,7 +7212,7 @@ client.inbox.moderate(
 </dl>
 </details>
 
-<details><summary><code>client.inbox.<a href="src/peal/inbox/client.py#L289-L325">confirm_reply</a>(...) -> InboxReply</code></summary>
+<details><summary><code>client.inbox.<a href="src/peal/inbox/client.py#L299-L335">confirm_reply</a>(...) -> InboxReply</code></summary>
 <dl>
 <dd>
 
@@ -7295,7 +7303,7 @@ client.inbox.confirm_reply(
 </dl>
 </details>
 
-<details><summary><code>client.inbox.<a href="src/peal/inbox/client.py#L327-L360">withdraw_reply</a>(...) -> InboxReply</code></summary>
+<details><summary><code>client.inbox.<a href="src/peal/inbox/client.py#L337-L370">withdraw_reply</a>(...) -> InboxReply</code></summary>
 <dl>
 <dd>
 

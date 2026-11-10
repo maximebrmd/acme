@@ -15,6 +15,9 @@ public final class FailureReason {
 
     public static final FailureReason UNAVAILABLE = new FailureReason(Value.UNAVAILABLE, "unavailable");
 
+    public static final FailureReason REPLIES_NOT_ALLOWED =
+            new FailureReason(Value.REPLIES_NOT_ALLOWED, "repliesNotAllowed");
+
     public static final FailureReason MISSED = new FailureReason(Value.MISSED, "missed");
 
     public static final FailureReason MEDIA_REJECTED = new FailureReason(Value.MEDIA_REJECTED, "mediaRejected");
@@ -78,6 +81,8 @@ public final class FailureReason {
                 return visitor.visitMediaRemoved();
             case UNAVAILABLE:
                 return visitor.visitUnavailable();
+            case REPLIES_NOT_ALLOWED:
+                return visitor.visitRepliesNotAllowed();
             case MISSED:
                 return visitor.visitMissed();
             case MEDIA_REJECTED:
@@ -117,6 +122,8 @@ public final class FailureReason {
                 return MEDIA_REMOVED;
             case "unavailable":
                 return UNAVAILABLE;
+            case "repliesNotAllowed":
+                return REPLIES_NOT_ALLOWED;
             case "missed":
                 return MISSED;
             case "mediaRejected":
@@ -175,6 +182,8 @@ public final class FailureReason {
 
         PARTS_NOT_SENT,
 
+        REPLIES_NOT_ALLOWED,
+
         UNKNOWN
     }
 
@@ -208,6 +217,8 @@ public final class FailureReason {
         T visitPlanLimit();
 
         T visitPartsNotSent();
+
+        T visitRepliesNotAllowed();
 
         T visitUnknown(String unknownType);
     }

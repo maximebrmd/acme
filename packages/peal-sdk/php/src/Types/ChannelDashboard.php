@@ -20,6 +20,12 @@ class ChannelDashboard extends JsonSerializableType
     public FollowerChange $previousFollowers;
 
     /**
+     * @var bool $previousKept Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.
+     */
+    #[JsonProperty('previousKept')]
+    public bool $previousKept;
+
+    /**
      * @var DashboardTotals $previousTotals
      */
     #[JsonProperty('previousTotals')]
@@ -47,6 +53,7 @@ class ChannelDashboard extends JsonSerializableType
      * @param array{
      *   followers: FollowerChange,
      *   previousFollowers: FollowerChange,
+     *   previousKept: bool,
      *   previousTotals: DashboardTotals,
      *   totals: DashboardTotals,
      *   channelId: string,
@@ -58,6 +65,7 @@ class ChannelDashboard extends JsonSerializableType
     ) {
         $this->followers = $values['followers'];
         $this->previousFollowers = $values['previousFollowers'];
+        $this->previousKept = $values['previousKept'];
         $this->previousTotals = $values['previousTotals'];
         $this->totals = $values['totals'];
         $this->channelId = $values['channelId'];

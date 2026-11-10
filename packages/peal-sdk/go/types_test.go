@@ -34036,6 +34036,13 @@ func TestEnumFailureReason(t *testing.T) {
 		assert.Equal(t, FailureReason("partsNotSent"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_repliesNotAllowed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFailureReasonFromString("repliesNotAllowed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FailureReason("repliesNotAllowed"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewFailureReasonFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)

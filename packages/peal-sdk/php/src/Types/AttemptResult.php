@@ -19,4 +19,5 @@ enum AttemptResult: string
     case AppBillingLimit = "appBillingLimit";
     case PlanLimit = "planLimit";
     case PartsNotSent = "partsNotSent";
+    case RepliesNotAllowed = "repliesNotAllowed";
 }

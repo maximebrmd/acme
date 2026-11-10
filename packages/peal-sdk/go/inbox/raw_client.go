@@ -196,6 +196,9 @@ func (r *RawClient) Reply(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
+	if request.IdempotencyKey != nil {
+		headers.Add("idempotency-key", *request.IdempotencyKey)
+	}
 	headers.Add("Content-Type", "application/json")
 	var response *peal.InboxReply
 	raw, err := r.caller.Call(

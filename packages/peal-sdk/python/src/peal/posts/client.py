@@ -907,7 +907,7 @@ class PostsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Post:
         """
-        Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.
+        Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. A post of several parts goes on from the part after the last that is live; one failed as `partsNotSent` is refused (TargetStatusConflict), as Peal has no post to send the rest under: a part found by hand has no id, or the part to reply to is gone. Needs post:schedule.
 
         Parameters
         ----------
@@ -2038,7 +2038,7 @@ class AsyncPostsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Post:
         """
-        Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.
+        Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. A post of several parts goes on from the part after the last that is live; one failed as `partsNotSent` is refused (TargetStatusConflict), as Peal has no post to send the rest under: a part found by hand has no id, or the part to reply to is gone. Needs post:schedule.
 
         Parameters
         ----------

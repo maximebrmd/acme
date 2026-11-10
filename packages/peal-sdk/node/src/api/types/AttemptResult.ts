@@ -15,6 +15,7 @@ export const AttemptResult = {
         QuotaExceeded: "quotaExceeded",
         AppBillingLimit: "appBillingLimit",
         PlanLimit: "planLimit",
-        PartsNotSent: "partsNotSent"
+        PartsNotSent: "partsNotSent",
+        RepliesNotAllowed: "repliesNotAllowed"
     } as const;
 export type AttemptResult = typeof AttemptResult[keyof typeof AttemptResult];

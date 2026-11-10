@@ -8,6 +8,11 @@ use Peal\Core\Json\JsonProperty;
 class NewInboxReply extends JsonSerializableType
 {
     /**
+     * @var ?string $idempotencyKey
+     */
+    public ?string $idempotencyKey;
+
+    /**
      * @var string $text
      */
     #[JsonProperty('text')]
@@ -16,11 +21,13 @@ class NewInboxReply extends JsonSerializableType
     /**
      * @param array{
      *   text: string,
+     *   idempotencyKey?: ?string,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->idempotencyKey = $values['idempotencyKey'] ?? null;
         $this->text = $values['text'];
     }
 }

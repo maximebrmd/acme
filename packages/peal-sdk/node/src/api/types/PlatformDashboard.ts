@@ -5,6 +5,8 @@ import * as Peal from "../index.js";
 export interface PlatformDashboard {
     followers: Peal.FollowerChange;
     previousFollowers: Peal.FollowerChange;
+    /** Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown. */
+    previousKept: boolean;
     previousTotals: Peal.DashboardTotals;
     totals: Peal.DashboardTotals;
     platform: Peal.Platform;
