@@ -97,7 +97,8 @@
     }
   },
   "AppShell": {
-    "productName": "Peal"
+    "productName": "Peal",
+    "hostedBy": "Secure connection by {product}"
   },
   "LanguageSwitcher": {
     "label": "Language",
@@ -326,6 +327,63 @@
     "connected": "{handle} is connected.",
     "toChannels": "Back to the channels",
     "toWorkspaces": "Back to your workspaces"
+  },
+  "ConnectLink": {
+    "title": "Connect an account",
+    "heading": "Connect your {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account",
+    "loading": "Opening the link…",
+    "retry": "Try again",
+    "asks": "{host} asks to connect your {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account, to publish there for you.",
+    "asksAgain": "{host} asks you to sign in again to {handle} on {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}, so it can keep publishing there for you.",
+    "explains": "You will sign in at {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} and see what you allow. {host} never sees your password. The connection is handled by Peal, the service {host} publishes with.",
+    "input": {
+      "instance": {
+        "label": "Your Mastodon server",
+        "hint": "The address of the server your account is on, such as mastodon.social."
+      },
+      "handle": {
+        "label": "Your Bluesky handle",
+        "hint": "Such as name.bsky.social."
+      }
+    },
+    "continue": "Continue to {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "opening": "Opening…",
+    "backTo": "Back to {host}",
+    "back": "Go back",
+    "over": {
+      "completed": "This link was used already: the account is connected. You can close this page.",
+      "expired": "This link has expired. Ask {host} for a new one.",
+      "revoked": "This link no longer works. Ask {host} for a new one."
+    },
+    "connected": "{count, plural, one {{handles} is connected.} other {These accounts are connected: {handles}.}}",
+    "mayClose": "You can close this page.",
+    "returning": "Taking you back…",
+    "continueBack": "Continue",
+    "failedTitle": "The account was not connected",
+    "finishing": "Finishing the connection…",
+    "tryAgain": "Try again",
+    "errors": {
+      "platformNotSupported": "Accounts of this platform cannot be connected here yet.",
+      "notConfigured": "Accounts of this platform cannot be connected here for now. Tell whoever sent you this link.",
+      "invalidInstance": "This is not the address of a server. Check it, for example mastodon.social.",
+      "instanceNotAllowed": "Only servers on the public internet, over HTTPS, can be connected.",
+      "invalidHandle": "No account was found for this handle.",
+      "invalidState": "This sign-in expired, or was started in another browser. Open the link again, in this browser.",
+      "denied": "The connection was cancelled on the platform.",
+      "authorizationFailed": "The platform did not hand over the account. Try again.",
+      "accountMismatch": "You signed in to another account than the one to connect again. Try again with that account.",
+      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages; on YouTube, the Google account you chose has no channel.",
+      "linkExpired": "This link has expired. Ask whoever sent it for a new one.",
+      "linkCompleted": "This link was used already.",
+      "linkRevoked": "This link no longer works. Ask whoever sent it for a new one.",
+      "tooManyAttempts": "This link was tried too many times. Ask whoever sent it for a new one.",
+      "planLimit": "No more accounts can be connected for now. Tell whoever sent you this link.",
+      "channelGone": "The account to connect again was removed since. Ask whoever sent this link for a new one.",
+      "platformUnreachable": "The platform did not answer. Try again in a moment.",
+      "notFound": "This link opens nothing. Check that you have the whole address, or ask for a new link.",
+      "tooMany": "Too many tries from your network for now. Try again in an hour.",
+      "unknown": "Something went wrong. Try again."
+    }
   },
   "MetaChannels": {
     "title": "{platform, select, facebook {Facebook Pages} instagram {Instagram} threads {Threads} other {{platform}}}",

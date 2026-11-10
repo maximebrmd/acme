@@ -1,73 +1,24 @@
 // Connect links: whoever holds one connects an account on a hosted page,
 // without a Peal account, once, from the browser that started the sign-in.
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer, Option, Redacted, Schema } from "effect";
+import { Effect, Option, Redacted, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
-import { ConnectLinkAddresses } from "#channels/application/connect-link-addresses.ts";
 import { ConnectLinks } from "#channels/application/connect-links.ts";
-import type { NewConnectLink } from "#channels/application/connect-links.ts";
-import { LinkHosts } from "#channels/application/link-hosts.ts";
 import type { AuthorizationCallback } from "#channels/application/platform-authorizer.ts";
 import { maxLinkStarts } from "#channels/domain/connect-link.ts";
-import { DrizzleConnectLinkStore } from "#channels/infrastructure/drizzle-connect-link-store.ts";
-import { RandomConnectLinkTokens } from "#channels/infrastructure/random-connect-link-tokens.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { mastodonInstance } from "#test/channels/connect-support.ts";
 import {
-  connectChannelWith,
-  MastodonAuthorizersTest,
-  mastodonInstance,
-} from "#test/channels/connect-support.ts";
-import {
-  actorIn,
-  freshWorkspace,
-  OpenOutboundGuard,
-} from "#test/channels/support.ts";
-
-const pages = "https://peal.test/connect/link/";
-
-const LinksTest = ConnectLinks.layer.pipe(
-  Layer.provideMerge(
-    Layer.mergeAll(
-      DrizzleConnectLinkStore,
-      RandomConnectLinkTokens,
-      Layer.succeed(
-        ConnectLinkAddresses,
-        ConnectLinkAddresses.of({
-          pageOf: (token) => `${pages}${Redacted.value(token)}`,
-          secure: true,
-        })
-      ),
-      LinkHosts.layerTest(
-        {
-          logoUrl: Option.some("https://cdn.example.test/logo.png"),
-          name: "Partner Suite",
-        },
-        ["https://app.example.test"]
-      )
-    )
-  ),
-  Layer.provideMerge(
-    connectChannelWith(
-      MastodonAuthorizersTest.pipe(Layer.provide(OpenOutboundGuard))
-    )
-  )
-);
-
-const manager = (workspaceId: WorkspaceId) =>
-  actorIn(workspaceId, ["channel:read", "channel:connect"]);
-
-const mastodon: NewConnectLink = {
-  channelId: Option.none(),
-  connection: Option.none(),
-  expiresInHours: Option.none(),
-  locale: Option.none(),
-  platform: "mastodon",
-  returnUrl: Option.some("https://app.example.test/settings/social?tab=1"),
-};
+  linked,
+  LinksTest,
+  manager,
+  mastodonLink as mastodon,
+  pages,
+} from "#test/channels/link-support.ts";
+import { actorIn, freshWorkspace } from "#test/channels/support.ts";
 
 const callbackOf = (back: {
   readonly code?: string;
@@ -78,28 +29,6 @@ const callbackOf = (back: {
   error: Option.fromUndefinedOr(back.error),
   issuer: Option.none(),
   state: back.state,
-});
-
-// A link of a new workspace, and the token its address holds.
-const linked = Effect.fn("linked")(function* linked(
-  asked: Partial<NewConnectLink> = {}
-) {
-  const workspaceId = yield* freshWorkspace;
-  const links = yield* ConnectLinks;
-
-  const created = yield* links.create(manager(workspaceId), {
-    ...mastodon,
-    ...asked,
-  });
-
-  const url = Redacted.value(created.url);
-
-  return {
-    link: created.link,
-    token: Redacted.make(url.slice(pages.length)),
-    url,
-    workspaceId,
-  };
 });
 
 const reasonOf = <A, E extends { readonly _tag: string }>(

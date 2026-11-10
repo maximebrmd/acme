@@ -1,6 +1,11 @@
 import { DateTime, Effect, Option, Redacted } from "effect";
-import { HttpServerRequest } from "effect/http";
-import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
+import {
+  Cookies,
+  HttpEffect,
+  HttpServerRequest,
+  HttpServerResponse,
+} from "effect/http";
+import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   ChannelNotFound,
@@ -227,12 +232,20 @@ export const HostedConnectHandlers = HttpApiBuilder.group(
             })
             .pipe(Effect.catchTags(hostedFailures));
 
-          return HttpApiSchema.withHeaders({
-            body: { authorizationUrl: started.authorizationUrl },
-            headers: {
-              "set-cookie": cookieOf(started.browser, addresses.secure),
-            },
-          });
+          // On the reply itself: a browser hands scripts no Set-Cookie,
+          // so the answer's body carries none of it.
+          yield* HttpEffect.appendPreResponseHandler((_request, response) =>
+            Effect.succeed(
+              HttpServerResponse.mergeCookies(
+                response,
+                Cookies.fromSetCookie([
+                  cookieOf(started.browser, addresses.secure),
+                ])
+              )
+            )
+          );
+
+          return { authorizationUrl: started.authorizationUrl };
         }),
     });
   })

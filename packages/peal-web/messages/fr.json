@@ -97,7 +97,8 @@
     }
   },
   "AppShell": {
-    "productName": "Peal"
+    "productName": "Peal",
+    "hostedBy": "Connexion sécurisée par {product}"
   },
   "LanguageSwitcher": {
     "label": "Langue",
@@ -326,6 +327,63 @@
     "connected": "{handle} est connecté.",
     "toChannels": "Retour aux canaux",
     "toWorkspaces": "Retour à vos espaces de travail"
+  },
+  "ConnectLink": {
+    "title": "Connecter un compte",
+    "heading": "Connecter votre compte {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "loading": "Ouverture du lien…",
+    "retry": "Réessayer",
+    "asks": "{host} demande à connecter votre compte {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}, pour y publier pour vous.",
+    "asksAgain": "{host} vous demande de vous reconnecter à {handle} sur {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}, pour continuer à y publier pour vous.",
+    "explains": "Vous allez vous connecter chez {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} et voir ce que vous autorisez. {host} ne voit jamais votre mot de passe. La connexion est assurée par Peal, le service avec lequel {host} publie.",
+    "input": {
+      "instance": {
+        "label": "Votre serveur Mastodon",
+        "hint": "L’adresse du serveur où se trouve votre compte, par exemple mastodon.social."
+      },
+      "handle": {
+        "label": "Votre identifiant Bluesky",
+        "hint": "Par exemple nom.bsky.social."
+      }
+    },
+    "continue": "Continuer vers {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "opening": "Ouverture…",
+    "backTo": "Retour à {host}",
+    "back": "Revenir",
+    "over": {
+      "completed": "Ce lien a déjà servi : le compte est connecté. Vous pouvez fermer cette page.",
+      "expired": "Ce lien a expiré. Demandez-en un nouveau à {host}.",
+      "revoked": "Ce lien ne fonctionne plus. Demandez-en un nouveau à {host}."
+    },
+    "connected": "{count, plural, one {{handles} est connecté.} other {Ces comptes sont connectés : {handles}.}}",
+    "mayClose": "Vous pouvez fermer cette page.",
+    "returning": "Retour en cours…",
+    "continueBack": "Continuer",
+    "failedTitle": "Le compte n’a pas été connecté",
+    "finishing": "Finalisation de la connexion…",
+    "tryAgain": "Réessayer",
+    "errors": {
+      "platformNotSupported": "Les comptes de cette plateforme ne peuvent pas encore être connectés ici.",
+      "notConfigured": "Les comptes de cette plateforme ne peuvent pas être connectés ici pour le moment. Prévenez la personne qui vous a envoyé ce lien.",
+      "invalidInstance": "Ce n’est pas l’adresse d’un serveur. Vérifiez-la, par exemple mastodon.social.",
+      "instanceNotAllowed": "Seuls les serveurs publics, en HTTPS, peuvent être connectés.",
+      "invalidHandle": "Aucun compte ne correspond à cet identifiant.",
+      "invalidState": "Cette connexion a expiré, ou a été lancée dans un autre navigateur. Rouvrez le lien, dans ce navigateur.",
+      "denied": "La connexion a été annulée sur la plateforme.",
+      "authorizationFailed": "La plateforme n’a pas confié le compte. Réessayez.",
+      "accountMismatch": "Vous vous êtes connecté à un autre compte que celui à reconnecter. Réessayez avec ce compte.",
+      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages ; sur YouTube, le compte Google choisi n’a pas de chaîne.",
+      "linkExpired": "Ce lien a expiré. Demandez-en un nouveau à la personne qui vous l’a envoyé.",
+      "linkCompleted": "Ce lien a déjà servi.",
+      "linkRevoked": "Ce lien ne fonctionne plus. Demandez-en un nouveau à la personne qui vous l’a envoyé.",
+      "tooManyAttempts": "Ce lien a été essayé trop de fois. Demandez-en un nouveau à la personne qui vous l’a envoyé.",
+      "planLimit": "Aucun compte de plus ne peut être connecté pour le moment. Prévenez la personne qui vous a envoyé ce lien.",
+      "channelGone": "Le compte à reconnecter a été retiré depuis. Demandez un nouveau lien à la personne qui vous l’a envoyé.",
+      "platformUnreachable": "La plateforme n’a pas répondu. Réessayez dans un instant.",
+      "notFound": "Ce lien n’ouvre rien. Vérifiez que l’adresse est complète, ou demandez un nouveau lien.",
+      "tooMany": "Trop d’essais depuis votre réseau pour le moment. Réessayez dans une heure.",
+      "unknown": "Une erreur est survenue. Réessayez."
+    }
   },
   "MetaChannels": {
     "title": "{platform, select, facebook {Pages Facebook} instagram {Instagram} threads {Threads} other {{platform}}}",

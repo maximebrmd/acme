@@ -4,16 +4,17 @@ import { notFound } from "next/navigation";
 import { ConnectCallbackSchema, PlatformSchema } from "peal-contract";
 
 import { AuthCard } from "#components/auth/auth-card.tsx";
-import { UpgradePrompts } from "#components/billing/upgrade-prompts.tsx";
-import { CompleteConnection } from "#components/channels/complete-connection.tsx";
+import { ConnectCallbackView } from "#components/connect-link/connect-callback.tsx";
 
 const decodePlatform = Schema.decodeUnknownOption(PlatformSchema);
 
 const decodeCallback = Schema.decodeUnknownOption(ConnectCallbackSchema);
 
-// Where a platform sends the browser back after the member signs in there,
+// Where a platform sends the browser back after someone signs in there,
 // with the state, and a code or an error, in the address: the redirect URI
-// Peal registers is this page, for every workspace.
+// Peal registers is this page, for every workspace, whether a member
+// started the connection in the app or someone came through a connect
+// link.
 const ConnectCallbackPage = async ({
   params,
   searchParams,
@@ -30,12 +31,10 @@ const ConnectCallbackPage = async ({
 
   return (
     <AuthCard title={t("title")} description={t("description")}>
-      <UpgradePrompts current={null}>
-        <CompleteConnection
-          platform={known.value}
-          callback={Option.getOrNull(callback)}
-        />
-      </UpgradePrompts>
+      <ConnectCallbackView
+        platform={known.value}
+        callback={Option.getOrNull(callback)}
+      />
     </AuthCard>
   );
 };

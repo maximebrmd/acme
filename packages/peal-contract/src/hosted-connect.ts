@@ -1,10 +1,5 @@
 import { Schema } from "effect";
-import {
-  HttpApiEndpoint,
-  HttpApiGroup,
-  HttpApiSchema,
-  OpenApi,
-} from "effect/http-api";
+import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api";
 
 import {
   ChannelSchema,
@@ -121,9 +116,7 @@ export class HostedConnectApi extends HttpApiGroup.make("hostedConnect")
       error: hostedErrors,
       params: token,
       payload: HostedStartSchema,
-      success: HttpApiSchema.WithHeaders(HostedAuthorizationSchema, {
-        "set-cookie": Schema.String,
-      }),
+      success: HostedAuthorizationSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description: `Starts the link's sign-in: answers with the platform's sign-in page, where the browser goes next, and sets a cookie only this browser holds, so only it completes the sign-in, within 15 minutes. A link's sign-in can be started ${maxConnectLinkStarts} times.`,

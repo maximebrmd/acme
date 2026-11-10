@@ -10,9 +10,26 @@ describe("next.config.ts", () => {
   });
 
   it("applies its headers to every path, /api/* included", async () => {
-    const applied = await rules();
+    const [everywhere] = await rules();
 
-    expect(applied.map((rule) => rule.source)).toStrictEqual(["/:path*"]);
+    expect(everywhere?.source).toBe("/:path*");
+  });
+
+  it("keeps a connect link's page, whose address holds its token, out of referers, caches and search engines", async () => {
+    const [, ...hosted] = await rules();
+
+    expect(hosted.map((rule) => rule.source)).toStrictEqual([
+      "/connect/link/:token",
+      "/:locale/connect/link/:token",
+    ]);
+
+    for (const rule of hosted) {
+      expect(rule.headers).toStrictEqual([
+        { key: "Cache-Control", value: "no-store" },
+        { key: "Referrer-Policy", value: "no-referrer" },
+        { key: "X-Robots-Tag", value: "noindex, nofollow" },
+      ]);
+    }
   });
 
   it.each([
@@ -25,8 +42,8 @@ describe("next.config.ts", () => {
     ["Referrer-Policy", "strict-origin-when-cross-origin"],
     ["Permissions-Policy", "camera=(), microphone=(), geolocation=()"],
   ])("sends %s", async (key, value) => {
-    const applied = await rules();
-    const headers = applied.flatMap((rule) => rule.headers);
+    const [everywhere] = await rules();
+    const headers = everywhere?.headers ?? [];
 
     expect(headers.find((header) => header.key === key)?.value).toBe(value);
   });
