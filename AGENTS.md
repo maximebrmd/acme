@@ -536,8 +536,15 @@ and no socket, for tests.
   within 30 seconds gets the same answer, while later reuse revokes that user
   and client's refresh tokens.
 - An MCP token is bound to the workspace the user picked (`workspace_id`
-  claim). Access tokens must carry `workspace:read` (reading only) or
-  `workspace:write` (what the role allows).
+  claim). Access tokens must carry a workspace scope
+  (`workspace/domain/oauth-grant.ts`): `workspace:read` (reading only),
+  `workspace:write` (what the role allows, but what puts posts out) or
+  `workspace:publish` (reading, and `publishingPermissions`: post:schedule,
+  post:approve, post:publish, so scheduling, moving, publishing, reposting,
+  cancelling, unscheduling and confirming). Publishing is a grant of its
+  own: the consent page lets the person leave it out, a token issued before
+  it existed publishes nothing, and `scopeFor` names the scope a permission
+  takes. Never fold it back into `workspace:write`.
 - When `PUBLIC_URL` is neither HTTPS nor a loopback host, the server runs the
   plain OAuth provider without the MCP resource: the CLI signs in, the MCP
   endpoint refuses every request, and startup logs a warning.
@@ -722,6 +729,27 @@ and no socket, for tests.
   the user checks the platform before reposting.
 - Erasing a workspace's posts (`PostRecords`) stops its scheduled jobs in the
   same transaction, and is refused while one of its posts is publishing.
+- A post keeps how it was created and last scheduled (`PostAttribution`,
+  `#publishing/domain/post-origin.ts`): in the web app, with an API key or
+  through an OAuth application (`Actor.subject.clientId`), with the key's or
+  the application's id and the name it had then (`PostOrigins`, backed by
+  the workspace context's `CredentialNames`), and which member scheduled it
+  (`scheduled_by`). `created_via` and `scheduled_via` are JSON the domain
+  decodes: persisted contract (`fixtures/persisted/posts/origins.json`).
+  The post view shows it, the export holds it without who, `forgetAuthor`
+  clears `scheduled_by`, and no adapter is handed any of it.
+- `PostScheduling.send` (`posts.send`, `create_post`, `peal post`) creates
+  and schedules in one call; "now" is the current instant, through every
+  rule a later time goes through. With an `Idempotency-Key`
+  (`IdempotencyKeys`, `publishing.idempotency_keys`: SHA-256 of the key and
+  of the request's canonical JSON, per workspace, never either), the same
+  key and body within 24 hours (`idempotencyKeyLifetime`) answer the first
+  post, checked before anything else so a retry after the post went out is
+  not told its time passed; another body is `IdempotencyKeyReused`. The key
+  is claimed in the transaction that saves the post, so requests sent
+  together make one. The `publishing.idempotency-retention` cron purges.
+- Scheduling answers every violation at once: the platforms' rules and the
+  accounts' own (`AccountRules`) in one `PostContentRejected`.
 - A post's author is the member who created it (`authorId`, none for an API
   key). Drafts are listed newest first (`PostQueries.listDrafts`) and
   discarded by deleting them, which needs post:delete, or post:update for
@@ -918,6 +946,16 @@ and no socket, for tests.
   permissions; publishing jobs through `MediaForPlatforms`, which checks
   none, as they act for the workspace once a post is scheduled, and hands out
   only ready assets of that workspace (`MediaNotPublishable` otherwise).
+- `POST …/media/import` (`importMedia`, media:upload) fetches a file through
+  `RemoteMedia` (`HttpRemoteMedia`: `publicHttpClientWith`, so the
+  OutboundGuard checks the address and each of three redirects at most, no
+  credentials, never logging the address), reads its format from its first
+  bytes (`sniffContentType`), never the host's content type, counts bytes as
+  they arrive against the kind's limit and the plan's storage, stores them
+  in parts (`MediaStorage.store`, one part in memory), records the asset
+  under the workspace's lock, then completes and probes it as an upload.
+  The whole import has `importTimeout` (90 seconds, under the proxy's 120).
+  Tests reach a loopback host with `mediaWith` and an open guard.
 - Deleting an asset asks the `MediaUsage` port first, which publishing's
   `MediaInPosts` backs (`PublishingMediaUsage`; the composition root
   provides `MediaInPostsLive`): a post scheduled or publishing that shows it
@@ -1278,13 +1316,22 @@ and no socket, for tests.
 - The use cases' permission checks refuse a client the user let read only.
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
-  `reports-tools.ts`, `people-tools.ts`) and its handlers beside it, merged
+  `media-tools.ts`, `reports-tools.ts`, `people-tools.ts`) and its handlers beside it, merged
   into `PealTools`. Annotate every tool with `reading`, or
   `changing({ destructive, idempotent, openWorld })` from `annotations.ts`,
   and say in its description what it changes. `list_members` answers
   members' email addresses only with `includeEmails`: hand an AI model no
   more personal data than the task needs. Refusals are `ToolRefused`,
-  with a message the user can act on (`refusals.ts`). The account's own
+  with a message the user can act on (`refusals.ts`): `notAllowed` names
+  the scope the client lacks and how the user grants it, or says the role
+  refuses; a refused post lists every violation as JSON. Tools that put
+  posts out (`schedule_post`, `publish_post`, `reschedule_post`,
+  `create_post`, `repost_target`) are `openWorld`, say in their description
+  that what goes out is public and cannot be taken back, and check
+  post:schedule before reading the post. Instants are
+  `Schema.DateTimeUtcFromString` in tool parameters. The tools of
+  `PostTools` and `MediaTools` that change something are `contentTools`,
+  whose calls the ConnectionJournal keeps. The account's own
   data (its export, its applications) has no tool.
 - What the web app's composer sends, the CLI and the tools send too: a
   draft's per-channel `options` (`create_draft`, `update_draft`, `peal
@@ -1294,7 +1341,11 @@ and no socket, for tests.
   channels it keeps unless told otherwise, so a rewrite never drops them.
   Every failure reason has its words in the CLI (`posts.ts`
   `failureReasons`, typed by the contract) and in `get_post`'s
-  description: add a reason there with the others. Neither schedules.
+  description: add a reason there with the others. Both schedule and
+  publish (`schedule_post`, `publish_post`, `create_post`; `peal posts
+  schedule|publish|reschedule|cancel`, `peal post`), for a sign-in that
+  holds `workspace:publish`: `peal post` takes `--at` or `--now`, never a
+  default.
 
 ### Database
 
@@ -1503,7 +1554,8 @@ self-hoster needs only Postgres and an S3-compatible store:
   `http://localhost:3000`.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `analytics`, `billing`, `members` and `invitations`, which act in the
+  `post`, `media`, `analytics`, `billing`, `members` and `invitations`,
+  which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read

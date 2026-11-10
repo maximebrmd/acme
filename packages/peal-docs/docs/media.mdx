@@ -20,6 +20,15 @@ Peal reads each file once it is stored: an image's dimensions, a video's dimensi
 
 On an instance that bills, each plan holds a number of bytes of media ([Plans and billing](/billing#limits)), uploads in progress included: an upload the workspace has no room for is refused before anything is sent, and deleting media makes room.
 
+## Import from an address [#import]
+
+A file that is already online can come into the library without passing through your computer: the Peal server fetches it itself. `peal media import <url>` does it from the [command line](/cli#media), the `import_media` tool from an [MCP client](/mcp#tools), and `POST /api/workspaces/{workspaceId}/media/import` from the API, with the file's `url` and, if you like, its `altText`. All three need the right to upload.
+
+- The address must be an `https://` URL on the default port, without a user name or password, whose host is public: not `localhost`, nor a private network. The server sends no credentials or cookies, and follows at most three redirects, each checked the same way.
+- The file's type is read from the file itself, whatever its name or what its host says: the formats and sizes above. A link to a page that shows a picture is not the picture.
+- The file must arrive within 90 seconds. Upload larger or slower files instead.
+- Each import adds a new file, read as an upload is. On an instance that bills, it must fit the plan's media storage.
+
 ## Attach media to a post [#attach]
 
 In the composer, under **Images and videos**:

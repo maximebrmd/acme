@@ -1,11 +1,11 @@
 ---
 title: Ligne de commande
-description: Construisez la ligne de commande peal, connectez-vous avec peal login, puis travaillez dans un espace de travail depuis un terminal (brouillons, publications, statistiques, facturation, membres et invitations) et copiez vos propres données.
+description: Construisez la ligne de commande peal, connectez-vous avec peal login, puis travaillez dans un espace de travail depuis un terminal (brouillons, publications et leur programmation, médias, statistiques, facturation, membres et invitations) et copiez vos propres données.
 sidebar:
   order: 8
 ---
 
-`peal` travaille avec une instance Peal depuis un terminal. Il se connecte en votre nom, dans un navigateur, puis agit avec votre rôle dans chacun de vos espaces de travail : il écrit et supprime des brouillons, assure le suivi des publications parties, lit les statistiques, la facturation, les membres et les invitations, invite des personnes et enregistre une copie de vos données. Programmer, connecter des canaux et changer des rôles se font dans l’application web. Ses messages sont en anglais.
+`peal` travaille avec une instance Peal depuis un terminal. Il se connecte en votre nom, dans un navigateur, puis agit avec votre rôle dans chacun de vos espaces de travail : il écrit et supprime des brouillons, importe et récupère des médias, programme, publie, déplace et annule des publications, assure le suivi de celles qui sont parties, lit les statistiques, la facturation, les membres et les invitations, invite des personnes et enregistre une copie de vos données. Connecter des canaux et changer des rôles se font dans l’application web. Ses messages sont en anglais.
 
 ## L’obtenir [#install]
 
@@ -50,7 +50,7 @@ Waiting for you to approve the sign-in (the code works for 10m)…
 
 Le code reste valable 10 minutes. **Refuser** rejette la connexion, et `peal login` s’arrête.
 
-`peal` demande à faire ce que votre rôle permet dans vos espaces de travail, et à rester connecté. Il enregistre la connexion à cette instance dans `credentials.json`, que vous seul pouvez lire, dans le premier de ces dossiers qui est défini :
+`peal` demande à faire ce que votre rôle permet dans vos espaces de travail, à programmer et publier des publications, et à rester connecté. Une connexion faite avant que `peal` demande la publication ne l’a pas : les commandes qui font partir des publications le disent alors, et vous demandent de relancer `peal login` et de l’approuver. Il enregistre la connexion à cette instance dans `credentials.json`, que vous seul pouvez lire, dans le premier de ces dossiers qui est défini :
 
 - `PEAL_CONFIG_DIR` ;
 - `$XDG_CONFIG_HOME/peal` ;
@@ -100,7 +100,7 @@ peal drafts list
 peal drafts list --workspace clients
 ```
 
-Chaque commande fait ce que votre rôle y permet, comme l’application web : un lecteur lit, un éditeur écrit et assure le suivi, un propriétaire ou un administrateur invite. Quand l’instance refuse, `peal` dit pourquoi (votre rôle, le statut de la publication, la formule) et se termine avec le code 1.
+Chaque commande fait ce que votre rôle y permet, comme l’application web : un lecteur lit, un éditeur écrit, programme, publie et assure le suivi, un propriétaire ou un administrateur invite. Quand l’instance refuse, `peal` dit pourquoi (votre rôle, le statut de la publication, la formule) et se termine avec le code 1.
 
 ## Canaux [#channels]
 
@@ -109,7 +109,7 @@ peal channels list
 peal channels tiktok <channel-id>
 ```
 
-`peal channels list` liste les canaux de l’espace de travail avec leurs identifiants, que les brouillons prennent, et si chacun publie ou est à reconnecter. Connecter un canal se fait dans l’application web.
+`peal channels list` liste les canaux de l’espace de travail avec leurs identifiants, que les brouillons et les publications prennent, et si chacun publie ou est à reconnecter. Connecter un canal se fait dans l’application web.
 
 `peal channels tiktok` lit les réglages d’un canal TikTok sur TikTok, comme TikTok le demande avant une publication : sous quel nom il publie, les audiences qu’une publication peut choisir (son `privacyLevel`, sans valeur par défaut), les interactions que le compte a désactivées, qui restent désactivées, et sa vidéo la plus longue, ou pourquoi il ne peut pas publier aujourd’hui. Publier sur TikTok vaut acceptation de sa confirmation d’utilisation de la musique, et de sa politique sur le contenu de marque pour un contenu de marque.
 
@@ -125,23 +125,78 @@ peal drafts discard <post-id>
 
 - `peal drafts save` sans `--post` écrit un nouveau brouillon, pour les canaux que nomme `--channel` (aucun pour l’instant convient). Avec `--post`, il modifie ce brouillon : le texte, quand `--text` est donné, et les canaux, quand un `--channel` l’est. Ce que vous laissez de côté reste tel quel, médias et [options des plateformes](/scheduling#options) des canaux qu’il garde compris.
 - `--options <channel-id>=<json>` règle les options de la plateforme d’un canal, en JSON avec sa `platform` : pour YouTube, `title` et `madeForKids` (tous deux nécessaires pour programmer), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia` ; pour TikTok, `privacyLevel` (nécessaire, l’un de ceux que liste `peal channels tiktok`), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated`. Répétez-le pour plusieurs canaux ; il remplace en entier les options de ce canal.
-- Un brouillon ne part à aucune heure. Son texte est vérifié contre les limites de chaque plateforme quand il est programmé, dans l’application web.
+- Un brouillon ne part à aucune heure. Son texte, ses médias et ses options sont vérifiés contre les règles de chaque plateforme quand il est programmé, avec `peal posts schedule` ou dans l’application web.
 - `peal drafts discard` supprime un brouillon pour de bon. Une publication programmée ou partie n’est pas un brouillon : déprogrammez-la ou annulez-la plutôt.
+
+## Écrire et envoyer une publication [#post]
+
+```sh
+peal post "Le catalogue de printemps est sorti" --channel <channel-id> --at 2026-11-20T10:00 --time-zone Europe/Paris
+peal post "Le catalogue de printemps est sorti" --channels <channel-id>,<channel-id> --now
+peal post "Le catalogue de printemps est sorti" --channel <channel-id> --at 2026-11-20T09:00:00Z \
+  --media ./couverture.jpg --alt "Un catalogue papier ouvert sur une table en bois" \
+  --idempotency-key catalogue-printemps-2026-11-20
+```
+
+`peal post` écrit une publication et l’envoie en une seule commande, au public des comptes que connectent ses canaux. Ce qui part ne peut pas être repris depuis Peal.
+
+- **Quand.** `--at` la programme, `--now` la publie aussitôt, et l’un des deux est obligatoire : publier n’est jamais le comportement par défaut. `--at` prend un instant avec son décalage, comme `2026-11-20T09:00:00Z` ou `2026-11-20T10:00:00+01:00`, ou une heure locale sans décalage, comme `2026-11-20T10:00`, lue dans `--time-zone` (ou `--zone`), un fuseau IANA comme `Europe/Paris`. Sans l’option, le fuseau est `TZ`, puis celui de votre ordinateur. Une heure locale que les horloges sautent ou répètent dans ce fuseau est refusée : donnez l’instant avec son décalage.
+- **Où.** `--channel` (ou `--channels`) nomme un canal par son identifiant ; répétez-le, ou séparez les identifiants par des virgules. Il en faut au moins un.
+- **Médias.** Chaque `--media` est un fichier, importé d’abord ; une adresse `https://`, que le serveur va chercher ; ou l’identifiant d’un média que l’espace de travail a déjà, tel que `peal media list` le montre. Ils s’affichent dans l’ordre donné, 20 au plus. Le premier `--alt` décrit le premier `--media`, le deuxième le deuxième.
+- **Options.** `--options <channel-id>=<json>` règle les [options de la plateforme](/scheduling#options) d’un canal, comme les prend `peal drafts save`.
+- **La relancer.** `--idempotency-key` prend le texte de votre choix, de 255 caractères au plus, comme un UUID : dans les 24 heures, la même clé avec la même publication répond la publication créée la première fois, sans en faire une autre ; avec une autre publication, elle est refusée. Sans elle, `peal` n’envoie aucune clé. Pour relancer une publication avec des médias, donnez à `--media` des identifiants de médias : fichiers et adresses sont stockés de nouveau à chaque lancement, ce qui en fait une autre publication.
+
+La publication est d’abord vérifiée contre la plateforme de chaque canal. Quand elle enfreint une règle, rien n’est publié, et `peal` liste chaque violation sur sa propre ligne, avec son canal, sa plateforme, son option ou son média, et la limite.
 
 ## Publications [#posts]
 
 ```sh
 peal posts show <post-id>
+peal posts schedule <post-id> --at 2026-11-20T10:00 --time-zone Europe/Paris
+peal posts schedule <post-id> --at 2026-11-20T09:00:00Z --channels <channel-id>,<channel-id>
+peal posts publish <post-id>
+peal posts reschedule <post-id> --at 2026-11-21T10:00 --time-zone Europe/Paris
 peal posts unschedule <post-id>
+peal posts cancel <post-id>
 peal posts repost <post-id> <target-id>
 peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
 peal posts confirm <post-id> <target-id> not-published
 ```
 
 - `peal posts show` affiche le statut et l’heure de la publication, puis une ligne par canal, qui commence par l’identifiant de sa cible, avec ce qui s’y est passé : échouée et pourquoi, non confirmée et pourquoi, ou publiée à son adresse (et gardée privée, quand YouTube a gardé privée une vidéo publique ou non répertoriée), puis les options de la publication sur chaque canal qui en a.
+- `peal posts schedule` programme un brouillon pour `--at`, lu comme le lit `peal post`, sur les canaux qu’il a, ou sur ceux que nomme `--channel`. Son texte, ses médias et ses options doivent respecter les règles de chaque plateforme, sinon rien n’est programmé.
+- `peal posts publish` publie maintenant un brouillon, ou une publication programmée, sur ses canaux. Elle atteint le public des comptes, et ne peut pas être reprise depuis Peal une fois partie.
+- `peal posts reschedule` déplace une publication programmée à une autre heure. Un brouillon est alors programmé, sur les canaux qu’il a.
 - `peal posts unschedule` ramène une publication programmée à l’état de brouillon : elle ne part à aucune heure tant qu’elle n’est pas reprogrammée. Une publication déjà en cours de publication ne peut pas être déprogrammée.
+- `peal posts cancel` annule pour de bon un brouillon ou une publication programmée : elle ne part sur aucun canal. Une publication déjà en cours de publication finit avec ce que ses canaux ont fait, et ceux qui n’ont pas encore reçu l’envoi sont annulés. Pour modifier une publication programmée et la garder, déprogrammez-la plutôt.
 - `peal posts repost` renvoie la publication, maintenant, sur un canal où elle a échoué ou n’est pas confirmée. Quand elle n’est pas confirmée, vérifiez d’abord sur la plateforme : elle est peut-être déjà en ligne.
 - `peal posts confirm` enregistre ce que vous avez trouvé sur la plateforme pour une publication que Peal n’a pas pu confirmer : `published`, avec son adresse si vous l’avez, ou `not-published`, qui la marque en échec sur ce canal pour que `peal posts repost` puisse la renvoyer. [Programmer des publications](/scheduling) explique comment finissent les publications.
+
+## Médias [#media]
+
+```sh
+peal media upload ./couverture.jpg --alt "Un catalogue papier ouvert sur une table en bois"
+peal media import https://files.example/printemps/couverture.jpg --alt "Un catalogue papier ouvert sur une table en bois"
+peal media list                   # du plus récent au plus ancien ; --limit et --cursor les parcourent
+```
+
+- `peal media upload` envoie un fichier dans les médias de l’espace de travail : JPEG, PNG, GIF ou WebP jusqu’à 16 Mio, MP4 ou QuickTime jusqu’à 1 Gio, reconnu à son extension. Le fichier va directement au stockage des médias, puis Peal le vérifie et le lit.
+- `peal media import` fait récupérer au serveur une image ou une vidéo à une adresse `https://` publique, sans identifiants, en 90 secondes au plus ([Images et vidéos](/media#import)). Pour les fichiers plus lourds ou plus lents, utilisez `peal media upload`.
+- `peal media list` liste les images et vidéos de l’espace de travail, de la plus récente à la plus ancienne, avec les identifiants que les publications prennent et si chacune est prête. `--limit` prend 100 au plus.
+- `--alt` dit ce que montre le fichier, pour les personnes qui ne peuvent pas le voir.
+
+Chaque commande affiche l’identifiant du média. Seul un média `ready` va dans une publication.
+
+## Sortie pour les scripts [#json]
+
+`--json` affiche la réponse de l’API en un seul document JSON sur la sortie standard, et rien d’autre, avec les instants en ISO 8601, en UTC. Un refus part toujours sur la sortie d’erreur, et la commande se termine avec un code autre que 0. L’option existe sur `peal post`, toutes les commandes `peal posts` et `peal media`, `peal channels list`, `peal drafts list` et `peal drafts save`.
+
+```sh
+peal post "Le catalogue de printemps est sorti" --channel <channel-id> --now --json
+peal posts show <post-id> --json
+```
+
+Un agent qui lance des commandes plutôt que des outils MCP travaille de la même façon : [Publier depuis un agent IA](/agents#cli).
 
 ## Statistiques [#analytics]
 
@@ -198,14 +253,14 @@ peal account apps
 
 ## Réglages [#settings]
 
-| Variable          | Rôle                                                                                                       |
-| ----------------- | ---------------------------------------------------------------------------------------------------------- |
-| `PEAL_API_URL`    | L’adresse de l’instance, sauf si `--api-url` est indiqué. Par défaut : `http://localhost:3000`.            |
-| `PEAL_WORKSPACE`  | L’espace de travail où agissent les commandes, par slug ou identifiant, sauf si `--workspace` est indiqué. |
-| `TZ`              | Le fuseau des jours d’`peal analytics summary`, sauf si `--time-zone` est indiqué.                         |
-| `PEAL_CONFIG_DIR` | Le dossier où est enregistré `credentials.json`.                                                           |
-| `XDG_CONFIG_HOME` | Sans `PEAL_CONFIG_DIR`, la connexion va dans son dossier `peal`.                                           |
-| `APPDATA`         | Sans l’une ni l’autre, sous Windows, la connexion va dans son dossier `peal`.                              |
-| `HOME`            | Sinon, la connexion va dans `~/.config/peal`.                                                              |
+| Variable          | Rôle                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| `PEAL_API_URL`    | L’adresse de l’instance, sauf si `--api-url` est indiqué. Par défaut : `http://localhost:3000`.               |
+| `PEAL_WORKSPACE`  | L’espace de travail où agissent les commandes, par slug ou identifiant, sauf si `--workspace` est indiqué.    |
+| `TZ`              | Le fuseau des jours d’`peal analytics summary`, et celui où `--at` est lu, sauf si `--time-zone` est indiqué. |
+| `PEAL_CONFIG_DIR` | Le dossier où est enregistré `credentials.json`.                                                              |
+| `XDG_CONFIG_HOME` | Sans `PEAL_CONFIG_DIR`, la connexion va dans son dossier `peal`.                                              |
+| `APPDATA`         | Sans l’une ni l’autre, sous Windows, la connexion va dans son dossier `peal`.                                 |
+| `HOME`            | Sinon, la connexion va dans `~/.config/peal`.                                                                 |
 
 `peal --help` liste les commandes, et `peal <commande> --help` en décrit une.
