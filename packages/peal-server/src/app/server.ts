@@ -52,7 +52,12 @@ import {
   TikTokApiLive,
   publishingWorkersReading,
 } from "#publishing/container.ts";
-import { ReviewGateLive, ReviewLive } from "#review/container.ts";
+import {
+  ReviewApiLive,
+  ReviewGateLive,
+  ReviewLinkApiLive,
+  ReviewLive,
+} from "#review/container.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
@@ -87,7 +92,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   AnalyticsApiLive,
   TikTokApiLive,
   StaffApiLive,
-  LegalApiLive
+  LegalApiLive,
+  ReviewApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -98,6 +104,7 @@ const ApiLive = HttpApiBuilder.layer(Api, {
     ClientErrorsLive,
     ChannelOAuthApiLive,
     DataDeletionApiLive,
+    ReviewLinkApiLive,
     WorkspaceGroupsLive,
   ])
 );

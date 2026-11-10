@@ -19,6 +19,7 @@ import { authorize } from "#shared/domain/authorize.ts";
 import type { PostId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import { LinkAddresses } from "./ports/link-addresses.ts";
 import { LinkStore } from "./ports/link-store.ts";
 import { LinkTokens } from "./ports/link-tokens.ts";
 import { ReviewedPosts } from "./ports/reviewed-posts.ts";
@@ -41,6 +42,8 @@ export interface LinkRequest {
 export interface CreatedLink {
   readonly link: ReviewLink;
   readonly token: string;
+  /** The page that shows the post. */
+  readonly url: string;
 }
 
 const mayManage = (actor: Actor) =>
@@ -95,6 +98,7 @@ export class ReviewLinks extends Context.Service<
   static readonly layer = Layer.effect(
     ReviewLinks,
     Effect.gen(function* ReviewLinksLive() {
+      const addresses = yield* LinkAddresses;
       const links = yield* LinkStore;
       const posts = yield* ReviewedPosts;
       const tokens = yield* LinkTokens;
@@ -154,7 +158,7 @@ export class ReviewLinks extends Context.Service<
 
         yield* links.insert(link, hash);
 
-        return { link, token };
+        return { link, token, url: addresses.of(token) };
       });
 
       const ofPost = Effect.fn("ReviewLinks.ofPost")(function* ofPost(

@@ -9,6 +9,8 @@ import {
   CurrentPrincipal,
   CurrentStaff,
   Forbidden,
+  ReviewVisitor,
+  ReviewVisitorAddress,
   StaffAccess,
   Unauthenticated,
   WorkspaceAccess,
@@ -350,9 +352,23 @@ const noStaffTest = Layer.succeed(
   StaffAccess.of({ session: notFound })
 );
 
-const openIntakeTest = Layer.succeed(
-  ClientErrorIntake,
-  ClientErrorIntake.of((httpEffect) => httpEffect)
+const openIntakeTest = Layer.merge(
+  Layer.succeed(
+    ClientErrorIntake,
+    ClientErrorIntake.of((httpEffect) => httpEffect)
+  ),
+  // Visitors of review links come from a synthetic address.
+  Layer.succeed(
+    ReviewVisitor,
+    ReviewVisitor.of((httpEffect) =>
+      httpEffect.pipe(
+        Effect.provideService(
+          ReviewVisitorAddress,
+          ReviewVisitorAddress.of({ address: "203.0.113.1" })
+        )
+      )
+    )
+  )
 );
 
 /**

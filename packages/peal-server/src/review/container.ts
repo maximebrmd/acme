@@ -1,5 +1,6 @@
 import { Layer } from "effect";
 
+import { ReviewLinkHandlers } from "#review/api/review-link.ts";
 import { ApprovalIntake } from "#review/application/approval-intake.ts";
 import type { VisitorGuard } from "#review/application/ports/visitor-guard.ts";
 import { PostReview } from "#review/application/post-review.ts";
@@ -19,8 +20,10 @@ import { LibraryMediaPreviews } from "#review/infrastructure/library-media-previ
 import { LimitedVisitorGuard } from "#review/infrastructure/limited-visitor-guard.ts";
 import { MailedVisitorReplies } from "#review/infrastructure/mailed-visitor-replies.ts";
 import { NotifiedReviewOutcomes } from "#review/infrastructure/notified-review-outcomes.ts";
+import { PublicLinkAddresses } from "#review/infrastructure/public-link-addresses.ts";
 import { PublishingReviewedPosts } from "#review/infrastructure/publishing-reviewed-posts.ts";
 import { ReviewApprovalGate } from "#review/infrastructure/review-approval-gate.ts";
+import { ReviewVisitorLive } from "#review/infrastructure/review-visitor-live.ts";
 import { SecureLinkTokens } from "#review/infrastructure/secure-link-tokens.ts";
 
 // The review schema's tables, behind their ports.
@@ -77,6 +80,7 @@ export const reviewWith = <E, R>(guard: Layer.Layer<VisitorGuard, E, R>) =>
         LibraryMediaPreviews,
         MailedVisitorReplies,
         NotifiedReviewOutcomes,
+        PublicLinkAddresses,
         PublishingReviewedPosts,
         SecureLinkTokens,
         guard
@@ -89,3 +93,14 @@ export const ReviewLive = reviewWith(LimitedVisitorGuard);
 
 /** The review data's daily retention. Needs PurgeReviewData. */
 export { ReviewRetentionCron as ReviewCronsLive } from "#review/infrastructure/crons.ts";
+
+// The review endpoints of a workspace. They need the use cases ReviewLive
+// provides, and the Authentication and WorkspaceAccess middleware of the
+// workspace context, which the composition root brings.
+export { ReviewHandlers as ReviewApiLive } from "#review/api/review.ts";
+
+// The endpoints behind a review link, which need no sign-in, with what
+// their requests pass first (ReviewVisitor).
+export const ReviewLinkApiLive = ReviewLinkHandlers.pipe(
+  Layer.provideMerge(ReviewVisitorLive)
+);

@@ -19,6 +19,8 @@ import { MembersApi } from "./members.ts";
 import { NoticesApi } from "./notices.ts";
 import { NotificationPreferencesApi } from "./notification-preferences.ts";
 import { PostsApi } from "./posts.ts";
+import { ReviewLinkApi } from "./review-link.ts";
+import { ReviewApi } from "./review.ts";
 import { SessionApi } from "./session.ts";
 import { StaffApi } from "./staff.ts";
 import { SystemApi } from "./system.ts";
@@ -637,6 +639,114 @@ export { UserNotFound } from "./user-not-found.ts";
 
 export { WorkspaceAccess } from "./workspace-access.ts";
 
+export { ApprovalNotPending } from "./approval-not-pending.ts";
+
+export { CommentInvalid, CommentProblemSchema } from "./comment-invalid.ts";
+
+export type { CommentProblem } from "./comment-invalid.ts";
+
+export { CommentNotFound } from "./comment-not-found.ts";
+
+export { PostNotReviewable } from "./post-not-reviewable.ts";
+
+export { ReviewAccessDenied } from "./review-access-denied.ts";
+
+export { ReviewCaptchaRequired } from "./review-captcha-required.ts";
+
+export { ReviewLinkAccessSchema } from "./review-link-access.ts";
+
+export type { ReviewLinkAccess } from "./review-link-access.ts";
+
+export {
+  ReviewLinkClosed,
+  ReviewLinkClosureSchema,
+} from "./review-link-closed.ts";
+
+export type { ReviewLinkClosure } from "./review-link-closed.ts";
+
+export { ReviewLinkNotFound } from "./review-link-not-found.ts";
+
+export {
+  ReviewedChannelSchema,
+  ReviewedMediaSchema,
+  ReviewLinkApi,
+  ReviewPageSchema,
+  VisitorApprovalSchema,
+  VisitorChangesSchema,
+  VisitorCommentSchema,
+} from "./review-link.ts";
+
+export type {
+  ReviewedChannel,
+  ReviewedMedia,
+  ReviewPage,
+  VisitorApproval,
+  VisitorChanges,
+  VisitorComment,
+} from "./review-link.ts";
+
+export { ReviewRequestTooLarge } from "./review-request-too-large.ts";
+
+export { ReviewVisitorAddress } from "./review-visitor-address.ts";
+
+export { maxReviewRequestBytes, ReviewVisitor } from "./review-visitor.ts";
+
+export { TooManyReviewLinks } from "./too-many-review-links.ts";
+
+export { TooManyReviewRequests } from "./too-many-review-requests.ts";
+
+export {
+  ApprovalOriginSchema,
+  ApprovalOutcomeSchema,
+  ApprovalPolicySchema,
+  ApprovalRequestSchema,
+  ApprovalStatusSchema,
+  ChangesOutcomeSchema,
+  ChangesRequestSchema,
+  CommentAnchorSchema,
+  CommentSelectionSchema,
+  CreatedReviewLinkSchema,
+  defaultReviewLinkHours,
+  maxCommentLength,
+  maxQuoteLength,
+  maxReviewLinkHours,
+  maxReviewLinksPerPost,
+  maxVisitorEmailLength,
+  maxVisitorNameLength,
+  NewCommentSchema,
+  NewReviewLinkSchema,
+  PostReviewSchema,
+  ReviewApi,
+  ReviewCommentSchema,
+  ReviewerKindSchema,
+  ReviewerSchema,
+  ReviewLinkSchema,
+  ReviewLinkStatusSchema,
+  ReviewSettingsSchema,
+} from "./review.ts";
+
+export type {
+  ApprovalOrigin,
+  ApprovalOutcome,
+  ApprovalPolicy,
+  ApprovalRequest,
+  ApprovalStatus,
+  ChangesOutcome,
+  ChangesRequest,
+  CommentAnchor,
+  CommentSelection,
+  CreatedReviewLink,
+  NewComment,
+  NewReviewLink,
+  PostReview,
+  ReviewComment,
+  Reviewer,
+  ReviewerKind,
+  ReviewLink,
+  ReviewLinkStatus,
+  ReviewSettings,
+} from "./review.ts";
+
 export { WorkspaceNotFound } from "./workspace-not-found.ts";
 
 // The one definition of the HTTP API. The server implements it; the web app,
@@ -667,6 +777,8 @@ export class Api extends HttpApi.make("peal")
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)
+  .add(ReviewApi)
+  .add(ReviewLinkApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.
   .annotateMerge(

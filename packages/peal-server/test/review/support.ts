@@ -1,4 +1,5 @@
 import { Context, Effect, Layer, Option, Ref } from "effect";
+import type { Scope } from "effect";
 
 import { ApprovalIntake } from "#review/application/approval-intake.ts";
 import type { VisitorContact } from "#review/application/ports/comment-store.ts";
@@ -21,6 +22,7 @@ import { DrizzleLinkStore } from "#review/infrastructure/drizzle-link-store.ts";
 import { DrizzleReviewArchive } from "#review/infrastructure/drizzle-review-archive.ts";
 import { DrizzleReviewRecords } from "#review/infrastructure/drizzle-review-records.ts";
 import { DrizzleReviewSettingsStore } from "#review/infrastructure/drizzle-review-settings-store.ts";
+import { PublicLinkAddresses } from "#review/infrastructure/public-link-addresses.ts";
 import { PublishingReviewedPosts } from "#review/infrastructure/publishing-reviewed-posts.ts";
 import { ReviewApprovalGate } from "#review/infrastructure/review-approval-gate.ts";
 import { SecureLinkTokens } from "#review/infrastructure/secure-link-tokens.ts";
@@ -140,6 +142,7 @@ export const reviewServerWith = <E, R>(
       Layer.mergeAll(
         MemberNames.none,
         Previews,
+        PublicLinkAddresses,
         PublishingReviewedPosts,
         SecureLinkTokens,
         guard
@@ -153,7 +156,11 @@ export const ReviewServerTest = reviewServerWith(VisitorGuard.open);
 /** Runs `test` on a fresh server at virtual time `start`. */
 export const onReviewServerAt = <A, E>(
   start: string,
-  test: Effect.Effect<A, E, Layer.Success<typeof ReviewServerTest>>
+  test: Effect.Effect<
+    A,
+    E,
+    Layer.Success<typeof ReviewServerTest> | Scope.Scope
+  >
 ) =>
   setTime(start).pipe(
     Effect.andThen(test.pipe(Effect.provide(ReviewServerTest)))
