@@ -17,7 +17,12 @@ const decodeEntity = (whole: string, name: string): string => {
       ? Number.parseInt(name.slice(2), 16)
       : Math.trunc(Number(name.slice(1)));
 
-    return Number.isInteger(code) && code > 0 && code <= 0x10_ff_ff
+    // A character there is: not NUL, not half of a surrogate pair, which
+    // a reference may name but no text holds alone.
+    return Number.isInteger(code) &&
+      code > 0 &&
+      code <= 0x10_ff_ff &&
+      (code < 0xd8_00 || code > 0xdf_ff)
       ? String.fromCodePoint(code)
       : whole;
   }

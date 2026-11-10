@@ -181,6 +181,7 @@ const ChannelJobsTest = Layer.mergeAll(
         Effect.succeed({
           discovered: 0,
           ended: 0,
+          failed: 0,
           left: 0,
           postponed: 0,
           read: 0,

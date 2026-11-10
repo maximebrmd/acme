@@ -17,6 +17,7 @@ import {
   markAnswered,
   receiveComment,
   refreshComment,
+  storableReading,
 } from "#engagement/domain/comment.ts";
 import type { Comment, CommentReading } from "#engagement/domain/comment.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
@@ -53,6 +54,11 @@ export interface CommentsReport {
   readonly received: number;
   /** Threads put off: their platform down or slowing, their channel off. */
   readonly postponed: number;
+  /**
+   * Threads whose read could not be kept (the database refused it, or a
+   * fault broke on it), put off like the others so the run goes on.
+   */
+  readonly failed: number;
   /** Threads read no more: out of the window, gone, or their channel gone. */
   readonly ended: number;
   /** Threads still due when the run stopped, which the next run takes. */
@@ -116,6 +122,18 @@ export const collectionsUnfinished = Metric.counter(
   }
 );
 
+/**
+ * Threads whose read could not be kept, each time one is put off for it.
+ * One that keeps failing counts at every try: an alert watches it.
+ */
+export const threadsFailed = Metric.counter(
+  "peal.engagement.collection.thread_failures",
+  {
+    description: "Threads whose comments could not be kept by a collection run",
+    incremental: true,
+  }
+);
+
 /** Comments read for the first time. */
 export const commentsReceived = Metric.counter(
   "peal.engagement.comments.received",
@@ -134,10 +152,17 @@ const discoveryPages = 10;
 
 type Tally = Omit<CommentsReport, "discovered" | "left">;
 
-const emptyTally: Tally = { ended: 0, postponed: 0, read: 0, received: 0 };
+const emptyTally: Tally = {
+  ended: 0,
+  failed: 0,
+  postponed: 0,
+  read: 0,
+  received: 0,
+};
 
 const addTallies = (left: Tally, right: Tally): Tally => ({
   ended: left.ended + right.ended,
+  failed: left.failed + right.failed,
   postponed: left.postponed + right.postponed,
   read: left.read + right.read,
   received: left.received + right.received,
@@ -161,7 +186,9 @@ const unknownIn = (
 
   const unknown = new Set<string>();
 
-  for (const reading of read) {
+  for (const reading of read.flatMap((raw) =>
+    Option.toArray(storableReading(raw))
+  )) {
     if (!reading.fromAccount && !known.has(reading.platformCommentId)) {
       unknown.add(reading.platformCommentId);
     }
@@ -193,10 +220,18 @@ export interface Reconciled {
 export const reconcile = (
   thread: Thread,
   kept: readonly Comment[],
-  read: CommentsRead,
+  given: CommentsRead,
   ids: readonly Comment["id"][],
   now: DateTime.Utc
 ): Reconciled => {
+  // Cleaned before anything is compared: ids are matched as they are kept.
+  const read = {
+    comments: given.comments.flatMap((reading) =>
+      Option.toArray(storableReading(reading))
+    ),
+    complete: given.complete,
+  };
+
   const byPlatformId = new Map(
     kept.map((comment) => [comment.platformCommentId, comment])
   );
@@ -454,6 +489,7 @@ export class CollectComments extends Context.Service<
 
         const tally: Tally = {
           ended: read.collection._tag === "ended" ? 1 : 0,
+          failed: 0,
           postponed: 0,
           read: 1,
           received: received.length,
@@ -461,6 +497,38 @@ export class CollectComments extends Context.Service<
 
         return tally;
       });
+
+      // One thread never stops a run. What a read found of it may be
+      // something the database refuses, or break a fault of Peal's own:
+      // the thread is then put off like one its platform could not show,
+      // away from the queue's front, counted, and named by id alone in
+      // the log, never with the failure itself, which may quote what
+      // people wrote. When putting it off fails too, the database is
+      // down, and the run stops as it would.
+      const recordOrPutOff = (
+        thread: Thread,
+        reading: ThreadReading,
+        at: DateTime.Utc
+      ) => {
+        const putOff = (kind: "database" | "fault") =>
+          Effect.logWarning(
+            "A thread's comments could not be kept: it is read again later, after the others"
+          ).pipe(
+            Effect.annotateLogs({ kind, threadId: thread.id }),
+            Effect.andThen(Metric.update(threadsFailed, 1)),
+            Effect.andThen(postponing([thread], at)),
+            Effect.map((tally): Tally => ({
+              ...tally,
+              failed: 1,
+              postponed: 0,
+            }))
+          );
+
+        return record(thread, reading, at).pipe(
+          Effect.catchTag("DatabaseError", () => putOff("database")),
+          Effect.catchDefect(() => putOff("fault"))
+        );
+      };
 
       // A channel's due threads, one call at a time, until the platform
       // asks to slow down, the channel cannot be read, or the run is out
@@ -516,7 +584,10 @@ export class CollectComments extends Context.Service<
 
               if (thread !== undefined) {
                 byId.delete(reading.threadId);
-                total = addTallies(total, yield* record(thread, reading, at));
+                total = addTallies(
+                  total,
+                  yield* recordOrPutOff(thread, reading, at)
+                );
               }
             }
 

@@ -5,6 +5,8 @@ import {
   forgetComment,
   markAnswered,
   markUnanswered,
+  maxAuthorHandleLength,
+  maxAuthorNameLength,
   maxCommentLength,
   refreshComment,
   setHidden,
@@ -31,6 +33,74 @@ describe("a comment", () => {
 
   it("is hidden when the account already hid it on the platform", () => {
     expect(comment(1, { hidden: true }).state).toBe("hidden");
+  });
+
+  it("keeps nothing a database refuses or a screen acts on, whatever a platform gives", () => {
+    const nul = String.fromCodePoint(0);
+    const lone = String.fromCodePoint(0xd8_00);
+    const escape = String.fromCodePoint(0x1b);
+    const override = String.fromCodePoint(0x20_2e);
+    const replaced = String.fromCodePoint(0xff_fd);
+
+    const hostile = comment(1, {
+      author: {
+        displayName: Option.some(`Ada${nul}\n${override}Lovelace${lone}`),
+        handle: ` ada${escape}@social.example\n`,
+        platformId: `70${nul}01`,
+      },
+      parentPlatformId: Option.some(`20${nul}00`),
+      permalink: Option.some(`https://social.example/@ada/1${nul}`),
+      platformCommentId: `20${nul}01`,
+      text: `Hello${nul}\r\nthere${lone}${escape}[2J`,
+    });
+
+    expect(hostile.text).toBe(`Hello\nthere${replaced}[2J`);
+    expect(hostile.author).toStrictEqual(
+      Option.some({
+        displayName: Option.some(`Ada Lovelace${replaced}`),
+        handle: "ada@social.example",
+        platformId: "7001",
+      })
+    );
+    expect(hostile.platformCommentId).toBe("2001");
+    expect(hostile.parentPlatformId).toStrictEqual(Option.some("2000"));
+    expect(hostile.permalink).toStrictEqual(
+      Option.some("https://social.example/@ada/1")
+    );
+  });
+
+  it("bounds a name, a handle and a link", () => {
+    const long = comment(2, {
+      author: {
+        displayName: Option.some("n".repeat(1000)),
+        handle: "h".repeat(1000),
+        platformId: "7002",
+      },
+      permalink: Option.some(`https://social.example/${"p".repeat(5000)}`),
+    });
+
+    expect(
+      Option.getOrThrow(long.author).displayName.pipe(Option.getOrThrow)
+    ).toHaveLength(maxAuthorNameLength);
+    expect(Option.getOrThrow(long.author).handle).toHaveLength(
+      maxAuthorHandleLength
+    );
+    // A link too long to be one is no link.
+    expect(long.permalink).toStrictEqual(Option.none());
+  });
+
+  it("keeps a link only when it is a web address, and reads an edit like a first read", () => {
+    expect(
+      comment(3, { permalink: Option.some("data:text/html,synthetic") })
+        .permalink
+    ).toStrictEqual(Option.none());
+
+    const edited = refreshComment(
+      comment(4),
+      reading(4, { text: `Edited${String.fromCodePoint(0)}` })
+    );
+
+    expect(edited.text).toBe("Edited");
   });
 
   it("keeps at most the longest text Peal stores", () => {

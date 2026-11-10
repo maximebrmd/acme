@@ -12,6 +12,7 @@ import type {
 } from "#engagement/application/ports/comment-source.ts";
 import type { CommentReading } from "#engagement/domain/comment.ts";
 import { recordCollection } from "#engagement/domain/thread.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import { Actor } from "#shared/domain/access.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
@@ -87,6 +88,7 @@ describe(CollectComments, () => {
       assert.deepStrictEqual(report, {
         discovered: 1,
         ended: 0,
+        failed: 0,
         left: 0,
         postponed: 0,
         read: 1,
@@ -208,6 +210,67 @@ describe(CollectComments, () => {
           commentsOf(world).map(({ state }) => state),
           ["new", "new"]
         );
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "keeps reading the other threads when one cannot be saved or breaks, and puts that one behind them",
+    () => {
+      const world = makeWorld();
+      const unsavable = followedPost(1);
+      const breaking = followedPost(2);
+      const fine = followedPost(3);
+
+      world.state.posts.push(unsavable, breaking, fine);
+      world.state.read = showing([reading(1)]);
+
+      // The database refuses what one thread holds, and a fault of Peal's
+      // own breaks on another.
+      world.state.saving = (comments) => {
+        const [first] = comments;
+        const thread = world.state.threads.get(first?.threadId ?? "");
+
+        if (thread?.targetId === unsavable.targetId) {
+          return Effect.fail(new DatabaseError({ cause: "synthetic" }));
+        }
+
+        return thread?.targetId === breaking.targetId
+          ? Effect.die(new Error("synthetic fault"))
+          : Effect.void;
+      };
+
+      return Effect.gen(function* collecting() {
+        const at = after("10 minutes");
+        const report = yield* runAt(at);
+
+        assert.deepInclude(report, { failed: 2, read: 1, received: 1 });
+
+        const byTarget = new Map(
+          [...world.state.threads.values()].map((thread) => [
+            thread.targetId,
+            thread,
+          ])
+        );
+
+        // The thread that was read follows its schedule; the two others
+        // wait half an hour, away from the queue's front.
+        assert.deepStrictEqual(
+          commentsOf(world).map(({ threadId }) => threadId),
+          [byTarget.get(fine.targetId)?.id]
+        );
+
+        for (const failed of [unsavable, breaking]) {
+          assert.deepStrictEqual(byTarget.get(failed.targetId)?.collection, {
+            _tag: "collecting",
+            nextAt: DateTime.addDuration(at, "30 minutes"),
+          });
+        }
+
+        // The next run does not meet them again, and goes on.
+        const next = yield* runAt(after("20 minutes"));
+
+        assert.deepInclude(next, { failed: 0, read: 1 });
       }).pipe(Effect.provide(world.layer));
     }
   );

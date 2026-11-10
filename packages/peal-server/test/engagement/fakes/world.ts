@@ -33,6 +33,7 @@ import type { Comment } from "#engagement/domain/comment.ts";
 import type { ReplyId } from "#engagement/domain/reply-id.ts";
 import type { Reply, SendOutcome } from "#engagement/domain/reply.ts";
 import type { FollowedPost, Thread } from "#engagement/domain/thread.ts";
+import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -88,6 +89,8 @@ export interface WorldState {
   readonly replied: Reply[];
   readonly replies: Map<string, Reply>;
   readonly resumed: SendRequest[];
+  /** What saving comments does first: a test's way to make it fail. */
+  saving: (comments: readonly Comment[]) => Effect.Effect<void, DatabaseError>;
   resuming: SendOutcome;
   sending: SendOutcome;
   readonly sent: SendRequest[];
@@ -143,6 +146,7 @@ export const makeWorld = () => {
     replies: new Map(),
     resumed: [],
     resuming: { _tag: "unconfirmed", reason: "interrupted" },
+    saving: () => Effect.void,
     sending: {
       _tag: "sent",
       permalink: Option.some("https://social.example/@studio/3001"),
@@ -317,13 +321,17 @@ export const makeWorld = () => {
         }
       }),
     saveComments: (comments) =>
-      Effect.sync(() => {
-        for (const comment of comments) {
-          if (state.threads.has(comment.threadId)) {
-            state.comments.set(comment.id, comment);
-          }
-        }
-      }),
+      state.saving(comments).pipe(
+        Effect.andThen(
+          Effect.sync(() => {
+            for (const comment of comments) {
+              if (state.threads.has(comment.threadId)) {
+                state.comments.set(comment.id, comment);
+              }
+            }
+          })
+        )
+      ),
     saveReply: (reply) =>
       Effect.sync(() => {
         if (state.threads.has(reply.threadId)) {

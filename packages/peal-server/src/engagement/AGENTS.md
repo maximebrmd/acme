@@ -110,3 +110,14 @@
 - Test use cases on the in-memory world (`test/engagement/fakes/world.ts`),
   the store on Postgres at instants no other suite uses (2043; the purge
   in 2031), deleting the workspace's rows after.
+- Every string a platform gives is cleaned before anything keeps or
+  compares it (`storableReading`, on `#shared/domain/platform-text.ts`):
+  no NUL, no lone surrogate, no control character, a bounded text, name,
+  handle and id, and a permalink only when it is a web address. `reconcile`
+  cleans first, as ids are matched as they are kept, and `receiveComment`
+  and `refreshComment` clean again whatever they are handed. One thread
+  never stops a run: `recordOrPutOff` puts off a thread the database
+  refuses or a fault breaks on, counts it (`failed`,
+  `peal.engagement.collection.thread_failures`, alert
+  `peal-comments-thread-failing`) and logs its id, never the failure
+  itself, which may quote what people wrote.

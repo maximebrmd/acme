@@ -373,6 +373,38 @@ groups:
                     type: gt
                     params: [2.5]
 
+      - uid: peal-comments-thread-failing
+        title: A thread's comments keep failing to be kept
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Six or more reads of comments could not be kept in three hours (peal.engagement.collection.thread_failures), as one thread that fails at every try, half an hour apart, would. Its comments do not reach the inbox; the other threads are read. The server's warnings name the thread by id, and whether the database refused what it holds or a fault broke on it.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A thread that fails is tried again half an hour later.
+              expr: sum(increase(peal_engagement_collection_thread_failures_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [5.5]
+
       - uid: peal-uploads-waiting
         title: Uploads to platforms wait for a slot
         condition: B

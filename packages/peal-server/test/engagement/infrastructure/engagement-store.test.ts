@@ -25,6 +25,7 @@ import {
 import type { Thread } from "#engagement/domain/thread.ts";
 import { DrizzleEngagementRecords } from "#engagement/infrastructure/drizzle-engagement-records.ts";
 import { DrizzleEngagementStore } from "#engagement/infrastructure/drizzle-engagement-store.ts";
+import { textOfHtml } from "#engagement/infrastructure/platforms/html-text.ts";
 import { newId } from "#shared/application/ids.ts";
 import {
   ChannelIdSchema,
@@ -300,6 +301,53 @@ layer(StoreTest)("the engagement store", (it) => {
             ofPost.map(({ thread }) => thread.id),
             [recent.id]
           );
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  it.effect(
+    "stores whatever a platform wrote, once the domain made it storable",
+    () =>
+      Effect.gen(function* hostile() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* EngagementStore;
+
+        const thread = yield* threadOn(
+          workspaceId,
+          yield* newId(ChannelIdSchema),
+          "2043-03-07T10:20:00.000Z"
+        );
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([thread]);
+
+          const nul = String.fromCodePoint(0);
+          const lone = String.fromCodePoint(0xd8_00);
+          const at = utc("2043-03-07T10:25:00.000Z");
+
+          // What Postgres refuses in a text or in JSON, in every field.
+          const comment = receiveComment(
+            yield* newId(CommentIdSchema),
+            thread,
+            reading(1, {
+              author: {
+                displayName: Option.some(`Ada${nul}${lone}`),
+                handle: `ada${nul}${lone}@social.example`,
+                platformId: `70${nul}01`,
+              },
+              permalink: Option.some(`https://social.example/1${nul}`),
+              platformCommentId: `20${nul}01${lone}`,
+              text: textOfHtml(`<p>Hello&#xD800;&#0;${nul}${lone}</p>`),
+              writtenAt: at,
+            }),
+            at
+          );
+
+          yield* store.saveComments([comment]);
+
+          assert.deepStrictEqual(yield* store.commentsOf(thread.id), [comment]);
+          assert.notInclude(comment.text, nul);
+          assert.isTrue(comment.text.isWellFormed());
         }).pipe(Effect.ensuring(forget(workspaceId)));
       })
   );

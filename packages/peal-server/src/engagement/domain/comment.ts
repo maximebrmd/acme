@@ -2,6 +2,7 @@ import { Option, Schema } from "effect";
 import type { DateTime } from "effect";
 
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { storableLine, storableText } from "#shared/domain/platform-text.ts";
 
 import { CommentIdSchema } from "./comment-id.ts";
 import type { CommentId } from "./comment-id.ts";
@@ -120,27 +121,91 @@ const withFields = (comment: Comment, changed: Partial<Fields>): Comment =>
     ...changed,
   });
 
-// The text's first `maxCommentLength` characters, whole: a for-of loop
-// reads code points, so no character is cut in two.
-const cut = (text: string): string => {
-  if (text.length <= maxCommentLength) {
-    return text;
-  }
+/** The longest display name Peal keeps of a comment's author. */
+export const maxAuthorNameLength = 200;
 
-  let kept = "";
-  let count = 0;
+/** The longest handle Peal keeps of a comment's author. */
+export const maxAuthorHandleLength = 320;
 
-  for (const character of text) {
-    if (count === maxCommentLength) {
-      break;
-    }
+// The longest id a platform gives a comment or an account, and the longest
+// address of a comment, that Peal keeps.
+const maxPlatformIdLength = 512;
+const maxPermalinkLength = 2048;
 
-    kept += character;
-    count += 1;
-  }
+// A comment's address, when it is one a browser opens on the web and
+// short enough to be one: anything else is no address.
+const webAddress = (address: string): Option.Option<string> => {
+  const cleaned = storableLine(address, maxPermalinkLength + 1);
 
-  return kept;
+  return cleaned.length <= maxPermalinkLength &&
+    /^https?:\/\/\S+$/u.test(cleaned)
+    ? Option.some(cleaned)
+    : Option.none();
 };
+
+/**
+ * A reading as Peal keeps it. Everything in it was written by someone
+ * outside, or by the platform for them: each string is made storable
+ * (`#shared/domain/platform-text.ts`) and bounded before anything reads
+ * it, ids included, so one comment never fails a write or forges a line
+ * where it is shown. None when its id is empty once cleaned.
+ */
+export const storableReading = (
+  reading: CommentReading
+): Option.Option<CommentReading> => {
+  const platformCommentId = storableLine(
+    reading.platformCommentId,
+    maxPlatformIdLength
+  );
+
+  const platformId = storableLine(
+    reading.author.platformId,
+    maxPlatformIdLength
+  );
+
+  return platformCommentId === "" || platformId === ""
+    ? Option.none()
+    : Option.some({
+        author: {
+          displayName: reading.author.displayName.pipe(
+            Option.map((name) => storableLine(name, maxAuthorNameLength)),
+            Option.filter((name) => name !== "")
+          ),
+          handle: storableLine(reading.author.handle, maxAuthorHandleLength),
+          platformId,
+        },
+        fromAccount: reading.fromAccount,
+        hidden: reading.hidden,
+        liked: reading.liked,
+        parentPlatformId: reading.parentPlatformId.pipe(
+          Option.map((parent) => storableLine(parent, maxPlatformIdLength)),
+          Option.filter((parent) => parent !== "")
+        ),
+        permalink: reading.permalink.pipe(Option.flatMap(webAddress)),
+        platformCommentId,
+        text: storableText(reading.text, maxCommentLength),
+        writtenAt: reading.writtenAt,
+      });
+};
+
+// A reading the domain was handed as it came: cleaned here too, so no
+// caller keeps one raw. One whose id cleans to nothing keeps its own.
+const cleaned = (reading: CommentReading): CommentReading =>
+  Option.getOrElse(storableReading(reading), () => ({
+    ...reading,
+    author: {
+      displayName: Option.none(),
+      handle: storableLine(reading.author.handle, maxAuthorHandleLength),
+      platformId: storableLine(reading.author.platformId, maxPlatformIdLength),
+    },
+    parentPlatformId: Option.none(),
+    permalink: Option.none(),
+    platformCommentId: storableLine(
+      reading.platformCommentId,
+      maxPlatformIdLength
+    ),
+    text: storableText(reading.text, maxCommentLength),
+  }));
 
 // What a comment that is neither hidden nor deleted is: answered or new.
 const standing = (answeredAt: Option.Option<DateTime.Utc>): CommentState =>
@@ -150,10 +215,12 @@ const standing = (answeredAt: Option.Option<DateTime.Utc>): CommentState =>
 export const receiveComment = (
   id: CommentId,
   thread: Pick<Thread, "channelId" | "id" | "workspaceId">,
-  reading: CommentReading,
+  given: CommentReading,
   now: DateTime.Utc
-): Comment =>
-  new Comment({
+): Comment => {
+  const reading = cleaned(given);
+
+  return new Comment({
     answeredAt: Option.none(),
     author: Option.some(reading.author),
     channelId: thread.channelId,
@@ -164,11 +231,12 @@ export const receiveComment = (
     platformCommentId: reading.platformCommentId,
     receivedAt: now,
     state: reading.hidden ? "hidden" : "new",
-    text: cut(reading.text),
+    text: reading.text,
     threadId: thread.id,
     workspaceId: thread.workspaceId,
     writtenAt: reading.writtenAt,
   });
+};
 
 /**
  * A comment Peal already keeps, as a later read found it: its text and its
@@ -178,15 +246,18 @@ export const receiveComment = (
  */
 export const refreshComment = (
   comment: Comment,
-  reading: CommentReading
-): Comment =>
-  withFields(comment, {
+  given: CommentReading
+): Comment => {
+  const reading = cleaned(given);
+
+  return withFields(comment, {
     author: Option.some(reading.author),
     liked: Option.getOrElse(reading.liked, () => comment.liked),
     permalink: reading.permalink,
     state: reading.hidden ? "hidden" : standing(comment.answeredAt),
-    text: cut(reading.text),
+    text: reading.text,
   });
+};
 
 /**
  * The comment once its platform no longer shows it: what its author wrote
