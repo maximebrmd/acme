@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Option } from "effect";
 import type { Scope } from "effect";
 import { MessageStorage } from "effect/cluster";
 
@@ -262,6 +262,61 @@ describe("a post's webhook events", () => {
             cancelled.data.targets.map(({ targetId }) => targetId),
             moved.targets.map(({ id }) => id)
           );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "say once that a post sent in one call was scheduled, however often its request is sent, and not who or what sent it",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* sentOnce() {
+          const { endpointId, owner } = yield* listening;
+          const scheduling = yield* PostScheduling;
+          const channel = yield* connect(owner.workspaceId, "mastodon");
+
+          const request = {
+            at: Option.some(scheduleIn("2026-06-15T08:00:00Z").at),
+            channelIds: [channel] as const,
+            content: syntheticContent,
+            idempotency: Option.some({
+              fingerprint: "synthetic-fingerprint",
+              key: "synthetic-key",
+            }),
+            timeZone: scheduleIn("2026-06-15T08:00:00Z").timeZone,
+          };
+
+          const first = yield* scheduling.send(owner, request);
+          const again = yield* scheduling.send(owner, request);
+
+          assert.isFalse(first.replayed);
+          assert.isTrue(again.replayed);
+          assert.strictEqual(again.post.id, first.post.id);
+
+          const sent = yield* eventsSentTo(owner, endpointId);
+
+          const expected: WebhookEvent = {
+            data: {
+              postId: first.post.id,
+              scheduledAt: scheduleIn("2026-06-15T08:00:00Z").at,
+              targets: first.targets.map((target) => ({
+                channelId: channel,
+                platform: "mastodon",
+                targetId: target.id,
+              })),
+              timeZone: "Europe/Paris",
+              workspaceId: owner.workspaceId,
+            },
+            type: "post.scheduled",
+          };
+
+          // The whole event: ids, the time and its zone, with nothing of
+          // how the post was created or scheduled.
+          assert.deepStrictEqual(sent, [expected]);
+
+          yield* scheduling.cancel(owner, first.post.id);
         })
       ),
     timeout
