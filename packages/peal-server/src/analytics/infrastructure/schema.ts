@@ -129,3 +129,52 @@ export const paidReads = analytics.table(
     index("paid_reads_day").on(table.day),
   ]
 );
+
+/**
+ * A connected channel whose account analytics reads once a day: when next
+ * (`next_collection_at`), and when it was read last. The platform is kept
+ * with it, as how long a platform's numbers may be kept depends on it.
+ */
+export const trackedChannels = analytics.table(
+  "tracked_channels",
+  {
+    channelId: uuid("channel_id").primaryKey(),
+    lastCollectedAt: instant("last_collected_at"),
+    nextCollectionAt: instant("next_collection_at").notNull(),
+    platform: text("platform").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    index("tracked_channels_due").on(table.nextCollectionAt, table.channelId),
+    index("tracked_channels_workspace").on(table.workspaceId),
+  ]
+);
+
+/**
+ * An account's numbers for one UTC day: its followers, the accounts it
+ * follows and its posts as read that day (the day's last read), and the
+ * views and reach its platform counted for the day, which a later read may
+ * revise. Each is null where the platform gives none: never zero.
+ */
+export const accountSnapshots = analytics.table(
+  "account_snapshots",
+  {
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => trackedChannels.channelId, { onDelete: "cascade" }),
+    collectedAt: instant("collected_at").notNull(),
+    day: date("day").notNull(),
+    followers: integer("followers"),
+    following: integer("following"),
+    posts: integer("posts"),
+    reach: integer("reach"),
+    views: integer("views"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.channelId, table.day] }),
+    check(
+      "account_snapshots_counts",
+      sql`coalesce(${table.followers}, 0) >= 0 AND coalesce(${table.following}, 0) >= 0 AND coalesce(${table.posts}, 0) >= 0 AND coalesce(${table.reach}, 0) >= 0 AND coalesce(${table.views}, 0) >= 0`
+    ),
+  ]
+);

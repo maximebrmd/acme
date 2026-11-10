@@ -182,7 +182,11 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
         return yield* bluesky.read(request.posts);
       });
 
-      return MetricsReader.of({ read });
+      return MetricsReader.of({
+        account: () =>
+          Effect.fail(new ChannelUnreadable({ reason: "unsupported" })),
+        read,
+      });
     })
   );
 

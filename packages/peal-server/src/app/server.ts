@@ -361,12 +361,16 @@ const WorkersLive = Layer.mergeAll(
   CronsLive
 );
 
-// Analytics follows the posts publishing lists, and reads their counts
-// through the channels' gates.
+// Analytics follows the posts publishing lists and the channels the
+// channels context lists, and reads their numbers through the channels'
+// gates.
 const AnalyticsContextLive = Layer.merge(
   AnalyticsLive,
   analyticsCollection(GatedMetricsReader)
-).pipe(Layer.provide(PublishingContextLive));
+).pipe(
+  Layer.provide(PublishingContextLive),
+  Layer.provide(ChannelsWithNoticesLive)
+);
 
 // The contexts' use cases and adapters, which handlers and workers share.
 const ContextsLive = Layer.mergeAll(

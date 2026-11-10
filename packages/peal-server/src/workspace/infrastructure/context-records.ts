@@ -119,6 +119,7 @@ export const ContextRecordsLive = Layer.effect(
         ),
       exportWorkspace: (workspaceId) =>
         Effect.all({
+          accountAnalytics: analytics.exportAccounts(workspaceId),
           analytics: analytics.exportWorkspace(workspaceId),
           assistantUsage: usage.exportWorkspace(workspaceId),
           billing: billing.exportWorkspace(workspaceId),

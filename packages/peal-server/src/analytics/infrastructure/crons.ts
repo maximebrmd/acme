@@ -1,6 +1,7 @@
 import { Cron, Duration, Effect } from "effect";
 import { ClusterCron } from "effect/cluster";
 
+import { CollectAccounts } from "#analytics/application/collect-accounts.ts";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 
 /**
@@ -28,4 +29,29 @@ export const CollectMetricsCron = ClusterCron.make({
   ),
   name: "analytics.collect-metrics",
   skipIfOlderThan: Duration.minutes(50),
+});
+
+/**
+ * Every hour at minute 37, half an hour from the posts' collection:
+ * follows the channels connected since the last run and reads the accounts
+ * due, each once a day, through each channel's gate. A run stops reading 40
+ * minutes after its scheduled time, and one more than 40 minutes late is
+ * skipped: the next one reads what it would have.
+ */
+export const CollectAccountsCron = ClusterCron.make({
+  cron: Cron.parseUnsafe("37 * * * *", "UTC"),
+  execute: Effect.gen(function* collectAccounts() {
+    const at = yield* ClusterCron.CurrentScheduledTime;
+    const report = yield* CollectAccounts.use((collect) => collect.run(at));
+
+    if (Object.values(report).some((count) => count > 0)) {
+      yield* Effect.logInfo("Collected accounts' numbers", report);
+    }
+  }).pipe(
+    Effect.catchCause((cause) =>
+      Effect.logWarning("The accounts collection failed", cause)
+    )
+  ),
+  name: "analytics.collect-accounts",
+  skipIfOlderThan: Duration.minutes(40),
 });

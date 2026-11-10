@@ -188,6 +188,8 @@ export const forgetWorkspace = (workspaceId: WorkspaceId) =>
   SqlClient.SqlClient.use((sql) =>
     Effect.all([
       sql`DELETE FROM analytics.tracked_posts WHERE workspace_id = ${workspaceId}`,
+      sql`DELETE FROM analytics.tracked_channels WHERE workspace_id = ${workspaceId}`,
+      sql`DELETE FROM channels.channels WHERE workspace_id = ${workspaceId}`,
       sql`DELETE FROM analytics.erased_workspaces WHERE workspace_id = ${workspaceId}`,
     ])
   ).pipe(Effect.orDie);

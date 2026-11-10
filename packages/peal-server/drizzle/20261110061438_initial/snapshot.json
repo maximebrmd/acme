@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "1451c75a-c104-4c76-a216-393298a59705",
+  "id": "4df39fd4-cf6f-4081-9689-6a448ee7fbbd",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -156,6 +156,25 @@
       "statementTarget": [
         "table",
         "analytics",
+        "account_snapshots"
+      ],
+      "writes": [
+        "s|tbl|analytics.account_snapshots",
+        "n|tbl|analytics.account_snapshots",
+        "e|tbl|analytics.account_snapshots",
+        "n|rel|analytics.account_snapshots",
+        "n|type|analytics.account_snapshots",
+        "n|rel|analytics.account_snapshots_pkey"
+      ],
+      "reads": [
+        "n|sch|analytics"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "analytics",
         "erased_workspaces"
       ],
       "writes": [
@@ -203,6 +222,25 @@
         "n|rel|analytics.paid_reads",
         "n|type|analytics.paid_reads",
         "n|rel|analytics.paid_reads_pkey"
+      ],
+      "reads": [
+        "n|sch|analytics"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "analytics",
+        "tracked_channels"
+      ],
+      "writes": [
+        "s|tbl|analytics.tracked_channels",
+        "n|tbl|analytics.tracked_channels",
+        "e|tbl|analytics.tracked_channels",
+        "n|rel|analytics.tracked_channels",
+        "n|type|analytics.tracked_channels",
+        "n|rel|analytics.tracked_channels_pkey"
       ],
       "reads": [
         "n|sch|analytics"
@@ -1306,6 +1344,47 @@
         "n|tbl|analytics.paid_reads",
         "n|sch|analytics",
         "n|col|analytics.paid_reads.day"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "analytics",
+        "tracked_channels",
+        "tracked_channels_due"
+      ],
+      "writes": [
+        "s|idx|analytics.tracked_channels_due",
+        "n|idx|analytics.tracked_channels_due",
+        "e|idx|analytics.tracked_channels_due",
+        "n|rel|analytics.tracked_channels_due"
+      ],
+      "reads": [
+        "n|tbl|analytics.tracked_channels",
+        "n|sch|analytics",
+        "n|col|analytics.tracked_channels.next_collection_at",
+        "n|col|analytics.tracked_channels.channel_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "analytics",
+        "tracked_channels",
+        "tracked_channels_workspace"
+      ],
+      "writes": [
+        "s|idx|analytics.tracked_channels_workspace",
+        "n|idx|analytics.tracked_channels_workspace",
+        "e|idx|analytics.tracked_channels_workspace",
+        "n|rel|analytics.tracked_channels_workspace"
+      ],
+      "reads": [
+        "n|tbl|analytics.tracked_channels",
+        "n|sch|analytics",
+        "n|col|analytics.tracked_channels.workspace_id"
       ]
     },
     {
@@ -3178,6 +3257,29 @@
       "statementTarget": [
         "table",
         "analytics",
+        "account_snapshots"
+      ],
+      "writes": [
+        "s|fk|analytics.account_snapshots.account_snapshots_channel_id_tracked_channels_channel_id_fkey",
+        "n|fk|analytics.account_snapshots.account_snapshots_channel_id_tracked_channels_channel_id_fkey",
+        "e|fk|analytics.account_snapshots.account_snapshots_channel_id_tracked_channels_channel_id_fkey",
+        "n|con|analytics.account_snapshots.account_snapshots_channel_id_tracked_channels_channel_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|analytics.account_snapshots",
+        "n|sch|analytics",
+        "n|tbl|analytics.tracked_channels",
+        "n|sch|analytics",
+        "n|col|analytics.account_snapshots.channel_id",
+        "n|col|analytics.tracked_channels.channel_id",
+        "e|uniqueness|analytics.tracked_channels.channel_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "analytics",
         "metric_snapshots"
       ],
       "writes": [
@@ -3800,6 +3902,12 @@
     },
     {
       "schema": "analytics",
+      "name": "account_snapshots",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "analytics",
       "name": "erased_workspaces",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -3813,6 +3921,12 @@
     {
       "schema": "analytics",
       "name": "paid_reads",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "analytics",
+      "name": "tracked_channels",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -4154,6 +4268,110 @@
     },
     {
       "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "collected_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "day",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "followers",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "following",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "posts",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "reach",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "views",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
       "table": "erased_workspaces",
       "name": "erased_at",
       "type": "timestamp with time zone",
@@ -4350,6 +4568,71 @@
     {
       "schema": "analytics",
       "table": "paid_reads",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_channels",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_channels",
+      "name": "last_collected_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_channels",
+      "name": "next_collection_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_channels",
+      "name": "platform",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_channels",
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
@@ -12118,6 +12401,55 @@
     },
     {
       "schema": "analytics",
+      "table": "tracked_channels",
+      "name": "tracked_channels_due",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "next_collection_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "channel_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_channels",
+      "name": "tracked_channels_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "analytics",
       "table": "tracked_posts",
       "name": "tracked_posts_due",
       "nameExplicit": true,
@@ -14225,6 +14557,23 @@
     },
     {
       "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "account_snapshots_channel_id_tracked_channels_channel_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "channel_id"
+      ],
+      "schemaTo": "analytics",
+      "tableTo": "tracked_channels",
+      "columnsTo": [
+        "channel_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "analytics",
       "table": "metric_snapshots",
       "name": "metric_snapshots_target_id_tracked_posts_target_id_fkey",
       "nameExplicit": false,
@@ -14650,6 +14999,17 @@
     },
     {
       "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "account_snapshots_pkey",
+      "columns": [
+        "channel_id",
+        "day"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "analytics",
       "table": "metric_snapshots",
       "name": "metric_snapshots_pkey",
       "columns": [
@@ -14746,6 +15106,16 @@
       "name": "erased_workspaces_pkey",
       "columns": [
         "workspace_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_channels",
+      "name": "tracked_channels_pkey",
+      "columns": [
+        "channel_id"
       ],
       "nameExplicit": false,
       "entityType": "pks"
@@ -15431,6 +15801,13 @@
       ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
+    },
+    {
+      "schema": "analytics",
+      "table": "account_snapshots",
+      "name": "account_snapshots_counts",
+      "value": "coalesce(\"followers\", 0) >= 0 AND coalesce(\"following\", 0) >= 0 AND coalesce(\"posts\", 0) >= 0 AND coalesce(\"reach\", 0) >= 0 AND coalesce(\"views\", 0) >= 0",
+      "entityType": "checks"
     },
     {
       "schema": "analytics",

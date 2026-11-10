@@ -14,6 +14,7 @@ import { ClusterCron, RunnerAddress } from "effect/cluster";
 import type { Sharding } from "effect/cluster";
 import { SqlClient } from "effect/sql";
 
+import { CollectAccounts } from "#analytics/application/collect-accounts.ts";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import { clusterLayer } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
@@ -122,6 +123,20 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     PurgeDeliveries,
     PurgeDeliveries.of({ purge: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    CollectAccounts,
+    CollectAccounts.of({
+      run: () =>
+        Effect.succeed({
+          deferred: 0,
+          discovered: 0,
+          ended: 0,
+          left: 0,
+          read: 0,
+          skipped: 0,
+        }),
+    })
   ),
   Layer.succeed(
     CollectMetrics,

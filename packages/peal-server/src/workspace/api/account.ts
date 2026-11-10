@@ -105,6 +105,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
     staffActions,
     user: account.user,
     workspaces: exported.workspaces.map((workspace, index) => ({
+      accountAnalytics: workspace.accountAnalytics,
       analytics: workspace.analytics,
       apiKeys: workspace.apiKeys.map((apiKey) => ({
         createdAt: apiKey.createdAt,

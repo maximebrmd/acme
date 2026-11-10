@@ -5,6 +5,7 @@ import { SqlClient } from "effect/sql";
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type {
+  AccountSnapshotRecord,
   AnalyticsRecord,
   MetricsSnapshotRecord,
 } from "#shared/application/personal-data.ts";
@@ -13,7 +14,9 @@ import { Drizzle } from "#shared/infrastructure/database.ts";
 import {
   erasedWorkspaces,
   metricSnapshots,
+  accountSnapshots,
   paidReads,
+  trackedChannels,
   trackedPosts,
 } from "./schema.ts";
 import { shareTrackingLock } from "./tracking-lock.ts";
@@ -121,6 +124,10 @@ export const DrizzleAnalyticsRecords = Layer.effect(
                 .where(eq(trackedPosts.workspaceId, workspaceId));
 
               yield* db
+                .delete(trackedChannels)
+                .where(eq(trackedChannels.workspaceId, workspaceId));
+
+              yield* db
                 .delete(paidReads)
                 .where(eq(paidReads.workspaceId, workspaceId));
             })
@@ -129,6 +136,38 @@ export const DrizzleAnalyticsRecords = Layer.effect(
       }
     );
 
-    return AnalyticsRecords.of({ eraseWorkspace, exportWorkspace });
+    const exportAccounts = Effect.fn("AnalyticsRecords.exportAccounts")(
+      function* exportAccounts(workspaceId: string) {
+        const days = yield* db
+          .select({
+            channelId: accountSnapshots.channelId,
+            day: accountSnapshots.day,
+            followers: accountSnapshots.followers,
+            following: accountSnapshots.following,
+            platform: trackedChannels.platform,
+            posts: accountSnapshots.posts,
+            reach: accountSnapshots.reach,
+            views: accountSnapshots.views,
+          })
+          .from(accountSnapshots)
+          .innerJoin(
+            trackedChannels,
+            eq(trackedChannels.channelId, accountSnapshots.channelId)
+          )
+          .where(eq(trackedChannels.workspaceId, workspaceId))
+          .orderBy(asc(accountSnapshots.channelId), asc(accountSnapshots.day))
+          .pipe(Effect.mapError(failed));
+
+        const records: readonly AccountSnapshotRecord[] = days;
+
+        return records;
+      }
+    );
+
+    return AnalyticsRecords.of({
+      eraseWorkspace,
+      exportAccounts,
+      exportWorkspace,
+    });
   })
 );

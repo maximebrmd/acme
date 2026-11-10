@@ -453,7 +453,23 @@ const ExportedWebhookSchema = Schema.Struct({
   url: Schema.String,
 });
 
+// A channel's account on one UTC day: its followers, the accounts it
+// follows and its posts as read that day, and the views and reach its
+// platform counted. Each is null where the platform gives none.
+const ExportedAccountDaySchema = Schema.Struct({
+  channelId: Schema.String,
+  // A UTC day, as YYYY-MM-DD.
+  day: Schema.String,
+  followers: nullable(Schema.Int),
+  following: nullable(Schema.Int),
+  platform: Schema.String,
+  posts: nullable(Schema.Int),
+  reach: nullable(Schema.Int),
+  views: nullable(Schema.Int),
+});
+
 const ExportedWorkspaceSchema = Schema.Struct({
+  accountAnalytics: Schema.Array(ExportedAccountDaySchema),
   analytics: Schema.Array(ExportedAnalyticsSchema),
   apiKeys: Schema.Array(ApiKeySchema),
   assistantUsage: Schema.Array(ExportedUsageSchema),

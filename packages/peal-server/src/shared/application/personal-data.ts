@@ -131,6 +131,23 @@ export interface AnalyticsRecord {
   readonly targetId: string;
 }
 
+/**
+ * A channel's account on one UTC day, as analytics read it: its followers,
+ * the accounts it follows and its posts, and the views and reach its
+ * platform counted. Each is null where the platform gives none.
+ */
+export interface AccountSnapshotRecord {
+  readonly channelId: string;
+  /** The UTC day, as YYYY-MM-DD. */
+  readonly day: string;
+  readonly followers: number | null;
+  readonly following: number | null;
+  readonly platform: string;
+  readonly posts: number | null;
+  readonly reach: number | null;
+  readonly views: number | null;
+}
+
 /** A comment on a post, as the review context keeps it. */
 export interface ReviewCommentRecord {
   /** member, apiKey or visitor. */

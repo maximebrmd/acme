@@ -6,6 +6,7 @@ import type {
   MetricsReadFailure,
   MetricsRequest,
 } from "#analytics/application/metrics-reader.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 
 /** The reads a MetricsReader stand-in was asked for. */
 export class ReadLog extends Context.Service<
@@ -40,6 +41,7 @@ export const readerAnswering = (
     ReadLog.use((log) =>
       Effect.succeed(
         MetricsReader.of({
+          account: () => Effect.fail(new PlatformUnavailable()),
           read: (request) =>
             log.record(request).pipe(Effect.andThen(answer(request))),
         })

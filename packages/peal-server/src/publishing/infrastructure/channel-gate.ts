@@ -3,6 +3,8 @@ import { Entity } from "effect/cluster";
 import { Rpc } from "effect/rpc";
 
 import {
+  AccountReadingSchema,
+  AccountRequestSchema,
   MetricsBatchSchema,
   MetricsReader,
   MetricsReadFailureSchema,
@@ -38,6 +40,7 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
  * `ReadMetrics` reads the counts of some of the channel's posts for
  * analytics, so reads take turns with publishing and share its rate limits;
  * each is bounded in time, and holds a publish back by one read at most.
+ * `ReadAccount` reads the account's own numbers the same way, once a day.
  */
 export const ChannelGate = Entity.make("ChannelGate", [
   Rpc.make("Publish", {
@@ -55,6 +58,11 @@ export const ChannelGate = Entity.make("ChannelGate", [
     payload: { request: MetricsRequestSchema },
     success: MetricsBatchSchema,
   }),
+  Rpc.make("ReadAccount", {
+    error: MetricsReadFailureSchema,
+    payload: { request: AccountRequestSchema },
+    success: AccountReadingSchema,
+  }),
 ]);
 
 /**
@@ -69,6 +77,7 @@ export const ChannelGateLive = ChannelGate.toLayer(
 
     return ChannelGate.of({
       Publish: ({ payload }) => platforms.publish(payload.request),
+      ReadAccount: ({ payload }) => metrics.account(payload.request),
       ReadMetrics: ({ payload }) => metrics.read(payload.request),
       Resume: ({ payload }) => platforms.resume(payload.request),
     });
@@ -82,7 +91,10 @@ export const ChannelGateLive = ChannelGate.toLayer(
  */
 export const UnreadMetrics = Layer.succeed(
   MetricsReader,
-  MetricsReader.of({ read: () => Effect.fail(new PlatformUnavailable()) })
+  MetricsReader.of({
+    account: () => Effect.fail(new PlatformUnavailable()),
+    read: () => Effect.fail(new PlatformUnavailable()),
+  })
 );
 
 // The gate did not take the call, so it was not sent: worth a few quick
@@ -168,31 +180,40 @@ export const GatedMetricsReader = Layer.effect(
   Effect.gen(function* GatedMetricsReader() {
     const gateFor = yield* ChannelGate.client;
 
+    // ReadMetrics and ReadAccount are taken, or not, alike.
+    const gated = <A>(
+      call: Effect.Effect<
+        A,
+        | MetricsReadFailure
+        | Effect.Error<ReturnType<ReturnType<typeof gateFor>["ReadMetrics"]>>
+      >
+    ): Effect.Effect<A, MetricsReadFailure> =>
+      call.pipe(
+        Effect.retry({
+          schedule: notTakenRetry,
+          times: 4,
+          while: (error) =>
+            error._tag === "MailboxFull" ||
+            error._tag === "EntityNotAssignedToRunner",
+        }),
+        Effect.catchTags({
+          AlreadyProcessingMessage: unread,
+          EntityNotAssignedToRunner: unread,
+          MailboxFull: unread,
+          PersistenceError: unread,
+        }),
+        Effect.catchDefect((cause) =>
+          Effect.logError("A metrics read failed in its adapter", cause).pipe(
+            Effect.andThen(unread())
+          )
+        )
+      );
+
     return MetricsReader.of({
+      account: (request) =>
+        gated(gateFor(request.channelId).ReadAccount({ request })),
       read: (request): Effect.Effect<MetricsBatch, MetricsReadFailure> =>
-        gateFor(request.channelId)
-          .ReadMetrics({ request })
-          .pipe(
-            Effect.retry({
-              schedule: notTakenRetry,
-              times: 4,
-              while: (error) =>
-                error._tag === "MailboxFull" ||
-                error._tag === "EntityNotAssignedToRunner",
-            }),
-            Effect.catchTags({
-              AlreadyProcessingMessage: unread,
-              EntityNotAssignedToRunner: unread,
-              MailboxFull: unread,
-              PersistenceError: unread,
-            }),
-            Effect.catchDefect((cause) =>
-              Effect.logError(
-                "A metrics read failed in its adapter",
-                cause
-              ).pipe(Effect.andThen(unread()))
-            )
-          ),
+        gated(gateFor(request.channelId).ReadMetrics({ request })),
     });
   })
 );
