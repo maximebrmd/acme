@@ -696,6 +696,47 @@ layer(ActionsTest)("billing's actions", (it) => {
   );
 
   it.effect(
+    "lets a workspace that holds more than its plan allows cancel and withdraw all the same",
+    () =>
+      Effect.gen(function* overPlan() {
+        // Three days into a 30-day period paid 900 cents, with far more
+        // channels, members and media than any plan it could move to.
+        yield* setNow("2026-11-04T00:00:00Z");
+        yield* holds({
+          channels: 400,
+          mediaStorage: 900_000_000_000,
+          members: 90,
+        });
+        yield* holding(paid());
+        yield* paying({
+          invoiceId: "in_synthetic",
+          paid: { amount: 900, currency: "eur" },
+          periodEnd: Option.none(),
+          periodStart: Option.none(),
+        });
+
+        const cancelled = yield* (yield* CancelSubscription).cancel(actorAs());
+
+        assert.deepStrictEqual(cancelled, {
+          endsAt: at("2026-12-01T00:00:00Z"),
+          plan: "starter",
+        });
+
+        const withdrawn = yield* (yield* Withdraw).confirm(actorAs());
+
+        assert.deepStrictEqual(withdrawn.refunded, {
+          amount: 810,
+          currency: "eur",
+        });
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "cancelAtPeriodEnd sub_synthetic_paid",
+          "credit sub_synthetic_paid in_synthetic:810",
+          "endNow sub_synthetic_paid withdrawn",
+        ]);
+      })
+  );
+
+  it.effect(
     "lets a consumer who cancelled still withdraw within 14 days, refunded",
     () =>
       Effect.gen(function* cancelledThenWithdrawn() {
