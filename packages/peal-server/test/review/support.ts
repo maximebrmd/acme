@@ -1,0 +1,215 @@
+import { Context, Effect, Layer, Option, Ref } from "effect";
+
+import { ApprovalIntake } from "#review/application/approval-intake.ts";
+import type { VisitorContact } from "#review/application/ports/comment-store.ts";
+import { MediaPreviews } from "#review/application/ports/media-previews.ts";
+import { MemberNames } from "#review/application/ports/member-names.ts";
+import { ReviewOutcomes } from "#review/application/ports/review-outcomes.ts";
+import { VisitorGuard } from "#review/application/ports/visitor-guard.ts";
+import { VisitorMail } from "#review/application/ports/visitor-mail.ts";
+import { PostReview } from "#review/application/post-review.ts";
+import { PurgeReviewData } from "#review/application/purge-review-data.ts";
+import { ReviewDesk } from "#review/application/review-desk.ts";
+import { ReviewLinks } from "#review/application/review-links.ts";
+import { ReviewSettings } from "#review/application/review-settings.ts";
+import { VisitorReview } from "#review/application/visitor-review.ts";
+import type { VisitorIdentity } from "#review/application/visitor-review.ts";
+import type { ApprovalPolicy } from "#review/domain/approval-policy.ts";
+import { DrizzleApprovalStore } from "#review/infrastructure/drizzle-approval-store.ts";
+import { DrizzleCommentStore } from "#review/infrastructure/drizzle-comment-store.ts";
+import { DrizzleLinkStore } from "#review/infrastructure/drizzle-link-store.ts";
+import { DrizzleReviewArchive } from "#review/infrastructure/drizzle-review-archive.ts";
+import { DrizzleReviewRecords } from "#review/infrastructure/drizzle-review-records.ts";
+import { DrizzleReviewSettingsStore } from "#review/infrastructure/drizzle-review-settings-store.ts";
+import { PublishingReviewedPosts } from "#review/infrastructure/publishing-reviewed-posts.ts";
+import { ReviewApprovalGate } from "#review/infrastructure/review-approval-gate.ts";
+import { SecureLinkTokens } from "#review/infrastructure/secure-link-tokens.ts";
+import { Actor } from "#shared/domain/access.ts";
+import type { Permission } from "#shared/domain/access.ts";
+import { UserIdSchema } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import { setTime } from "#test/publishing/infrastructure/harness.ts";
+import { postsServerBehind } from "#test/publishing/posts-server.ts";
+import { actorAs, attachableMedia } from "#test/publishing/support.ts";
+import { permissionsFor } from "#workspace/domain/roles.ts";
+
+// The review context over Postgres, with publishing as the server runs it
+// on an in-memory cluster (test/publishing/posts-server.ts): the gate, the
+// stores and the use cases are the real ones; what reaches other contexts
+// (notices, mail, media, members' names) is recorded or stood in for.
+
+/** An outcome the review told, by kind, and the key it was told under. */
+export interface ToldOutcome {
+  readonly key: string;
+  readonly kind:
+    | "approvalRequested"
+    | "approved"
+    | "changesRequested"
+    | "commented"
+    | "settled";
+}
+
+/** What the review told the rest of Peal, and the mail it sent. */
+export class Told extends Context.Service<
+  Told,
+  {
+    readonly mailed: Effect.Effect<readonly VisitorContact[]>;
+    readonly outcomes: Effect.Effect<readonly ToldOutcome[]>;
+  }
+>()("test/review/Told") {}
+
+const Recording = Layer.effectContext(
+  Effect.gen(function* Recording() {
+    const outcomes = yield* Ref.make<readonly ToldOutcome[]>([]);
+    const mailed = yield* Ref.make<readonly VisitorContact[]>([]);
+
+    const tell =
+      (kind: ToldOutcome["kind"]) =>
+      ({ key }: { readonly key: string }) =>
+        Ref.update(outcomes, (told) => [...told, { key, kind }]);
+
+    return Context.make(
+      ReviewOutcomes,
+      ReviewOutcomes.of({
+        approvalRequested: tell("approvalRequested"),
+        approved: tell("approved"),
+        changesRequested: tell("changesRequested"),
+        commented: tell("commented"),
+        settled: (key) => tell("settled")({ key }),
+      })
+    ).pipe(
+      Context.add(
+        VisitorMail,
+        VisitorMail.of({
+          replied: (contacts) =>
+            Ref.update(mailed, (sent) => [...sent, ...contacts]),
+        })
+      ),
+      Context.add(
+        Told,
+        Told.of({ mailed: Ref.get(mailed), outcomes: Ref.get(outcomes) })
+      )
+    );
+  })
+);
+
+const Stores = Layer.mergeAll(
+  DrizzleApprovalStore,
+  DrizzleCommentStore,
+  DrizzleLinkStore,
+  DrizzleReviewArchive,
+  DrizzleReviewSettingsStore
+);
+
+// Every file a post shows has a preview, at an address of the test's.
+const Previews = Layer.succeed(
+  MediaPreviews,
+  MediaPreviews.of({
+    of: (_workspaceId, mediaId) =>
+      Effect.succeed(
+        Option.some({
+          contentType: "image/jpeg",
+          kind: "image" as const,
+          url: `https://media.example.test/${mediaId}`,
+        })
+      ),
+  })
+);
+
+const Gate = Layer.mergeAll(
+  ReviewApprovalGate,
+  DrizzleReviewRecords,
+  PurgeReviewData.layer
+).pipe(
+  Layer.provide(ApprovalIntake.layer),
+  Layer.provideMerge(Layer.mergeAll(Stores, Recording))
+);
+
+/** The review use cases, with `guard` before what visitors write. */
+export const reviewServerWith = <E, R>(
+  guard: Layer.Layer<VisitorGuard, E, R>
+) =>
+  Layer.mergeAll(
+    ReviewSettings.layer,
+    ReviewLinks.layer,
+    PostReview.layer,
+    VisitorReview.layer
+  ).pipe(
+    Layer.provide(ReviewDesk.layer),
+    Layer.provide(
+      Layer.mergeAll(
+        MemberNames.none,
+        Previews,
+        PublishingReviewedPosts,
+        SecureLinkTokens,
+        guard
+      )
+    ),
+    Layer.provideMerge(postsServerBehind(Gate, attachableMedia()))
+  );
+
+export const ReviewServerTest = reviewServerWith(VisitorGuard.open);
+
+/** Runs `test` on a fresh server at virtual time `start`. */
+export const onReviewServerAt = <A, E>(
+  start: string,
+  test: Effect.Effect<A, E, Layer.Success<typeof ReviewServerTest>>
+) =>
+  setTime(start).pipe(
+    Effect.andThen(test.pipe(Effect.provide(ReviewServerTest)))
+  );
+
+/** Gives the workspace an approval policy, as an owner would. */
+export const withPolicy = (workspaceId: WorkspaceId, policy: ApprovalPolicy) =>
+  ReviewSettings.use((settings) =>
+    settings.setPolicy(
+      actorAs(
+        UserIdSchema.make("5b1c5f7e-3d2a-4c1b-9e8f-00000000000a"),
+        workspaceId,
+        permissionsFor("owner")
+      ),
+      policy
+    )
+  );
+
+/** A member acting through an OAuth client, such as the command line. */
+export const throughClient = (
+  userId: UserId,
+  workspaceId: WorkspaceId,
+  permissions: readonly Permission[] = permissionsFor("editor")
+): Actor =>
+  new Actor({
+    permissions,
+    subject: {
+      _tag: "user",
+      clientId: "synthetic-client",
+      impersonatedBy: Option.none(),
+      userId,
+    },
+    workspaceId,
+  });
+
+/** Staff acting as a member. */
+export const impersonating = (
+  staffId: UserId,
+  userId: UserId,
+  workspaceId: WorkspaceId,
+  permissions: readonly Permission[] = permissionsFor("owner")
+): Actor =>
+  new Actor({
+    permissions,
+    subject: { _tag: "user", impersonatedBy: Option.some(staffId), userId },
+    workspaceId,
+  });
+
+/** A visitor as the public endpoints see one. */
+export const visitor = (
+  name = "Ada Lovelace",
+  email: Option.Option<string> = Option.none()
+): VisitorIdentity => ({
+  address: "203.0.113.7",
+  captchaToken: Option.none(),
+  email,
+  locale: "en",
+  name,
+});

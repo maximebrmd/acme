@@ -18,7 +18,11 @@ export interface ReviewPurge {
 export class ReviewArchive extends Context.Service<
   ReviewArchive,
   {
-    /** Deletes a post's links, comments and approval requests. */
+    /**
+     * Deletes a post's comments and approval requests. Its links stay, so
+     * that whoever opens one is told the post was deleted, until they are
+     * past their retention.
+     */
     readonly deletePost: (
       workspaceId: WorkspaceId,
       postId: PostId
@@ -32,7 +36,10 @@ export class ReviewArchive extends Context.Service<
      * what they asked and decided, the links and settings they made.
      */
     readonly forgetUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
-    /** Empties what is past its retention, `limit` rows of each at most. */
+    /**
+     * Empties what is past its retention, `limit` rows of each at most, and
+     * deletes the links that ended before names are kept.
+     */
     readonly purge: (
       cutoffs: ReviewCutoffs,
       limit: number

@@ -32,11 +32,6 @@ export const DrizzleReviewArchive = Layer.effect(
               eq(approvalRequests.postId, postId)
             )
           );
-        yield* db
-          .delete(links)
-          .where(
-            and(eq(links.workspaceId, workspaceId), eq(links.postId, postId))
-          );
       },
       Effect.mapError(failed)
     );
@@ -160,6 +155,24 @@ export const DrizzleReviewArchive = Layer.effect(
           )
         )
         .returning({ id: approvalRequests.id });
+
+      // A link is kept while what was written through it may still name it,
+      // then goes.
+      yield* db.delete(links).where(
+        inArray(
+          links.id,
+          db
+            .select({ id: links.id })
+            .from(links)
+            .where(
+              or(
+                lt(links.expiresAt, old),
+                and(isNotNull(links.revokedAt), lt(links.revokedAt, old))
+              )
+            )
+            .limit(limit)
+        )
+      );
 
       return {
         emails: emails.length,

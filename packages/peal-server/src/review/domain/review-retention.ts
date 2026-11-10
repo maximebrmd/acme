@@ -12,8 +12,9 @@ import { DateTime, Duration } from "effect";
  *   to show who approved a post; the comment and the decision stay, and say
  *   "a reviewer".
  *
- * Everything about a post goes when the post is deleted, and everything of
- * a workspace when it is. The privacy policy and the docs say these
+ * A link's own row (its token's hash, what it allowed, when it ended) goes
+ * 24 months after it ended. What was said and decided about a post goes when
+ * the post is deleted, and everything of a workspace when it is. The privacy policy and the docs say these
  * periods: change them together.
  */
 export const visitorEmailRetention = Duration.days(30);

@@ -1,0 +1,627 @@
+import { assert, describe, it } from "@effect/vitest";
+import { Duration, Effect, Option } from "effect";
+import { SqlClient } from "effect/sql";
+
+import { PostDrafts } from "#publishing/application/post-drafts.ts";
+import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { CommentRejected } from "#review/application/comment-rejected.ts";
+import { LinkAccessDenied } from "#review/application/link-access-denied.ts";
+import { LinkClosed } from "#review/application/link-closed.ts";
+import { LinkNotFound } from "#review/application/link-not-found.ts";
+import { PostNotReviewable } from "#review/application/post-not-reviewable.ts";
+import { PostReview } from "#review/application/post-review.ts";
+import { PurgeReviewData } from "#review/application/purge-review-data.ts";
+import type { CommentDraft } from "#review/application/review-desk.ts";
+import { ReviewLinks } from "#review/application/review-links.ts";
+import { ReviewPostNotFound } from "#review/application/review-post-not-found.ts";
+import { VisitorReview } from "#review/application/visitor-review.ts";
+import { locate } from "#review/domain/comment-anchor.ts";
+import type { LinkAccess } from "#review/domain/review-link.ts";
+import { newId } from "#shared/application/ids.ts";
+import type { Actor } from "#shared/domain/access.ts";
+import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import { MissingPermission } from "#shared/domain/missing-permission.ts";
+import {
+  eventually,
+  isFinished,
+  isSuspended,
+  scheduleIn,
+  setTime,
+  storedPost,
+} from "#test/publishing/infrastructure/harness.ts";
+import { connect } from "#test/publishing/posts-server.ts";
+import { actorAs, contentOf } from "#test/publishing/support.ts";
+import {
+  impersonating,
+  onReviewServerAt,
+  Told,
+  visitor,
+  withPolicy,
+} from "#test/review/support.ts";
+import { permissionsFor } from "#workspace/domain/roles.ts";
+
+// Review links and comments, over Postgres: what a link shows and lets its
+// holders do, when it stops working, and how threads behave.
+
+const timeout = 60_000;
+
+const start = "2026-06-15T07:00:00Z";
+
+const at8 = scheduleIn("2026-06-15T08:00:00Z");
+
+const freshWorkspace = newId(WorkspaceIdSchema);
+
+const freshUser = newId(WorkspaceIdSchema).pipe(
+  Effect.map((id) => UserIdSchema.make(id))
+);
+
+const text = "Launch day is here. Join us on Friday.";
+
+const say = (
+  words: string,
+  more: Partial<Omit<CommentDraft, "text">> = {}
+): CommentDraft => ({
+  anchor: Option.none(),
+  parentId: Option.none(),
+  text: words,
+  ...more,
+});
+
+// A workspace with a channel, an editor, and a draft on the channel.
+const drafted = Effect.gen(function* drafted() {
+  const workspaceId: WorkspaceId = yield* freshWorkspace;
+  const channelId: ChannelId = yield* connect(workspaceId, "mastodon");
+  const editor: Actor = actorAs(yield* freshUser, workspaceId);
+
+  const { post } = yield* PostDrafts.use((drafts) =>
+    drafts.create(editor, {
+      channelIds: [channelId],
+      content: contentOf(text, {
+        overrides: [[channelId, `${text} #launch`]],
+      }),
+    })
+  );
+
+  return { channelId, editor, postId: post.id, workspaceId };
+});
+
+const linkTo = (
+  actor: Actor,
+  postId: PostId,
+  access: LinkAccess,
+  lifetime: Option.Option<Duration.Duration> = Option.none()
+) =>
+  ReviewLinks.use((links) => links.create(actor, postId, { access, lifetime }));
+
+describe("a review link", () => {
+  it.effect(
+    "shows the post as each channel will receive it, and nothing it was not asked",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* shows() {
+          const visitors = yield* VisitorReview;
+          const { channelId, editor, postId } = yield* drafted;
+          const { link, token } = yield* linkTo(editor, postId, "view");
+
+          assert.match(token, /^[\w-]{43}$/u);
+          assert.deepStrictEqual(
+            link.expiresAt.pipe((at) => at.epochMilliseconds),
+            Date.parse("2026-06-29T07:00:00Z")
+          );
+
+          const page = yield* visitors.open(token);
+
+          assert.deepStrictEqual(page.post.channels, [
+            {
+              channelId,
+              handle: page.post.channels[0]?.handle ?? Option.none(),
+              platform: Option.some("mastodon" as const),
+              text: `${text} #launch`,
+            },
+          ]);
+          assert.isTrue(
+            Option.isSome(page.post.channels[0]?.handle ?? Option.none())
+          );
+          assert.strictEqual(page.post.status, "draft");
+          assert.deepStrictEqual(page.comments, []);
+
+          // A token nobody was given opens nothing.
+          assert.deepStrictEqual(
+            yield* Effect.flip(visitors.open(`${token.slice(0, -1)}_`)),
+            new LinkNotFound()
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "is made by those who may approve, in person, for a post still to go out",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* whoMakes() {
+          const links = yield* ReviewLinks;
+          const scheduling = yield* PostScheduling;
+          const { editor, postId, workspaceId } = yield* drafted;
+
+          const refused = [
+            actorAs(
+              yield* freshUser,
+              workspaceId,
+              permissionsFor("contributor")
+            ),
+            impersonating(yield* freshUser, yield* freshUser, workspaceId),
+          ];
+
+          for (const actor of refused) {
+            assert.deepStrictEqual(
+              yield* Effect.flip(linkTo(actor, postId, "view")),
+              new MissingPermission({ permission: "post:approve" })
+            );
+          }
+
+          // Another workspace's editor finds no such post.
+          const outsider = actorAs(yield* freshUser, yield* freshWorkspace);
+
+          assert.deepStrictEqual(
+            yield* Effect.flip(linkTo(outsider, postId, "view")),
+            new ReviewPostNotFound({ postId })
+          );
+
+          yield* scheduling.cancel(editor, postId);
+
+          assert.deepStrictEqual(
+            yield* Effect.flip(linkTo(editor, postId, "view")),
+            new PostNotReviewable({ postId, status: "cancelled" })
+          );
+          assert.deepStrictEqual(yield* links.ofPost(editor, postId), []);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "stops working once revoked, expired, or its post went out or was deleted, and says which",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* closes() {
+          const links = yield* ReviewLinks;
+          const visitors = yield* VisitorReview;
+          const scheduling = yield* PostScheduling;
+          const drafts = yield* PostDrafts;
+          const { channelId, editor, postId } = yield* drafted;
+
+          const reasonOf = (token: string) =>
+            Effect.flip(visitors.open(token)).pipe(
+              Effect.map((closed) =>
+                closed instanceof LinkClosed ? closed.reason : closed._tag
+              )
+            );
+
+          const revoked = yield* linkTo(editor, postId, "view");
+
+          const short = yield* linkTo(
+            editor,
+            postId,
+            "view",
+            Option.some(Duration.hours(1))
+          );
+
+          const long = yield* linkTo(editor, postId, "comment");
+
+          yield* links.revoke(editor, revoked.link.id);
+
+          assert.strictEqual(yield* reasonOf(revoked.token), "revoked");
+
+          // The post goes out at 08:00, as the short link expires.
+          yield* scheduling.scheduleDraft(editor, postId, {
+            channelIds: [channelId],
+            schedule: at8,
+          });
+          yield* eventually("the job sleeps", isSuspended(postId));
+          yield* setTime("2026-06-15T08:00:00Z");
+          yield* eventually("the post finishes", isFinished(postId));
+
+          assert.strictEqual(yield* reasonOf(short.token), "expired");
+          assert.strictEqual(yield* reasonOf(long.token), "published");
+          assert.deepStrictEqual(
+            yield* Effect.flip(
+              visitors.comment(long.token, visitor(), say("Too late?"))
+            ),
+            new LinkClosed({ reason: "published" })
+          );
+
+          // A draft that is discarded takes its review with it; its link
+          // says the post is gone.
+          const other = yield* drafts.create(editor, {
+            channelIds: [channelId],
+            content: contentOf("A synthetic draft to discard."),
+          });
+
+          const gone = yield* linkTo(editor, other.post.id, "comment");
+
+          yield* visitors.comment(gone.token, visitor(), say("A comment."));
+          yield* drafts.discard(editor, other.post.id);
+
+          assert.strictEqual(yield* reasonOf(gone.token), "deleted");
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "lets its holders do what it allows, and no more",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* allows() {
+          const visitors = yield* VisitorReview;
+          const scheduling = yield* PostScheduling;
+          const review = yield* PostReview;
+          const { channelId, editor, postId, workspaceId } = yield* drafted;
+
+          yield* withPolicy(workspaceId, "always");
+          yield* scheduling.scheduleDraft(editor, postId, {
+            channelIds: [channelId],
+            schedule: at8,
+          });
+
+          const view = yield* linkTo(editor, postId, "view");
+          const comment = yield* linkTo(editor, postId, "comment");
+          const approve = yield* linkTo(editor, postId, "approve");
+
+          assert.deepStrictEqual(
+            yield* Effect.flip(
+              visitors.comment(view.token, visitor(), say("May I?"))
+            ),
+            new LinkAccessDenied({ needed: "comment" })
+          );
+          assert.deepStrictEqual(
+            yield* Effect.flip(visitors.approve(comment.token, visitor())),
+            new LinkAccessDenied({ needed: "approve" })
+          );
+
+          // Approved through the link: recorded with the name given, the
+          // time and the link.
+          assert.deepStrictEqual(
+            yield* visitors.approve(
+              approve.token,
+              visitor("  Ada\n Lovelace ")
+            ),
+            { late: false }
+          );
+          assert.strictEqual(
+            (yield* storedPost(postId)).post.status._tag,
+            "scheduled"
+          );
+
+          const [request] = (yield* review.thread(editor, postId)).requests;
+
+          assert.deepStrictEqual(
+            request?.decision.pipe(Option.map(({ by }) => by)),
+            Option.some({
+              _tag: "visitor" as const,
+              linkId: approve.link.id,
+              name: Option.some("Ada Lovelace"),
+            })
+          );
+          assert.deepStrictEqual(
+            request?.decision.pipe(
+              Option.map(({ at }) => at.epochMilliseconds)
+            ),
+            Option.some(Date.parse(start))
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "sends the post back when a visitor asks for changes, with their comment",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* visitorRefuses() {
+          const visitors = yield* VisitorReview;
+          const scheduling = yield* PostScheduling;
+          const { channelId, editor, postId, workspaceId } = yield* drafted;
+
+          yield* withPolicy(workspaceId, "always");
+          yield* scheduling.scheduleDraft(editor, postId, {
+            channelIds: [channelId],
+            schedule: at8,
+          });
+
+          const { token } = yield* linkTo(editor, postId, "approve");
+
+          const comment = yield* visitors.requestChanges(
+            token,
+            visitor(),
+            "Please say Thursday."
+          );
+
+          assert.strictEqual(comment.text, "Please say Thursday.");
+          assert.strictEqual(
+            (yield* storedPost(postId)).post.status._tag,
+            "draft"
+          );
+
+          // The link still shows the draft, and what was asked.
+          const page = yield* visitors.open(token);
+
+          assert.strictEqual(page.post.status, "draft");
+          assert.deepStrictEqual(
+            page.request.pipe(Option.map(({ status }) => status)),
+            Option.some("changesRequested" as const)
+          );
+        })
+      ),
+    timeout
+  );
+});
+
+describe("comments", () => {
+  it.effect(
+    "make threads, with answers, anchors that follow the text, and a resolution",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* threads() {
+          const visitors = yield* VisitorReview;
+          const review = yield* PostReview;
+          const drafts = yield* PostDrafts;
+          const told = yield* Told;
+          const { channelId, editor, postId } = yield* drafted;
+          const { token } = yield* linkTo(editor, postId, "comment");
+
+          const shown = `${text} #launch`;
+
+          const first = yield* visitors.comment(
+            token,
+            visitor("Ada Lovelace", Option.some("Ada@Example.test")),
+            say("Could this be <b>Thursday</b>?\u0007", {
+              anchor: Option.some({
+                channelId,
+                selection: Option.some({
+                  quote: "Friday",
+                  start: shown.indexOf("Friday"),
+                }),
+              }),
+            })
+          );
+
+          // Markup stays the text it is; control characters go.
+          assert.strictEqual(first.text, "Could this be <b>Thursday</b>?");
+
+          const answer = yield* review.comment(
+            editor,
+            postId,
+            say("It can.", { parentId: Option.some(first.id) })
+          );
+
+          assert.deepStrictEqual(answer.parentId, Option.some(first.id));
+          // The visitor asked to hear of answers.
+          assert.deepStrictEqual(yield* told.mailed, [
+            { email: "ada@example.test", locale: "en" },
+          ]);
+
+          // The text changes around the words: the anchor follows them.
+          const rewritten = `Big news! ${text}`;
+
+          yield* drafts.update(editor, postId, {
+            channelIds: [channelId],
+            content: contentOf(rewritten),
+          });
+
+          const page = yield* visitors.open(token);
+          const [root] = page.comments;
+
+          const selection = root?.anchor.pipe(
+            Option.flatMap((anchor) => anchor.selection),
+            Option.getOrThrow
+          );
+
+          assert.deepStrictEqual(
+            selection === undefined
+              ? Option.none()
+              : locate(selection, page.post.channels[0]?.text ?? ""),
+            Option.some({
+              end: rewritten.indexOf("Friday") + "Friday".length,
+              start: rewritten.indexOf("Friday"),
+            })
+          );
+
+          const resolved = yield* review.resolve(
+            editor,
+            postId,
+            first.id,
+            true
+          );
+
+          assert.isTrue(Option.isSome(resolved.resolution));
+          assert.deepStrictEqual(
+            (yield* told.outcomes).map(({ kind }) => kind),
+            ["commented", "commented"]
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "refuse what cannot be kept: no text, no name, a bad address, a wrong thread or selection",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* refuses() {
+          const visitors = yield* VisitorReview;
+          const review = yield* PostReview;
+          const { channelId, editor, postId, workspaceId } = yield* drafted;
+          const { token } = yield* linkTo(editor, postId, "comment");
+          const first = yield* visitors.comment(token, visitor(), say("One."));
+
+          const answer = yield* review.comment(
+            editor,
+            postId,
+            say("Two.", { parentId: Option.some(first.id) })
+          );
+
+          const elsewhere = yield* connect(workspaceId, "mastodon");
+
+          const problems = yield* Effect.forEach(
+            [
+              visitors.comment(token, visitor(), say(" \n ")),
+              visitors.comment(token, visitor("​"), say("Hello.")),
+              visitors.comment(
+                token,
+                visitor("Ada", Option.some("not an address")),
+                say("Hello.")
+              ),
+              // An answer to an answer.
+              visitors.comment(
+                token,
+                visitor(),
+                say("Three.", { parentId: Option.some(answer.id) })
+              ),
+              // About a channel the post does not go to.
+              visitors.comment(
+                token,
+                visitor(),
+                say("Here?", {
+                  anchor: Option.some({
+                    channelId: elsewhere,
+                    selection: Option.none(),
+                  }),
+                })
+              ),
+              // Words that are not where it says.
+              visitors.comment(
+                token,
+                visitor(),
+                say("This.", {
+                  anchor: Option.some({
+                    channelId,
+                    selection: Option.some({ quote: "Thursday", start: 0 }),
+                  }),
+                })
+              ),
+            ],
+            (attempt) =>
+              Effect.flip(attempt).pipe(
+                Effect.map((failure) =>
+                  failure instanceof CommentRejected
+                    ? failure.problem
+                    : failure._tag
+                )
+              ),
+            { concurrency: 1 }
+          );
+
+          assert.deepStrictEqual(problems, [
+            "text",
+            "name",
+            "email",
+            "parent",
+            "anchor",
+            "selection",
+          ]);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "are for those who write posts or approve them, and for their own workspace",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* whoComments() {
+          const review = yield* PostReview;
+          const { editor, postId, workspaceId } = yield* drafted;
+
+          const viewer = actorAs(
+            yield* freshUser,
+            workspaceId,
+            permissionsFor("viewer")
+          );
+
+          yield* review.comment(editor, postId, say("A note."));
+
+          assert.lengthOf((yield* review.thread(viewer, postId)).comments, 1);
+          assert.deepStrictEqual(
+            yield* Effect.flip(review.comment(viewer, postId, say("Mine."))),
+            new MissingPermission({ permission: "post:create" })
+          );
+
+          const outsider = actorAs(yield* freshUser, yield* freshWorkspace);
+
+          assert.deepStrictEqual(
+            yield* Effect.flip(review.thread(outsider, postId)),
+            new ReviewPostNotFound({ postId })
+          );
+        })
+      ),
+    timeout
+  );
+});
+
+describe("what visitors gave", () => {
+  it.effect(
+    "ends by itself: the address 30 days after the link, the name after 24 months",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* retention() {
+          const visitors = yield* VisitorReview;
+          const links = yield* ReviewLinks;
+          const purging = yield* PurgeReviewData;
+          const sql = yield* SqlClient.SqlClient;
+          const { editor, postId } = yield* drafted;
+          const { link, token } = yield* linkTo(editor, postId, "comment");
+
+          const comment = yield* visitors.comment(
+            token,
+            visitor("Ada Lovelace", Option.some("ada@example.test")),
+            say("A comment to keep a while.")
+          );
+
+          const kept = sql<{
+            readonly email: string | null;
+            readonly name: string | null;
+          }>`SELECT visitor_email AS email, visitor_name AS name FROM review.comments WHERE id = ${comment.id}`.pipe(
+            Effect.map(([row]) => row)
+          );
+
+          // Revoked 29 days ago: the address is still kept.
+          yield* links.revoke(editor, link.id);
+          yield* sql`UPDATE review.links SET revoked_at = ${new Date("2026-05-17T07:00:00Z")} WHERE id = ${link.id}`;
+          yield* purging.purge;
+
+          assert.deepStrictEqual(yield* kept, {
+            email: "ada@example.test",
+            name: "Ada Lovelace",
+          });
+
+          // 31 days ago: it goes, and the name stays.
+          yield* sql`UPDATE review.links SET revoked_at = ${new Date("2026-05-15T07:00:00Z")} WHERE id = ${link.id}`;
+
+          assert.deepStrictEqual(yield* purging.purge, { emails: 1, names: 0 });
+          assert.deepStrictEqual(yield* kept, {
+            email: null,
+            name: "Ada Lovelace",
+          });
+
+          // A comment written more than 24 months ago loses its name.
+          yield* sql`UPDATE review.comments SET created_at = ${new Date("2024-06-14T07:00:00Z")} WHERE id = ${comment.id}`;
+
+          assert.deepStrictEqual(yield* purging.purge, { emails: 0, names: 1 });
+          assert.deepStrictEqual(yield* kept, { email: null, name: null });
+        })
+      ),
+    timeout
+  );
+});
