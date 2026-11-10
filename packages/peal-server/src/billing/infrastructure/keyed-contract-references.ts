@@ -1,10 +1,13 @@
 import { eq } from "drizzle-orm";
-import { DateTime, Effect, Layer, Option, Redacted } from "effect";
+import { DateTime, Effect, Layer, Option, Redacted, Schema } from "effect";
 import { Mac, SecureRandom } from "effect/crypto";
 
 import { ContractReferences } from "#billing/application/ports/contract-references.ts";
+import type { NamedContract } from "#billing/application/ports/contract-references.ts";
 import { referenceFrom } from "#billing/domain/contract-reference.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { authSecretConfig } from "#shared/infrastructure/auth-secret.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -13,6 +16,8 @@ import { contractReferences } from "./schema.ts";
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
 const encoder = new TextEncoder();
+
+const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
 
 // Apart from anything else the secret keys.
 const purpose = "peal-contract-reference-v1:";
@@ -36,9 +41,10 @@ export const KeyedContractReferencesLive = Layer.effect(
       encoder.encode(Redacted.value(secret))
     ).pipe(Effect.orDie);
 
-    const issue = Effect.fn("ContractReferences.issue")(function* issue(
-      stripeSubscriptionId: string
-    ) {
+    const issue = Effect.fn("ContractReferences.issue")(function* issue({
+      stripeSubscriptionId,
+      workspaceId,
+    }: NamedContract) {
       const [issued] = yield* db
         .select({ reference: contractReferences.reference })
         .from(contractReferences)
@@ -67,6 +73,7 @@ export const KeyedContractReferencesLive = Layer.effect(
           issuedAt: DateTime.toDateUtc(now),
           reference,
           stripeSubscriptionId,
+          workspaceId,
         })
         .onConflictDoNothing()
         .pipe(Effect.mapError(failed));
@@ -76,19 +83,41 @@ export const KeyedContractReferencesLive = Layer.effect(
 
     const find = (reference: string) =>
       db
-        .select({ id: contractReferences.stripeSubscriptionId })
+        .select({
+          stripeSubscriptionId: contractReferences.stripeSubscriptionId,
+          workspaceId: contractReferences.workspaceId,
+        })
         .from(contractReferences)
         .where(eq(contractReferences.reference, reference))
         .limit(1)
         .pipe(
           Effect.mapError(failed),
           Effect.map(([row]) =>
-            Option.fromUndefinedOr(row).pipe(Option.map(({ id }) => id))
+            Option.fromUndefinedOr(row).pipe(
+              Option.flatMap((found) =>
+                decodeWorkspaceId(found.workspaceId).pipe(
+                  Option.map((workspaceId): NamedContract => ({
+                    stripeSubscriptionId: found.stripeSubscriptionId,
+                    workspaceId,
+                  }))
+                )
+              )
+            )
           ),
           Effect.withSpan("ContractReferences.find")
         );
 
-    return ContractReferences.of({ find, issue });
+    const eraseWorkspace = (workspaceId: WorkspaceId) =>
+      db
+        .delete(contractReferences)
+        .where(eq(contractReferences.workspaceId, workspaceId))
+        .pipe(
+          Effect.mapError(failed),
+          Effect.asVoid,
+          Effect.withSpan("ContractReferences.eraseWorkspace")
+        );
+
+    return ContractReferences.of({ eraseWorkspace, find, issue });
   })
 ).pipe(
   Layer.provide(

@@ -199,6 +199,7 @@ export const contractRequests = billing.table(
     confirmationExpiresAt: instant("confirmation_expires_at"),
     contract: text("contract"),
     currency: text("currency"),
+    desiredAt: instant("desired_at"),
     effectiveAt: instant("effective_at"),
     email: text("email"),
     erasedAt: instant("erased_at"),
@@ -230,8 +231,13 @@ export const contractRequests = billing.table(
  * so a number finds its subscription. A keyed hash of the subscription's
  * id: it names nobody. Erasing the workspace deletes its rows.
  */
-export const contractReferences = billing.table("contract_references", {
-  issuedAt: instant("issued_at").notNull(),
-  reference: text("reference").primaryKey(),
-  stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
-});
+export const contractReferences = billing.table(
+  "contract_references",
+  {
+    issuedAt: instant("issued_at").notNull(),
+    reference: text("reference").primaryKey(),
+    stripeSubscriptionId: text("stripe_subscription_id").notNull().unique(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [index("contract_references_workspace").on(table.workspaceId)]
+);

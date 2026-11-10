@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "8bd241a9-83a4-4846-84a9-aaf5f527da03",
+  "id": "64da63ee-59f9-4781-b42b-18a1e42f49cd",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -1173,6 +1173,26 @@
         "n|sch|analytics",
         "n|col|analytics.tracked_posts.published_at",
         "n|col|analytics.tracked_posts.target_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "contract_references",
+        "contract_references_workspace"
+      ],
+      "writes": [
+        "s|idx|billing.contract_references_workspace",
+        "n|idx|billing.contract_references_workspace",
+        "e|idx|billing.contract_references_workspace",
+        "n|rel|billing.contract_references_workspace"
+      ],
+      "reads": [
+        "n|tbl|billing.contract_references",
+        "n|sch|billing",
+        "n|col|billing.contract_references.workspace_id"
       ]
     },
     {
@@ -3825,6 +3845,19 @@
     },
     {
       "schema": "billing",
+      "table": "contract_references",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
       "table": "contract_requests",
       "name": "acknowledged_at",
       "type": "timestamp with time zone",
@@ -3906,6 +3939,19 @@
       "table": "contract_requests",
       "name": "currency",
       "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "contract_requests",
+      "name": "desired_at",
+      "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
@@ -10064,6 +10110,27 @@
         },
         {
           "value": "target_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "contract_references",
+      "name": "contract_references_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,

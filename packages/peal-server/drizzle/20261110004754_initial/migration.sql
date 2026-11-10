@@ -66,7 +66,8 @@ CREATE TABLE "assistant"."daily_usage" (
 CREATE TABLE "billing"."contract_references" (
 	"issued_at" timestamp with time zone NOT NULL,
 	"reference" text PRIMARY KEY,
-	"stripe_subscription_id" text NOT NULL UNIQUE
+	"stripe_subscription_id" text NOT NULL UNIQUE,
+	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."contract_requests" (
@@ -77,6 +78,7 @@ CREATE TABLE "billing"."contract_requests" (
 	"confirmation_expires_at" timestamp with time zone,
 	"contract" text,
 	"currency" text,
+	"desired_at" timestamp with time zone,
 	"effective_at" timestamp with time zone,
 	"email" text,
 	"erased_at" timestamp with time zone,
@@ -700,6 +702,7 @@ CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collectio
 CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" ("workspace_id","published_at");--> statement-breakpoint
 CREATE INDEX "tracked_posts_post" ON "analytics"."tracked_posts" ("post_id");--> statement-breakpoint
 CREATE INDEX "tracked_posts_published" ON "analytics"."tracked_posts" ("published_at","target_id");--> statement-breakpoint
+CREATE INDEX "contract_references_workspace" ON "billing"."contract_references" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "contract_requests_workspace" ON "billing"."contract_requests" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "contract_requests_user" ON "billing"."contract_requests" ("user_id");--> statement-breakpoint
 CREATE INDEX "contract_requests_status" ON "billing"."contract_requests" ("status","received_at");--> statement-breakpoint

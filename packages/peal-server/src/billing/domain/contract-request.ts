@@ -142,6 +142,9 @@ export class ContractRequest extends Schema.Class<ContractRequest>(
   channel: ContractRequestChannelSchema,
   // The contract as its sender named it: its number, or its workspace.
   contract: Schema.Option(Schema.String),
+  // When its sender wants the contract to end, for a cancellation, if
+  // they said.
+  desiredAt: Schema.Option(Schema.DateTimeUtc),
   // When the contract ends, once applied.
   effectiveAt: Schema.Option(Schema.DateTimeUtc),
   // Where the acknowledgement goes.
@@ -188,6 +191,7 @@ export const changed = (
     acknowledgement: request.acknowledgement,
     channel: request.channel,
     contract: request.contract,
+    desiredAt: request.desiredAt,
     effectiveAt: request.effectiveAt,
     email: request.email,
     id: request.id,
@@ -205,9 +209,12 @@ export const changed = (
     ...changes,
   });
 
-/** The contract a request was tied to. */
+/**
+ * The contract a request was tied to: a workspace's, and its subscription
+ * when it has one.
+ */
 export interface TiedContract {
-  readonly stripeSubscriptionId: string;
+  readonly stripeSubscriptionId: Option.Option<string>;
   readonly workspaceId: WorkspaceId;
 }
 
@@ -227,7 +234,7 @@ export const appliedTo = (
     refusal: Option.none(),
     settledAt: Option.some(outcome.settledAt),
     status: "applied",
-    stripeSubscriptionId: Option.some(contract.stripeSubscriptionId),
+    stripeSubscriptionId: contract.stripeSubscriptionId,
     workspaceId: Option.some(contract.workspaceId),
   });
 
@@ -242,6 +249,6 @@ export const refusedBy = (
     refusal: Option.some(refusal),
     settledAt: Option.some(settledAt),
     status: "refused",
-    stripeSubscriptionId: Option.some(contract.stripeSubscriptionId),
+    stripeSubscriptionId: contract.stripeSubscriptionId,
     workspaceId: Option.some(contract.workspaceId),
   });

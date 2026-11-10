@@ -332,6 +332,7 @@ export class Withdraw extends Context.Service<
             acknowledgement: "none",
             channel: "session",
             contract: Option.none(),
+            desiredAt: Option.none(),
             effectiveAt: Option.some(done.withdrawnAt),
             email: Option.none(),
             id: yield* newId(ContractRequestIdSchema),

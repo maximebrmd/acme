@@ -43,6 +43,7 @@ const received = Effect.fn("received")(function* received(
     acknowledgement: "pending",
     channel: "form",
     contract: Option.some("Synthetic Studio"),
+    desiredAt: Option.none(),
     effectiveAt: Option.none(),
     email: Option.some(`holder+${id}@example.test`),
     id,
@@ -276,17 +277,33 @@ layer(StoreTest, { timeout: 60_000 })("contract requests in Postgres", (it) => {
   it.effect("give a subscription one contract number, which finds it", () =>
     Effect.gen(function* references() {
       const store = yield* ContractReferences;
-      const subscription = `sub_${yield* newId(ContractRequestIdSchema)}`;
-      const reference = yield* store.issue(subscription);
+      const workspaceId = yield* freshWorkspace;
+
+      const contract = {
+        stripeSubscriptionId: `sub_${yield* newId(ContractRequestIdSchema)}`,
+        workspaceId,
+      };
+
+      const reference = yield* store.issue(contract);
 
       assert.deepStrictEqual(readReference(reference), Option.some(reference));
-      assert.strictEqual(yield* store.issue(subscription), reference);
-      assert.notStrictEqual(yield* store.issue(`${subscription}x`), reference);
+      assert.strictEqual(yield* store.issue(contract), reference);
+      assert.notStrictEqual(
+        yield* store.issue({
+          stripeSubscriptionId: `${contract.stripeSubscriptionId}x`,
+          workspaceId: yield* freshWorkspace,
+        }),
+        reference
+      );
       assert.deepStrictEqual(
         yield* store.find(reference),
-        Option.some(subscription)
+        Option.some(contract)
       );
       assert.isTrue(Option.isNone(yield* store.find("0000-0000-0000")));
+
+      yield* store.eraseWorkspace(workspaceId);
+
+      assert.isTrue(Option.isNone(yield* store.find(reference)));
     })
   );
 });

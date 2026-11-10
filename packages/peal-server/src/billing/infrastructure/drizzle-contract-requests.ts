@@ -45,6 +45,7 @@ const requestOf = (row: Row) =>
     acknowledgement: row.acknowledgement,
     channel: row.channel,
     contract: Option.fromNullOr(row.contract),
+    desiredAt: instantOf(row.desiredAt),
     effectiveAt: instantOf(row.effectiveAt),
     email: Option.fromNullOr(row.email),
     id: row.id,
@@ -73,6 +74,7 @@ const valuesOf = (request: ContractRequest) => ({
     Option.map(({ currency }) => currency),
     Option.getOrNull
   ),
+  desiredAt: dateOf(request.desiredAt),
   effectiveAt: dateOf(request.effectiveAt),
   email: Option.getOrNull(request.email),
   kind: request.kind,

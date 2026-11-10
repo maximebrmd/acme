@@ -229,6 +229,7 @@ export class CancelSubscription extends Context.Service<
             acknowledgement: "none",
             channel: "session",
             contract: Option.none(),
+            desiredAt,
             effectiveAt: Option.some(done.endsAt),
             email: Option.none(),
             id: yield* newId(ContractRequestIdSchema),
