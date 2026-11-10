@@ -8,6 +8,9 @@ import { connectChannel } from "#channels/domain/channel.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
+import type { LivePart } from "#publishing/domain/live-part.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
 import { PostTarget } from "#publishing/domain/post-target.ts";
@@ -74,6 +77,48 @@ const targetOn = (channelId: ChannelId, status: PostTargetStatus) =>
     status,
   });
 
+// A thread of three parts: the first and the last link to Peal.
+const threadId = PostIdSchema.make("00000000-0000-7000-8000-000000000102");
+
+const part = (text: string) =>
+  new PostPart({ delaySeconds: 0, media: [], overrides: [], text });
+
+const thread = createDraft(
+  threadId,
+  workspaceId,
+  new PostContent({
+    followUps: [part("No link here"), part("More at peal.social/more")],
+    media: [],
+    overrides: [],
+    text: "Read peal.social",
+  }),
+  Option.none()
+);
+
+const liveIn = (round: number, index: number): LivePart => ({
+  index,
+  permalink: Option.none(),
+  platformPostId: Option.none(),
+  publishedAt: DateTime.add(publishedAt, { minutes: index }),
+  round,
+});
+
+// The thread on X, in `round`, with these parts live.
+const threadOn = (
+  round: number,
+  status: PostTargetStatus,
+  liveParts: readonly LivePart[]
+) =>
+  new PostTarget({
+    channelId: onX,
+    id: PostTargetIdSchema.make("00000000-0000-7000-8000-000000000302"),
+    liveParts,
+    options: Option.none(),
+    postId: threadId,
+    round,
+    status,
+  });
+
 const published: PostTargetStatus = {
   _tag: "published",
   permalink: Option.none(),
@@ -123,9 +168,14 @@ const OutcomesTest = meteredOutcomes(
       Layer.mock(PostRepository, {
         find: (id) =>
           Effect.succeed(
-            id === postId
-              ? Option.some({ execution: Option.none(), post })
-              : Option.none()
+            Option.fromUndefinedOr(
+              [post, thread].find((known) => known.id === id)
+            ).pipe(
+              Option.map((known) => ({
+                execution: Option.none(),
+                post: known,
+              }))
+            )
           ),
       }),
       Layer.effect(
@@ -173,6 +223,48 @@ layer(OutcomesTest)("publication outcomes, metered", (it) => {
           "published",
           "failed",
         ]);
+      })
+  );
+
+  it.effect(
+    "count each part that went live in the round, with its own text's links, whatever came after",
+    () =>
+      Effect.gen(function* metersParts() {
+        const outcomes = yield* PublicationOutcomes;
+        const { counted } = yield* Recorded;
+        const before = (yield* Ref.get(counted)).length;
+
+        const failed: PostTargetStatus = {
+          _tag: "failed",
+          code: Option.none(),
+          failedAt: publishedAt,
+          reason: "contentRejected",
+        };
+
+        // Round 1 sent two parts, then the third was refused.
+        yield* outcomes.settled(
+          threadOn(1, failed, [liveIn(1, 0), liveIn(1, 1)])
+        );
+
+        // Round 2 sent the third: the first two were counted already.
+        yield* outcomes.settled(
+          threadOn(2, published, [liveIn(1, 0), liveIn(1, 1), liveIn(2, 2)])
+        );
+
+        assert.deepStrictEqual(
+          (yield* Ref.get(counted))
+            .slice(before)
+            .map(({ platform, publishedAt: at, withLink }) => ({
+              at,
+              platform,
+              withLink,
+            })),
+          [
+            { at: liveIn(1, 0).publishedAt, platform: "x", withLink: true },
+            { at: liveIn(1, 1).publishedAt, platform: "x", withLink: false },
+            { at: liveIn(2, 2).publishedAt, platform: "x", withLink: true },
+          ]
+        );
       })
   );
 });

@@ -27,6 +27,7 @@ const live = (index: number, id = `post-${String(index)}`): LivePart => ({
   permalink: Option.some(`https://social.example/@peal/${id}`),
   platformPostId: Option.some(PlatformPostIdSchema.make(id)),
   publishedAt: startedAt,
+  round: 1,
 });
 
 const sending: PostTargetStatus = {
@@ -152,6 +153,7 @@ describe("the parts of a post that are live on a channel", () => {
         permalink: Option.none(),
         platformPostId: Option.some("older"),
         publishedAt: startedAt,
+        round: 1,
       },
     ]);
     expect(livePartsOf(target(failed))).toStrictEqual([]);
@@ -186,6 +188,7 @@ describe("confirming an unconfirmed part of a post of several", () => {
         permalink: Option.none(),
         platformPostId: Option.none(),
         publishedAt: startedAt,
+        round: 1,
       },
     ]);
   });

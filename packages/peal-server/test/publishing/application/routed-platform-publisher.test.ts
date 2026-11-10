@@ -292,6 +292,7 @@ layer(ThreadPublisherTest)("the adapters of a platform with threads", (it) => {
             Option.map((given) => PlatformPostIdSchema.make(given))
           ),
           publishedAt,
+          round: 1,
         });
 
         const pending = createTarget(

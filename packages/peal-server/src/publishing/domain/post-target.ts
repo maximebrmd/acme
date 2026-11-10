@@ -135,6 +135,7 @@ export const livePartsOf = (target: PostTarget): readonly LivePart[] => {
           permalink: status.permalink,
           platformPostId: status.platformPostId,
           publishedAt: status.publishedAt,
+          round: target.round,
         },
       ]
     : liveParts;
@@ -324,6 +325,7 @@ export const confirmPublished = (
       permalink: found.permalink,
       platformPostId: found.platformPostId,
       publishedAt: status.attemptedAt,
+      round: target.round,
     },
   ];
 

@@ -116,6 +116,7 @@ export const recordPartRun = Effect.fn("Publishing.recordPart")(
             permalink: Option.fromUndefinedOr(published.permalink),
             platformPostId: Option.some(published.platformPostId),
             publishedAt: now,
+            round,
           }),
           { onFailure: Effect.die, onSuccess: Effect.succeed }
         );
