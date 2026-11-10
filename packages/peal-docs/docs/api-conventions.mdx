@@ -31,7 +31,7 @@ The API only adds to what it answers ([Versioning](#versioning)): ignore the fie
 
 ## Authentication [#authentication]
 
-Apart from the health checks, the changelog and the [discovery documents](#discovery), every endpoint needs a credential, sent as `Authorization: Bearer …`:
+Apart from the health checks, the changelog and the [discovery documents](#discovery), every endpoint of the API needs a credential, sent as `Authorization: Bearer …`. The exceptions answer someone who is no member, by other means: the pages of a [connect link](/embedding) or a [review link](/review), which answer the link's token; the platforms' data deletion callbacks, which the platform signs; and what the web app's own pages send before anyone signs in (its error reports, the captcha's site key, the sign-in routes under `/api/auth`). The credentials:
 
 | Credential            | Acts as                                            | Allowed                                                                                                             |
 | --------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -361,6 +361,8 @@ A request whose answer was lost, to a timeout or a dropped connection, may or ma
 - Once that post was deleted, the key answers 404 `post_not_found`.
 
 Keys are kept per workspace. [Posting from an AI agent](/agents#api) shows a whole request.
+
+`POST …/posts/bulk` and `POST …/posts/import` take the same header, for the whole request, and each of their items or rows may carry a key of its own ([Posting through the API](/posting-api)); creating a customer's workspace through the partner API takes one too ([Embedding Peal](/embedding)).
 
 The other writes take no key. Whether one is safe to send again depends on what it does:
 

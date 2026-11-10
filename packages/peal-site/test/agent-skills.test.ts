@@ -13,6 +13,7 @@ import { describe, expect, it } from "vitest";
 import {
   descriptionOf,
   indexText,
+  linkedFiles,
   servedSkills,
   skillsIndex,
 } from "../src/agent-skills.ts";
@@ -41,6 +42,22 @@ describe("the agent skills the site serves", () => {
   it("serves each of the repository's skills as it is", () => {
     for (const name of servedSkills) {
       expect(servedDocument(name).equals(source(name))).toBe(true);
+    }
+  });
+
+  it("serves the files a skill's document links to, where its links lead", () => {
+    for (const name of servedSkills) {
+      const linked = linkedFiles(source(name).toString("utf-8"));
+
+      expect(linked).toContain("references/http.md");
+
+      for (const file of linked) {
+        expect(
+          readFileSync(path.join(served, name, file)).equals(
+            readFileSync(path.join(repository, "skills", name, file))
+          )
+        ).toBe(true);
+      }
     }
   });
 

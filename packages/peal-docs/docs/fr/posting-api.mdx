@@ -11,14 +11,14 @@ Un script ou un agent qui publie par l’[API HTTP](/api-overview) peut vérifie
 
 Tous les points d’accès de cette page se trouvent sous `/api/workspaces/{workspaceId}/posts`. Les exemples lisent l’identifiant de l’espace de travail dans `$WORKSPACE_ID` et une [clé d’API](/settings#api-keys), de la forme `peal_…`, dans `$PEAL_API_KEY`. Les identifiants sont inventés, et les réponses abrégées : une publication est toujours répondue en entier, comme la répond `GET …/posts/{postId}`.
 
-| Requête                        | Ce qu’elle fait                                           | Demande                         |
-| ------------------------------ | --------------------------------------------------------- | ------------------------------- |
-| `POST …/posts/validate`        | Vérifie une publication, sans rien créer                  | `post:read`, `channel:read`     |
-| `POST …/posts/send`            | Crée une publication et l’envoie, maintenant ou plus tard | `post:schedule`, `channel:read` |
-| `GET …/posts/{postId}/outcome` | Attend qu’une publication soit partie                     | `post:read`                     |
-| `POST …/posts/bulk`            | Crée et envoie jusqu’à 50 publications                    | `post:schedule`, `channel:read` |
-| `POST …/posts/import`          | Crée et envoie les publications d’un fichier CSV          | `post:schedule`, `channel:read` |
-| `GET …/posts/search`           | Liste les publications de l’espace de travail, filtrées   | `post:read`, `channel:read`     |
+| Requête                        | Ce qu’elle fait                                           | Demande                                      |
+| ------------------------------ | --------------------------------------------------------- | -------------------------------------------- |
+| `POST …/posts/validate`        | Vérifie une publication, sans rien créer                  | `post:read`, `channel:read`                  |
+| `POST …/posts/send`            | Crée une publication et l’envoie, maintenant ou plus tard | `post:schedule`, `channel:read`              |
+| `GET …/posts/{postId}/outcome` | Attend qu’une publication soit partie                     | `post:read`                                  |
+| `POST …/posts/bulk`            | Crée et envoie jusqu’à 50 publications                    | `post:schedule`, `channel:read`              |
+| `POST …/posts/import`          | Crée et envoie les publications d’un fichier CSV          | `post:schedule`, `post:read`, `channel:read` |
+| `GET …/posts/search`           | Liste les publications de l’espace de travail, filtrées   | `post:read`, `channel:read`                  |
 
 Une publication qui montre des médias demande aussi `media:read`. Un jeton d’accès OAuth a besoin du scope `workspace:publish` pour `send`, `bulk` et `import` ([Ce que permet chaque permission](/agents#scopes)).
 
@@ -361,7 +361,7 @@ Une publication créée en un seul appel est refusée quand une autre publicatio
 }
 ```
 
-`duplicates` nomme chaque canal qui a déjà le contenu, avec la publication la plus proche dans le temps qui l’y envoie.
+`duplicates` nomme chaque canal qui a déjà le contenu, avec la première publication qui l’y envoie dans cet intervalle.
 
 - **Le même contenu**, c’est le texte que reçoit le canal et les mêmes médias, dans le même ordre.
 - **23 heures**, c’est la journée la plus courte qu’ait un fuseau horaire : une publication qui se répète chaque jour à la même heure locale n’est donc jamais refusée.
@@ -379,7 +379,7 @@ Ce refus est distinct des clés d’idempotence. Une clé permet de renvoyer une
 
 | Paramètre    | Ce qu’il garde                                                                                                                                                                  |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `status`     | `draft`, `scheduled`, `publishing`, `finished` ou `cancelled`                                                                                                                   |
+| `status`     | `draft`, `awaitingApproval` (elle attend une [approbation](/review), et garde son horaire), `scheduled`, `publishing`, `finished` ou `cancelled`                                |
 | `outcome`    | Comment une publication terminée a fini : `published`, `partiallyPublished`, `unconfirmed`, `failed` ou `cancelled`                                                             |
 | `channelId`  | Les publications qui ont une cible sur ce canal                                                                                                                                 |
 | `platform`   | Les publications qui ont une cible sur un canal connecté de cette plateforme                                                                                                    |

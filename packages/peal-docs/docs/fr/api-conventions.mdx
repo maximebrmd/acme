@@ -31,7 +31,7 @@ L’API ne fait qu’ajouter à ce qu’elle répond ([Versions](#versioning)) :
 
 ## Authentification [#authentication]
 
-En dehors des sondes de santé, du journal des modifications et des [documents de découverte](#discovery), chaque point d’accès demande un moyen d’authentification, envoyé en `Authorization: Bearer …` :
+En dehors des sondes de santé, du journal des modifications et des [documents de découverte](#discovery), chaque point d’accès de l’API demande un moyen d’authentification, envoyé en `Authorization: Bearer …`. Les exceptions répondent à quelqu’un qui n’est pas membre, par d’autres moyens : les pages d’un [lien de connexion](/embedding) ou d’un [lien de relecture](/review), qui répondent au jeton du lien ; les rappels de suppression de données des plateformes, que la plateforme signe ; et ce que les pages de l’application web envoient avant toute connexion (ses rapports d’erreur, la clé de site du captcha, les routes de connexion sous `/api/auth`). Les moyens d’authentification :
 
 | Moyen                   | Agit en tant que                                                        | Ce qui lui est permis                                                                                                           |
 | ----------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -361,6 +361,8 @@ Une requête dont la réponse s’est perdue, après un délai dépassé ou une 
 - Une fois cette publication supprimée, la clé répond 404 `post_not_found`.
 
 Les clés sont gardées par espace de travail. [Publier depuis un agent IA](/agents#api) montre une requête entière.
+
+`POST …/posts/bulk` et `POST …/posts/import` acceptent le même en-tête, pour la requête entière, et chacun de leurs éléments ou de leurs lignes peut porter sa propre clé ([Publier par l’API](/posting-api)) ; la création de l’espace de travail d’un client par l’API partenaire en accepte une aussi ([Intégrer Peal](/embedding)).
 
 Les autres écritures ne prennent pas de clé. Ce que fait chacune décide si elle peut être renvoyée sans risque :
 

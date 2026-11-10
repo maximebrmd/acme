@@ -140,14 +140,14 @@ created = peal.connect_links.create(
 # created.link.id, created.url
 ```
 
-| Field            | What it is                                                                                                                                    |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `platform`       | One of the platforms [the instance connects](/channels#connect)                                                                               |
-| `returnUrl`      | Where the page sends them once done. Its origin must be one of your [return origins](#account), exactly: 422 `ReturnUrlNotAllowed` otherwise. |
-| `expiresInHours` | How long the link works, from 1 to 720 (30 days): 168 (a week) unless given                                                                   |
-| `locale`         | `en` or `fr`: the language the page opens in. Left out, the visitor's own.                                                                    |
-| `channelId`      | Reconnect this channel instead of connecting a new account ([Reconnect](#reconnect))                                                          |
-| `connection`     | Instagram only: `instagramLogin` or `facebookLogin` ([Instagram](/channels#instagram))                                                        |
+| Field            | What it is                                                                                                                                                                                                                                                                                                      |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `platform`       | One of the platforms [the instance connects](/channels#connect)                                                                                                                                                                                                                                                 |
+| `returnUrl`      | Where the page sends them once done. Its origin must be one of your [return origins](#account), exactly: 422 `ReturnUrlNotAllowed` otherwise.                                                                                                                                                                   |
+| `expiresInHours` | How long the link works, from 1 to 720 (30 days): 168 (a week) unless given                                                                                                                                                                                                                                     |
+| `locale`         | `en` or `fr`: the language the page opens in. Left out, the visitor's own.                                                                                                                                                                                                                                      |
+| `channelId`      | Reconnect this channel instead of connecting a new account ([Reconnect](#reconnect))                                                                                                                                                                                                                            |
+| `connection`     | The way in, on the platforms that have several: for Instagram, `instagramLogin` or `facebookLogin` ([Instagram](/channels#instagram)); for LinkedIn, `linkedinProfile` (the member's profile) or `linkedinPage` (the company pages they manage) ([LinkedIn](/channels#linkedin)). Left out, the server's first. |
 
 The answer's `url` is shown once: Peal keeps only a digest of the token it holds. Needs `channel:connect`.
 

@@ -140,14 +140,14 @@ created = peal.connect_links.create(
 # created.link.id, created.url
 ```
 
-| Champ            | Ce que c’est                                                                                                                                             |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `platform`       | L’une des plateformes que [l’instance connecte](/channels#connect)                                                                                       |
-| `returnUrl`      | Où la page le renvoie une fois terminé. Son origine doit être l’une de vos [origines de retour](#account), exactement : 422 `ReturnUrlNotAllowed` sinon. |
-| `expiresInHours` | Combien de temps le lien fonctionne, de 1 à 720 (30 jours) : 168 (une semaine) par défaut                                                                |
-| `locale`         | `en` ou `fr` : la langue dans laquelle la page s’ouvre. Sans elle, celle du visiteur.                                                                    |
-| `channelId`      | Reconnecter ce canal au lieu de connecter un nouveau compte ([Reconnecter](#reconnect))                                                                  |
-| `connection`     | Instagram seulement : `instagramLogin` ou `facebookLogin` ([Instagram](/channels#instagram))                                                             |
+| Champ            | Ce que c’est                                                                                                                                                                                                                                                                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `platform`       | L’une des plateformes que [l’instance connecte](/channels#connect)                                                                                                                                                                                                                                                                     |
+| `returnUrl`      | Où la page le renvoie une fois terminé. Son origine doit être l’une de vos [origines de retour](#account), exactement : 422 `ReturnUrlNotAllowed` sinon.                                                                                                                                                                               |
+| `expiresInHours` | Combien de temps le lien fonctionne, de 1 à 720 (30 jours) : 168 (une semaine) par défaut                                                                                                                                                                                                                                              |
+| `locale`         | `en` ou `fr` : la langue dans laquelle la page s’ouvre. Sans elle, celle du visiteur.                                                                                                                                                                                                                                                  |
+| `channelId`      | Reconnecter ce canal au lieu de connecter un nouveau compte ([Reconnecter](#reconnect))                                                                                                                                                                                                                                                |
+| `connection`     | La voie d’accès, sur les plateformes qui en ont plusieurs : pour Instagram, `instagramLogin` ou `facebookLogin` ([Instagram](/channels#instagram)) ; pour LinkedIn, `linkedinProfile` (le profil du membre) ou `linkedinPage` (les pages d’entreprise qu’il gère) ([LinkedIn](/channels#linkedin)). Sans elle, la première du serveur. |
 
 L’`url` de la réponse est affichée une seule fois : Peal ne garde qu’une empreinte du jeton qu’elle contient. Demande `channel:connect`.
 

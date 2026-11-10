@@ -279,8 +279,8 @@ peal posts list --outcome failed --json
 `posts list` answers a page: its posts in `items`, and `nextCursor`, to pass
 as `--cursor` with the same filters for the next page, or null on the last.
 
-A post's `status` is `draft`, `scheduled`, `publishing`, `finished` or
-`cancelled`. Once `finished`, `outcome` says how it ended across its
+A post's `status` is `draft`, `awaitingApproval` (it waits for an approval,
+and keeps its time), `scheduled`, `publishing`, `finished` or `cancelled`. Once `finished`, `outcome` says how it ended across its
 channels. Each entry of `targets` is the post on one channel, with its own
 `id`, `status`, `permalink`, `failureReason` and `unconfirmedReason`:
 

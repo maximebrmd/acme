@@ -4,7 +4,8 @@ import { createHash } from "node:crypto";
 // via Well-Known URIs", version 0.2.0): an index at
 // /.well-known/agent-skills/index.json, and each skill's SKILL.md beside
 // it. A skill is published as its single SKILL.md (`skill-md`), which is
-// written to be enough on its own.
+// written to be enough on its own; the files of its folder it links to are
+// served at the paths its links give, so none leads nowhere.
 //
 // The skills live in the repository's skills/ folder, under their own
 // licence. The site builds from its own folder alone, so what it serves is
@@ -24,6 +25,19 @@ export const skillDocument = "SKILL.md";
 
 /** The skills served, by the name of their folder in skills/. */
 export const servedSkills = ["peal"] as const;
+
+/**
+ * The files of its own folder a skill's document links to
+ * (`references/http.md`), which are served beside it at the same paths,
+ * so that a reader of the served document finds them.
+ */
+export const linkedFiles = (document: string): readonly string[] => [
+  ...new Set(
+    [...document.matchAll(/\]\((?<path>references\/[\w./-]+)\)/gu)].map(
+      (match) => match.groups?.["path"] ?? ""
+    )
+  ),
+];
 
 /** The description a SKILL.md's frontmatter gives. */
 export const descriptionOf = (document: string): string => {

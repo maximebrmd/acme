@@ -117,7 +117,9 @@ Within 24 hours, the same key with the same body answers the first post, and
 makes no other. With another body it answers 409 `idempotency_key_reused`.
 After a timeout or a 5xx, send the same request with the same key.
 
-There is no dry run. A post that breaks a platform's rule answers 422
+To check a post without making it, send the same body to
+`POST …/posts/validate`: it answers 200 with `valid` and every problem, and
+writes nothing. A post sent that breaks a platform's rule answers 422
 `post_content_invalid` with every problem in `violations`, and nothing is
 made.
 

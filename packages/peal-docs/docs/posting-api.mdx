@@ -11,14 +11,14 @@ A script or an agent that posts through the [HTTP API](/api-overview) can check 
 
 Every endpoint here is under `/api/workspaces/{workspaceId}/posts`. The examples read the workspace's id from `$WORKSPACE_ID` and an [API key](/settings#api-keys), which looks like `peal_…`, from `$PEAL_API_KEY`. Ids are made up, and answers are abridged: a post always comes whole, as `GET …/posts/{postId}` answers it.
 
-| Request                        | What it does                              | Needs                           |
-| ------------------------------ | ----------------------------------------- | ------------------------------- |
-| `POST …/posts/validate`        | Checks a post, and makes nothing          | `post:read`, `channel:read`     |
-| `POST …/posts/send`            | Creates a post and sends it, now or later | `post:schedule`, `channel:read` |
-| `GET …/posts/{postId}/outcome` | Waits until a post has gone out           | `post:read`                     |
-| `POST …/posts/bulk`            | Creates and sends up to 50 posts          | `post:schedule`, `channel:read` |
-| `POST …/posts/import`          | Creates and sends the posts of a CSV file | `post:schedule`, `channel:read` |
-| `GET …/posts/search`           | Lists the workspace's posts, with filters | `post:read`, `channel:read`     |
+| Request                        | What it does                              | Needs                                        |
+| ------------------------------ | ----------------------------------------- | -------------------------------------------- |
+| `POST …/posts/validate`        | Checks a post, and makes nothing          | `post:read`, `channel:read`                  |
+| `POST …/posts/send`            | Creates a post and sends it, now or later | `post:schedule`, `channel:read`              |
+| `GET …/posts/{postId}/outcome` | Waits until a post has gone out           | `post:read`                                  |
+| `POST …/posts/bulk`            | Creates and sends up to 50 posts          | `post:schedule`, `channel:read`              |
+| `POST …/posts/import`          | Creates and sends the posts of a CSV file | `post:schedule`, `post:read`, `channel:read` |
+| `GET …/posts/search`           | Lists the workspace's posts, with filters | `post:read`, `channel:read`                  |
 
 A post that shows media also needs `media:read`. An OAuth access token needs the scope `workspace:publish` for `send`, `bulk` and `import` ([What each permission allows](/agents#scopes)).
 
@@ -361,7 +361,7 @@ A post made in one call is refused when another post of the workspace already se
 }
 ```
 
-`duplicates` names each channel that has the content, with the post nearest in time that sends it there.
+`duplicates` names each channel that has the content, with the earliest post that sends it there in that time.
 
 - **The same content** is the text the channel receives and the same media, in the same order.
 - **23 hours** is the shortest day a time zone has, so a post that repeats every day at the same local time is never refused.
@@ -379,7 +379,7 @@ This is apart from idempotency keys. A key makes one request safe to send again.
 
 | Parameter    | What it keeps                                                                                                                                        |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `status`     | `draft`, `scheduled`, `publishing`, `finished` or `cancelled`                                                                                        |
+| `status`     | `draft`, `awaitingApproval` (it waits for an [approval](/review), and keeps its time), `scheduled`, `publishing`, `finished` or `cancelled`          |
 | `outcome`    | How a finished post ended: `published`, `partiallyPublished`, `unconfirmed`, `failed` or `cancelled`                                                 |
 | `channelId`  | Posts with a target on that channel                                                                                                                  |
 | `platform`   | Posts with a target on a connected channel of that platform                                                                                          |
