@@ -66,6 +66,12 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
       text,
     });
 
+    const inbox = (threadId: string, text: string): NoticeText => ({
+      href: `/app/${workspaceId}/inbox/${threadId}`,
+      open: t("open", { page: "inbox" }),
+      text,
+    });
+
     const plan = (name: string) => t("plan", { plan: name });
 
     return Match.valueTags(event, {
@@ -79,6 +85,8 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
             workspace,
           })
         ),
+      CommentsReceived: ({ count, threadId }) =>
+        inbox(threadId, t("event.CommentsReceived", { count, workspace })),
       PostApprovalRequested: ({ postId, scheduledAt }) =>
         post(
           postId,

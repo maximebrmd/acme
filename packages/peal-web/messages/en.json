@@ -906,7 +906,7 @@
       "offlineAccess": "Stay connected while you are away, until you disconnect it",
       "workspaceRead": "Read the workspace: posts, channels, media and analytics",
       "workspaceWrite": "Do what your role allows in the workspace, such as writing drafts and managing media, without scheduling or publishing anything",
-      "workspacePublish": "Schedule and publish posts to your connected accounts, where everyone can see them",
+      "workspacePublish": "Schedule and publish posts to your connected accounts, and answer comments in public as those accounts, where everyone can see them",
       "other": "Use the permission “{scope}”"
     },
     "device": {
@@ -946,7 +946,7 @@
       "allow": "Allow",
       "allowing": "Allowing…",
       "deny": "Deny",
-      "publish": "Let it schedule and publish posts to your connected accounts, where everyone can see them",
+      "publish": "Let it schedule and publish posts to your connected accounts, and answer comments in public as those accounts, where everyone can see them",
       "publishHint": "{rest, select, drafts {Without this, it can still write drafts, which you review and schedule yourself.} other {Without this, it can still read the workspace, and nothing more.}}"
     }
   },
@@ -964,6 +964,7 @@
       "PostApprovedLate": "{by, select, visitor {A reviewer} application {An application} other {A member}} approved a post of {workspace} after its time. Nothing was published late: it is a draft again, still approved. Give it a new time.",
       "PostChangesRequested": "{by, select, visitor {A reviewer} application {An application} other {A member}} asked for changes to a post of {workspace}. It is a draft again.",
       "PostCommented": "{by, select, visitor {A reviewer} application {An application} other {A member}} commented on a post of {workspace}.",
+      "CommentsReceived": "{count, plural, one {# new comment} other {# new comments}} under a post of {workspace}.",
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
       "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed.",
       "TrialEnding": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
@@ -976,7 +977,7 @@
       "TrialEndingOver": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan. It holds more than the free plan allows ({over}): from that day nothing is scheduled or published until it is back within it."
     },
     "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} other {{reason}}}",
-    "open": "{page, select, post {Open the post} billing {Open billing} webhooks {Open the webhooks} other {Open the channels}}",
+    "open": "{page, select, post {Open the post} billing {Open billing} webhooks {Open the webhooks} inbox {Open the comments} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
       "many": "99+",
@@ -1009,6 +1010,7 @@
       "postUnconfirmed": "A post may have gone out, and needs checking on the platform",
       "postReview": "A post waits for my approval, or a post I follow is commented on, approved or sent back",
       "channelReconnect": "A channel must be reconnected, now or soon",
+      "comments": "People comment on published posts",
       "postPublished": "A post went out",
       "postsLegend": "Tell me about",
       "everyPost": "Every post of my workspaces, not only the ones I wrote",
@@ -1447,6 +1449,10 @@
       "media": {
         "ready": "A file is ready for posts",
         "failed": "A file is refused or cannot be read"
+      },
+      "comment": {
+        "received": "A comment is read under a published post",
+        "replied": "A reply to a comment goes out from Peal"
       },
       "webhook": {
         "test": "Test event"
@@ -2132,6 +2138,117 @@
       "saveFailed": "The setting could not be saved.",
       "loadFailed": "The setting could not be loaded.",
       "readOnly": "Owners and admins choose this."
+    }
+  },
+  "Inbox": {
+    "open": "Inbox",
+    "openLabel": "Inbox of {workspace}",
+    "title": "Inbox",
+    "description": "The comments people leave under the posts of {workspace}, where they went live.",
+    "collected": "Peal reads comments on {platforms}, for {windowDays, number} days after a post went live, and keeps them {retentionDays, number} days after that.",
+    "loading": "Loading the comments…",
+    "loadFailed": "The comments could not be loaded.",
+    "retry": "Try again",
+    "readOnly": "You can read the comments. Answering them takes the permission to reply to comments.",
+    "filter": {
+      "legend": "Show",
+      "unanswered": "Waiting for an answer",
+      "channel": "Channel",
+      "allChannels": "All channels"
+    },
+    "list": {
+      "title": "Posts with comments",
+      "empty": "No comment has been read yet.",
+      "emptyFiltered": "No post matches these filters.",
+      "loadMore": "Load more"
+    },
+    "row": {
+      "thread": "Comments under the post on {channel}",
+      "counts": "{unanswered, number} waiting of {comments, number}",
+      "lastComment": "Latest comment on {at}",
+      "noComment": "No comment is left on the platform.",
+      "openPost": "Open the post",
+      "onPlatform": "View the post on the platform",
+      "ended": "{reason, select, window {Its comments are no longer read: the post is past the days Peal reads them for.} disconnected {Its comments are no longer read: its channel was disconnected.} unsupported {Its comments are no longer read: Peal reads none on this platform.} missing {Its comments are no longer read: the platform no longer shows the post.} other {Its comments are no longer read.}}"
+    },
+    "thread": {
+      "title": "Comments",
+      "channel": "Under the post on {channel}, live since {at}.",
+      "back": "Back to the inbox",
+      "listTitle": "Oldest first",
+      "empty": "No comment under this post.",
+      "notFound": "These comments do not exist, or are no longer kept."
+    },
+    "comment": {
+      "unknownAuthor": "Someone",
+      "writtenAt": "Written on {at}",
+      "state": "{state, select, new {New} answered {Answered} hidden {Hidden} deleted {Deleted} other {{state}}}",
+      "deleted": "This comment is no longer on the platform",
+      "liked": "Liked",
+      "onPlatform": "View the comment on the platform",
+      "answers": "Answers to this comment",
+      "replies": "Replies sent from Peal"
+    },
+    "reply": {
+      "from": "Reply sent from Peal on {at}",
+      "status": "{status, select, sending {Sending…} sent {Sent} failed {Not sent} unconfirmed {To check} withdrawn {Withdrawn} other {{status}}}",
+      "onPlatform": "View the reply on the platform",
+      "failed": "Nothing went out: {reason}",
+      "unconfirmed": "This reply may be on the platform: {reason} Peal never sends it again. Check the platform, then say what you found.",
+      "reason": "{reason, select, channelUnavailable {the channel was disconnected or turned off.} reconnectNeeded {the platform refuses the account’s authorization. Disconnect the channel and connect the account again.} rateLimited {the platform kept turning requests away.} platformUnavailable {the platform could not be reached.} commentGone {the comment is no longer on the platform.} refused {the platform refused the reply.} notSent {someone checked the platform and did not find it.} noResponse {the request left and no answer came.} interrupted {Peal stopped during the call, and the platform could not say afterwards.} adapterFailure {a fault in Peal happened after the request may have left.} other {{reason}}}",
+      "withdrawnNote": "It was deleted from the platform.",
+      "confirmSent": "It is there",
+      "confirmNotSent": "It did not go out",
+      "confirmed": "{sent, select, true {The reply is recorded as sent.} other {The reply is recorded as not sent: the comment waits for an answer again.}}",
+      "withdraw": "Withdraw",
+      "withdrawing": "Withdrawing…",
+      "withdrawTitle": "Withdraw this reply?",
+      "withdrawDescription": "The reply is deleted from the platform. People who already read it may have kept it. This cannot be undone.",
+      "withdrawn": "The reply was withdrawn."
+    },
+    "box": {
+      "label": "Reply to {author}",
+      "public": "Everyone who sees the post sees the reply, sent as the channel’s account.",
+      "mention": "On Mastodon a reply reaches the person only when it mentions them: it will start with {mention}, which the count includes.",
+      "count": "{length, number} of {maximum, number} {unit, select, utf8Bytes {bytes} other {characters}}",
+      "tooLong": "{over, plural, one {# too many} other {# too many}}",
+      "send": "Send",
+      "sending": "Sending…",
+      "sent": "The reply is on its way.",
+      "pending": "{status, select, sending {A reply to this comment is on its way. Wait until it has gone out to write another.} other {A reply to this comment may have gone out. Say what you found on the platform before writing another.}}"
+    },
+    "action": {
+      "markAnswered": "Mark as answered",
+      "markWaiting": "Mark as waiting",
+      "like": "Like",
+      "unlike": "Unlike",
+      "hide": "Hide",
+      "show": "Show",
+      "delete": "Delete",
+      "deleteTitle": "Delete this comment?",
+      "deleteDescription": "The comment is deleted from the platform, for everyone. This cannot be undone.",
+      "cancel": "Cancel",
+      "done": "{action, select, answered {The comment is marked as answered.} waiting {The comment waits for an answer again.} like {The comment is liked.} unlike {The like was taken back.} hide {The comment is hidden.} unhide {The comment is shown again.} delete {The comment was deleted.} other {Done.}}"
+    },
+    "abilities": {
+      "reconnect": "The account’s authorization does not allow replies. To answer comments here, disconnect the channel and connect the account again.",
+      "channels": "Open the channels",
+      "unsupported": "Replies are not possible here: the platform does not offer them to this account, or Peal does not send them there yet.",
+      "disconnected": "Replies are not possible here: the channel was disconnected."
+    },
+    "errors": {
+      "forbidden": "You are not allowed to do this.",
+      "threadNotFound": "These comments no longer exist.",
+      "commentNotFound": "This comment no longer exists.",
+      "commentGone": "The comment is no longer on its platform: it can be neither answered nor moderated.",
+      "replyNotFound": "This reply no longer exists.",
+      "replyPending": "A reply to this comment is on its way, or may have gone out. Settle it before writing another, so the same answer never shows twice.",
+      "replyEmpty": "The reply says nothing.",
+      "replyTooLong": "The reply is too long: {length, number} where the platform takes {maximum, number}, counted as it counts. Nothing was sent.",
+      "unavailable": "{standing, select, reconnect {The account’s authorization does not allow this. Disconnect the channel and connect the account again.} other {This is not possible on this channel: its platform does not offer it to the account, or Peal does not do it there yet.}}",
+      "actionFailed": "The platform did not do it, and nothing changed: {reason, select, rateLimited {it asked to slow down. Try again in a moment.} platformUnavailable {it could not be reached. Try again later.} reconnectNeeded {it refuses the account’s authorization. Disconnect the channel and connect the account again.} channelUnavailable {the channel was disconnected or turned off.} commentGone {the comment is no longer there.} refused {it refused.} other {{reason}}}",
+      "statusConflict": "{status, select, sending {The reply is still on its way.} sent {The reply was already sent.} failed {The reply did not go out.} unconfirmed {The reply must be checked on the platform first.} withdrawn {The reply was already withdrawn.} other {The reply is not in a state that allows this.}}",
+      "unknown": "Something went wrong. Try again."
     }
   }
 }

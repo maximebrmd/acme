@@ -8,6 +8,7 @@ import { loadMessages } from "#i18n/messages.ts";
 const preferences = {
   email: {
     channelReconnect: true,
+    comments: true,
     postFailed: true,
     postPublished: false,
     postReview: true,
@@ -72,6 +73,10 @@ describe(PreferencesFields, () => {
         ],
         [
           "A channel must be reconnected, now or soon",
+          { checked: true, labelled: true },
+        ],
+        [
+          "People comment on published posts",
           { checked: true, labelled: true },
         ],
         ["A post went out", { checked: false, labelled: true }],

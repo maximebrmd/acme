@@ -33,7 +33,7 @@ const render = async (
   );
 
 const publishing =
-  "schedule and publish posts to your connected accounts, where everyone can see them";
+  "schedule and publish posts to your connected accounts, and answer comments in public as those accounts, where everyone can see them";
 
 describe(OAuthConsentView, () => {
   it("lets the person leave publishing out, ticked at first", async () => {
@@ -93,7 +93,7 @@ describe(OAuthConsentView, () => {
     const html = await render("fr", {});
 
     expect(html).toContain(
-      "L’autoriser à programmer et publier des publications sur vos comptes connectés, où tout le monde peut les voir"
+      "L’autoriser à programmer et publier des publications sur vos comptes connectés, et à répondre publiquement aux commentaires au nom de ces comptes, où tout le monde peut les voir"
     );
     expect(html).toContain(
       "Sans cela, elle peut toujours rédiger des brouillons, que vous relisez et programmez vous-même."
