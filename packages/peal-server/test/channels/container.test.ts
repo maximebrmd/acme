@@ -310,6 +310,18 @@ layer(DatabaseTest)("the channels context's Bluesky settings", (it) => {
   );
 });
 
+// A value the server takes for a setting that holds an app's credentials:
+// the Bluesky key, digits for Meta's app ids, any text for the rest.
+const syntheticSetting = (name: string, blueskyKey: string) => {
+  if (name === "BLUESKY_CLIENT_KEYS") {
+    return blueskyKey;
+  }
+
+  return name.endsWith("_APP_ID")
+    ? "1234567890123456"
+    : `synthetic-${name.toLowerCase()}`;
+};
+
 // The address the sign-in asks the platform to send the member back to.
 const redirectOf = (authorizationUrl: string) =>
   new URL(authorizationUrl).searchParams.get("redirect_uri");
@@ -334,12 +346,7 @@ layer(DatabaseTest)(
         ...Object.fromEntries(
           registrations
             .flatMap(({ settings }) => settings)
-            .map((name) => [
-              name,
-              name === "BLUESKY_CLIENT_KEYS"
-                ? entry
-                : `synthetic-${name.toLowerCase()}`,
-            ])
+            .map((name) => [name, syntheticSetting(name, entry)])
         ),
         PEAL_TOKEN_KEYS: syntheticKeyring,
         PUBLIC_URL: publicUrl,

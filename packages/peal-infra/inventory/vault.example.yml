@@ -13,10 +13,11 @@ cloudflared_tunnel_token: REPLACE
 # file: every key below goes in, not only the ones that change. A single
 # quote cannot appear in a value.
 peal_credentials:
-  # An R2 API token with Object Read & Write on the media bucket only.
+  # The media bucket's key, which reads and writes objects in that bucket
+  # only (on R2, an API token with Object Read & Write on it).
   PEAL_S3_ACCESS_KEY_ID: REPLACE
   PEAL_S3_SECRET_ACCESS_KEY: REPLACE
-  # An R2 API token with Object Read & Write on the backup bucket only.
+  # The backup bucket's key, likewise, for that bucket only.
   PGBACKREST_REPO1_S3_KEY: REPLACE
   PGBACKREST_REPO1_S3_KEY_SECRET: REPLACE
   # Encrypts the backups: `openssl rand -base64 48`. Keep a copy outside the
@@ -25,8 +26,9 @@ peal_credentials:
   PGBACKREST_REPO1_CIPHER_PASS: REPLACE
   # Email through Resend, or SMTP_URL.
   RESEND_API_KEY: REPLACE
-  # The alert bot (from @BotFather) and the chat it writes to: the
-  # sandbox's vault takes the sandbox's own bot and channel.
+  # The alert bot (from @BotFather) and the id of the channel it writes to,
+  # quoted, as "-100…": the sandbox's vault takes the sandbox's own bot and
+  # channel (README.md, "Telegram").
   TELEGRAM_BOT_TOKEN: REPLACE
   TELEGRAM_CHAT_ID: REPLACE
   # Where peal_heartbeat_url is set (production): the token Grafana's

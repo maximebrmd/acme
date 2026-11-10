@@ -44,9 +44,12 @@ peal_mail_from: Peal <notifications@mail.peal.social>
 # credential PEAL_HEARTBEAT_TOKEN, which the uptime server generates.
 peal_heartbeat_url: https://uptime.peal.social/api/v1/endpoints/production_grafana-heartbeat/external?success=true
 
-# Cloudflare R2: one bucket for media, one for database backups, in the
-# account whose id names the endpoint. Both buckets are created in R2's EU
-# jurisdiction, whose endpoints carry `.eu.`, so the data stays in the EU.
+# Object storage, in the EU: one bucket for media, one for database backups,
+# on any store that speaks the S3 API (README.md, "Object storage"). The
+# media endpoint is an https:// URL, the backup endpoint a host. These name
+# Cloudflare R2, in the account whose id names the endpoint: both buckets
+# are created in R2's EU jurisdiction, which cannot change afterwards and
+# whose endpoints carry `.eu.`, so the data stays in the EU.
 peal_media_endpoint: https://0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com
 peal_media_bucket: peal-production-media
 peal_backup_endpoint: 0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com

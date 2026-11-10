@@ -305,7 +305,9 @@ the owner's approval.
    cloudflared tunnel token peal-production              # the token for the vault
    ```
 
-4. **R2**: a media bucket and a backup bucket per environment, created in
+4. **Object storage in the EU** ([Object storage](#object-storage) says what
+   any S3 store needs). On Cloudflare R2, which the inventory's placeholders
+   name: a media bucket and a backup bucket per environment, created in
    R2's EU jurisdiction (their endpoint is
    `<account>.eu.r2.cloudflarestorage.com`), which cannot be changed once a
    bucket exists: a bucket made without it is deleted while empty and made
@@ -327,10 +329,8 @@ the owner's approval.
    dashboard (R2 › the bucket › Settings › CORS policy), which needs no such
    token.
 
-5. **Telegram**: a bot from @BotFather per environment, each writing to a
-   private channel, and that chat's id. Read the id from Telegram Web's
-   address bar rather than calling `getUpdates`, which puts the bot's token
-   in a URL. The uptime server has a bot of its own.
+5. **Telegram** ([Telegram](#telegram)): three bots from @BotFather, one for
+   each server that alerts, and two private channels.
 6. **Email**: a Resend key for the verified sending domain `mail.peal.social`,
    which sends as `notifications@mail.peal.social` (`peal_mail_from`).
 7. **The platforms' apps**, a set of its own for each environment
@@ -364,6 +364,79 @@ without Access. Production is public. On the sandbox, they are
 Bypass application at Cloudflare's edge (step 2 above):
 `tests/test_cloudflared.py` runs the command for the sandbox's name and
 fails when cloudflared would stop one of them.
+
+### Object storage
+
+Media and the database's backups go to two buckets of any store that
+speaks the S3 API, in the EU, each with a key that reads and writes its
+bucket alone:
+
+| What                   | Inventory                                                                                              | Reaches the stack as                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| The media bucket       | `peal_media_endpoint`, an `https://` URL; `peal_media_bucket`                                          | `PEAL_S3_ENDPOINT`, `PEAL_S3_BUCKET`                                                  |
+| Its key                | the vault: `PEAL_S3_ACCESS_KEY_ID`, `PEAL_S3_SECRET_ACCESS_KEY`                                        | the same                                                                              |
+| The backup repository  | `peal_backup_endpoint`, a host without a scheme; `peal_backup_bucket`; `peal_backup_path`              | `PGBACKREST_REPO1_S3_ENDPOINT`, `PGBACKREST_REPO1_S3_BUCKET`, `PGBACKREST_REPO1_PATH` |
+| Its key and passphrase | the vault: `PGBACKREST_REPO1_S3_KEY`, `PGBACKREST_REPO1_S3_KEY_SECRET`, `PGBACKREST_REPO1_CIPHER_PASS` | the same                                                                              |
+
+A store that asks for more takes it in `peal_settings`: the region
+requests are signed for, `PEAL_S3_REGION` and `PGBACKREST_REPO1_S3_REGION`
+(both `auto` unless set, which suits R2; elsewhere the store's region,
+such as `eu-west-1`), and where the bucket's name goes,
+`PEAL_S3_FORCE_PATH_STYLE: true` for the path rather than the host name,
+and `PGBACKREST_REPO1_S3_URI_STYLE` (`path` unless set, or `host`). Browsers
+upload straight to the media bucket, so it needs the upload CORS rule
+(`bun nx run peal-server:media-cors`), and a rule that aborts unfinished
+multipart uploads after a day where the store has one. Never put an expiry
+rule on the backup bucket.
+
+On Cloudflare R2, a bucket's jurisdiction is chosen when it is created and
+cannot change: an EU bucket is reached at
+`<account>.eu.r2.cloudflarestorage.com` alone, and the account's plain
+endpoint does not find it. `site.yml` refuses an R2 endpoint without `.eu.`,
+a media endpoint that is not an `https://` URL, and a backup endpoint with a
+scheme. The account's id is part of the endpoint and no secret; it goes in
+each environment's `main.yml`, in place of the placeholder.
+
+### Telegram
+
+Alerts go to Telegram from three senders, each with a bot of its own, so a
+token that leaks or is revoked silences one server, and the uptime server
+holds no secret of the servers it watches:
+
+| Sender                | Writes to                    | Its token and chat id go in                                                                  |
+| --------------------- | ---------------------------- | -------------------------------------------------------------------------------------------- |
+| Production's Grafana  | A channel for alerts         | `group_vars/production/vault.yml`: `peal_credentials.TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
+| The sandbox's Grafana | A channel for the sandbox's  | `group_vars/sandbox/vault.yml`: the same two names                                           |
+| The uptime server     | The channel production's use | `group_vars/uptime/vault.yml`: `uptime_credentials.TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`   |
+
+Two bots are the least: one for both Grafanas and one for the uptime
+server. The sandbox then holds the token production's alerts depend on, so
+prefer three. `site.yml` requires both names on production and on the
+sandbox, and `uptime.yml` on the uptime server.
+
+1. Create two private channels, where only admins post. A channel's id does
+   not change; a group's does when Telegram upgrades it.
+2. For each bot, send `/newbot` to @BotFather (check its verified mark),
+   then a name, then a username that ends in `bot`. Its answer holds the
+   token: copy it straight into the vault, with
+   `EDITOR=nano uv run ansible-vault edit inventory/group_vars/<group>/vault.yml`,
+   and delete BotFather's message. `/token` issues a new one, which ends the
+   old one.
+3. `/setjoingroups`, **Disable**, for each bot, so nobody adds it elsewhere.
+4. Make each bot an administrator of its channel, with the right to post
+   messages and no other.
+5. Read each channel's id in Telegram Web's address bar
+   (`web.telegram.org/a/`, the number after `#`, `-100…` with its minus
+   sign), rather than by calling `getUpdates`, which puts the bot's token in
+   a URL, or through a third party's bot. Quote it in the vault:
+   `TELEGRAM_CHAT_ID: "-100…"`.
+6. After the first release, send a test from Grafana (Alerting › Contact
+   points › Telegram › Test) on production and on the sandbox. Gatus has no
+   test button: the uptime server's first alert, when a check fails, is its
+   test.
+
+Alerts carry rule names and labels, never log lines: Telegram is outside
+the EU, so keep personal data out of any rule you add.
 
 ### Credentials
 
@@ -578,11 +651,18 @@ resource. Then:
    status page its own, `uptime_status_hostname` ([The status
    page](#the-status-page)).
 2. Make its credentials, which are its own:
-   - a Telegram bot from @BotFather, and the chat it writes to, which may be
-     the one production's alerts go to;
-   - a Cloudflare Access service token (Zero Trust › Access › Service
-     credentials), and a Service Auth policy for it on the sandbox's Access
-     application.
+   - its Telegram bot, and the id of the channel it writes to, which may be
+     the one production's alerts go to ([Telegram](#telegram)):
+     `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`;
+   - a Cloudflare Access service token for the sandbox's checks (Zero Trust ›
+     Access › Service credentials), valid a year: its client id and secret,
+     shown once, are `SANDBOX_ACCESS_CLIENT_ID` and
+     `SANDBOX_ACCESS_CLIENT_SECRET`, named after the environment. Add a
+     policy with the action Service Auth that includes that token alone,
+     not any service token of the account, to the sandbox's Access
+     application, the one that covers its app, site and docs, and to no
+     other. When the token expires, every check of the sandbox fails at
+     once: refresh it before, which keeps its id and secret.
 
    Put them in `inventory/group_vars/uptime/vault.yml`, from
    `inventory/vault.uptime.example.yml` and encrypted like the others, or
