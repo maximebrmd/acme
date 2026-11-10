@@ -8,6 +8,7 @@ import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
 
 import { Composer } from "#components/posts/composer.tsx";
+import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
 import { PostDetail } from "#components/posts/post-detail.tsx";
 import { PostReviewSection } from "#components/review/post-review-section.tsx";
 import { Link } from "#i18n/navigation.ts";
@@ -109,6 +110,13 @@ const ExistingPost = ({
     ) : (
       <div className="flex flex-col gap-6">
         <PostDetail
+          actions={
+            <DuplicatePost
+              permissions={permissions}
+              postId={post.id}
+              workspaceId={workspaceId}
+            />
+          }
           channels={channels}
           permissions={permissions}
           post={post}

@@ -65,6 +65,21 @@ describe(CharacterCounters, () => {
     expect(html).toContain("1 canal refuserait la publication en l’état.");
   });
 
+  it("names a channel as its workspace does, with its handle beside", async () => {
+    const messages = await loadMessages("en");
+    const named = { ...channel("bluesky"), label: "Client A" };
+
+    const html = renderToStaticMarkup(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <CharacterCounters
+          fits={[{ channel: named, fit: fitOn("bluesky", "Hello", 0) }]}
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(html).toContain("Client A (@peal_bluesky) on Bluesky");
+  });
+
   it("asks for channels before there is anything to count", async () => {
     const messages = await loadMessages("en");
 

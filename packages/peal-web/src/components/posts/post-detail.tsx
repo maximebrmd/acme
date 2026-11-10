@@ -51,6 +51,7 @@ import { useCallback, useId, useState, useTransition } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 
+import { channelName as nameOfChannel } from "#channels/channel-name.ts";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
 import { PostTagsField } from "#components/posts/post-tags-field.tsx";
 import { useRefreshWhileVisible } from "#notices/use-refresh-while-visible.ts";
@@ -308,7 +309,7 @@ export const TargetView = ({
     channel === undefined
       ? tPosts("disconnectedChannel")
       : tPosts("Composer.channelDetail", {
-          handle: channel.handle,
+          handle: nameOfChannel(channel),
           platform,
         });
 
@@ -404,6 +405,8 @@ interface PostDetailViewProps {
   readonly channels: readonly Channel[];
   readonly onRequest: (request: TargetRequest) => void;
   readonly post: Post;
+  /** What a member may do with the whole post, such as copying it. */
+  readonly actions?: ReactNode;
   /** The post's tags, with what changes them for a member who may. */
   readonly tags?: ReactNode;
   /** The signed-in user, named in how the post came to be. */
@@ -416,6 +419,7 @@ interface PostDetailViewProps {
  * check.
  */
 export const PostDetailView = ({
+  actions,
   attempts,
   busy,
   canAct,
@@ -452,6 +456,7 @@ export const PostDetailView = ({
           )}
         </div>
         <PostOrigins post={post} viewerId={viewerId} />
+        {actions === undefined ? null : <CardAction>{actions}</CardAction>}
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-6">
@@ -532,12 +537,15 @@ const noChange = () => {
  * could not tell. It updates while the post is publishing.
  */
 export const PostDetail = ({
+  actions,
   channels,
   permissions,
   post,
   userId,
   workspaceId,
 }: {
+  /** What a member may do with the whole post, such as copying it. */
+  readonly actions?: ReactNode;
   readonly channels: readonly Channel[];
   readonly permissions: readonly Permission[];
   readonly post: Post;
@@ -573,7 +581,7 @@ export const PostDetail = ({
     return channel === undefined
       ? tPosts("disconnectedChannel")
       : tPosts("Composer.channelDetail", {
-          handle: channel.handle,
+          handle: nameOfChannel(channel),
           platform: tPosts("platform", { platform: channel.platform }),
         });
   };
@@ -625,6 +633,7 @@ export const PostDetail = ({
 
   return (
     <PostDetailView
+      actions={actions}
       attempts={AsyncResult.isSuccess(attempts) ? attempts.value : undefined}
       busy={busy}
       canAct={permissions.includes("post:schedule")}

@@ -13,6 +13,7 @@ import {
   missingChannels,
   withChannel,
 } from "#channel-sets/selection.ts";
+import { channelName } from "#channels/channel-name.ts";
 import { SavedItemErrorAlert } from "#components/settings/saved-item-error.tsx";
 import type { SavedItemError } from "#settings/saved-item-error.ts";
 
@@ -99,7 +100,7 @@ export const ChannelSetFieldsView = ({
                   />
                   <Label htmlFor={id}>
                     {tPosts("Composer.channelDetail", {
-                      handle: channel.handle,
+                      handle: channelName(channel),
                       platform: tPosts("platform", {
                         platform: channel.platform,
                       }),
@@ -164,7 +165,7 @@ export const ChannelSetItemView = ({
               {connected.map((channel) => (
                 <li key={channel.id}>
                   {tPosts("Composer.channelDetail", {
-                    handle: channel.handle,
+                    handle: channelName(channel),
                     platform: tPosts("platform", {
                       platform: channel.platform,
                     }),

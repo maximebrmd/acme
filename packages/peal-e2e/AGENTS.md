@@ -33,6 +33,12 @@
   inserts a synthetic one with `seedChannel` (`tests/support/channels.ts`).
   Update it when `channels.channels` changes. Publish nothing, and cancel any
   post a test schedules, through the UI.
+- `tests/tags.e2e.ts` signs up a member of its own, adds a tag in the
+  settings, schedules a tagged post and another, filters the calendar by
+  the tag and clears the filter, then cancels both. The calendar names a
+  tagged post "<time>, <status>: <text> Tag: <name>.", so a locator for one
+  ends with its tags. A menu or popover that stays open after a choice is
+  closed with `press("Escape")` before the page behind it is read.
 - CI's `e2e` job runs after `verify`, with its own Postgres and Mailpit and
   SeaweedFS from `compose.yaml`. After a failure, read the report, traces and
   screenshots under `packages/peal-e2e/.e2e/` (CI uploads it for 7 days), and

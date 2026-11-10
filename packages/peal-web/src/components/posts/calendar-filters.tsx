@@ -13,6 +13,7 @@ import {
 } from "peal-ui/components/dropdown-menu";
 import { TagDot } from "peal-ui/components/tag";
 
+import { channelName } from "#channels/channel-name.ts";
 import { isFiltering, noFilter, withChoice } from "#posts/calendar-filter.ts";
 import type { CalendarFilter } from "#posts/calendar-filter.ts";
 
@@ -98,7 +99,7 @@ export const CalendarFilters = ({
                 >
                   <span className="truncate">
                     {tPosts("Composer.channelDetail", {
-                      handle: channel.handle,
+                      handle: channelName(channel),
                       platform: tPosts("platform", {
                         platform: channel.platform,
                       }),

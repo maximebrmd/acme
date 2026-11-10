@@ -8,8 +8,13 @@ import { PealApi } from "#api/client.ts";
 // What refreshes a workspace's channel list once a change lands.
 const channelsKey = (workspaceId: string) => `channels:${workspaceId}`;
 
+// What the composer, the calendar and the reports read their channels
+// under (`workspaceChannels`): a change here shows there too.
+const everyChannelList = "channels";
+
 export const channelsChanged = (workspaceId: string) => [
   channelsKey(workspaceId),
+  everyChannelList,
 ];
 
 /** The workspace's channels, fetched through /api with the visitor's cookies. */
@@ -40,6 +45,14 @@ export const chooseAccounts = PealApi.mutation("channels", "chooseAccounts");
 export const reconnectChannel = PealApi.mutation("channels", "reconnect");
 
 export const disconnectChannel = PealApi.mutation("channels", "disconnect");
+
+/** Gives a channel the workspace's own name for it, or takes it back. */
+export const renameChannel = PealApi.mutation("channels", "update");
+
+/** Turns a channel off: nothing goes out on it until it is turned back on. */
+export const disableChannel = PealApi.mutation("channels", "disable");
+
+export const enableChannel = PealApi.mutation("channels", "enable");
 
 /**
  * The message explaining why a channel action failed: a ChannelsPage error,

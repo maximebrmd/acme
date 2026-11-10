@@ -265,6 +265,34 @@
     "disconnectDescription": "Peal deletes the tokens it holds for this {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account and posts nothing more on it. You can connect it again later.",
     "cancel": "Cancel",
     "disconnected": "{handle} is disconnected.",
+    "offHint": "{who, select, you {Nothing goes out on this channel while it is off. Choose Turn on to post on it again.} other {Nothing goes out on this channel while it is off. An owner or an admin of the workspace can turn it back on.}}{reconnect, select, yes { Its account’s authorization stopped working meanwhile: it will need reconnecting once the channel is on.} other {}}",
+    "rename": {
+      "open": "Rename",
+      "account": "Rename {handle}",
+      "title": "Rename {handle}",
+      "description": "Give this channel the name your workspace calls it by.",
+      "name": "Name in Peal",
+      "hint": "Shown in Peal only, beside the account’s handle, and sent to no platform. {max, number} characters at most; leave it empty to remove the name.",
+      "tooLong": "This name is longer than {max, number} characters.",
+      "save": "Save",
+      "saving": "Saving…",
+      "clear": "Remove the name",
+      "close": "Close",
+      "saved": "{handle} is now named {label} in Peal.",
+      "cleared": "{handle} has no name of its own in Peal any more."
+    },
+    "power": {
+      "off": "Turn off",
+      "offAccount": "Turn off {handle}",
+      "turningOff": "Turning off…",
+      "offTitle": "Turn off {handle}?",
+      "offDescription": "Nothing will go out on this channel until it is turned back on. Posts that reach their time meanwhile fail on it, and go out on their other channels. The channel stays connected, and still counts in your plan.",
+      "on": "Turn on",
+      "onAccount": "Turn on {handle}",
+      "turningOn": "Turning on…",
+      "turnedOff": "{handle} is off: nothing goes out on it.",
+      "turnedOn": "{status, select, refreshNeeded {{handle} is on, but its authorization stopped working meanwhile: reconnect the account.} other {{handle} is on: posts go out on it again.}}"
+    },
     "connectTitle": "Connect an account",
     "connectDescription": "You sign in on the platform, then come back here.",
     "mastodonTitle": "Mastodon",
@@ -449,6 +477,12 @@
       "drafts": "Drafts",
       "workspaceLinks": "Posts of {workspace}"
     },
+    "Duplicate": {
+      "open": "Duplicate",
+      "working": "Duplicating…",
+      "done": "A copy was made as a draft. It has no time yet: choose one, then schedule it.",
+      "failed": "{reason, select, forbidden {You may not copy posts in this workspace.} notFound {This post no longer exists.} other {The post could not be copied. Try again.}}"
+    },
     "Composer": {
       "newTitle": "New post",
       "editTitle": "Edit the draft",
@@ -589,7 +623,7 @@
         "documentTitleInvalid": "A title cannot be only spaces."
       },
       "lookupLoading": "Reading the list on the platform…",
-      "lookupFailed": "{reason, select, reconnect {Reconnect this account to read its list.} disabled {This channel is turned off: disconnect it and connect the account again to post to it.} rateLimited {The platform asked to slow down. Try again in a moment.} other {The list could not be read from the platform. Try again in a moment.}}",
+      "lookupFailed": "{reason, select, reconnect {Reconnect this account to read its list.} disabled {This channel is turned off: turn it back on, on the Channels page, to post to it.} rateLimited {The platform asked to slow down. Try again in a moment.} other {The list could not be read from the platform. Try again in a moment.}}",
       "lookupRetry": "Try again",
       "lookupNone": "None",
       "lookupUnknown": "Not in the list ({value})",
@@ -686,7 +720,7 @@
         "postingAs": "Posting as {nickname} (@{username}).",
         "postingAsNickname": "Posting as {nickname}.",
         "blocked": "{reason, select, postLimit {This account has made as many posts today as TikTok allows: try again later.} banned {TikTok has banned this account from posting.} clientLimit {Today, TikTok takes no more accounts posting through this server: try again later.} other {This account cannot post right now: try again later.}}",
-        "creatorFailed": "{reason, select, reconnect {Reconnect this account to read its settings on TikTok.} disabled {This channel is turned off: disconnect it and connect the account again to post to it.} other {The account’s settings could not be read from TikTok. Try again later: scheduling checks them too.}}",
+        "creatorFailed": "{reason, select, reconnect {Reconnect this account to read its settings on TikTok.} disabled {This channel is turned off: turn it back on, on the Channels page, to post to it.} other {The account’s settings could not be read from TikTok. Try again later: scheduling checks them too.}}",
         "turnedOff": "Turned off in the account’s TikTok settings.",
         "brandedNotPrivate": "Branded content visibility cannot be set to private.",
         "labelPromotional": "Your {kind, select, photo {photo} other {video}} will be labeled “Promotional content”.",
@@ -1048,7 +1082,7 @@
       "WebhookEndpointDisabled": "{reason, select, gone {The webhook endpoint at {host} in {workspace} was turned off: it answered 410 Gone, which asks for no more deliveries.} other {The webhook endpoint at {host} in {workspace} was turned off: every delivery had failed for {days, number} days. Fix the receiver, then turn it back on.}}",
       "TrialEndingOver": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan. It holds more than the free plan allows ({over}): from that day nothing is scheduled or published until it is back within it."
     },
-    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn the channel back on, on the Channels page, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} other {{reason}}}",
     "open": "{page, select, post {Open the post} billing {Open billing} webhooks {Open the webhooks} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
@@ -2354,6 +2388,7 @@
     "menuTrigger": "Signature",
     "menuAll": "Add under the text for all channels",
     "menuOwn": "Add under one channel’s own text",
+    "addedCheck": "The post was saved as a draft, with the default signature under its text. Nothing is scheduled yet: check the text and the character counts, then choose {action} again.",
     "addDefault": "{count, plural, one {Add the default signature when the post is saved} other {Add the default signatures when the post is saved}}",
     "addDefaultHint": "{count, plural, one {{names} goes under the text when the post is first saved. You then see the text as it will go out, and can still change it.} other {{names} go under the text, each on the channels it is for, when the post is first saved. You then see the texts as they will go out, and can still change them.}}"
   },

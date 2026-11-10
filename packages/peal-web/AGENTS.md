@@ -145,6 +145,26 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `PostTagsField`, which saves tags with the post while it is written and
   at once (`posts.tag`, `savedOn`) on a post scheduled or out, as
   `PostDetail` does.
+- Name a channel with `#channels/channel-name.ts`, never `channel.handle`
+  alone: `channelName` wherever one line names it (the workspace's name
+  with the handle beside it, "Client A (@handle)"), `channelTitle` where
+  the handle is written beside anyway (the channels page, the composer's
+  picker). The name is Peal's (`Channel.label`, `RenameChannel`,
+  `labelUpdateOf`) and never hides the handle. The text tabs still show
+  the handle alone. `ChannelPower` turns a channel off, after a
+  confirmation, and back on: every string about a channel that is off
+  says to turn it back on, on the Channels page, not to reconnect it.
+- `DuplicatePost` (post:read and post:create, `#posts/duplicate.ts`) copies
+  a post into a new draft and opens it: in the composer through
+  `ComposerActions`' `extra`, on a post that went out through
+  `PostDetail`'s `actions`, which `ComposerScreen` fills, as the view under
+  test imports no navigation. The calendar's chips are links, with no menu.
+- A schedule whose save created the post with default signatures that
+  changed a text stops there (`pausesToCheck`,
+  `#signatures/signing-pause.ts`): the composer shows the saved texts and
+  `SignaturePause`, a status region, asks to check them and choose
+  Schedule again, which asks for no signature. Never schedule text the
+  counters did not count.
 - The calendar filters the posts it loaded in the browser
   (`#posts/calendar-filter.ts`, `CalendarFilters`), and links each day and
   each hour still to come to `…/posts/new?at=YYYY-MM-DDTHH:mm`

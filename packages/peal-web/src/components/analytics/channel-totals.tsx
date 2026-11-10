@@ -13,6 +13,8 @@ import {
   TableRow,
 } from "peal-ui/components/table";
 
+import { channelName } from "#channels/channel-name.ts";
+
 type Column = keyof MetricTotals;
 
 const allColumns: readonly Column[] = [
@@ -79,7 +81,7 @@ export const ChannelTotals = ({ channels, summary }: ChannelTotalsProps) => {
                   tPosts("disconnectedChannel")
                 ) : (
                   <span className="flex flex-col">
-                    <span>{channel.handle}</span>
+                    <span>{channelName(channel)}</span>
                     <span className="text-muted-foreground text-xs">
                       {tPosts("platform", { platform: channel.platform })}
                     </span>

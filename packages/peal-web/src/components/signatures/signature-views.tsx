@@ -18,6 +18,7 @@ import {
 import { Textarea } from "peal-ui/components/textarea";
 import type { ReactNode } from "react";
 
+import { channelName } from "#channels/channel-name.ts";
 import { SavedItemErrorAlert } from "#components/settings/saved-item-error.tsx";
 import type { SavedItemError } from "#settings/saved-item-error.ts";
 import { platformOf, ScopeKindSchema } from "#signatures/draft.ts";
@@ -48,7 +49,7 @@ export const useScopeText = (channels: readonly Channel[]) => {
     return channel === undefined
       ? t("scopeChannelGone")
       : t("scopeChannel", {
-          handle: channel.handle,
+          handle: channelName(channel),
           platform: tPosts("platform", { platform: channel.platform }),
         });
   };
@@ -100,7 +101,7 @@ export const SignatureFieldsView = ({
 
   const channelText = (shown: Channel) =>
     tPosts("Composer.channelDetail", {
-      handle: shown.handle,
+      handle: channelName(shown),
       platform: tPosts("platform", { platform: shown.platform }),
     });
 

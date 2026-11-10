@@ -39,6 +39,7 @@ import {
   DefaultSignatures,
   useDefaultSigning,
 } from "#components/posts/default-signatures.tsx";
+import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
 import { LinkWarnings } from "#components/posts/link-warnings.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
@@ -49,6 +50,7 @@ import {
 } from "#components/posts/schedule-fields.tsx";
 import type { ScheduleChoice } from "#components/posts/schedule-fields.tsx";
 import { SignatureMenu } from "#components/posts/signature-menu.tsx";
+import { SignaturePause } from "#components/posts/signature-pause.tsx";
 import { TargetOptionsSection } from "#components/posts/target-options-panel.tsx";
 import { TargetStatuses } from "#components/posts/target-statuses.tsx";
 import { TextTabs } from "#components/posts/text-tabs.tsx";
@@ -74,6 +76,7 @@ import {
   wallClockOf,
 } from "#posts/zoned-time.ts";
 import { withSignature } from "#signatures/insert.ts";
+import { pausesToCheck } from "#signatures/signing-pause.ts";
 
 const utcZone = "UTC";
 
@@ -298,6 +301,8 @@ export const Composer = ({
   const busy = isPending ? action : null;
   const locked = !canWrite || busy !== null;
   const signing = useDefaultSigning(workspaceId, postId === undefined);
+  // Whether scheduling stopped for the person to read the signed text.
+  const [signedPause, setSignedPause] = useState(false);
 
   const selected = channelIds.flatMap((channelId) =>
     channels.filter(({ id }) => id === channelId)
@@ -388,6 +393,22 @@ export const Composer = ({
     const [first, ...rest] = channelIds;
 
     if (Option.isNone(saved)) {
+      return;
+    }
+
+    // Just created with the default signatures, which no counter counted:
+    // the person reads the text as saved, then chooses Schedule again.
+    if (
+      pausesToCheck({
+        asked: signing.payload.defaultSignatures === true,
+        created: postId === undefined,
+        saved: saved.value,
+        sent: content,
+      })
+    ) {
+      opened(saved.value);
+      setSignedPause(true);
+
       return;
     }
 
@@ -493,6 +514,7 @@ export const Composer = ({
 
   const perform = (next: ComposerAction) => {
     setAction(next);
+    setSignedPause(false);
     startTransition(work[next]);
   };
 
@@ -678,6 +700,7 @@ export const Composer = ({
               workspaceId={workspaceId}
             />
           ) : null}
+          <SignaturePause shown={signedPause} willWait={willWait} />
           <ComposerErrors
             channels={channels}
             failure={requests.failure}
@@ -700,6 +723,14 @@ export const Composer = ({
             ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)
           )}
           onAction={perform}
+          extra={
+            <DuplicatePost
+              disabled={busy !== null}
+              permissions={permissions}
+              postId={postId}
+              workspaceId={workspaceId}
+            />
+          }
         />
       </CardFooter>
     </Card>
