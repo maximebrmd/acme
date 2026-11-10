@@ -49,6 +49,7 @@ export const failureMessage = (
       }),
     AssistantUnavailable: () => t("errors.unavailable"),
     Forbidden: () => t("errors.forbidden"),
+    TooManyRequests: () => t("errors.generic"),
     Unauthenticated: () => t("errors.generic"),
     Unexpected: () => t("errors.generic"),
     WorkspaceNotFound: () => t("errors.generic"),

@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
-import { Api, DatabaseUnavailable } from "peal-contract";
+import { Api, apiChangelog, DatabaseUnavailable } from "peal-contract";
 
 import { makeDatabasePing } from "#shared/infrastructure/database-ping.ts";
 
@@ -11,6 +11,7 @@ export const SystemHandlers = HttpApiBuilder.group(
     const pingDatabase = yield* makeDatabasePing;
 
     return handlers.handleAll({
+      changelog: () => Effect.succeed(apiChangelog),
       health: () => Effect.void,
       ready: () =>
         pingDatabase.pipe(

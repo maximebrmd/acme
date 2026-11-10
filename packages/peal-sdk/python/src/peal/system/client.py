@@ -4,6 +4,7 @@ import typing
 
 from ..core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ..core.request_options import RequestOptions
+from ..types.api_changelog import ApiChangelog
 from .raw_client import AsyncRawSystemClient, RawSystemClient
 
 
@@ -70,6 +71,32 @@ class SystemClient:
         client.system.ready()
         """
         _response = self._raw_client.ready(request_options=request_options)
+        return _response.data
+
+    def changelog(self, *, request_options: typing.Optional[RequestOptions] = None) -> ApiChangelog:
+        """
+        Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+
+        Parameters
+        ----------
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ApiChangelog
+            ApiChangelog
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.system.changelog()
+        """
+        _response = self._raw_client.changelog(request_options=request_options)
         return _response.data
 
 
@@ -152,4 +179,38 @@ class AsyncSystemClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.ready(request_options=request_options)
+        return _response.data
+
+    async def changelog(self, *, request_options: typing.Optional[RequestOptions] = None) -> ApiChangelog:
+        """
+        Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+
+        Parameters
+        ----------
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ApiChangelog
+            ApiChangelog
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.system.changelog()
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.changelog(request_options=request_options)
         return _response.data

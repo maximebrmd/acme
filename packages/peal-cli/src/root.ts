@@ -19,5 +19,7 @@ const apiUrl = Flag.String("api-url").pipe(
 // every subcommand uses.
 export const peal = Command.make("peal").pipe(
   Command.withSharedFlags({ apiUrl }),
-  Command.withDescription("Work with a Peal server from the terminal.")
+  Command.withDescription(
+    "Work with a Peal server from the terminal. Sign in as yourself with peal login; for a run nobody attends, set PEAL_API_KEY to a workspace API key, which wins over a saved sign-in, and name the workspace by its id (--workspace or PEAL_WORKSPACE). The key is read from the environment alone: there is no flag for it, as a flag lands in the shell's history and in the list of processes. peal doctor checks what a run would use."
+  )
 );

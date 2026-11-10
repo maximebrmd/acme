@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -21,16 +23,72 @@ import social.peal.core.ObjectMappers;
 public final class ForbiddenEncoded {
     private final ForbiddenEncodedTag tag;
 
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
+    private final Optional<Permission> permission;
+
+    private final Optional<ForbiddenReason> reason;
+
+    private final Optional<String> scope;
+
     private final Map<String, Object> additionalProperties;
 
-    private ForbiddenEncoded(ForbiddenEncodedTag tag, Map<String, Object> additionalProperties) {
+    private ForbiddenEncoded(
+            ForbiddenEncodedTag tag,
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            Optional<Permission> permission,
+            Optional<ForbiddenReason> reason,
+            Optional<String> scope,
+            Map<String, Object> additionalProperties) {
         this.tag = tag;
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
+        this.permission = permission;
+        this.reason = reason;
+        this.scope = scope;
         this.additionalProperties = additionalProperties;
     }
 
     @JsonProperty("_tag")
     public ForbiddenEncodedTag getTag() {
         return tag;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
+    }
+
+    @JsonProperty("permission")
+    public Optional<Permission> getPermission() {
+        return permission;
+    }
+
+    @JsonProperty("reason")
+    public Optional<ForbiddenReason> getReason() {
+        return reason;
+    }
+
+    @JsonProperty("scope")
+    public Optional<String> getScope() {
+        return scope;
     }
 
     @java.lang.Override
@@ -45,12 +103,19 @@ public final class ForbiddenEncoded {
     }
 
     private boolean equalTo(ForbiddenEncoded other) {
-        return tag.equals(other.tag);
+        return tag.equals(other.tag)
+                && code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && permission.equals(other.permission)
+                && reason.equals(other.reason)
+                && scope.equals(other.scope);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag);
+        return Objects.hash(
+                this.tag, this.code, this.message, this.requestId, this.permission, this.reason, this.scope);
     }
 
     @java.lang.Override
@@ -74,11 +139,47 @@ public final class ForbiddenEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
+
+        _FinalStage permission(Optional<Permission> permission);
+
+        _FinalStage permission(Permission permission);
+
+        _FinalStage reason(Optional<ForbiddenReason> reason);
+
+        _FinalStage reason(ForbiddenReason reason);
+
+        _FinalStage scope(Optional<String> scope);
+
+        _FinalStage scope(String scope);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements TagStage, _FinalStage {
         private ForbiddenEncodedTag tag;
+
+        private Optional<String> scope = Optional.empty();
+
+        private Optional<ForbiddenReason> reason = Optional.empty();
+
+        private Optional<Permission> permission = Optional.empty();
+
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -87,6 +188,12 @@ public final class ForbiddenEncoded {
         @java.lang.Override
         public Builder from(ForbiddenEncoded other) {
             tag(other.getTag());
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
+            permission(other.getPermission());
+            reason(other.getReason());
+            scope(other.getScope());
             return this;
         }
 
@@ -98,13 +205,97 @@ public final class ForbiddenEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage scope(String scope) {
+            this.scope = Optional.ofNullable(scope);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "scope", nulls = Nulls.SKIP)
+        public _FinalStage scope(Optional<String> scope) {
+            this.scope = scope;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage reason(ForbiddenReason reason) {
+            this.reason = Optional.ofNullable(reason);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "reason", nulls = Nulls.SKIP)
+        public _FinalStage reason(Optional<ForbiddenReason> reason) {
+            this.reason = reason;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage permission(Permission permission) {
+            this.permission = Optional.ofNullable(permission);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "permission", nulls = Nulls.SKIP)
+        public _FinalStage permission(Optional<Permission> permission) {
+            this.permission = permission;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public ForbiddenEncoded build() {
-            return new ForbiddenEncoded(tag, additionalProperties);
+            return new ForbiddenEncoded(tag, code, message, requestId, permission, reason, scope, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag")) {
+            if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("permission")
+                    || key.equalsIgnoreCase("reason")
+                    || key.equalsIgnoreCase("scope")) {
                 return;
             }
             this.additionalProperties.put(key, value);

@@ -1,0 +1,412 @@
+[
+  {
+    "code": "already_member",
+    "status": 409,
+    "tag": "AlreadyMember"
+  },
+  {
+    "code": "alt_text_too_long",
+    "status": 422,
+    "tag": "AltTextTooLong"
+  },
+  {
+    "code": "api_key_not_found",
+    "status": 404,
+    "tag": "ApiKeyNotFound"
+  },
+  {
+    "code": "assistant_failed",
+    "status": 502,
+    "tag": "AssistantFailed"
+  },
+  {
+    "code": "assistant_input_rejected",
+    "status": 422,
+    "tag": "AssistantInputRejected"
+  },
+  {
+    "code": "assistant_quota_exceeded",
+    "status": 429,
+    "tag": "AssistantQuotaExceeded"
+  },
+  {
+    "code": "assistant_unavailable",
+    "status": 503,
+    "tag": "AssistantUnavailable"
+  },
+  {
+    "code": "bad_request",
+    "status": 400,
+    "tag": "BadRequest"
+  },
+  {
+    "code": "billing_not_enabled",
+    "status": 404,
+    "tag": "BillingNotEnabled"
+  },
+  {
+    "code": "billing_unavailable",
+    "status": 503,
+    "tag": "BillingUnavailable"
+  },
+  {
+    "code": "captcha_refused",
+    "status": 403,
+    "tag": "CaptchaRefused"
+  },
+  {
+    "code": "channel_cannot_post",
+    "status": 409,
+    "tag": "ChannelCannotPost"
+  },
+  {
+    "code": "channel_not_found",
+    "status": 404,
+    "tag": "ChannelNotFound"
+  },
+  {
+    "code": "client_error_too_large",
+    "status": 413,
+    "tag": "ClientErrorTooLarge"
+  },
+  {
+    "code": "connect_failed",
+    "status": 422,
+    "tag": "ConnectFailed"
+  },
+  {
+    "code": "connected_app_not_found",
+    "status": 404,
+    "tag": "ConnectedAppNotFound"
+  },
+  {
+    "code": "contract_request_not_found",
+    "status": 404,
+    "tag": "ContractRequestNotFound"
+  },
+  {
+    "code": "contract_request_settled",
+    "status": 409,
+    "tag": "ContractRequestSettled"
+  },
+  {
+    "code": "data_deletion_not_found",
+    "status": 404,
+    "tag": "DataDeletionNotFound"
+  },
+  {
+    "code": "database_unavailable",
+    "status": 503,
+    "tag": "DatabaseUnavailable"
+  },
+  {
+    "code": "deletion_incomplete",
+    "status": 500,
+    "tag": "DeletionIncomplete"
+  },
+  {
+    "code": "desired_day_too_far",
+    "status": 400,
+    "tag": "DesiredDayTooFar"
+  },
+  {
+    "code": "forbidden",
+    "status": 403,
+    "tag": "Forbidden"
+  },
+  {
+    "code": "idempotency_key_reused",
+    "status": 409,
+    "tag": "IdempotencyKeyReused"
+  },
+  {
+    "code": "incorrect_password",
+    "status": 400,
+    "tag": "IncorrectPassword"
+  },
+  {
+    "code": "internal_error",
+    "status": 500,
+    "tag": "InternalError"
+  },
+  {
+    "code": "invalid_date_range",
+    "status": 400,
+    "tag": "InvalidDateRange"
+  },
+  {
+    "code": "invalid_request",
+    "status": 400,
+    "tag": "InvalidRequest"
+  },
+  {
+    "code": "invalid_time_range",
+    "status": 400,
+    "tag": "InvalidTimeRange"
+  },
+  {
+    "code": "invalid_time_zone",
+    "status": 422,
+    "tag": "InvalidTimeZone"
+  },
+  {
+    "code": "invitation_not_found",
+    "status": 404,
+    "tag": "InvitationNotFound"
+  },
+  {
+    "code": "last_owner",
+    "status": 409,
+    "tag": "LastOwner"
+  },
+  {
+    "code": "media_import_busy",
+    "status": 429,
+    "tag": "MediaImportBusy"
+  },
+  {
+    "code": "media_in_use",
+    "status": 409,
+    "tag": "MediaInUse"
+  },
+  {
+    "code": "media_not_found",
+    "status": 404,
+    "tag": "MediaNotFound"
+  },
+  {
+    "code": "media_source_not_public",
+    "status": 422,
+    "tag": "MediaSourceNotPublic"
+  },
+  {
+    "code": "media_source_unreachable",
+    "status": 422,
+    "tag": "MediaSourceUnreachable"
+  },
+  {
+    "code": "media_store_unavailable",
+    "status": 503,
+    "tag": "MediaStoreUnavailable"
+  },
+  {
+    "code": "media_too_large",
+    "status": 422,
+    "tag": "MediaTooLarge"
+  },
+  {
+    "code": "meta_app_not_configured",
+    "status": 404,
+    "tag": "MetaAppNotConfigured"
+  },
+  {
+    "code": "method_not_allowed",
+    "status": 405,
+    "tag": "MethodNotAllowed"
+  },
+  {
+    "code": "not_found",
+    "status": 404,
+    "tag": "NotFound"
+  },
+  {
+    "code": "nothing_to_cancel",
+    "status": 409,
+    "tag": "NothingToCancel"
+  },
+  {
+    "code": "oauth_client_not_published",
+    "status": 404,
+    "tag": "OAuthClientNotPublished"
+  },
+  {
+    "code": "payload_too_large",
+    "status": 413,
+    "tag": "PayloadTooLarge"
+  },
+  {
+    "code": "plan_limit_reached",
+    "status": 402,
+    "tag": "PlanLimitReached"
+  },
+  {
+    "code": "plan_too_small",
+    "status": 409,
+    "tag": "PlanTooSmall"
+  },
+  {
+    "code": "platform_unreachable",
+    "status": 502,
+    "tag": "PlatformUnreachable"
+  },
+  {
+    "code": "post_content_invalid",
+    "status": 422,
+    "tag": "PostContentInvalid"
+  },
+  {
+    "code": "post_not_found",
+    "status": 404,
+    "tag": "PostNotFound"
+  },
+  {
+    "code": "post_status_conflict",
+    "status": 409,
+    "tag": "PostStatusConflict"
+  },
+  {
+    "code": "reduction_refused",
+    "status": 409,
+    "tag": "ReductionRefused"
+  },
+  {
+    "code": "schedule_in_past",
+    "status": 422,
+    "tag": "ScheduleInPast"
+  },
+  {
+    "code": "service_unavailable",
+    "status": 503,
+    "tag": "ServiceUnavailable"
+  },
+  {
+    "code": "signed_request_refused",
+    "status": 400,
+    "tag": "SignedRequestRefused"
+  },
+  {
+    "code": "staff_action_refused",
+    "status": 409,
+    "tag": "StaffActionRefused"
+  },
+  {
+    "code": "target_status_conflict",
+    "status": 409,
+    "tag": "TargetStatusConflict"
+  },
+  {
+    "code": "too_many_client_errors",
+    "status": 429,
+    "tag": "TooManyClientErrors"
+  },
+  {
+    "code": "too_many_contract_requests",
+    "status": 429,
+    "tag": "TooManyContractRequests"
+  },
+  {
+    "code": "too_many_invitations",
+    "status": 409,
+    "tag": "TooManyInvitations"
+  },
+  {
+    "code": "too_many_password_attempts",
+    "status": 429,
+    "tag": "TooManyPasswordAttempts"
+  },
+  {
+    "code": "too_many_requests",
+    "status": 429,
+    "tag": "TooManyRequests"
+  },
+  {
+    "code": "too_many_webhook_endpoints",
+    "status": 409,
+    "tag": "TooManyWebhookEndpoints"
+  },
+  {
+    "code": "too_many_webhook_sends",
+    "status": 429,
+    "tag": "TooManyWebhookSends"
+  },
+  {
+    "code": "trial_unavailable",
+    "status": 409,
+    "tag": "TrialUnavailable"
+  },
+  {
+    "code": "unauthenticated",
+    "status": 401,
+    "tag": "Unauthenticated"
+  },
+  {
+    "code": "unknown_channels",
+    "status": 422,
+    "tag": "UnknownChannels"
+  },
+  {
+    "code": "unknown_media",
+    "status": 422,
+    "tag": "UnknownMedia"
+  },
+  {
+    "code": "unsupported_media_type",
+    "status": 422,
+    "tag": "UnsupportedMediaType"
+  },
+  {
+    "code": "upload_incomplete",
+    "status": 409,
+    "tag": "UploadIncomplete"
+  },
+  {
+    "code": "upload_rejected",
+    "status": 422,
+    "tag": "UploadRejected"
+  },
+  {
+    "code": "user_not_found",
+    "status": 404,
+    "tag": "UserNotFound"
+  },
+  {
+    "code": "webhook_delivery_not_found",
+    "status": 404,
+    "tag": "WebhookDeliveryNotFound"
+  },
+  {
+    "code": "webhook_endpoint_disabled",
+    "status": 409,
+    "tag": "WebhookEndpointDisabled"
+  },
+  {
+    "code": "webhook_endpoint_not_found",
+    "status": 404,
+    "tag": "WebhookEndpointNotFound"
+  },
+  {
+    "code": "webhook_url_refused",
+    "status": 422,
+    "tag": "WebhookUrlRefused"
+  },
+  {
+    "code": "webhooks_not_configured",
+    "status": 503,
+    "tag": "WebhooksNotConfigured"
+  },
+  {
+    "code": "withdrawal_unavailable",
+    "status": 409,
+    "tag": "WithdrawalUnavailable"
+  },
+  {
+    "code": "workspace_busy",
+    "status": 409,
+    "tag": "WorkspaceBusy"
+  },
+  {
+    "code": "workspace_name_mismatch",
+    "status": 400,
+    "tag": "WorkspaceNameMismatch"
+  },
+  {
+    "code": "workspace_not_found",
+    "status": 404,
+    "tag": "WorkspaceNotFound"
+  },
+  {
+    "code": "workspace_subscribed",
+    "status": 409,
+    "tag": "WorkspaceSubscribed"
+  }
+]

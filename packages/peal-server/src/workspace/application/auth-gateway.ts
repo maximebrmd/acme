@@ -19,9 +19,13 @@ export interface AccessTokenRequest {
   readonly path: string;
 }
 
-/** A user, through an OAuth client bound to one of their workspaces. */
+/**
+ * Who a request to the MCP endpoint acts for, and where: a user, through
+ * an OAuth client bound to one of their workspaces, or an API key, in its
+ * workspace.
+ */
 export interface BoundPrincipal {
-  readonly principal: UserPrincipal;
+  readonly principal: ApiKeyPrincipal | UserPrincipal;
   readonly workspaceId: WorkspaceId;
 }
 
@@ -51,7 +55,10 @@ export class AuthGateway extends Context.Service<
      */
     readonly mcpToken: (
       request: AccessTokenRequest
-    ) => Effect.Effect<BoundPrincipal, AuthUnavailable | InvalidAccessToken>;
+    ) => Effect.Effect<
+      { readonly principal: UserPrincipal; readonly workspaceId: WorkspaceId },
+      AuthUnavailable | InvalidAccessToken
+    >;
     /**
      * The principal of the session the cookies carry. `fresh` reads the
      * session from the database, not from the copy cached in a cookie for a

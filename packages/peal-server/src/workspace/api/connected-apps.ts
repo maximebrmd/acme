@@ -1,17 +1,11 @@
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
-import {
-  Api,
-  ConnectedAppNotFound,
-  CurrentPrincipal,
-  Forbidden,
-} from "peal-contract";
+import { Api, ConnectedAppNotFound, CurrentPrincipal } from "peal-contract";
 
+import { forbidden, personRequired } from "#shared/api/forbidden.ts";
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 
 import { userPrincipalOf } from "./principal.ts";
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 /** The signed-in user, who must be a person: an API key is nobody. */
 export const currentUser = Effect.gen(function* currentUser() {
@@ -19,7 +13,7 @@ export const currentUser = Effect.gen(function* currentUser() {
 
   return principal._tag === "user"
     ? userPrincipalOf(principal)
-    : yield* new Forbidden();
+    : yield* personRequired();
 });
 
 export const ConnectedAppsHandlers = HttpApiBuilder.group(

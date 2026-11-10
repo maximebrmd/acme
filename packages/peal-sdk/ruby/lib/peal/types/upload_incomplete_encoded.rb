@@ -6,6 +6,12 @@ module Peal
   module Types
     class UploadIncompleteEncoded < Internal::Types::Model
       field :tag, -> { Peal::Types::UploadIncompleteEncodedTag }, optional: false, nullable: false, api_name: "_tag"
+
+      field :code, -> { String }, optional: true, nullable: false
+
+      field :message, -> { String }, optional: true, nullable: false
+
+      field :request_id, -> { String }, optional: true, nullable: false, api_name: "requestId"
     end
   end
 end

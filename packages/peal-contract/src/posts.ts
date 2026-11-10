@@ -358,6 +358,14 @@ export const PublicationAttemptSchema = Schema.Struct({
   // Its number in its round, from 1.
   attempt: Schema.Int,
   finishedAt: Schema.DateTimeUtc,
+  // The code behind a refusal, for support and for programs that tell
+  // refusals apart more finely than `result` does: the platform's own
+  // error code as it gave it (`duplicate`, `190`, `quotaExceeded`), or
+  // Peal's when Peal refused before calling the platform. Null when the
+  // attempt was not refused, or the refusal has no code. It never holds
+  // content, a token or an address; codes are the platforms', and change
+  // with them.
+  refusalCode: Schema.NullOr(Schema.String),
   result: AttemptResultSchema,
   // When Peal tried again, if it did.
   retryAt: Schema.NullOr(Schema.DateTimeUtc),

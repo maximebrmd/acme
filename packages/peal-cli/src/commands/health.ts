@@ -2,8 +2,10 @@ import { Console, Data, Duration, Effect, Option, Schema } from "effect";
 import { CliError, Command } from "effect/cli";
 import type { HttpClientError } from "effect/http";
 
+import type { JsonObject } from "#api-error.ts";
 import { PealApi } from "#api.ts";
 import { display } from "#display.ts";
+import { jsonFlag, printDocument } from "#json.ts";
 
 // A health check that hangs is as useless as one that fails.
 export const healthTimeout = Duration.seconds(5);
@@ -27,6 +29,17 @@ export class HealthCheckFailed extends Data.TaggedError("HealthCheckFailed")<{
         ].join("\n")
       : `The Peal API at ${this.url} is not healthy (${this.detail}).`;
   }
+
+  /** What --json prints for it. */
+  get jsonFailure(): JsonObject {
+    return {
+      code: this.reason,
+      message:
+        this.reason === "unreachable"
+          ? `Cannot reach the Peal API at ${this.url} (${this.detail}).`
+          : `The Peal API at ${this.url} is not healthy (${this.detail}).`,
+    };
+  }
 }
 
 const decodeCause = Schema.decodeUnknownOption(
@@ -43,8 +56,8 @@ const transportDetail = (error: HttpClientError.HttpClientError) =>
 
 export const health = Command.make(
   "health",
-  {},
-  Effect.fn("health")(function* health() {
+  { json: jsonFlag },
+  Effect.fn("health")(function* health({ json }) {
     const { baseUrl, client } = yield* PealApi;
     const url = display(baseUrl);
 
@@ -71,9 +84,13 @@ export const health = Command.make(
 
     const milliseconds = Math.round(Duration.toMillis(elapsed));
 
-    yield* Console.log(
-      `The Peal API at ${url} is healthy (${String(milliseconds)} ms).`
-    );
+    // The API answers a health check without a body: --json says what the
+    // command line measured.
+    yield* json
+      ? printDocument({ healthy: true, milliseconds, url })
+      : Console.log(
+          `The Peal API at ${url} is healthy (${String(milliseconds)} ms).`
+        );
   })
 ).pipe(
   Command.withDescription(

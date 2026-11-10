@@ -3,6 +3,7 @@ import { Command } from "effect/cli";
 import { cliClientId, deviceCodeGrantType } from "peal-contract";
 import type { DeviceAuthorization, OAuthError, Token } from "peal-contract";
 
+import { personOnly } from "#api-key.ts";
 import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";
 import { PealApi } from "#api.ts";
@@ -44,6 +45,8 @@ export const login = Command.make(
   "login",
   {},
   Effect.fn("login")(function* login() {
+    yield* personOnly("sign in");
+
     const { baseUrl, oauth } = yield* PealApi;
     const store = yield* CredentialStore;
     const url = display(baseUrl);

@@ -100,7 +100,7 @@ class ApiKeysClient:
         client.api_keys.create(
             workspace_id="workspaceId",
             name="name",
-            permissions=["analytics:read"],
+            permissions=["activity:read"],
         )
         """
         _response = self._raw_client.create(
@@ -247,7 +247,7 @@ class AsyncApiKeysClient:
             await client.api_keys.create(
                 workspace_id="workspaceId",
                 name="name",
-                permissions=["analytics:read"],
+                permissions=["activity:read"],
             )
 
 

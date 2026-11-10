@@ -8,6 +8,8 @@ namespace Peal;
 [Serializable]
 public readonly record struct Permission : IStringEnum
 {
+    public static readonly Permission ActivityRead = new(Values.ActivityRead);
+
     public static readonly Permission AnalyticsRead = new(Values.AnalyticsRead);
 
     public static readonly Permission ApiKeyCreate = new(Values.ApiKeyCreate);
@@ -163,6 +165,8 @@ public readonly record struct Permission : IStringEnum
     [Serializable]
     public static class Values
     {
+        public const string ActivityRead = "activity:read";
+
         public const string AnalyticsRead = "analytics:read";
 
         public const string ApiKeyCreate = "apiKey:create";

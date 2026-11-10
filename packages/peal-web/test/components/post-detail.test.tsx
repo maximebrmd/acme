@@ -80,6 +80,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 1,
     finishedAt: utc("2026-06-15T08:00:01Z"),
+    refusalCode: null,
     result: "rateLimited",
     retryAt: utc("2026-06-15T08:01:01Z"),
     round: 1,
@@ -89,6 +90,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 2,
     finishedAt: utc("2026-06-15T08:01:02Z"),
+    refusalCode: "channelDisconnected",
     result: "channelDisconnected",
     retryAt: null,
     round: 1,
@@ -98,6 +100,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 1,
     finishedAt: utc("2026-06-15T09:00:02Z"),
+    refusalCode: null,
     result: "published",
     retryAt: null,
     round: 2,

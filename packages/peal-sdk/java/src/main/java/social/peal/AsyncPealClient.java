@@ -6,6 +6,7 @@ package social.peal;
 import java.util.function.Supplier;
 import social.peal.core.ClientOptions;
 import social.peal.core.Suppliers;
+import social.peal.resources.activity.AsyncActivityClient;
 import social.peal.resources.analytics.AsyncAnalyticsClient;
 import social.peal.resources.apikeys.AsyncApiKeysClient;
 import social.peal.resources.assistant.AsyncAssistantClient;
@@ -55,6 +56,8 @@ public class AsyncPealClient implements AutoCloseable {
 
     protected final Supplier<AsyncWebhooksClient> webhooksClient;
 
+    protected final Supplier<AsyncActivityClient> activityClient;
+
     public AsyncPealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new AsyncSystemClient(clientOptions));
@@ -73,6 +76,7 @@ public class AsyncPealClient implements AutoCloseable {
         this.analyticsClient = Suppliers.memoize(() -> new AsyncAnalyticsClient(clientOptions));
         this.tiktokClient = Suppliers.memoize(() -> new AsyncTiktokClient(clientOptions));
         this.webhooksClient = Suppliers.memoize(() -> new AsyncWebhooksClient(clientOptions));
+        this.activityClient = Suppliers.memoize(() -> new AsyncActivityClient(clientOptions));
     }
 
     public AsyncSystemClient system() {
@@ -133,6 +137,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncWebhooksClient webhooks() {
         return this.webhooksClient.get();
+    }
+
+    public AsyncActivityClient activity() {
+        return this.activityClient.get();
     }
 
     /**

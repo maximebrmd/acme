@@ -5,7 +5,6 @@ import {
   BillingUnavailable,
   DeletionIncomplete,
   CurrentMember,
-  Forbidden,
   MediaStoreUnavailable,
   WorkspaceBusy,
   WorkspaceNameMismatch,
@@ -13,12 +12,11 @@ import {
 } from "peal-contract";
 
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden, personRequired } from "#shared/api/forbidden.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 
 import { userPrincipalOf } from "./principal.ts";
 import { subscribedOf } from "./subscribed.ts";
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 export const WorkspacesHandlers = HttpApiBuilder.group(
   Api,
@@ -35,7 +33,7 @@ export const WorkspacesHandlers = HttpApiBuilder.group(
           const principal =
             member.principal._tag === "user"
               ? userPrincipalOf(member.principal)
-              : yield* new Forbidden();
+              : yield* personRequired();
 
           yield* deletion
             .delete(actorOf(member), principal, payload.name, {

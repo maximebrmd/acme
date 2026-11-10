@@ -4,6 +4,9 @@ import * as Peal from "../index.js";
 
 export interface PlanLimitReachedEncoded {
     _tag: PlanLimitReachedEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     allowed: number;
     billingUrl: string;
     limit: Peal.PlanLimit;

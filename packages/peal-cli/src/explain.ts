@@ -3,48 +3,14 @@ import type { Schema } from "effect";
 import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
 import type {
-  AlreadyMember,
-  AltTextTooLong,
-  ChannelCannotPost,
-  ChannelNotFound,
   ContentViolation,
-  Forbidden,
-  IdempotencyKeyReused,
-  InvalidDateRange,
-  InvalidTimeZone,
-  InvitationNotFound,
-  MediaNotFound,
   MediaSourceFailure,
-  MediaImportBusy,
-  MediaSourceNotPublic,
-  MediaSourceUnreachable,
-  MediaStoreUnavailable,
-  MediaTooLarge,
-  PlanLimitReached,
-  PlatformUnreachable,
-  PostContentInvalid,
-  PostNotFound,
-  PostStatusConflict,
-  ScheduleInPast,
-  TargetStatusConflict,
-  TooManyInvitations,
-  TooManyWebhookEndpoints,
-  TooManyWebhookSends,
-  Unauthenticated,
-  UnknownChannels,
-  UnknownMedia,
-  UnsupportedMediaType,
-  UploadIncomplete,
-  UploadRejected,
-  WebhookDeliveryNotFound,
-  WebhookEndpointDisabled,
-  WebhookEndpointNotFound,
-  WebhooksNotConfigured,
   WebhookUrlRefused,
-  WorkspaceNotFound,
 } from "peal-contract";
 import type { TextUnit } from "peal-contract/post-text";
 
+import { apiErrorJson } from "#api-error.ts";
+import type { ApiError } from "#api-error.ts";
 import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";
 import { PealApi } from "#api.ts";
@@ -55,46 +21,10 @@ import { SignInExpired } from "#sign-in-expired.ts";
 
 /** Whatever a signed-in command's request may fail with. */
 export type ApiFailure =
-  | AlreadyMember
-  | AltTextTooLong
-  | ChannelCannotPost
-  | ChannelNotFound
-  | Forbidden
+  | ApiError
   | HttpApiError.BadRequest
   | HttpClientError.HttpClientError
-  | IdempotencyKeyReused
-  | InvalidDateRange
-  | InvalidTimeZone
-  | InvitationNotFound
-  | MediaNotFound
-  | MediaImportBusy
-  | MediaSourceNotPublic
-  | MediaSourceUnreachable
-  | MediaStoreUnavailable
-  | MediaTooLarge
-  | PlanLimitReached
-  | PlatformUnreachable
-  | PostContentInvalid
-  | PostNotFound
-  | PostStatusConflict
-  | ScheduleInPast
-  | Schema.SchemaError
-  | TargetStatusConflict
-  | TooManyInvitations
-  | TooManyWebhookEndpoints
-  | TooManyWebhookSends
-  | Unauthenticated
-  | UnknownChannels
-  | UnknownMedia
-  | UnsupportedMediaType
-  | UploadIncomplete
-  | UploadRejected
-  | WebhookDeliveryNotFound
-  | WebhookEndpointDisabled
-  | WebhookEndpointNotFound
-  | WebhooksNotConfigured
-  | WebhookUrlRefused
-  | WorkspaceNotFound;
+  | Schema.SchemaError;
 
 const mebibyte = 1024 * 1024;
 
@@ -214,11 +144,7 @@ const sourceFailures: Readonly<Record<MediaSourceFailure, string>> = {
 
 const refused = (reason: string) => new Refused({ reason });
 
-/**
- * What a failed request means, as the user reads it: the sign-in to renew,
- * the server to check, or why it refused.
- */
-export const explain =
+const reasonOf =
   (url: string) =>
   (failure: ApiFailure): ApiRequestFailed | Refused | SignInExpired =>
     Match.valueTags(failure, {
@@ -238,9 +164,13 @@ export const explain =
         refused(
           "The workspace has no such channel, or it is not of this platform: peal channels list shows them."
         ),
-      Forbidden: () =>
+      // The server says what is missing and how to get it; one older than
+      // that says nothing.
+      Forbidden: ({ message }) =>
         refused(
-          "Peal refused: your role in this workspace does not allow it, or your account was suspended."
+          message === undefined || message === ""
+            ? "Peal refused: your role in this workspace does not allow it, or your account was suspended."
+            : `Peal refused: ${message}`
         ),
       HttpClientError: requestFailed(url),
       IdempotencyKeyReused: () =>
@@ -250,6 +180,10 @@ export const explain =
       InvalidDateRange: () =>
         refused(
           "The range must end on or after the day it starts, and span 366 days at most."
+        ),
+      InvalidTimeRange: () =>
+        refused(
+          "The range must end after it starts, and span 62 days at most."
         ),
       InvalidTimeZone: ({ timeZone }) =>
         refused(
@@ -306,6 +240,10 @@ export const explain =
         refused(
           "The workspace has 100 invitations pending, the most it may: revoke some first."
         ),
+      TooManyRequests: ({ limit, retryAfterSeconds, windowSeconds }) =>
+        refused(
+          `Peal takes ${String(limit)} requests every ${String(windowSeconds)} seconds from one sign-in or key, and this one sent more: nothing was done. Try again in ${String(retryAfterSeconds)} seconds.`
+        ),
       TooManyWebhookEndpoints: ({ allowed }) =>
         refused(
           `The workspace has ${String(allowed)} webhook endpoints, the most it may, whatever its plan: delete one first, with peal webhooks delete.`
@@ -358,6 +296,31 @@ export const explain =
         refused("You do not belong to this workspace, or it no longer exists."),
     });
 
+// The request a refusal answers, as the API's errors name it.
+const requestOf = (failure: ApiFailure) =>
+  "requestId" in failure
+    ? { code: failure.code, requestId: failure.requestId }
+    : {};
+
+/**
+ * What a failed request means, as the user reads it: the sign-in to renew,
+ * the server to check, or why it refused, with the request's id when the
+ * server gave one.
+ */
+export const explain =
+  (url: string) =>
+  (failure: ApiFailure): ApiRequestFailed | Refused | SignInExpired => {
+    const explained = reasonOf(url)(failure);
+
+    return explained._tag === "Refused"
+      ? new Refused({
+          error: apiErrorJson(failure),
+          reason: explained.reason,
+          ...requestOf(failure),
+        })
+      : explained;
+  };
+
 /** The scope a sign-in needs to schedule, publish, move or cancel posts. */
 export const publishScope = "workspace:publish";
 
@@ -396,9 +359,11 @@ export const explainingPublishing =
           Effect.flatMap((without) =>
             Effect.fail(
               without
-                ? refused(
-                    "This sign-in was made without the permission to schedule and publish posts: run peal login again and approve it."
-                  )
+                ? new Refused({
+                    error: apiErrorJson(forbidden),
+                    reason:
+                      "This sign-in was made without the permission to schedule and publish posts: run peal login again and approve it.",
+                  })
                 : explain(url)(forbidden)
             )
           )

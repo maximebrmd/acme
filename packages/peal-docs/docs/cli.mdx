@@ -1,11 +1,11 @@
 ---
 title: Command line
-description: Build the peal command line, sign in with peal login, then work in a workspace from a terminal (drafts, posts and their scheduling, media, analytics, billing, members and invitations) and copy out your own data.
+description: Build the peal command line, sign in with peal login or run it unattended with an API key, then work in a workspace from a terminal (drafts, posts and their scheduling, media, analytics, billing, the activity log, members and invitations), read its answers as JSON, and copy out your own data.
 sidebar:
   order: 8
 ---
 
-`peal` works with a Peal instance from a terminal. It signs in as you, in a browser, and then acts with your role in each of your workspaces: it writes and discards drafts, uploads and imports media, schedules, publishes, moves and cancels posts, follows up on those that went out, reads analytics, billing, members and invitations, invites people, and saves a copy of your data. Connecting channels and changing roles stay in the web app.
+`peal` works with a Peal instance from a terminal. It signs in as you, in a browser, and then acts with your role in each of your workspaces: it writes and discards drafts, uploads and imports media, schedules, publishes, moves and cancels posts, follows up on those that went out, reads analytics, billing, members and invitations, invites people, and saves a copy of your data. Connecting channels and changing roles stay in the web app. A script or an agent that nobody attends runs it with a workspace's [API key](#api-key) instead of a sign-in, and reads its answers as [JSON](#json).
 
 ## Get it [#install]
 
@@ -28,7 +28,7 @@ export PEAL_API_URL=https://peal.example.com
 peal health
 ```
 
-`peal health` says whether the instance answers. It exits with 0 when it does, and with 1 when it is unreachable (after 5 seconds) or answers with an error, so scripts can wait on it.
+`peal health` says whether the instance answers. It exits with 0 when it does, and with 1 when it is unreachable (after 5 seconds) or answers with an error, so scripts can wait on it. `peal health --json` prints what it measured, `{"healthy": true, "milliseconds": 12, "url": "https://peal.example.com"}`, and [`peal doctor`](#doctor) checks the rest of the setup.
 
 ## Sign in [#login]
 
@@ -68,9 +68,11 @@ peal whoami
 ```text
 Signed in to https://peal.example.com as Sam Example <sam@example.com>.
 Workspaces:
-  Studio (owner)
-  Clients (editor)
+  Studio (owner)    studio   7c9e6679-7425-40de-944b-e07fc1f90ae7
+  Clients (editor)  clients  3f2b8a41-5d6c-4e7f-8a9b-0c1d2e3f4a5b
 ```
+
+Each workspace comes with its slug and its id, which `--workspace` takes. `peal whoami` is for a person signed in: with an [API key](#api-key) it is refused, as a key is nobody.
 
 When the sign-in no longer works, because it was revoked or your account was banned, `peal whoami` says so and asks you to run `peal login` again. Before you sign in at all, it answers that you are not signed in.
 
@@ -82,6 +84,62 @@ peal logout
 
 `peal logout` tells the instance to revoke the sign-in, then forgets it, even when the instance does not answer within 5 seconds.
 
+## Run it with an API key [#api-key]
+
+For a run nobody attends, such as a scheduled job or an agent on a server, set `PEAL_API_KEY` to a workspace's [API key](/settings#api-keys), and name the workspace by its id:
+
+```sh
+export PEAL_API_URL=https://peal.example.com
+export PEAL_API_KEY=peal_…
+export PEAL_WORKSPACE=7c9e6679-7425-40de-944b-e07fc1f90ae7
+peal doctor
+peal drafts list --json
+```
+
+- The key is read from the environment alone. There is no flag for it: a flag lands in the shell's history and in the list of processes. `peal` never prints it.
+- While `PEAL_API_KEY` is set, it wins over a saved sign-in. A blank value is no key.
+- `--workspace` or `PEAL_WORKSPACE` must give the workspace's id, not its slug, and there is no default: a key cannot look workspaces up. The id is in the address of the workspace's pages in the web app (`/app/<id>/settings`), and `peal whoami`, signed in as a person, lists it. Otherwise the command stops with `workspace_id_required`.
+- The key does what its permissions allow, and no more: without `post:schedule` it writes drafts at most. A refusal comes in the server's words, with the permission it lacks.
+- What only a person does is refused before any request (`person_required`): `peal login`, `peal whoami`, `peal account export` and `peal account apps`, `peal members list`, and every `peal invitations` command.
+- A key the server no longer takes, revoked, expired or another server's, is told as such (`api_key_refused`), not as a sign-in to renew.
+
+## Check the setup [#doctor]
+
+```sh
+peal doctor
+peal doctor --workspace studio --json
+```
+
+`peal doctor` checks what a run would use, and changes nothing. Run it first, before a script or an agent does anything else.
+
+```text
+ok  api-url        https://peal.example.com, from PEAL_API_URL.
+ok  health         The server answers.
+ok  ready          The server and its database both answer.
+ok  changelog      The API's latest release is of 2026-11-09: The API as the SDKs' release 0.3.0 calls it: 49 operations. Later entries list what each release adds to it.
+ok  credential     The sign-in saved for https://peal.example.com. PEAL_API_KEY is not set.
+ok  access         Signed in as Sam Example <sam@example.com>, in 2 workspaces: Studio (studio, 7c9e6679-7425-40de-944b-e07fc1f90ae7, owner); Clients (clients, 3f2b8a41-5d6c-4e7f-8a9b-0c1d2e3f4a5b, editor).
+ok  publish-scope  The sign-in has workspace:publish: it can schedule and publish, where your role allows it.
+ok  workspace      Commands act in Studio (studio, 7c9e6679-7425-40de-944b-e07fc1f90ae7, owner), from --workspace.
+ok  mcp            MCP clients connect to https://peal.example.com/api/mcp: peal mcp shows how.
+```
+
+| Check           | What it looks at                                                                                                                                                                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `api-url`       | The instance's address, and whether it came from `--api-url`, `PEAL_API_URL` or the default.                                                                                         |
+| `health`        | That the server answers, within 5 seconds.                                                                                                                                           |
+| `ready`         | That it reaches its database.                                                                                                                                                        |
+| `changelog`     | That it answers `GET /api/changelog`, with the API's latest release ([Changelog](/api-conventions#changelog)): a server that does not is older, or is not a Peal server.             |
+| `credential`    | Which credential a run uses: the key in `PEAL_API_KEY`, or the saved sign-in. Never printed.                                                                                         |
+| `access`        | That the credential works: who is signed in and where, or, for a key, that it reads the workspace's channels.                                                                        |
+| `publish-scope` | Whether the sign-in may schedule and publish. Skipped for a key, which has permissions and no scope. A sign-in without it is `ok`: it writes drafts, and that is not to work around. |
+| `workspace`     | Which workspace commands act in, and where the choice came from.                                                                                                                     |
+| `mcp`           | The address MCP clients connect to.                                                                                                                                                  |
+
+Each check is `ok`, `failing` or `skipped`: a check is skipped when it cannot be made, as when the server does not answer, or does not apply. A failing check comes with what to do, on a line starting with `To do:`. `peal doctor` exits with 1 when any check fails.
+
+With `--json`, it prints `{"checks": [{"name", "status", "detail", "fix"}], "ok"}` on stdout, `fix` only where there is something to do, and, when a check fails, the [failure](#json) `checks_failed` on stderr, with the names of the failing checks in `failed`.
+
 ## Connect an MCP client [#mcp]
 
 ```sh
@@ -92,7 +150,7 @@ peal mcp
 
 ## Choose the workspace [#workspace]
 
-Every command below acts in one workspace. Name it with `--workspace` (or `-w`), by its slug or its id, or set `PEAL_WORKSPACE` once for the commands that follow. If you belong to one workspace only, `peal` takes it; if you belong to several and name none, it lists their slugs and stops.
+Every command below acts in one workspace. Name it with `--workspace` (or `-w`), by its slug or its id, or set `PEAL_WORKSPACE` once for the commands that follow. If you belong to one workspace only, `peal` takes it; if you belong to several and name none, it lists their slugs and stops. With an [API key](#api-key), give the workspace's id.
 
 ```sh
 export PEAL_WORKSPACE=studio
@@ -100,7 +158,7 @@ peal drafts list
 peal drafts list --workspace clients
 ```
 
-Each command does what your role allows there, as the web app does: a viewer reads, an editor writes, schedules, publishes and follows up, an owner or an admin invites. When the instance refuses, `peal` says why (your role, the post's status, the plan) and exits with 1.
+Each command does what your role allows there, as the web app does: a viewer reads, an editor writes, schedules, publishes and follows up, an owner or an admin invites. When the instance refuses, `peal` says why (your role, the post's status, the plan) and exits with 1. The refusal ends with the request's id and the error's code, such as `Request 019a7b2f-9a04-7b61-8c3d-2e5f7a1b4c68 (forbidden).`: quote the id when you ask for help ([Requests and answers](/api-conventions#requests)).
 
 ## Channels [#channels]
 
@@ -151,7 +209,10 @@ The post is checked against every channel's platform first. When it breaks a rul
 ## Posts [#posts]
 
 ```sh
+peal posts list                                            # scheduled from now, 31 days ahead
+peal posts list --from 2026-11-01T00:00:00Z --to 2026-12-01T00:00:00Z
 peal posts show <post-id>
+peal posts attempts <post-id>
 peal posts schedule <post-id> --at 2026-11-20T10:00 --time-zone Europe/Paris
 peal posts schedule <post-id> --at 2026-11-20T09:00:00Z --channels <channel-id>,<channel-id>
 peal posts publish <post-id>
@@ -163,6 +224,8 @@ peal posts confirm <post-id> <target-id> published --permalink https://mastodon.
 peal posts confirm <post-id> <target-id> not-published
 ```
 
+- `peal posts list` lists the posts scheduled over a range of time, by scheduled instant, cancelled ones included: each with its id, its status and outcome, its time and the start of its text. `--from` and `--to` take instants with their offset, at most 62 days apart; without them, the range runs from now to 31 days ahead. Drafts have no time: `peal drafts list` shows them.
+- `peal posts attempts` lists every attempt Peal made at publishing the post, by channel, round and attempt: when it started, how it ended, the code behind a refusal, the platform's own or Peal's, and when Peal tried again.
 - `peal posts show` prints the post's status and time, then one line per channel, starting with its target id, with how it went there: failed and why, unconfirmed and why, or published at its address (and kept private, when YouTube kept a public or unlisted video private), then the post's options on each channel that has some.
 - `peal posts schedule` schedules a draft for `--at`, read as `peal post` reads it, on the channels it has, or on those `--channel` names. Its text, media and options must fit each platform's rules, or nothing is scheduled.
 - `peal posts publish` publishes a draft, or a scheduled post, now, on the channels it has. It reaches the accounts' public, and cannot be taken back from Peal once it is out.
@@ -178,23 +241,65 @@ peal posts confirm <post-id> <target-id> not-published
 peal media upload ./cover.jpg --alt "A paper catalogue open on a wooden table"
 peal media import https://files.example/spring/cover.jpg --alt "A paper catalogue open on a wooden table"
 peal media list                   # newest first; --limit and --cursor page through them
+peal media show <media-id>
 ```
 
 - `peal media upload` sends a file to the workspace's media: JPEG, PNG, GIF or WebP up to 16 MiB, MP4 or QuickTime up to 1 GiB, told by its extension. The file goes straight to the media store, then Peal checks and reads it.
 - `peal media import` has the server fetch an image or a video from a public `https://` address, without credentials, within 90 seconds ([Images and videos](/media#import)). Upload larger or slower files instead.
 - `peal media list` lists the workspace's images and videos, newest first, with the ids posts attach and whether each is ready. `--limit` takes 100 at most.
+- `peal media show` prints one media: its type, its size, when it was stored, whether it is ready to attach, and its description. After an upload or an import, it tells when a video Peal is still reading becomes `ready`.
 - `--alt` says what the file shows, for people who cannot see it.
 
 Each command prints the media's id. Only a media that is `ready` goes in a post.
 
 ## Output for scripts [#json]
 
-`--json` prints the API's answer as one JSON document on stdout, and nothing else there, with instants in ISO 8601, in UTC. A refusal still goes to stderr, and the command exits with a status other than 0. It works on `peal post`, every `peal posts` and `peal media` command, `peal channels list`, `peal drafts list` and `peal drafts save`.
+`--json` prints the API's answer as one JSON document on stdout, and nothing else there, with instants in ISO 8601, in UTC. Every command that reads or changes something through the API takes it, and so do `peal health` and `peal doctor`; `peal login`, `peal logout` and `peal mcp` do not.
 
 ```sh
 peal post "Spring catalogue is out" --channel <channel-id> --now --json
 peal posts show <post-id> --json
 ```
+
+- The document is the answer of the endpoint the command calls, as the [API reference](/reference) describes it: a post, a page with `items` and `nextCursor`, an array.
+- A command whose endpoint answers without a body, such as `peal drafts discard`, `peal invitations revoke` or `peal webhooks delete`, prints `null`.
+- `peal billing --json` holds the two answers it reads, under `billing` and `standing`; `peal health --json` and `peal doctor --json` print documents of their own ([Choose the instance](#instance), [Check the setup](#doctor)).
+
+A failure under `--json` is one JSON document too, on stderr, with exit code 1, and stdout stays empty:
+
+```json
+{
+  "error": {
+    "code": "forbidden",
+    "message": "This API key does not have the permission post:schedule. An owner or an admin of the workspace gives it to the key, or creates a key that has it.",
+    "permission": "post:schedule",
+    "reason": "missingPermission",
+    "requestId": "019a7b2f-9a04-7b61-8c3d-2e5f7a1b4c68"
+  }
+}
+```
+
+For a refusal of the API, `error` is the error as the server sent it: its `code`, its `message`, the `requestId` and its own fields ([Error codes](/api-conventions#error-codes) lists every code). Branch on `code`, never on `message`. The command line has codes of its own for what stops it before, or instead of, an answer of the API:
+
+| Code                      | When                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `invalid_usage`           | The arguments cannot be read: an unknown flag, a missing argument.                                           |
+| `unreachable`             | No answer came from the instance: a refused connection, an unknown host, a timeout.                          |
+| `unhealthy`               | `peal health` got an answer that is not a healthy one.                                                       |
+| `unexpected_answer`       | The instance answered something the API's contract does not describe: it may be older, or not a Peal server. |
+| `not_signed_in`           | No sign-in is saved for the instance, and `PEAL_API_KEY` is not set.                                         |
+| `sign_in_expired`         | The saved sign-in no longer works: run `peal login` again.                                                   |
+| `api_key_refused`         | The instance refused the key in `PEAL_API_KEY`: revoked, expired, or another server's.                       |
+| `person_required`         | The command is for a person signed in, and `PEAL_API_KEY` is set.                                            |
+| `workspace_id_required`   | With an API key, no workspace is named, or it is named by something other than its id.                       |
+| `workspace_required`      | You belong to several workspaces and named none.                                                             |
+| `workspace_unknown`       | You belong to no workspace of that slug or id.                                                               |
+| `no_workspace`            | You do not belong to any workspace yet.                                                                      |
+| `credential_store_failed` | The sign-in could not be read from, or saved to, `credentials.json`.                                         |
+| `checks_failed`           | `peal doctor` found failing checks, named in `failed`.                                                       |
+| `refused`, `failed`       | Anything else the command line refuses or fails at, with the reason in `message`.                            |
+
+An answer with an error status that carries no error of the API has the API's general code for that status, such as `internal_error`, and the `requestId` when the server gave one.
 
 An agent that runs commands rather than MCP tools works the same way: [Posting from an AI agent](/agents#cli).
 
@@ -214,7 +319,7 @@ peal analytics post <post-id>
 peal billing
 ```
 
-Prints the workspace's plan and subscription, and, for each limit (channels, members, posts going out this month, assistant requests today, media stored), how much is used of what the plan allows, and whether the workspace may still start its trial. It changes nothing: owners and admins order, cancel or withdraw on the workspace's **Billing** page ([Plans and billing](/billing)). On an instance that does not bill, nothing is limited.
+`peal billing --json` prints the API's two answers in one document, under `billing` and `standing`. Without it, the command prints the workspace's plan and subscription, and, for each limit (channels, members, posts going out this month, assistant requests today, media stored), how much is used of what the plan allows, and whether the workspace may still start its trial. It changes nothing: owners and admins order, cancel or withdraw on the workspace's **Billing** page ([Plans and billing](/billing)). On an instance that does not bill, nothing is limited.
 
 ## Members and invitations [#members]
 
@@ -248,6 +353,19 @@ peal webhooks delete <endpoint-id>
 - `create` and `rotate-secret` print the signing secret, once: save it then. After a rotation the old secret still signs for 24 hours, beside the new one.
 - `test` sends a `webhook.test` event; `deliveries` shows how each delivery ended, newest first, and `redeliver` sends one again.
 
+## Activity log [#activity]
+
+```sh
+peal activity list
+peal activity list --operation posts.schedule --limit 50
+peal activity list --actor <user-id|api-key-id> --json
+```
+
+`peal activity list` lists the requests that asked to change something in the workspace, newest first: when, the operation, the status answered and the error's code, who asked, through which key or application, the ids the request named, and the request's id. Owners read it, and a key an owner gave `activity:read`; an event is kept {{keep-activity-en}} ([The activity log](/settings#activity)).
+
+- `--operation` keeps one operation, such as `posts.schedule`, or `mcp.create_draft` for a tool of the MCP endpoint; `--actor` keeps what one member, by their user id, or one API key, by its id, asked for.
+- `--limit` takes 100 at most. When there is more, the last line gives the command for the next page, with its `--cursor`.
+
 ## Your data [#account]
 
 ```sh
@@ -271,14 +389,15 @@ peal account apps
 
 ## Settings [#settings]
 
-| Variable          | What it does                                                                                                   |
-| ----------------- | -------------------------------------------------------------------------------------------------------------- |
-| `PEAL_API_URL`    | The instance's address, unless `--api-url` is given. Default: `http://localhost:3000`.                         |
-| `PEAL_WORKSPACE`  | The workspace commands act in, by slug or id, unless `--workspace` is given.                                   |
-| `TZ`              | The zone `peal analytics summary` runs days in, and the zone `--at` is read in, unless `--time-zone` is given. |
-| `PEAL_CONFIG_DIR` | The folder `credentials.json` is saved in.                                                                     |
-| `XDG_CONFIG_HOME` | Without `PEAL_CONFIG_DIR`, the sign-in goes in its `peal` folder.                                              |
-| `APPDATA`         | Without either, on Windows, the sign-in goes in its `peal` folder.                                             |
-| `HOME`            | Otherwise, the sign-in goes in `~/.config/peal`.                                                               |
+| Variable          | What it does                                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `PEAL_API_URL`    | The instance's address, unless `--api-url` is given. Default: `http://localhost:3000`.                               |
+| `PEAL_API_KEY`    | A workspace API key to run with instead of a saved sign-in, which it wins over ([Run it with an API key](#api-key)). |
+| `PEAL_WORKSPACE`  | The workspace commands act in, by slug or id, unless `--workspace` is given. With an API key, by id.                 |
+| `TZ`              | The zone `peal analytics summary` runs days in, and the zone `--at` is read in, unless `--time-zone` is given.       |
+| `PEAL_CONFIG_DIR` | The folder `credentials.json` is saved in.                                                                           |
+| `XDG_CONFIG_HOME` | Without `PEAL_CONFIG_DIR`, the sign-in goes in its `peal` folder.                                                    |
+| `APPDATA`         | Without either, on Windows, the sign-in goes in its `peal` folder.                                                   |
+| `HOME`            | Otherwise, the sign-in goes in `~/.config/peal`.                                                                     |
 
 `peal --help` lists the commands, and `peal <command> --help` describes one.

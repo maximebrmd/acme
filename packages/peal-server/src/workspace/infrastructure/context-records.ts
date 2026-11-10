@@ -1,5 +1,6 @@
 import { Effect, Layer } from "effect";
 
+import { ActivityRecords } from "#activity/application/activity-records.ts";
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { UsageRecords } from "#assistant/application/ports/usage-records.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
@@ -42,7 +43,7 @@ const billingRefusals = (workspaceId: WorkspaceId) => ({
  * ContextRecords through each context's own records: publishing's posts,
  * the channels, the media library, the notices, the assistant's usage,
  * analytics' posts followed, billing's subscriptions, the webhooks, the
- * staff audit log, and the legal records.
+ * activity logs, the staff audit log, and the legal records.
  */
 export const ContextRecordsLive = Layer.effect(
   ContextRecords,
@@ -57,6 +58,7 @@ export const ContextRecordsLive = Layer.effect(
     const staff = yield* StaffRecords;
     const legal = yield* LegalRecords;
     const webhooks = yield* WebhookRecords;
+    const activity = yield* ActivityRecords;
     const pseudonyms = yield* Pseudonyms;
 
     return ContextRecords.of({
@@ -67,6 +69,7 @@ export const ContextRecordsLive = Layer.effect(
           yield* notices.eraseUser(userId);
           yield* posts.forgetAuthor(userId);
           yield* channels.eraseUser(userId);
+          yield* activity.forgetUser(userId);
           yield* staff.forgetUser(userId, pseudonym);
           yield* billing.forgetUser(userId, pseudonym);
         }
@@ -85,6 +88,7 @@ export const ContextRecordsLive = Layer.effect(
           yield* notices.eraseWorkspace(workspaceId);
           yield* usage.eraseWorkspace(workspaceId);
           yield* webhooks.eraseWorkspace(workspaceId);
+          yield* activity.eraseWorkspace(workspaceId);
 
           // Billing last: refused if Stripe still bills it, which settling
           // made sure it no longer does, unless a checkout completed since.
@@ -97,16 +101,18 @@ export const ContextRecordsLive = Layer.effect(
         posts.exportAuthored(userId, workspaceIds),
       exportUser: (userId) =>
         Effect.all({
+          activity: activity.exportUser(userId),
           contracts: billing.exportUser(userId),
           legalHold: legal.exportUser(userId),
           staffActions: staff.exportUser(userId),
           user: notices.exportUser(userId),
         }).pipe(
-          Effect.map(({ contracts, legalHold, staffActions, user }) => ({
-            ...user,
-            contracts,
-            legalHold,
-            staffActions,
+          Effect.map((exported) => ({
+            ...exported.user,
+            activity: exported.activity,
+            contracts: exported.contracts,
+            legalHold: exported.legalHold,
+            staffActions: exported.staffActions,
           }))
         ),
       exportWorkspace: (workspaceId) =>

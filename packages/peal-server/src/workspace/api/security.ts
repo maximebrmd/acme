@@ -9,7 +9,6 @@ import {
   CurrentMember,
   CurrentPrincipal,
   CurrentStaff,
-  Forbidden,
   StaffAccess,
   Unauthenticated,
   WorkspaceAccess,
@@ -17,18 +16,24 @@ import {
 } from "peal-contract";
 import type { Member } from "peal-contract";
 
+import { forbidden, refused } from "#shared/api/forbidden.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
+import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ConnectionJournal } from "#workspace/application/connection-journal.ts";
 import type { ContentChange } from "#workspace/application/connection-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
+import { RequestLimits } from "#workspace/application/request-limits.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 
+import { recorded } from "./activity-recording.ts";
 import { memberOf, principalOf, toContractPrincipal } from "./principal.ts";
+import { pastLimit, tooManyRequests } from "./rate-limit.ts";
+import { explaining } from "./refusal.ts";
 
 // Reads change nothing; any other method needs a trusted origin when it
 // comes with cookies, which a browser sends to Peal from any site.
@@ -37,8 +42,6 @@ const safeMethods: ReadonlySet<string> = new Set(["GET", "HEAD", "OPTIONS"]);
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
 
 const unauthenticated = () => Effect.fail(new Unauthenticated());
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const as = (principal: Principal) =>
   Effect.provideService(CurrentPrincipal, toContractPrincipal(principal));
@@ -131,6 +134,9 @@ export const journalled =
  * A write to posts or media that succeeds is kept in the ConnectionJournal,
  * whatever authenticated it: the address and protocol it came over, never
  * what it carried.
+ *
+ * A bearer credential's requests are counted (RequestLimits): each answer
+ * says where it stands, and one past the limit is a 429.
  */
 export const AuthenticationLive = Layer.effect(
   Authentication,
@@ -138,6 +144,7 @@ export const AuthenticationLive = Layer.effect(
     const authenticate = yield* Authenticate;
     const guard = yield* ImpersonationGuard;
     const journal = yield* ConnectionJournal;
+    const limits = yield* RequestLimits;
 
     return Authentication.of({
       bearer: (httpEffect, { credential, group }) =>
@@ -156,6 +163,14 @@ export const AuthenticationLive = Layer.effect(
                 NotSignedIn: unauthenticated,
               })
             );
+
+          // A key or an application past its limit is told so before
+          // anything is handled.
+          const limited = yield* pastLimit(limits, principal);
+
+          if (Option.isSome(limited)) {
+            return tooManyRequests(limited.value);
+          }
 
           if (!changesContent(request, group)) {
             return yield* httpEffect.pipe(as(principal));
@@ -194,7 +209,7 @@ export const AuthenticationLive = Layer.effect(
               Option.fromNullishOr(request.headers["origin"])
             )
           ) {
-            return yield* new Forbidden();
+            return yield* refused("untrustedOrigin");
           }
 
           // A write reads the session from the database, so one revoked a
@@ -254,14 +269,22 @@ export const AuthenticationLive = Layer.effect(
 /**
  * WorkspaceAccess: the caller as a member of the workspace in the path. A
  * workspace they do not belong to reads as one that does not exist.
+ *
+ * A member's request that asks to change something (any method but GET,
+ * HEAD and OPTIONS) is kept in the workspace's activity log once it is
+ * answered, done, refused or failed (ActivityJournal): who asked, through
+ * what, the endpoint and the ids its path names, the status and the
+ * error's code, never what it carried. Reads leave nothing.
  */
 export const WorkspaceAccessLive = Layer.effect(
   WorkspaceAccess,
   Effect.gen(function* workspaceAccess() {
     const members = yield* ResolveMember;
+    const activity = yield* ActivityJournal;
 
-    return WorkspaceAccess.of((httpEffect) =>
+    return WorkspaceAccess.of((httpEffect, { endpoint, group }) =>
       Effect.gen(function* member() {
+        const request = yield* HttpServerRequest.HttpServerRequest;
         const principal = principalOf(yield* CurrentPrincipal);
         const params = yield* HttpRouter.params;
         const workspaceId = decodeWorkspaceId(params["workspaceId"]);
@@ -279,8 +302,26 @@ export const WorkspaceAccessLive = Layer.effect(
           })
         );
 
-        return yield* httpEffect.pipe(
-          Effect.provideService(CurrentMember, memberOf(actor, principal))
+        const current = memberOf(actor, principal);
+
+        // A refusal for a missing permission says whose it is: the
+        // application's scope, the key's or the role's.
+        const answered = httpEffect.pipe(
+          Effect.provideService(CurrentMember, current),
+          explaining(current)
+        );
+
+        if (safeMethods.has(request.method)) {
+          return yield* answered;
+        }
+
+        return yield* answered.pipe(
+          recorded(activity, {
+            named: params,
+            operation: `${group.identifier}.${endpoint.identifier}`,
+            principal,
+            workspaceId: workspaceId.value,
+          })
         );
       })
     );

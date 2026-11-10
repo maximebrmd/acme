@@ -48,6 +48,7 @@ public partial class PealClient : IPealClient
         Analytics = new AnalyticsClient(_client);
         Tiktok = new TiktokClient(_client);
         Webhooks = new WebhooksClient(_client);
+        Activity = new ActivityClient(_client);
     }
 
     public ISystemClient System { get; }
@@ -79,4 +80,6 @@ public partial class PealClient : IPealClient
     public ITiktokClient Tiktok { get; }
 
     public IWebhooksClient Webhooks { get; }
+
+    public IActivityClient Activity { get; }
 }

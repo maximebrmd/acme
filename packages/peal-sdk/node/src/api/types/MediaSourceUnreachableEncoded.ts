@@ -3,6 +3,9 @@
 import * as Peal from "../index.js";
 
 export interface MediaSourceUnreachableEncoded {
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     reason: Peal.MediaSourceFailure;
     status: number | null;
 }

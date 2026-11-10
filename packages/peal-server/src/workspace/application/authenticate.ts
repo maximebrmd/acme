@@ -29,6 +29,27 @@ const isEmpty = (secret: Redacted.Redacted): boolean =>
 // contain a dot, whatever their prefix becomes.
 const jwtSyntax = /^[\w-]+\.[\w-]+\.[\w-]+$/u;
 
+const bearerSyntax = /^Bearer (?<token>\S+)$/iu;
+
+// The API key an Authorization header carries, if what it carries as a
+// bearer token is not an OAuth access token.
+const apiKeyIn = (
+  authorization: Option.Option<Redacted.Redacted>
+): Option.Option<Redacted.Redacted> =>
+  authorization.pipe(
+    Option.flatMapNullishOr(
+      (header) => bearerSyntax.exec(Redacted.value(header))?.groups?.["token"]
+    ),
+    Option.filter((token) => !jwtSyntax.test(token)),
+    Option.map((token) => Redacted.make(token))
+  );
+
+// The workspace an API key acts in on the MCP endpoint, whose tools work in
+// one workspace: the key's own. A key that one day spans several
+// workspaces, as a partner's would, names the one it means here (a header,
+// or a tool argument), and nowhere else.
+const workspaceOfKey = (principal: ApiKeyPrincipal) => principal.workspaceId;
+
 /** A request with a bearer token, besides the token itself. */
 export type BearerRequest = Omit<AccessTokenRequest, "authorization">;
 
@@ -53,8 +74,11 @@ export class Authenticate extends Context.Service<
     /** Whether a request sending cookies comes from a trusted origin. */
     readonly isTrustedOrigin: (origin: Option.Option<string>) => boolean;
     /**
-     * The user and the workspace a request to the MCP endpoint acts for,
-     * from its OAuth access token.
+     * Who a request to the MCP endpoint acts for, and in which workspace:
+     * the user of its OAuth access token, in the workspace the token is
+     * bound to, or its API key, in the key's workspace. A key that does
+     * not work is answered as a missing token is, with the challenge that
+     * leads a client to sign in.
      */
     readonly mcp: (
       request: AccessTokenRequest
@@ -99,7 +123,31 @@ export class Authenticate extends Context.Service<
             : apiKey(token),
         isTrustedOrigin: (origin) =>
           Option.exists(origin, (value) => gateway.isTrustedOrigin(value)),
-        mcp: (request) => gateway.mcpToken(request),
+        mcp: (request) =>
+          Option.match(apiKeyIn(request.authorization), {
+            onNone: () => gateway.mcpToken(request),
+            onSome: (key) =>
+              gateway.apiKey(key).pipe(
+                Effect.flatMap(
+                  Option.match({
+                    // The challenge of a request without a token.
+                    onNone: (): Effect.Effect<
+                      BoundPrincipal,
+                      AuthUnavailable | InvalidAccessToken
+                    > =>
+                      gateway.mcpToken({
+                        ...request,
+                        authorization: Option.none(),
+                      }),
+                    onSome: (principal) =>
+                      Effect.succeed<BoundPrincipal>({
+                        principal,
+                        workspaceId: workspaceOfKey(principal),
+                      }),
+                  })
+                )
+              ),
+          }),
         session: (cookies, options) =>
           isEmpty(cookies)
             ? Effect.fail(new NotSignedIn())

@@ -5,6 +5,7 @@ import * as Peal from "../index.js";
 export interface PublicationAttempt {
     attempt: number;
     finishedAt: string;
+    refusalCode: string | null;
     result: Peal.AttemptResult;
     retryAt: string | null;
     round: number;

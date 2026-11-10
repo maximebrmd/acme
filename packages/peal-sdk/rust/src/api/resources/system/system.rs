@@ -1,3 +1,4 @@
+use crate::api::*;
 use crate::{ApiError, ClientConfig, HttpClient, RequestOptions};
 use reqwest::Method;
 
@@ -71,6 +72,40 @@ impl SystemClient {
     pub async fn ready(&self, options: Option<RequestOptions>) -> Result<(), ApiError> {
         self.http_client
             .execute_request(Method::GET, "api/ready", None, None, options)
+            .await
+    }
+
+    /// Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client.system.changelog(None).await;
+    /// }
+    /// ```
+    pub async fn changelog(
+        &self,
+        options: Option<RequestOptions>,
+    ) -> Result<ApiChangelog, ApiError> {
+        self.http_client
+            .execute_request(Method::GET, "api/changelog", None, None, options)
             .await
     }
 }

@@ -44,6 +44,7 @@ const count = (rows: ReturnType<Count>) =>
 // The schemas the migrations create. Effect's cluster tables, in `public`,
 // hold the jobs' payloads (ids), and are not the migrations'.
 const schemas = [
+  "activity",
   "analytics",
   "assistant",
   "auth",
@@ -60,6 +61,9 @@ const schemas = [
 // The rows of each table that name a workspace: none may be left once it is
 // deleted.
 const workspaceRows = {
+  // The log of who changed what in it.
+  "activity.events": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM activity.events WHERE workspace_id = ${id}`,
   "analytics.metric_snapshots": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM analytics.metric_snapshots s JOIN analytics.tracked_posts t ON t.target_id = s.target_id WHERE t.workspace_id = ${id}`,
   "analytics.tracked_posts": (sql, id) =>
@@ -137,6 +141,13 @@ const workspaceRows = {
 // The rows of each table that name a user: none may be left once their
 // account is closed. Posts stay with their workspaces, without an author.
 const userRows = {
+  // What they changed in the workspaces that remain stays in those
+  // workspaces' logs, without them; their id leaves the ids other events
+  // name.
+  "activity.events": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM activity.events
+      WHERE user_id = ${id}
+        OR EXISTS (SELECT 1 FROM jsonb_each_text(object_ids) AS named(name, value) WHERE value = ${id})`,
   "auth.account": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.account WHERE user_id = ${id}`,
   "auth.device_code": (sql, id) =>
@@ -210,6 +221,8 @@ const heldRows = {
 
 // Tables that name neither a workspace nor a user, and why they stay.
 const kept = {
+  "activity.request_counts":
+    "how many requests a credential sent in a window, by a digest that names nobody, kept an hour",
   "analytics.erased_workspaces":
     "the ids of erased workspaces, so posts listed before are never followed after",
   "auth.jwks": "the server's keys that sign OAuth access tokens",
@@ -554,6 +567,15 @@ layer(RetainingLive, {
         assert.deepStrictEqual(
           yield* countsOf(userRows, ana.id),
           none(userRows)
+        );
+
+        // The key she created in the workspace she shared is still in its
+        // log, as a change someone made.
+        assert.isAbove(
+          yield* count(
+            sql`SELECT count(*)::int AS count FROM activity.events WHERE workspace_id = ${shared} AND operation = 'apiKeys.create' AND actor_kind = 'user' AND user_id IS NULL AND application_id IS NULL`
+          ),
+          0
         );
 
         // Only what the law has a host keep is left, apart: who held the

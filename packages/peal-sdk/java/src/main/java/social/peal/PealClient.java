@@ -6,6 +6,7 @@ package social.peal;
 import java.util.function.Supplier;
 import social.peal.core.ClientOptions;
 import social.peal.core.Suppliers;
+import social.peal.resources.activity.ActivityClient;
 import social.peal.resources.analytics.AnalyticsClient;
 import social.peal.resources.apikeys.ApiKeysClient;
 import social.peal.resources.assistant.AssistantClient;
@@ -55,6 +56,8 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<WebhooksClient> webhooksClient;
 
+    protected final Supplier<ActivityClient> activityClient;
+
     public PealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new SystemClient(clientOptions));
@@ -72,6 +75,7 @@ public class PealClient implements AutoCloseable {
         this.analyticsClient = Suppliers.memoize(() -> new AnalyticsClient(clientOptions));
         this.tiktokClient = Suppliers.memoize(() -> new TiktokClient(clientOptions));
         this.webhooksClient = Suppliers.memoize(() -> new WebhooksClient(clientOptions));
+        this.activityClient = Suppliers.memoize(() -> new ActivityClient(clientOptions));
     }
 
     public SystemClient system() {
@@ -132,6 +136,10 @@ public class PealClient implements AutoCloseable {
 
     public WebhooksClient webhooks() {
         return this.webhooksClient.get();
+    }
+
+    public ActivityClient activity() {
+        return this.activityClient.get();
     }
 
     /**

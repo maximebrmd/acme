@@ -1,6 +1,7 @@
 import { HttpApi, OpenApi } from "effect/http-api";
 
 import { AccountApi } from "./account.ts";
+import { ActivityApi } from "./activity.ts";
 import { AnalyticsApi } from "./analytics.ts";
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
@@ -29,6 +30,26 @@ import { WebhooksApi } from "./webhooks.ts";
 import { WorkspacesApi } from "./workspaces.ts";
 
 export { DatabaseUnavailable } from "./database-unavailable.ts";
+
+export {
+  ActivityActorSchema,
+  ActivityApi,
+  ActivityApplicationSchema,
+  ActivityEventSchema,
+  ActivityPageSchema,
+  activityRetentionDays,
+  ActivityViaSchema,
+  defaultActivityPageSize,
+  maxActivityPageSize,
+} from "./activity.ts";
+
+export type {
+  ActivityActor,
+  ActivityApplication,
+  ActivityEvent,
+  ActivityPage,
+  ActivityVia,
+} from "./activity.ts";
 
 export {
   AccountApi,
@@ -398,7 +419,32 @@ export type { Staff } from "./current-staff.ts";
 
 export { CurrentPrincipal } from "./current-principal.ts";
 
-export { Forbidden } from "./forbidden.ts";
+export {
+  apiChangelog,
+  ApiChangelogEntrySchema,
+  ApiChangelogSchema,
+  BreakingChangeSchema,
+} from "./api-changelog.ts";
+
+export type { ApiChangelog, ApiChangelogEntry } from "./api-changelog.ts";
+
+export { deprecated, Deprecation } from "./deprecation.ts";
+
+export type { DeprecationNotice } from "./deprecation.ts";
+
+export { errorEnvelope } from "./error-envelope.ts";
+
+export { Forbidden, ForbiddenReasonSchema } from "./forbidden.ts";
+
+export type { ForbiddenReason } from "./forbidden.ts";
+
+export {
+  InvalidRequest,
+  maxRequestIssues,
+  RequestIssueSchema,
+} from "./invalid-request.ts";
+
+export type { RequestIssue } from "./invalid-request.ts";
 
 export { InvalidDateRange } from "./invalid-date-range.ts";
 
@@ -739,6 +785,8 @@ export type { StaffRefusal } from "./staff-action-refused.ts";
 
 export { TooManyClientErrors } from "./too-many-client-errors.ts";
 
+export { TooManyRequests } from "./too-many-requests.ts";
+
 export { Unauthenticated } from "./unauthenticated.ts";
 
 export { UnknownChannels } from "./unknown-channels.ts";
@@ -856,6 +904,7 @@ export class Api extends HttpApi.make("peal")
   .add(AnalyticsApi)
   .add(TikTokApi)
   .add(WebhooksApi)
+  .add(ActivityApi)
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)

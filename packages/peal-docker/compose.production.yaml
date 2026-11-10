@@ -187,6 +187,8 @@ services:
       OTEL_LOGS_EXPORTER:
       PEAL_CLUSTER_RETENTION:
       PEAL_ANALYTICS_CONCURRENCY:
+      PEAL_API_REQUESTS_PER_MINUTE:
+      PEAL_DOCS_URL:
       PEAL_LEGAL_RETENTION:
       # What the operator declares about its processing, for each user's
       # export: the file PEAL_PRIVACY_DECLARATION names, mounted below.

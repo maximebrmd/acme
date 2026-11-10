@@ -2,6 +2,9 @@
 
 export interface WebhookEndpointDisabledEncoded {
     _tag: WebhookEndpointDisabledEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace WebhookEndpointDisabledEncoded {

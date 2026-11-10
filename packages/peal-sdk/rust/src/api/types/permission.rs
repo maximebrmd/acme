@@ -4,6 +4,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Permission {
+    ActivityRead,
     AnalyticsRead,
     ApiKeyCreate,
     ApiKeyRead,
@@ -42,6 +43,7 @@ pub enum Permission {
 impl Serialize for Permission {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self {
+            Self::ActivityRead => serializer.serialize_str("activity:read"),
             Self::AnalyticsRead => serializer.serialize_str("analytics:read"),
             Self::ApiKeyCreate => serializer.serialize_str("apiKey:create"),
             Self::ApiKeyRead => serializer.serialize_str("apiKey:read"),
@@ -81,6 +83,7 @@ impl<'de> Deserialize<'de> for Permission {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let value = String::deserialize(deserializer)?;
         match value.as_str() {
+            "activity:read" => Ok(Self::ActivityRead),
             "analytics:read" => Ok(Self::AnalyticsRead),
             "apiKey:create" => Ok(Self::ApiKeyCreate),
             "apiKey:read" => Ok(Self::ApiKeyRead),
@@ -119,6 +122,7 @@ impl<'de> Deserialize<'de> for Permission {
 impl fmt::Display for Permission {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::ActivityRead => write!(f, "activity:read"),
             Self::AnalyticsRead => write!(f, "analytics:read"),
             Self::ApiKeyCreate => write!(f, "apiKey:create"),
             Self::ApiKeyRead => write!(f, "apiKey:read"),

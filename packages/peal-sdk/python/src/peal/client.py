@@ -10,6 +10,7 @@ from .core.logging import LogConfig, Logger
 from .environment import PealEnvironment
 
 if typing.TYPE_CHECKING:
+    from .activity.client import ActivityClient, AsyncActivityClient
     from .analytics.client import AnalyticsClient, AsyncAnalyticsClient
     from .api_keys.client import ApiKeysClient, AsyncApiKeysClient
     from .assistant.client import AssistantClient, AsyncAssistantClient
@@ -126,6 +127,7 @@ class Peal:
         self._analytics: typing.Optional[AnalyticsClient] = None
         self._tiktok: typing.Optional[TiktokClient] = None
         self._webhooks: typing.Optional[WebhooksClient] = None
+        self._activity: typing.Optional[ActivityClient] = None
 
     @property
     def system(self):
@@ -246,6 +248,14 @@ class Peal:
 
             self._webhooks = WebhooksClient(client_wrapper=self._client_wrapper)
         return self._webhooks
+
+    @property
+    def activity(self):
+        if self._activity is None:
+            from .activity.client import ActivityClient  # noqa: E402
+
+            self._activity = ActivityClient(client_wrapper=self._client_wrapper)
+        return self._activity
 
 
 def _make_default_async_client(
@@ -368,6 +378,7 @@ class AsyncPeal:
         self._analytics: typing.Optional[AsyncAnalyticsClient] = None
         self._tiktok: typing.Optional[AsyncTiktokClient] = None
         self._webhooks: typing.Optional[AsyncWebhooksClient] = None
+        self._activity: typing.Optional[AsyncActivityClient] = None
 
     @property
     def system(self):
@@ -488,6 +499,14 @@ class AsyncPeal:
 
             self._webhooks = AsyncWebhooksClient(client_wrapper=self._client_wrapper)
         return self._webhooks
+
+    @property
+    def activity(self):
+        if self._activity is None:
+            from .activity.client import AsyncActivityClient  # noqa: E402
+
+            self._activity = AsyncActivityClient(client_wrapper=self._client_wrapper)
+        return self._activity
 
 
 def _get_base_url(*, base_url: typing.Optional[str] = None, environment: PealEnvironment) -> str:

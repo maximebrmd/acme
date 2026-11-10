@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
 import { RejectionReasonSchema } from "./media-status.ts";
 
 /**
@@ -8,7 +9,7 @@ import { RejectionReasonSchema } from "./media-status.ts";
  */
 export class UploadRejected extends Schema.TaggedError<UploadRejected>()(
   "UploadRejected",
-  { reason: RejectionReasonSchema },
+  { ...errorEnvelope, reason: RejectionReasonSchema },
   {
     description:
       "The stored file does not have the declared size or type. It was deleted, and the media is rejected.",

@@ -7,10 +7,20 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .forbidden_encoded_tag import ForbiddenEncodedTag
+from .forbidden_reason import ForbiddenReason
+from .permission import Permission
 
 
 class ForbiddenEncoded(UniversalBaseModel):
     tag: typing_extensions.Annotated[ForbiddenEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")]
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+    permission: typing.Optional[Permission] = None
+    reason: typing.Optional[ForbiddenReason] = None
+    scope: typing.Optional[str] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

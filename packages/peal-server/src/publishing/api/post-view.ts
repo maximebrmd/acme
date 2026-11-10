@@ -109,10 +109,15 @@ const resultOf = (outcome: AttemptOutcome): AttemptResult =>
     ? outcome._tag
     : failureReasonOf(outcome);
 
+// The code a refusal came with: the platform's, or Peal's own.
+const refusalCodeOf = (outcome: AttemptOutcome): string | null =>
+  "code" in outcome && outcome.code !== undefined ? outcome.code : null;
+
 /** What clients see of an attempt: when, how it ended, what came next. */
 export const attemptView = (attempt: RecordedAttempt): AttemptView => ({
   attempt: attempt.attempt,
   finishedAt: attempt.finishedAt,
+  refusalCode: refusalCodeOf(attempt.outcome),
   result: resultOf(attempt.outcome),
   retryAt: attempt.retryAfter.pipe(
     Option.map((delay) => DateTime.addDuration(attempt.finishedAt, delay)),

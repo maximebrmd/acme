@@ -5,6 +5,7 @@ import {
   PlanLimitSchema,
   PlanSchema,
 } from "./billing-plans.ts";
+import { errorEnvelope } from "./error-envelope.ts";
 
 /**
  * The workspace's plan allows no more of this, with what a client needs to
@@ -14,6 +15,7 @@ import {
 export class PlanLimitReached extends Schema.TaggedError<PlanLimitReached>()(
   "PlanLimitReached",
   {
+    ...errorEnvelope,
     // How many the plan allows.
     allowed: Schema.Int,
     // The workspace's billing page in the web app, where an owner or an

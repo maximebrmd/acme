@@ -7,6 +7,7 @@ peal_runtime_host_settings: >-
   {{ {
        'PUBLIC_URL': 'https://' ~ peal_hostnames.app,
        'PEAL_TERMS_URL': 'https://' ~ peal_hostnames.site ~ '/terms/',
+       'PEAL_DOCS_URL': 'https://' ~ peal_hostnames.docs,
        'AUTH_IP_HEADERS': 'cf-connecting-ip',
        'MAIL_FROM': peal_mail_from,
        'PEAL_LEGAL_RETENTION': peal_legal_retention,

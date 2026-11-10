@@ -9,11 +9,24 @@ pub enum ApiError {
     UnauthorizedError {
         message: String,
         tag: Option<UnauthenticatedEncodedTag>,
+        code: Option<String>,
+        request_id: Option<String>,
     },
     #[error("ForbiddenError: Access forbidden - {message}")]
     ForbiddenError {
         message: String,
         tag: Option<ForbiddenEncodedTag>,
+        code: Option<String>,
+        request_id: Option<String>,
+        permission: Option<Permission>,
+        reason: Option<ForbiddenReason>,
+        scope: Option<String>,
+    },
+    #[error("TooManyRequestsError: Rate limit exceeded - {message}")]
+    TooManyRequestsError {
+        message: String,
+        retry_after_seconds: Option<u64>,
+        limit_type: Option<String>,
     },
     #[error("NotFoundError: Resource not found - {message}")]
     NotFoundError {
@@ -25,6 +38,8 @@ pub enum ApiError {
     PaymentRequiredError {
         message: String,
         tag: Option<PlanLimitReachedEncodedTag>,
+        code: Option<String>,
+        request_id: Option<String>,
         allowed: Option<i64>,
         billing_url: Option<String>,
         limit: Option<PlanLimit>,
@@ -50,12 +65,6 @@ pub enum ApiError {
     ConflictError {
         message: String,
         conflict_type: Option<String>,
-    },
-    #[error("TooManyRequestsError: Rate limit exceeded - {message}")]
-    TooManyRequestsError {
-        message: String,
-        retry_after_seconds: Option<u64>,
-        limit_type: Option<String>,
     },
     #[error("HTTP error {status}: {message}")]
     Http { status: u16, message: String },
@@ -112,12 +121,20 @@ impl ApiError {
                             tag: parsed.get("_tag").and_then(|v| {
                                 serde_json::from_value::<UnauthenticatedEncodedTag>(v.clone()).ok()
                             }),
+                            code: parsed
+                                .get("code")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            request_id: parsed
+                                .get("requestId")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
                         };
                     }
                 }
                 return Self::UnauthorizedError {
                     message: body.unwrap_or("Unknown error").to_string(),
                     tag: None,
+                    code: None,
+                    request_id: None,
                 };
             }
             403 => {
@@ -133,12 +150,57 @@ impl ApiError {
                             tag: parsed.get("_tag").and_then(|v| {
                                 serde_json::from_value::<ForbiddenEncodedTag>(v.clone()).ok()
                             }),
+                            code: parsed
+                                .get("code")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            request_id: parsed
+                                .get("requestId")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            permission: parsed
+                                .get("permission")
+                                .and_then(|v| serde_json::from_value::<Permission>(v.clone()).ok()),
+                            reason: parsed.get("reason").and_then(|v| {
+                                serde_json::from_value::<ForbiddenReason>(v.clone()).ok()
+                            }),
+                            scope: parsed
+                                .get("scope")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
                         };
                     }
                 }
                 return Self::ForbiddenError {
                     message: body.unwrap_or("Unknown error").to_string(),
                     tag: None,
+                    code: None,
+                    request_id: None,
+                    permission: None,
+                    reason: None,
+                    scope: None,
+                };
+            }
+            429 => {
+                // Parse error body for TooManyRequestsError;
+                if let Some(body_str) = body {
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(body_str) {
+                        return Self::TooManyRequestsError {
+                            message: parsed
+                                .get("message")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("Unknown error")
+                                .to_string(),
+                            retry_after_seconds: parsed
+                                .get("retryAfterSeconds")
+                                .and_then(|v| v.as_u64()),
+                            limit_type: parsed
+                                .get("limitType")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                        };
+                    }
+                }
+                return Self::TooManyRequestsError {
+                    message: body.unwrap_or("Unknown error").to_string(),
+                    retry_after_seconds: None,
+                    limit_type: None,
                 };
             }
             404 => {
@@ -179,6 +241,12 @@ impl ApiError {
                             tag: parsed.get("_tag").and_then(|v| {
                                 serde_json::from_value::<PlanLimitReachedEncodedTag>(v.clone()).ok()
                             }),
+                            code: parsed
+                                .get("code")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            request_id: parsed
+                                .get("requestId")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
                             allowed: parsed
                                 .get("allowed")
                                 .and_then(|v| serde_json::from_value::<i64>(v.clone()).ok()),
@@ -203,6 +271,8 @@ impl ApiError {
                 return Self::PaymentRequiredError {
                     message: body.unwrap_or("Unknown error").to_string(),
                     tag: None,
+                    code: None,
+                    request_id: None,
                     allowed: None,
                     billing_url: None,
                     limit: None,
@@ -297,31 +367,6 @@ impl ApiError {
                 return Self::ConflictError {
                     message: body.unwrap_or("Unknown error").to_string(),
                     conflict_type: None,
-                };
-            }
-            429 => {
-                // Parse error body for TooManyRequestsError;
-                if let Some(body_str) = body {
-                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(body_str) {
-                        return Self::TooManyRequestsError {
-                            message: parsed
-                                .get("message")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("Unknown error")
-                                .to_string(),
-                            retry_after_seconds: parsed
-                                .get("retryAfterSeconds")
-                                .and_then(|v| v.as_u64()),
-                            limit_type: parsed
-                                .get("limitType")
-                                .and_then(|v| v.as_str().map(|s| s.to_string())),
-                        };
-                    }
-                }
-                return Self::TooManyRequestsError {
-                    message: body.unwrap_or("Unknown error").to_string(),
-                    retry_after_seconds: None,
-                    limit_type: None,
                 };
             }
             _ => Self::Http {

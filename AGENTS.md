@@ -65,7 +65,9 @@ Work from the repository root unless a command names another directory.
   in the [CI workflow](.github/workflows/ci.yml). Install with
   `bun install --frozen-lockfile`.
 - For code changes, run `bun run check`, `bun run typecheck`, `bun run test`
-  and `bun run build`, as CI does. Fix lint findings without inline
+  and `bun run build`, as CI does. `bun run test` also checks the API
+  against the last released one (`nx run peal-sdk:test`: `bun test` on
+  `packages/peal-sdk/scripts`, then `scripts/compat.ts`). Fix lint findings without inline
   suppressions; `bun run fix` applies what it can. `bun run test` needs the
   development stack's Postgres, Mailpit and SeaweedFS (see
   [Development stack](#development-stack)). It does not run the end-to-end
@@ -196,6 +198,7 @@ them:
 | `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
 | `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
 | `staff`         | the staff console: what staff read and do, and the audit log of it          |
+| `activity`      | each workspace's activity log, and the requests counted for the rate limit  |
 | `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log   |
 | `legal`         | what French law has a host keep, and the legal requests that read it        |
 
@@ -263,10 +266,68 @@ and no socket, for tests.
 
 ### HTTP API and middlewares
 
-- Every route the server answers starts with `/api`, apart from `/openapi.json`
-  and the OAuth discovery documents under `/.well-known/oauth-*`. The web app
-  forwards `/api/*` and `/.well-known/oauth-*` unchanged, so Peal has one
-  public origin; `/openapi.json` is reachable on the server only.
+- Every route the server answers starts with `/api`, apart from `/openapi.json`,
+  the OAuth discovery documents under `/.well-known/oauth-*`, the API
+  catalogue `/.well-known/api-catalog` and `/llms.txt`. The web app forwards
+  `/api/*` and those documents unchanged (`servedByApi`, and the matcher of
+  `src/proxy.ts`: add a path to both), so Peal has one public origin;
+  `/openapi.json` is reachable on the server only, and `/api/openapi.json` is
+  the same document for everyone.
+- `ApiAnswersLive` (`src/app/answers.ts`), a global router middleware in
+  `RoutesLive`, shapes every answer, a failure's included (it changes the
+  response a cause would get and fails with the same cause, so logging,
+  counting and tracing stay as they were: `mapFailureResponse`): the request
+  id (`X-Request-Id`: the caller's when it is 8 to 128 of `[\w.:-]`, a UUIDv7
+  otherwise; `peal.request_id` on log lines and the span; `RequestId` from
+  `#shared/api/request-id.ts` for handlers), the headers handlers and
+  middlewares left for it (`setAnswerHeader`, `#shared/api/answer-headers.ts`:
+  an error is encoded after they ran), a deprecated endpoint's headers, and
+  the error envelope.
+- Every error of the API is one envelope: its own fields, then `code`,
+  `message` and `requestId` (`errorEnvelope`, which every contract error
+  spreads first; `enveloped` in `src/app/error-envelope.ts` fills them). A
+  code is the tag in snake case (`errorCodeOf`), `message` the error's own
+  words or its description. An answer without a body gets the general error
+  of its status (`generalErrors`: `not_found`, `internal_error`…, never more
+  than the status says, so the staff console's 404 and a missing route stay
+  alike), and a request the API could not decode `InvalidRequest` with its
+  `issues`. Better Auth's routes and the MCP endpoint keep their own shapes.
+  `errorCatalogue()` (`peal-contract/errors`) reads the list from the
+  contract: `test/app/fixtures/error-codes.json` freezes the published codes
+  (`UPDATE_ERROR_CODES=1` adds new ones; never remove or rename one), and the
+  docs' "API conventions" page lists them all, in both languages, which
+  `test/app/error-catalogue.test.ts` checks.
+- Handlers answer a use case's refusal with `forbidden` from
+  `#shared/api/forbidden.ts` (`MissingPermission: forbidden`,
+  `personRequired()`): it gives `Forbidden` its `reason` and `permission`.
+  `WorkspaceAccess` then tells it to the member (`#workspace/api/refusal.ts`):
+  an OAuth client without the scope gets `missingScope`, the scope and the
+  RFC 6750 `insufficient_scope` challenge; a key or a role, who gives the
+  permission. Never answer a bare `new Forbidden()`.
+- Bearer credentials are rate limited (`RequestLimits`, backed by the
+  activity context's `RequestLimiter`): `PEAL_API_REQUESTS_PER_MINUTE` (600)
+  per API key, and per OAuth client and user (`limitSubjectOf`: a key counts
+  by its id, whatever it belongs to), in fixed one-minute windows, one upsert
+  per request on `activity.request_counts` under the subject's SHA-256, the
+  same count for the API and the MCP endpoint; sessions are not counted. Every
+  such answer carries `RateLimit-Policy` and `RateLimit` (the IETF draft's
+  structured fields); past the limit `Authentication` answers
+  `TooManyRequests` (429, `Retry-After`) as a response, not a failure, which
+  its next security scheme would turn into a 401. A count that cannot be
+  kept lets the request through. Better Auth's own per-key limit stays off.
+- A workspace write (any method but GET, HEAD, OPTIONS) is kept in the
+  workspace's activity log by `WorkspaceAccess`, done, refused or failed
+  (`recorded`, `#workspace/api/activity-recording.ts`, through
+  `ActivityJournal`), and so is each call of an MCP tool that changes
+  something (`recordToolCall`, as `mcp.<tool>`, without a status). Keeping it
+  never changes an answer.
+- The discovery documents (`src/app/discovery/`) need no credentials and are
+  written from `PUBLIC_URL`, `PEAL_DOCS_URL` and the contract: the API
+  catalogue (RFC 9727, a Linkset), `/api/openapi.json`, the MCP server card
+  at `/api/mcp/server-card` (SEP-2127: `application/mcp-server-card+json`,
+  CORS for any origin, an ETag) and `/llms.txt`. Implement a discovery
+  document only where a specification gives its path and format, and read
+  the specification first.
 - `GET /api/health` is liveness: keep it free of the database.
   `GET /api/ready` is readiness: `SELECT 1` within 2 seconds, otherwise
   `DatabaseUnavailable` (503).
@@ -308,6 +369,19 @@ and no socket, for tests.
   included, gets 404 (`HttpApiError.NotFound`), never 401 or 403, so the
   console never tells it is there. `StaffStanding` decides, from the role
   and the ban the database holds now.
+- The API only grows: add a field, an operation, an enum value or an error,
+  never rename, remove or tighten one. `nx run peal-sdk:test` (in `bun run
+  test`) compares the SDKs' document with the last released one
+  (`packages/peal-sdk/released/openapi.json`, `scripts/api-changes.ts`) and
+  fails on anything a client could break on; a break that is decided on goes
+  into `released/accepted-changes.json` with its reason. Deprecate with
+  `.annotateMerge(deprecated({ since, sunset?, link? }))`
+  (`peal-contract/deprecation`): the document marks it and every answer
+  carries `Deprecation` (RFC 9745) and `Sunset` (RFC 8594). `GET
+  /api/changelog` serves `api-changelog.json`, which only `bun
+  scripts/compat.ts --release --date … --title …` (in `packages/peal-sdk`)
+  writes, when the SDKs are released: it records what changed and makes the
+  current document the released one.
 - `POST /api/client-errors` (`ClientErrorsApi`, in `src/app/client-errors/`)
   needs no credentials. `ClientErrorIntake` counts 30 reports a minute per
   address (`AUTH_IP_HEADERS`, else the connection's), in this process, and
@@ -1681,6 +1755,36 @@ and no socket, for tests.
   (`attempt/<n>/again/<k>`, `recover/<n>/<k>`, persisted contract),
   `maxRecoveries` times.
 
+### Activity
+
+- The activity context keeps two things about requests, in its own schema:
+  `activity.request_counts`, the rate limit's windows (a subject's SHA-256,
+  a window, a count: they name nobody, and the hourly
+  `activity.request-counts` cron deletes those an hour past), and
+  `activity.events`, each workspace's activity log.
+- An event (`ActivityEvent`) is metadata only: when, the operation
+  (`<group>.<endpoint>` from the contract, or `mcp.<tool>`), the status and
+  the error's code, the actor (a user or an API key), how they authenticated
+  (`session`, `apiKey`, `oauth`, `mcp`), the key or the OAuth client with
+  the name it had then (`ApplicationNames`, backed by the workspace
+  context's `CredentialNames`), whether staff acted as the member (never
+  who), the ids the path named (id-shaped values only) and the request id.
+  Never a body, a text, a URL's query, an address or a user agent.
+  `actor_kind`, `via` and operations are persisted names: add, never rename.
+- `ActivityLog.list` needs `activity:read`, which owners alone hold (an
+  admin holds everything else but deleting the workspace); `GET
+  …/activity` pages newest first by `cursor`, as the other lists do, and
+  `peal activity list` and the MCP tool `list_activity` read the same.
+- Events are kept 90 days (`activity/domain/activity-retention.ts`, the
+  daily `activity.retention` cron, the `activityLog` period of the
+  data-processing registry and the privacy policy's table: change them
+  together). `ActivityRecords` erases a workspace's, clears a closed
+  account's id and application from the events its user made and from
+  other events' object ids, and exports a user's own. A successful
+  `workspaces.delete` records nothing: its log went with it.
+- Tests set the clock before 1970 when Postgres is in the layer (the pool's
+  periodic sleeps run for every second the test clock moves forward).
+
 ### MCP endpoint
 
 - `src/app/mcp/` serves effect/ai's `McpServer.layerHttp` at `/api/mcp`
@@ -1688,15 +1792,29 @@ and no socket, for tests.
   sessions live in memory and end with `DELETE`).
 - Tools are `Tool.make` with Effect Schema inputs and outputs, declare
   `CurrentMember`, and reach contexts through their use cases.
-  `McpAuthenticationLive` (`#workspace/api/mcp-authentication.ts`) provides
+  `mcpAuthentication` (`#workspace/api/mcp-authentication.ts`) provides
   the member from the request's OAuth token: 401 with an RFC 9728 challenge
-  without a working token, 403 without a workspace scope or membership.
+  without a working token, 403 without a workspace scope or membership. It
+  also takes a workspace's API key as the bearer token (never in the URL),
+  for agents that run with nobody to sign in: the key's permissions apply,
+  as on the API, `whoami` answers `apiKey` with a null `user` and role, and
+  what only a person does refuses it in words about keys. A key acts in its
+  own workspace (`workspaceOfKey` in `Authenticate`: the one place to
+  change if a key ever spans several). Past the rate limit it answers a
+  JSON-RPC error with 429.
 - The use cases' permission checks refuse a client the user let read only.
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
   `media-tools.ts`, `reports-tools.ts`, `people-tools.ts`, `webhooks-tools.ts`)
   and its handlers beside it, merged
-  into `PealTools`. Annotate every tool with `reading`, or
+  into `PealTools`. Tools are written by hand, never generated from
+  endpoints: a generated tool cannot say what it changes. `find_tools`
+  lists them by area from `catalogue.ts` (`toolAreas`: one toolkit an
+  area), with the scope each takes (`publishingTools` names those that
+  take `workspace:publish`; a test calls each without it) and whether the
+  connection holds it: a new toolkit joins `toolAreas`, `ToolAreaSchema`
+  and `PealTools` together, and tools/list stays whole, as the protocol
+  has no filter. Annotate every tool with `reading`, or
   `changing({ destructive, idempotent, openWorld })` from `annotations.ts`,
   and say in its description what it changes. `list_members` answers
   members' email addresses only with `includeEmails`: hand an AI model no
@@ -1767,6 +1885,10 @@ self-hoster needs only Postgres and an S3-compatible store:
 - AI: an Anthropic key, or any OpenAI-compatible endpoint that serves
   `/chat/completions`; the writing assistant is off until `PEAL_AI_PROVIDER`
   is set;
+- rate limit: `PEAL_API_REQUESTS_PER_MINUTE` per key and per application
+  (600), on Postgres;
+- documentation links: `PEAL_DOCS_URL`, unset by default, for the links the
+  discovery documents give;
 - telemetry: OTLP export of logs, metrics and traces only when
   `OTEL_EXPORTER_OTLP_ENDPOINT` is set (`src/app/observability.ts` defaults
   each `OTEL_<SIGNAL>_EXPORTER` to `otlp`; set one to `none` to turn that
@@ -1991,6 +2113,43 @@ self-hoster needs only Postgres and an S3-compatible store:
   with the refresh token. `CredentialStore` (`src/credentials.ts`) saves sign-ins by API URL in
   `credentials.json` (0600, in a 0700 folder). Keep tokens `Redacted`, and
   never print one.
+- An agent or a script runs headless with `PEAL_API_KEY` (`src/api-key.ts`;
+  the environment only, never a flag, which shell history keeps): the key
+  is the bearer token, wins over a saved sign-in, stays `Redacted`, and
+  `--workspace` or `PEAL_WORKSPACE` must then be the workspace's id, as a
+  key cannot read `/api/me`. What only a person does (`login`, `account`,
+  members and invitations) says so without asking the server.
+- Every command that reads or changes through the API takes `--json`
+  (`jsonFlag`, `printJson`) and prints the API's answer as it came; an
+  answer without a body prints `null`. With `--json` a failure is one JSON
+  object on stderr, `{"error": {"code", "message", "requestId", …}}`, and
+  exit code 1: `src/report.ts` is the one place that turns a failure into
+  what is printed, in prose or JSON, and holds the command line's own codes
+  (`unreachable`, `not_signed_in`, `api_key_refused`…). In prose, a refusal
+  ends with the request's id (`requestLine`).
+- `peal doctor` checks a configuration and changes nothing (the API URL and
+  where it came from, health, readiness, the API's latest release, which
+  credential is used and whether it works, the publish scope, the workspace
+  commands will act in, the MCP endpoint's address), exits with 1 when a
+  check fails, and is the first thing the skill tells an agent to run.
+- `test/parity.test.ts` maps every endpoint a bearer token can call
+  (`test/contract-endpoints.ts`, which copies the SDK spec's rule and its
+  `ownSessionTags`: keep them equal) to the command that covers it, or to
+  an exemption with its reason, and checks the command exists and takes
+  `--json`: a new endpoint gets a command or a stated reason.
+  `test/command-tree.ts` reads commands, flags and arguments from
+  effect/cli's own help documents, never from printed text.
+- `skills/peal/` (Apache-2.0, with its own `LICENSE`) is the agent skill, in
+  the Agent Skills format: `SKILL.md` under 500 lines, more in
+  `references/`. `test/skill.test.ts` checks its frontmatter, that every
+  `peal` command line and flag in its code blocks exists, that every HTTP
+  path of its curl reference is in the contract, and that the error codes it
+  lists are the catalogue's: change a command, the skill and the docs'
+  command line page together. The site publishes it at
+  `/.well-known/agent-skills/` (a draft's path: index 0.2.0, a `skill-md`
+  with its SHA-256), from copies under `packages/peal-site/public/` that
+  `bun packages/peal-site/src/write-agent-skills.ts` writes and a test
+  keeps equal.
 - Test commands with `runWith` from `src/cli.ts` against the in-memory server
   in `test/support.ts` (the contract served by test handlers) and the
   authorization server in `test/authorization-server.ts`, never against a

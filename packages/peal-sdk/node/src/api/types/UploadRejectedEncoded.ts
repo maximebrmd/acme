@@ -4,6 +4,9 @@ import * as Peal from "../index.js";
 
 export interface UploadRejectedEncoded {
     _tag: UploadRejectedEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     reason: Peal.RejectionReason;
 }
 

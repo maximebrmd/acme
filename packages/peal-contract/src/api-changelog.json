@@ -1,0 +1,10 @@
+[
+  {
+    "additions": 0,
+    "breaking": [],
+    "date": "2026-11-09",
+    "deprecations": [],
+    "operations": [],
+    "title": "The API as the SDKs' release 0.3.0 calls it: 49 operations. Later entries list what each release adds to it."
+  }
+]

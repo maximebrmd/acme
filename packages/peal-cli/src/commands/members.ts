@@ -1,19 +1,30 @@
-import { Console, Effect } from "effect";
+import { Console, Effect, Schema } from "effect";
 import { Command } from "effect/cli";
+import { WorkspaceMemberSchema } from "peal-contract";
 
+import { personOnly } from "#api-key.ts";
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
 const list = Command.make(
   "list",
-  { workspace: workspaceFlag },
-  Effect.fn("members.list")(function* list({ workspace: choice }) {
+  { json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("members.list")(function* list({ json, workspace: choice }) {
+    yield* personOnly("list a workspace's members");
+
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const members = yield* client.members
       .list({ params: { workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(Schema.Array(WorkspaceMemberSchema), members);
+
+      return;
+    }
 
     yield* Console.log(`Members of ${workspace.name}:`);
 
@@ -29,7 +40,7 @@ const list = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "List the workspace's members and their roles, in the order they joined."
+    "List the workspace's members and their roles, in the order they joined. For a person signed in: an API key may not read members."
   )
 );
 

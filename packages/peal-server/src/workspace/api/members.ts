@@ -4,7 +4,6 @@ import {
   AlreadyMember,
   Api,
   CurrentMember,
-  Forbidden,
   InvitationNotFound,
   TooManyInvitations,
 } from "peal-contract";
@@ -14,6 +13,7 @@ import type {
 } from "peal-contract";
 
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";
 import type { PersonInWorkspace } from "#workspace/application/workspace-people.ts";
@@ -37,8 +37,6 @@ export const invitationView = (invitation: Invitation): InvitationView => ({
   inviterId: invitation.inviterId,
   role: invitation.role,
 });
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 export const MembersHandlers = HttpApiBuilder.group(
   Api,

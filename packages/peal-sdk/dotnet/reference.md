@@ -78,6 +78,45 @@ await client.System.ReadyAsync();
 </dl>
 </details>
 
+<details><summary><code>client.System.<a href="/src/Peal/System/SystemClient.cs">ChangelogAsync</a>() -> WithRawResponseTask&lt;ApiChangelog&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.System.ChangelogAsync();
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## session
 <details><summary><code>client.Session.<a href="/src/Peal/Session/SessionClient.cs">MeAsync</a>() -> WithRawResponseTask&lt;Me&gt;</code></summary>
 <dl>
@@ -205,7 +244,7 @@ await client.ApiKeys.CreateAsync(
     {
         WorkspaceId = "workspaceId",
         Name = "name",
-        Permissions = new List<Permission>() { Permission.AnalyticsRead },
+        Permissions = new List<Permission>() { Permission.ActivityRead },
     }
 );
 ```
@@ -3430,6 +3469,61 @@ await client.Webhooks.RedeliverAsync(
 <dd>
 
 **request:** `RedeliverWebhooksRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## activity
+<details><summary><code>client.Activity.<a href="/src/Peal/Activity/ActivityClient.cs">ListAsync</a>(ListActivityRequest { ... }) -> WithRawResponseTask&lt;ActivityPage&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the requests that asked to change something in the workspace, newest first, 30 a page unless `limit` (at most 100) says otherwise: who asked (a member or an API key), how they authenticated, the key or the application it came through, the operation, the ids its path named, the status answered and, when it was refused or failed, the error's code. Requests that only read are not kept, and neither is anything a request or its answer carried. `operation` keeps one operation (`posts.schedule`), `actor` what one member (a user id) or one API key (its id) asked for. Pass the page's `nextCursor` as `cursor` for the next one. An event is kept 90 days. Needs activity:read, which owners hold.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Activity.ListAsync(new ListActivityRequest { WorkspaceId = "workspaceId" });
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListActivityRequest` 
     
 </dd>
 </dl>

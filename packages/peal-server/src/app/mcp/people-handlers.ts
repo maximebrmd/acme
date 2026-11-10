@@ -7,11 +7,17 @@ import { actorOf } from "#shared/api/actor.ts";
 import { invitationView, memberView } from "#workspace/api/members.ts";
 import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";
 
-// MCP tokens act for a user, never an API key, and are bound to a
-// workspace the user belongs to; the user left it meanwhile.
+// What only a member does: an API key is nobody, and a user's token is
+// bound to a workspace they belonged to, which they left meanwhile.
 const gone = () =>
-  refuse(
-    "You no longer belong to the workspace this connection acts in. Connect to Peal again and pick another."
+  CurrentMember.pipe(
+    Effect.flatMap(({ principal }) =>
+      refuse(
+        principal._tag === "apiKey"
+          ? "Only a person signed in to Peal does this, never an API key: the workspace's members and invitations are theirs to see and change. Connect with OAuth, as a member, to use this tool."
+          : "You no longer belong to the workspace this connection acts in. Connect to Peal again and pick another."
+      )
+    )
   );
 
 /** What the people tools do, through the workspace context's use cases. */

@@ -7,6 +7,9 @@ pub struct PublicationAttempt {
     #[serde(rename = "finishedAt")]
     #[serde(default)]
     pub finished_at: String,
+    #[serde(rename = "refusalCode")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refusal_code: Option<String>,
     pub result: AttemptResult,
     #[serde(rename = "retryAt")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -32,6 +35,7 @@ impl PublicationAttempt {
 pub struct PublicationAttemptBuilder {
     attempt: Option<i64>,
     finished_at: Option<String>,
+    refusal_code: Option<String>,
     result: Option<AttemptResult>,
     retry_at: Option<String>,
     round: Option<i64>,
@@ -47,6 +51,11 @@ impl PublicationAttemptBuilder {
 
     pub fn finished_at(mut self, value: impl Into<String>) -> Self {
         self.finished_at = Some(value.into());
+        self
+    }
+
+    pub fn refusal_code(mut self, value: impl Into<String>) -> Self {
+        self.refusal_code = Some(value.into());
         self
     }
 
@@ -91,6 +100,7 @@ impl PublicationAttemptBuilder {
             finished_at: self
                 .finished_at
                 .ok_or_else(|| BuildError::missing_field("finished_at"))?,
+            refusal_code: self.refusal_code,
             result: self
                 .result
                 .ok_or_else(|| BuildError::missing_field("result"))?,

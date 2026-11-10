@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * The workspace's members sent as many test events and deliveries again
  * as it may in an hour.
@@ -7,6 +9,7 @@ import { Schema } from "effect";
 export class TooManyWebhookSends extends Schema.TaggedError<TooManyWebhookSends>()(
   "TooManyWebhookSends",
   {
+    ...errorEnvelope,
     // How many a workspace may send by hand in an hour.
     allowed: Schema.Int,
   },

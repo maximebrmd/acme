@@ -1,13 +1,9 @@
 import { Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
-import {
-  Api,
-  CurrentPrincipal,
-  Forbidden,
-  Unauthenticated,
-} from "peal-contract";
+import { Api, CurrentPrincipal, Unauthenticated } from "peal-contract";
 import type { Me } from "peal-contract";
 
+import { forbidden, personRequired } from "#shared/api/forbidden.ts";
 import { Accounts } from "#workspace/application/accounts.ts";
 import type { CurrentAccount } from "#workspace/application/accounts.ts";
 
@@ -45,14 +41,14 @@ export const SessionHandlers = HttpApiBuilder.group(
 
           // An API key belongs to a workspace, not to anyone.
           if (principal._tag !== "user") {
-            return yield* new Forbidden();
+            return yield* personRequired();
           }
 
           const current = yield* accounts
             .current(userPrincipalOf(principal))
             .pipe(
               Effect.catchTags({
-                BannedUser: () => Effect.fail(new Forbidden()),
+                BannedUser: forbidden,
                 DirectoryUnavailable: Effect.die,
                 NotSignedIn: () => Effect.fail(new Unauthenticated()),
               })

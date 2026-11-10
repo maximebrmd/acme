@@ -55,6 +55,33 @@
       "postServeActions": []
     },
     {
+      "id": "6b061a88-19b1-4aaf-a0cd-1882d2ecbd4b",
+      "name": "List what each release of the API changed - default",
+      "request": {
+        "urlPathTemplate": "/api/changelog",
+        "method": "GET"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"entries\": [\n    {\n      \"additions\": 1,\n      \"breaking\": [\n        {\n          \"change\": \"change\",\n          \"reason\": \"reason\"\n        }\n      ],\n      \"date\": \"date\",\n      \"deprecations\": [\n        \"deprecations\"\n      ],\n      \"operations\": [\n        \"operations\"\n      ],\n      \"title\": \"title\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6b061a88-19b1-4aaf-a0cd-1882d2ecbd4b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
       "id": "9bdf0e47-e11e-456c-85e6-4d94caea839c",
       "name": "Get the signed-in user - default",
       "request": {
@@ -68,7 +95,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"impersonatedBy\": \"impersonatedBy\",\n  \"user\": {\n    \"email\": \"email\",\n    \"emailVerified\": true,\n    \"id\": \"id\",\n    \"image\": \"image\",\n    \"locale\": \"en\",\n    \"name\": \"name\"\n  },\n  \"workspaces\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"permissions\": [\n        \"analytics:read\"\n      ],\n      \"role\": \"role\",\n      \"slug\": \"slug\"\n    }\n  ]\n}",
+        "body": "{\n  \"impersonatedBy\": \"impersonatedBy\",\n  \"user\": {\n    \"email\": \"email\",\n    \"emailVerified\": true,\n    \"id\": \"id\",\n    \"image\": \"image\",\n    \"locale\": \"en\",\n    \"name\": \"name\"\n  },\n  \"workspaces\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"permissions\": [\n        \"activity:read\"\n      ],\n      \"role\": \"role\",\n      \"slug\": \"slug\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -105,7 +132,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"permissions\": [\n      \"analytics:read\"\n    ],\n    \"start\": \"start\"\n  }\n]",
+        "body": "[\n  {\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"permissions\": [\n      \"activity:read\"\n    ],\n    \"start\": \"start\"\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -141,7 +168,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"apiKey\": {\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"permissions\": [\n      \"analytics:read\"\n    ],\n    \"start\": \"start\"\n  },\n  \"key\": \"key\"\n}",
+        "body": "{\n  \"apiKey\": {\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"permissions\": [\n      \"activity:read\"\n    ],\n    \"start\": \"start\"\n  },\n  \"key\": \"key\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -755,7 +782,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"attempt\": 1,\n    \"finishedAt\": \"finishedAt\",\n    \"result\": \"published\",\n    \"retryAt\": \"retryAt\",\n    \"round\": 1,\n    \"startedAt\": \"startedAt\",\n    \"targetId\": \"targetId\"\n  }\n]",
+        "body": "[\n  {\n    \"attempt\": 1,\n    \"finishedAt\": \"finishedAt\",\n    \"refusalCode\": \"refusalCode\",\n    \"result\": \"published\",\n    \"retryAt\": \"retryAt\",\n    \"round\": 1,\n    \"startedAt\": \"startedAt\",\n    \"targetId\": \"targetId\"\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2267,9 +2294,45 @@
           }
         }
       }
+    },
+    {
+      "id": "0e35e19f-71fc-4d14-bb2f-202ea4bf6553",
+      "name": "List the workspace's activity - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/activity",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"actor\": {\n        \"userId\": null,\n        \"_tag\": \"user\"\n      },\n      \"application\": {\n        \"id\": \"id\",\n        \"name\": null\n      },\n      \"errorCode\": \"errorCode\",\n      \"id\": \"id\",\n      \"impersonated\": true,\n      \"objectIds\": {\n        \"key\": \"value\"\n      },\n      \"occurredAt\": \"occurredAt\",\n      \"operation\": \"operation\",\n      \"requestId\": \"requestId\",\n      \"status\": 1,\n      \"via\": \"session\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "0e35e19f-71fc-4d14-bb2f-202ea4bf6553",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
     }
   ],
   "meta": {
-    "total": 61
+    "total": 63
   }
 }

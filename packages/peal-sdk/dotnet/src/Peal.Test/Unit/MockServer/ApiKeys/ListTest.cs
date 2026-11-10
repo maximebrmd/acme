@@ -20,8 +20,8 @@ public class ListTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "permissions": [
-                  "analytics:read",
-                  "analytics:read"
+                  "activity:read",
+                  "activity:read"
                 ],
                 "start": "start"
               },
@@ -31,8 +31,8 @@ public class ListTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "permissions": [
-                  "analytics:read",
-                  "analytics:read"
+                  "activity:read",
+                  "activity:read"
                 ],
                 "start": "start"
               }
@@ -70,7 +70,7 @@ public class ListTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "permissions": [
-                  "analytics:read"
+                  "activity:read"
                 ],
                 "start": "start"
               }

@@ -2389,28 +2389,31 @@ func (p *PostTimingNow) String() string {
 }
 
 var (
-	publicationAttemptFieldAttempt    = big.NewInt(1 << 0)
-	publicationAttemptFieldFinishedAt = big.NewInt(1 << 1)
-	publicationAttemptFieldResult     = big.NewInt(1 << 2)
-	publicationAttemptFieldRetryAt    = big.NewInt(1 << 3)
-	publicationAttemptFieldRound      = big.NewInt(1 << 4)
-	publicationAttemptFieldStartedAt  = big.NewInt(1 << 5)
-	publicationAttemptFieldTargetID   = big.NewInt(1 << 6)
+	publicationAttemptFieldAttempt     = big.NewInt(1 << 0)
+	publicationAttemptFieldFinishedAt  = big.NewInt(1 << 1)
+	publicationAttemptFieldRefusalCode = big.NewInt(1 << 2)
+	publicationAttemptFieldResult      = big.NewInt(1 << 3)
+	publicationAttemptFieldRetryAt     = big.NewInt(1 << 4)
+	publicationAttemptFieldRound       = big.NewInt(1 << 5)
+	publicationAttemptFieldStartedAt   = big.NewInt(1 << 6)
+	publicationAttemptFieldTargetID    = big.NewInt(1 << 7)
 )
 
 // publicationAttemptNullableFields maps the wire names of PublicationAttempt's nullable fields (required or optional) to their field bits.
 var publicationAttemptNullableFields = map[string]*big.Int{
-	"retryAt": publicationAttemptFieldRetryAt,
+	"refusalCode": publicationAttemptFieldRefusalCode,
+	"retryAt":     publicationAttemptFieldRetryAt,
 }
 
 type PublicationAttempt struct {
-	Attempt    int           `json:"attempt" url:"attempt"`
-	FinishedAt string        `json:"finishedAt" url:"finishedAt"`
-	Result     AttemptResult `json:"result" url:"result"`
-	RetryAt    *string       `json:"retryAt,omitempty" url:"retryAt,omitempty"`
-	Round      int           `json:"round" url:"round"`
-	StartedAt  string        `json:"startedAt" url:"startedAt"`
-	TargetID   string        `json:"targetId" url:"targetId"`
+	Attempt     int           `json:"attempt" url:"attempt"`
+	FinishedAt  string        `json:"finishedAt" url:"finishedAt"`
+	RefusalCode *string       `json:"refusalCode,omitempty" url:"refusalCode,omitempty"`
+	Result      AttemptResult `json:"result" url:"result"`
+	RetryAt     *string       `json:"retryAt,omitempty" url:"retryAt,omitempty"`
+	Round       int           `json:"round" url:"round"`
+	StartedAt   string        `json:"startedAt" url:"startedAt"`
+	TargetID    string        `json:"targetId" url:"targetId"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2431,6 +2434,13 @@ func (p *PublicationAttempt) GetFinishedAt() string {
 		return ""
 	}
 	return p.FinishedAt
+}
+
+func (p *PublicationAttempt) GetRefusalCode() *string {
+	if p == nil {
+		return nil
+	}
+	return p.RefusalCode
 }
 
 func (p *PublicationAttempt) GetResult() AttemptResult {
@@ -2496,6 +2506,13 @@ func (p *PublicationAttempt) SetAttempt(attempt int) {
 func (p *PublicationAttempt) SetFinishedAt(finishedAt string) {
 	p.FinishedAt = finishedAt
 	p.require(publicationAttemptFieldFinishedAt)
+}
+
+// SetRefusalCode sets the RefusalCode field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PublicationAttempt) SetRefusalCode(refusalCode *string) {
+	p.RefusalCode = refusalCode
+	p.require(publicationAttemptFieldRefusalCode)
 }
 
 // SetResult sets the Result field and marks it as non-optional;

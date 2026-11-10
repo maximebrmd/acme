@@ -37,6 +37,7 @@ const written = (locale: Locale, count: number, unit: Unit): string => {
 
 // The docs' names for the registry's periods.
 const names = {
+  activityLog: "activity",
   auditLog: "audit",
   backups: "backups",
   banRecords: "bans",
@@ -66,6 +67,7 @@ const namedPeriods: readonly (readonly [
   string,
   Partial<Record<Unit, number>>,
 ])[] = [
+  [names.activityLog, retentionPeriods.activityLog],
   [names.auditLog, retentionPeriods.auditLog],
   [names.backups, retentionPeriods.backups],
   [names.banRecords, retentionPeriods.banRecords],

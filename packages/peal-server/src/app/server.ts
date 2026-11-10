@@ -6,16 +6,19 @@ import { HttpApiBuilder } from "effect/http-api";
 import { WorkflowEngine } from "effect/workflow";
 import { Api } from "peal-contract";
 
+import { ActivityApiLive, ActivityLive } from "#activity/container.ts";
 import {
   AnalyticsApiLive,
   analyticsCollection,
   AnalyticsLive,
   PlatformMetricsReaderLive,
 } from "#analytics/container.ts";
+import { ApiAnswersLive } from "#app/answers.ts";
 import { ClientErrorsLive } from "#app/client-errors/live.ts";
 import { ClusterLive } from "#app/cluster.ts";
 import { ContractRequestsLive } from "#app/contract-requests/live.ts";
 import { CronsLive } from "#app/crons.ts";
+import { DiscoveryLive } from "#app/discovery/live.ts";
 import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { countRequests } from "#app/request-metrics.ts";
@@ -78,6 +81,7 @@ import {
 import {
   AccountLookupLive,
   AuthRoutesLive,
+  CredentialNamesLive,
   ErasureReplayLive,
   StripeCheckoutsLive,
   WorkspaceApiLive,
@@ -102,6 +106,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   StaffApiLive,
   LegalApiLive,
   WebhooksApiLive,
+  ActivityApiLive,
   ContractRequestsDeskApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
@@ -119,10 +124,17 @@ const ApiLive = HttpApiBuilder.layer(Api, {
 );
 
 /**
- * Every route the server answers: the HTTP API, Better Auth's, and the MCP
- * endpoint.
+ * Every route the server answers: the HTTP API, Better Auth's, the MCP
+ * endpoint and the documents that say where they are, each answer with its
+ * request id.
  */
-export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive, McpLive);
+export const RoutesLive = Layer.mergeAll(
+  ApiLive,
+  AuthRoutesLive,
+  McpLive,
+  DiscoveryLive,
+  ApiAnswersLive
+);
 
 // Billing, which reads the checkouts the workspace context's Stripe plugin
 // keeps.
@@ -130,12 +142,20 @@ const BillingContextsLive = BillingLive.pipe(
   Layer.provide(StripeCheckoutsLive)
 );
 
+// The request counts and the workspaces' activity logs, which name the
+// keys and applications behind requests as the workspace context does.
+const ActivityContextLive = ActivityLive.pipe(
+  Layer.provide(CredentialNamesLive)
+);
+
 // Webhooks, whose signing secrets the channels context's cipher encrypts.
 const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
 
 // The workspace context with the notifications it sends, the plans that
 // limit it, the audit log of staff's impersonations it records and the
-// legal records of the connections that change content, then the
+// legal records of the connections that change content, the count of
+// the requests each key and application sends and the activity logs of the
+// changes they ask for, then the
 // notices, which read the workspace's members, then the webhooks, which
 // tell a workspace through them that an endpoint was turned off, then the
 // channels context, which sends notices and webhook events, as publishing
@@ -148,7 +168,8 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
       Layer.provideMerge(NotificationsLive),
       Layer.provideMerge(BillingContextsLive),
       Layer.provide(ImpersonationAuditLive),
-      Layer.provideMerge(LegalLive)
+      Layer.provideMerge(LegalLive),
+      Layer.provideMerge(ActivityContextLive)
     )
   )
 );

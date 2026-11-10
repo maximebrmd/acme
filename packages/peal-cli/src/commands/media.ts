@@ -83,6 +83,42 @@ const importMedia = Command.make(
   )
 );
 
+const show = Command.make(
+  "show",
+  {
+    json: jsonFlag,
+    mediaId: Argument.String("media-id").pipe(
+      Argument.withDescription("The media, as peal media list shows its id.")
+    ),
+    workspace: workspaceFlag,
+  },
+  Effect.fn("media.show")(function* show({ json, mediaId, workspace: choice }) {
+    const { client, url, workspace } = yield* inWorkspace(choice);
+
+    const found = yield* client.media
+      .get({ params: { mediaId, workspaceId: workspace.id } })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(MediaSchema, found);
+
+      return;
+    }
+
+    yield* Console.log(
+      `Media ${found.id} of ${workspace.name} (${found.contentType}, ${String(found.byteSize)} bytes), stored ${instant(found.createdAt)}: ${statusOf(found)}.`
+    );
+
+    if (found.altText !== null) {
+      yield* Console.log(`  ${excerpt(found.altText)}`);
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "Show one image or video: its type, its size, and whether it is ready to attach, which a video is once Peal probed it."
+  )
+);
+
 const list = Command.make(
   "list",
   {
@@ -162,7 +198,7 @@ const list = Command.make(
 
 export const media = Command.make("media").pipe(
   Command.withDescription(
-    "A workspace's images and videos: uploading files, importing them from an address, and listing them."
+    "A workspace's images and videos: uploading files, importing them from an address, listing them and showing one."
   ),
-  Command.withSubcommands([upload, importMedia, list])
+  Command.withSubcommands([upload, importMedia, list, show])
 );

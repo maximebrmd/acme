@@ -2,6 +2,9 @@
 
 export interface PlatformUnreachableEncoded {
     _tag: PlatformUnreachableEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace PlatformUnreachableEncoded {

@@ -94,5 +94,10 @@ module Peal
     def webhooks
       @webhooks ||= Peal::Webhooks::Client.new(client: @raw_client)
     end
+
+    # @return [Peal::Activity::Client]
+    def activity
+      @activity ||= Peal::Activity::Client.new(client: @raw_client)
+    end
   end
 end

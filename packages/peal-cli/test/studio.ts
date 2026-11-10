@@ -9,6 +9,7 @@ import {
   CurrentPrincipal,
   Forbidden,
   IdempotencyKeyReused,
+  InvalidTimeRange,
   InvalidTimeZone,
   InvitationNotFound,
   maxWebhookEndpoints,
@@ -37,6 +38,7 @@ import {
 } from "peal-contract";
 import type {
   AccountExport,
+  ActivityEvent,
   Billing,
   Channel,
   ChannelOptions,
@@ -52,6 +54,7 @@ import type {
   PostDraft,
   PostOrigin,
   PostTarget,
+  PublicationAttempt,
   SignedRequest,
   Standing,
   TikTokAccount,
@@ -75,6 +78,7 @@ export const shopId = "6c1d7f75-6e1a-4b8f-8b63-4a2d3e5f6071";
 export const userId = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
 
 const everything: readonly Permission[] = [
+  "activity:read",
   "analytics:read",
   "billing:read",
   "channel:read",
@@ -295,6 +299,30 @@ const posts: readonly Post[] = [
   },
 ];
 
+// How Peal tried the post that finished, on the channel that limited it.
+const attempts: readonly PublicationAttempt[] = [
+  {
+    attempt: 1,
+    finishedAt: at("2026-11-08T09:00:02Z"),
+    refusalCode: "429",
+    result: "rateLimited",
+    retryAt: at("2026-11-08T09:05:00Z"),
+    round: 1,
+    startedAt: at("2026-11-08T09:00:00Z"),
+    targetId: failedTargetId,
+  },
+  {
+    attempt: 2,
+    finishedAt: at("2026-11-08T09:05:02Z"),
+    refusalCode: "429",
+    result: "rateLimited",
+    retryAt: null,
+    round: 1,
+    startedAt: at("2026-11-08T09:05:00Z"),
+    targetId: failedTargetId,
+  },
+];
+
 const invitation: Invitation = {
   createdAt: at("2026-11-01T10:00:00Z"),
   email: "guest@example.test",
@@ -371,6 +399,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     recipients: [],
     rights: [],
   },
+  activity: [],
   authoredPosts: [],
   connectedApps: [cli],
   contracts: { orders: [], requests: [], withdrawals: [] },
@@ -443,6 +472,54 @@ export interface StoredRequest {
   readonly method: string;
   readonly part: string | null;
 }
+
+export const auditedKeyId = "3d6f0a1b-2c4e-4f5a-8b7c-9d0e1f2a3b4c";
+
+/**
+ * Studio's activity log, newest first: a draft an application made for the
+ * user, a key refused, and a channel the user disconnected in the web app.
+ */
+export const activityLog: readonly ActivityEvent[] = [
+  {
+    actor: { _tag: "user", userId },
+    application: { id: "peal-cli", name: "Peal CLI" },
+    errorCode: null,
+    id: "0190f3a0-0000-7000-8000-0000000a0003",
+    impersonated: false,
+    objectIds: {},
+    occurredAt: at("2026-11-09T11:30:00Z"),
+    operation: "posts.create",
+    requestId: "0190f3a0-0000-7000-8000-0000000b0003",
+    status: 201,
+    via: "oauth",
+  },
+  {
+    actor: { _tag: "apiKey", apiKeyId: auditedKeyId },
+    application: { id: auditedKeyId, name: "ci" },
+    errorCode: "forbidden",
+    id: "0190f3a0-0000-7000-8000-0000000a0002",
+    impersonated: false,
+    objectIds: { postId: "0190f3a0-0000-7000-8000-00000000d002" },
+    occurredAt: at("2026-11-09T10:15:00Z"),
+    operation: "posts.schedule",
+    requestId: "synthetic-request-0002",
+    status: 403,
+    via: "apiKey",
+  },
+  {
+    actor: { _tag: "user", userId },
+    application: null,
+    errorCode: null,
+    id: "0190f3a0-0000-7000-8000-0000000a0001",
+    impersonated: false,
+    objectIds: { channelId: "0190f3a0-0000-7000-8000-00000000c002" },
+    occurredAt: at("2026-11-08T09:00:00Z"),
+    operation: "channels.disconnect",
+    requestId: null,
+    status: 204,
+    via: "session",
+  },
+];
 
 export const hookId = "0190f3a0-0000-7000-8000-00000000b001";
 
@@ -588,14 +665,65 @@ export interface StudioState {
   readonly webhooks: readonly WebhookEndpoint[];
 }
 
+/** A synthetic API key of a workspace, with what it may do there. */
+export interface StudioKey {
+  readonly id: string;
+  /** The secret a request sends as its bearer token. */
+  readonly key: string;
+  readonly permissions: readonly Permission[];
+  readonly workspaceId: string;
+}
+
+/** The id of the request the studio refuses a key in, as the server names it. */
+export const refusedRequestId = "0190f3a0-0000-7000-8000-0000000c0001";
+
+// As the server words them (peal-server's refusals), with the envelope it
+// fills on every error.
+const keyWithout = (permission: Permission) =>
+  new Forbidden({
+    code: "forbidden",
+    message: `This API key does not have the permission ${permission}. An owner or an admin of the workspace gives it to the key, or creates a key that has it.`,
+    permission,
+    reason: "missingPermission",
+    requestId: refusedRequestId,
+  });
+
+const personRequired = new Forbidden({
+  code: "forbidden",
+  message:
+    "Only a person signed in to Peal does this, in the web app: not an API key, an application acting for them, or staff acting as them.",
+  reason: "personRequired",
+  requestId: refusedRequestId,
+});
+
+const wrongWorkspace = new Forbidden({
+  code: "forbidden",
+  message:
+    "This key or token belongs to another workspace: use it there, or use one of this workspace.",
+  reason: "wrongWorkspace",
+  requestId: refusedRequestId,
+});
+
+// What only a person does: an API key is nobody.
+const inPerson = CurrentPrincipal.pipe(
+  Effect.flatMap((principal) =>
+    principal._tag === "apiKey" ? Effect.fail(personRequired) : Effect.void
+  )
+);
+
 export interface Studio {
+  /** The API keys the server takes, beside the user's access token. */
+  readonly keys: readonly StudioKey[];
   readonly me: Me;
   readonly state: Ref.Ref<StudioState>;
   /** What happens while the server answers an export, as a test sets it. */
   readonly whileExporting: Ref.Ref<Effect.Effect<void>>;
 }
 
-export const makeStudio = (me: Me = studioMe) =>
+export const makeStudio = (
+  me: Me = studioMe,
+  keys: readonly StudioKey[] = []
+) =>
   Effect.all({
     state: Ref.make<StudioState>({
       changes: [],
@@ -611,7 +739,7 @@ export const makeStudio = (me: Me = studioMe) =>
       webhooks,
     }),
     whileExporting: Ref.make<Effect.Effect<void>>(Effect.void),
-  }).pipe(Effect.map((refs): Studio => ({ me, ...refs })));
+  }).pipe(Effect.map((refs): Studio => ({ keys, me, ...refs })));
 
 const record = (studio: Studio, change: string) =>
   Ref.update(studio.state, (current) => ({
@@ -619,14 +747,25 @@ const record = (studio: Studio, change: string) =>
     changes: [...current.changes, change],
   }));
 
-// The member a request acts as, if they may do this.
+// The actor an event names: the member's user id, or the key's id.
+const actorIdOf = ({ actor }: ActivityEvent): string | null =>
+  actor._tag === "apiKey" ? actor.apiKeyId : actor.userId;
+
+// The member a request acts as, if they may do this. A key is told what
+// it lacks, in the server's words.
 const allowed = (permission: Permission) =>
   CurrentMember.pipe(
-    Effect.flatMap((member) =>
-      member.permissions.includes(permission)
-        ? Effect.succeed(member)
-        : Effect.fail(new Forbidden())
-    )
+    Effect.flatMap((member) => {
+      if (member.permissions.includes(permission)) {
+        return Effect.succeed(member);
+      }
+
+      return Effect.fail(
+        member.principal._tag === "apiKey"
+          ? keyWithout(permission)
+          : new Forbidden()
+      );
+    })
   );
 
 const inStudio = (workspaceId: string) =>
@@ -1021,7 +1160,9 @@ const deliverTo = (
 export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
     HttpApiBuilder.group(Api, "session", (handlers) =>
-      handlers.handleAll({ me: () => Effect.succeed(studio.me) })
+      handlers.handleAll({
+        me: () => inPerson.pipe(Effect.as(studio.me)),
+      })
     ),
     HttpApiBuilder.group(Api, "channels", (handlers) =>
       handlers.handleAll({
@@ -1039,7 +1180,11 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     HttpApiBuilder.group(Api, "posts", (handlers) =>
       handlers.handleAll({
-        attempts: () => refusing,
+        attempts: ({ params }) =>
+          allowed("post:read").pipe(
+            Effect.andThen(findPost(studio, params.workspaceId, params.postId)),
+            Effect.map(({ id }) => (id === finishedId ? attempts : []))
+          ),
         cancel: ({ params }) =>
           Effect.gen(function* cancel() {
             yield* publishing;
@@ -1168,7 +1313,25 @@ export const studioGroupsLive = (studio: Studio) =>
           allowed("post:read").pipe(
             Effect.andThen(findPost(studio, params.workspaceId, params.postId))
           ),
-        list: () => refusing,
+        list: ({ params, query }) =>
+          Effect.gen(function* list() {
+            yield* allowed("post:read");
+
+            if (DateTime.isLessThan(query.to, query.from)) {
+              return yield* new InvalidTimeRange();
+            }
+
+            const { posts: all } = yield* Ref.get(studio.state);
+
+            return params.workspaceId === studioId
+              ? all.filter(
+                  ({ schedule }) =>
+                    schedule !== null &&
+                    DateTime.isGreaterThanOrEqualTo(schedule.at, query.from) &&
+                    DateTime.isLessThan(schedule.at, query.to)
+                )
+              : [];
+          }),
         repost: ({ params }) =>
           publishing.pipe(
             Effect.andThen(
@@ -1486,7 +1649,10 @@ export const studioGroupsLive = (studio: Studio) =>
             yield* record(studio, `delete-media:${found.id}`);
           }),
         describe: () => refusing,
-        get: () => refusing,
+        get: ({ params }) =>
+          allowed("media:read").pipe(
+            Effect.andThen(findMedia(studio, params.mediaId))
+          ),
         // What the address stands for, by its host: one the server does not
         // fetch, one that answers too slowly, one that has no such file.
         importFromUrl: ({ params, payload }) =>
@@ -1662,28 +1828,31 @@ export const studioGroupsLive = (studio: Studio) =>
     HttpApiBuilder.group(Api, "members", (handlers) =>
       handlers.handleAll({
         list: () =>
-          Effect.succeed([
-            {
-              email: "synthetic@example.test",
-              joinedAt: at("2026-10-01T08:00:00Z"),
-              name: "Synthetic User",
-              role: "owner",
-              userId,
-            },
-            {
-              email: "sam@example.test",
-              joinedAt: at("2026-10-02T08:00:00Z"),
-              name: "Sam Example",
-              role: "viewer",
-              userId: "2d8a4b6c-5e3f-4a71-8cbd-3e4f5a6b7c8d",
-            },
-          ]),
+          inPerson.pipe(
+            Effect.as([
+              {
+                email: "synthetic@example.test",
+                joinedAt: at("2026-10-01T08:00:00Z"),
+                name: "Synthetic User",
+                role: "owner",
+                userId,
+              },
+              {
+                email: "sam@example.test",
+                joinedAt: at("2026-10-02T08:00:00Z"),
+                name: "Sam Example",
+                role: "viewer",
+                userId: "2d8a4b6c-5e3f-4a71-8cbd-3e4f5a6b7c8d",
+              },
+            ])
+          ),
       })
     ),
     HttpApiBuilder.group(Api, "invitations", (handlers) =>
       handlers.handleAll({
         create: ({ payload }) =>
           Effect.gen(function* create() {
+            yield* inPerson;
             yield* allowed("invitation:create");
 
             if (payload.email === "sam@example.test") {
@@ -1708,12 +1877,14 @@ export const studioGroupsLive = (studio: Studio) =>
             return sent;
           }),
         list: () =>
-          allowed("invitation:create").pipe(
+          inPerson.pipe(
+            Effect.andThen(allowed("invitation:create")),
             Effect.andThen(Ref.get(studio.state)),
             Effect.map(({ invitations }) => invitations)
           ),
         revoke: ({ params }) =>
           Effect.gen(function* revoke() {
+            yield* inPerson;
             yield* allowed("invitation:cancel");
 
             const { invitations } = yield* Ref.get(studio.state);
@@ -1981,6 +2152,50 @@ export const studioGroupsLive = (studio: Studio) =>
           }),
       })
     ),
+    HttpApiBuilder.group(Api, "activity", (handlers) =>
+      handlers.handleAll({
+        list: ({ params, query }) =>
+          Effect.gen(function* list() {
+            const member = yield* CurrentMember;
+
+            // As the server words it, for the member it refuses.
+            if (!member.permissions.includes("activity:read")) {
+              return yield* new Forbidden({
+                message:
+                  "Your role in this workspace does not have the permission activity:read. An owner or an admin of the workspace changes roles, in its settings.",
+                permission: "activity:read",
+                reason: "missingPermission",
+              });
+            }
+
+            const listed = (
+              params.workspaceId === studioId ? activityLog : []
+            ).filter(
+              (event) =>
+                (query.operation === undefined ||
+                  event.operation === query.operation) &&
+                (query.actor === undefined || actorIdOf(event) === query.actor)
+            );
+
+            const start =
+              query.cursor === undefined
+                ? 0
+                : listed.findIndex(({ id }) => id === query.cursor) + 1;
+
+            const limit = query.limit ?? 30;
+            const items = listed.slice(start, start + limit);
+            const last = items.at(-1);
+
+            return {
+              items,
+              nextCursor:
+                last !== undefined && start + limit < listed.length
+                  ? last.id
+                  : null,
+            };
+          }),
+      })
+    ),
     HttpApiBuilder.group(Api, "tiktok", (handlers) =>
       handlers.handleAll({
         creator: ({ params }) =>
@@ -2006,6 +2221,21 @@ export const studioAccessLive = (studio: Studio) =>
       Effect.gen(function* member() {
         const principal = yield* CurrentPrincipal;
         const params = yield* HttpRouter.params;
+
+        // A key acts in its own workspace alone, with its own permissions.
+        if (principal._tag === "apiKey") {
+          if (principal.workspaceId !== params["workspaceId"]) {
+            return yield* wrongWorkspace;
+          }
+
+          return yield* httpEffect.pipe(
+            Effect.provideService(CurrentMember, {
+              permissions: principal.permissions,
+              principal,
+              workspaceId: principal.workspaceId,
+            })
+          );
+        }
 
         const workspace = studio.me.workspaces.find(
           ({ id }) => id === params["workspaceId"]

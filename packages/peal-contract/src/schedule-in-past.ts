@@ -1,9 +1,11 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /** The time asked for has passed. */
 export class ScheduleInPast extends Schema.TaggedError<ScheduleInPast>()(
   "ScheduleInPast",
-  {},
+  { ...errorEnvelope },
   {
     description:
       "The time asked for has passed. A time up to a minute ago publishes now.",

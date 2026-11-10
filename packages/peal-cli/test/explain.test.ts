@@ -1,5 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
-import { PlanLimitReached } from "peal-contract";
+import { CliError } from "effect/cli";
+import {
+  Forbidden,
+  PlanLimitReached,
+  PostNotFound,
+  TooManyRequests,
+} from "peal-contract";
 
 import { explain } from "#explain.ts";
 
@@ -63,6 +69,65 @@ describe("a plan's refusal, explained", () => {
       )
     ).toBe(
       "The workspace's Agency plan allows 100 channels, and it has 100. No plan is larger: write to the people who run this server to ask for more, or remove some."
+    );
+  });
+});
+
+describe("a refusal, with the request it answers", () => {
+  it("ends with the request's id and the error's code, to quote when asking for help", () => {
+    const explained = explain(url)(
+      new PostNotFound({
+        code: "post_not_found",
+        requestId: "018f4e9a-7b1c-7d2e-8f3a-4b5c6d7e8f90",
+      })
+    );
+
+    expect(explained[CliError.userMessage]).toBe(
+      [
+        "The workspace has no such post.",
+        "  Request 018f4e9a-7b1c-7d2e-8f3a-4b5c6d7e8f90 (post_not_found).",
+      ].join("\n")
+    );
+  });
+
+  it("says nothing more when the server sent no id", () => {
+    expect(explain(url)(new PostNotFound())[CliError.userMessage]).toBe(
+      "The workspace has no such post."
+    );
+  });
+
+  it("names what a refused sign-in or key lacks, as the server says it", () => {
+    const explained = explain(url)(
+      new Forbidden({
+        code: "forbidden",
+        message:
+          "This token lacks the scope workspace:publish. Run peal login again and approve it.",
+        permission: "post:schedule",
+        reason: "missingScope",
+        requestId: "deploy-42.attempt_3",
+        scope: "workspace:publish",
+      })
+    );
+
+    expect(explained[CliError.userMessage]).toBe(
+      [
+        "Peal refused: This token lacks the scope workspace:publish. Run peal login again and approve it.",
+        "  Request deploy-42.attempt_3 (forbidden).",
+      ].join("\n")
+    );
+  });
+
+  it("says how long to wait once a sign-in sent too many requests", () => {
+    expect(
+      explain(url)(
+        new TooManyRequests({
+          limit: 600,
+          retryAfterSeconds: 42,
+          windowSeconds: 60,
+        })
+      )[CliError.userMessage]
+    ).toBe(
+      "Peal takes 600 requests every 60 seconds from one sign-in or key, and this one sent more: nothing was done. Try again in 42 seconds."
     );
   });
 });

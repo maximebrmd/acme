@@ -117,7 +117,7 @@ class ApiKeysClient
      *     new NewApiKey([
      *         'name' => 'name',
      *         'permissions' => [
-     *             Permission::AnalyticsRead->value,
+     *             Permission::ActivityRead->value,
      *         ],
      *     ]),
      * );

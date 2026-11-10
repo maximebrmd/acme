@@ -7,9 +7,12 @@ sidebar:
 
 L’application web, la ligne de commande et le point d’accès MCP reposent sur la même API HTTP : tout ce qu’ils font, votre propre code peut le faire aussi.
 
-<Callout type="warning" title="Pas encore stable">
-  L’API change à chaque commit jusqu’à la première version. Attendez-vous à des
-  points d’accès ajoutés, renommés ou supprimés.
+[Conventions de l’API](/api-conventions) décrit ce que tous les points d’accès ont en commun : identifiants de requête, format des erreurs et liste de leurs codes, pagination, idempotence, limites de débit, et la façon dont l’API évolue.
+
+<Callout type="note" title="L’API ne fait que grandir">
+  Des champs, des opérations, des valeurs et des erreurs s’ajoutent ; rien n’est
+  renommé, retiré ni rendu plus strict. Écrivez des clients qui ignorent ce
+  qu’ils ne connaissent pas ([Versions](/api-conventions#versioning)).
 </Callout>
 
 ## Un seul contrat [#contract]
@@ -28,7 +31,7 @@ curl -i https://api.example.com/api/health
 
 En dehors des sondes de santé et des documents que les plateformes lisent sur Peal, chaque point d’accès demande l’un de ces moyens :
 
-- **Une clé d’API**, pour les scripts et les intégrations : envoyez-la en `Authorization: Bearer peal_…`. Une clé appartient à un espace de travail et porte une partie des permissions du membre qui l’a créée, jamais plus : une clé sans `post:schedule` ne programme ni ne publie. Les membres qui peuvent gérer les clés (propriétaires et administrateurs) en créent une avec `POST /api/workspaces/{workspaceId}/api-keys` une fois connectés, et ne voient la clé que dans cette réponse. Une clé peut envoyer 600 requêtes par minute.
+- **Une clé d’API**, pour les scripts et les intégrations : envoyez-la en `Authorization: Bearer peal_…`. Une clé appartient à un espace de travail et porte une partie des permissions du membre qui l’a créée, jamais plus : une clé sans `post:schedule` ne programme ni ne publie. Les membres qui peuvent gérer les clés (propriétaires et administrateurs) en créent une avec `POST /api/workspaces/{workspaceId}/api-keys` une fois connectés, et ne voient la clé que dans cette réponse. Une clé peut envoyer 600 requêtes par minute ([Limites de débit](/api-conventions#rate-limits)).
 - **Un jeton d’accès OAuth**, que la [ligne de commande](/cli) et les [clients MCP](/mcp) obtiennent quand vous les connectez, envoyé de la même façon. Il agit en votre nom, dans la limite de ce que vous avez accepté : `workspace:read` lit, `workspace:write` fait ce que votre rôle permet, sauf ce qui fait partir des publications, et `workspace:publish` programme et publie ([Ce que permet chaque permission](/agents#scopes)). Tout point d’accès qui demande `post:schedule` demande `workspace:publish` à un jeton OAuth, et répond 403 sans lui.
 - **Le cookie de session** de l’application web, pour l’application web elle-même. Une requête qui change quelque chose avec lui doit venir de l’origine même de l’application web.
 
@@ -36,7 +39,7 @@ Avec une session ou un jeton OAuth, `GET /api/me` dit qui vous êtes, et liste v
 
 ## Espaces de travail [#workspaces]
 
-Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{workspaceId}/` : `channels`, `posts`, `media`, `assistant`, `analytics`, `billing`, `webhooks` et `api-keys` ; `DELETE /api/workspaces/{workspaceId}` supprime l’espace de travail lui-même, avec tout son contenu ([Espaces de travail et compte](/settings#delete-workspace)). La référence de chaque point d’accès nomme la permission qu’il demande, comme `post:schedule` ou `channel:connect`.
+Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{workspaceId}/` : `channels`, `posts`, `media`, `assistant`, `analytics`, `billing`, `webhooks`, `activity` et `api-keys` ; `DELETE /api/workspaces/{workspaceId}` supprime l’espace de travail lui-même, avec tout son contenu ([Espaces de travail et compte](/settings#delete-workspace)). La référence de chaque point d’accès nomme la permission qu’il demande, comme `post:schedule` ou `channel:connect`.
 
 | Code | Signification                                                                                |
 | ---- | -------------------------------------------------------------------------------------------- |
@@ -46,11 +49,15 @@ Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{works
 
 `POST /api/workspaces/{workspaceId}/posts/send` crée une publication et l’envoie en une seule requête, maintenant ou à un instant ; `POST /api/workspaces/{workspaceId}/media/import` fait récupérer au serveur une image ou une vidéo à une adresse HTTPS publique, pour l’ajouter aux médias de l’espace de travail. Envoyée avec un en-tête `Idempotency-Key`, une requête `send` peut être renvoyée sans risque : dans les 24 heures, la même clé avec le même corps répond la publication créée par la première requête, et un autre corps répond 409 `IdempotencyKeyReused`. [Publier depuis un agent IA](/agents#api) montre les deux.
 
-Les erreurs répondent par un corps JSON dont `_tag` nomme l’erreur, comme `PostContentInvalid` ou `ConnectFailed`, avec les détails que liste la référence. Les points d’accès de l’assistant de rédaction répondent aussi 429 une fois que l’espace de travail a utilisé ses demandes du jour, 503 quand l’instance n’a pas de fournisseur d’IA, et 502 quand le fournisseur n’a donné aucune réponse que l’assistant puisse utiliser. Sur une instance qui facture, connecter un canal, programmer une publication ou commencer un envoi pour lesquels l’abonnement de l’espace de travail n’a plus de place répond 402 `PlanLimitReached`, qui nomme la limite (`limit` : `channels`, `members`, `scheduledPosts`, `assistantRequests` ou `mediaStorage`, en octets) et ce que l’abonnement permet (`allowed`) ([Abonnements et facturation](/billing#limits)) ; `GET /api/workspaces/:workspaceId/billing` montre l’abonnement, ce qu’il permet et ce que l’espace de travail en utilise.
+Les erreurs répondent par un corps JSON d’un seul format : un `code` stable, comme `post_content_invalid` ou `connect_failed`, le même nom en `_tag` (`PostContentInvalid`) pour les clients générés depuis le contrat, un `message` pour les personnes, le `requestId`, et les détails que liste la référence. [Erreurs](/api-conventions#errors) le décrit, et [Codes d’erreur](/api-conventions#error-codes) liste tous les codes. Les points d’accès de l’assistant de rédaction répondent aussi 429 une fois que l’espace de travail a utilisé ses demandes du jour, 503 quand l’instance n’a pas de fournisseur d’IA, et 502 quand le fournisseur n’a donné aucune réponse que l’assistant puisse utiliser. Sur une instance qui facture, connecter un canal, programmer une publication ou commencer un envoi pour lesquels l’abonnement de l’espace de travail n’a plus de place répond 402 `PlanLimitReached`, qui nomme la limite (`limit` : `channels`, `members`, `scheduledPosts`, `assistantRequests` ou `mediaStorage`, en octets) et ce que l’abonnement permet (`allowed`) ([Abonnements et facturation](/billing#limits)) ; `GET /api/workspaces/:workspaceId/billing` montre l’abonnement, ce qu’il permet et ce que l’espace de travail en utilise.
 
 ## Webhooks [#webhooks]
 
 Plutôt que d’interroger l’API sans cesse, faites appeler votre serveur par Peal quand il se passe quelque chose dans un espace de travail : une publication est partie ou a échoué, un canal doit être reconnecté, un fichier est prêt. Les membres qui peuvent gérer les webhooks (propriétaires et administrateurs), et les clés d’API qui ont reçu cette permission, ajoutent des points de terminaison sous `/api/workspaces/{workspaceId}/webhooks`. [Webhooks](/webhooks) liste chaque événement avec son schéma, et dit comment les livraisons sont signées, retentées et vérifiées.
+
+## Le journal d’activité [#activity]
+
+`GET /api/workspaces/{workspaceId}/activity` liste les requêtes qui ont demandé à changer quelque chose dans l’espace de travail : qui a demandé, par quelle clé ou quelle application, quelle opération, et ce qui a été répondu. Il demande `activity:read`, que portent les propriétaires ([Le journal d’activité](/settings#activity)).
 
 ## Votre compte [#me]
 
@@ -60,7 +67,9 @@ Une copie de vos données (`GET /api/me/export`), la suppression de votre compte
 
 ## Document OpenAPI [#openapi]
 
-Le serveur publie son document OpenAPI 3.1 à `/openapi.json` sur sa propre adresse, comme `http://localhost:3000/openapi.json` pour un serveur lancé depuis les sources ; l’application web ne le transmet pas. Servez-vous-en pour générer un client dans un autre langage ou pour importer l’API dans un outil HTTP.
+Le document OpenAPI 3.1 de l’API est public à `/api/openapi.json`, à l’adresse où vous ouvrez Peal, comme `https://api.example.com/api/openapi.json`. Servez-vous-en pour générer un client dans un autre langage ou pour importer l’API dans un outil HTTP. Le serveur le répond aussi à `/openapi.json` sur sa propre adresse, comme `http://localhost:3000/openapi.json` pour un serveur lancé depuis les sources, ce que l’application web ne transmet pas.
+
+Le catalogue d’API, à `/.well-known/api-catalog` (RFC 9727), indique aux programmes ce document, le [point d’accès MCP](/mcp) et l’endroit où obtenir de quoi s’authentifier auprès de chacun ([Découverte](/api-conventions#discovery)). `GET /api/changelog` liste ce que chaque version de l’API a ajouté ([Journal des modifications](/api-conventions#changelog)).
 
 ## Référence [#reference]
 

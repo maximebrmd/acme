@@ -28,6 +28,8 @@ public final class PublicationAttempt {
 
     private final String finishedAt;
 
+    private final Optional<String> refusalCode;
+
     private final AttemptResult result;
 
     private final Optional<String> retryAt;
@@ -43,6 +45,7 @@ public final class PublicationAttempt {
     private PublicationAttempt(
             int attempt,
             String finishedAt,
+            Optional<String> refusalCode,
             AttemptResult result,
             Optional<String> retryAt,
             int round,
@@ -51,6 +54,7 @@ public final class PublicationAttempt {
             Map<String, Object> additionalProperties) {
         this.attempt = attempt;
         this.finishedAt = finishedAt;
+        this.refusalCode = refusalCode;
         this.result = result;
         this.retryAt = retryAt;
         this.round = round;
@@ -67,6 +71,14 @@ public final class PublicationAttempt {
     @JsonProperty("finishedAt")
     public String getFinishedAt() {
         return finishedAt;
+    }
+
+    @JsonIgnore
+    public Optional<String> getRefusalCode() {
+        if (refusalCode == null) {
+            return Optional.empty();
+        }
+        return refusalCode;
     }
 
     @JsonProperty("result")
@@ -98,6 +110,12 @@ public final class PublicationAttempt {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("refusalCode")
+    private Optional<String> _getRefusalCode() {
+        return refusalCode;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("retryAt")
     private Optional<String> _getRetryAt() {
         return retryAt;
@@ -117,6 +135,7 @@ public final class PublicationAttempt {
     private boolean equalTo(PublicationAttempt other) {
         return attempt == other.attempt
                 && finishedAt.equals(other.finishedAt)
+                && refusalCode.equals(other.refusalCode)
                 && result.equals(other.result)
                 && retryAt.equals(other.retryAt)
                 && round == other.round
@@ -127,7 +146,14 @@ public final class PublicationAttempt {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.attempt, this.finishedAt, this.result, this.retryAt, this.round, this.startedAt, this.targetId);
+                this.attempt,
+                this.finishedAt,
+                this.refusalCode,
+                this.result,
+                this.retryAt,
+                this.round,
+                this.startedAt,
+                this.targetId);
     }
 
     @java.lang.Override
@@ -172,6 +198,12 @@ public final class PublicationAttempt {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage refusalCode(Optional<String> refusalCode);
+
+        _FinalStage refusalCode(String refusalCode);
+
+        _FinalStage refusalCode(Nullable<String> refusalCode);
+
         _FinalStage retryAt(Optional<String> retryAt);
 
         _FinalStage retryAt(String retryAt);
@@ -202,6 +234,8 @@ public final class PublicationAttempt {
 
         private Optional<String> retryAt = Optional.empty();
 
+        private Optional<String> refusalCode = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -210,6 +244,7 @@ public final class PublicationAttempt {
         public Builder from(PublicationAttempt other) {
             attempt(other.getAttempt());
             finishedAt(other.getFinishedAt());
+            refusalCode(other.getRefusalCode());
             result(other.getResult());
             retryAt(other.getRetryAt());
             round(other.getRound());
@@ -286,15 +321,49 @@ public final class PublicationAttempt {
         }
 
         @java.lang.Override
+        public _FinalStage refusalCode(Nullable<String> refusalCode) {
+            if (refusalCode.isNull()) {
+                this.refusalCode = null;
+            } else if (refusalCode.isEmpty()) {
+                this.refusalCode = Optional.empty();
+            } else {
+                this.refusalCode = Optional.of(refusalCode.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage refusalCode(String refusalCode) {
+            this.refusalCode = Optional.ofNullable(refusalCode);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "refusalCode", nulls = Nulls.SKIP)
+        public _FinalStage refusalCode(Optional<String> refusalCode) {
+            this.refusalCode = refusalCode;
+            return this;
+        }
+
+        @java.lang.Override
         public PublicationAttempt build() {
             return new PublicationAttempt(
-                    attempt, finishedAt, result, retryAt, round, startedAt, targetId, additionalProperties);
+                    attempt,
+                    finishedAt,
+                    refusalCode,
+                    result,
+                    retryAt,
+                    round,
+                    startedAt,
+                    targetId,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("attempt")
                     || key.equalsIgnoreCase("finishedAt")
+                    || key.equalsIgnoreCase("refusalCode")
                     || key.equalsIgnoreCase("result")
                     || key.equalsIgnoreCase("retryAt")
                     || key.equalsIgnoreCase("round")

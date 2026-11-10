@@ -42,6 +42,7 @@ import { PasswordCheckLive } from "#workspace/infrastructure/auth/password-check
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
 import { WorkspacePeopleLive } from "#workspace/infrastructure/auth/workspace-people.ts";
 import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts";
+import { CountedRequestLimits } from "#workspace/infrastructure/counted-request-limits.ts";
 import { ErasureLedgerRetentionCron } from "#workspace/infrastructure/crons.ts";
 import { AccountDirectoryLive } from "#workspace/infrastructure/drizzle-account-directory.ts";
 import { DrizzleAccountStore } from "#workspace/infrastructure/drizzle-account-store.ts";
@@ -51,6 +52,7 @@ import { DrizzleImpersonationSessions } from "#workspace/infrastructure/drizzle-
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 import { EmailedAccountMail } from "#workspace/infrastructure/emailed-account-mail.ts";
+import { LoggedActivityJournal } from "#workspace/infrastructure/logged-activity-journal.ts";
 import { PrivacyDeclarationLive } from "#workspace/infrastructure/privacy-declaration-file.ts";
 import { S3ErasureLedger } from "#workspace/infrastructure/s3-erasure-ledger.ts";
 import { StaffImpersonationLog } from "#workspace/infrastructure/staff-impersonation-log.ts";
@@ -83,6 +85,13 @@ const StaffToolsLive = Layer.mergeAll(
   AccountModerationLive
 );
 
+/**
+ * What the workspaces' API keys and the OAuth clients acting for members
+ * are called, for the contexts that record which one did something. Needs
+ * the database.
+ */
+export { DrizzleCredentialNames as CredentialNamesLive } from "#workspace/infrastructure/drizzle-credential-names.ts";
+
 // The account an email address signs in to, which billing asks for when a
 // contract's cancellation comes without a session.
 export { DrizzleAccountLookup as AccountLookupLive } from "#workspace/infrastructure/drizzle-account-lookup.ts";
@@ -109,7 +118,10 @@ const ImpersonationGuardLive = ImpersonationGuard.layer.pipe(
  * journal of the connections that change content. It needs the database,
  * migrated, Ids, the notifications context's SendAuthEmail, the billing
  * context's WorkspaceEntitlements and RecordSubscription, the staff
- * context's ImpersonationAudit and the legal context's LegalRecords.
+ * context's ImpersonationAudit, the legal context's LegalRecords and the
+ * activity context's RequestLimiter, which counts requests for the rate
+ * limit, and ActivityLog, which keeps the changes members, keys and
+ * applications ask for.
  */
 export const WorkspaceLive = Layer.mergeAll(
   UseCasesLive,
@@ -121,6 +133,8 @@ export const WorkspaceLive = Layer.mergeAll(
   Layer.provideMerge(BetterAuthLive),
   Layer.provideMerge(ImpersonationGuardLive),
   Layer.provideMerge(LegalConnectionJournal),
+  Layer.provideMerge(CountedRequestLimits),
+  Layer.provideMerge(LoggedActivityJournal),
   Layer.provideMerge(AuthSettings.layer)
 );
 

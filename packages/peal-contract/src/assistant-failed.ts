@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * The language model gave nothing the assistant can offer:
  *
@@ -14,6 +16,7 @@ import { Schema } from "effect";
 export class AssistantFailed extends Schema.TaggedError<AssistantFailed>()(
   "AssistantFailed",
   {
+    ...errorEnvelope,
     reason: Schema.Literals([
       "unreachable",
       "timedOut",

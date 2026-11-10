@@ -113,4 +113,47 @@ export class SystemClient {
 
         return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/api/ready");
     }
+
+    /**
+     * Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+     *
+     * @param {SystemClient.RequestOptions} requestOptions - Request-specific configuration.
+     *
+     * @throws {@link errors.PealError}
+     * @throws {@link errors.PealTimeoutError}
+     *
+     * @example
+     *     await client.system.changelog()
+     */
+    public changelog(requestOptions?: SystemClient.RequestOptions): core.HttpResponsePromise<Peal.ApiChangelog> {
+        return core.HttpResponsePromise.fromPromise(this.__changelog(requestOptions));
+    }
+
+    private async __changelog(requestOptions?: SystemClient.RequestOptions): Promise<core.WithRawResponse<Peal.ApiChangelog>> {
+        let _headers: core.Fetcher.Args["headers"] = mergeHeaders(this._options?.headers, requestOptions?.headers);
+        const _response = await core.fetcher({
+            url: core.url.join(await core.Supplier.get(this._options.baseUrl) ?? (await core.Supplier.get(this._options.environment) ?? environments.PealEnvironment.Default), "api/changelog"),
+            method: "GET",
+            headers: _headers,
+            queryString: core.url.queryBuilder().mergeAdditional(requestOptions?.queryParams).build(),
+            timeoutMs: (requestOptions?.timeoutInSeconds ?? this._options?.timeoutInSeconds ?? 60) * 1000,
+            maxRetries: requestOptions?.maxRetries ?? this._options?.maxRetries,
+            abortSignal: requestOptions?.abortSignal,
+            fetchFn: this._options?.fetch,
+            logging: this._options.logging
+        });
+        if (_response.ok) {
+            return { data: _response.body as Peal.ApiChangelog, rawResponse: _response.rawResponse };
+        }
+
+        if (_response.error.reason === "status-code") {
+            throw new errors.PealError({
+                statusCode: _response.error.statusCode,
+                body: _response.error.body,
+                rawResponse: _response.rawResponse
+            });
+        }
+
+        return handleNonStatusCodeError(_response.error, _response.rawResponse, "GET", "/api/changelog");
+    }
 }

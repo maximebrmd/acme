@@ -1,6 +1,6 @@
 import { Console, Effect, Match, Schema } from "effect";
 import { Argument, Command } from "effect/cli";
-import { ChannelSchema } from "peal-contract";
+import { ChannelSchema, TikTokAccountSchema } from "peal-contract";
 import type {
   Channel,
   ChannelStatus,
@@ -133,10 +133,12 @@ const tiktok = Command.make(
         "The TikTok channel, as peal channels list shows its id."
       )
     ),
+    json: jsonFlag,
     workspace: workspaceFlag,
   },
   Effect.fn("channels.tiktok")(function* tiktokCreator({
     channelId,
+    json,
     workspace: choice,
   }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
@@ -144,6 +146,12 @@ const tiktok = Command.make(
     const account = yield* client.tiktok
       .creator({ params: { channelId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(TikTokAccountSchema, account);
+
+      return;
+    }
 
     for (const line of creatorLines(account)) {
       yield* Console.log(line);
