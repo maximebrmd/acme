@@ -14,7 +14,7 @@ describe("what a channel can do about comments", () => {
     ).toStrictEqual({
       delete: "unsupported",
       hide: "unsupported",
-      like: "reconnect",
+      like: "unsupported",
       read: "available",
       reply: "available",
       withdraw: "available",
@@ -32,8 +32,8 @@ describe("what a channel can do about comments", () => {
       ])
     ).toStrictEqual({
       delete: "unsupported",
-      hide: "reconnect",
-      like: "reconnect",
+      hide: "unsupported",
+      like: "unsupported",
       read: "available",
       reply: "available",
       withdraw: "available",
@@ -54,6 +54,10 @@ describe("what a channel can do about comments", () => {
     expect(
       abilitiesOf("bluesky", ["atproto", "repo:app.bsky.feed.postgate"]).reply
     ).toBe("reconnect");
+    // A like's scope is not asked at sign-in: reconnecting would not help.
+    expect(abilitiesOf("mastodon", ["write:statuses"]).like).toBe(
+      "unsupported"
+    );
   });
 
   it("does nothing on the platforms Peal reads no comments on", () => {

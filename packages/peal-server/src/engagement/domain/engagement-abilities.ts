@@ -58,11 +58,35 @@ const none: EngagementAbilities = {
   withdraw: "unsupported",
 };
 
+/**
+ * The abilities whose scopes Peal's sign-in asks for today, on every
+ * platform it reads comments on: a channel without them was connected
+ * before, and gets them by connecting again. A like and a hidden reply
+ * take scopes the sign-ins do not ask for yet (Mastodon's
+ * `write:favourites`; Bluesky's `repo:app.bsky.feed.like` and
+ * `repo:app.bsky.feed.threadgate`): a channel has them only when its
+ * grant happens to hold them, and is `unsupported` otherwise, since
+ * reconnecting would change nothing. An ability joins this list in the
+ * change that adds its scope to the platform's authorizer.
+ */
+export const askedAtSignIn: readonly EngagementAbility[] = [
+  "read",
+  "reply",
+  "withdraw",
+];
+
 // Whether the grant holds one of the scopes that allow an ability.
 const granted = (
+  ability: EngagementAbility,
   scopes: readonly string[],
   allowing: (scope: string) => boolean
-): AbilityStanding => (scopes.some(allowing) ? "available" : "reconnect");
+): AbilityStanding => {
+  if (scopes.some(allowing)) {
+    return "available";
+  }
+
+  return askedAtSignIn.includes(ability) ? "reconnect" : "unsupported";
+};
 
 const oneOf =
   (...names: readonly string[]) =>
@@ -108,28 +132,28 @@ export const abilitiesOf = (
   scopes: readonly string[]
 ): EngagementAbilities => {
   if (platform === "mastodon") {
-    const posting = granted(scopes, oneOf("write", "write:statuses"));
+    const posting = oneOf("write", "write:statuses");
 
     return {
       delete: "unsupported",
       hide: "unsupported",
-      like: granted(scopes, oneOf("write", "write:favourites")),
+      like: granted("like", scopes, oneOf("write", "write:favourites")),
       read: "available",
-      reply: posting,
-      withdraw: posting,
+      reply: granted("reply", scopes, posting),
+      withdraw: granted("withdraw", scopes, posting),
     };
   }
 
   if (platform === "bluesky") {
-    const posting = granted(scopes, repo("app.bsky.feed.post"));
+    const posting = repo("app.bsky.feed.post");
 
     return {
       delete: "unsupported",
-      hide: granted(scopes, repo("app.bsky.feed.threadgate")),
-      like: granted(scopes, repo("app.bsky.feed.like")),
+      hide: granted("hide", scopes, repo("app.bsky.feed.threadgate")),
+      like: granted("like", scopes, repo("app.bsky.feed.like")),
       read: "available",
-      reply: posting,
-      withdraw: posting,
+      reply: granted("reply", scopes, posting),
+      withdraw: granted("withdraw", scopes, posting),
     };
   }
 

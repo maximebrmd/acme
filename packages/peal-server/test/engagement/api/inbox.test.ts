@@ -95,7 +95,7 @@ describe("the inbox endpoints", () => {
       assert.deepStrictEqual(detail.abilities, {
         delete: "unsupported",
         hide: "unsupported",
-        like: "reconnect",
+        like: "unsupported",
         read: "available",
         reply: "available",
         withdraw: "available",

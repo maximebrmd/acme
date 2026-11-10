@@ -544,27 +544,36 @@ describe("moderating a comment", () => {
     ).pipe(Effect.provide(world.layer));
   });
 
-  it.effect("says when the account must be connected again to allow it", () => {
-    const world = worldWith();
+  it.effect(
+    "says when the account must be connected again to answer, and that a like is not offered",
+    () => {
+      const world = worldWith();
 
-    world.state.channels.set(channelId(1), {
-      platform: "mastodon",
-      scopes: ["read:statuses", "write:statuses"],
-    });
+      // Connected before Peal asked to post statuses.
+      world.state.channels.set(channelId(1), {
+        platform: "mastodon",
+        scopes: ["read:statuses"],
+      });
 
-    return at(
-      Effect.gen(function* moderating() {
-        const refused = yield* EngagementReplies.use((replies) =>
-          replies.moderate(editor, commentId(101), "like")
-        ).pipe(Effect.flip);
+      return at(
+        Effect.gen(function* moderating() {
+          const reply = yield* replying("Thank you!").pipe(Effect.flip);
 
-        assert.deepStrictEqual(
-          refused._tag === "AbilityUnavailable" ? refused.standing : "",
-          "reconnect"
-        );
-      })
-    ).pipe(Effect.provide(world.layer));
-  });
+          const like = yield* EngagementReplies.use((replies) =>
+            replies.moderate(editor, commentId(101), "like")
+          ).pipe(Effect.flip);
+
+          assert.deepStrictEqual(
+            [reply, like].map((refused) =>
+              refused._tag === "AbilityUnavailable" ? refused.standing : ""
+            ),
+            // The sign-in does not ask for likes: reconnecting changes nothing.
+            ["reconnect", "unsupported"]
+          );
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
 
   it.effect("changes nothing in Peal when the platform refused", () => {
     const world = worldWith();
