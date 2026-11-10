@@ -525,14 +525,24 @@ describe("a channel's capabilities endpoint", () => {
 const orNull = <A>(value: A | undefined): A | null => value ?? null;
 
 // A file type's limits as the capabilities show them, from the contract's.
+// A type's kind, from its name: what is neither an image nor a video is a
+// document.
+const kindOfType = (contentType: MediaContentType) => {
+  if (contentType.startsWith("image/")) {
+    return "image" as const;
+  }
+
+  return contentType.startsWith("video/")
+    ? ("video" as const)
+    : ("document" as const);
+};
+
 const formatOf = (
   contentType: MediaContentType,
   limits: ContractText.FormatLimits
 ) => ({
   contentType,
-  kind: contentType.startsWith("image/")
-    ? ("image" as const)
-    : ("video" as const),
+  kind: kindOfType(contentType),
   maxAspectRatio: orNull(limits.aspectRatio?.maximum),
   maxByteSize: orNull(limits.maxByteSize),
   maxDurationMs: orNull(limits.maxDurationMs),
