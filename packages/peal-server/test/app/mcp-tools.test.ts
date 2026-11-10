@@ -242,6 +242,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           analytics_summary: [true, false, true, false],
           approve_post: [false, false, false, true],
           cancel_post: [false, true, true, false],
+          confirm_comment_reply: [false, true, true, false],
           confirm_target: [false, true, true, false],
           create_draft: [false, false, false, false],
           create_post: [false, false, false, true],
@@ -251,6 +252,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           discard_draft: [false, true, true, false],
           get_billing: [true, false, true, false],
           get_channel_capabilities: [true, false, true, true],
+          get_comment_thread: [true, false, true, false],
           get_post: [true, false, true, false],
           get_post_review: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
@@ -258,6 +260,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           invite_member: [false, true, false, true],
           list_approvals: [true, false, true, false],
           list_channels: [true, false, true, false],
+          list_comment_threads: [true, false, true, false],
           list_drafts: [true, false, true, false],
           list_invitations: [true, false, true, false],
           list_media: [true, false, true, false],
@@ -267,8 +270,12 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_webhook_deliveries: [true, false, true, false],
           list_webhooks: [true, false, true, false],
           list_workspaces: [true, false, true, false],
+          mark_comment_answered: [false, false, true, false],
+          moderate_comment: [false, true, true, true],
           post_analytics: [true, false, true, false],
           publish_post: [false, false, false, true],
+          // A reply is a public message from the account.
+          reply_to_comment: [false, false, false, true],
           repost_target: [false, false, false, true],
           request_changes: [false, true, false, false],
           reschedule_post: [false, true, true, true],
@@ -279,6 +286,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           unschedule_post: [false, true, true, false],
           update_draft: [false, true, true, false],
           whoami: [true, false, true, false],
+          withdraw_comment_reply: [false, true, true, true],
         });
 
         for (const tool of listed) {

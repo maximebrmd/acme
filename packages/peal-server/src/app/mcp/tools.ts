@@ -4,6 +4,7 @@ import { ChannelSchema, CurrentMember, PermissionSchema } from "peal-contract";
 
 import { reading } from "#app/mcp/annotations.ts";
 import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
+import { InboxTools } from "#app/mcp/inbox-tools.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
@@ -106,5 +107,6 @@ export const PealTools = Toolkit.merge(
   PeopleTools,
   CapabilityTools,
   ReviewTools,
-  WebhookTools
+  WebhookTools,
+  InboxTools
 );

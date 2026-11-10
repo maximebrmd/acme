@@ -17,7 +17,7 @@ export const refuse = (message: string) =>
 
 // What each scope lets a client do, as the consent page says it.
 const scopeGrants = {
-  "workspace:publish": "schedule and publish posts",
+  "workspace:publish": "schedule and publish posts, and answer comments",
   "workspace:read": "read the workspace",
   "workspace:write": "write drafts and change the workspace",
 } as const;

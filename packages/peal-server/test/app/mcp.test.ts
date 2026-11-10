@@ -239,6 +239,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "analytics_summary",
           "approve_post",
           "cancel_post",
+          "confirm_comment_reply",
           "confirm_target",
           "create_draft",
           "create_post",
@@ -246,6 +247,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "discard_draft",
           "get_billing",
           "get_channel_capabilities",
+          "get_comment_thread",
           "get_post",
           "get_post_review",
           "get_tiktok_creator",
@@ -253,6 +255,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "invite_member",
           "list_approvals",
           "list_channels",
+          "list_comment_threads",
           "list_drafts",
           "list_invitations",
           "list_media",
@@ -262,8 +265,11 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "list_webhook_deliveries",
           "list_webhooks",
           "list_workspaces",
+          "mark_comment_answered",
+          "moderate_comment",
           "post_analytics",
           "publish_post",
+          "reply_to_comment",
           "repost_target",
           "request_changes",
           "reschedule_post",
@@ -274,6 +280,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "unschedule_post",
           "update_draft",
           "whoami",
+          "withdraw_comment_reply",
         ]);
         assert.strictEqual(results.whoami.user.id, fixture.owner.id);
         assert.strictEqual(results.whoami.workspace.id, fixture.studio);
