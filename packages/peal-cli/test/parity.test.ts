@@ -29,6 +29,11 @@ const inbox =
 
 const coverage = {
   "activity.list": by("activity list"),
+  "analytics.channel": by("analytics channel"),
+  "analytics.dashboard": by("analytics dashboard"),
+  "analytics.export": exempt(
+    "An export is a file the server streams: peal analytics export saves it, as CSV or as one JSON object a line with --format json, and prints where, so there is no JSON answer to print."
+  ),
   "analytics.post": by("analytics post"),
   "analytics.summary": by("analytics summary"),
   "apiKeys.create": exempt(
@@ -65,6 +70,14 @@ const coverage = {
   "connectLinks.get": by("links show"),
   "connectLinks.list": by("links list"),
   "connectLinks.revoke": by("links revoke"),
+  "inbox.confirmReply": by("inbox confirm"),
+  "inbox.getAbilities": by("inbox abilities"),
+  "inbox.getThread": by("inbox thread"),
+  "inbox.listThreads": by("inbox threads"),
+  "inbox.moderate": by("inbox moderate"),
+  "inbox.reply": by("inbox reply"),
+  "inbox.setAnswered": by("inbox answered"),
+  "inbox.withdrawReply": by("inbox withdraw"),
   "invitations.create": by("invitations send"),
   "invitations.list": by("invitations list"),
   "invitations.revoke": by("invitations revoke"),
@@ -217,7 +230,14 @@ describe("the command line and the API", () => {
     Effect.gen(function* everywhere() {
       // Every command that asks the API something, but those that sign in
       // and out, show a configuration, or save a file.
-      const prose = new Set(["login", "logout", "mcp", "account export"]);
+      const prose = new Set([
+        "login",
+        "logout",
+        "mcp",
+        "account export",
+        "analytics export",
+      ]);
+
       const without: string[] = [];
 
       for (const command of commandPaths) {

@@ -35,7 +35,7 @@ export const answeredCommentId = "0190f3a0-0000-7000-8000-00000000c102";
 
 export const unconfirmedReplyId = "0190f3a0-0000-7000-8000-00000000c201";
 
-const inboxChannelId = "0190f3a0-0000-7000-8000-00000000a001";
+export const inboxChannelId = "0190f3a0-0000-7000-8000-00000000a001";
 
 const abilities: InboxAbilities = {
   delete: "unsupported",

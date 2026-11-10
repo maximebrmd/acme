@@ -10,8 +10,10 @@ import {
 } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
+  AnalyticsDashboardSchema,
   AnalyticsSummarySchema,
   CalendarDaySchema,
+  ChannelSeriesSchema,
   countedPlatforms,
   PostAnalyticsSchema,
 } from "peal-contract";
@@ -349,7 +351,7 @@ const comparisonLines = (
 
 const dashboard = Command.make(
   "dashboard",
-  { ...rangeFlags, workspace: workspaceFlag },
+  { ...rangeFlags, json: jsonFlag, workspace: workspaceFlag },
   Effect.fn("analytics.dashboard")(function* dashboard(input) {
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
     const query = yield* rangeOf(input);
@@ -357,6 +359,12 @@ const dashboard = Command.make(
     const found = yield* client.analytics
       .dashboard({ params: { workspaceId: workspace.id }, query })
       .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(AnalyticsDashboardSchema, found);
+
+      return;
+    }
 
     const names = yield* channelNames(client, workspace.id);
 
@@ -417,6 +425,7 @@ const channel = Command.make(
         "The channel, as peal channels list shows its id."
       )
     ),
+    json: jsonFlag,
     workspace: workspaceFlag,
   },
   Effect.fn("analytics.channel")(function* channel(input) {
@@ -429,6 +438,12 @@ const channel = Command.make(
         query,
       })
       .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(ChannelSeriesSchema, found);
+
+      return;
+    }
 
     const names = yield* channelNames(client, workspace.id);
 

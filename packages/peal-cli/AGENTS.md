@@ -81,8 +81,8 @@
   `--then` keeps the parts the draft has, as it keeps its options.
 - `peal analytics` has `summary`, `dashboard`, `channel`, `post` and
   `export`, which writes the file `--output` names and never over one
-  that exists. `peal inbox` has `threads`, `thread`, `reply`, `answered`,
-  `moderate`, `confirm` and `withdraw`: comments are other people's words,
+  that exists. `peal inbox` has `threads`, `thread`, `abilities`, `reply`,
+  `answered`, `moderate`, `confirm` and `withdraw`, each with `--json`: comments are other people's words,
   printed through `printableConsole` like everything else, and a reply
   that is `unconfirmed` is never sent again, so `explain` sends the user
   to the platform, then to `peal inbox confirm`.

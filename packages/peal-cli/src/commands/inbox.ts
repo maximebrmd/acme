@@ -1,9 +1,14 @@
 import { Console, Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
+  InboxAbilitiesSchema,
+  InboxCommentSchema,
   InboxModerationActionSchema,
   inboxPlatforms,
+  InboxReplySchema,
   inboxRetentionDays,
+  InboxThreadDetailSchema,
+  InboxThreadPageSchema,
   inboxWindowDays,
   maxInboxPageSize,
 } from "peal-contract";
@@ -15,6 +20,7 @@ import type {
 } from "peal-contract";
 
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
@@ -80,6 +86,7 @@ const threads = Command.make(
       Flag.withDescription("The next page, as the page before named it."),
       Flag.optional
     ),
+    json: jsonFlag,
     limit: Flag.Int("limit").pipe(
       Flag.withDescription(
         `How many threads to list, ${String(maxInboxPageSize)} at most.`
@@ -127,6 +134,12 @@ const threads = Command.make(
       })
       .pipe(Effect.mapError(explain(url)));
 
+    if (flags.json) {
+      yield* printJson(InboxThreadPageSchema, page);
+
+      return;
+    }
+
     if (page.items.length === 0) {
       yield* Console.log(
         `No comments in ${workspace.name}'s inbox. Peal reads comments on ${inboxPlatforms.join(" and ")}, for ${String(inboxWindowDays)} days after a post went live, and keeps them ${String(inboxRetentionDays)} days after that.`
@@ -161,7 +174,7 @@ const threads = Command.make(
 
 const thread = Command.make(
   "thread",
-  { threadId: threadArgument, workspace: workspaceFlag },
+  { json: jsonFlag, threadId: threadArgument, workspace: workspaceFlag },
   Effect.fn("inbox.thread")(function* thread(flags) {
     const { client, url, workspace } = yield* inWorkspace(flags.workspace);
 
@@ -170,6 +183,12 @@ const thread = Command.make(
         params: { threadId: flags.threadId, workspaceId: workspace.id },
       })
       .pipe(Effect.mapError(explain(url)));
+
+    if (flags.json) {
+      yield* printJson(InboxThreadDetailSchema, detail);
+
+      return;
+    }
 
     yield* Console.log(
       `Comments under post ${detail.thread.postId}${detail.platform === null ? "" : ` on ${detail.platform}`}${detail.thread.permalink === null ? "" : ` (${detail.thread.permalink})`}:`
@@ -208,6 +227,7 @@ const reply = Command.make(
   "reply",
   {
     commentId: commentArgument,
+    json: jsonFlag,
     text: Flag.String("text").pipe(
       Flag.withMetavar("<text>"),
       Flag.withDescription("What the reply says.")
@@ -224,6 +244,12 @@ const reply = Command.make(
       })
       .pipe(Effect.mapError(explain(url)));
 
+    if (flags.json) {
+      yield* printJson(InboxReplySchema, sent);
+
+      return;
+    }
+
     yield* Console.log(
       `Reply ${sent.id} is on its way, in public, as the channel's account: peal inbox thread ${sent.threadId} shows how it ended.`
     );
@@ -239,6 +265,7 @@ const answered = Command.make(
   "answered",
   {
     commentId: commentArgument,
+    json: jsonFlag,
     undo: Flag.Boolean("undo").pipe(
       Flag.withDescription("The comment waits for an answer again."),
       Flag.withDefault(false)
@@ -254,6 +281,12 @@ const answered = Command.make(
         payload: { answered: !flags.undo },
       })
       .pipe(Effect.mapError(explain(url)));
+
+    if (flags.json) {
+      yield* printJson(InboxCommentSchema, comment);
+
+      return;
+    }
 
     yield* Console.log(`Comment ${comment.id} is ${comment.state}.`);
   })
@@ -274,6 +307,7 @@ const moderate = Command.make(
       )
     ),
     commentId: commentArgument,
+    json: jsonFlag,
     workspace: workspaceFlag,
   },
   Effect.fn("inbox.moderate")(function* moderate(flags) {
@@ -285,6 +319,12 @@ const moderate = Command.make(
         payload: { action: flags.action },
       })
       .pipe(Effect.mapError(explain(url)));
+
+    if (flags.json) {
+      yield* printJson(InboxCommentSchema, comment);
+
+      return;
+    }
 
     yield* Console.log(
       `Done: comment ${comment.id} is ${comment.state}${comment.liked ? ", liked" : ""}.`
@@ -299,6 +339,7 @@ const moderate = Command.make(
 const confirm = Command.make(
   "confirm",
   {
+    json: jsonFlag,
     notSent: Flag.Boolean("not-sent").pipe(
       Flag.withDescription("It never went out: the comment waits again."),
       Flag.withDefault(false)
@@ -328,6 +369,12 @@ const confirm = Command.make(
       })
       .pipe(Effect.mapError(explain(url)));
 
+    if (flags.json) {
+      yield* printJson(InboxReplySchema, settled);
+
+      return;
+    }
+
     yield* Console.log(`Reply ${settled.id}: ${replyLine(settled)}.`);
   })
 ).pipe(
@@ -338,7 +385,7 @@ const confirm = Command.make(
 
 const withdraw = Command.make(
   "withdraw",
-  { replyId: replyArgument, workspace: workspaceFlag },
+  { json: jsonFlag, replyId: replyArgument, workspace: workspaceFlag },
   Effect.fn("inbox.withdraw")(function* withdraw(flags) {
     const { client, url, workspace } = yield* inWorkspace(flags.workspace);
 
@@ -348,10 +395,54 @@ const withdraw = Command.make(
       })
       .pipe(Effect.mapError(explain(url)));
 
+    if (flags.json) {
+      yield* printJson(InboxReplySchema, withdrawn);
+
+      return;
+    }
+
     yield* Console.log(`Reply ${withdrawn.id} was deleted from its platform.`);
   })
 ).pipe(
   Command.withDescription("Delete a reply sent from Peal from its platform.")
+);
+
+const abilities = Command.make(
+  "abilities",
+  {
+    channelId: Argument.String("channel-id").pipe(
+      Argument.withDescription(
+        "The channel, as peal channels list shows its id."
+      )
+    ),
+    json: jsonFlag,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("inbox.abilities")(function* abilities(flags) {
+    const { client, url, workspace } = yield* inWorkspace(flags.workspace);
+
+    const found = yield* client.inbox
+      .getAbilities({
+        params: { channelId: flags.channelId, workspaceId: workspace.id },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (flags.json) {
+      yield* printJson(InboxAbilitiesSchema, found);
+
+      return;
+    }
+
+    yield* Console.log("What this channel can do about comments:");
+
+    for (const line of abilityLines(found)) {
+      yield* Console.log(line);
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "Say what a channel can do about the comments under its posts: read them, reply, take a reply back, like, hide or delete, from its platform and what its account allowed."
+  )
 );
 
 export const inbox = Command.make("inbox").pipe(
@@ -361,6 +452,7 @@ export const inbox = Command.make("inbox").pipe(
   Command.withSubcommands([
     threads,
     thread,
+    abilities,
     reply,
     answered,
     moderate,
