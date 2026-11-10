@@ -174,7 +174,8 @@ export class LinkedInOptions extends Schema.Class<LinkedInOptions>(
     linkTitle: { maxLength: maxLinkedInLinkTitleLength },
     linkUrl: {
       maxLength: maxLinkedInLinkUrlLength,
-      pattern: "^https?://.+",
+      // What `isWebAddress` takes matches it: the scheme in either case.
+      pattern: "^[Hh][Tt][Tt][Pp][Ss]?://.+",
     },
     mentions: { lookup: "linkedinOrganizations", maximum: maxLinkedInMentions },
     visibility: { ifLeftOut: "public" },

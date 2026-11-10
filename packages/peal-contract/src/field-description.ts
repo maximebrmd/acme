@@ -40,6 +40,8 @@ export const FieldDescriptionSchema = Schema.Struct({
   // The longest text, in code points; for a `textList`, of all its texts
   // together, as the platform counts them.
   maxLength: Schema.NullOr(Schema.Int),
+  // The largest whole number; for a `mentionList`, the most accounts it
+  // names.
   maximum: Schema.NullOr(Schema.Int),
   minimum: Schema.NullOr(Schema.Int),
   name: Schema.String,

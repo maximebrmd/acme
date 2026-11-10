@@ -9,6 +9,7 @@ import {
   describeFields,
   isDescribed,
 } from "#publishing/domain/field-description.ts";
+import { LinkedInOptions } from "#publishing/domain/linkedin-options.ts";
 import {
   defaultCategoryRegion,
   defaultLookupPageSize,
@@ -20,6 +21,7 @@ import {
   queryOf,
 } from "#publishing/domain/lookup.ts";
 import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";
+import { PinterestOptions } from "#publishing/domain/pinterest-options.ts";
 import {
   capabilitiesOf,
   capabilitiesVersion,
@@ -201,6 +203,37 @@ describe("a platform's options, described", () => {
           title: "A title",
         }).problems()
       ).toStrictEqual([{ _tag: "invalid", field: "tags" }]);
+    }
+  });
+
+  it("give a link the pattern its rule takes, in whatever case it is written", () => {
+    const address = "HTTPS://Shop.Example.test/spring";
+
+    // What the options take, the pattern they describe matches.
+    expect(
+      new PinterestOptions({
+        boardId: "549755885175",
+        link: address,
+        platform: "pinterest",
+      }).problems()
+    ).toStrictEqual([]);
+    expect(
+      new LinkedInOptions({
+        linkTitle: "Spring",
+        linkUrl: address,
+        platform: "linkedin",
+      }).problems()
+    ).toStrictEqual([]);
+
+    for (const [platform, field] of [
+      ["pinterest", "link"],
+      ["linkedin", "linkUrl"],
+    ] as const) {
+      expect(
+        new RegExp(fieldNamed(platform, field)?.pattern ?? "$^", "u").test(
+          address
+        )
+      ).toBeTruthy();
     }
   });
 

@@ -23,7 +23,9 @@ export const maxPinterestLinkLength = 2048;
 const pinterestId = /^\d+$/u;
 
 // An address people open in a browser.
-const webAddress = /^https?:\/\/\S+$/iu;
+// Written without a flag, so the pattern clients are told (its source)
+// is the rule itself: the scheme in either case.
+const webAddress = /^[Hh][Tt][Tt][Pp][Ss]?:\/\/\S+$/u;
 
 // A colour as Pinterest takes it: "#6E7874".
 const hexColour = /^#[\dA-Fa-f]{6}$/u;

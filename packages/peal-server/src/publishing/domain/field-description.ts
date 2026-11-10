@@ -31,7 +31,10 @@ export interface FieldNotes<Lookup extends string = string> {
    * together, as the platform counts them.
    */
   readonly maxLength?: number;
-  /** The largest whole number. */
+  /**
+   * The largest whole number; for a `mentionList`, the most accounts it
+   * names.
+   */
   readonly maximum?: number;
   /** The smallest whole number. */
   readonly minimum?: number;
