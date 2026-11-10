@@ -444,6 +444,7 @@ The file was refused, or Peal could not read it. A file that could not be read s
 | `timedOut`     | Reading the file took longer than Peal allows.                         |
 | `tooLarge`     | The store served more bytes than Peal stores for the file's kind.      |
 | `toolFailed`   | The program that reads files could not run, or printed nothing usable. |
+| `tooManyPages` | A PDF document has more than 300 pages, which no platform shows.       |
 | `unavailable`  | The instance has nothing to read this kind of file with.               |
 
 ```json title="media.failed"

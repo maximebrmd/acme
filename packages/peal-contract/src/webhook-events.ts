@@ -69,6 +69,8 @@ export const MediaFailureReasonSchema = Schema.Literals([
   "timedOut",
   "tooLarge",
   "toolFailed",
+  // A PDF document of more pages than any platform shows.
+  "tooManyPages",
   // This server has no probe for the file's kind.
   "unavailable",
 ]).annotate({ identifier: "MediaFailureReason" });
