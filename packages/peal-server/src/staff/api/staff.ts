@@ -19,6 +19,7 @@ import {
 import type {
   StaffAuditEvent,
   StaffChannel,
+  StaffPartner,
   StaffUser,
   StaffUserSummary,
   StaffWorkspace,
@@ -26,6 +27,7 @@ import type {
 
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
+import type { PartnerPosition } from "#staff/application/ports/partner-desk.ts";
 import type {
   UserProfile,
   UserSummary,
@@ -38,6 +40,7 @@ import type {
   AuditEntry,
   WorkspaceOverview,
 } from "#staff/application/staff-console.ts";
+import { StaffPartners } from "#staff/application/staff-partners.ts";
 import { StaffReasonSchema } from "#staff/domain/staff-reason.ts";
 
 const decodeUserId = Schema.decodeUnknownOption(UserIdSchema);
@@ -55,6 +58,19 @@ const decodeSubscriptionStatus = Schema.decodeUnknownEffect(
 );
 
 const orNull = Option.getOrNull;
+
+const partnerView = ({ account, owner }: PartnerPosition): StaffPartner => ({
+  account: orNull(account),
+  owner: orNull(
+    owner.pipe(
+      Option.map(({ externalId, homeWorkspaceId, partnerId }) => ({
+        externalId: orNull(externalId),
+        homeWorkspaceId,
+        partnerId,
+      }))
+    )
+  ),
+});
 
 const summaryView = (user: UserSummary): StaffUserSummary => ({
   banned: Option.isSome(user.ban),
@@ -248,6 +264,7 @@ export const StaffHandlers = HttpApiBuilder.group(
   Effect.fn(function* staffHandlers(handlers) {
     const staffConsole = yield* StaffConsole;
     const actions = yield* StaffActions;
+    const partners = yield* StaffPartners;
 
     const viewUser = (userId: UserId) =>
       staffConsole.user(userId).pipe(
@@ -288,6 +305,31 @@ export const StaffHandlers = HttpApiBuilder.group(
             })
             .pipe(Effect.catchTags(failures));
         }),
+      grantPartner: ({ params, payload }) =>
+        Effect.gen(function* grantPartner() {
+          const workspaceId = decodeWorkspaceId(params.workspaceId);
+
+          if (Option.isNone(workspaceId)) {
+            return yield* new WorkspaceNotFound();
+          }
+
+          const { userId } = yield* currentStaff;
+
+          const position = yield* partners
+            .grant({
+              reason: yield* decodeReason(payload.reason).pipe(Effect.orDie),
+              staffId: userId,
+              workspaceId: workspaceId.value,
+            })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                WorkspaceNotFound: () => Effect.fail(new WorkspaceNotFound()),
+              })
+            );
+
+          return partnerView(position);
+        }),
       impersonate: ({ params, payload }) =>
         Effect.gen(function* impersonate() {
           const action = yield* actionOn(params.userId, payload.reason);
@@ -297,6 +339,14 @@ export const StaffHandlers = HttpApiBuilder.group(
             .pipe(Effect.catchTags(failures));
 
           yield* withCookies(setCookies);
+        }),
+      partner: ({ params }) =>
+        Option.match(decodeWorkspaceId(params.workspaceId), {
+          onNone: () => Effect.fail(new WorkspaceNotFound()),
+          onSome: (workspaceId) =>
+            partners
+              .positionOf(workspaceId)
+              .pipe(Effect.orDie, Effect.map(partnerView)),
         }),
       resendVerification: ({ params, payload }) =>
         Effect.gen(function* resendVerification() {

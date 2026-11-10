@@ -75,6 +75,7 @@ export const StaffActionSchema = Schema.Literals([
   "legalDisclosure",
   "applyContractRequest",
   "closeContractRequest",
+  "grantPartner",
 ]).annotate({ identifier: "StaffAction" });
 
 /**
@@ -253,6 +254,31 @@ export const StaffWorkspaceSchema = Schema.Struct({
 }).annotate({ identifier: "StaffWorkspace" });
 
 export type StaffWorkspace = typeof StaffWorkspaceSchema.Type;
+
+/**
+ * Where a workspace stands with partner accounts: its own, when it is a
+ * partner's home workspace, with how many workspaces it owns; or the
+ * partner that owns it, with the id the partner gave it.
+ */
+export const StaffPartnerSchema = Schema.Struct({
+  account: Schema.NullOr(
+    Schema.Struct({
+      createdAt: Schema.DateTimeUtc,
+      id: Schema.String,
+      name: Schema.String,
+      workspaces: Schema.Int,
+    })
+  ),
+  owner: Schema.NullOr(
+    Schema.Struct({
+      externalId: Schema.NullOr(Schema.String),
+      homeWorkspaceId: Schema.String,
+      partnerId: Schema.String,
+    })
+  ),
+}).annotate({ identifier: "StaffPartner" });
+
+export type StaffPartner = typeof StaffPartnerSchema.Type;
 
 /** A scheduled post due soon: when, where and to how many channels. */
 export const StaffDuePostSchema = Schema.Struct({
@@ -452,6 +478,29 @@ export class StaffApi extends HttpApiGroup.make("staff")
         description:
           "Answers with a workspace: its members and roles, its plan and subscription, its channels and their health, how many posts it has in each status, and the latest posts that failed or may have gone out unconfirmed. Never a post's text or media.",
         summary: "Get a workspace",
+      })
+    ),
+    HttpApiEndpoint.get("partner", "/workspaces/:workspaceId/partner", {
+      error: WorkspaceNotFound,
+      params: { workspaceId: Schema.String },
+      success: StaffPartnerSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Answers with where a workspace stands with partner accounts: its own account and how many workspaces it owns, or the partner that owns it and the id that partner gave it.",
+        summary: "Get a workspace's partner account",
+      })
+    ),
+    HttpApiEndpoint.post("grantPartner", "/workspaces/:workspaceId/partner", {
+      error: WorkspaceNotFound,
+      params: { workspaceId: Schema.String },
+      payload: StaffReasonPayloadSchema,
+      success: StaffPartnerSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Opens a partner account for the workspace, which becomes its home workspace, named after it; its owners and admins then name it, create its keys and register its return origins. Leaves the account it has when it has one. A workspace a partner owns cannot hold one: 404. Recorded in the audit log, with the reason, before it is done.",
+        summary: "Grant a workspace a partner account",
       })
     ),
     HttpApiEndpoint.get("system", "/system", {

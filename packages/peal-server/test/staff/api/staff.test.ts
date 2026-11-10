@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Option, Ref } from "effect";
 import { Cookies, HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import { Api } from "peal-contract";
@@ -8,8 +8,11 @@ import { StaffApiLive } from "#staff/container.ts";
 import {
   memberId,
   memoryStaff,
+  ownedWorkspaceId,
   profileOf,
   staffId,
+  StaffMemory,
+  workspaceId,
 } from "#test/staff/support.ts";
 import {
   anonymousSecurityTest,
@@ -28,7 +31,7 @@ const handlersWith = <E, R>(
   Layer.mergeAll(
     StaffApiLive.pipe(
       Layer.provideMerge(security),
-      Layer.provide(memoryStaff(accounts))
+      Layer.provideMerge(memoryStaff(accounts))
     ),
     HttpServer.layerServices
   );
@@ -74,6 +77,13 @@ layer(handlersWith(anonymousSecurityTest))(
             client.staff.resendVerification({ params, payload: reason })
           ),
           statusOf(client.staff.impersonate({ params, payload: reason })),
+          statusOf(client.staff.partner({ params: { workspaceId: memberId } })),
+          statusOf(
+            client.staff.grantPartner({
+              params: { workspaceId: memberId },
+              payload: reason,
+            })
+          ),
         ];
 
         for (const status of statuses) {
@@ -153,6 +163,61 @@ layer(handlersWith(staffSecurityTest(staffId)))(
           "peal.session_token": "synthetic-impersonation",
         });
       })
+    );
+
+    it.effect(
+      "grant a workspace a partner account, recorded with its reason",
+      () =>
+        Effect.gen(function* grants() {
+          const client = yield* makeClient;
+          const params = { workspaceId };
+
+          const before = yield* client.staff.partner({ params });
+
+          assert.deepStrictEqual(before, { account: null, owner: null });
+
+          const granted = yield* client.staff.grantPartner({
+            params,
+            payload: reason,
+          });
+
+          assert.strictEqual(granted.account?.name, "Synthetic partner");
+
+          const { events } = yield* StaffMemory;
+          const recorded = (yield* Ref.get(events)).at(-1);
+
+          assert(recorded !== undefined);
+          assert.deepStrictEqual(
+            {
+              action: recorded.action,
+              reason: Option.getOrNull(recorded.reason),
+              staffId: Option.getOrNull(recorded.staffId),
+              targetId: Option.getOrNull(recorded.targetId),
+              workspaceId: Option.getOrNull(recorded.workspaceId),
+            },
+            {
+              action: "grantPartner",
+              reason: reason.reason,
+              staffId,
+              targetId: null,
+              workspaceId,
+            }
+          );
+
+          // A workspace a partner owns, or an id that names none: nothing
+          // to grant, though the try is recorded.
+          for (const id of [ownedWorkspaceId, "not-an-id"]) {
+            assert.strictEqual(
+              yield* statusOf(
+                client.staff.grantPartner({
+                  params: { workspaceId: id },
+                  payload: reason,
+                })
+              ),
+              "WorkspaceNotFound"
+            );
+          }
+        })
     );
 
     it.effect("list what they did, newest first", () =>

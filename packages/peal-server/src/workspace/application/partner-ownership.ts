@@ -67,6 +67,16 @@ export class PartnerOwnership extends Context.Service<
       workspaceId: WorkspaceId,
       returnUrl: string
     ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * The partner account whose home workspace this is, with how many
+     * workspaces it owns, for the staff console.
+     */
+    readonly accountOf: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<
+      Option.Option<{ readonly partner: Partner; readonly workspaces: number }>,
+      DatabaseError
+    >;
     /** Whether the workspace is a partner account's home workspace. */
     readonly isHome: (
       workspaceId: WorkspaceId
@@ -176,7 +186,25 @@ export class PartnerOwnership extends Context.Service<
         }
       );
 
+      const accountOf = Effect.fn("PartnerOwnership.accountOf")(
+        function* accountOf(workspaceId: WorkspaceId) {
+          const partner = yield* partners.ofWorkspace(workspaceId);
+
+          if (Option.isNone(partner)) {
+            return Option.none();
+          }
+
+          const owned = yield* workspaces.idsOf(partner.value.id);
+
+          return Option.some({
+            partner: partner.value,
+            workspaces: owned.length,
+          });
+        }
+      );
+
       return PartnerOwnership.of({
+        accountOf,
         allowsReturnTo: (workspaceId, returnUrl) =>
           partnerOf(workspaceId).pipe(
             Effect.map(
@@ -199,6 +227,7 @@ export class PartnerOwnership extends Context.Service<
   static readonly layerNone = Layer.succeed(
     PartnerOwnership,
     PartnerOwnership.of({
+      accountOf: () => Effect.succeedNone,
       allowsReturnTo: () => Effect.succeed(false),
       ensureDeletable: () => Effect.void,
       isHome: () => Effect.succeed(false),

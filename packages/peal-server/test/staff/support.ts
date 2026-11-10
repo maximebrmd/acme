@@ -4,18 +4,20 @@ import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
 
 import { Ids } from "#shared/application/ids.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import type { UserId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { ImpersonationAudit } from "#staff/application/impersonation-audit.ts";
 import { ModerationFailed } from "#staff/application/moderation-failed.ts";
 import { AuditLog } from "#staff/application/ports/audit-log.ts";
 import { Moderation } from "#staff/application/ports/moderation.ts";
 import type { EndedImpersonation } from "#staff/application/ports/moderation.ts";
+import { PartnerDesk } from "#staff/application/ports/partner-desk.ts";
 import { StaffDirectory } from "#staff/application/ports/staff-directory.ts";
 import type { UserProfile } from "#staff/application/ports/staff-directory.ts";
 import { SystemHealth } from "#staff/application/ports/system-health.ts";
 import { WorkspaceHealth } from "#staff/application/ports/workspace-health.ts";
 import { StaffActions } from "#staff/application/staff-actions.ts";
 import { StaffConsole } from "#staff/application/staff-console.ts";
+import { StaffPartners } from "#staff/application/staff-partners.ts";
 import type { AuditEvent } from "#staff/domain/audit-event.ts";
 
 export const staffId = UserIdSchema.make(
@@ -52,6 +54,11 @@ export const profileOf = (
   ],
   ...overrides,
 });
+
+/** A workspace a partner owns, which holds no partner account itself. */
+export const ownedWorkspaceId = WorkspaceIdSchema.make(
+  "9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"
+);
 
 /** What moderation was asked to do. */
 export interface Moderated {
@@ -100,6 +107,7 @@ export const memoryStaff = (
     Effect.gen(function* memoryPorts() {
       const events = yield* Ref.make<readonly AuditEvent[]>([]);
       const moderated = yield* Ref.make<readonly Moderated[]>([]);
+      const granted = yield* Ref.make<readonly WorkspaceId[]>([]);
 
       const carry = (done: Moderated) =>
         options.failing === true
@@ -194,12 +202,40 @@ export const memoryStaff = (
             release: Option.some("synthetic-release"),
           })
         ),
+        // Partner accounts in memory: granted to any workspace but the
+        // one a partner owns.
+        Layer.succeed(
+          PartnerDesk,
+          PartnerDesk.of({
+            grant: (asked) =>
+              asked === ownedWorkspaceId
+                ? Effect.succeed(false)
+                : Ref.update(granted, (all) => [...all, asked]).pipe(
+                    Effect.as(true)
+                  ),
+            positionOf: (asked) =>
+              Ref.get(granted).pipe(
+                Effect.map((all) => ({
+                  account: all.includes(asked)
+                    ? Option.some({
+                        createdAt: DateTime.makeUnsafe("2026-11-10T09:00:00Z"),
+                        id: "00000000-0000-7000-8000-0000000000a1",
+                        name: "Synthetic partner",
+                        workspaces: 0,
+                      })
+                    : Option.none(),
+                  owner: Option.none(),
+                }))
+              ),
+          })
+        ),
         Ids.layerTest
       );
 
       return Layer.mergeAll(
         StaffActions.layer,
         StaffConsole.layer,
+        StaffPartners.layer,
         ImpersonationAudit.layer
       ).pipe(
         Layer.provideMerge(ports),

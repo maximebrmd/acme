@@ -7,7 +7,9 @@ import { SqlLive } from "#shared/infrastructure/database.ts";
 import {
   apiKeyOf,
   bodyOf,
+  makeAdmin,
   signedUpUnconfirmed,
+  signIn,
   TestApp,
   unconfirmedEmails,
   workspaceOf,
@@ -93,6 +95,24 @@ const HostedSchema = Schema.Struct({
 const HostedFailureSchema = Schema.Struct({
   _tag: Schema.Literal("HostedConnectFailed"),
   reason: Schema.String,
+});
+
+const StaffPartnerSchema = Schema.Struct({
+  account: Schema.NullOr(
+    Schema.Struct({ name: Schema.String, workspaces: Schema.Number })
+  ),
+});
+
+const AuditSchema = Schema.Struct({
+  items: Schema.Array(
+    Schema.Struct({
+      action: Schema.String,
+      reason: Schema.NullOr(Schema.String),
+      staffId: Schema.NullOr(Schema.String),
+      targetId: Schema.NullOr(Schema.String),
+      workspaceId: Schema.NullOr(Schema.String),
+    })
+  ),
 });
 
 const CountSchema = Schema.Array(Schema.Struct({ rows: Schema.Number }));
@@ -234,6 +254,103 @@ layer(StaffOnlyLive, { excludeTestServices: true, timeout: "180 seconds" })(
         assert.strictEqual(opened.status, 403);
         assert.deepStrictEqual(opened.body, { _tag: "PartnerAccountsClosed" });
       })
+    );
+  }
+);
+
+layer(StaffOnlyLive, { excludeTestServices: true, timeout: "180 seconds" })(
+  "partner accounts that staff grant",
+  (it) => {
+    it.effect(
+      "open for the workspace staff name, whose owner then runs them",
+      () =>
+        Effect.gen(function* granted() {
+          const app = yield* TestApp;
+          const owner = yield* signedUpUnconfirmed("granted");
+          const home = yield* workspaceOf(owner, "Granted");
+          const operator = yield* signedUpUnconfirmed("operator");
+
+          yield* makeAdmin(operator.id);
+
+          const staff = { cookie: yield* signIn(operator.email) };
+          const path = `/api/admin/workspaces/${home}/partner`;
+
+          // Anyone but staff finds nothing there.
+          const hidden = yield* app.request(path, {
+            body: { reason: "Synthetic partnership" },
+            headers: { cookie: owner.cookies },
+          });
+
+          assert.strictEqual(hidden.status, 404);
+
+          const before = yield* app.request(path, { headers: staff });
+
+          assert.deepStrictEqual(before.body, { account: null, owner: null });
+
+          const reply = yield* app.request(path, {
+            body: { reason: "Synthetic partnership" },
+            headers: staff,
+          });
+
+          assert.strictEqual(reply.status, 200);
+
+          const { account } = yield* bodyOf(StaffPartnerSchema, reply);
+
+          assert.deepStrictEqual(account, { name: "Granted", workspaces: 0 });
+
+          // Recorded, with its reason and the workspace, naming nobody.
+          const audit = yield* app.request("/api/admin/audit", {
+            headers: staff,
+          });
+
+          const [latest] = (yield* bodyOf(AuditSchema, audit)).items;
+
+          assert.deepStrictEqual(latest, {
+            action: "grantPartner",
+            reason: "Synthetic partnership",
+            staffId: operator.id,
+            targetId: null,
+            workspaceId: home,
+          });
+
+          // The owner names it and creates its keys; the key's workspaces
+          // show, to staff, whose they are.
+          const renamed = yield* app.request(
+            `/api/workspaces/${home}/partner`,
+            {
+              body: { name: "Granted Suite" },
+              headers: { cookie: owner.cookies },
+              method: "PATCH",
+            }
+          );
+
+          assert.strictEqual(renamed.status, 200);
+
+          const { key } = yield* keyOf(owner, home);
+          const customer = yield* customerOf(key, "Their customer", "cus_g1");
+
+          const owned = yield* app.request(
+            `/api/admin/workspaces/${customer.id}/partner`,
+            { headers: staff }
+          );
+
+          assert.deepStrictEqual(owned.body, {
+            account: null,
+            owner: {
+              externalId: "cus_g1",
+              homeWorkspaceId: home,
+              partnerId: (yield* bodyOf(PartnerSchema, renamed)).id,
+            },
+          });
+
+          // A workspace a partner owns holds no account of its own.
+          const nested = yield* app.request(
+            `/api/admin/workspaces/${customer.id}/partner`,
+            { body: { reason: "Synthetic partnership" }, headers: staff }
+          );
+
+          assert.strictEqual(nested.status, 404);
+        })
     );
   }
 );
