@@ -1,0 +1,23 @@
+# Betterleaks' rules, which CI runs over every commit (see the CI workflow),
+# and what of their findings this repository makes up on purpose. Tests,
+# fixtures and docs hold synthetic values only (AGENTS.md, "Public
+# repository"): say "synthetic" in them, and a finding passes. Anything else
+# a rule finds fails the check.
+
+# Discarded, whatever the rule:
+# - a value that says it is synthetic, as `sk_test_synthetic_…`, written
+#   out or in base64 (a JWT's payload, a webhook secret), at any of the
+#   three positions a word can start in base64;
+# - credentials in a URL to this machine (127.0.0.1, localhost), as the
+#   development stack's `postgres://peal:peal@127.0.0.1:15432/peal`, which
+#   reach nothing but the stack on the computer that runs it;
+# - "correct horse battery staple", the textbook example of a passphrase.
+filter = '''
+filter.matchesAny(finding["secret"], [`(?i)synthetic`]) ||
+filter.containsAny(finding["secret"], ["c3ludGhldGlj", "N5bnRoZXRpY", "zeW50aGV0aWM"]) ||
+filter.matchesAny(finding["match"], [`@(?:127\.0\.0\.1|localhost)(?:[:/]|$)`]) ||
+finding["secret"] == "correct horse battery staple"
+'''
+
+[extend]
+useDefault = true

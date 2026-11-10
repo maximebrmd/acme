@@ -86,6 +86,38 @@ jobs:
           STRIPE_MOCK_URL: http://localhost:12111
       - run: bun run build
 
+  # Every commit of the repository, which is public, scanned for secrets with
+  # Betterleaks, at medium confidence and above, with the rules and the
+  # filter of .betterleaks.toml. The whole history takes seconds, and a
+  # secret committed once stays readable even after a later commit removes
+  # it: rotate it at once, as rewriting history does not take it back.
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BETTERLEAKS_VERSION: 1.10.0
+      BETTERLEAKS_SHA256: 9d9ad503cd5d80d18a939352266c3fcca52f10da9b83cd5cfe646989b13940fe
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Betterleaks
+        run: |
+          archive="betterleaks_${BETTERLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/betterleaks/betterleaks/releases/download/v${BETTERLEAKS_VERSION}/$archive"
+          echo "$BETTERLEAKS_SHA256  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          tar --extract --gzip --file "$RUNNER_TEMP/$archive" --directory "$RUNNER_TEMP" betterleaks
+      # --redact keeps whatever it finds out of the public log; the finding's
+      # file, line and commit are enough to find it.
+      - run: >-
+          "$RUNNER_TEMP/betterleaks" git .
+          --config .betterleaks.toml
+          --confidence medium
+          --redact
+          --no-banner
+
   # The SDKs, generated from the contract and committed: a contract change
   # comes with the SDKs it changes, or sdk:check fails. Each SDK then builds
   # in its language's image, pinned by digest, as its registry would get it.

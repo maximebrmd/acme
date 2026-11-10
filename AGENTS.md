@@ -305,6 +305,13 @@ The servers' other rules are in
   write `sk_test_synthetic_…`, not a prefix followed by as many letters and
   digits as a real key has. GitHub's push protection reads every commit
   pushed, and refuses a branch for one such value, corrected later or not.
+- CI's `secrets` job scans every commit with Betterleaks (pinned, with its
+  checksum, in the CI workflow), by the rules and filter of
+  `.betterleaks.toml`: a made-up value passes when it says `synthetic`,
+  or is a credential for 127.0.0.1 or localhost. Make a value pass that
+  way, never by widening the filter for one file. Run it locally with
+  `betterleaks git . --config .betterleaks.toml --confidence medium
+  --redact`. A secret it finds is published already: rotate it first.
 - Never name a competitor or another product in this field, in code,
   comments, docs, commits, pull requests or issues. Describe the behaviour
   instead.
