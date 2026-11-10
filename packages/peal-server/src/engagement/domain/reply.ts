@@ -1,4 +1,4 @@
-import { Option, Result, Schema } from "effect";
+import { Duration, Option, Result, Schema } from "effect";
 import type { DateTime } from "effect";
 
 import {
@@ -117,6 +117,16 @@ export class Reply extends Schema.Class<Reply>(
   threadId: ThreadIdSchema,
   workspaceId: WorkspaceIdSchema,
 }) {}
+
+/**
+ * How long after it was written a reply may still be `sending`: its job
+ * waits its turn at the channel's gate, behind a video being uploaded at
+ * worst, and retries a database that is down for a few minutes. One still
+ * on its way past that has no job left to settle it (the job gave up on
+ * the database, or was lost): it is handed to a person as `unconfirmed`,
+ * never sent again.
+ */
+export const strandedAfter = Duration.hours(1);
 
 type Transition = Result.Result<Reply, InvalidReplyTransition>;
 

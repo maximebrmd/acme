@@ -364,6 +364,72 @@ describe("sending a reply", () => {
   });
 
   it.effect(
+    "hands a reply still on its way an hour later to a person, and never sends it",
+    () => {
+      const world = worldWith([{}, {}]);
+
+      return at(
+        Effect.gen(function* stranded() {
+          // Two replies journalled; the job of each was lost before it
+          // settled, one after its call set out.
+          const never = yield* replying("Thank you!");
+          const begun = yield* replying("And you!", editor, commentId(102));
+
+          world.state.replies.set(
+            begun.id,
+            Result.getOrThrow(beginSending(begun, now))
+          );
+
+          const send = yield* SendReply;
+
+          // Within the hour a job may still be waiting its turn.
+          yield* TestClock.adjust("59 minutes");
+          assert.strictEqual(yield* send.settleStranded, 0);
+          assert.strictEqual(
+            world.state.replies.get(never.id)?.status._tag,
+            "sending"
+          );
+
+          yield* TestClock.adjust("2 minutes");
+          assert.strictEqual(yield* send.settleStranded, 2);
+
+          const later = DateTime.addDuration(now, "61 minutes");
+
+          for (const id of [never.id, begun.id]) {
+            assert.deepStrictEqual(world.state.replies.get(id)?.status, {
+              _tag: "unconfirmed",
+              at: later,
+              reason: "interrupted",
+            });
+          }
+
+          // Nothing was sent, or looked up, on anyone's behalf.
+          assert.lengthOf(world.state.sent, 0);
+          assert.lengthOf(world.state.resumed, 0);
+
+          // A person says what they found: the comment waits again, and
+          // can be answered.
+          const replies = yield* EngagementReplies;
+
+          yield* replies.confirm(editor, never.id, false);
+
+          assert.strictEqual(
+            world.state.comments.get(commentId(101))?.state,
+            "new"
+          );
+          assert.strictEqual(
+            (yield* replying("Thank you, again!")).status._tag,
+            "sending"
+          );
+
+          // Settled once: the next run finds none left.
+          assert.strictEqual(yield* send.settleStranded, 0);
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
     "does nothing for a reply already settled, or gone with its workspace",
     () => {
       const world = worldWith();

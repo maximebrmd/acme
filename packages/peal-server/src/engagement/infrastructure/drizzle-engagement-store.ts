@@ -684,6 +684,25 @@ export const DrizzleEngagementStore = Layer.effect(
         : Option.some(yield* replyOf(row));
     });
 
+    const strandedReplies = Effect.fn("EngagementStore.strandedReplies")(
+      function* strandedReplies(writtenBefore: DateTime.Utc, limit: number) {
+        const rows = yield* db
+          .select()
+          .from(replies)
+          .where(
+            and(
+              eq(replies.status, "sending"),
+              lte(replies.createdAt, DateTime.toDateUtc(writtenBefore))
+            )
+          )
+          .orderBy(asc(replies.createdAt), asc(replies.id))
+          .limit(limit)
+          .pipe(Effect.mapError(failed));
+
+        return yield* Effect.all(rows.map(replyOf));
+      }
+    );
+
     // A reply whose comment went, with its thread or its workspace, is
     // dropped: the insert selects its comment, and finds none.
     const saveReply = Effect.fn("EngagementStore.saveReply")(
@@ -757,6 +776,7 @@ export const DrizzleEngagementStore = Layer.effect(
       saveCollections,
       saveComments,
       saveReply,
+      strandedReplies,
       thread,
     });
   })

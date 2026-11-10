@@ -1,10 +1,21 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Context, DateTime, Effect, Fiber, Layer, Option, Scope } from "effect";
+import {
+  Context,
+  DateTime,
+  Effect,
+  Exit,
+  Fiber,
+  Layer,
+  Option,
+  Scope,
+} from "effect";
 import { MessageStorage } from "effect/cluster";
+import { TestClock } from "effect/testing";
 
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
 import { CommentSource } from "#engagement/application/ports/comment-source.ts";
 import type { CommentsRequest } from "#engagement/application/ports/comment-source.ts";
+import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import { ReplyJobs } from "#engagement/application/ports/reply-jobs.ts";
 import { ReplySender } from "#engagement/application/ports/reply-sender.ts";
 import type {
@@ -27,6 +38,7 @@ import {
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
 import { FakePlatformPublisher } from "#publishing/infrastructure/fake-platform-publisher.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import { Actor } from "#shared/domain/access.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
 import type { World } from "#test/engagement/fakes/world.ts";
@@ -154,12 +166,14 @@ const adaptersOf = (platform: Platform) =>
 const serverOver = <S, E, R>(
   world: World,
   platform: Platform,
-  storage: Layer.Layer<S, E, R>
+  storage: Layer.Layer<S, E, R>,
+  store?: Layer.Layer<EngagementStore>
 ) =>
   SendReplyV1Live.pipe(
     Layer.provideMerge(
       Layer.mergeAll(EngagementReplies.layer, SendReply.layer).pipe(
-        // The adapters under test first; the world's ports for the rest.
+        // The adapters under test first, then a store a test stands in;
+        // the world's ports for the rest.
         Layer.provideMerge(
           Layer.mergeAll(
             GatedReplySender,
@@ -167,6 +181,7 @@ const serverOver = <S, E, R>(
             WorkflowReplyJobs
           )
         ),
+        Layer.provide(store ?? Layer.empty),
         Layer.provide(world.ports)
       )
     ),
@@ -183,6 +198,24 @@ const serverOver = <S, E, R>(
     ),
     Layer.provideMerge(clusterOver(storage))
   );
+
+// The world's store, whose reads of a reply fail while `failing` says so:
+// the database down under the job.
+const storeFailing = (world: World, failing: () => boolean) =>
+  Layer.effect(
+    EngagementStore,
+    EngagementStore.use((store) =>
+      Effect.succeed(
+        EngagementStore.of({
+          ...store,
+          reply: (id) =>
+            failing()
+              ? Effect.fail(new DatabaseError({ cause: "synthetic outage" }))
+              : store.reply(id),
+        })
+      )
+    )
+  ).pipe(Layer.provide(world.ports));
 
 // A world with one thread on a Mastodon channel and one comment under it.
 const worldWithComment = (): World => {
@@ -474,6 +507,89 @@ describe("SendReplyV1 on a cluster", () => {
 
         yield* shutDown(after);
       }),
+    timeout
+  );
+});
+
+describe("SendReplyV1 while the database is down", () => {
+  it.effect(
+    "sends the reply once the database answers again",
+    () => {
+      const world = worldWithComment();
+      const platform = makePlatform();
+      let outages = 2;
+
+      const store = storeFailing(world, () => {
+        outages -= 1;
+
+        return outages >= 0;
+      });
+
+      return setTime(start).pipe(
+        Effect.andThen(
+          Effect.gen(function* recovers() {
+            const reply = yield* replying;
+
+            yield* eventually("the reply's job ends", jobEnded(reply.id));
+
+            assert.strictEqual(statusOf(world, reply.id), "sent");
+            assert.lengthOf(platform.sent, 1);
+          }).pipe(
+            Effect.provide(
+              serverOver(world, platform, MessageStorage.layerMemory, store)
+            )
+          )
+        )
+      );
+    },
+    timeout
+  );
+
+  it.effect(
+    "gives up after its retries without sending, and leaves the reply on its way for someone to settle",
+    () => {
+      const world = worldWithComment();
+      const platform = makePlatform();
+      const store = storeFailing(world, () => true);
+
+      return setTime(start).pipe(
+        Effect.andThen(
+          Effect.gen(function* givesUp() {
+            const reply = yield* replying;
+
+            const executionId = yield* SendReplyV1.executionId({
+              replyId: reply.id,
+            });
+
+            // The retries span about two minutes of virtual time.
+            for (let round = 0; round < 60; round += 1) {
+              if (yield* jobEnded(reply.id)) {
+                break;
+              }
+
+              yield* TestClock.adjust("5 seconds");
+              yield* settle(2);
+            }
+
+            const result = yield* SendReplyV1.poll(executionId);
+
+            // The job ends rather than run for ever: its error is logged.
+            assert(Option.isSome(result) && result.value._tag === "Complete");
+            assert.isTrue(Exit.isSuccess(result.value.exit));
+
+            // Nothing was sent, and nothing says it was.
+            assert.lengthOf(platform.sent, 0);
+            assert.lengthOf(platform.resumed, 0);
+            assert.strictEqual(statusOf(world, reply.id), "sending");
+            assert.lengthOf(world.state.replied, 0);
+          }).pipe(
+            Effect.provide(
+              serverOver(world, platform, MessageStorage.layerMemory, store)
+            )
+          )
+        )
+      );
+    },
     timeout
   );
 });

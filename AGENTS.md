@@ -2221,7 +2221,10 @@ and no socket, for tests.
   derives (Bluesky's record key from the reply's time and id; Mastodon's
   Idempotency-Key, the reply's id, for 50 minutes) and answers
   `unconfirmed` when it cannot tell. An unconfirmed reply is settled by a
-  person (`confirm`). `SendReplyV1` (payload `replyId`, activity `send`) is
+  person (`confirm`). A reply still `sending` an hour after it was written
+  (`strandedAfter`: its job gave up on the database, or was lost) blocks
+  its comment and has no job left: the collection's cron hands it to a
+  person as `unconfirmed` (`SendReply.settleStranded`), sending nothing. `SendReplyV1` (payload `replyId`, activity `send`) is
   persisted contract.
 - Acting needs `engagement:reply`, which is in `publishingPermissions` (an
   OAuth client needs `workspace:publish`) and in

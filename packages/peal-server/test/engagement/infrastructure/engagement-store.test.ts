@@ -340,6 +340,22 @@ layer(StoreTest)("the engagement store", (it) => {
           Option.some(written)
         );
 
+        // On its way: listed among those written by then, and not before.
+        const onTheirWay = (before: string) =>
+          store
+            .strandedReplies(utc(before), 1000)
+            .pipe(
+              Effect.map((found) => found.filter(({ id }) => id === written.id))
+            );
+
+        assert.deepStrictEqual(yield* onTheirWay("2043-03-05T10:30:00.000Z"), [
+          written,
+        ]);
+        assert.deepStrictEqual(
+          yield* onTheirWay("2043-03-05T10:29:59.000Z"),
+          []
+        );
+
         const begun = Result.getOrThrow(
           beginSending(written, utc("2043-03-05T10:30:01.000Z"))
         );
@@ -364,6 +380,10 @@ layer(StoreTest)("the engagement store", (it) => {
 
         yield* store.saveReply(sent);
         assert.deepStrictEqual(yield* store.repliesOf(thread.id), [sent]);
+        assert.deepStrictEqual(
+          yield* onTheirWay("2043-03-05T11:00:00.000Z"),
+          []
+        );
 
         const records = yield* EngagementRecords;
 

@@ -3,6 +3,7 @@ import { ClusterCron } from "effect/cluster";
 
 import { CollectComments } from "#engagement/application/collect-comments.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
+import { SendReply } from "#engagement/application/send-reply.ts";
 
 /**
  * Every ten minutes, at minutes 2, 12, 22…: follows the posts that went
@@ -21,6 +22,16 @@ const CollectCommentsCron = ClusterCron.make({
   cron: Cron.parseUnsafe("2-59/10 * * * *", "UTC"),
   execute: Effect.gen(function* collectComments() {
     const at = yield* ClusterCron.CurrentScheduledTime;
+
+    // A reply no job settled within the hour is handed to a person.
+    const stranded = yield* SendReply.use((sending) => sending.settleStranded);
+
+    if (stranded > 0) {
+      yield* Effect.logWarning(
+        "Replies were still on their way an hour after they were written: their job gave up or was lost. They wait to be checked, and are never sent again"
+      ).pipe(Effect.annotateLogs({ replies: stranded }));
+    }
+
     const report = yield* CollectComments.use((collect) => collect.run(at));
 
     if (Object.values(report).some((count) => count > 0)) {

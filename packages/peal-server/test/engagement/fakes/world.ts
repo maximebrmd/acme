@@ -330,6 +330,21 @@ export const makeWorld = () => {
           state.replies.set(reply.id, reply);
         }
       }),
+    strandedReplies: (writtenBefore, limit) =>
+      Effect.succeed(
+        [...state.replies.values()]
+          .filter(
+            (reply) =>
+              reply.status._tag === "sending" &&
+              DateTime.isLessThanOrEqualTo(reply.createdAt, writtenBefore)
+          )
+          .toSorted(
+            (left, right) =>
+              before(left.createdAt, right.createdAt) ||
+              left.id.localeCompare(right.id)
+          )
+          .slice(0, limit)
+      ),
     thread: (threadId) =>
       Effect.succeed(
         Option.fromUndefinedOr(state.threads.get(threadId)).pipe(

@@ -971,6 +971,7 @@ CREATE UNIQUE INDEX "comments_platform_id" ON "engagement"."comments" ("thread_i
 CREATE INDEX "comments_thread_written" ON "engagement"."comments" ("thread_id","written_at");--> statement-breakpoint
 CREATE INDEX "replies_thread" ON "engagement"."replies" ("thread_id","id");--> statement-breakpoint
 CREATE INDEX "replies_comment" ON "engagement"."replies" ("comment_id");--> statement-breakpoint
+CREATE INDEX "replies_sending" ON "engagement"."replies" ("created_at","id") WHERE "status" = 'sending';--> statement-breakpoint
 CREATE INDEX "replies_author" ON "engagement"."replies" ("author_id") WHERE "author_id" IS NOT NULL;--> statement-breakpoint
 CREATE UNIQUE INDEX "threads_target" ON "engagement"."threads" ("target_id");--> statement-breakpoint
 CREATE INDEX "threads_due" ON "engagement"."threads" ("next_collection_at","channel_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint

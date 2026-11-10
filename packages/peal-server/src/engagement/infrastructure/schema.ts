@@ -158,6 +158,10 @@ export const replies = engagement.table(
   (table) => [
     index("replies_thread").on(table.threadId, table.id),
     index("replies_comment").on(table.commentId),
+    // The replies no job settled, which the collection hands to a person.
+    index("replies_sending")
+      .on(table.createdAt, table.id)
+      .where(sql`${table.status} = 'sending'`),
     index("replies_author")
       .on(table.authorId)
       .where(sql`${table.authorId} IS NOT NULL`),

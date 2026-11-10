@@ -126,6 +126,14 @@ export class EngagementStore extends Context.Service<
     readonly reply: (
       replyId: ReplyId
     ) => Effect.Effect<Option.Option<Reply>, DatabaseError>;
+    /**
+     * The replies still `sending` that were written at `writtenBefore` or
+     * earlier, oldest first, `limit` at most: those no job settled.
+     */
+    readonly strandedReplies: (
+      writtenBefore: DateTime.Utc,
+      limit: number
+    ) => Effect.Effect<readonly Reply[], DatabaseError>;
     /** Saves a reply, new or changed. One whose thread is gone is dropped. */
     readonly saveReply: (reply: Reply) => Effect.Effect<void, DatabaseError>;
     /**

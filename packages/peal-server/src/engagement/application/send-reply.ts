@@ -13,6 +13,7 @@ import type { ReplyId } from "#engagement/domain/reply-id.ts";
 import {
   beginSending,
   settleReply,
+  strandedAfter,
   wasAttempted,
 } from "#engagement/domain/reply.ts";
 import type { SendOutcome } from "#engagement/domain/reply.ts";
@@ -28,6 +29,9 @@ export const repliesSettled = Metric.counter("peal.engagement.replies", {
   description: "Replies to comments that ended, by outcome",
   incremental: true,
 });
+
+// The stranded replies one run hands over: there are few, if any.
+const strandedPerRun = 100;
 
 /**
  * How a run of the job left its reply: `settled` with an outcome, or
@@ -51,6 +55,14 @@ export class SendReply extends Context.Service<
     readonly run: (
       replyId: ReplyId
     ) => Effect.Effect<SendResult, DatabaseError>;
+    /**
+     * Hands to a person the replies no job settled: those still `sending`
+     * `strandedAfter` they were written become `unconfirmed`, which a
+     * member settles after checking the platform. Nothing is sent, nor
+     * looked up: no run of their job is left to act on what a lookup
+     * finds. Answers how many.
+     */
+    readonly settleStranded: Effect.Effect<number, DatabaseError>;
   }
 >()("peal-server/engagement/application/SendReply") {
   static readonly layer = Layer.effect(
@@ -139,7 +151,34 @@ export class SendReply extends Context.Service<
         return result;
       });
 
-      return SendReply.of({ run });
+      const settleStranded = Effect.gen(function* settleStranded() {
+        const now = yield* DateTime.now;
+
+        const stranded = yield* store.strandedReplies(
+          DateTime.subtractDuration(now, strandedAfter),
+          strandedPerRun
+        );
+
+        let settled = 0;
+
+        // One transaction a reply, so one that fails undoes no other.
+        for (const { id } of stranded) {
+          const result = yield* transaction(
+            settle(id, { _tag: "unconfirmed", reason: "interrupted" })
+          );
+
+          settled += result === "settled" ? 1 : 0;
+        }
+
+        yield* Metric.update(
+          Metric.withAttributes(repliesSettled, { outcome: "unconfirmed" }),
+          settled
+        );
+
+        return settled;
+      }).pipe(Effect.withSpan("SendReply.settleStranded"));
+
+      return SendReply.of({ run, settleStranded });
     })
   );
 }
