@@ -174,6 +174,18 @@ Un serveur connecte des membres LinkedIn une fois que vous lui avez enregistré 
 
 Ces applications n’obtiennent pas de jeton de rafraîchissement : les membres reconnectent leur canal tous les 60 jours, et en sont prévenus une semaine avant. Peal appelle l’API de LinkedIn dans la version que nomme `LINKEDIN_API_VERSION`, une version récente si elle n’est pas définie ; LinkedIn retire chaque version un an après sa sortie, et une version retirée fait échouer chaque publication.
 
+### Pages d’entreprise LinkedIn [#linkedin-pages]
+
+Publier sur des pages d’entreprise demande la **Community Management API** de LinkedIn, que LinkedIn examine, et n’accorde qu’à une application sans autre produit : elle ne peut pas s’ajouter à l’application ci-dessus. Un serveur qui n’a que la première application continue de connecter des profils, sans changement.
+
+1. Créez une seconde application sur le portail développeurs de LinkedIn, pour la même page LinkedIn, sans aucun produit. LinkedIn demande qu’un super administrateur de cette page vérifie l’application.
+2. Demandez-y la **Community Management API**. LinkedIn l’accorde à des organisations légalement enregistrées, pour des usages commerciaux, et vérifie une adresse e-mail professionnelle, l’organisation et son site web ; une adresse personnelle ne passe pas. Ses conditions réservent ce que l’API sert aux clients de votre propre organisation : lisez-les en pensant à l’usage que vous faites de votre serveur.
+3. LinkedIn accorde d’abord le **niveau Development**, pour construire : 500 appels par jour pour l’application et 100 par membre, et aucune lecture par lot, que Peal n’utilise pas. Demandez le **niveau Standard** avant un usage réel : LinkedIn demande alors un enregistrement d’écran de chaque usage, ici connecter une page, y publier, et lire les statistiques de ses publications, ainsi que votre politique de confidentialité.
+4. Sous **Auth**, ajoutez la même URL de redirection, `PUBLIC_URL/connect/linkedin/callback`.
+5. Mettez l’identifiant client de l’application dans `LINKEDIN_PAGES_CLIENT_ID` et son secret client principal dans `LINKEDIN_PAGES_CLIENT_SECRET`.
+
+Peal demande aux membres `w_organization_social`, `r_organization_social` et `rw_organization_admin`, liste les pages que chacun administre, et publie sur celles qu’ils choisissent avec leur propre accès, qui dure 60 jours. LinkedIn ne donne des jetons de rafraîchissement qu’à des partenaires approuvés : quand votre application en reçoit, Peal renouvelle seul l’accès d’une page pendant un an après la connexion ; sinon la page est reconnectée tous les 60 jours, comme un profil. Les pages sont les seuls canaux LinkedIn dont Peal relève les chiffres, et dont il retrouve une publication après une réponse perdue.
+
 ### X [#x]
 
 Un serveur connecte des comptes X une fois que vous lui avez enregistré une application dans la console développeurs de X :

@@ -11,12 +11,13 @@ Une publication peut montrer des images et des vidéos de la médiathèque de so
 
 Sur la carte d’un espace de travail, **Médiathèque** regroupe les images et vidéos de l’espace de travail. Déposez-y des fichiers, ou choisissez-les ; les grandes vidéos partent en plusieurs morceaux, et un import peut être annulé ou relancé. Donnez à chaque fichier une description pour les personnes qui ne peuvent pas le voir, de 2 000 caractères au plus.
 
-| Type   | Formats               | Fichier le plus lourd |
-| ------ | --------------------- | --------------------- |
-| Images | JPEG, PNG, GIF, WebP  | 16 Mio                |
-| Vidéos | MP4, QuickTime (.mov) | 1 Gio                 |
+| Type      | Formats                | Fichier le plus lourd |
+| --------- | ---------------------- | --------------------- |
+| Images    | JPEG, PNG, GIF, WebP   | 16 Mio                |
+| Vidéos    | MP4, QuickTime (.mov)  | 1 Gio                 |
+| Documents | PDF, jusqu’à 300 pages | 100 Mio               |
 
-Peal lit chaque fichier une fois stocké : les dimensions d’une image, les dimensions, la durée et le codec d’une vidéo. Une image dont le contenu n’est pas du type sous lequel elle a été importée est refusée, et supprimée. Les contributeurs et au-delà importent ; les éditeurs et au-delà suppriment.
+Peal lit chaque fichier une fois stocké : les dimensions d’une image, les dimensions, la durée et le codec d’une vidéo, le nombre de pages d’un PDF. Un PDF est un document, que seul LinkedIn affiche, page par page : Peal le stocke et le transmet, sans jamais l’ouvrir. Un PDF de plus de 300 pages, le maximum que LinkedIn accepte, n’est pas prêt pour les publications ; un PDF dont les pages ne peuvent pas être comptées, comme un fichier chiffré, est conservé, et LinkedIn en juge. Une image dont le contenu n’est pas du type sous lequel elle a été importée est refusée, et supprimée. Les contributeurs et au-delà importent ; les éditeurs et au-delà suppriment.
 
 Sur une instance qui facture, chaque abonnement contient un nombre d’octets de médias ([Abonnements et facturation](/billing#limits)), envois en cours compris : un envoi pour lequel l’espace de travail n’a pas de place est refusé avant que rien ne parte, et supprimer des médias libère de la place.
 
@@ -58,7 +59,7 @@ Les limites de Mastodon sont celles d’un serveur Mastodon tel qu’il est livr
 | Images et vidéo ensemble         | Non                                                                              | Non                                                              |
 | Texte alternatif                 | Sur les images, montré aux personnes qui en ont besoin, jusqu’à 4 086 caractères | Montré aux personnes qui en ont besoin, jusqu’à 1 000 caractères |
 
-X laisse certains comptes publier des vidéos plus longues ; Peal vérifie la durée que tout compte peut publier. Un GIF avec d’autres fichiers sur X, et une vidéo de moins de 75 Ko (75 000 octets) sur LinkedIn, sont refusés quand la publication est programmée.
+X laisse certains comptes publier des vidéos plus longues ; Peal vérifie la durée que tout compte peut publier. Un GIF avec d’autres fichiers sur X, et une vidéo de moins de 75 Ko (75 000 octets) sur LinkedIn, sont refusés quand la publication est programmée. Sur LinkedIn, une publication peut afficher à la place un PDF de 100 Mio au plus, seul, sans texte alternatif, sous le titre que donnent ses options ou le nom de son fichier ; toute autre plateforme refuse un PDF quand la publication est programmée.
 
 Sur les plateformes de Meta :
 

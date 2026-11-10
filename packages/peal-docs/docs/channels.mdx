@@ -36,11 +36,13 @@ The Peal server must be set up for Bluesky: on a self-hosted instance, see [Blue
 
 ### LinkedIn [#linkedin]
 
-Under **LinkedIn**, choose **Connect LinkedIn**, sign in on LinkedIn and allow Peal. Peal connects your own LinkedIn profile, and posts as you; company pages cannot be connected yet. It asks LinkedIn for your name and picture, and to publish posts.
+Under **LinkedIn**, choose **Connect LinkedIn**, sign in on LinkedIn and allow Peal. Peal connects your own LinkedIn profile, and posts as you. It asks LinkedIn for your name and picture, and to publish posts.
 
-LinkedIn lets Peal post for 60 days, then asks you to sign in again: the channel shows the date, and its workspace's owners and admins are told a week before. Reconnect before then: when you are signed in on LinkedIn, it does not ask again.
+On a server set up for company pages, **LinkedIn** offers two buttons instead. **Connect your profile** does the above. **Connect company pages** signs you in to a second LinkedIn app, then lists the pages you may post to, where you are an administrator or a content administrator: choose one or several, and each becomes a channel that posts as the page. Peal asks LinkedIn to post as your pages, to read their posts, and to list the pages you administer and read their statistics; nothing about your own profile. A page keeps working while you keep your role on it: when you lose it, or leave the company, reconnect the page with another administrator's sign-in.
 
-The Peal server must be set up for LinkedIn: on a self-hosted instance, see [LinkedIn](/self-hosting#linkedin). Until then, **Channels** does not offer it.
+LinkedIn lets Peal post for 60 days, then asks you to sign in again: the channel shows the date, and its workspace's owners and admins are told a week before. Reconnect before then: when you are signed in on LinkedIn, it does not ask again. A page's access lasts 60 days too, unless LinkedIn gave the server's app refresh tokens, which it reserves for approved partners: Peal then renews it a week ahead, for a year after the sign-in.
+
+The Peal server must be set up for LinkedIn, and separately for company pages: on a self-hosted instance, see [LinkedIn](/self-hosting#linkedin) and [LinkedIn company pages](/self-hosting#linkedin-pages). Until then, **Channels** does not offer them.
 
 ### X [#x]
 
@@ -111,7 +113,7 @@ At a post's time, Peal posts it as the channel's account, with its text on that 
 
 - **Mastodon**: Peal posts on the account's server, with the account's default visibility. The server turns mentions, hashtags and links into links itself, and may process a video before the post can show it.
 - **Bluesky**: Peal posts on the server that holds the account. Links and hashtags become links; mentions stay plain text for now. Videos go through Bluesky's video service, which processes them before the post goes out.
-- **LinkedIn**: Peal posts publicly, as the member. Hashtags become LinkedIn hashtags; mentions stay plain text. LinkedIn processes a video before the post goes out.
+- **LinkedIn**: Peal posts as the member, or as the company page, publicly unless the post's options say otherwise (a profile's connections only, or signed-in members). Hashtags become LinkedIn hashtags. A company page the text names after an `@`, by its full name exactly as LinkedIn shows it, becomes a mention when the post's options list the page; a company page channel finds a page by the name in its address. People cannot be mentioned, and any other `@` stays plain text. A link can show as a card, with the title and description you give it, as LinkedIn reads no page itself. A PDF shows page by page, alone, under the title you give it. LinkedIn processes a video or a document before the post goes out.
 - **X**: Peal posts as the account. X turns mentions, hashtags and links into links itself, a domain without `https://` such as `peal.social` too, and processes a video before the post goes out. When X refuses the server's app because its credits ran out, the post is not at fault: Peal waits for over two hours, as for an outage, then the post fails with its reason (see [Notifications](/notifications)).
 - **Threads** and **Instagram**: Meta fetches each image and video from the media store, processes it, then Peal publishes the post: several files make a carousel. An Instagram video goes out as a reel. Peal checks the account's daily publishing limit before it starts.
 - **Facebook Pages**: Peal posts the text on the Page, a photo with it, several photos in one post, or a video, which Facebook fetches from the media store.
