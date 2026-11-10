@@ -305,7 +305,7 @@ describe("a new member's first post", { serial: true }, () => {
     // A documentation address (RFC 5737): never a public host, and no name
     // to look up.
     await screen.getByLabel("Address").fill("https://192.0.2.10/hooks");
-    await screen.getByLabel("All events").tap();
+    await screen.getByRole("checkbox", "All events").tap();
     await screen.getByRole("button", "Add the endpoint").tap();
 
     await expect(
