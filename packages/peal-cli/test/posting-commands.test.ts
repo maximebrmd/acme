@@ -1033,7 +1033,7 @@ describe("--json", () => {
           yield* session.printed(["channels", "list", "--json", ...inStudio])
         );
 
-        assert.strictEqual(channels.length, 5);
+        assert.strictEqual(channels.length, 6);
         assert.deepStrictEqual(channels[0], {
           id: mastodonId,
           platform: "mastodon",
