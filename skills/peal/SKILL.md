@@ -176,11 +176,18 @@ refused when it is scheduled.
 Only when the user asked for these channels and this time. Say back what will
 go out, where and when, before sending.
 
-There is no dry run. Peal checks a post against each platform's rules when it
-is scheduled or sent, never while it is a draft. A post that breaks one is
-refused with `post_content_invalid`: `violations` lists every problem at once,
-by channel, media and option, and nothing is made. Fix them all, then send
-again.
+Peal checks a post against each platform's rules when it is scheduled or
+sent, never while it is a draft. A post that breaks one is refused with
+`post_content_invalid`: `violations` lists every problem at once, by channel,
+media and option, and nothing is made. Fix them all, then send again.
+
+Check a post before sending it: `--dry-run` makes nothing, and prints what
+each channel would receive and everything that would refuse it. With it,
+`--media` takes media ids only.
+
+```sh
+peal post "Our spring catalogue is out." --channel <channel-id> --at 2026-11-20T09:00:00Z --dry-run --json
+```
 
 Send a new post in one command:
 
@@ -189,8 +196,26 @@ peal post "Our spring catalogue is out." --channel <channel-id> --at 2026-11-20T
 peal post "Our spring catalogue is out." --channel <channel-id> --now --idempotency-key <key> --json
 ```
 
-One of `--at` and `--now` is required. Give `--at` with its offset. Or
-schedule a draft the user reviewed:
+One of `--at` and `--now` is required. Give `--at` with its offset. With
+`--now`, `--wait <seconds>` (60 at most) waits for each channel's result
+before answering; when the time runs out the post goes on publishing, and
+`peal posts wait <post-id> --json` waits for the rest.
+
+The same text and media already going to one of the channels less than 23
+hours from the post's time is refused with `duplicate_post`, which names
+that post: read it before deciding. Only when the user means to post the
+same twice, send it again with `--allow-duplicate`.
+
+Several posts come from a CSV file (columns `text`, `channels`, `at`, and
+`media`, `time_zone`, `allow_duplicate`, `idempotency_key` when needed).
+Every row is checked first, and nothing is made unless all are valid:
+
+```sh
+peal posts import posts.csv --dry-run --json
+peal posts import posts.csv --idempotency-key <key> --json
+```
+
+Or schedule a draft the user reviewed:
 
 ```sh
 peal posts schedule <post-id> --at 2026-11-20T09:00:00Z --json
@@ -232,7 +257,12 @@ cancelling act on one post by its id, and are safe to send again.
 peal posts show <post-id> --json
 peal posts attempts <post-id> --json
 peal posts list --from 2026-11-01T00:00:00Z --to 2026-12-01T00:00:00Z --json
+peal posts list --status scheduled --json
+peal posts list --outcome failed --json
 ```
+
+`posts list` answers a page: its posts in `items`, and `nextCursor`, to pass
+as `--cursor` with the same filters for the next page, or null on the last.
 
 A post's `status` is `draft`, `scheduled`, `publishing`, `finished` or
 `cancelled`. Once `finished`, `outcome` says how it ended across its
@@ -325,6 +355,8 @@ Every error of the API carries:
 | `post_status_conflict`   | 409    | The post's `status` does not allow this. Read the post again.            |
 | `target_status_conflict` | 409    | Only a failed or unconfirmed target is reposted or confirmed.            |
 | `idempotency_key_reused` | 409    | The key was sent with another post. Nothing was made.                    |
+| `duplicate_post`         | 409    | `duplicates` names the post that already sends this. Nothing was made.   |
+| `import_unreadable`      | 422    | Fix what `problem` and `column` say of the CSV file. Nothing was made.   |
 | `plan_limit_reached`     | 402    | The workspace's plan has no room. Tell the user.                         |
 | `too_many_requests`      | 429    | Wait `retryAfterSeconds`, then send again.                               |
 | `internal_error`         | 500    | Retry a read. For `peal post`, retry only with the same idempotency key. |
