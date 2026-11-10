@@ -2754,7 +2754,9 @@ self-hoster needs only Postgres and an S3-compatible store:
 
 - Docs pages live in `packages/peal-docs/docs/`: English at the root, French in
   `docs/fr/` under the same file names. Pin each heading's anchor with `[#id]`
-  so links work in both languages, and order pages with `sidebar.order`.
+  so links work in both languages, and order pages with `sidebar.order`: a whole
+  number, each used once, the same in both languages (renumber the pages
+  after a new one rather than squeeze it in with a fraction).
 - Every docs target depends on `peal-contract:openapi`, so the reference
   matches the contract. `nx run peal-docs:test` runs `blume validate --strict`.
 - Do not run `blume build` or `blume check` while `blume dev` runs in the same
