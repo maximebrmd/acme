@@ -59,11 +59,13 @@ export const channelIdsFrom = (raw: readonly string[]) => {
     : Effect.succeed(raw.flatMap((id) => Option.toArray(decodeChannelId(id))));
 };
 
-/** The post's content, with its ids decoded. */
+/** The post's content, with the ids of every part decoded. */
 export const contentFrom = (input: ContentInput) =>
   Effect.gen(function* decodingContent() {
+    const parts = [input, ...(input.followUps ?? [])];
+
     const media = malformed(
-      input.media.map(({ mediaId }) => mediaId),
+      parts.flatMap((part) => part.media.map(({ mediaId }) => mediaId)),
       decodeMediaId
     );
 
@@ -71,7 +73,9 @@ export const contentFrom = (input: ContentInput) =>
       return yield* new UnknownMedia({ mediaIds: media });
     }
 
-    yield* channelIdsFrom(input.overrides.map(({ channelId }) => channelId));
+    yield* channelIdsFrom(
+      parts.flatMap((part) => part.overrides.map(({ channelId }) => channelId))
+    );
 
     return yield* decodeContent(input).pipe(Effect.orDie);
   });

@@ -29,6 +29,7 @@ const draftFor = (...channelIds: readonly string[]): Post => ({
     failureReason: null,
     id: `00000000-0000-7000-8000-00000000010${index}`,
     options: null,
+    parts: { count: 1, live: [] },
     permalink: null,
     publishedAt: null,
     round: 1,

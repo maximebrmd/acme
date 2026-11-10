@@ -40,6 +40,7 @@ const target = (
   failureReason: null,
   id,
   options: null,
+  parts: { count: 1, live: [] },
   permalink: null,
   publishedAt: null,
   round: 1,
@@ -80,6 +81,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 1,
     finishedAt: utc("2026-06-15T08:00:01Z"),
+    part: 0,
     result: "rateLimited",
     retryAt: utc("2026-06-15T08:01:01Z"),
     round: 1,
@@ -89,6 +91,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 2,
     finishedAt: utc("2026-06-15T08:01:02Z"),
+    part: 0,
     result: "channelDisconnected",
     retryAt: null,
     round: 1,
@@ -98,6 +101,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 1,
     finishedAt: utc("2026-06-15T09:00:02Z"),
+    part: 0,
     result: "published",
     retryAt: null,
     round: 2,

@@ -259,6 +259,7 @@ const pendingOn = (id: string, channelId: string): PostTarget => ({
   failureReason: null,
   id,
   options: null,
+  parts: { count: 1, live: [] },
   permalink: null,
   publishedAt: null,
   round: 1,

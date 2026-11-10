@@ -682,6 +682,7 @@ describe("peal posts", () => {
             failureReason: null,
             id: unconfirmedTargetId,
             options: null,
+            parts: { count: 1, live: [] },
             permalink: "https://studio.example.test/post/1",
             publishedAt: null,
             round: 1,

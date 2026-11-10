@@ -372,6 +372,7 @@ describe(valuesOfPost, () => {
           failureReason: null,
           id: `target-${id}`,
           options: id === "c1" ? { platform: "youtube", title: "Hi" } : null,
+          parts: { count: 1, live: [] },
           permalink: null,
           publishedAt: null,
           round: 1,
