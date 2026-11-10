@@ -392,6 +392,14 @@ const (
 	SubscribableWebhookEventTypeMediaFailed            SubscribableWebhookEventType = "media.failed"
 	SubscribableWebhookEventTypeCommentReceived        SubscribableWebhookEventType = "comment.received"
 	SubscribableWebhookEventTypeCommentReplied         SubscribableWebhookEventType = "comment.replied"
+	SubscribableWebhookEventTypeBoostStarted           SubscribableWebhookEventType = "boost.started"
+	SubscribableWebhookEventTypeBoostPaused            SubscribableWebhookEventType = "boost.paused"
+	SubscribableWebhookEventTypeBoostResumed           SubscribableWebhookEventType = "boost.resumed"
+	SubscribableWebhookEventTypeBoostStopped           SubscribableWebhookEventType = "boost.stopped"
+	SubscribableWebhookEventTypeBoostEnded             SubscribableWebhookEventType = "boost.ended"
+	SubscribableWebhookEventTypeBoostFailed            SubscribableWebhookEventType = "boost.failed"
+	SubscribableWebhookEventTypeBoostUnconfirmed       SubscribableWebhookEventType = "boost.unconfirmed"
+	SubscribableWebhookEventTypeBoostBudgetReached     SubscribableWebhookEventType = "boost.budget_reached"
 )
 
 func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEventType, error) {
@@ -428,6 +436,22 @@ func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEve
 		return SubscribableWebhookEventTypeCommentReceived, nil
 	case "comment.replied":
 		return SubscribableWebhookEventTypeCommentReplied, nil
+	case "boost.started":
+		return SubscribableWebhookEventTypeBoostStarted, nil
+	case "boost.paused":
+		return SubscribableWebhookEventTypeBoostPaused, nil
+	case "boost.resumed":
+		return SubscribableWebhookEventTypeBoostResumed, nil
+	case "boost.stopped":
+		return SubscribableWebhookEventTypeBoostStopped, nil
+	case "boost.ended":
+		return SubscribableWebhookEventTypeBoostEnded, nil
+	case "boost.failed":
+		return SubscribableWebhookEventTypeBoostFailed, nil
+	case "boost.unconfirmed":
+		return SubscribableWebhookEventTypeBoostUnconfirmed, nil
+	case "boost.budget_reached":
+		return SubscribableWebhookEventTypeBoostBudgetReached, nil
 	}
 	var t SubscribableWebhookEventType
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -1388,6 +1412,14 @@ const (
 	WebhookEventTypeMediaFailed            WebhookEventType = "media.failed"
 	WebhookEventTypeCommentReceived        WebhookEventType = "comment.received"
 	WebhookEventTypeCommentReplied         WebhookEventType = "comment.replied"
+	WebhookEventTypeBoostStarted           WebhookEventType = "boost.started"
+	WebhookEventTypeBoostPaused            WebhookEventType = "boost.paused"
+	WebhookEventTypeBoostResumed           WebhookEventType = "boost.resumed"
+	WebhookEventTypeBoostStopped           WebhookEventType = "boost.stopped"
+	WebhookEventTypeBoostEnded             WebhookEventType = "boost.ended"
+	WebhookEventTypeBoostFailed            WebhookEventType = "boost.failed"
+	WebhookEventTypeBoostUnconfirmed       WebhookEventType = "boost.unconfirmed"
+	WebhookEventTypeBoostBudgetReached     WebhookEventType = "boost.budget_reached"
 	WebhookEventTypeWebhookTest            WebhookEventType = "webhook.test"
 )
 
@@ -1425,6 +1457,22 @@ func NewWebhookEventTypeFromString(s string) (WebhookEventType, error) {
 		return WebhookEventTypeCommentReceived, nil
 	case "comment.replied":
 		return WebhookEventTypeCommentReplied, nil
+	case "boost.started":
+		return WebhookEventTypeBoostStarted, nil
+	case "boost.paused":
+		return WebhookEventTypeBoostPaused, nil
+	case "boost.resumed":
+		return WebhookEventTypeBoostResumed, nil
+	case "boost.stopped":
+		return WebhookEventTypeBoostStopped, nil
+	case "boost.ended":
+		return WebhookEventTypeBoostEnded, nil
+	case "boost.failed":
+		return WebhookEventTypeBoostFailed, nil
+	case "boost.unconfirmed":
+		return WebhookEventTypeBoostUnconfirmed, nil
+	case "boost.budget_reached":
+		return WebhookEventTypeBoostBudgetReached, nil
 	case "webhook.test":
 		return WebhookEventTypeWebhookTest, nil
 	}

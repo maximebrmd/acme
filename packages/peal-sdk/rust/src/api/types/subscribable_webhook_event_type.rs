@@ -20,6 +20,14 @@ pub enum SubscribableWebhookEventType {
     MediaFailed,
     CommentReceived,
     CommentReplied,
+    BoostStarted,
+    BoostPaused,
+    BoostResumed,
+    BoostStopped,
+    BoostEnded,
+    BoostFailed,
+    BoostUnconfirmed,
+    BoostBudgetReached,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -44,6 +52,14 @@ impl Serialize for SubscribableWebhookEventType {
             Self::MediaFailed => serializer.serialize_str("media.failed"),
             Self::CommentReceived => serializer.serialize_str("comment.received"),
             Self::CommentReplied => serializer.serialize_str("comment.replied"),
+            Self::BoostStarted => serializer.serialize_str("boost.started"),
+            Self::BoostPaused => serializer.serialize_str("boost.paused"),
+            Self::BoostResumed => serializer.serialize_str("boost.resumed"),
+            Self::BoostStopped => serializer.serialize_str("boost.stopped"),
+            Self::BoostEnded => serializer.serialize_str("boost.ended"),
+            Self::BoostFailed => serializer.serialize_str("boost.failed"),
+            Self::BoostUnconfirmed => serializer.serialize_str("boost.unconfirmed"),
+            Self::BoostBudgetReached => serializer.serialize_str("boost.budget_reached"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -69,6 +85,14 @@ impl<'de> Deserialize<'de> for SubscribableWebhookEventType {
             "media.failed" => Ok(Self::MediaFailed),
             "comment.received" => Ok(Self::CommentReceived),
             "comment.replied" => Ok(Self::CommentReplied),
+            "boost.started" => Ok(Self::BoostStarted),
+            "boost.paused" => Ok(Self::BoostPaused),
+            "boost.resumed" => Ok(Self::BoostResumed),
+            "boost.stopped" => Ok(Self::BoostStopped),
+            "boost.ended" => Ok(Self::BoostEnded),
+            "boost.failed" => Ok(Self::BoostFailed),
+            "boost.unconfirmed" => Ok(Self::BoostUnconfirmed),
+            "boost.budget_reached" => Ok(Self::BoostBudgetReached),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -93,6 +117,14 @@ impl fmt::Display for SubscribableWebhookEventType {
             Self::MediaFailed => write!(f, "media.failed"),
             Self::CommentReceived => write!(f, "comment.received"),
             Self::CommentReplied => write!(f, "comment.replied"),
+            Self::BoostStarted => write!(f, "boost.started"),
+            Self::BoostPaused => write!(f, "boost.paused"),
+            Self::BoostResumed => write!(f, "boost.resumed"),
+            Self::BoostStopped => write!(f, "boost.stopped"),
+            Self::BoostEnded => write!(f, "boost.ended"),
+            Self::BoostFailed => write!(f, "boost.failed"),
+            Self::BoostUnconfirmed => write!(f, "boost.unconfirmed"),
+            Self::BoostBudgetReached => write!(f, "boost.budget_reached"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

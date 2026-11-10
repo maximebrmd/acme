@@ -460,23 +460,25 @@ func (n *NoticeChannel) String() string {
 }
 
 type NoticeEvent struct {
-	Type                     string
-	PostPublished            *NoticeEventPostPublished
-	PostFailed               *NoticeEventPostFailed
-	PostUnconfirmed          *NoticeEventPostUnconfirmed
-	PostApprovalRequested    *NoticeEventPostApprovalRequested
-	PostApproved             *NoticeEventPostApproved
-	PostChangesRequested     *NoticeEventPostChangesRequested
-	PostCommented            *NoticeEventPostCommented
-	CommentsReceived         *NoticeEventCommentsReceived
-	ChannelReconnectRequired *NoticeEventChannelReconnectRequired
-	ChannelReconnectSoon     *NoticeEventChannelReconnectSoon
-	SubscriptionStarted      *NoticeEventSubscriptionStarted
-	TrialEnding              *NoticeEventTrialEnding
-	SubscriptionRenewing     *NoticeEventSubscriptionRenewing
-	SubscriptionCancelled    *NoticeEventSubscriptionCancelled
-	SubscriptionWithdrawn    *NoticeEventSubscriptionWithdrawn
-	WebhookEndpointDisabled  *NoticeEventWebhookEndpointDisabled
+	Type                          string
+	PostPublished                 *NoticeEventPostPublished
+	PostFailed                    *NoticeEventPostFailed
+	PostUnconfirmed               *NoticeEventPostUnconfirmed
+	PostApprovalRequested         *NoticeEventPostApprovalRequested
+	PostApproved                  *NoticeEventPostApproved
+	PostChangesRequested          *NoticeEventPostChangesRequested
+	PostCommented                 *NoticeEventPostCommented
+	CommentsReceived              *NoticeEventCommentsReceived
+	ChannelReconnectRequired      *NoticeEventChannelReconnectRequired
+	ChannelReconnectSoon          *NoticeEventChannelReconnectSoon
+	SubscriptionStarted           *NoticeEventSubscriptionStarted
+	TrialEnding                   *NoticeEventTrialEnding
+	SubscriptionRenewing          *NoticeEventSubscriptionRenewing
+	SubscriptionCancelled         *NoticeEventSubscriptionCancelled
+	SubscriptionWithdrawn         *NoticeEventSubscriptionWithdrawn
+	WebhookEndpointDisabled       *NoticeEventWebhookEndpointDisabled
+	AdBoostChanged                *NoticeEventAdBoostChanged
+	AdConnectionReconnectRequired *NoticeEventAdConnectionReconnectRequired
 
 	rawJSON json.RawMessage
 }
@@ -600,6 +602,20 @@ func (n *NoticeEvent) GetWebhookEndpointDisabled() *NoticeEventWebhookEndpointDi
 	return n.WebhookEndpointDisabled
 }
 
+func (n *NoticeEvent) GetAdBoostChanged() *NoticeEventAdBoostChanged {
+	if n == nil {
+		return nil
+	}
+	return n.AdBoostChanged
+}
+
+func (n *NoticeEvent) GetAdConnectionReconnectRequired() *NoticeEventAdConnectionReconnectRequired {
+	if n == nil {
+		return nil
+	}
+	return n.AdConnectionReconnectRequired
+}
+
 func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -708,6 +724,18 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.WebhookEndpointDisabled = value
+	case "AdBoostChanged":
+		value := new(NoticeEventAdBoostChanged)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.AdBoostChanged = value
+	case "AdConnectionReconnectRequired":
+		value := new(NoticeEventAdConnectionReconnectRequired)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.AdConnectionReconnectRequired = value
 	}
 	n.rawJSON = json.RawMessage(data)
 	return nil
@@ -765,6 +793,12 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.WebhookEndpointDisabled != nil {
 		return internal.MarshalJSONWithExtraProperty(n.WebhookEndpointDisabled, "_tag", "WebhookEndpointDisabled")
 	}
+	if n.AdBoostChanged != nil {
+		return internal.MarshalJSONWithExtraProperty(n.AdBoostChanged, "_tag", "AdBoostChanged")
+	}
+	if n.AdConnectionReconnectRequired != nil {
+		return internal.MarshalJSONWithExtraProperty(n.AdConnectionReconnectRequired, "_tag", "AdConnectionReconnectRequired")
+	}
 	if len(n.rawJSON) > 0 {
 		return n.rawJSON, nil
 	}
@@ -788,6 +822,8 @@ type NoticeEventVisitor interface {
 	VisitSubscriptionCancelled(*NoticeEventSubscriptionCancelled) error
 	VisitSubscriptionWithdrawn(*NoticeEventSubscriptionWithdrawn) error
 	VisitWebhookEndpointDisabled(*NoticeEventWebhookEndpointDisabled) error
+	VisitAdBoostChanged(*NoticeEventAdBoostChanged) error
+	VisitAdConnectionReconnectRequired(*NoticeEventAdConnectionReconnectRequired) error
 }
 
 func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
@@ -838,6 +874,12 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.WebhookEndpointDisabled != nil {
 		return visitor.VisitWebhookEndpointDisabled(n.WebhookEndpointDisabled)
+	}
+	if n.AdBoostChanged != nil {
+		return visitor.VisitAdBoostChanged(n.AdBoostChanged)
+	}
+	if n.AdConnectionReconnectRequired != nil {
+		return visitor.VisitAdConnectionReconnectRequired(n.AdConnectionReconnectRequired)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", n)
 }
@@ -895,6 +937,12 @@ func (n *NoticeEvent) validate() error {
 	if n.WebhookEndpointDisabled != nil {
 		fields = append(fields, "WebhookEndpointDisabled")
 	}
+	if n.AdBoostChanged != nil {
+		fields = append(fields, "AdBoostChanged")
+	}
+	if n.AdConnectionReconnectRequired != nil {
+		fields = append(fields, "AdConnectionReconnectRequired")
+	}
 	if len(fields) == 0 {
 		if n.Type != "" {
 			if len(n.rawJSON) > 0 {
@@ -919,6 +967,317 @@ func (n *NoticeEvent) validate() error {
 		}
 	}
 	return nil
+}
+
+var (
+	noticeEventAdBoostChangedFieldBoostID      = big.NewInt(1 << 0)
+	noticeEventAdBoostChangedFieldBudget       = big.NewInt(1 << 1)
+	noticeEventAdBoostChangedFieldBudgetDigits = big.NewInt(1 << 2)
+	noticeEventAdBoostChangedFieldChange       = big.NewInt(1 << 3)
+	noticeEventAdBoostChangedFieldEndsAt       = big.NewInt(1 << 4)
+	noticeEventAdBoostChangedFieldPostID       = big.NewInt(1 << 5)
+	noticeEventAdBoostChangedFieldReason       = big.NewInt(1 << 6)
+)
+
+// noticeEventAdBoostChangedNullableFields maps the wire names of NoticeEventAdBoostChanged's nullable fields (required or optional) to their field bits.
+var noticeEventAdBoostChangedNullableFields = map[string]*big.Int{
+	"reason": noticeEventAdBoostChangedFieldReason,
+}
+
+type NoticeEventAdBoostChanged struct {
+	BoostID      string                          `json:"boostId" url:"boostId"`
+	Budget       *Money                          `json:"budget" url:"budget"`
+	BudgetDigits float64                         `json:"budgetDigits" url:"budgetDigits"`
+	Change       NoticeEventAdBoostChangedChange `json:"change" url:"change"`
+	EndsAt       string                          `json:"endsAt" url:"endsAt"`
+	PostID       string                          `json:"postId" url:"postId"`
+	Reason       *string                         `json:"reason,omitempty" url:"reason,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventAdBoostChanged) GetBoostID() string {
+	if n == nil {
+		return ""
+	}
+	return n.BoostID
+}
+
+func (n *NoticeEventAdBoostChanged) GetBudget() *Money {
+	if n == nil {
+		return nil
+	}
+	return n.Budget
+}
+
+func (n *NoticeEventAdBoostChanged) GetBudgetDigits() float64 {
+	if n == nil {
+		return 0
+	}
+	return n.BudgetDigits
+}
+
+func (n *NoticeEventAdBoostChanged) GetChange() NoticeEventAdBoostChangedChange {
+	if n == nil {
+		return ""
+	}
+	return n.Change
+}
+
+func (n *NoticeEventAdBoostChanged) GetEndsAt() string {
+	if n == nil {
+		return ""
+	}
+	return n.EndsAt
+}
+
+func (n *NoticeEventAdBoostChanged) GetPostID() string {
+	if n == nil {
+		return ""
+	}
+	return n.PostID
+}
+
+func (n *NoticeEventAdBoostChanged) GetReason() *string {
+	if n == nil {
+		return nil
+	}
+	return n.Reason
+}
+
+func (n *NoticeEventAdBoostChanged) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventAdBoostChanged) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetBoostID sets the BoostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAdBoostChanged) SetBoostID(boostID string) {
+	n.BoostID = boostID
+	n.require(noticeEventAdBoostChangedFieldBoostID)
+}
+
+// SetBudget sets the Budget field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAdBoostChanged) SetBudget(budget *Money) {
+	n.Budget = budget
+	n.require(noticeEventAdBoostChangedFieldBudget)
+}
+
+// SetBudgetDigits sets the BudgetDigits field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAdBoostChanged) SetBudgetDigits(budgetDigits float64) {
+	n.BudgetDigits = budgetDigits
+	n.require(noticeEventAdBoostChangedFieldBudgetDigits)
+}
+
+// SetChange sets the Change field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAdBoostChanged) SetChange(change NoticeEventAdBoostChangedChange) {
+	n.Change = change
+	n.require(noticeEventAdBoostChangedFieldChange)
+}
+
+// SetEndsAt sets the EndsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAdBoostChanged) SetEndsAt(endsAt string) {
+	n.EndsAt = endsAt
+	n.require(noticeEventAdBoostChangedFieldEndsAt)
+}
+
+// SetPostID sets the PostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAdBoostChanged) SetPostID(postID string) {
+	n.PostID = postID
+	n.require(noticeEventAdBoostChangedFieldPostID)
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAdBoostChanged) SetReason(reason *string) {
+	n.Reason = reason
+	n.require(noticeEventAdBoostChangedFieldReason)
+}
+
+func (n *NoticeEventAdBoostChanged) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventAdBoostChanged
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventAdBoostChanged(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, noticeEventAdBoostChangedNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		n.require(presentFields)
+	}
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventAdBoostChanged) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventAdBoostChanged
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventAdBoostChanged) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+type NoticeEventAdBoostChangedChange string
+
+const (
+	NoticeEventAdBoostChangedChangeStarted       NoticeEventAdBoostChangedChange = "started"
+	NoticeEventAdBoostChangedChangeEnded         NoticeEventAdBoostChangedChange = "ended"
+	NoticeEventAdBoostChangedChangeFailed        NoticeEventAdBoostChangedChange = "failed"
+	NoticeEventAdBoostChangedChangeBudgetReached NoticeEventAdBoostChangedChange = "budgetReached"
+	NoticeEventAdBoostChangedChangeUnconfirmed   NoticeEventAdBoostChangedChange = "unconfirmed"
+)
+
+func NewNoticeEventAdBoostChangedChangeFromString(s string) (NoticeEventAdBoostChangedChange, error) {
+	switch s {
+	case "started":
+		return NoticeEventAdBoostChangedChangeStarted, nil
+	case "ended":
+		return NoticeEventAdBoostChangedChangeEnded, nil
+	case "failed":
+		return NoticeEventAdBoostChangedChangeFailed, nil
+	case "budgetReached":
+		return NoticeEventAdBoostChangedChangeBudgetReached, nil
+	case "unconfirmed":
+		return NoticeEventAdBoostChangedChangeUnconfirmed, nil
+	}
+	var t NoticeEventAdBoostChangedChange
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (n NoticeEventAdBoostChangedChange) Ptr() *NoticeEventAdBoostChangedChange {
+	return &n
+}
+
+var (
+	noticeEventAdConnectionReconnectRequiredFieldNetwork = big.NewInt(1 << 0)
+)
+
+type NoticeEventAdConnectionReconnectRequired struct {
+	Network string `json:"network" url:"network"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventAdConnectionReconnectRequired) GetNetwork() string {
+	if n == nil {
+		return ""
+	}
+	return n.Network
+}
+
+func (n *NoticeEventAdConnectionReconnectRequired) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventAdConnectionReconnectRequired) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetNetwork sets the Network field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventAdConnectionReconnectRequired) SetNetwork(network string) {
+	n.Network = network
+	n.require(noticeEventAdConnectionReconnectRequiredFieldNetwork)
+}
+
+func (n *NoticeEventAdConnectionReconnectRequired) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventAdConnectionReconnectRequired
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventAdConnectionReconnectRequired(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventAdConnectionReconnectRequired) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventAdConnectionReconnectRequired
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventAdConnectionReconnectRequired) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
 }
 
 var (

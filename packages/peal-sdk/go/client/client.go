@@ -4,6 +4,7 @@ package client
 
 import (
 	activity "github.com/peal-social/peal/packages/peal-sdk/go/activity"
+	ads "github.com/peal-social/peal/packages/peal-sdk/go/ads"
 	analytics "github.com/peal-social/peal/packages/peal-sdk/go/analytics"
 	apikeys "github.com/peal-social/peal/packages/peal-sdk/go/apikeys"
 	assistant "github.com/peal-social/peal/packages/peal-sdk/go/assistant"
@@ -54,6 +55,7 @@ type Client struct {
 	Lookups                 *lookups.Client
 	Webhooks                *webhooks.Client
 	Inbox                   *inbox.Client
+	Ads                     *ads.Client
 	Activity                *activity.Client
 	Partner                 *partner.Client
 	PartnerAccount          *partneraccount.Client
@@ -90,6 +92,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Lookups:                 lookups.NewClient(options),
 		Webhooks:                webhooks.NewClient(options),
 		Inbox:                   inbox.NewClient(options),
+		Ads:                     ads.NewClient(options),
 		Activity:                activity.NewClient(options),
 		Partner:                 partner.NewClient(options),
 		PartnerAccount:          partneraccount.NewClient(options),

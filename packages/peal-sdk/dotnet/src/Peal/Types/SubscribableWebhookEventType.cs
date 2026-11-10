@@ -56,6 +56,26 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
 
     public static readonly SubscribableWebhookEventType CommentReplied = new(Values.CommentReplied);
 
+    public static readonly SubscribableWebhookEventType BoostStarted = new(Values.BoostStarted);
+
+    public static readonly SubscribableWebhookEventType BoostPaused = new(Values.BoostPaused);
+
+    public static readonly SubscribableWebhookEventType BoostResumed = new(Values.BoostResumed);
+
+    public static readonly SubscribableWebhookEventType BoostStopped = new(Values.BoostStopped);
+
+    public static readonly SubscribableWebhookEventType BoostEnded = new(Values.BoostEnded);
+
+    public static readonly SubscribableWebhookEventType BoostFailed = new(Values.BoostFailed);
+
+    public static readonly SubscribableWebhookEventType BoostUnconfirmed = new(
+        Values.BoostUnconfirmed
+    );
+
+    public static readonly SubscribableWebhookEventType BoostBudgetReached = new(
+        Values.BoostBudgetReached
+    );
+
     public SubscribableWebhookEventType(string value)
     {
         Value = value;
@@ -184,5 +204,21 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
         public const string CommentReceived = "comment.received";
 
         public const string CommentReplied = "comment.replied";
+
+        public const string BoostStarted = "boost.started";
+
+        public const string BoostPaused = "boost.paused";
+
+        public const string BoostResumed = "boost.resumed";
+
+        public const string BoostStopped = "boost.stopped";
+
+        public const string BoostEnded = "boost.ended";
+
+        public const string BoostFailed = "boost.failed";
+
+        public const string BoostUnconfirmed = "boost.unconfirmed";
+
+        public const string BoostBudgetReached = "boost.budget_reached";
     }
 }

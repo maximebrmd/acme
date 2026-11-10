@@ -20,6 +20,7 @@
 //! - **lookups**
 //! - **webhooks**
 //! - **inbox**
+//! - **ads**
 //! - **activity**
 //! - **partner**
 //! - **partnerAccount**
@@ -33,6 +34,7 @@
 use crate::{ApiError, ClientConfig};
 
 pub mod activity;
+pub mod ads;
 pub mod analytics;
 pub mod api_keys;
 pub mod assistant;
@@ -79,6 +81,7 @@ pub struct PealClient {
     pub lookups: LookupsClient,
     pub webhooks: WebhooksClient,
     pub inbox: InboxClient,
+    pub ads: AdsClient,
     pub activity: ActivityClient,
     pub partner: PartnerClient,
     pub partner_account: PartnerAccountClient,
@@ -112,6 +115,7 @@ impl PealClient {
             lookups: LookupsClient::new(config.clone())?,
             webhooks: WebhooksClient::new(config.clone())?,
             inbox: InboxClient::new(config.clone())?,
+            ads: AdsClient::new(config.clone())?,
             activity: ActivityClient::new(config.clone())?,
             partner: PartnerClient::new(config.clone())?,
             partner_account: PartnerAccountClient::new(config.clone())?,
@@ -126,6 +130,7 @@ impl PealClient {
 }
 
 pub use activity::ActivityClient;
+pub use ads::AdsClient;
 pub use analytics::AnalyticsClient;
 pub use api_keys::ApiKeysClient;
 pub use assistant::AssistantClient;
