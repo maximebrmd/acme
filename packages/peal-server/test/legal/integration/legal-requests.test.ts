@@ -149,6 +149,21 @@ layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
             headers: { cookie: ana.cookies, "x-forwarded-for": clientAddress },
           });
 
+          // Nor is checking a post, which makes none, though it is sent
+          // as content is.
+          const checked = yield* app.request(
+            `/api/workspaces/${workspaceId}/posts/validate`,
+            {
+              body: draftOf("A synthetic post only checked."),
+              headers: {
+                cookie: ana.cookies,
+                "x-forwarded-for": clientAddress,
+              },
+            }
+          );
+
+          assert.strictEqual(checked.status, 200);
+
           // Ana's export tells her what is kept, and why.
           const exported = yield* bodyOf(
             ExportSchema,
