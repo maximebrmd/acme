@@ -8,7 +8,9 @@ import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import type { UpgradePath } from "#shared/application/upgrade-paths.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
+import { MemberDirectory } from "#workspace/application/member-directory.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 import { AuthStartFailed } from "./auth-start-failed.ts";
@@ -19,6 +21,7 @@ import { servesMcp } from "./oauth.ts";
 import { makeAuth } from "./options.ts";
 import type { PealAuth, AuthHooks, AuthLogLevel } from "./options.ts";
 import { AuthSettings } from "./settings.ts";
+import type { WorkspaceAuthChange } from "./workspace-changes.ts";
 
 /**
  * The Better Auth instance. Only workspace infrastructure uses it: its
@@ -41,6 +44,8 @@ const drainTimeout = "10 seconds";
 const decodeUserId = Schema.decodeUnknownEffect(UserIdSchema);
 
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
+
+const decodeUser = Schema.decodeUnknownOption(UserIdSchema);
 
 const orderRequired: CheckoutAnswer = {
   _tag: "refused",
@@ -97,6 +102,59 @@ const guarded =
       return true;
     }).pipe(Effect.orDie, Effect.withSpan("BetterAuth.impersonatedRequest"));
 
+// A request to Better Auth's routes that asked to change a workspace, kept
+// in the workspace's activity log as the API's writes are. A refusal is
+// kept only for someone the workspace knows: anyone can name a workspace
+// in a request, and must leave nothing in its log by being refused.
+const keptChange =
+  (
+    activity: ActivityJournal["Service"],
+    directory: MemberDirectory["Service"]
+  ) =>
+  (change: WorkspaceAuthChange) =>
+    Effect.gen(function* workspaceChange() {
+      const workspaceId = decodeWorkspaceId(change.workspaceId);
+      const userId = decodeUser(change.userId);
+
+      if (Option.isNone(workspaceId) || Option.isNone(userId)) {
+        return;
+      }
+
+      const known =
+        change.done ||
+        Option.isSome(
+          yield* directory.membership(userId.value, workspaceId.value)
+        );
+
+      if (!known) {
+        return;
+      }
+
+      yield* activity.record({
+        named: change.objectIds,
+        operation: change.operation,
+        outcome: { _tag: "answered", status: change.status },
+        principal: new UserPrincipal({
+          impersonatedBy: Option.fromNullOr(change.impersonatedBy).pipe(
+            Option.flatMap(decodeUser)
+          ),
+          userId: userId.value,
+        }),
+        requestId: Option.none(),
+        via: "session",
+        workspaceId: workspaceId.value,
+      });
+    }).pipe(
+      // The route has answered: a log that cannot be kept is logged.
+      Effect.catchCause((cause) =>
+        Effect.logError(
+          "Keeping a workspace change in the activity log failed",
+          cause
+        )
+      ),
+      Effect.withSpan("BetterAuth.workspaceChange")
+    );
+
 export const BetterAuthLive = Layer.effect(
   BetterAuth,
   Effect.gen(function* betterAuthLive() {
@@ -108,6 +166,8 @@ export const BetterAuthLive = Layer.effect(
     const subscriptions = yield* RecordSubscription;
     const checkouts = yield* CheckoutOrders;
     const guard = yield* ImpersonationGuard;
+    const activity = yield* ActivityJournal;
+    const directory = yield* MemberDirectory;
 
     // Better Auth calls back outside any fiber. Work it starts runs on fibers
     // of this layer, with its logger and tracer, and is waited for, then
@@ -197,6 +257,10 @@ export const BetterAuthLive = Layer.effect(
       },
       verifyEmail: (link) => {
         run(emails.send({ _tag: "VerifyEmail", ...link }));
+      },
+      // Awaited, so the log holds the change once its answer is read.
+      workspaceChange: async (change) => {
+        await runPromise(keptChange(activity, directory)(change));
       },
     };
 

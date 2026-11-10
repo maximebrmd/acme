@@ -290,7 +290,9 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.isAtLeast(overreach.status, 400);
 
-          // Reading the log is not itself kept; the keys' creations are.
+          // Reading the log is not itself kept; the keys' creations are,
+          // and the admin's invitation, sent and accepted through the
+          // sign-in service's routes.
           const log = yield* logOf(owner, workspaceId);
 
           assert.deepStrictEqual(
@@ -298,6 +300,8 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             [
               ["apiKeys.create", overreach.status],
               ["apiKeys.create", 201],
+              ["auth:/organization/accept-invitation", 200],
+              ["auth:/organization/invite-member", 200],
             ]
           );
         })

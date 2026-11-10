@@ -324,7 +324,11 @@ and no socket, for tests.
   MCP middleware around the tool (`recordedCalls`, `src/app/mcp/`): only a
   call that ran is kept, with `tool_refused` when the tool answered an
   error and `tool_failed` when the call gave no answer, never what a
-  request's body names. Keeping it never changes an answer.
+  request's body names. Better Auth's routes that change a workspace
+  (`changesWorkspace`: `/organization/*` and `/subscription/*` but those
+  that read) are kept by its after hook (`recordWorkspaceChange`), as
+  `auth:/path`, for requests browsers send: a refusal only for a member,
+  as anyone can name a workspace. Keeping it never changes an answer.
 - The discovery documents (`src/app/discovery/`) need no credentials and are
   written from `PUBLIC_URL`, `PEAL_DOCS_URL` and the contract: the API
   catalogue (RFC 9727, a Linkset), `/api/openapi.json`, the MCP server card

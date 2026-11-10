@@ -59,6 +59,15 @@ const billingReads: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Whether a Better Auth route changes a workspace: every workspace route
+ * but those that only read or change the calling session alone, and the
+ * Stripe plugin's that subscribe, cancel or open the billing portal.
+ */
+export const changesWorkspace = (path: string): boolean =>
+  (path.startsWith("/organization/") && !allowedWhileImpersonating.has(path)) ||
+  (path.startsWith("/subscription/") && !billingReads.has(path));
+
+/**
  * Whether staff impersonating a member are refused a Better Auth route: every
  * workspace route but those that only read, those that give an OAuth client
  * access, those that change the account, and those that subscribe, cancel
@@ -68,10 +77,7 @@ const billingReads: ReadonlySet<string> = new Set([
  * does, and these routes never reach Peal's API, which applies that list.
  */
 export const refusedWhileImpersonating = (path: string): boolean =>
-  grantsAccess.has(path) ||
-  changesAccount.has(path) ||
-  (path.startsWith("/organization/") && !allowedWhileImpersonating.has(path)) ||
-  (path.startsWith("/subscription/") && !billingReads.has(path));
+  grantsAccess.has(path) || changesAccount.has(path) || changesWorkspace(path);
 
 const isImpersonation = Schema.is(
   Schema.Struct({
@@ -155,6 +161,18 @@ const bodyIdDecoders = bodyIdFields.map(
     ] as const
 );
 
+/** The ids a request's body names, by name: those fields' values alone. */
+export const bodyIdsOf = ({
+  body,
+}: Pick<GenericEndpointContext, "body">): Readonly<
+  Record<string, string | undefined>
+> =>
+  Object.fromEntries(
+    bodyIdDecoders.flatMap(([name, decode]) =>
+      Option.toArray(decode(body)).map((fields) => [name, fields[name]])
+    )
+  );
+
 /**
  * Part of Better Auth's before hook: a request to its routes, sent by a
  * browser, in a session staff act as someone in, goes through `check` before
@@ -185,12 +203,7 @@ export const guardImpersonatedRequest = async (
 
   const { session, user } = found.value;
 
-  const objectIds: Readonly<Record<string, string | undefined>> =
-    Object.fromEntries(
-      bodyIdDecoders.flatMap(([name, decode]) =>
-        Option.toArray(decode(ctx.body)).map((fields) => [name, fields[name]])
-      )
-    );
+  const objectIds = bodyIdsOf(ctx);
 
   const admitted = await check({
     kind: kindOf(request.method, ctx.path),

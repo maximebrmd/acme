@@ -84,8 +84,9 @@ export const ActivityEventSchema = Schema.Struct({
   // The ids the request's path named, by name (`postId`, `channelId`).
   objectIds: Schema.Record(Schema.String, Schema.String),
   occurredAt: Schema.DateTimeUtc,
-  // The endpoint, as `group.endpoint` (`posts.schedule`), or the MCP tool,
-  // as `mcp.<tool>` (`mcp.create_draft`).
+  // The endpoint, as `group.endpoint` (`posts.schedule`), the MCP tool, as
+  // `mcp.<tool>` (`mcp.create_draft`), or the sign-in service's route, as
+  // `auth:<path>` (`auth:/organization/remove-member`).
   operation: Schema.String,
   // The request's id, as its `X-Request-Id` header gave it.
   requestId: Schema.NullOr(Schema.String),
@@ -129,7 +130,7 @@ export class ActivityApi extends HttpApiGroup.make("activity")
       success: ActivityPageSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Lists the requests that asked to change something in the workspace, newest first, ${defaultActivityPageSize} a page unless \`limit\` (at most ${maxActivityPageSize}) says otherwise: who asked (a member or an API key), how they authenticated, the key or the application it came through, the operation, the ids its path named, the status answered and, when it was refused or failed, the error's code. Requests that only read are not kept, and neither is anything a request or its answer carried. \`operation\` keeps one operation (\`posts.schedule\`), \`actor\` what one member (a user id) or one API key (its id) asked for. Pass the page's \`nextCursor\` as \`cursor\` for the next one. An event is kept ${activityRetentionDays} days. Needs activity:read, which owners hold.`,
+        description: `Lists the requests that asked to change something in the workspace, newest first, ${defaultActivityPageSize} a page unless \`limit\` (at most ${maxActivityPageSize}) says otherwise: who asked (a member or an API key), how they authenticated, the key or the application it came through, the operation, the ids its path named, the status answered and, when it was refused or failed, the error's code. What the web app's settings change through the sign-in service's routes (roles, members, invitations, the subscription) is kept as \`auth:\` and the route's path. Requests that only read are not kept, and neither is anything a request or its answer carried. \`operation\` keeps one operation (\`posts.schedule\`), \`actor\` what one member (a user id) or one API key (its id) asked for. Pass the page's \`nextCursor\` as \`cursor\` for the next one. An event is kept ${activityRetentionDays} days. Needs activity:read, which owners hold.`,
         summary: "List the workspace's activity",
       })
     )
