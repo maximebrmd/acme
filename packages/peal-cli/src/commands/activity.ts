@@ -140,8 +140,15 @@ const list = Command.make(
     }
 
     if (page.nextCursor !== null) {
+      // With what this page was asked with: the same list, continued.
+      const asked = [
+        ...Option.toArray(input.operation).map((it) => ` --operation ${it}`),
+        ...Option.toArray(input.actor).map((it) => ` --actor ${it}`),
+        ...Option.toArray(input.limit).map((it) => ` --limit ${String(it)}`),
+      ].join("");
+
       yield* Console.log(
-        `More: peal activity list --workspace ${workspace.slug} --cursor ${page.nextCursor}`
+        `More: peal activity list --workspace ${workspace.slug}${asked} --cursor ${page.nextCursor}`
       );
     }
   })

@@ -152,6 +152,20 @@ const contentsOf = (given: string) =>
     const fs = yield* FileSystem.FileSystem;
     const path = yield* Path.Path;
 
+    const tooLong = new Refused({
+      reason: `${given} is longer than one import takes, ${String(maxImportLength)} characters: split it. Nothing was made.`,
+    });
+
+    // Before reading it: a file named by mistake may be of any size, and
+    // a character takes four bytes at most.
+    const { size } = yield* fs
+      .stat(path.resolve(given))
+      .pipe(Effect.mapError(cannotRead(given)));
+
+    if (Number(size) > maxImportLength * 4) {
+      return yield* tooLong;
+    }
+
     const contents = yield* fs
       .readFileString(path.resolve(given))
       .pipe(Effect.mapError(cannotRead(given)));
@@ -161,9 +175,7 @@ const contentsOf = (given: string) =>
       : contents;
 
     if (csv.length > maxImportLength) {
-      return yield* new Refused({
-        reason: `${given} is longer than one import takes, ${String(maxImportLength)} characters: split it. Nothing was made.`,
-      });
+      return yield* tooLong;
     }
 
     return csv;

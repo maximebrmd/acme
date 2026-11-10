@@ -65,9 +65,11 @@ describe("peal activity", () => {
       assert.include(first, "posts.create");
       assert.include(first, "posts.schedule");
       assert.notInclude(first, "channels.disconnect");
+      // The next page's command keeps what this one asked for, so
+      // running it as printed continues the same list.
       assert.include(
         first,
-        `More: peal activity list --workspace studio --cursor ${refusal?.id ?? ""}`
+        `More: peal activity list --workspace studio --limit 2 --cursor ${refusal?.id ?? ""}`
       );
 
       const second = yield* session.printed(

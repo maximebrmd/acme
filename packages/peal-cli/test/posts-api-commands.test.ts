@@ -689,6 +689,25 @@ describe("peal post --wait and peal posts wait", () => {
 });
 
 describe("peal posts import", () => {
+  it.effect(
+    "refuses a file longer than one import takes, and sends none of it",
+    () =>
+      Effect.gen(function* tooLong() {
+        const session = yield* signedIn();
+
+        const file = yield* fileOf(
+          session,
+          "long.csv",
+          `text,channels,at\n${"a".repeat(4_000_001)}`
+        );
+
+        const refusal = yield* session.refused(importing(file));
+
+        assert.include(refusal, "is longer than one import takes");
+        assert.include(refusal, "Nothing was made.");
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("checks a file with --dry-run, and makes nothing", () =>
     Effect.gen(function* checks() {
       const session = yield* signedIn();
