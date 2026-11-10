@@ -19,6 +19,7 @@ import { SqlAnalyticsReports } from "#analytics/infrastructure/sql-analytics-rep
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
   countsOf,
+  countTablesAgain,
   forgetWorkspace,
   newChannelId,
   publicationOf,
@@ -607,6 +608,8 @@ layer(StoreTest)("the analytics store", (it) => {
             '2045-03-01T00:00:00Z', 'window'
           FROM generate_series(1, 70000) AS i
         `;
+
+        yield* countTablesAgain;
 
         const read = yield* seedPost(
           yield* publicationOf(

@@ -15,7 +15,11 @@ import {
   ReadLog,
   ReadLogTest,
 } from "#test/analytics/read-log.ts";
-import { countsOf, forgetWorkspace } from "#test/analytics/support.ts";
+import {
+  countsOf,
+  countTablesAgain,
+  forgetWorkspace,
+} from "#test/analytics/support.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
 
 // The hourly collection on Postgres, with readers that answer at once:
@@ -91,6 +95,8 @@ layer(CollectionTest, { excludeTestServices: true })(
             CROSS JOIN generate_series(1, ${postsPerChannel}) AS post
           `;
 
+            yield* countTablesAgain;
+
             const startedAt = performance.now();
 
             const report = yield* CollectMetrics.use((collect) =>
@@ -98,6 +104,9 @@ layer(CollectionTest, { excludeTestServices: true })(
             );
 
             const seconds = (performance.now() - startedAt) / 1000;
+
+            // The run wrote a snapshot a post.
+            yield* countTablesAgain;
 
             assert.deepStrictEqual(report, {
               deferred: 0,
