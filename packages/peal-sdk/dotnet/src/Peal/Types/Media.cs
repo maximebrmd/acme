@@ -15,7 +15,7 @@ public record Media : IJsonOnDeserialized
     public string? AltText { get; set; }
 
     [JsonPropertyName("byteSize")]
-    public required int ByteSize { get; set; }
+    public required long ByteSize { get; set; }
 
     [JsonPropertyName("codec")]
     public string? Codec { get; set; }

@@ -17,6 +17,7 @@ import { ReviewClient } from "./api/resources/review/client/Client.js";
 import { SessionClient } from "./api/resources/session/client/Client.js";
 import { SystemClient } from "./api/resources/system/client/Client.js";
 import { TiktokClient } from "./api/resources/tiktok/client/Client.js";
+import { WebhooksClient } from "./api/resources/webhooks/client/Client.js";
 import type { BaseClientOptions, BaseRequestOptions } from "./BaseClient.js";
 import { normalizeClientOptionsWithAuth, type NormalizedClientOptionsWithAuth } from "./BaseClient.js";
 import * as core from "./core/index.js";
@@ -47,6 +48,7 @@ export class PealClient {
     protected _tiktok: TiktokClient | undefined;
     protected _capabilities: CapabilitiesClient | undefined;
     protected _lookups: LookupsClient | undefined;
+    protected _webhooks: WebhooksClient | undefined;
     protected _review: ReviewClient | undefined;
 
     constructor(options: PealClient.Options = {}) {
@@ -116,6 +118,10 @@ export class PealClient {
 
     public get lookups(): LookupsClient {
         return (this._lookups ??= new LookupsClient(this._options));
+    }
+
+    public get webhooks(): WebhooksClient {
+        return (this._webhooks ??= new WebhooksClient(this._options));
     }
 
     public get review(): ReviewClient {

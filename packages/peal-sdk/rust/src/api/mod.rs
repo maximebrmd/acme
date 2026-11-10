@@ -15,6 +15,6 @@ pub use resources::{
     AnalyticsClient, ApiKeysClient, AssistantClient, BillingClient, CapabilitiesClient,
     ChannelsClient, InvitationsClient, LookupsClient, MediaClient, MembersClient, NoticesClient,
     NotificationPreferencesClient, PealClient, PostsClient, ReviewClient, SessionClient,
-    SystemClient, TiktokClient,
+    SystemClient, TiktokClient, WebhooksClient,
 };
 pub use types::*;

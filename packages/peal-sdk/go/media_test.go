@@ -112,7 +112,7 @@ func TestSettersNewUpload(t *testing.T) {
 
 	t.Run("SetByteSize", func(t *testing.T) {
 		obj := &NewUpload{}
-		var fernTestValueByteSize int
+		var fernTestValueByteSize int64
 		obj.SetByteSize(fernTestValueByteSize)
 		assert.Equal(t, fernTestValueByteSize, obj.ByteSize)
 		assert.NotNil(t, obj.explicitFields)
@@ -195,7 +195,7 @@ func TestSettersMarkExplicitNewUpload(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &NewUpload{}
-		var fernTestValueByteSize int
+		var fernTestValueByteSize int64
 
 		// Act
 		obj.SetByteSize(fernTestValueByteSize)
@@ -803,7 +803,7 @@ func TestSettersMedia(t *testing.T) {
 
 	t.Run("SetByteSize", func(t *testing.T) {
 		obj := &Media{}
-		var fernTestValueByteSize int
+		var fernTestValueByteSize int64
 		obj.SetByteSize(fernTestValueByteSize)
 		assert.Equal(t, fernTestValueByteSize, obj.ByteSize)
 		assert.NotNil(t, obj.explicitFields)
@@ -937,7 +937,7 @@ func TestGettersMedia(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &Media{}
-		var expected int
+		var expected int64
 		obj.ByteSize = expected
 
 		// Act & Assert
@@ -1307,7 +1307,7 @@ func TestSettersMarkExplicitMedia(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &Media{}
-		var fernTestValueByteSize int
+		var fernTestValueByteSize int64
 
 		// Act
 		obj.SetByteSize(fernTestValueByteSize)
@@ -2777,7 +2777,7 @@ func TestSettersMarkExplicitSignedRequest(t *testing.T) {
 func TestSettersUploadPart(t *testing.T) {
 	t.Run("SetByteSize", func(t *testing.T) {
 		obj := &UploadPart{}
-		var fernTestValueByteSize int
+		var fernTestValueByteSize int64
 		obj.SetByteSize(fernTestValueByteSize)
 		assert.Equal(t, fernTestValueByteSize, obj.ByteSize)
 		assert.NotNil(t, obj.explicitFields)
@@ -2806,7 +2806,7 @@ func TestGettersUploadPart(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &UploadPart{}
-		var expected int
+		var expected int64
 		obj.ByteSize = expected
 
 		// Act & Assert
@@ -2888,7 +2888,7 @@ func TestSettersMarkExplicitUploadPart(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &UploadPart{}
-		var fernTestValueByteSize int
+		var fernTestValueByteSize int64
 
 		// Act
 		obj.SetByteSize(fernTestValueByteSize)

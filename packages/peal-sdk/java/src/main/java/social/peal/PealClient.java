@@ -23,6 +23,7 @@ import social.peal.resources.review.ReviewClient;
 import social.peal.resources.session.SessionClient;
 import social.peal.resources.system.SystemClient;
 import social.peal.resources.tiktok.TiktokClient;
+import social.peal.resources.webhooks.WebhooksClient;
 
 public class PealClient implements AutoCloseable {
     protected final ClientOptions clientOptions;
@@ -59,6 +60,8 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<LookupsClient> lookupsClient;
 
+    protected final Supplier<WebhooksClient> webhooksClient;
+
     protected final Supplier<ReviewClient> reviewClient;
 
     public PealClient(ClientOptions clientOptions) {
@@ -79,6 +82,7 @@ public class PealClient implements AutoCloseable {
         this.tiktokClient = Suppliers.memoize(() -> new TiktokClient(clientOptions));
         this.capabilitiesClient = Suppliers.memoize(() -> new CapabilitiesClient(clientOptions));
         this.lookupsClient = Suppliers.memoize(() -> new LookupsClient(clientOptions));
+        this.webhooksClient = Suppliers.memoize(() -> new WebhooksClient(clientOptions));
         this.reviewClient = Suppliers.memoize(() -> new ReviewClient(clientOptions));
     }
 
@@ -144,6 +148,10 @@ public class PealClient implements AutoCloseable {
 
     public LookupsClient lookups() {
         return this.lookupsClient.get();
+    }
+
+    public WebhooksClient webhooks() {
+        return this.webhooksClient.get();
     }
 
     public ReviewClient review() {

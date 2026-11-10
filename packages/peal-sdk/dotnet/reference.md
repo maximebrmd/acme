@@ -881,6 +881,79 @@ await client.Posts.CreateAsync(
 </dl>
 </details>
 
+<details><summary><code>client.Posts.<a href="/src/Peal/Posts/PostsClient.cs">SendAsync</a>(NewPost { ... }) -> WithRawResponseTask&lt;Post&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Posts.SendAsync(
+    new NewPost
+    {
+        WorkspaceId = "workspaceId",
+        ChannelIds = new List<string>() { "channelIds" },
+        Content = new PostContent
+        {
+            Media = new List<MediaAttachment>()
+            {
+                new MediaAttachment { AltText = "altText", MediaId = "mediaId" },
+            },
+            Overrides = new List<TextOverride>()
+            {
+                new TextOverride { ChannelId = "channelId", Text = "text" },
+            },
+            Text = "text",
+        },
+        When = new PostTiming(new PostTiming.Now(new PostTimingNow())),
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `NewPost` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.Posts.<a href="/src/Peal/Posts/PostsClient.cs">GetAsync</a>(GetPostsRequest { ... }) -> WithRawResponseTask&lt;Post&gt;</code></summary>
 <dl>
 <dd>
@@ -1570,7 +1643,7 @@ await client.Media.CreateAsync(
     new NewUpload
     {
         WorkspaceId = "workspaceId",
-        ByteSize = 1,
+        ByteSize = 1000000,
         ContentType = "contentType",
     }
 );
@@ -1589,6 +1662,60 @@ await client.Media.CreateAsync(
 <dd>
 
 **request:** `NewUpload` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Media.<a href="/src/Peal/Media/MediaClient.cs">ImportFromUrlAsync</a>(MediaImport { ... }) -> WithRawResponseTask&lt;Media&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Media.ImportFromUrlAsync(new MediaImport { WorkspaceId = "workspaceId", Url = "url" });
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `MediaImport` 
     
 </dd>
 </dl>
@@ -1785,7 +1912,7 @@ await client.Media.DescribeAsync(
 <dl>
 <dd>
 
-Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached `mediaStorage`). Needs media:upload.
 </dd>
 </dl>
 </dd>
@@ -2568,6 +2695,60 @@ await client.Billing.GetAsync(new GetBillingRequest { WorkspaceId = "workspaceId
 </dl>
 </details>
 
+<details><summary><code>client.Billing.<a href="/src/Peal/Billing/BillingClient.cs">StandingAsync</a>(StandingBillingRequest { ... }) -> WithRawResponseTask&lt;Standing&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with `planLimit`), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Billing.StandingAsync(new StandingBillingRequest { WorkspaceId = "workspaceId" });
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `StandingBillingRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## analytics
 <details><summary><code>client.Analytics.<a href="/src/Peal/Analytics/AnalyticsClient.cs">SummaryAsync</a>(SummaryAnalyticsRequest { ... }) -> WithRawResponseTask&lt;AnalyticsSummary&gt;</code></summary>
 <dl>
@@ -2964,6 +3145,522 @@ await client.Lookups.RunAsync(
 <dd>
 
 **request:** `LookupInput` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## webhooks
+<details><summary><code>client.Webhooks.<a href="/src/Peal/Webhooks/WebhooksClient.cs">ListAsync</a>(ListWebhooksRequest { ... }) -> WithRawResponseTask&lt;IEnumerable&lt;WebhookEndpoint&gt;&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's webhook endpoints, oldest first. Needs webhook:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Webhooks.ListAsync(new ListWebhooksRequest { WorkspaceId = "workspaceId" });
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListWebhooksRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Webhooks.<a href="/src/Peal/Webhooks/WebhooksClient.cs">CreateAsync</a>(NewWebhookEndpoint { ... }) -> WithRawResponseTask&lt;WebhookEndpointSecret&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Webhooks.CreateAsync(
+    new NewWebhookEndpoint
+    {
+        WorkspaceId = "workspaceId",
+        EventTypes = new List<SubscribableWebhookEventType>()
+        {
+            SubscribableWebhookEventType.PostScheduled,
+        },
+        Url = "url",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `NewWebhookEndpoint` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Webhooks.<a href="/src/Peal/Webhooks/WebhooksClient.cs">GetAsync</a>(GetWebhooksRequest { ... }) -> WithRawResponseTask&lt;WebhookEndpoint&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Shows one of the workspace's webhook endpoints. Needs webhook:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Webhooks.GetAsync(
+    new GetWebhooksRequest { WorkspaceId = "workspaceId", EndpointId = "endpointId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `GetWebhooksRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Webhooks.<a href="/src/Peal/Webhooks/WebhooksClient.cs">DeleteAsync</a>(DeleteWebhooksRequest { ... }) -> WithRawResponseTask</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes an endpoint, its secret and its delivery log: nothing more is sent to it. Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Webhooks.DeleteAsync(
+    new DeleteWebhooksRequest { WorkspaceId = "workspaceId", EndpointId = "endpointId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `DeleteWebhooksRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Webhooks.<a href="/src/Peal/Webhooks/WebhooksClient.cs">UpdateAsync</a>(WebhookEndpointChange { ... }) -> WithRawResponseTask&lt;WebhookEndpoint&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Webhooks.UpdateAsync(
+    new WebhookEndpointChange { WorkspaceId = "workspaceId", EndpointId = "endpointId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `WebhookEndpointChange` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Webhooks.<a href="/src/Peal/Webhooks/WebhooksClient.cs">RotateSecretAsync</a>(RotateSecretWebhooksRequest { ... }) -> WithRawResponseTask&lt;WebhookEndpointSecret&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces an endpoint's signing secret, and answers with the new one, which is not shown again. For 24 hours each delivery carries two signatures, one per secret, so the receiver changes its own without missing any; the old one then signs nothing more. Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Webhooks.RotateSecretAsync(
+    new RotateSecretWebhooksRequest { WorkspaceId = "workspaceId", EndpointId = "endpointId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `RotateSecretWebhooksRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Webhooks.<a href="/src/Peal/Webhooks/WebhooksClient.cs">SendTestAsync</a>(SendTestWebhooksRequest { ... }) -> WithRawResponseTask&lt;WebhookDelivery&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Webhooks.SendTestAsync(
+    new SendTestWebhooksRequest { WorkspaceId = "workspaceId", EndpointId = "endpointId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `SendTestWebhooksRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Webhooks.<a href="/src/Peal/Webhooks/WebhooksClient.cs">ListDeliveriesAsync</a>(ListDeliveriesWebhooksRequest { ... }) -> WithRawResponseTask&lt;WebhookDeliveryPage&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the endpoint's deliveries, newest first, 30 a page unless `limit` (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's `nextCursor` as `cursor` for the next one. A delivery is kept 30 days. Needs webhook:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Webhooks.ListDeliveriesAsync(
+    new ListDeliveriesWebhooksRequest { WorkspaceId = "workspaceId", EndpointId = "endpointId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListDeliveriesWebhooksRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Webhooks.<a href="/src/Peal/Webhooks/WebhooksClient.cs">RedeliverAsync</a>(RedeliverWebhooksRequest { ... }) -> WithRawResponseTask&lt;WebhookDelivery&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same `webhook-id` and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Webhooks.RedeliverAsync(
+    new RedeliverWebhooksRequest
+    {
+        WorkspaceId = "workspaceId",
+        EndpointId = "endpointId",
+        DeliveryId = "deliveryId",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `RedeliverWebhooksRequest` 
     
 </dd>
 </dl>

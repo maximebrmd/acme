@@ -17,7 +17,7 @@ public class ListTest : BaseMockServerTest
               "items": [
                 {
                   "altText": "altText",
-                  "byteSize": 1,
+                  "byteSize": 1000000,
                   "codec": "codec",
                   "contentType": "image/gif",
                   "createdAt": "createdAt",
@@ -37,7 +37,7 @@ public class ListTest : BaseMockServerTest
                 },
                 {
                   "altText": "altText",
-                  "byteSize": 1,
+                  "byteSize": 1000000,
                   "codec": "codec",
                   "contentType": "image/gif",
                   "createdAt": "createdAt",
@@ -88,7 +88,7 @@ public class ListTest : BaseMockServerTest
               "items": [
                 {
                   "altText": "altText",
-                  "byteSize": 1,
+                  "byteSize": 1000000,
                   "codec": "codec",
                   "contentType": "image/gif",
                   "createdAt": "createdAt",

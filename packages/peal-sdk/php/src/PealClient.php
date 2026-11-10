@@ -18,6 +18,7 @@ use Peal\Analytics\AnalyticsClient;
 use Peal\Tiktok\TiktokClient;
 use Peal\Capabilities\CapabilitiesClient;
 use Peal\Lookups\LookupsClient;
+use Peal\Webhooks\WebhooksClient;
 use Peal\Review\ReviewClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
@@ -105,6 +106,11 @@ class PealClient
     public LookupsClient $lookups;
 
     /**
+     * @var WebhooksClient $webhooks
+     */
+    public WebhooksClient $webhooks;
+
+    /**
      * @var ReviewClient $review
      */
     public ReviewClient $review;
@@ -176,6 +182,7 @@ class PealClient
         $this->tiktok = new TiktokClient($this->client, $this->options);
         $this->capabilities = new CapabilitiesClient($this->client, $this->options);
         $this->lookups = new LookupsClient($this->client, $this->options);
+        $this->webhooks = new WebhooksClient($this->client, $this->options);
         $this->review = new ReviewClient($this->client, $this->options);
     }
 }

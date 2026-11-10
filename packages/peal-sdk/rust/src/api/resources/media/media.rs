@@ -94,7 +94,7 @@ impl MediaClient {
     ///         .create(
     ///             &"workspaceId".to_string(),
     ///             &NewUpload {
-    ///                 byte_size: 1,
+    ///                 byte_size: 1000000,
     ///                 content_type: "contentType".to_string(),
     ///                 alt_text: None,
     ///             },

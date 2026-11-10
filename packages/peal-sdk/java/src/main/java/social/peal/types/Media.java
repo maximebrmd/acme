@@ -26,7 +26,7 @@ import social.peal.core.ObjectMappers;
 public final class Media {
     private final Optional<String> altText;
 
-    private final int byteSize;
+    private final long byteSize;
 
     private final Optional<String> codec;
 
@@ -54,7 +54,7 @@ public final class Media {
 
     private Media(
             Optional<String> altText,
-            int byteSize,
+            long byteSize,
             Optional<String> codec,
             MediaContentType contentType,
             String createdAt,
@@ -92,7 +92,7 @@ public final class Media {
     }
 
     @JsonProperty("byteSize")
-    public int getByteSize() {
+    public long getByteSize() {
         return byteSize;
     }
 
@@ -257,7 +257,7 @@ public final class Media {
     }
 
     public interface ByteSizeStage {
-        ContentTypeStage byteSize(int byteSize);
+        ContentTypeStage byteSize(long byteSize);
 
         Builder from(Media other);
     }
@@ -340,7 +340,7 @@ public final class Media {
                     StatusStage,
                     UpdatedAtStage,
                     _FinalStage {
-        private int byteSize;
+        private long byteSize;
 
         private MediaContentType contentType;
 
@@ -390,7 +390,7 @@ public final class Media {
 
         @java.lang.Override
         @JsonSetter("byteSize")
-        public ContentTypeStage byteSize(int byteSize) {
+        public ContentTypeStage byteSize(long byteSize) {
             this.byteSize = byteSize;
             return this;
         }

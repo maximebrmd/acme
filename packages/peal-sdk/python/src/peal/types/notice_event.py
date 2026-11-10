@@ -9,11 +9,13 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .billing_interval import BillingInterval
+from .excess import Excess
 from .failure_reason import FailureReason
 from .money import Money
 from .notice_channel import NoticeChannel
 from .paid_plan import PaidPlan
 from .review_party import ReviewParty
+from .webhook_turn_off_reason import WebhookTurnOffReason
 
 
 class NoticeEvent_PostPublished(UniversalBaseModel):
@@ -200,6 +202,7 @@ class NoticeEvent_TrialEnding(UniversalBaseModel):
         typing.Literal["TrialEnding"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "TrialEnding"
     ends_at: typing_extensions.Annotated[str, FieldMetadata(alias="endsAt"), pydantic.Field(alias="endsAt")]
+    over: typing.List[Excess]
     plan: PaidPlan
 
     if IS_PYDANTIC_V2:
@@ -267,6 +270,24 @@ class NoticeEvent_SubscriptionWithdrawn(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_WebhookEndpointDisabled(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["WebhookEndpointDisabled"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "WebhookEndpointDisabled"
+    endpoint_id: typing_extensions.Annotated[str, FieldMetadata(alias="endpointId"), pydantic.Field(alias="endpointId")]
+    host: str
+    reason: WebhookTurnOffReason
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 NoticeEvent = typing_extensions.Annotated[
     typing.Union[
         NoticeEvent_PostPublished,
@@ -283,6 +304,7 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_SubscriptionRenewing,
         NoticeEvent_SubscriptionCancelled,
         NoticeEvent_SubscriptionWithdrawn,
+        NoticeEvent_WebhookEndpointDisabled,
     ],
     pydantic.Field(discriminator="type"),
 ]

@@ -23,24 +23,24 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = PlanAllowances.Builder.class)
 public final class PlanAllowances {
-    private final Optional<Integer> assistantRequests;
+    private final Optional<Long> assistantRequests;
 
-    private final Optional<Integer> channels;
+    private final Optional<Long> channels;
 
-    private final Optional<Integer> mediaStorage;
+    private final Optional<Long> mediaStorage;
 
-    private final Optional<Integer> members;
+    private final Optional<Long> members;
 
-    private final Optional<Integer> scheduledPosts;
+    private final Optional<Long> scheduledPosts;
 
     private final Map<String, Object> additionalProperties;
 
     private PlanAllowances(
-            Optional<Integer> assistantRequests,
-            Optional<Integer> channels,
-            Optional<Integer> mediaStorage,
-            Optional<Integer> members,
-            Optional<Integer> scheduledPosts,
+            Optional<Long> assistantRequests,
+            Optional<Long> channels,
+            Optional<Long> mediaStorage,
+            Optional<Long> members,
+            Optional<Long> scheduledPosts,
             Map<String, Object> additionalProperties) {
         this.assistantRequests = assistantRequests;
         this.channels = channels;
@@ -51,7 +51,7 @@ public final class PlanAllowances {
     }
 
     @JsonIgnore
-    public Optional<Integer> getAssistantRequests() {
+    public Optional<Long> getAssistantRequests() {
         if (assistantRequests == null) {
             return Optional.empty();
         }
@@ -59,7 +59,7 @@ public final class PlanAllowances {
     }
 
     @JsonIgnore
-    public Optional<Integer> getChannels() {
+    public Optional<Long> getChannels() {
         if (channels == null) {
             return Optional.empty();
         }
@@ -67,7 +67,7 @@ public final class PlanAllowances {
     }
 
     @JsonIgnore
-    public Optional<Integer> getMediaStorage() {
+    public Optional<Long> getMediaStorage() {
         if (mediaStorage == null) {
             return Optional.empty();
         }
@@ -75,7 +75,7 @@ public final class PlanAllowances {
     }
 
     @JsonIgnore
-    public Optional<Integer> getMembers() {
+    public Optional<Long> getMembers() {
         if (members == null) {
             return Optional.empty();
         }
@@ -83,7 +83,7 @@ public final class PlanAllowances {
     }
 
     @JsonIgnore
-    public Optional<Integer> getScheduledPosts() {
+    public Optional<Long> getScheduledPosts() {
         if (scheduledPosts == null) {
             return Optional.empty();
         }
@@ -92,31 +92,31 @@ public final class PlanAllowances {
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("assistantRequests")
-    private Optional<Integer> _getAssistantRequests() {
+    private Optional<Long> _getAssistantRequests() {
         return assistantRequests;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("channels")
-    private Optional<Integer> _getChannels() {
+    private Optional<Long> _getChannels() {
         return channels;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("mediaStorage")
-    private Optional<Integer> _getMediaStorage() {
+    private Optional<Long> _getMediaStorage() {
         return mediaStorage;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("members")
-    private Optional<Integer> _getMembers() {
+    private Optional<Long> _getMembers() {
         return members;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("scheduledPosts")
-    private Optional<Integer> _getScheduledPosts() {
+    private Optional<Long> _getScheduledPosts() {
         return scheduledPosts;
     }
 
@@ -156,15 +156,15 @@ public final class PlanAllowances {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
-        private Optional<Integer> assistantRequests = Optional.empty();
+        private Optional<Long> assistantRequests = Optional.empty();
 
-        private Optional<Integer> channels = Optional.empty();
+        private Optional<Long> channels = Optional.empty();
 
-        private Optional<Integer> mediaStorage = Optional.empty();
+        private Optional<Long> mediaStorage = Optional.empty();
 
-        private Optional<Integer> members = Optional.empty();
+        private Optional<Long> members = Optional.empty();
 
-        private Optional<Integer> scheduledPosts = Optional.empty();
+        private Optional<Long> scheduledPosts = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -180,17 +180,17 @@ public final class PlanAllowances {
         }
 
         @JsonSetter(value = "assistantRequests", nulls = Nulls.SKIP)
-        public Builder assistantRequests(Optional<Integer> assistantRequests) {
+        public Builder assistantRequests(Optional<Long> assistantRequests) {
             this.assistantRequests = assistantRequests;
             return this;
         }
 
-        public Builder assistantRequests(Integer assistantRequests) {
+        public Builder assistantRequests(Long assistantRequests) {
             this.assistantRequests = Optional.ofNullable(assistantRequests);
             return this;
         }
 
-        public Builder assistantRequests(Nullable<Integer> assistantRequests) {
+        public Builder assistantRequests(Nullable<Long> assistantRequests) {
             if (assistantRequests.isNull()) {
                 this.assistantRequests = null;
             } else if (assistantRequests.isEmpty()) {
@@ -202,17 +202,17 @@ public final class PlanAllowances {
         }
 
         @JsonSetter(value = "channels", nulls = Nulls.SKIP)
-        public Builder channels(Optional<Integer> channels) {
+        public Builder channels(Optional<Long> channels) {
             this.channels = channels;
             return this;
         }
 
-        public Builder channels(Integer channels) {
+        public Builder channels(Long channels) {
             this.channels = Optional.ofNullable(channels);
             return this;
         }
 
-        public Builder channels(Nullable<Integer> channels) {
+        public Builder channels(Nullable<Long> channels) {
             if (channels.isNull()) {
                 this.channels = null;
             } else if (channels.isEmpty()) {
@@ -224,17 +224,17 @@ public final class PlanAllowances {
         }
 
         @JsonSetter(value = "mediaStorage", nulls = Nulls.SKIP)
-        public Builder mediaStorage(Optional<Integer> mediaStorage) {
+        public Builder mediaStorage(Optional<Long> mediaStorage) {
             this.mediaStorage = mediaStorage;
             return this;
         }
 
-        public Builder mediaStorage(Integer mediaStorage) {
+        public Builder mediaStorage(Long mediaStorage) {
             this.mediaStorage = Optional.ofNullable(mediaStorage);
             return this;
         }
 
-        public Builder mediaStorage(Nullable<Integer> mediaStorage) {
+        public Builder mediaStorage(Nullable<Long> mediaStorage) {
             if (mediaStorage.isNull()) {
                 this.mediaStorage = null;
             } else if (mediaStorage.isEmpty()) {
@@ -246,17 +246,17 @@ public final class PlanAllowances {
         }
 
         @JsonSetter(value = "members", nulls = Nulls.SKIP)
-        public Builder members(Optional<Integer> members) {
+        public Builder members(Optional<Long> members) {
             this.members = members;
             return this;
         }
 
-        public Builder members(Integer members) {
+        public Builder members(Long members) {
             this.members = Optional.ofNullable(members);
             return this;
         }
 
-        public Builder members(Nullable<Integer> members) {
+        public Builder members(Nullable<Long> members) {
             if (members.isNull()) {
                 this.members = null;
             } else if (members.isEmpty()) {
@@ -268,17 +268,17 @@ public final class PlanAllowances {
         }
 
         @JsonSetter(value = "scheduledPosts", nulls = Nulls.SKIP)
-        public Builder scheduledPosts(Optional<Integer> scheduledPosts) {
+        public Builder scheduledPosts(Optional<Long> scheduledPosts) {
             this.scheduledPosts = scheduledPosts;
             return this;
         }
 
-        public Builder scheduledPosts(Integer scheduledPosts) {
+        public Builder scheduledPosts(Long scheduledPosts) {
             this.scheduledPosts = Optional.ofNullable(scheduledPosts);
             return this;
         }
 
-        public Builder scheduledPosts(Nullable<Integer> scheduledPosts) {
+        public Builder scheduledPosts(Nullable<Long> scheduledPosts) {
             if (scheduledPosts.isNull()) {
                 this.scheduledPosts = null;
             } else if (scheduledPosts.isEmpty()) {

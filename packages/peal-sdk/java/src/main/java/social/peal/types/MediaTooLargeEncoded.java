@@ -19,16 +19,16 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = MediaTooLargeEncoded.Builder.class)
 public final class MediaTooLargeEncoded {
-    private final int byteSize;
+    private final long byteSize;
 
     private final MediaTooLargeEncodedKind kind;
 
-    private final int maxByteSize;
+    private final long maxByteSize;
 
     private final Map<String, Object> additionalProperties;
 
     private MediaTooLargeEncoded(
-            int byteSize, MediaTooLargeEncodedKind kind, int maxByteSize, Map<String, Object> additionalProperties) {
+            long byteSize, MediaTooLargeEncodedKind kind, long maxByteSize, Map<String, Object> additionalProperties) {
         this.byteSize = byteSize;
         this.kind = kind;
         this.maxByteSize = maxByteSize;
@@ -36,7 +36,7 @@ public final class MediaTooLargeEncoded {
     }
 
     @JsonProperty("byteSize")
-    public int getByteSize() {
+    public long getByteSize() {
         return byteSize;
     }
 
@@ -46,7 +46,7 @@ public final class MediaTooLargeEncoded {
     }
 
     @JsonProperty("maxByteSize")
-    public int getMaxByteSize() {
+    public long getMaxByteSize() {
         return maxByteSize;
     }
 
@@ -80,7 +80,7 @@ public final class MediaTooLargeEncoded {
     }
 
     public interface ByteSizeStage {
-        KindStage byteSize(int byteSize);
+        KindStage byteSize(long byteSize);
 
         Builder from(MediaTooLargeEncoded other);
     }
@@ -90,7 +90,7 @@ public final class MediaTooLargeEncoded {
     }
 
     public interface MaxByteSizeStage {
-        _FinalStage maxByteSize(int maxByteSize);
+        _FinalStage maxByteSize(long maxByteSize);
     }
 
     public interface _FinalStage {
@@ -103,11 +103,11 @@ public final class MediaTooLargeEncoded {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements ByteSizeStage, KindStage, MaxByteSizeStage, _FinalStage {
-        private int byteSize;
+        private long byteSize;
 
         private MediaTooLargeEncodedKind kind;
 
-        private int maxByteSize;
+        private long maxByteSize;
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -123,7 +123,7 @@ public final class MediaTooLargeEncoded {
 
         @java.lang.Override
         @JsonSetter("byteSize")
-        public KindStage byteSize(int byteSize) {
+        public KindStage byteSize(long byteSize) {
             this.byteSize = byteSize;
             return this;
         }
@@ -137,7 +137,7 @@ public final class MediaTooLargeEncoded {
 
         @java.lang.Override
         @JsonSetter("maxByteSize")
-        public _FinalStage maxByteSize(int maxByteSize) {
+        public _FinalStage maxByteSize(long maxByteSize) {
             this.maxByteSize = maxByteSize;
             return this;
         }

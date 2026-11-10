@@ -55,7 +55,7 @@ var (
 type NewUpload struct {
 	WorkspaceID string  `json:"-" url:"-"`
 	AltText     *string `json:"altText,omitempty" url:"-"`
-	ByteSize    int     `json:"byteSize" url:"-"`
+	ByteSize    int64   `json:"byteSize" url:"-"`
 	ContentType string  `json:"contentType" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -87,7 +87,7 @@ func (n *NewUpload) SetAltText(altText *string) {
 
 // SetByteSize sets the ByteSize field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NewUpload) SetByteSize(byteSize int) {
+func (n *NewUpload) SetByteSize(byteSize int64) {
 	n.ByteSize = byteSize
 	n.require(newUploadFieldByteSize)
 }
@@ -397,7 +397,7 @@ var mediaNullableFields = map[string]*big.Int{
 
 type Media struct {
 	AltText     *string          `json:"altText,omitempty" url:"altText,omitempty"`
-	ByteSize    int              `json:"byteSize" url:"byteSize"`
+	ByteSize    int64            `json:"byteSize" url:"byteSize"`
 	Codec       *string          `json:"codec,omitempty" url:"codec,omitempty"`
 	ContentType MediaContentType `json:"contentType" url:"contentType"`
 	CreatedAt   string           `json:"createdAt" url:"createdAt"`
@@ -424,7 +424,7 @@ func (m *Media) GetAltText() *string {
 	return m.AltText
 }
 
-func (m *Media) GetByteSize() int {
+func (m *Media) GetByteSize() int64 {
 	if m == nil {
 		return 0
 	}
@@ -533,7 +533,7 @@ func (m *Media) SetAltText(altText *string) {
 
 // SetByteSize sets the ByteSize field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (m *Media) SetByteSize(byteSize int) {
+func (m *Media) SetByteSize(byteSize int64) {
 	m.ByteSize = byteSize
 	m.require(mediaFieldByteSize)
 }
@@ -1767,7 +1767,7 @@ var (
 )
 
 type UploadPart struct {
-	ByteSize   int            `json:"byteSize" url:"byteSize"`
+	ByteSize   int64          `json:"byteSize" url:"byteSize"`
 	PartNumber int            `json:"partNumber" url:"partNumber"`
 	Request    *SignedRequest `json:"request" url:"request"`
 
@@ -1778,7 +1778,7 @@ type UploadPart struct {
 	rawJSON         json.RawMessage
 }
 
-func (u *UploadPart) GetByteSize() int {
+func (u *UploadPart) GetByteSize() int64 {
 	if u == nil {
 		return 0
 	}
@@ -1817,7 +1817,7 @@ func (u *UploadPart) require(field *big.Int) {
 
 // SetByteSize sets the ByteSize field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (u *UploadPart) SetByteSize(byteSize int) {
+func (u *UploadPart) SetByteSize(byteSize int64) {
 	u.ByteSize = byteSize
 	u.require(uploadPartFieldByteSize)
 }

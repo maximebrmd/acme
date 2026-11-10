@@ -27,6 +27,7 @@ if typing.TYPE_CHECKING:
     from .session.client import AsyncSessionClient, SessionClient
     from .system.client import AsyncSystemClient, SystemClient
     from .tiktok.client import AsyncTiktokClient, TiktokClient
+    from .webhooks.client import AsyncWebhooksClient, WebhooksClient
 
 
 class Peal:
@@ -129,6 +130,7 @@ class Peal:
         self._tiktok: typing.Optional[TiktokClient] = None
         self._capabilities: typing.Optional[CapabilitiesClient] = None
         self._lookups: typing.Optional[LookupsClient] = None
+        self._webhooks: typing.Optional[WebhooksClient] = None
         self._review: typing.Optional[ReviewClient] = None
 
     @property
@@ -260,6 +262,14 @@ class Peal:
         return self._lookups
 
     @property
+    def webhooks(self):
+        if self._webhooks is None:
+            from .webhooks.client import WebhooksClient  # noqa: E402
+
+            self._webhooks = WebhooksClient(client_wrapper=self._client_wrapper)
+        return self._webhooks
+
+    @property
     def review(self):
         if self._review is None:
             from .review.client import ReviewClient  # noqa: E402
@@ -389,6 +399,7 @@ class AsyncPeal:
         self._tiktok: typing.Optional[AsyncTiktokClient] = None
         self._capabilities: typing.Optional[AsyncCapabilitiesClient] = None
         self._lookups: typing.Optional[AsyncLookupsClient] = None
+        self._webhooks: typing.Optional[AsyncWebhooksClient] = None
         self._review: typing.Optional[AsyncReviewClient] = None
 
     @property
@@ -518,6 +529,14 @@ class AsyncPeal:
 
             self._lookups = AsyncLookupsClient(client_wrapper=self._client_wrapper)
         return self._lookups
+
+    @property
+    def webhooks(self):
+        if self._webhooks is None:
+            from .webhooks.client import AsyncWebhooksClient  # noqa: E402
+
+            self._webhooks = AsyncWebhooksClient(client_wrapper=self._client_wrapper)
+        return self._webhooks
 
     @property
     def review(self):

@@ -194,6 +194,17 @@
       },
       "default": "./dist/cjs/api/resources/lookups/exports.js"
     },
+    "./webhooks": {
+      "import": {
+        "types": "./dist/esm/api/resources/webhooks/exports.d.mts",
+        "default": "./dist/esm/api/resources/webhooks/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/webhooks/exports.d.ts",
+        "default": "./dist/cjs/api/resources/webhooks/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/webhooks/exports.js"
+    },
     "./review": {
       "import": {
         "types": "./dist/esm/api/resources/review/exports.d.mts",

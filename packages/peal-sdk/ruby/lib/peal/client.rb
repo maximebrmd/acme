@@ -100,6 +100,11 @@ module Peal
       @lookups ||= Peal::Lookups::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Webhooks::Client]
+    def webhooks
+      @webhooks ||= Peal::Webhooks::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::Review::Client]
     def review
       @review ||= Peal::Review::Client.new(client: @raw_client)

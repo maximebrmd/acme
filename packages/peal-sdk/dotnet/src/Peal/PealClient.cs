@@ -49,6 +49,7 @@ public partial class PealClient : IPealClient
         Tiktok = new TiktokClient(_client);
         Capabilities = new CapabilitiesClient(_client);
         Lookups = new LookupsClient(_client);
+        Webhooks = new WebhooksClient(_client);
         Review = new ReviewClient(_client);
     }
 
@@ -83,6 +84,8 @@ public partial class PealClient : IPealClient
     public ICapabilitiesClient Capabilities { get; }
 
     public ILookupsClient Lookups { get; }
+
+    public IWebhooksClient Webhooks { get; }
 
     public IReviewClient Review { get; }
 }

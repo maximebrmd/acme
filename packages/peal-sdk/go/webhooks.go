@@ -373,6 +373,9 @@ const (
 	SubscribableWebhookEventTypePostFailed             SubscribableWebhookEventType = "post.failed"
 	SubscribableWebhookEventTypePostUnconfirmed        SubscribableWebhookEventType = "post.unconfirmed"
 	SubscribableWebhookEventTypePostCancelled          SubscribableWebhookEventType = "post.cancelled"
+	SubscribableWebhookEventTypePostApprovalRequested  SubscribableWebhookEventType = "post.approval_requested"
+	SubscribableWebhookEventTypePostApproved           SubscribableWebhookEventType = "post.approved"
+	SubscribableWebhookEventTypePostChangesRequested   SubscribableWebhookEventType = "post.changes_requested"
 	SubscribableWebhookEventTypeChannelConnected       SubscribableWebhookEventType = "channel.connected"
 	SubscribableWebhookEventTypeChannelDisconnected    SubscribableWebhookEventType = "channel.disconnected"
 	SubscribableWebhookEventTypeChannelReconnectNeeded SubscribableWebhookEventType = "channel.reconnect_needed"
@@ -394,6 +397,12 @@ func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEve
 		return SubscribableWebhookEventTypePostUnconfirmed, nil
 	case "post.cancelled":
 		return SubscribableWebhookEventTypePostCancelled, nil
+	case "post.approval_requested":
+		return SubscribableWebhookEventTypePostApprovalRequested, nil
+	case "post.approved":
+		return SubscribableWebhookEventTypePostApproved, nil
+	case "post.changes_requested":
+		return SubscribableWebhookEventTypePostChangesRequested, nil
 	case "channel.connected":
 		return SubscribableWebhookEventTypeChannelConnected, nil
 	case "channel.disconnected":
@@ -1316,6 +1325,9 @@ const (
 	WebhookEventTypePostFailed             WebhookEventType = "post.failed"
 	WebhookEventTypePostUnconfirmed        WebhookEventType = "post.unconfirmed"
 	WebhookEventTypePostCancelled          WebhookEventType = "post.cancelled"
+	WebhookEventTypePostApprovalRequested  WebhookEventType = "post.approval_requested"
+	WebhookEventTypePostApproved           WebhookEventType = "post.approved"
+	WebhookEventTypePostChangesRequested   WebhookEventType = "post.changes_requested"
 	WebhookEventTypeChannelConnected       WebhookEventType = "channel.connected"
 	WebhookEventTypeChannelDisconnected    WebhookEventType = "channel.disconnected"
 	WebhookEventTypeChannelReconnectNeeded WebhookEventType = "channel.reconnect_needed"
@@ -1338,6 +1350,12 @@ func NewWebhookEventTypeFromString(s string) (WebhookEventType, error) {
 		return WebhookEventTypePostUnconfirmed, nil
 	case "post.cancelled":
 		return WebhookEventTypePostCancelled, nil
+	case "post.approval_requested":
+		return WebhookEventTypePostApprovalRequested, nil
+	case "post.approved":
+		return WebhookEventTypePostApproved, nil
+	case "post.changes_requested":
+		return WebhookEventTypePostChangesRequested, nil
 	case "channel.connected":
 		return WebhookEventTypeChannelConnected, nil
 	case "channel.disconnected":

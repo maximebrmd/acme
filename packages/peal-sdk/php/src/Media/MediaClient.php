@@ -129,7 +129,7 @@ class MediaClient
      * $client->media->create(
      *     'workspaceId',
      *     new NewUpload([
-     *         'byteSize' => 1,
+     *         'byteSize' => 1000000,
      *         'contentType' => 'contentType',
      *     ]),
      * );

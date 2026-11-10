@@ -12,13 +12,13 @@ public record MediaTooLargeEncoded : IJsonOnDeserialized
         new Dictionary<string, JsonElement>();
 
     [JsonPropertyName("byteSize")]
-    public required int ByteSize { get; set; }
+    public required long ByteSize { get; set; }
 
     [JsonPropertyName("kind")]
     public required MediaTooLargeEncodedKind Kind { get; set; }
 
     [JsonPropertyName("maxByteSize")]
-    public required int MaxByteSize { get; set; }
+    public required long MaxByteSize { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

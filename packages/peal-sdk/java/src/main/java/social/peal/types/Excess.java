@@ -19,15 +19,15 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = Excess.Builder.class)
 public final class Excess {
-    private final int allowed;
+    private final long allowed;
 
     private final HeldLimit limit;
 
-    private final int used;
+    private final long used;
 
     private final Map<String, Object> additionalProperties;
 
-    private Excess(int allowed, HeldLimit limit, int used, Map<String, Object> additionalProperties) {
+    private Excess(long allowed, HeldLimit limit, long used, Map<String, Object> additionalProperties) {
         this.allowed = allowed;
         this.limit = limit;
         this.used = used;
@@ -35,7 +35,7 @@ public final class Excess {
     }
 
     @JsonProperty("allowed")
-    public int getAllowed() {
+    public long getAllowed() {
         return allowed;
     }
 
@@ -45,7 +45,7 @@ public final class Excess {
     }
 
     @JsonProperty("used")
-    public int getUsed() {
+    public long getUsed() {
         return used;
     }
 
@@ -79,7 +79,7 @@ public final class Excess {
     }
 
     public interface AllowedStage {
-        LimitStage allowed(int allowed);
+        LimitStage allowed(long allowed);
 
         Builder from(Excess other);
     }
@@ -89,7 +89,7 @@ public final class Excess {
     }
 
     public interface UsedStage {
-        _FinalStage used(int used);
+        _FinalStage used(long used);
     }
 
     public interface _FinalStage {
@@ -102,11 +102,11 @@ public final class Excess {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements AllowedStage, LimitStage, UsedStage, _FinalStage {
-        private int allowed;
+        private long allowed;
 
         private HeldLimit limit;
 
-        private int used;
+        private long used;
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -122,7 +122,7 @@ public final class Excess {
 
         @java.lang.Override
         @JsonSetter("allowed")
-        public LimitStage allowed(int allowed) {
+        public LimitStage allowed(long allowed) {
             this.allowed = allowed;
             return this;
         }
@@ -136,7 +136,7 @@ public final class Excess {
 
         @java.lang.Override
         @JsonSetter("used")
-        public _FinalStage used(int used) {
+        public _FinalStage used(long used) {
             this.used = used;
             return this;
         }

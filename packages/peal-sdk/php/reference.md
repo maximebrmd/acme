@@ -1082,6 +1082,123 @@ $client->posts->create(
 </dl>
 </details>
 
+<details><summary><code>$client-&gt;posts-&gt;send($workspaceId, $request) -> ?Post</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->posts->send(
+    'workspaceId',
+    new NewPost([
+        'channelIds' => [
+            'channelIds',
+        ],
+        'content' => new PostContent([
+            'media' => [
+                new MediaAttachment([
+                    'altText' => 'altText',
+                    'mediaId' => 'mediaId',
+                ]),
+            ],
+            'overrides' => [
+                new TextOverride([
+                    'channelId' => 'channelId',
+                    'text' => 'text',
+                ]),
+            ],
+            'text' => 'text',
+        ]),
+        'when' => PostTiming::now(new PostTimingNow([])),
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$idempotencyKey:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$channelIds:** `array` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$content:** `PostContent` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$options:** `?array` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$when:** `PostTiming` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>$client-&gt;posts-&gt;get($workspaceId, $postId) -> ?Post</code></summary>
 <dl>
 <dd>
@@ -1942,7 +2059,7 @@ Records pending media and signs the upload of its file: one PUT for an image or 
 $client->media->create(
     'workspaceId',
     new NewUpload([
-        'byteSize' => 1,
+        'byteSize' => 1000000,
         'contentType' => 'contentType',
     ]),
 );
@@ -1985,6 +2102,81 @@ $client->media->create(
 <dd>
 
 **$contentType:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;media-&gt;importFromUrl($workspaceId, $request) -> ?Media</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->media->importFromUrl(
+    'workspaceId',
+    new MediaImport([
+        'url' => 'url',
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$altText:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$url:** `string` 
     
 </dd>
 </dl>
@@ -2214,7 +2406,7 @@ $client->media->describe(
 <dl>
 <dd>
 
-Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached `mediaStorage`). Needs media:upload.
 </dd>
 </dl>
 </dd>
@@ -3086,6 +3278,62 @@ $client->billing->get(
 </dl>
 </details>
 
+<details><summary><code>$client-&gt;billing-&gt;standing($workspaceId) -> ?Standing</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with `planLimit`), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->billing->standing(
+    'workspaceId',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## analytics
 <details><summary><code>$client-&gt;analytics-&gt;summary($workspaceId, $request) -> ?AnalyticsSummary</code></summary>
 <dl>
@@ -3603,6 +3851,671 @@ $client->lookups->run(
 <dd>
 
 **$vanityName:** `?string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## webhooks
+<details><summary><code>$client-&gt;webhooks-&gt;list($workspaceId) -> ?array</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the workspace's webhook endpoints, oldest first. Needs webhook:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->webhooks->list(
+    'workspaceId',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;webhooks-&gt;create($workspaceId, $request) -> ?WebhookEndpointSecret</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Adds a webhook endpoint to the workspace, and answers with its signing secret, which is not shown again. Its address must be HTTPS on the default port, on a public host, without credentials; Peal follows no redirect from it. A workspace has 10 endpoints at most, whatever its plan. Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->webhooks->create(
+    'workspaceId',
+    new NewWebhookEndpoint([
+        'eventTypes' => [
+            SubscribableWebhookEventType::PostScheduled->value,
+        ],
+        'url' => 'url',
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$description:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$enabled:** `?bool` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$eventTypes:** `array` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$url:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;webhooks-&gt;get($workspaceId, $endpointId) -> ?WebhookEndpoint</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Shows one of the workspace's webhook endpoints. Needs webhook:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->webhooks->get(
+    'workspaceId',
+    'endpointId',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$endpointId:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;webhooks-&gt;delete($workspaceId, $endpointId)</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes an endpoint, its secret and its delivery log: nothing more is sent to it. Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->webhooks->delete(
+    'workspaceId',
+    'endpointId',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$endpointId:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;webhooks-&gt;update($workspaceId, $endpointId, $request) -> ?WebhookEndpoint</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes an endpoint's address, description or events, or turns it off or back on: what is left out stays as it is. Turned off, it is sent nothing, its pending deliveries fail, and events that happen meanwhile are not kept for it. Turning it back on forgets the failures that turned it off. Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->webhooks->update(
+    'workspaceId',
+    'endpointId',
+    new WebhookEndpointChange([]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$endpointId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$description:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$enabled:** `?bool` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$eventTypes:** `?array` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$url:** `?string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;webhooks-&gt;rotateSecret($workspaceId, $endpointId) -> ?WebhookEndpointSecret</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces an endpoint's signing secret, and answers with the new one, which is not shown again. For 24 hours each delivery carries two signatures, one per secret, so the receiver changes its own without missing any; the old one then signs nothing more. Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->webhooks->rotateSecret(
+    'workspaceId',
+    'endpointId',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$endpointId:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;webhooks-&gt;sendTest($workspaceId, $endpointId) -> ?WebhookDelivery</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->webhooks->sendTest(
+    'workspaceId',
+    'endpointId',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$endpointId:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;webhooks-&gt;listDeliveries($workspaceId, $endpointId, $request) -> ?WebhookDeliveryPage</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the endpoint's deliveries, newest first, 30 a page unless `limit` (at most 100) says otherwise: each one's status, the receiver's last answer, how many attempts were made and when the next one is. Pass the page's `nextCursor` as `cursor` for the next one. A delivery is kept 30 days. Needs webhook:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->webhooks->listDeliveries(
+    'workspaceId',
+    'endpointId',
+    new ListDeliveriesWebhooksRequest([]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$endpointId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$cursor:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$limit:** `?string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;webhooks-&gt;redeliver($workspaceId, $endpointId, $deliveryId) -> ?WebhookDelivery</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same `webhook-id` and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->webhooks->redeliver(
+    'workspaceId',
+    'endpointId',
+    'deliveryId',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$endpointId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$deliveryId:** `string` 
     
 </dd>
 </dl>
