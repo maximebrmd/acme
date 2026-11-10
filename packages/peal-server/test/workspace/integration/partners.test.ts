@@ -2,9 +2,8 @@ import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
-import { SqlLive } from "#shared/infrastructure/database.ts";
-
 import {
+  MigratedSqlLive,
   apiKeyOf,
   bodyOf,
   makeAdmin,
@@ -119,12 +118,12 @@ const SelfServiceLive = Layer.mergeAll(
     ...unconfirmedEmails,
     PEAL_PARTNER_SELF_SERVICE: "true",
   }),
-  SqlLive
+  MigratedSqlLive
 );
 
 const StaffOnlyLive = Layer.mergeAll(
   TestApp.layerWith({ ...unconfirmedEmails, PEAL_PARTNER_SELF_SERVICE: "" }),
-  SqlLive
+  MigratedSqlLive
 );
 
 layer(StaffOnlyLive, { excludeTestServices: true, timeout: "180 seconds" })(

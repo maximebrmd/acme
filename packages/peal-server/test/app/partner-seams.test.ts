@@ -8,8 +8,8 @@ import { Effect, Layer, Option, Schema } from "effect";
 import { McpClient, McpProtocol } from "effect/ai";
 import { ActivityPageSchema, PostSchema } from "peal-contract";
 
-import { SqlLive } from "#shared/infrastructure/database.ts";
 import {
+  MigratedSqlLive,
   bodyOf,
   TestApp,
   unconfirmedEmails,
@@ -30,7 +30,7 @@ const Test = Layer.mergeAll(
     ...unconfirmedEmails,
     PEAL_PARTNER_SELF_SERVICE: "true",
   }),
-  SqlLive
+  MigratedSqlLive
 );
 
 const PageJsonSchema = Schema.toCodecJson(ActivityPageSchema);
@@ -601,7 +601,7 @@ const BillingTest = Layer.mergeAll(
     STRIPE_SECRET_KEY: "sk_test_synthetic_partner_seams",
     STRIPE_WEBHOOK_SECRET: "whsec_synthetic_seams_test_secret",
   }),
-  SqlLive
+  MigratedSqlLive
 );
 
 const ShortfallSchema = Schema.Struct({

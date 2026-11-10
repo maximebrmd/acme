@@ -5,8 +5,8 @@ import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 import { ActivityPageSchema } from "peal-contract";
 
-import { SqlLive } from "#shared/infrastructure/database.ts";
 import {
+  MigratedSqlLive,
   apiKeyOf,
   bodyOf,
   signedUp,
@@ -16,7 +16,7 @@ import {
 import type { Person } from "#test/workspace/integration/harness.ts";
 
 // The second test invites someone, which takes a confirmed address.
-const Test = Layer.mergeAll(TestApp.layer, SqlLive);
+const Test = Layer.mergeAll(TestApp.layer, MigratedSqlLive);
 
 const PageJsonSchema = Schema.toCodecJson(ActivityPageSchema);
 

@@ -4,8 +4,8 @@
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 
-import { SqlLive } from "#shared/infrastructure/database.ts";
 import {
+  MigratedSqlLive,
   apiKeyOf,
   signedUpUnconfirmed,
   TestApp,
@@ -14,7 +14,7 @@ import {
 } from "#test/workspace/integration/harness.ts";
 
 // Five requests a minute, so a test reaches the limit.
-const Test = SqlLive.pipe(
+const Test = MigratedSqlLive.pipe(
   Layer.provideMerge(
     TestApp.layerWith({
       ...unconfirmedEmails,
