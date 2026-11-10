@@ -111,6 +111,11 @@ const reads = (workspaceId: string) => [
   `/api/workspaces/${workspaceId}/billing`,
   `/api/workspaces/${workspaceId}/assistant`,
   `/api/workspaces/${workspaceId}/analytics/summary?from=2026-11-01&to=2026-11-07&timeZone=Europe/Paris`,
+  `/api/workspaces/${workspaceId}/posts/search`,
+  `/api/workspaces/${workspaceId}/platforms/capabilities`,
+  `/api/workspaces/${workspaceId}/approvals`,
+  `/api/workspaces/${workspaceId}/review/settings`,
+  `/api/workspaces/${workspaceId}/connect-links`,
 ];
 
 const SelfServiceLive = Layer.mergeAll(

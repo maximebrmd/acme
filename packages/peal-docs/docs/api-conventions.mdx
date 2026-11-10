@@ -381,7 +381,7 @@ Each publishing attempt, in `GET …/posts/{postId}/attempts`, says how it ended
 
 ## Rate limits [#rate-limits]
 
-Each API key may send 600 requests a minute, and so may each application for each member it acts for, whichever of its access tokens it sends. The count is shared between the API and the [MCP endpoint](/mcp), and kept in fixed windows of one minute that start on the minute. Sessions of the web app are not counted. On your own server, `PEAL_API_REQUESTS_PER_MINUTE` sets another number ([Environment variables](/environment-variables#core)).
+Each API key may send 600 requests a minute, a [partner key](/embedding) too, across every workspace it acts in, and so may each application for each member it acts for, whichever of its access tokens it sends. The count is shared between the API and the [MCP endpoint](/mcp), and kept in fixed windows of one minute that start on the minute. Sessions of the web app are not counted. On your own server, `PEAL_API_REQUESTS_PER_MINUTE` sets another number ([Environment variables](/environment-variables#core)).
 
 Every answer to a counted credential says where it stands, in the headers of the IETF draft "RateLimit header fields for HTTP":
 
@@ -390,6 +390,8 @@ Every answer to a counted credential says where it stands, in the headers of the
 | `RateLimit-Policy` | `"default";q=600;w=60` | The policy: `q` requests every `w` seconds.                                           |
 | `RateLimit`        | `"default";r=412;t=23` | What is left: `r` requests, for `t` more seconds, after which the count starts again. |
 | `Retry-After`      | `23`                   | On a 429 only: how many seconds to wait.                                              |
+
+A 429 `platform_rate_limited` is another thing: a platform asked Peal to slow down, as a [lookup](/api-overview) can find, and this count is untouched. The hosted pages of connect links and review links, which take no key, have limits of their own by address.
 
 Past the limit, the request answers 429 `too_many_requests`, and nothing was done:
 

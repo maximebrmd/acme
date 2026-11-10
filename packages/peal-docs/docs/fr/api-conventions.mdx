@@ -381,7 +381,7 @@ Chaque tentative de publication, dans `GET …/posts/{postId}/attempts`, dit com
 
 ## Limites de débit [#rate-limits]
 
-Chaque clé d’API peut envoyer 600 requêtes par minute, et chaque application autant pour chaque membre au nom duquel elle agit, quel que soit celui de ses jetons d’accès qu’elle envoie. Le compte est commun à l’API et au [point d’accès MCP](/mcp), et tenu par fenêtres fixes d’une minute, qui commencent à la minute ronde. Les sessions de l’application web ne sont pas comptées. Sur votre propre serveur, `PEAL_API_REQUESTS_PER_MINUTE` fixe un autre nombre ([Variables d’environnement](/environment-variables#core)).
+Chaque clé d’API peut envoyer 600 requêtes par minute, une [clé partenaire](/embedding) aussi, tous espaces de travail où elle agit confondus, et chaque application autant pour chaque membre au nom duquel elle agit, quel que soit celui de ses jetons d’accès qu’elle envoie. Le compte est commun à l’API et au [point d’accès MCP](/mcp), et tenu par fenêtres fixes d’une minute, qui commencent à la minute ronde. Les sessions de l’application web ne sont pas comptées. Sur votre propre serveur, `PEAL_API_REQUESTS_PER_MINUTE` fixe un autre nombre ([Variables d’environnement](/environment-variables#core)).
 
 Chaque réponse à une clé ou à un jeton compté dit où il en est, dans les en-têtes du brouillon de l’IETF « RateLimit header fields for HTTP » :
 
