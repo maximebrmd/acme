@@ -540,7 +540,7 @@ describe("peal post --wait and peal posts wait", () => {
       assert.match(
         printed,
         new RegExp(
-          `${mastodonId} \\(mastodon @studio@social\\.example\\.test\\) +published at https://example\\.social/`,
+          `${mastodonId} \\(mastodon @studio@social\\.example\\.test\\) +published at https://social\\.example\\.test/`,
           "u"
         )
       );
@@ -587,7 +587,7 @@ describe("peal post --wait and peal posts wait", () => {
           waited,
           `Post ${id} finished: it went out on every channel.`
         );
-        assert.include(waited, "published at https://example.social/");
+        assert.include(waited, "published at https://social.example.test/");
       }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 

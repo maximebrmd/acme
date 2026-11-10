@@ -1524,7 +1524,7 @@ const settledOn = (target: PostTarget): PostTarget => {
         ...target,
         permalink:
           channel.platform === "mastodon"
-            ? `https://example.social/@studio/${target.id}`
+            ? `https://social.example.test/@studio/${target.id}`
             : `https://${channel.platform}.example.test/posts/${target.id}`,
         publishedAt: studioNow,
         status: "published",

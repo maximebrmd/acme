@@ -283,8 +283,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "For each request that asks to change something in a workspace, done, refused or failed: its time, the operation, the identifiers it names, the member or the key that asked (an API key, a partner key, or a connect link, never whoever opened it), how they authenticated, the key or the application it came through and its name then, whether the operator’s staff acted as the member, the status answered and the error’s code; never what the request or its answer carried, an IP address or a browser",
-      fr: "Pour chaque requête qui demande une modification dans un espace de travail, faite, refusée ou échouée : sa date, l’opération, les identifiants visés, le membre ou la clé à son origine (une clé d’API, une clé partenaire, ou un lien de connexion, jamais la personne qui l’a ouvert), leur mode d’authentification, la clé ou l’application utilisée et son nom à ce moment-là, si l’équipe de l’exploitant agissait au nom du membre, le code de réponse et le code de l’erreur ; jamais le contenu de la requête ou de sa réponse, une adresse IP ou un navigateur",
+      en: "For each request that asks to change something in a workspace, done, refused or failed: its time, the operation, the identifiers it names, the member or the key that asked (an API key, a partner key, or a connect link, never whoever opened it), how they authenticated, the key or the application it came through and its name then, whether the operator’s staff acted as the member, the status answered and the error’s code; never what the request or its answer carried, an IP address or a browser. For the limit on how many requests a key or an application may send: the number each sent in a window of time, kept under a digest of the key’s or the application’s and its user’s identifier, never the identifier itself",
+      fr: "Pour chaque requête qui demande une modification dans un espace de travail, faite, refusée ou échouée : sa date, l’opération, les identifiants visés, le membre ou la clé à son origine (une clé d’API, une clé partenaire, ou un lien de connexion, jamais la personne qui l’a ouvert), leur mode d’authentification, la clé ou l’application utilisée et son nom à ce moment-là, si l’équipe de l’exploitant agissait au nom du membre, le code de réponse et le code de l’erreur ; jamais le contenu de la requête ou de sa réponse, une adresse IP ou un navigateur. Pour la limite du nombre de requêtes qu’une clé ou une application peut envoyer : le nombre que chacune a envoyé dans un intervalle de temps, conservé sous une empreinte de l’identifiant de la clé, ou de l’application et de son utilisateur, jamais l’identifiant lui-même",
     },
     id: "activity",
     legalBasis: {
@@ -297,12 +297,12 @@ export const processingRegister: readonly ProcessingCategory[] = [
     },
     operatorSet: false,
     purposes: {
-      en: "Show a workspace’s owners who changed what in it, and through which application",
-      fr: "Montrer aux propriétaires d’un espace de travail qui y a modifié quoi, et par quelle application",
+      en: "Show a workspace’s owners who changed what in it, and through which application; keep any one key or application from sending more requests than the service allows",
+      fr: "Montrer aux propriétaires d’un espace de travail qui y a modifié quoi, et par quelle application ; empêcher une clé ou une application d’envoyer plus de requêtes que le service n’en accepte",
     },
     retention: {
-      en: `${p.activityLog.days} days from each request, then deleted within a day, or until the workspace is deleted. Closing an account removes it from the logs of the workspaces that remain at once: what it changed stays there, without who`,
-      fr: `${p.activityLog.days} jours à compter de chaque requête, puis suppression dans la journée, ou jusqu’à la suppression de l’espace de travail. La fermeture d’un compte le retire aussitôt des journaux des espaces de travail qui restent : ce qu’il a modifié y demeure, sans son auteur`,
+      en: `${p.activityLog.days} days from each request, then deleted within a day, or until the workspace is deleted. Closing an account removes it from the logs of the workspaces that remain at once: what it changed stays there, without who. The counts kept for the request limit are deleted within two hours`,
+      fr: `${p.activityLog.days} jours à compter de chaque requête, puis suppression dans la journée, ou jusqu’à la suppression de l’espace de travail. La fermeture d’un compte le retire aussitôt des journaux des espaces de travail qui restent : ce qu’il a modifié y demeure, sans son auteur. Les décomptes conservés pour la limite de requêtes sont supprimés dans les deux heures`,
     },
     source: {
       en: "Your use of the service, and that of the API keys, partner keys and connect links, and of the applications, acting in your workspaces",

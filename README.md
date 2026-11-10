@@ -634,6 +634,7 @@ licences:
 | Everything, unless a folder below has a `LICENSE` of its own | [FSL-1.1-ALv2](LICENSE.md): any use but a competing service, and Apache-2.0 two years after each release |
 | [`peal-contract`](packages/peal-contract), the API contract  | [Apache-2.0](packages/peal-contract/LICENSE)                                                             |
 | [`peal-sdk`](packages/peal-sdk), the SDKs                    | [Apache-2.0](packages/peal-sdk/LICENSE)                                                                  |
+| [`skills/peal`](skills/peal), the agent skill                | [Apache-2.0](skills/peal/LICENSE)                                                                        |
 
 The SDKs are generated from the contract's OpenAPI document, so the contract
 is Apache-2.0 with them: what an SDK user installs, and the API description
