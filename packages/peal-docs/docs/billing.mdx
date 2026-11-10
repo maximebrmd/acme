@@ -29,19 +29,31 @@ Once per account and per workspace, a workspace that never had a subscription ma
 
 ## What a plan limits [#limits]
 
-Each limit is checked when something is added, and a workspace over a smaller plan's limits, as after its trial, keeps what it has:
+A workspace never goes above its plan: each limit is checked when something is added, requests sent together included, and what the plan has no room for is refused.
 
-- **Channels**: connecting an account the plan has no room for is refused. An Instagram account is one channel whichever way it is connected: moving it from a Facebook Page to Instagram, or back, adds none, even on a full plan. A workspace with more channels than its plan allows schedules nothing until it disconnects some, and its scheduled posts do not go out either.
-- **Members**, pending invitations included.
+- **Channels**: connecting an account the plan has no room for is refused. An Instagram account is one channel whichever way it is connected: moving it from a Facebook Page to Instagram, or back, adds none, even on a full plan. 
+- **Members**, pending invitations included, when inviting and again when an invitation is accepted.
 - **Posts** going out in a calendar month (UTC), on the free plan. Checked again when each post is due: once a trial or a larger plan ends, only the month's first posts the plan allows go out, by their time.
 - **Writing assistant** requests per UTC day.
-- **Media**: the bytes of images and videos stored, uploads in progress included. An upload the plan has no room for is refused before anything is sent; delete media to make room.
+- **Media**: the bytes of images and videos stored, uploads in progress included. An upload the plan has no room for is refused before anything is sent; delete media to make room. The room an upload is given is held for it for six hours: finished later, it needs room again.
 
-Each refusal answers 402 `PlanLimitReached`, naming the `limit` and what the plan `allowed`. A scheduled post the plan has no room for when it is due fails on its channels as `planLimit`, nothing sent: make room or move to a larger plan, then post it again.
+In the web app, a refusal opens a dialog that says which limit was reached, with what the workspace holds and its plan, and offers the smallest plan with room, its price with VAT first, monthly or yearly. Owners and admins order it there, by card, as on the Billing page ([Ordering](#ordering)), and come back to what they were doing; other members read who can. On the largest plan, the dialog says how to ask for more.
+
+Over the API, each refusal answers 402 `PlanLimitReached`, with the `limit`, what the plan `allowed`, what the workspace holds (`used`), its `plan`, the smallest plan with room (`planWithRoom`, null on the largest plan) and the billing page (`billingUrl`); the writing assistant's daily allowance answers 429 `AssistantQuotaExceeded` with the same plan fields. The command line and MCP tools say the same in words, with the plan to order and the billing page.
+
+## A workspace over its plan [#over]
+
+A plan can shrink under a workspace: its trial ends, or its subscription is cancelled or left unpaid. Nothing is deleted, so the workspace may then hold more than its plan allows. With more channels or members than the plan allows, it must come back within its plan before it does anything else:
+
+- Every member who opens the workspace sees what it holds beyond the plan. Owners and admins can order the smallest plan that holds everything, or choose which channels stay connected and which members stay: the others are disconnected or removed in one confirmed step, and pending invitations are revoked. Disconnecting is the same as disconnecting each channel by hand: its tokens are deleted and the platforms that allow it are asked to forget Peal. Other members read who can do this.
+- Until then nothing is scheduled or published. Posts already scheduled are kept as they are and fail on their channels when due, with `planLimit` as the reason and nothing sent; once the workspace is within its plan, post each again from its page. They are not moved back to drafts: a failed post keeps its time, text and channels, tells its author by notice and email, and is posted again in one step, where a draft would lose its schedule without telling anyone.
+- More media than the plan allows refuses uploads only: the library stays open, to delete from.
+
+Three days before a trial ends, the reminder lists what the workspace holds beyond the free plan. `GET /api/workspaces/:workspaceId/billing/standing` answers the same for every member: what is over, whether the workspace must come back within its plan, and the smallest plan that holds everything.
 
 ## Ordering [#ordering]
 
-Owners and admins order on the workspace's **Billing** page, in their own session. Before anything is paid, they tick a box that is never ticked for them: "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days and then pay only for the days used." Peal records it with the order, then opens Stripe's checkout from the **Order with obligation to pay** button. Stripe asks for the billing address and, for a business, the VAT number, and computes the VAT. A confirmation of the subscription comes by email, with what Stripe charged, VAT included. A plan changes on the billing page only, with an order each time; Stripe's portal changes the payment method and gives the invoices.
+Owners and admins order on the workspace's **Billing** page, in their own session. Before anything is paid, they tick a box that is never ticked for them: "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days and then pay only for the days used." Peal records it with the order, then opens Stripe's checkout from the **Order with obligation to pay** button. Stripe asks for the billing address and, for a business, the VAT number, and computes the VAT. A confirmation of the subscription comes by email, with what Stripe charged, VAT included. A plan changes on the billing page only, with an order each time; Stripe's portal changes the payment method and gives the invoices. An order for a plan too small for what the workspace holds, as when moving to a smaller plan, is refused (409 `PlanTooSmall`) with what to remove first: channels to disconnect, members to remove, media to delete. An address that already had a trial, with an account since closed too, is shown none and cannot order one.
 
 ## Cancelling [#cancelling]
 
