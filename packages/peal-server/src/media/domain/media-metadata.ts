@@ -1,4 +1,4 @@
-import { Duration, Option, Schema } from "effect";
+import { Duration, Effect, Option, Schema } from "effect";
 
 const PixelsSchema = Schema.Int.check(Schema.isGreaterThan(0));
 
@@ -12,6 +12,8 @@ const MediaDurationSchema = Schema.Duration.check(
   Schema.makeIsLessThanOrEqualTo({ order: Duration.Order })(maxDuration)
 );
 
+const PagesSchema = Schema.Int.check(Schema.isGreaterThan(0));
+
 /** Width and height in pixels, as the media is displayed. */
 export const DimensionsSchema = Schema.Struct({
   height: PixelsSchema,
@@ -22,7 +24,8 @@ export type Dimensions = typeof DimensionsSchema.Type;
 
 /**
  * What probing a file found out. Each fact is known or not: an image has no
- * duration, and a file stays unprobed when no probe is installed.
+ * duration, only a document has pages, and a file stays unprobed when no
+ * probe is installed.
  */
 export class MediaMetadata extends Schema.Class<MediaMetadata>(
   "peal-server/media/domain/MediaMetadata"
@@ -31,6 +34,12 @@ export class MediaMetadata extends Schema.Class<MediaMetadata>(
   codec: Schema.Option(Schema.NonEmptyString),
   dimensions: Schema.Option(DimensionsSchema),
   duration: Schema.Option(MediaDurationSchema),
+  // How many pages a document has, when its bytes tell.
+  // Left out by what was written before documents: none.
+  pages: Schema.Option(PagesSchema).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeedNone),
+    Schema.withConstructorDefault(Effect.succeedNone)
+  ),
 }) {
   /** Nothing known yet. */
   static readonly unknown = new MediaMetadata({

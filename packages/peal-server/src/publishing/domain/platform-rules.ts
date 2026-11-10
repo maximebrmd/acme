@@ -117,7 +117,8 @@ const minute = 60 * second;
 // - LinkedIn: JPEG, PNG and GIF images of up to 36,152,320 pixels; one MP4
 //   video of 3 seconds to 30 minutes and 75 KB to 500 MB (75 KB read as
 //   75,000 bytes, the smaller reading), never with images; alt text of up
-//   to 4,086 characters.
+//   to 4,086 characters; or one PDF document of up to 100 MB (and 300
+//   pages, which the media library checks), alone.
 // - X: JPEG, PNG and WebP images of up to 5 MB, GIFs of up to 15 MB; one
 //   video, MP4 or QuickTime, of 0.5 to 140 seconds and up to 512 MB, never
 //   with images; a GIF alone too; alt text of up to 1,000 characters.
@@ -262,6 +263,8 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     maxMedia: 20,
     media: {
       formats: {
+        // A document, shown page by page, is the post's only file.
+        "application/pdf": { maxByteSize: 100 * mebibyte, maxMediaWith: 1 },
         "image/gif": linkedinImage,
         "image/jpeg": linkedinImage,
         "image/png": linkedinImage,

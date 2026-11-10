@@ -110,11 +110,11 @@ CREATE TABLE "billing"."subscriptions" (
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."trials" (
+	"forgotten_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	"plan" text,
 	"reserved_at" timestamp with time zone NOT NULL,
 	"started_at" timestamp with time zone,
-	"forgotten_at" timestamp with time zone,
 	"stripe_subscription_id" text,
 	"user_id" text,
 	"user_pseudonym" text,
@@ -247,6 +247,7 @@ CREATE TABLE "media"."media_assets" (
 	"id" uuid PRIMARY KEY,
 	"multipart_part_size" integer,
 	"multipart_upload_id" text,
+	"page_count" integer,
 	"probe_state" text,
 	"rejection_reason" text,
 	"status" text NOT NULL,

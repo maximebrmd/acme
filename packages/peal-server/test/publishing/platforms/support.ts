@@ -178,10 +178,18 @@ export interface TestFile {
 let nextMedia = 0;
 
 /** A synthetic file of `size` bytes. */
+const defaultTypes = {
+  document: "application/pdf",
+  image: "image/png",
+  video: "video/mp4",
+} as const;
+
+const extensions = { document: "pdf", image: "png", video: "mp4" } as const;
+
 export const testFile = (
-  kind: "image" | "video",
+  kind: "document" | "image" | "video",
   size: number,
-  contentType = kind === "image" ? "image/png" : "video/mp4"
+  contentType: string = defaultTypes[kind]
 ): TestFile => {
   nextMedia += 1;
 
@@ -194,10 +202,13 @@ export const testFile = (
     media: {
       byteSize: size,
       contentType,
-      dimensions: Option.some({ height: 600, width: 800 }),
+      dimensions:
+        kind === "document"
+          ? Option.none()
+          : Option.some({ height: 600, width: 800 }),
       duration:
         kind === "video" ? Option.some(Duration.seconds(4)) : Option.none(),
-      fileName: `${mediaId}.${kind === "image" ? "png" : "mp4"}`,
+      fileName: `${mediaId}.${extensions[kind]}`,
       kind,
       mediaId,
     },

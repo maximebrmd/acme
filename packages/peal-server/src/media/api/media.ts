@@ -53,6 +53,7 @@ const toView = (asset: MediaAsset, url: Option.Option<string>): MediaView => ({
   ),
   id: asset.id,
   kind: asset.kind,
+  pageCount: Option.getOrNull(asset.metadata.pages),
   status: statusView(asset.status),
   updatedAt: asset.updatedAt,
   url: Option.getOrNull(url),

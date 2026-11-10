@@ -2,6 +2,7 @@ import { assert, layer } from "@effect/vitest";
 import { ConfigProvider, Duration, Effect, Layer, Option } from "effect";
 import sharp from "sharp";
 
+import { MediaProbeFailed } from "#media/application/media-probe-failed.ts";
 import { MediaProbe } from "#media/application/ports/media-probe.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
@@ -13,6 +14,7 @@ import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
+import { compressedPdf, syntheticPdf } from "#test/media/pdf.ts";
 import {
   damagedPng,
   hasFfmpeg,
@@ -147,6 +149,56 @@ layer(probeWith("ffprobe"))("the media probe", (it) => {
         _tag: "MediaTypeMismatch",
         declared: "image/jpeg",
       });
+    })
+  );
+
+  it.effect("counts a PDF's pages, without a size or a duration", () =>
+    Effect.gen(function* document() {
+      const source = yield* stored(compressedPdf(12), "application/pdf");
+      const outcome = yield* MediaProbe.use((probe) => probe.probe(source));
+
+      assert.deepStrictEqual(outcome, {
+        _tag: "probed",
+        metadata: new MediaMetadata({
+          codec: Option.none(),
+          dimensions: Option.none(),
+          duration: Option.none(),
+          pages: Option.some(12),
+        }),
+      });
+    })
+  );
+
+  it.effect("refuses a file declared a PDF that is none", () =>
+    Effect.gen(function* notPdf() {
+      const source = yield* stored(syntheticSvg(), "application/pdf");
+
+      const failure = yield* MediaProbe.use((probe) =>
+        probe.probe(source)
+      ).pipe(Effect.flip);
+
+      assert.strictEqual(failure._tag, "MediaTypeMismatch");
+    })
+  );
+
+  it.effect("refuses a PDF of more pages than any platform shows", () =>
+    Effect.gen(function* long() {
+      const source = yield* stored(syntheticPdf(301), "application/pdf");
+
+      const failure = yield* MediaProbe.use((probe) =>
+        probe.probe(source)
+      ).pipe(Effect.flip);
+
+      assert.deepStrictEqual(
+        failure,
+        new MediaProbeFailed({ reason: "tooManyPages" })
+      );
+
+      // 300 pages are kept.
+      const kept = yield* stored(syntheticPdf(300), "application/pdf");
+      const outcome = yield* MediaProbe.use((probe) => probe.probe(kept));
+
+      assert.strictEqual(outcome._tag, "probed");
     })
   );
 

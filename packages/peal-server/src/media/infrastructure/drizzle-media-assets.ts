@@ -48,6 +48,7 @@ const stateColumns = (asset: MediaAsset): Omit<NewRow, "altText"> => {
     id: asset.id,
     multipartPartSize: multipart?.partSize ?? null,
     multipartUploadId: multipart?.uploadId ?? null,
+    pageCount: Option.getOrNull(metadata.pages),
     probeState: status._tag === "uploaded" ? status.probe : null,
     rejectionReason: status._tag === "rejected" ? status.reason : null,
     status: status._tag,
@@ -110,6 +111,7 @@ const fromRow = (row: Row): Effect.Effect<MediaAsset> =>
       duration: Option.fromNullOr(row.durationMs).pipe(
         Option.map(Duration.millis)
       ),
+      pages: Option.fromNullOr(row.pageCount),
     },
     status: statusOf(row),
     storageKey: row.storageKey,

@@ -362,6 +362,8 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     maxMedia: 20,
     media: {
       formats: {
+        // A document, shown page by page, is the post's only file.
+        "application/pdf": { maxByteSize: 100 * mebibyte, maxMediaWith: 1 },
         "image/gif": linkedinImage,
         "image/jpeg": linkedinImage,
         "image/png": linkedinImage,

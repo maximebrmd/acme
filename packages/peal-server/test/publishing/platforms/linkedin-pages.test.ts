@@ -4,6 +4,7 @@ import { Context, DateTime, Effect, Layer, Option } from "effect";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { LinkedInOptions } from "#publishing/domain/linkedin-options.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
+import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import {
   fakeLinkedInApi,
@@ -357,5 +358,114 @@ describe("a LinkedIn post's options", () => {
         );
         assert.strictEqual(linkedin.requests().length, 0);
       }).pipe(Effect.scoped)
+  );
+});
+
+describe("a document on LinkedIn", () => {
+  it.live("goes up through the Documents API, and shows under its title", () =>
+    Effect.gen(function* document() {
+      const deck = testFile("document", 4096);
+
+      const { client, linkedin, post } = yield* onLinkedIn({ files: [deck] });
+
+      const result = yield* client.publish(
+        yield* post({
+          media: [attached(deck, "")],
+          options: optionsOf({ documentTitle: "Our 2026 menu" }),
+          text: "The new menu",
+        })
+      );
+
+      assert.strictEqual(result._tag, "published");
+      assert.deepStrictEqual(linkedin.documents(), [
+        {
+          bytes: 4096,
+          polls: 0,
+          status: "AVAILABLE",
+          urn: "urn:li:document:D5510AQ1",
+        },
+      ]);
+      assert.deepStrictEqual(linkedin.posts()[0]?.body.content, {
+        media: { id: "urn:li:document:D5510AQ1", title: "Our 2026 menu" },
+      });
+
+      // The page owns the document, and its status is read by its URN.
+      const look = linkedin
+        .requests()
+        .find(({ path }) => path.startsWith("/rest/documents/"));
+
+      assert.strictEqual(
+        look?.path,
+        "/rest/documents/urn:li:document:D5510AQ1"
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("is titled by its file's name when the options give none", () =>
+    Effect.gen(function* untitled() {
+      const deck = testFile("document", 1024);
+
+      // A member's token writes documents, and may not read them back.
+      const { client, linkedin, post } = yield* onLinkedIn({
+        files: [deck],
+        page: false,
+      });
+
+      const result = yield* client.publish(
+        yield* post({ media: [attached(deck, "")] })
+      );
+
+      assert.strictEqual(result._tag, "published");
+      assert.deepStrictEqual(linkedin.posts()[0]?.body.content, {
+        media: {
+          id: "urn:li:document:D5510AQ1",
+          title: deck.media.fileName,
+        },
+      });
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("fails the post when LinkedIn cannot process it", () =>
+    Effect.gen(function* failed() {
+      const deck = testFile("document", 1024);
+
+      const { client, linkedin, post } = yield* onLinkedIn({
+        api: { documentFails: true },
+        files: [deck],
+      });
+
+      const refused = yield* client
+        .publish(yield* post({ media: [attached(deck, "")] }))
+        .pipe(Effect.flip);
+
+      assert.deepStrictEqual(
+        refused,
+        new MediaRejected({ code: "processingFailed" })
+      );
+      assert.strictEqual(linkedin.posts().length, 0);
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("goes alone: never with an image, nor twice", () =>
+    Effect.gen(function* alone() {
+      const deck = testFile("document", 1024);
+      const image = testFile("image", 1024);
+
+      const { client, linkedin, post } = yield* onLinkedIn({
+        files: [deck, image],
+      });
+
+      const refused = yield* client
+        .publish(
+          yield* post({ media: [attached(deck, ""), attached(image, "")] })
+        )
+        .pipe(Effect.flip);
+
+      assert.deepStrictEqual(
+        refused,
+        new MediaRejected({ code: "documentWithOtherMedia" })
+      );
+      assert.strictEqual(linkedin.requests().length, 0);
+    }).pipe(Effect.scoped)
   );
 });

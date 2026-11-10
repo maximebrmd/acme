@@ -45,7 +45,8 @@ import type { TokenRejected } from "#shared/domain/token-rejected.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 
 import { pageLookUp } from "./linkedin-confirmation.ts";
-import { linkOf, postBodyOf } from "./linkedin-post-body.ts";
+import { linkedinDocuments } from "./linkedin-documents.ts";
+import { documentTitleOf, linkOf, postBodyOf } from "./linkedin-post-body.ts";
 import type { LinkedInLink } from "./linkedin-post-body.ts";
 import { mediaRefusal, postRefusal } from "./linkedin-refusal.ts";
 import type { LinkedInRefusal } from "./linkedin-refusal.ts";
@@ -138,6 +139,14 @@ type LinkedInMedia =
       readonly thumbnail: Option.Option<LinkedInImage>;
     }
   | { readonly _tag: "images"; readonly images: readonly LinkedInImage[] }
+  // A PDF, shown page by page under its title. `unread` counts the waits
+  // while the token could not read it back.
+  | {
+      readonly _tag: "document";
+      readonly document: string;
+      readonly title: string;
+      readonly unread: number;
+    }
   // `unread` counts the waits while the token could not read it back.
   | { readonly _tag: "video"; readonly unread: number; readonly video: string };
 
@@ -261,6 +270,9 @@ const articleContent = (
 const contentOf = (prepared: LinkedInMedia) =>
   Match.valueTags(prepared, {
     article: ({ link, thumbnail }) => articleContent(link, thumbnail),
+    document: ({ document, title }) => ({
+      content: { media: { id: document, title } },
+    }),
     images: ({ images }) => imagesContent(images),
     text: () => ({}),
     video: ({ video }) => ({ content: { media: { id: video } } }),
@@ -278,6 +290,8 @@ const contentOf = (prepared: LinkedInMedia) =>
  * are the page's own. The target's options say who sees the post, whether
  * it can be reshared, which pages its text names, and a link to show as a
  * card (LinkedIn's article, with one image of the post as its thumbnail).
+ * A PDF goes up through the Documents API and shows alone, page by page,
+ * under the title the options give or its file's name.
  *
  * LinkedIn has no idempotency key, and a member's token may not read posts
  * back (`r_member_social` is closed), so a member's post whose answer was
@@ -349,6 +363,15 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
           })
         )
       );
+
+    const documents = linkedinDocuments({
+      api,
+      apiUrl,
+      credentials,
+      media,
+      uploads,
+      version,
+    });
 
     const uploadImage = Effect.fn("LinkedInClient.uploadImage")(
       function* uploadImage(
@@ -596,6 +619,26 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
 
       const [first] = described;
 
+      // A post shows one document alone.
+      if (described.some((item) => item.described.kind === "document")) {
+        if (described.length !== 1 || first === undefined) {
+          return yield* new MediaRejected({ code: "documentWithOtherMedia" });
+        }
+
+        const document = yield* documents.upload(
+          post,
+          first.attachment,
+          first.described
+        );
+
+        return processing({
+          _tag: "document",
+          document,
+          title: documentTitleOf(post, first.described.fileName),
+          unread: 0,
+        });
+      }
+
       // A post shows one video alone, or images.
       if (described.some((item) => item.described.kind === "video")) {
         return described.length === 1 && first !== undefined
@@ -619,6 +662,24 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
       post: OutgoingPost,
       prepared: LinkedInMedia
     ) {
+      if (prepared._tag === "document") {
+        const status = yield* documents.status(post, prepared.document);
+
+        if (Option.isNone(status)) {
+          return prepared.unread + 1 >= blindPolls
+            ? ready(prepared)
+            : processing({ ...prepared, unread: prepared.unread + 1 });
+        }
+
+        if (status.value === "PROCESSING_FAILED") {
+          return yield* new MediaRejected({ code: "processingFailed" });
+        }
+
+        return status.value === "AVAILABLE"
+          ? ready(prepared)
+          : processing(prepared);
+      }
+
       if (prepared._tag !== "video") {
         return ready(prepared);
       }

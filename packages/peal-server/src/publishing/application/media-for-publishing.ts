@@ -18,7 +18,7 @@ export interface PublishableMedia {
   readonly duration: Option.Option<Duration.Duration>;
   /** A file name with the extension of its format. */
   readonly fileName: string;
-  readonly kind: "image" | "video";
+  readonly kind: "document" | "image" | "video";
   readonly mediaId: MediaAssetId;
 }
 
