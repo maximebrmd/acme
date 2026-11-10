@@ -398,6 +398,19 @@ export type { Staff } from "./current-staff.ts";
 
 export { CurrentPrincipal } from "./current-principal.ts";
 
+export {
+  apiChangelog,
+  ApiChangelogEntrySchema,
+  ApiChangelogSchema,
+  BreakingChangeSchema,
+} from "./api-changelog.ts";
+
+export type { ApiChangelog, ApiChangelogEntry } from "./api-changelog.ts";
+
+export { deprecated, Deprecation } from "./deprecation.ts";
+
+export type { DeprecationNotice } from "./deprecation.ts";
+
 export { errorEnvelope } from "./error-envelope.ts";
 
 export { Forbidden, ForbiddenReasonSchema } from "./forbidden.ts";

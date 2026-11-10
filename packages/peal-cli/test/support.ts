@@ -17,6 +17,7 @@ import { ChildProcessSpawner } from "effect/process";
 import { TestConsole } from "effect/testing";
 import {
   Api,
+  apiChangelog,
   Authentication,
   BillingNotEnabled,
   ClientErrorIntake,
@@ -335,6 +336,7 @@ export const inMemoryServer = (
                 Layer.provide(
                   HttpApiBuilder.group(Api, "system", (handlers) =>
                     handlers.handleAll({
+                      changelog: () => Effect.succeed(apiChangelog),
                       health: () => health,
                       ready: () => health,
                     })

@@ -8,9 +8,9 @@ import {
   HttpApiError,
   HttpApiGroup,
 } from "effect/http-api";
-import { errorEnvelope, PostNotFound } from "peal-contract";
+import { deprecated, errorEnvelope, PostNotFound } from "peal-contract";
 
-import { ApiAnswersLive } from "#app/answers.ts";
+import { apiAnswers } from "#app/answers.ts";
 import { requestIdHeader } from "#app/request-identity.ts";
 
 // An error no contract declares, which the catalogue does not know.
@@ -36,7 +36,18 @@ const TestApi = HttpApi.make("test").add(
       error: HttpApiError.NotFound,
       success: Schema.String,
     }),
-    HttpApiEndpoint.get("broken", "/api/broken", { success: Schema.String })
+    HttpApiEndpoint.get("broken", "/api/broken", { success: Schema.String }),
+    HttpApiEndpoint.get("old", "/api/old/:thingId", {
+      error: PostNotFound,
+      params: { thingId: Schema.String },
+      success: Schema.String,
+    }).annotateMerge(
+      deprecated({
+        link: "https://docs.peal.example/api-conventions#deprecations",
+        since: "2026-12-01T00:00:00Z",
+        sunset: "2027-06-01T00:00:00Z",
+      })
+    )
   )
 );
 
@@ -56,6 +67,11 @@ const Things = HttpApiBuilder.group(TestApi, "things", (handlers) =>
       return Effect.succeed({ made: payload.name });
     })
     .handle("hidden", () => Effect.fail(new HttpApiError.NotFound()))
+    .handle("old", ({ params }) =>
+      params.thingId === "missing"
+        ? Effect.fail(new PostNotFound())
+        : Effect.succeed("still here")
+    )
     .handle("broken", () =>
       Effect.die(new Error("the password is hunter2-synthetic"))
     )
@@ -92,7 +108,7 @@ const serving = () =>
     Layer.mergeAll(
       HttpApiBuilder.layer(TestApi).pipe(Layer.provide(Things)),
       Others,
-      ApiAnswersLive
+      apiAnswers(TestApi)
     ).pipe(Layer.provide(HttpServer.layerServices)),
     { disableLogger: true }
   );
@@ -269,6 +285,52 @@ describe("the error envelope", () => {
         assert.deepStrictEqual(mcp.body, { jsonrpc: "2.0" });
         assert.isNotNull(auth.id);
         assert.isNotNull(mcp.id);
+      })
+  );
+
+  it.effect(
+    "tells the callers of a deprecated endpoint since when, until when and where to read more",
+    () =>
+      Effect.gen(function* deprecations() {
+        const { dispose, handler } = serving();
+
+        const headersOf = (path: string) =>
+          Effect.promise(async () => {
+            const response = await handler(
+              new Request(`http://localhost${path}`)
+            );
+
+            return {
+              deprecation: response.headers.get("deprecation"),
+              link: response.headers.get("link"),
+              status: response.status,
+              sunset: response.headers.get("sunset"),
+            };
+          });
+
+        const answered = yield* headersOf("/api/old/one?verbose=1");
+        const refused = yield* headersOf("/api/old/missing");
+        const current = yield* headersOf("/api/hidden");
+        const deeper = yield* headersOf("/api/old/one/more");
+
+        yield* Effect.promise(dispose);
+
+        // 1 December 2026, as a structured field's date, and 1 June 2027,
+        // as an HTTP date.
+        const told = {
+          deprecation: "@1796083200",
+          link: '<https://docs.peal.example/api-conventions#deprecations>; rel="deprecation"; type="text/html"',
+          sunset: "Tue, 01 Jun 2027 00:00:00 GMT",
+        };
+
+        assert.deepStrictEqual(answered, { ...told, status: 200 });
+        // Whatever the answer is.
+        assert.deepStrictEqual(refused, { ...told, status: 404 });
+
+        // Other endpoints, and addresses that only begin like it, say
+        // nothing.
+        assert.isNull(current.deprecation);
+        assert.isNull(deeper.deprecation);
       })
   );
 });
