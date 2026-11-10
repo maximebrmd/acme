@@ -61,6 +61,8 @@ Sur les plateformes qui ont des fils, chaque partie part en réponse à la préc
 | Bluesky    | Un fil : chaque partie nomme la première publication du fil et son parent |
 | Mastodon   | Un fil : chaque partie répond à la précédente                             |
 
+Sur X, qu’un fil parte dépend de l’accès qu’a l’application du serveur : X indique qu’une application en accès libre-service ne peut répondre que sous une publication dont l’auteur a mentionné ou cité le compte qui répond. Si X refuse la deuxième partie, la publication est publiée en partie, avec la raison que X ne laisse pas cette application publier de réponses, et ne peut pas être republiée depuis Peal ; la personne qui exploite le serveur peut désactiver les fils sur X ([`X_THREADS`](/environment-variables)), et X prend alors une publication seule.
+
 Chaque partie suit les règles d’une publication sur sa plateforme : sa longueur, comptée comme la plateforme la compte, et ses images et vidéos. Les autres plateformes prennent une publication seule : une publication avec des parties y est refusée quand vous la programmez, et l’éditeur le dit dès que vous cochez un tel canal. Les commentaires sous une publication, sur les plateformes qui en prennent, ne sont pas encore envoyés.
 
 Les parties partent dans l’ordre, chacune par sa propre requête à la plateforme :

@@ -366,7 +366,8 @@ export const confirmPublished = (
  * one did. A round sends from the part after the last that is live, as a
  * reply to it: when Peal has no id for that part (found by hand), or the
  * target failed as `partsNotSent` (the part to reply to is gone), there is
- * nothing to send under.
+ * nothing to send under; nor when the platform refuses this app replies
+ * (`repliesNotAllowed`), which every round would meet again.
  */
 export const isRepostable = (target: PostTarget): boolean => {
   const { status } = target;
@@ -378,6 +379,7 @@ export const isRepostable = (target: PostTarget): boolean => {
   return (
     status._tag === "failed" &&
     status.reason !== "partsNotSent" &&
+    status.reason !== "repliesNotAllowed" &&
     !Option.exists(Option.fromUndefinedOr(target.liveParts.at(-1)), (last) =>
       Option.isNone(last.platformPostId)
     )

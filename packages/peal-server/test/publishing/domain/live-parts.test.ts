@@ -203,6 +203,21 @@ describe("confirming an unconfirmed part of a post of several", () => {
     expect(isRepostable(stopped)).toBeFalsy();
     expect(Result.isFailure(repostTarget(stopped))).toBeTruthy();
 
+    // Nor one whose platform refuses this app replies.
+    expect(
+      isRepostable(
+        target(
+          {
+            _tag: "failed",
+            code: Option.some("repliesNotAllowed"),
+            failedAt: later,
+            reason: "repliesNotAllowed",
+          },
+          [live(0)]
+        )
+      )
+    ).toBeFalsy();
+
     // A thread that stopped at a part the platform refused goes on from it.
     expect(isRepostable(target(failed, [live(0)]))).toBeTruthy();
     expect(isRepostable(target(unconfirmed, [live(0)]))).toBeTruthy();

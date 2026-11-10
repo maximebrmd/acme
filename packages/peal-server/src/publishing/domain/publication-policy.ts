@@ -260,6 +260,10 @@ const badRequestReason = (code: string): RefusalReason => {
     return "planLimit";
   }
 
+  if (code === platformRefusalCodes.repliesNotAllowed) {
+    return "repliesNotAllowed";
+  }
+
   if (partRefusals.has(code)) {
     return "partsNotSent";
   }

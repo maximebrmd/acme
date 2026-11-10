@@ -69,6 +69,7 @@ import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflo
 import { PublishTargetV2Live } from "#publishing/infrastructure/workflows/publish-parts.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
+import { XThreadsLive } from "#publishing/infrastructure/x-threads.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 // The use cases over their adapters, asking whatever ApprovalGate they are
@@ -207,6 +208,8 @@ export const PublishingLive = publishingOver(
   NamedPostOrigins,
   WebhookPostEvents
 ).pipe(
+  // The operator's X_THREADS, which scheduling reads.
+  Layer.provide(XThreadsLive),
   Layer.provideMerge(
     TikTokCreatorInfo.layer.pipe(Layer.provide(ListedWorkspaceChannels))
   ),
@@ -216,7 +219,8 @@ export const PublishingLive = publishingOver(
         Layer.provide(
           Layer.mergeAll(
             AccountStandings.layer.pipe(Layer.provide(PacedLookupsLive)),
-            AnalyticsCountedPlatforms
+            AnalyticsCountedPlatforms,
+            XThreadsLive
           )
         )
       ),
@@ -314,6 +318,8 @@ export const publishingWorkers = <
  * with Dns, the database and the PostRepository.
  */
 export const PlatformsLive = RoutedPlatformPublisher.pipe(
+  // The operator's X_THREADS: a part already scheduled is not sent either.
+  Layer.provide(XThreadsLive),
   Layer.provide(PlatformClientsLive),
   Layer.provide(
     Layer.mergeAll(

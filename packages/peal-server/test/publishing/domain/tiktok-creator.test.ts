@@ -2,6 +2,7 @@ import { assert, describe, expect, it } from "@effect/vitest";
 import { Duration, Effect, Layer, Option } from "effect";
 
 import { AccountRules } from "#publishing/application/account-rules.ts";
+import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
 import { TikTokCreators } from "#publishing/application/tiktok-creators.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import {
@@ -124,6 +125,7 @@ describe("a TikTok account's rules at scheduling", () => {
       const found = yield* violations({
         channel: tiktok,
         files: [clip],
+        followUps: 0,
         options: Option.some(new TikTokOptions({ privacyLevel: "SELF_ONLY" })),
       }).pipe(
         Effect.provide(
@@ -143,6 +145,7 @@ describe("a TikTok account's rules at scheduling", () => {
       const found = yield* violations({
         channel: tiktok,
         files: [clip],
+        followUps: 0,
         options: Option.some(allowing),
       }).pipe(
         Effect.provide(rulesWith(Effect.fail(new PlatformUnavailable())))
@@ -157,6 +160,7 @@ describe("a TikTok account's rules at scheduling", () => {
       const found = yield* violations({
         channel: tiktok,
         files: [picture],
+        followUps: 0,
         options: Option.some(new TikTokOptions({ privacyLevel: "SELF_ONLY" })),
       }).pipe(
         Effect.provide(
@@ -178,11 +182,52 @@ describe("a TikTok account's rules at scheduling", () => {
     })
   );
 
+  it.effect(
+    "refuse a post of several parts on X where the operator turned X threads off",
+    () =>
+      Effect.gen(function* xThreadsOff() {
+        const onX = { ...tiktok, platform: "x" as const };
+
+        const ask = (followUps: number) =>
+          violations({
+            channel: onX,
+            files: [],
+            followUps,
+            options: Option.none(),
+          });
+
+        const off = { takesParts: (platform: string) => platform !== "x" };
+
+        const refused = yield* ask(2).pipe(
+          Effect.provide(rulesWith(Effect.die("not read"))),
+          Effect.provideService(CurrentThreadedPlatforms, off)
+        );
+
+        assert.deepStrictEqual(refused, [
+          { _tag: "tooManyParts", ...onX, count: 3, maximum: 1 },
+        ]);
+
+        // A post alone goes, and threads go where the setting is on.
+        assert.deepStrictEqual(
+          yield* ask(0).pipe(
+            Effect.provide(rulesWith(Effect.die("not read"))),
+            Effect.provideService(CurrentThreadedPlatforms, off)
+          ),
+          []
+        );
+        assert.deepStrictEqual(
+          yield* ask(2).pipe(Effect.provide(rulesWith(Effect.die("not read")))),
+          []
+        );
+      })
+  );
+
   it.effect("are none on other platforms", () =>
     Effect.gen(function* others() {
       const found = yield* violations({
         channel: { ...tiktok, platform: "mastodon" },
         files: [picture],
+        followUps: 0,
         options: Option.none(),
       }).pipe(Effect.provide(rulesWith(Effect.die("not read"), false)));
 

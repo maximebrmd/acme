@@ -436,6 +436,54 @@ describe("publishing on X", () => {
   );
 
   it.live(
+    "tells a reply X does not let this app post from a post it refused",
+    () =>
+      Effect.gen(function* refusesReply() {
+        const { client, x } = yield* onX();
+        const first = yield* client.publish(yield* post({ text: "A first" }));
+
+        assert(first._tag === "published");
+
+        // X's words for a reply its self-serve access does not allow: the
+        // replying account was not summoned by the post's author.
+        const notAllowed = json(
+          {
+            detail:
+              "Reply to this conversation is not allowed because you have not been mentioned or otherwise engaged by the author of the post you are replying to.",
+            status: 403,
+            title: "Forbidden",
+            type: "about:blank",
+          },
+          403
+        );
+
+        x.script("POST /2/tweets", [notAllowed, notAllowed]);
+
+        const reply = yield* post({
+          part: 1,
+          replyTo: Option.some({
+            parent: first.platformPostId,
+            root: first.platformPostId,
+          }),
+          text: "A second",
+        });
+
+        assert.deepStrictEqual(
+          yield* client.publish(reply).pipe(Effect.flip),
+          new BadRequest({ code: "repliesNotAllowed" })
+        );
+
+        // The same refusal of a post alone is X's refusal of the post.
+        assert.deepStrictEqual(
+          yield* client
+            .publish(yield* post({ text: "Alone" }))
+            .pipe(Effect.flip),
+          new BadRequest({ code: "http403" })
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
     "finds a lost reply among the account's replies, by the post it answers",
     () =>
       Effect.gen(function* lostReply() {

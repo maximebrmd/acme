@@ -7,6 +7,7 @@ import { PlatformPublisher } from "#publishing/application/platform-publisher.ts
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
+import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostPart } from "#publishing/domain/post-part.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
@@ -95,14 +96,19 @@ const PlanTest = Layer.succeed(
   })
 );
 
-// The publisher, for channels of this account.
-const publisherFor = (account: Parameters<typeof credentialsOf>[0]) =>
+// The publisher, for channels of this account; `threaded` is what the
+// operator set of later parts.
+const publisherFor = (
+  account: Parameters<typeof credentialsOf>[0],
+  threaded: (platform: string) => boolean = () => true
+) =>
   RoutedPlatformPublisher.pipe(
     Layer.provide(
       Layer.mergeAll(
         PlanTest,
         RecordingClients,
-        credentialsOf(account, ["token-1"])
+        credentialsOf(account, ["token-1"]),
+        Layer.succeed(CurrentThreadedPlatforms, { takesParts: threaded })
       )
     ),
     Layer.provideMerge(DrizzlePostRepository),
@@ -432,3 +438,61 @@ layer(PublisherTest)(
     );
   }
 );
+
+layer(
+  publisherFor(
+    { accountId: "synthetic-x-account", platform: "x" },
+    (platform) => platform !== "x"
+  )
+)("the adapters of X where the operator turned X threads off", (it) => {
+  it.effect("never receive a part after the first, scheduled before", () =>
+    Effect.gen(function* refusesParts() {
+      const posts = yield* PostRepository;
+      const postId = yield* newId(PostIdSchema);
+      const channelId = yield* newId(ChannelIdSchema);
+
+      const target = createTarget(
+        yield* newId(PostTargetIdSchema),
+        postId,
+        channelId
+      );
+
+      yield* posts.insert(
+        createDraft(
+          postId,
+          yield* freshWorkspace,
+          new PostContent({
+            followUps: [part("Second")],
+            media: [],
+            overrides: [],
+            text: "First",
+          }),
+          Option.none()
+        ),
+        [target]
+      );
+
+      const before = (yield* Ref.get(handed)).length;
+
+      const refused = yield* PlatformPublisher.use((publisher) =>
+        publisher.publish({
+          channelId,
+          idempotencyKey: "a-synthetic-x-part",
+          part: 1,
+          postId,
+          startedAt: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
+          targetId: target.id,
+        })
+      ).pipe(
+        Effect.flip,
+        Effect.ensuring(posts.remove(postId).pipe(Effect.orDie))
+      );
+
+      assert.deepStrictEqual(
+        refused,
+        new BadRequest({ code: "partsNotSupported" })
+      );
+      assert.lengthOf(yield* Ref.get(handed), before);
+    })
+  );
+});

@@ -53,6 +53,16 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   back from the PDS, and refuses a part whose parent is gone
   (`replyTargetGone`). Threads' `reply_to_id` needs
   `threads_manage_replies`, which Peal does not ask for: no parts there.
+- X documents that an app on self-serve access may reply only under a post
+  whose author mentioned or quoted the replying account, and gives no code
+  for the refusal: a 403 naming a reply, on a part after the first, is
+  `repliesNotAllowed` (a failure reason of its own, never reposted). The
+  operator turns X threads off with `X_THREADS=false`
+  (`CurrentThreadedPlatforms`, read when AccountRules, the router and
+  PostingCapabilities are built): scheduling refuses parts on X
+  (`tooManyParts`, maximum 1), the router refuses a part already
+  scheduled (`partsNotSupported`), and the capabilities give X no
+  `followUps`.
 - `PublishedTargets` lists a target once it is published, a post of
   several parts as its first part (id and permalink): one row a target,
   whatever its parts, so analytics counts, and X bills, one post, and the

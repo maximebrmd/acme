@@ -107,6 +107,13 @@ export interface ChannelCapabilities {
   readonly capabilities: PlatformCapabilities;
 }
 
+// The platform's rules but for its later parts, which it then takes none
+// of: `followUps` left out.
+const withoutParts = ({
+  followUps: _followUps,
+  ...rules
+}: PlatformRules): PlatformRules => rules;
+
 // Where Peal reads no number.
 const nothingCounted: PlatformCapabilities["counted"] = {
   account: [],
@@ -125,9 +132,13 @@ export const capabilitiesOf = (
   platform: Platform,
   countsPosts: boolean,
   connection?: Option.Option<ChannelConnection>,
-  counted: PlatformCapabilities["counted"] = nothingCounted
+  counted: PlatformCapabilities["counted"] = nothingCounted,
+  // False where the operator turned the platform's later parts off.
+  takesParts = true
 ): PlatformCapabilities => {
-  const rules = platformRules[platform];
+  const rules = takesParts
+    ? platformRules[platform]
+    : withoutParts(platformRules[platform]);
 
   return {
     counted,
@@ -150,8 +161,15 @@ export const capabilitiesOf = (
 /** Every platform's capabilities, in the platforms' order. */
 export const everyCapabilities = (
   counted: (platform: Platform) => boolean,
-  numbers?: (platform: Platform) => PlatformCapabilities["counted"]
+  numbers?: (platform: Platform) => PlatformCapabilities["counted"],
+  takesParts: (platform: Platform) => boolean = () => true
 ): readonly PlatformCapabilities[] =>
   platforms.map((platform) =>
-    capabilitiesOf(platform, counted(platform), undefined, numbers?.(platform))
+    capabilitiesOf(
+      platform,
+      counted(platform),
+      undefined,
+      numbers?.(platform),
+      takesParts(platform)
+    )
   );

@@ -33,6 +33,10 @@ export const platformRefusalCodes = {
   // app until it approves it (TikTok: private posts from an app it has not
   // audited).
   appNotAudited: "appNotAudited",
+  // A BadRequest: the platform does not let this server's app post a later
+  // part as a reply (X, on self-serve access, takes a reply only from an
+  // account the post's author mentioned or quoted).
+  repliesNotAllowed: "repliesNotAllowed",
   // A BadRequest: the post a later part answers is gone from the platform
   // (Bluesky: its record no longer exists).
   replyTargetGone: "replyTargetGone",

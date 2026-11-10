@@ -120,6 +120,8 @@ export const english: EmailCatalog = {
       "the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.",
     rateLimited:
       "the platform kept turning requests away, and Peal stopped trying.",
+    repliesNotAllowed:
+      "its first part is live, and the platform did not let this server's app post the parts after it as replies: on X, an app on self-serve access may reply only to a post whose author mentioned or quoted the account. Sending it again from Peal would meet the same refusal: post the rest on the platform, as replies to the last part that is live.",
     tokenExpired:
       "the account’s authorization stopped working. Reconnect it, then post again.",
     unavailable: "the platform could not be reached.",

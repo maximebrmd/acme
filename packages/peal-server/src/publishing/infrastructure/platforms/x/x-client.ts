@@ -549,7 +549,10 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
                 ? HttpClientResponse.schemaBodyJson(CreatedSchema)(
                     response
                   ).pipe(Effect.map(({ data }) => publishedAs(data.id)))
-                : postRefusal(response)
+                : postRefusal(
+                    response,
+                    Option.isSome(post.replyTo) ? "reply" : "post"
+                  )
           ),
           Effect.catchTags({
             HttpClientError: commitUnanswered,

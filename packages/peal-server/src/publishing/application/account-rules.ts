@@ -4,15 +4,19 @@ import type { Option } from "effect";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import type { MediaFile } from "#publishing/domain/media-file.ts";
+import { followUpsOn } from "#publishing/domain/platform-rules.ts";
 import type { TargetOptions } from "#publishing/domain/target-options.ts";
 import { creatorViolationsOn } from "#publishing/domain/tiktok-creator.ts";
 
+import { CurrentThreadedPlatforms } from "./threaded-platforms.ts";
 import { TikTokCreators } from "./tiktok-creators.ts";
 
 /** A post on one of its channels, as it is about to be scheduled. */
 export interface AccountTarget {
   readonly channel: ChannelOnPlatform;
   readonly files: readonly MediaFile[];
+  /** How many parts the post has after its first. */
+  readonly followUps: number;
   readonly options: Option.Option<TargetOptions>;
 }
 
@@ -56,6 +60,24 @@ export class AccountRules extends Context.Service<
     AccountRules,
     Effect.gen(function* AccountRulesLive() {
       const creators = yield* TikTokCreators;
+      const threaded = yield* CurrentThreadedPlatforms;
+
+      // Parts on a platform whose rules take them, where the operator
+      // turned them off (`X_THREADS`): the post is refused as one with
+      // more parts than the platform takes.
+      const partsOff = (target: AccountTarget): readonly ContentViolation[] =>
+        target.followUps > 0 &&
+        followUpsOn(target.channel.platform) !== undefined &&
+        !threaded.takesParts(target.channel.platform)
+          ? [
+              {
+                _tag: "tooManyParts",
+                ...target.channel,
+                count: target.followUps + 1,
+                maximum: 1,
+              },
+            ]
+          : [];
 
       const tiktok = Effect.fn("AccountRules.tiktok")(function* tiktok(
         target: AccountTarget
@@ -91,7 +113,7 @@ export class AccountRules extends Context.Service<
         violationsOn: (target) =>
           target.channel.platform === "tiktok"
             ? tiktok(target)
-            : Effect.succeed([]),
+            : Effect.succeed(partsOff(target)),
       });
     })
   );

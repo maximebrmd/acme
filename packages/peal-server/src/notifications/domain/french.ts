@@ -122,6 +122,8 @@ export const french: EmailCatalog = {
       "l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.",
     rateLimited:
       "la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.",
+    repliesNotAllowed:
+      "sa première partie est en ligne, et la plateforme n’a pas laissé l’application de ce serveur publier les suivantes en réponse : sur X, une application en accès libre-service ne peut répondre qu’à une publication dont l’auteur a mentionné ou cité le compte. La renvoyer depuis Peal se heurterait au même refus : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.",
     tokenExpired:
       "l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.",
     unavailable: "la plateforme était injoignable.",

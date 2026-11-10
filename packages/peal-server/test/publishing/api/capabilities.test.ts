@@ -25,6 +25,7 @@ import { ChannelConnections } from "#publishing/application/channel-connections.
 import { CountedPlatforms } from "#publishing/application/counted-platforms.ts";
 import { PlatformLookups } from "#publishing/application/platform-lookups.ts";
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
+import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
 import type { CreatorFailure } from "#publishing/application/tiktok-creators.ts";
 import { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
@@ -110,7 +111,9 @@ const workspaceChannels = Layer.succeed(
 // only, and whose channels are counted as analytics counts them.
 const clientWith = (
   member: Member,
-  read: Effect.Effect<TikTokPosting, CreatorFailure> = ready
+  read: Effect.Effect<TikTokPosting, CreatorFailure> = ready,
+  // What the operator set of later parts (X_THREADS).
+  threaded: (platform: string) => boolean = () => true
 ) =>
   HttpApiTest.groups(Api, ["capabilities"]).pipe(
     Effect.provide(
@@ -152,7 +155,10 @@ const clientWith = (
                     })
                   ),
                   connections,
-                  workspaceChannels
+                  workspaceChannels,
+                  Layer.succeed(CurrentThreadedPlatforms, {
+                    takesParts: threaded,
+                  })
                 )
               )
             )
@@ -218,6 +224,29 @@ describe("the platforms' capabilities endpoint", () => {
         maxCount: 24,
       });
     })
+  );
+
+  it.effect(
+    "says X takes a post alone where the operator turned X threads off",
+    () =>
+      Effect.gen(function* xThreadsOff() {
+        const client = yield* clientWith(
+          viewer,
+          ready,
+          (platform) => platform !== "x"
+        );
+
+        const all = yield* client.capabilities.platforms({
+          params: { workspaceId },
+        });
+
+        assert.deepStrictEqual(
+          all.flatMap(({ followUps, platform }) =>
+            followUps === null ? [] : [platform]
+          ),
+          ["bluesky", "mastodon"]
+        );
+      })
   );
 
   it.effect(

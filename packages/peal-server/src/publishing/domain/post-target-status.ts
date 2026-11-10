@@ -55,6 +55,10 @@ export const FailureReasonSchema = Schema.Literals([
   // found by hand, which gives no id, or is gone from the platform. No
   // repost is offered: every round would stop at the same part.
   "partsNotSent",
+  // The platform does not let this server's app post the parts after the
+  // first as replies (X's self-serve access): the first parts are live,
+  // and no repost can send the rest from this server.
+  "repliesNotAllowed",
 ]);
 
 export type FailureReason = typeof FailureReasonSchema.Type;

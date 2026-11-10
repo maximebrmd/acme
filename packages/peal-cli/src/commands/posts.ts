@@ -73,6 +73,8 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   quotaExceeded:
     "the platform's daily upload allowance stayed spent: post it again after it resets",
   rateLimited: "the platform kept limiting Peal, which stopped trying",
+  repliesNotAllowed:
+    "its first parts are live and X did not let this server's app post the rest as replies (self-serve access replies only where the post's author mentioned or quoted the account): it cannot be reposted, so post the rest on X",
   tokenExpired: "the account's authorization stopped working: reconnect it",
   unavailable: "the platform could not be reached",
 };

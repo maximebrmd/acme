@@ -228,23 +228,24 @@ The post did not go out on the channel.
 | `failedAt`    | string         | When it failed, as an instant in UTC                           |
 | `reason`      | string         | Why, one of the codes below                                    |
 
-| `reason`              | What happened                                                                                                                     |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `contentRejected`     | The platform refused the post's text or format.                                                                                   |
-| `channelDisconnected` | The channel was disconnected from the workspace before the post went out. Nothing was sent.                                       |
-| `channelDisabled`     | The channel was turned off before the post went out. Nothing was sent.                                                            |
-| `mediaRemoved`        | One of its images or videos was deleted, or was no longer ready, before the post went out. Nothing was sent.                      |
-| `mediaRejected`       | The platform refused one of its images or videos.                                                                                 |
-| `missed`              | The server was down at the scheduled time, and the post was too late to send when it came back.                                   |
-| `notPublished`        | A member checked an unconfirmed post on the platform and did not find it.                                                         |
-| `rateLimited`         | The platform kept limiting Peal until the attempt gave up.                                                                        |
-| `tokenExpired`        | The platform refused the channel's authorization: the channel must be reconnected.                                                |
-| `unavailable`         | The platform could not be reached. Nothing was sent.                                                                              |
-| `appNotAudited`       | The platform takes only some posts from the server's app until it approves it. Nothing was sent.                                  |
-| `quotaExceeded`       | A daily allowance of uploads on the platform stayed used up until the attempt gave up.                                            |
-| `appBillingLimit`     | The platform refused the server's app until its operator pays for it. Nothing was sent.                                           |
-| `planLimit`           | The workspace's plan had no room for the post when it was due: too many channels, or the month's posts used up. Nothing was sent. |
-| `partsNotSent`        | Some parts of the post are live, and Peal cannot send those after them: it has no post to reply to. It cannot be reposted.        |
+| `reason`              | What happened                                                                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contentRejected`     | The platform refused the post's text or format.                                                                                                 |
+| `channelDisconnected` | The channel was disconnected from the workspace before the post went out. Nothing was sent.                                                     |
+| `channelDisabled`     | The channel was turned off before the post went out. Nothing was sent.                                                                          |
+| `mediaRemoved`        | One of its images or videos was deleted, or was no longer ready, before the post went out. Nothing was sent.                                    |
+| `mediaRejected`       | The platform refused one of its images or videos.                                                                                               |
+| `missed`              | The server was down at the scheduled time, and the post was too late to send when it came back.                                                 |
+| `notPublished`        | A member checked an unconfirmed post on the platform and did not find it.                                                                       |
+| `rateLimited`         | The platform kept limiting Peal until the attempt gave up.                                                                                      |
+| `tokenExpired`        | The platform refused the channel's authorization: the channel must be reconnected.                                                              |
+| `unavailable`         | The platform could not be reached. Nothing was sent.                                                                                            |
+| `appNotAudited`       | The platform takes only some posts from the server's app until it approves it. Nothing was sent.                                                |
+| `quotaExceeded`       | A daily allowance of uploads on the platform stayed used up until the attempt gave up.                                                          |
+| `appBillingLimit`     | The platform refused the server's app until its operator pays for it. Nothing was sent.                                                         |
+| `planLimit`           | The workspace's plan had no room for the post when it was due: too many channels, or the month's posts used up. Nothing was sent.               |
+| `partsNotSent`        | Some parts of the post are live, and Peal cannot send those after them: it has no post to reply to. It cannot be reposted.                      |
+| `repliesNotAllowed`   | The first parts are live, and X did not let this server's app post the rest as replies ([Threads](/scheduling#threads)). It cannot be reposted. |
 
 [Notifications](/notifications#events) tells what to do about each.
 

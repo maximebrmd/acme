@@ -2,7 +2,10 @@ import { DateTime, Duration, Effect, Option, Schema } from "effect";
 import { Headers, HttpClientResponse } from "effect/http";
 
 import { OutcomeUnknown } from "#publishing/application/outcome-unknown.ts";
-import { operatorRefusalCodes } from "#publishing/domain/own-refusals.ts";
+import {
+  operatorRefusalCodes,
+  platformRefusalCodes,
+} from "#publishing/domain/own-refusals.ts";
 import { codeOf } from "#publishing/infrastructure/platforms/platform-exchange.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
@@ -34,9 +37,10 @@ export const XProblemSchema = Schema.Struct({
 
 type XProblem = typeof XProblemSchema.Type;
 
-// Which call was refused: an upload or a look at one (`media`), or the post
-// itself (`post`), which may have gone live when X fails.
-export type XCall = "media" | "post";
+// Which call was refused: an upload or a look at one (`media`), the post
+// itself (`post`), which may have gone live when X fails, or a later part
+// of a thread, posted as a reply to the part before (`reply`).
+export type XCall = "media" | "post" | "reply";
 
 export type XRefusal = OutcomeUnknown | PublishFailure | TokenRejected;
 
@@ -162,9 +166,17 @@ const refusal = (
   }
 
   if (status >= 500) {
-    return call === "post"
-      ? new OutcomeUnknown({ reason: "noResponse" })
-      : new PlatformUnavailable();
+    return call === "media"
+      ? new PlatformUnavailable()
+      : new OutcomeUnknown({ reason: "noResponse" });
+  }
+
+  // A reply X does not let this app post: on self-serve access, X takes a
+  // reply only from an account the post's author mentioned or quoted, and
+  // its documentation gives no code for the refusal. A 403 naming a reply,
+  // to a part of a thread: the thread cannot go on from this app.
+  if (call === "reply" && status === 403 && says(problem, "reply")) {
+    return new BadRequest({ code: platformRefusalCodes.repliesNotAllowed });
   }
 
   // The same text again: X refuses a post it already has from the account.
@@ -205,6 +217,7 @@ export const mediaRefusal = (
 
 /** What X's refusal of the post itself means. */
 export const postRefusal = (
-  response: HttpClientResponse.HttpClientResponse
+  response: HttpClientResponse.HttpClientResponse,
+  call: "post" | "reply" = "post"
 ): Effect.Effect<never, XRefusal> =>
-  refused("post", response).pipe(Effect.flatMap(Effect.fail));
+  refused(call, response).pipe(Effect.flatMap(Effect.fail));

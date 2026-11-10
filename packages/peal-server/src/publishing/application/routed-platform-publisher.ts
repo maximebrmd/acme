@@ -1,5 +1,6 @@
 import { Effect, Layer, Option, Result } from "effect";
 
+import { CurrentThreadedPlatforms } from "#publishing/application/threaded-platforms.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { followUpsOn } from "#publishing/domain/platform-rules.ts";
 import { partsOn } from "#publishing/domain/post-content.ts";
@@ -97,6 +98,7 @@ export const RoutedPlatformPublisher = Layer.effect(
     const credentials = yield* PlatformCredentials;
     const clients = yield* PlatformClients;
     const allowance = yield* PostAllowance;
+    const threaded = yield* CurrentThreadedPlatforms;
 
     const withinPlan = Effect.fn("Publishing.withinPlan")(function* withinPlan(
       post: Post
@@ -174,7 +176,11 @@ export const RoutedPlatformPublisher = Layer.effect(
       // Scheduling refuses parts where the platform takes a post alone; a
       // part that came this far all the same must never go out as a post
       // of its own.
-      if (part.index > 0 && followUpsOn(account.platform) === undefined) {
+      if (
+        part.index > 0 &&
+        (followUpsOn(account.platform) === undefined ||
+          !threaded.takesParts(account.platform))
+      ) {
         return yield* new BadRequest({
           code: ownRefusalCodes.partsNotSupported,
         });
