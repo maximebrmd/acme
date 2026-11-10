@@ -16,6 +16,14 @@ export const WebhookEventType = {
         ChannelReconnectNeeded: "channel.reconnect_needed",
         MediaReady: "media.ready",
         MediaFailed: "media.failed",
+        BoostStarted: "boost.started",
+        BoostPaused: "boost.paused",
+        BoostResumed: "boost.resumed",
+        BoostStopped: "boost.stopped",
+        BoostEnded: "boost.ended",
+        BoostFailed: "boost.failed",
+        BoostUnconfirmed: "boost.unconfirmed",
+        BoostBudgetReached: "boost.budget_reached",
         WebhookTest: "webhook.test"
     } as const;
 export type WebhookEventType = typeof WebhookEventType[keyof typeof WebhookEventType];

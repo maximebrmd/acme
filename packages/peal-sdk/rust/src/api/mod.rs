@@ -12,7 +12,7 @@ pub mod resources;
 pub mod types;
 
 pub use resources::{
-    ActivityClient, AnalyticsClient, ApiKeysClient, AssistantClient, BillingClient,
+    ActivityClient, AdsClient, AnalyticsClient, ApiKeysClient, AssistantClient, BillingClient,
     CapabilitiesClient, ChannelsClient, ConnectLinksClient, InvitationsClient, LookupsClient,
     MediaClient, MembersClient, NoticesClient, NotificationPreferencesClient, PartnerAccountClient,
     PartnerClient, PealClient, PostsClient, ReviewClient, SessionClient, SystemClient,

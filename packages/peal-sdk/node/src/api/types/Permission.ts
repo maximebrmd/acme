@@ -3,6 +3,10 @@
 /** One action on one resource of a workspace. */
 export const Permission = {
         ActivityRead: "activity:read",
+        AdsRead: "ads:read",
+        AdsManage: "ads:manage",
+        AdsSpend: "ads:spend",
+        AdsAuthorize: "ads:authorize",
         AnalyticsRead: "analytics:read",
         ApiKeyCreate: "apiKey:create",
         ApiKeyRead: "apiKey:read",

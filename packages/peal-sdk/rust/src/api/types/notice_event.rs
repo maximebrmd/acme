@@ -143,6 +143,34 @@ pub enum NoticeEvent {
         reason: WebhookTurnOffReason,
     },
 
+    #[non_exhaustive]
+    AdBoostChanged {
+        #[serde(rename = "boostId")]
+        #[serde(default)]
+        boost_id: String,
+        #[serde(default)]
+        budget: Money,
+        #[serde(rename = "budgetDigits")]
+        #[serde(default)]
+        #[serde(with = "crate::core::number_serializers")]
+        budget_digits: f64,
+        change: NoticeEventAdBoostChangedChange,
+        #[serde(rename = "endsAt")]
+        #[serde(default)]
+        ends_at: String,
+        #[serde(rename = "postId")]
+        #[serde(default)]
+        post_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        reason: Option<String>,
+    },
+
+    #[non_exhaustive]
+    AdConnectionReconnectRequired {
+        #[serde(default)]
+        network: String,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -259,6 +287,29 @@ impl NoticeEvent {
         }
     }
 
+    pub fn ad_boost_changed(
+        boost_id: String,
+        budget: Money,
+        budget_digits: f64,
+        change: NoticeEventAdBoostChangedChange,
+        ends_at: String,
+        post_id: String,
+    ) -> Self {
+        Self::AdBoostChanged {
+            boost_id,
+            budget,
+            budget_digits,
+            change,
+            ends_at,
+            post_id,
+            reason: None,
+        }
+    }
+
+    pub fn ad_connection_reconnect_required(network: String) -> Self {
+        Self::AdConnectionReconnectRequired { network }
+    }
+
     pub fn post_published_with_channel(
         channel: NoticeChannel,
         permalink: Option<String>,
@@ -315,6 +366,26 @@ impl NoticeEvent {
             price,
             started_at,
             trial_end: Some(trial_end),
+        }
+    }
+
+    pub fn ad_boost_changed_with_reason(
+        boost_id: String,
+        budget: Money,
+        budget_digits: f64,
+        change: NoticeEventAdBoostChangedChange,
+        ends_at: String,
+        post_id: String,
+        reason: String,
+    ) -> Self {
+        Self::AdBoostChanged {
+            boost_id,
+            budget,
+            budget_digits,
+            change,
+            ends_at,
+            post_id,
+            reason: Some(reason),
         }
     }
 

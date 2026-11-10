@@ -21,6 +21,14 @@ module Peal
       CHANNEL_RECONNECT_NEEDED = "channel.reconnect_needed"
       MEDIA_READY = "media.ready"
       MEDIA_FAILED = "media.failed"
+      BOOST_STARTED = "boost.started"
+      BOOST_PAUSED = "boost.paused"
+      BOOST_RESUMED = "boost.resumed"
+      BOOST_STOPPED = "boost.stopped"
+      BOOST_ENDED = "boost.ended"
+      BOOST_FAILED = "boost.failed"
+      BOOST_UNCONFIRMED = "boost.unconfirmed"
+      BOOST_BUDGET_REACHED = "boost.budget_reached"
       WEBHOOK_TEST = "webhook.test"
     end
   end

@@ -205,6 +205,17 @@
       },
       "default": "./dist/cjs/api/resources/webhooks/exports.js"
     },
+    "./ads": {
+      "import": {
+        "types": "./dist/esm/api/resources/ads/exports.d.mts",
+        "default": "./dist/esm/api/resources/ads/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/ads/exports.d.ts",
+        "default": "./dist/cjs/api/resources/ads/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/ads/exports.js"
+    },
     "./activity": {
       "import": {
         "types": "./dist/esm/api/resources/activity/exports.d.mts",

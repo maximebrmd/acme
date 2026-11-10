@@ -10,6 +10,14 @@ public readonly record struct Permission : IStringEnum
 {
     public static readonly Permission ActivityRead = new(Values.ActivityRead);
 
+    public static readonly Permission AdsRead = new(Values.AdsRead);
+
+    public static readonly Permission AdsManage = new(Values.AdsManage);
+
+    public static readonly Permission AdsSpend = new(Values.AdsSpend);
+
+    public static readonly Permission AdsAuthorize = new(Values.AdsAuthorize);
+
     public static readonly Permission AnalyticsRead = new(Values.AnalyticsRead);
 
     public static readonly Permission ApiKeyCreate = new(Values.ApiKeyCreate);
@@ -170,6 +178,14 @@ public readonly record struct Permission : IStringEnum
     public static class Values
     {
         public const string ActivityRead = "activity:read";
+
+        public const string AdsRead = "ads:read";
+
+        public const string AdsManage = "ads:manage";
+
+        public const string AdsSpend = "ads:spend";
+
+        public const string AdsAuthorize = "ads:authorize";
 
         public const string AnalyticsRead = "analytics:read";
 

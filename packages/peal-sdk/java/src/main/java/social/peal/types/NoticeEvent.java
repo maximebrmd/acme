@@ -86,6 +86,14 @@ public final class NoticeEvent {
         return new NoticeEvent(new WebhookEndpointDisabledValue(value));
     }
 
+    public static NoticeEvent adBoostChanged(NoticeEventAdBoostChanged value) {
+        return new NoticeEvent(new AdBoostChangedValue(value));
+    }
+
+    public static NoticeEvent adConnectionReconnectRequired(NoticeEventAdConnectionReconnectRequired value) {
+        return new NoticeEvent(new AdConnectionReconnectRequiredValue(value));
+    }
+
     public boolean isPostPublished() {
         return value instanceof PostPublishedValue;
     }
@@ -144,6 +152,14 @@ public final class NoticeEvent {
 
     public boolean isWebhookEndpointDisabled() {
         return value instanceof WebhookEndpointDisabledValue;
+    }
+
+    public boolean isAdBoostChanged() {
+        return value instanceof AdBoostChangedValue;
+    }
+
+    public boolean isAdConnectionReconnectRequired() {
+        return value instanceof AdConnectionReconnectRequiredValue;
     }
 
     public boolean _isUnknown() {
@@ -255,6 +271,20 @@ public final class NoticeEvent {
         return Optional.empty();
     }
 
+    public Optional<NoticeEventAdBoostChanged> getAdBoostChanged() {
+        if (isAdBoostChanged()) {
+            return Optional.of(((AdBoostChangedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventAdConnectionReconnectRequired> getAdConnectionReconnectRequired() {
+        if (isAdConnectionReconnectRequired()) {
+            return Optional.of(((AdConnectionReconnectRequiredValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<Object> _getUnknown() {
         if (_isUnknown()) {
             return Optional.of(((_UnknownValue) value).value);
@@ -314,6 +344,10 @@ public final class NoticeEvent {
 
         T visitWebhookEndpointDisabled(NoticeEventWebhookEndpointDisabled webhookEndpointDisabled);
 
+        T visitAdBoostChanged(NoticeEventAdBoostChanged adBoostChanged);
+
+        T visitAdConnectionReconnectRequired(NoticeEventAdConnectionReconnectRequired adConnectionReconnectRequired);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -333,7 +367,9 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(SubscriptionRenewingValue.class),
         @JsonSubTypes.Type(SubscriptionCancelledValue.class),
         @JsonSubTypes.Type(SubscriptionWithdrawnValue.class),
-        @JsonSubTypes.Type(WebhookEndpointDisabledValue.class)
+        @JsonSubTypes.Type(WebhookEndpointDisabledValue.class),
+        @JsonSubTypes.Type(AdBoostChangedValue.class),
+        @JsonSubTypes.Type(AdConnectionReconnectRequiredValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -926,6 +962,87 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(WebhookEndpointDisabledValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("AdBoostChanged")
+    @JsonIgnoreProperties("_tag")
+    private static final class AdBoostChangedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventAdBoostChanged value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private AdBoostChangedValue() {}
+
+        private AdBoostChangedValue(NoticeEventAdBoostChanged value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitAdBoostChanged(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof AdBoostChangedValue && equalTo((AdBoostChangedValue) other);
+        }
+
+        private boolean equalTo(AdBoostChangedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("AdConnectionReconnectRequired")
+    @JsonIgnoreProperties("_tag")
+    private static final class AdConnectionReconnectRequiredValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventAdConnectionReconnectRequired value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private AdConnectionReconnectRequiredValue() {}
+
+        private AdConnectionReconnectRequiredValue(NoticeEventAdConnectionReconnectRequired value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitAdConnectionReconnectRequired(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof AdConnectionReconnectRequiredValue
+                    && equalTo((AdConnectionReconnectRequiredValue) other);
+        }
+
+        private boolean equalTo(AdConnectionReconnectRequiredValue other) {
             return value.equals(other.value);
         }
 

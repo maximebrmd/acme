@@ -281,8 +281,6 @@ func (a *AnalyticsSummary) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
-type CalendarDay = string
-
 var (
 	channelMetricsFieldImpressions = big.NewInt(1 << 0)
 	channelMetricsFieldLikes       = big.NewInt(1 << 1)

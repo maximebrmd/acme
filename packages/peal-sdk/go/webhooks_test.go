@@ -3645,6 +3645,62 @@ func TestEnumSubscribableWebhookEventType(t *testing.T) {
 		assert.Equal(t, SubscribableWebhookEventType("media.failed"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_boost_started", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("boost.started")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("boost.started"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_paused", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("boost.paused")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("boost.paused"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_resumed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("boost.resumed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("boost.resumed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_stopped", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("boost.stopped")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("boost.stopped"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_ended", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("boost.ended")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("boost.ended"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_failed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("boost.failed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("boost.failed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_unconfirmed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("boost.unconfirmed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("boost.unconfirmed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_budget_reached", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("boost.budget_reached")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("boost.budget_reached"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewSubscribableWebhookEventTypeFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)
@@ -3936,6 +3992,62 @@ func TestEnumWebhookEventType(t *testing.T) {
 		val, err := NewWebhookEventTypeFromString("media.failed")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, WebhookEventType("media.failed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_started", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("boost.started")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("boost.started"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_paused", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("boost.paused")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("boost.paused"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_resumed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("boost.resumed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("boost.resumed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_stopped", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("boost.stopped")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("boost.stopped"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_ended", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("boost.ended")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("boost.ended"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_failed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("boost.failed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("boost.failed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_unconfirmed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("boost.unconfirmed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("boost.unconfirmed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_boost_budget_reached", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("boost.budget_reached")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("boost.budget_reached"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_webhook_test", func(t *testing.T) {

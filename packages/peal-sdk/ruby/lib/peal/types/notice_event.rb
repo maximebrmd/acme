@@ -38,6 +38,10 @@ module Peal
       member -> { Peal::Types::NoticeEventSubscriptionWithdrawn }, key: "SUBSCRIPTION_WITHDRAWN"
 
       member -> { Peal::Types::NoticeEventWebhookEndpointDisabled }, key: "WEBHOOK_ENDPOINT_DISABLED"
+
+      member -> { Peal::Types::NoticeEventAdBoostChanged }, key: "AD_BOOST_CHANGED"
+
+      member -> { Peal::Types::NoticeEventAdConnectionReconnectRequired }, key: "AD_CONNECTION_RECONNECT_REQUIRED"
     end
   end
 end

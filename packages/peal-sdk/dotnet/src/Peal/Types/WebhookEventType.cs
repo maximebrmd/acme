@@ -40,6 +40,22 @@ public readonly record struct WebhookEventType : IStringEnum
 
     public static readonly WebhookEventType MediaFailed = new(Values.MediaFailed);
 
+    public static readonly WebhookEventType BoostStarted = new(Values.BoostStarted);
+
+    public static readonly WebhookEventType BoostPaused = new(Values.BoostPaused);
+
+    public static readonly WebhookEventType BoostResumed = new(Values.BoostResumed);
+
+    public static readonly WebhookEventType BoostStopped = new(Values.BoostStopped);
+
+    public static readonly WebhookEventType BoostEnded = new(Values.BoostEnded);
+
+    public static readonly WebhookEventType BoostFailed = new(Values.BoostFailed);
+
+    public static readonly WebhookEventType BoostUnconfirmed = new(Values.BoostUnconfirmed);
+
+    public static readonly WebhookEventType BoostBudgetReached = new(Values.BoostBudgetReached);
+
     public static readonly WebhookEventType WebhookTest = new(Values.WebhookTest);
 
     public WebhookEventType(string value)
@@ -165,6 +181,22 @@ public readonly record struct WebhookEventType : IStringEnum
         public const string MediaReady = "media.ready";
 
         public const string MediaFailed = "media.failed";
+
+        public const string BoostStarted = "boost.started";
+
+        public const string BoostPaused = "boost.paused";
+
+        public const string BoostResumed = "boost.resumed";
+
+        public const string BoostStopped = "boost.stopped";
+
+        public const string BoostEnded = "boost.ended";
+
+        public const string BoostFailed = "boost.failed";
+
+        public const string BoostUnconfirmed = "boost.unconfirmed";
+
+        public const string BoostBudgetReached = "boost.budget_reached";
 
         public const string WebhookTest = "webhook.test";
     }

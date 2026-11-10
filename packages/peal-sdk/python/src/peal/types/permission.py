@@ -5,6 +5,10 @@ import typing
 Permission = typing.Union[
     typing.Literal[
         "activity:read",
+        "ads:read",
+        "ads:manage",
+        "ads:spend",
+        "ads:authorize",
         "analytics:read",
         "apiKey:create",
         "apiKey:read",

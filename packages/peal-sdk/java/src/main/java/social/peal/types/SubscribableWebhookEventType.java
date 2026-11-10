@@ -7,11 +7,20 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class SubscribableWebhookEventType {
+    public static final SubscribableWebhookEventType BOOST_STARTED =
+            new SubscribableWebhookEventType(Value.BOOST_STARTED, "boost.started");
+
     public static final SubscribableWebhookEventType MEDIA_FAILED =
             new SubscribableWebhookEventType(Value.MEDIA_FAILED, "media.failed");
 
     public static final SubscribableWebhookEventType POST_FAILED =
             new SubscribableWebhookEventType(Value.POST_FAILED, "post.failed");
+
+    public static final SubscribableWebhookEventType BOOST_RESUMED =
+            new SubscribableWebhookEventType(Value.BOOST_RESUMED, "boost.resumed");
+
+    public static final SubscribableWebhookEventType BOOST_FAILED =
+            new SubscribableWebhookEventType(Value.BOOST_FAILED, "boost.failed");
 
     public static final SubscribableWebhookEventType POST_PUBLISHED =
             new SubscribableWebhookEventType(Value.POST_PUBLISHED, "post.published");
@@ -25,11 +34,23 @@ public final class SubscribableWebhookEventType {
     public static final SubscribableWebhookEventType POST_CHANGES_REQUESTED =
             new SubscribableWebhookEventType(Value.POST_CHANGES_REQUESTED, "post.changes_requested");
 
+    public static final SubscribableWebhookEventType BOOST_STOPPED =
+            new SubscribableWebhookEventType(Value.BOOST_STOPPED, "boost.stopped");
+
+    public static final SubscribableWebhookEventType BOOST_BUDGET_REACHED =
+            new SubscribableWebhookEventType(Value.BOOST_BUDGET_REACHED, "boost.budget_reached");
+
     public static final SubscribableWebhookEventType POST_APPROVED =
             new SubscribableWebhookEventType(Value.POST_APPROVED, "post.approved");
 
     public static final SubscribableWebhookEventType CHANNEL_CONNECTED =
             new SubscribableWebhookEventType(Value.CHANNEL_CONNECTED, "channel.connected");
+
+    public static final SubscribableWebhookEventType BOOST_ENDED =
+            new SubscribableWebhookEventType(Value.BOOST_ENDED, "boost.ended");
+
+    public static final SubscribableWebhookEventType BOOST_UNCONFIRMED =
+            new SubscribableWebhookEventType(Value.BOOST_UNCONFIRMED, "boost.unconfirmed");
 
     public static final SubscribableWebhookEventType CHANNEL_DISCONNECTED =
             new SubscribableWebhookEventType(Value.CHANNEL_DISCONNECTED, "channel.disconnected");
@@ -42,6 +63,9 @@ public final class SubscribableWebhookEventType {
 
     public static final SubscribableWebhookEventType POST_SCHEDULED =
             new SubscribableWebhookEventType(Value.POST_SCHEDULED, "post.scheduled");
+
+    public static final SubscribableWebhookEventType BOOST_PAUSED =
+            new SubscribableWebhookEventType(Value.BOOST_PAUSED, "boost.paused");
 
     public static final SubscribableWebhookEventType MEDIA_READY =
             new SubscribableWebhookEventType(Value.MEDIA_READY, "media.ready");
@@ -82,10 +106,16 @@ public final class SubscribableWebhookEventType {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
+            case BOOST_STARTED:
+                return visitor.visitBoostStarted();
             case MEDIA_FAILED:
                 return visitor.visitMediaFailed();
             case POST_FAILED:
                 return visitor.visitPostFailed();
+            case BOOST_RESUMED:
+                return visitor.visitBoostResumed();
+            case BOOST_FAILED:
+                return visitor.visitBoostFailed();
             case POST_PUBLISHED:
                 return visitor.visitPostPublished();
             case POST_APPROVAL_REQUESTED:
@@ -94,10 +124,18 @@ public final class SubscribableWebhookEventType {
                 return visitor.visitPostUnscheduled();
             case POST_CHANGES_REQUESTED:
                 return visitor.visitPostChangesRequested();
+            case BOOST_STOPPED:
+                return visitor.visitBoostStopped();
+            case BOOST_BUDGET_REACHED:
+                return visitor.visitBoostBudgetReached();
             case POST_APPROVED:
                 return visitor.visitPostApproved();
             case CHANNEL_CONNECTED:
                 return visitor.visitChannelConnected();
+            case BOOST_ENDED:
+                return visitor.visitBoostEnded();
+            case BOOST_UNCONFIRMED:
+                return visitor.visitBoostUnconfirmed();
             case CHANNEL_DISCONNECTED:
                 return visitor.visitChannelDisconnected();
             case CHANNEL_RECONNECT_NEEDED:
@@ -106,6 +144,8 @@ public final class SubscribableWebhookEventType {
                 return visitor.visitPostCancelled();
             case POST_SCHEDULED:
                 return visitor.visitPostScheduled();
+            case BOOST_PAUSED:
+                return visitor.visitBoostPaused();
             case MEDIA_READY:
                 return visitor.visitMediaReady();
             case POST_UNCONFIRMED:
@@ -119,10 +159,16 @@ public final class SubscribableWebhookEventType {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static SubscribableWebhookEventType valueOf(String value) {
         switch (value) {
+            case "boost.started":
+                return BOOST_STARTED;
             case "media.failed":
                 return MEDIA_FAILED;
             case "post.failed":
                 return POST_FAILED;
+            case "boost.resumed":
+                return BOOST_RESUMED;
+            case "boost.failed":
+                return BOOST_FAILED;
             case "post.published":
                 return POST_PUBLISHED;
             case "post.approval_requested":
@@ -131,10 +177,18 @@ public final class SubscribableWebhookEventType {
                 return POST_UNSCHEDULED;
             case "post.changes_requested":
                 return POST_CHANGES_REQUESTED;
+            case "boost.stopped":
+                return BOOST_STOPPED;
+            case "boost.budget_reached":
+                return BOOST_BUDGET_REACHED;
             case "post.approved":
                 return POST_APPROVED;
             case "channel.connected":
                 return CHANNEL_CONNECTED;
+            case "boost.ended":
+                return BOOST_ENDED;
+            case "boost.unconfirmed":
+                return BOOST_UNCONFIRMED;
             case "channel.disconnected":
                 return CHANNEL_DISCONNECTED;
             case "channel.reconnect_needed":
@@ -143,6 +197,8 @@ public final class SubscribableWebhookEventType {
                 return POST_CANCELLED;
             case "post.scheduled":
                 return POST_SCHEDULED;
+            case "boost.paused":
+                return BOOST_PAUSED;
             case "media.ready":
                 return MEDIA_READY;
             case "post.unconfirmed":
@@ -181,6 +237,22 @@ public final class SubscribableWebhookEventType {
 
         MEDIA_FAILED,
 
+        BOOST_STARTED,
+
+        BOOST_PAUSED,
+
+        BOOST_RESUMED,
+
+        BOOST_STOPPED,
+
+        BOOST_ENDED,
+
+        BOOST_FAILED,
+
+        BOOST_UNCONFIRMED,
+
+        BOOST_BUDGET_REACHED,
+
         UNKNOWN
     }
 
@@ -212,6 +284,22 @@ public final class SubscribableWebhookEventType {
         T visitMediaReady();
 
         T visitMediaFailed();
+
+        T visitBoostStarted();
+
+        T visitBoostPaused();
+
+        T visitBoostResumed();
+
+        T visitBoostStopped();
+
+        T visitBoostEnded();
+
+        T visitBoostFailed();
+
+        T visitBoostUnconfirmed();
+
+        T visitBoostBudgetReached();
 
         T visitUnknown(String unknownType);
     }

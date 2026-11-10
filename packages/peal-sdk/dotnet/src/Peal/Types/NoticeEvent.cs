@@ -154,6 +154,24 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.AdBoostChanged"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.AdBoostChanged value)
+    {
+        Type = "AdBoostChanged";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.AdConnectionReconnectRequired"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.AdConnectionReconnectRequired value)
+    {
+        Type = "AdConnectionReconnectRequired";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -238,6 +256,16 @@ public record NoticeEvent
     /// Returns true if <see cref="Type"/> is "WebhookEndpointDisabled"
     /// </summary>
     public bool IsWebhookEndpointDisabled => Type == "WebhookEndpointDisabled";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "AdBoostChanged"
+    /// </summary>
+    public bool IsAdBoostChanged => Type == "AdBoostChanged";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "AdConnectionReconnectRequired"
+    /// </summary>
+    public bool IsAdConnectionReconnectRequired => Type == "AdConnectionReconnectRequired";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventPostPublished"/> if <see cref="Type"/> is 'PostPublished', otherwise throws an exception.
@@ -378,6 +406,26 @@ public record NoticeEvent
                 "NoticeEvent.Type is not 'WebhookEndpointDisabled'"
             );
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventAdBoostChanged"/> if <see cref="Type"/> is 'AdBoostChanged', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'AdBoostChanged'.</exception>
+    public Peal.NoticeEventAdBoostChanged AsAdBoostChanged() =>
+        IsAdBoostChanged
+            ? (Peal.NoticeEventAdBoostChanged)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'AdBoostChanged'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventAdConnectionReconnectRequired"/> if <see cref="Type"/> is 'AdConnectionReconnectRequired', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'AdConnectionReconnectRequired'.</exception>
+    public Peal.NoticeEventAdConnectionReconnectRequired AsAdConnectionReconnectRequired() =>
+        IsAdConnectionReconnectRequired
+            ? (Peal.NoticeEventAdConnectionReconnectRequired)Value!
+            : throw new global::System.Exception(
+                "NoticeEvent.Type is not 'AdConnectionReconnectRequired'"
+            );
+
     public T Match<T>(
         Func<Peal.NoticeEventPostPublished, T> onPostPublished,
         Func<Peal.NoticeEventPostFailed, T> onPostFailed,
@@ -394,6 +442,8 @@ public record NoticeEvent
         Func<Peal.NoticeEventSubscriptionCancelled, T> onSubscriptionCancelled,
         Func<Peal.NoticeEventSubscriptionWithdrawn, T> onSubscriptionWithdrawn,
         Func<Peal.NoticeEventWebhookEndpointDisabled, T> onWebhookEndpointDisabled,
+        Func<Peal.NoticeEventAdBoostChanged, T> onAdBoostChanged,
+        Func<Peal.NoticeEventAdConnectionReconnectRequired, T> onAdConnectionReconnectRequired,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -414,6 +464,10 @@ public record NoticeEvent
             "SubscriptionCancelled" => onSubscriptionCancelled(AsSubscriptionCancelled()),
             "SubscriptionWithdrawn" => onSubscriptionWithdrawn(AsSubscriptionWithdrawn()),
             "WebhookEndpointDisabled" => onWebhookEndpointDisabled(AsWebhookEndpointDisabled()),
+            "AdBoostChanged" => onAdBoostChanged(AsAdBoostChanged()),
+            "AdConnectionReconnectRequired" => onAdConnectionReconnectRequired(
+                AsAdConnectionReconnectRequired()
+            ),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -434,6 +488,8 @@ public record NoticeEvent
         Action<Peal.NoticeEventSubscriptionCancelled> onSubscriptionCancelled,
         Action<Peal.NoticeEventSubscriptionWithdrawn> onSubscriptionWithdrawn,
         Action<Peal.NoticeEventWebhookEndpointDisabled> onWebhookEndpointDisabled,
+        Action<Peal.NoticeEventAdBoostChanged> onAdBoostChanged,
+        Action<Peal.NoticeEventAdConnectionReconnectRequired> onAdConnectionReconnectRequired,
         Action<string, object?> onUnknown_
     )
     {
@@ -483,6 +539,12 @@ public record NoticeEvent
                 break;
             case "WebhookEndpointDisabled":
                 onWebhookEndpointDisabled(AsWebhookEndpointDisabled());
+                break;
+            case "AdBoostChanged":
+                onAdBoostChanged(AsAdBoostChanged());
+                break;
+            case "AdConnectionReconnectRequired":
+                onAdConnectionReconnectRequired(AsAdConnectionReconnectRequired());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -700,6 +762,36 @@ public record NoticeEvent
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventAdBoostChanged"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsAdBoostChanged(out Peal.NoticeEventAdBoostChanged? value)
+    {
+        if (Type == "AdBoostChanged")
+        {
+            value = (Peal.NoticeEventAdBoostChanged)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventAdConnectionReconnectRequired"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsAdConnectionReconnectRequired(
+        out Peal.NoticeEventAdConnectionReconnectRequired? value
+    )
+    {
+        if (Type == "AdConnectionReconnectRequired")
+        {
+            value = (Peal.NoticeEventAdConnectionReconnectRequired)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator NoticeEvent(NoticeEvent.PostPublished value) => new(value);
@@ -739,6 +831,11 @@ public record NoticeEvent
         new(value);
 
     public static implicit operator NoticeEvent(NoticeEvent.WebhookEndpointDisabled value) =>
+        new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.AdBoostChanged value) => new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.AdConnectionReconnectRequired value) =>
         new(value);
 
     [Serializable]
@@ -871,6 +968,18 @@ public record NoticeEvent
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.NoticeEventWebhookEndpointDisabled"
                         ),
+                "AdBoostChanged" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventAdBoostChanged?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventAdBoostChanged"
+                        ),
+                "AdConnectionReconnectRequired" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventAdConnectionReconnectRequired?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventAdConnectionReconnectRequired"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new NoticeEvent(discriminator, value);
@@ -903,6 +1012,11 @@ public record NoticeEvent
                     "SubscriptionCancelled" => JsonSerializer.SerializeToNode(value.Value, options),
                     "SubscriptionWithdrawn" => JsonSerializer.SerializeToNode(value.Value, options),
                     "WebhookEndpointDisabled" => JsonSerializer.SerializeToNode(
+                        value.Value,
+                        options
+                    ),
+                    "AdBoostChanged" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "AdConnectionReconnectRequired" => JsonSerializer.SerializeToNode(
                         value.Value,
                         options
                     ),
@@ -1230,6 +1344,46 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.WebhookEndpointDisabled(
             Peal.NoticeEventWebhookEndpointDisabled value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for AdBoostChanged
+    /// </summary>
+    [Serializable]
+    public struct AdBoostChanged
+    {
+        public AdBoostChanged(Peal.NoticeEventAdBoostChanged value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventAdBoostChanged Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.AdBoostChanged(
+            Peal.NoticeEventAdBoostChanged value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for AdConnectionReconnectRequired
+    /// </summary>
+    [Serializable]
+    public struct AdConnectionReconnectRequired
+    {
+        public AdConnectionReconnectRequired(Peal.NoticeEventAdConnectionReconnectRequired value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventAdConnectionReconnectRequired Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.AdConnectionReconnectRequired(
+            Peal.NoticeEventAdConnectionReconnectRequired value
         ) => new(value);
     }
 }

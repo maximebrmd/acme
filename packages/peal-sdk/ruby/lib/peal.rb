@@ -120,6 +120,30 @@ require_relative "peal/webhooks/types/rotate_secret_webhooks_request"
 require_relative "peal/webhooks/types/send_test_webhooks_request"
 require_relative "peal/webhooks/types/list_deliveries_webhooks_request"
 require_relative "peal/webhooks/types/redeliver_webhooks_request"
+require_relative "peal/ads/client"
+require_relative "peal/ads/types/status_ads_request"
+require_relative "peal/ads/types/list_connections_ads_request"
+require_relative "peal/ads/types/connect_ads_request"
+require_relative "peal/ads/types/ad_sign_in_callback"
+require_relative "peal/ads/types/reachable_accounts_ads_request"
+require_relative "peal/ads/types/ad_accounts_to_connect"
+require_relative "peal/ads/types/disconnect_ads_request"
+require_relative "peal/ads/types/list_accounts_ads_request"
+require_relative "peal/ads/types/get_account_ads_request"
+require_relative "peal/ads/types/remove_account_ads_request"
+require_relative "peal/ads/types/ad_spending_decision"
+require_relative "peal/ads/types/list_campaigns_ads_request"
+require_relative "peal/ads/types/list_ads_ads_request"
+require_relative "peal/ads/types/list_insights_ads_request"
+require_relative "peal/ads/types/post_performance_ads_request"
+require_relative "peal/ads/types/quote_boost_ads_request"
+require_relative "peal/ads/types/list_boosts_ads_request"
+require_relative "peal/ads/types/create_boost_ads_request"
+require_relative "peal/ads/types/get_boost_ads_request"
+require_relative "peal/ads/types/pause_boost_ads_request"
+require_relative "peal/ads/types/resume_boost_ads_request"
+require_relative "peal/ads/types/stop_boost_ads_request"
+require_relative "peal/ads/types/audit_trail_ads_request"
 require_relative "peal/activity/client"
 require_relative "peal/activity/types/list_activity_request"
 require_relative "peal/partner/client"
@@ -222,10 +246,52 @@ module Peal
     autoload :ActivityVia, ::File.join(__dir__, "peal/types/activity_via")
     autoload :ActivityEvent, ::File.join(__dir__, "peal/types/activity_event")
     autoload :ActivityPage, ::File.join(__dir__, "peal/types/activity_page")
+    autoload :AdObjectStatus, ::File.join(__dir__, "peal/types/ad_object_status")
+    autoload :PaidTotals, ::File.join(__dir__, "peal/types/paid_totals")
+    autoload :Ad, ::File.join(__dir__, "peal/types/ad")
+    autoload :AdAccess, ::File.join(__dir__, "peal/types/ad_access")
+    autoload :AdAccountStatus, ::File.join(__dir__, "peal/types/ad_account_status")
+    autoload :AdNetwork, ::File.join(__dir__, "peal/types/ad_network")
+    autoload :AdAccount, ::File.join(__dir__, "peal/types/ad_account")
+    autoload :AdAccountBusyEncodedTag, ::File.join(__dir__, "peal/types/ad_account_busy_encoded_tag")
+    autoload :AdAccountBusyEncoded, ::File.join(__dir__, "peal/types/ad_account_busy_encoded")
+    autoload :AdAccountNotFoundEncoded, ::File.join(__dir__, "peal/types/ad_account_not_found_encoded")
+    autoload :AdAccountSpendCapExceededEncoded, ::File.join(__dir__, "peal/types/ad_account_spend_cap_exceeded_encoded")
+    autoload :AdAccountUnsupported, ::File.join(__dir__, "peal/types/ad_account_unsupported")
+    autoload :AdAccountUnusableEncodedReason, ::File.join(__dir__, "peal/types/ad_account_unusable_encoded_reason")
+    autoload :AdAccountUnusableEncoded, ::File.join(__dir__, "peal/types/ad_account_unusable_encoded")
+    autoload :AdAuditAction, ::File.join(__dir__, "peal/types/ad_audit_action")
+    autoload :AdAuditEntryByKind, ::File.join(__dir__, "peal/types/ad_audit_entry_by_kind")
+    autoload :AdAuditEntryBy, ::File.join(__dir__, "peal/types/ad_audit_entry_by")
+    autoload :AdAuditEntry, ::File.join(__dir__, "peal/types/ad_audit_entry")
+    autoload :AdAuditPage, ::File.join(__dir__, "peal/types/ad_audit_page")
+    autoload :CampaignObjective, ::File.join(__dir__, "peal/types/campaign_objective")
+    autoload :AdCampaign, ::File.join(__dir__, "peal/types/ad_campaign")
+    autoload :CalendarDay, ::File.join(__dir__, "peal/types/calendar_day")
+    autoload :AdCampaignReport, ::File.join(__dir__, "peal/types/ad_campaign_report")
+    autoload :AdConnection, ::File.join(__dir__, "peal/types/ad_connection")
+    autoload :AdConnectionNotFoundEncoded, ::File.join(__dir__, "peal/types/ad_connection_not_found_encoded")
+    autoload :AdInsightDay, ::File.join(__dir__, "peal/types/ad_insight_day")
+    autoload :AdInsightReport, ::File.join(__dir__, "peal/types/ad_insight_report")
+    autoload :AdMoney, ::File.join(__dir__, "peal/types/ad_money")
+    autoload :AdNetworkUnavailableEncodedTag, ::File.join(__dir__, "peal/types/ad_network_unavailable_encoded_tag")
+    autoload :AdNetworkUnavailableEncoded, ::File.join(__dir__, "peal/types/ad_network_unavailable_encoded")
+    autoload :AdReport, ::File.join(__dir__, "peal/types/ad_report")
+    autoload :AdSignIn, ::File.join(__dir__, "peal/types/ad_sign_in")
+    autoload :AdSignInFailedEncodedTag, ::File.join(__dir__, "peal/types/ad_sign_in_failed_encoded_tag")
+    autoload :AdSignInFailedEncodedReason, ::File.join(__dir__, "peal/types/ad_sign_in_failed_encoded_reason")
+    autoload :AdSignInFailedEncoded, ::File.join(__dir__, "peal/types/ad_sign_in_failed_encoded")
+    autoload :ReachableAdAccount, ::File.join(__dir__, "peal/types/reachable_ad_account")
+    autoload :AdSignInResult, ::File.join(__dir__, "peal/types/ad_sign_in_result")
+    autoload :AdSpending, ::File.join(__dir__, "peal/types/ad_spending")
+    autoload :AdSpendingNotEnabledEncoded, ::File.join(__dir__, "peal/types/ad_spending_not_enabled_encoded")
+    autoload :AdSpendingUnavailableEncoded, ::File.join(__dir__, "peal/types/ad_spending_unavailable_encoded")
+    autoload :AdsMode, ::File.join(__dir__, "peal/types/ads_mode")
+    autoload :AdsStatus, ::File.join(__dir__, "peal/types/ads_status")
+    autoload :AdsUnavailableEncoded, ::File.join(__dir__, "peal/types/ads_unavailable_encoded")
     autoload :AlreadyMemberEncoded, ::File.join(__dir__, "peal/types/already_member_encoded")
     autoload :AltTextTooLongEncodedTag, ::File.join(__dir__, "peal/types/alt_text_too_long_encoded_tag")
     autoload :AltTextTooLongEncoded, ::File.join(__dir__, "peal/types/alt_text_too_long_encoded")
-    autoload :CalendarDay, ::File.join(__dir__, "peal/types/calendar_day")
     autoload :ChannelMetrics, ::File.join(__dir__, "peal/types/channel_metrics")
     autoload :EngagementDay, ::File.join(__dir__, "peal/types/engagement_day")
     autoload :MetricTotals, ::File.join(__dir__, "peal/types/metric_totals")
@@ -280,6 +346,25 @@ module Peal
     autoload :TrialOffer, ::File.join(__dir__, "peal/types/trial_offer")
     autoload :Usage, ::File.join(__dir__, "peal/types/usage")
     autoload :Billing, ::File.join(__dir__, "peal/types/billing")
+    autoload :BoostObjective, ::File.join(__dir__, "peal/types/boost_objective")
+    autoload :BoostPlatform, ::File.join(__dir__, "peal/types/boost_platform")
+    autoload :BoostAudience, ::File.join(__dir__, "peal/types/boost_audience")
+    autoload :BoostBudgetKind, ::File.join(__dir__, "peal/types/boost_budget_kind")
+    autoload :BoostBudget, ::File.join(__dir__, "peal/types/boost_budget")
+    autoload :BoostFailureReason, ::File.join(__dir__, "peal/types/boost_failure_reason")
+    autoload :BoostState, ::File.join(__dir__, "peal/types/boost_state")
+    autoload :Boost, ::File.join(__dir__, "peal/types/boost")
+    autoload :BoostStepStep, ::File.join(__dir__, "peal/types/boost_step_step")
+    autoload :BoostStepOutcome, ::File.join(__dir__, "peal/types/boost_step_outcome")
+    autoload :BoostStep, ::File.join(__dir__, "peal/types/boost_step")
+    autoload :BoostDetail, ::File.join(__dir__, "peal/types/boost_detail")
+    autoload :BoostViolation, ::File.join(__dir__, "peal/types/boost_violation")
+    autoload :BoostInvalidEncoded, ::File.join(__dir__, "peal/types/boost_invalid_encoded")
+    autoload :BoostKeyReusedEncoded, ::File.join(__dir__, "peal/types/boost_key_reused_encoded")
+    autoload :BoostNotFoundEncoded, ::File.join(__dir__, "peal/types/boost_not_found_encoded")
+    autoload :BoostPage, ::File.join(__dir__, "peal/types/boost_page")
+    autoload :BoostQuote, ::File.join(__dir__, "peal/types/boost_quote")
+    autoload :BoostStateConflictEncoded, ::File.join(__dir__, "peal/types/boost_state_conflict_encoded")
     autoload :GoogleBusinessCallToAction, ::File.join(__dir__, "peal/types/google_business_call_to_action")
     autoload :GoogleBusinessPostType, ::File.join(__dir__, "peal/types/google_business_post_type")
     autoload :GoogleBusinessOptions, ::File.join(__dir__, "peal/types/google_business_options")
@@ -358,6 +443,8 @@ module Peal
     autoload :BulkPostResultRefused, ::File.join(__dir__, "peal/types/bulk_post_result_refused")
     autoload :BulkPostResult, ::File.join(__dir__, "peal/types/bulk_post_result")
     autoload :BulkResult, ::File.join(__dir__, "peal/types/bulk_result")
+    autoload :CeilingCurrencyMismatchEncodedTag, ::File.join(__dir__, "peal/types/ceiling_currency_mismatch_encoded_tag")
+    autoload :CeilingCurrencyMismatchEncoded, ::File.join(__dir__, "peal/types/ceiling_currency_mismatch_encoded")
     autoload :CommentSelectionLocated, ::File.join(__dir__, "peal/types/comment_selection_located")
     autoload :CommentSelection, ::File.join(__dir__, "peal/types/comment_selection")
     autoload :CommentAnchor, ::File.join(__dir__, "peal/types/comment_anchor")
@@ -496,7 +583,12 @@ module Peal
     autoload :MediaUsage, ::File.join(__dir__, "peal/types/media_usage")
     autoload :MetricsSnapshot, ::File.join(__dir__, "peal/types/metrics_snapshot")
     autoload :Money, ::File.join(__dir__, "peal/types/money")
+    autoload :SpecialAdCategory, ::File.join(__dir__, "peal/types/special_ad_category")
+    autoload :NewBoost, ::File.join(__dir__, "peal/types/new_boost")
     autoload :NoticeChannel, ::File.join(__dir__, "peal/types/notice_channel")
+    autoload :NoticeEventAdBoostChangedChange, ::File.join(__dir__, "peal/types/notice_event_ad_boost_changed_change")
+    autoload :NoticeEventAdBoostChanged, ::File.join(__dir__, "peal/types/notice_event_ad_boost_changed")
+    autoload :NoticeEventAdConnectionReconnectRequired, ::File.join(__dir__, "peal/types/notice_event_ad_connection_reconnect_required")
     autoload :NoticeEventChannelReconnectRequired, ::File.join(__dir__, "peal/types/notice_event_channel_reconnect_required")
     autoload :NoticeEventChannelReconnectSoon, ::File.join(__dir__, "peal/types/notice_event_channel_reconnect_soon")
     autoload :NoticeEventPostApprovalRequested, ::File.join(__dir__, "peal/types/notice_event_post_approval_requested")
@@ -519,6 +611,7 @@ module Peal
     autoload :NoticePage, ::File.join(__dir__, "peal/types/notice_page")
     autoload :NotificationPreferencesEmail, ::File.join(__dir__, "peal/types/notification_preferences_email")
     autoload :NotificationPreferences, ::File.join(__dir__, "peal/types/notification_preferences")
+    autoload :OrganicCounts, ::File.join(__dir__, "peal/types/organic_counts")
     autoload :Partner, ::File.join(__dir__, "peal/types/partner")
     autoload :PartnerDetailField, ::File.join(__dir__, "peal/types/partner_detail_field")
     autoload :PartnerDetailsInvalidEncodedTag, ::File.join(__dir__, "peal/types/partner_details_invalid_encoded_tag")
@@ -535,10 +628,14 @@ module Peal
     autoload :PlatformRateLimitedEncoded, ::File.join(__dir__, "peal/types/platform_rate_limited_encoded")
     autoload :PlatformUnreachableEncodedTag, ::File.join(__dir__, "peal/types/platform_unreachable_encoded_tag")
     autoload :PlatformUnreachableEncoded, ::File.join(__dir__, "peal/types/platform_unreachable_encoded")
+    autoload :PostAdPerformancePaidItem, ::File.join(__dir__, "peal/types/post_ad_performance_paid_item")
+    autoload :PostAdPerformance, ::File.join(__dir__, "peal/types/post_ad_performance")
     autoload :TargetMetrics, ::File.join(__dir__, "peal/types/target_metrics")
     autoload :PostAnalytics, ::File.join(__dir__, "peal/types/post_analytics")
     autoload :PostChannel, ::File.join(__dir__, "peal/types/post_channel")
     autoload :PostDraft, ::File.join(__dir__, "peal/types/post_draft")
+    autoload :PostNotPromotableEncodedReason, ::File.join(__dir__, "peal/types/post_not_promotable_encoded_reason")
+    autoload :PostNotPromotableEncoded, ::File.join(__dir__, "peal/types/post_not_promotable_encoded")
     autoload :PostPage, ::File.join(__dir__, "peal/types/post_page")
     autoload :ReviewedChannel, ::File.join(__dir__, "peal/types/reviewed_channel")
     autoload :ReviewedMedia, ::File.join(__dir__, "peal/types/reviewed_media")
@@ -558,6 +655,7 @@ module Peal
     autoload :PublicationAttempt, ::File.join(__dir__, "peal/types/publication_attempt")
     autoload :ReviewSettings, ::File.join(__dir__, "peal/types/review_settings")
     autoload :Role, ::File.join(__dir__, "peal/types/role")
+    autoload :SpendCeilingExceededEncoded, ::File.join(__dir__, "peal/types/spend_ceiling_exceeded_encoded")
     autoload :Standing, ::File.join(__dir__, "peal/types/standing")
     autoload :SubscribableWebhookEventType, ::File.join(__dir__, "peal/types/subscribable_webhook_event_type")
     autoload :SuggestionHashtags, ::File.join(__dir__, "peal/types/suggestion_hashtags")

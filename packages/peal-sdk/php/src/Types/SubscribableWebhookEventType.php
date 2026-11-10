@@ -18,4 +18,12 @@ enum SubscribableWebhookEventType: string
     case ChannelReconnectNeeded = "channel.reconnect_needed";
     case MediaReady = "media.ready";
     case MediaFailed = "media.failed";
+    case BoostStarted = "boost.started";
+    case BoostPaused = "boost.paused";
+    case BoostResumed = "boost.resumed";
+    case BoostStopped = "boost.stopped";
+    case BoostEnded = "boost.ended";
+    case BoostFailed = "boost.failed";
+    case BoostUnconfirmed = "boost.unconfirmed";
+    case BoostBudgetReached = "boost.budget_reached";
 }

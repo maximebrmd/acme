@@ -50,6 +50,7 @@ public partial class PealClient : IPealClient
         Capabilities = new CapabilitiesClient(_client);
         Lookups = new LookupsClient(_client);
         Webhooks = new WebhooksClient(_client);
+        Ads = new AdsClient(_client);
         Activity = new ActivityClient(_client);
         Partner = new PartnerClient(_client);
         PartnerAccount = new PartnerAccountClient(_client);
@@ -90,6 +91,8 @@ public partial class PealClient : IPealClient
     public ILookupsClient Lookups { get; }
 
     public IWebhooksClient Webhooks { get; }
+
+    public IAdsClient Ads { get; }
 
     public IActivityClient Activity { get; }
 

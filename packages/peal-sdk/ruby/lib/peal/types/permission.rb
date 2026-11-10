@@ -8,6 +8,10 @@ module Peal
       extend Peal::Internal::Types::Enum
 
       ACTIVITY_READ = "activity:read"
+      ADS_READ = "ads:read"
+      ADS_MANAGE = "ads:manage"
+      ADS_SPEND = "ads:spend"
+      ADS_AUTHORIZE = "ads:authorize"
       ANALYTICS_READ = "analytics:read"
       API_KEY_CREATE = "apiKey:create"
       API_KEY_READ = "apiKey:read"

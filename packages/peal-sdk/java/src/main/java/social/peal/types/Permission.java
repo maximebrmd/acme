@@ -11,6 +11,8 @@ public final class Permission {
 
     public static final Permission BILLING_READ = new Permission(Value.BILLING_READ, "billing:read");
 
+    public static final Permission ADS_READ = new Permission(Value.ADS_READ, "ads:read");
+
     public static final Permission POST_PUBLISH = new Permission(Value.POST_PUBLISH, "post:publish");
 
     public static final Permission ACTIVITY_READ = new Permission(Value.ACTIVITY_READ, "activity:read");
@@ -35,6 +37,10 @@ public final class Permission {
 
     public static final Permission ORGANIZATION_UPDATE =
             new Permission(Value.ORGANIZATION_UPDATE, "organization:update");
+
+    public static final Permission ADS_AUTHORIZE = new Permission(Value.ADS_AUTHORIZE, "ads:authorize");
+
+    public static final Permission ADS_SPEND = new Permission(Value.ADS_SPEND, "ads:spend");
 
     public static final Permission API_KEY_READ = new Permission(Value.API_KEY_READ, "apiKey:read");
 
@@ -67,6 +73,8 @@ public final class Permission {
     public static final Permission MEDIA_READ = new Permission(Value.MEDIA_READ, "media:read");
 
     public static final Permission WEBHOOK_MANAGE = new Permission(Value.WEBHOOK_MANAGE, "webhook:manage");
+
+    public static final Permission ADS_MANAGE = new Permission(Value.ADS_MANAGE, "ads:manage");
 
     public static final Permission POST_DELETE = new Permission(Value.POST_DELETE, "post:delete");
 
@@ -110,6 +118,8 @@ public final class Permission {
                 return visitor.visitMediaDelete();
             case BILLING_READ:
                 return visitor.visitBillingRead();
+            case ADS_READ:
+                return visitor.visitAdsRead();
             case POST_PUBLISH:
                 return visitor.visitPostPublish();
             case ACTIVITY_READ:
@@ -134,6 +144,10 @@ public final class Permission {
                 return visitor.visitAnalyticsRead();
             case ORGANIZATION_UPDATE:
                 return visitor.visitOrganizationUpdate();
+            case ADS_AUTHORIZE:
+                return visitor.visitAdsAuthorize();
+            case ADS_SPEND:
+                return visitor.visitAdsSpend();
             case API_KEY_READ:
                 return visitor.visitApiKeyRead();
             case CHANNEL_DISCONNECT:
@@ -166,6 +180,8 @@ public final class Permission {
                 return visitor.visitMediaRead();
             case WEBHOOK_MANAGE:
                 return visitor.visitWebhookManage();
+            case ADS_MANAGE:
+                return visitor.visitAdsManage();
             case POST_DELETE:
                 return visitor.visitPostDelete();
             case ORGANIZATION_DELETE:
@@ -185,6 +201,8 @@ public final class Permission {
                 return MEDIA_DELETE;
             case "billing:read":
                 return BILLING_READ;
+            case "ads:read":
+                return ADS_READ;
             case "post:publish":
                 return POST_PUBLISH;
             case "activity:read":
@@ -209,6 +227,10 @@ public final class Permission {
                 return ANALYTICS_READ;
             case "organization:update":
                 return ORGANIZATION_UPDATE;
+            case "ads:authorize":
+                return ADS_AUTHORIZE;
+            case "ads:spend":
+                return ADS_SPEND;
             case "apiKey:read":
                 return API_KEY_READ;
             case "channel:disconnect":
@@ -241,6 +263,8 @@ public final class Permission {
                 return MEDIA_READ;
             case "webhook:manage":
                 return WEBHOOK_MANAGE;
+            case "ads:manage":
+                return ADS_MANAGE;
             case "post:delete":
                 return POST_DELETE;
             case "organization:delete":
@@ -254,6 +278,14 @@ public final class Permission {
 
     public enum Value {
         ACTIVITY_READ,
+
+        ADS_READ,
+
+        ADS_MANAGE,
+
+        ADS_SPEND,
+
+        ADS_AUTHORIZE,
 
         ANALYTICS_READ,
 
@@ -324,6 +356,14 @@ public final class Permission {
 
     public interface Visitor<T> {
         T visitActivityRead();
+
+        T visitAdsRead();
+
+        T visitAdsManage();
+
+        T visitAdsSpend();
+
+        T visitAdsAuthorize();
 
         T visitAnalyticsRead();
 

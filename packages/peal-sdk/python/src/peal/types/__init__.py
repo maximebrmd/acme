@@ -34,6 +34,45 @@ if typing.TYPE_CHECKING:
     from .activity_event import ActivityEvent
     from .activity_page import ActivityPage
     from .activity_via import ActivityVia
+    from .ad import Ad
+    from .ad_access import AdAccess
+    from .ad_account import AdAccount
+    from .ad_account_busy_encoded import AdAccountBusyEncoded
+    from .ad_account_busy_encoded_tag import AdAccountBusyEncodedTag
+    from .ad_account_not_found_encoded import AdAccountNotFoundEncoded
+    from .ad_account_spend_cap_exceeded_encoded import AdAccountSpendCapExceededEncoded
+    from .ad_account_status import AdAccountStatus
+    from .ad_account_unsupported import AdAccountUnsupported
+    from .ad_account_unusable_encoded import AdAccountUnusableEncoded
+    from .ad_account_unusable_encoded_reason import AdAccountUnusableEncodedReason
+    from .ad_audit_action import AdAuditAction
+    from .ad_audit_entry import AdAuditEntry
+    from .ad_audit_entry_by import AdAuditEntryBy
+    from .ad_audit_entry_by_kind import AdAuditEntryByKind
+    from .ad_audit_page import AdAuditPage
+    from .ad_campaign import AdCampaign
+    from .ad_campaign_report import AdCampaignReport
+    from .ad_connection import AdConnection
+    from .ad_connection_not_found_encoded import AdConnectionNotFoundEncoded
+    from .ad_insight_day import AdInsightDay
+    from .ad_insight_report import AdInsightReport
+    from .ad_money import AdMoney
+    from .ad_network import AdNetwork
+    from .ad_network_unavailable_encoded import AdNetworkUnavailableEncoded
+    from .ad_network_unavailable_encoded_tag import AdNetworkUnavailableEncodedTag
+    from .ad_object_status import AdObjectStatus
+    from .ad_report import AdReport
+    from .ad_sign_in import AdSignIn
+    from .ad_sign_in_failed_encoded import AdSignInFailedEncoded
+    from .ad_sign_in_failed_encoded_reason import AdSignInFailedEncodedReason
+    from .ad_sign_in_failed_encoded_tag import AdSignInFailedEncodedTag
+    from .ad_sign_in_result import AdSignInResult
+    from .ad_spending import AdSpending
+    from .ad_spending_not_enabled_encoded import AdSpendingNotEnabledEncoded
+    from .ad_spending_unavailable_encoded import AdSpendingUnavailableEncoded
+    from .ads_mode import AdsMode
+    from .ads_status import AdsStatus
+    from .ads_unavailable_encoded import AdsUnavailableEncoded
     from .already_member_encoded import AlreadyMemberEncoded
     from .alt_text_too_long_encoded import AltTextTooLongEncoded
     from .alt_text_too_long_encoded_tag import AltTextTooLongEncodedTag
@@ -83,6 +122,25 @@ if typing.TYPE_CHECKING:
     from .billing_interval import BillingInterval
     from .billing_subscription import BillingSubscription
     from .billing_unavailable_encoded import BillingUnavailableEncoded
+    from .boost import Boost
+    from .boost_audience import BoostAudience
+    from .boost_budget import BoostBudget
+    from .boost_budget_kind import BoostBudgetKind
+    from .boost_detail import BoostDetail
+    from .boost_failure_reason import BoostFailureReason
+    from .boost_invalid_encoded import BoostInvalidEncoded
+    from .boost_key_reused_encoded import BoostKeyReusedEncoded
+    from .boost_not_found_encoded import BoostNotFoundEncoded
+    from .boost_objective import BoostObjective
+    from .boost_page import BoostPage
+    from .boost_platform import BoostPlatform
+    from .boost_quote import BoostQuote
+    from .boost_state import BoostState
+    from .boost_state_conflict_encoded import BoostStateConflictEncoded
+    from .boost_step import BoostStep
+    from .boost_step_outcome import BoostStepOutcome
+    from .boost_step_step import BoostStepStep
+    from .boost_violation import BoostViolation
     from .breaking_change import BreakingChange
     from .bulk_post import BulkPost
     from .bulk_post_result import BulkPostResult, BulkPostResult_Created, BulkPostResult_Refused
@@ -90,6 +148,9 @@ if typing.TYPE_CHECKING:
     from .bulk_post_result_refused import BulkPostResultRefused
     from .bulk_result import BulkResult
     from .calendar_day import CalendarDay
+    from .campaign_objective import CampaignObjective
+    from .ceiling_currency_mismatch_encoded import CeilingCurrencyMismatchEncoded
+    from .ceiling_currency_mismatch_encoded_tag import CeilingCurrencyMismatchEncodedTag
     from .changes_outcome import ChangesOutcome
     from .channel import Channel
     from .channel_cannot_post_encoded import ChannelCannotPostEncoded
@@ -316,6 +377,7 @@ if typing.TYPE_CHECKING:
     from .metric_totals import MetricTotals
     from .metrics_snapshot import MetricsSnapshot
     from .money import Money
+    from .new_boost import NewBoost
     from .non_finite_number import NonFiniteNumber
     from .not_found_error_body import (
         NotFoundErrorBody,
@@ -326,6 +388,8 @@ if typing.TYPE_CHECKING:
     from .notice_channel import NoticeChannel
     from .notice_event import (
         NoticeEvent,
+        NoticeEvent_AdBoostChanged,
+        NoticeEvent_AdConnectionReconnectRequired,
         NoticeEvent_ChannelReconnectRequired,
         NoticeEvent_ChannelReconnectSoon,
         NoticeEvent_PostApprovalRequested,
@@ -342,6 +406,9 @@ if typing.TYPE_CHECKING:
         NoticeEvent_TrialEnding,
         NoticeEvent_WebhookEndpointDisabled,
     )
+    from .notice_event_ad_boost_changed import NoticeEventAdBoostChanged
+    from .notice_event_ad_boost_changed_change import NoticeEventAdBoostChangedChange
+    from .notice_event_ad_connection_reconnect_required import NoticeEventAdConnectionReconnectRequired
     from .notice_event_channel_reconnect_required import NoticeEventChannelReconnectRequired
     from .notice_event_channel_reconnect_soon import NoticeEventChannelReconnectSoon
     from .notice_event_post_approval_requested import NoticeEventPostApprovalRequested
@@ -371,7 +438,9 @@ if typing.TYPE_CHECKING:
     from .option_constraint_needs_one_of import OptionConstraintNeedsOneOf
     from .option_constraint_not_with import OptionConstraintNotWith
     from .option_constraint_only_with import OptionConstraintOnlyWith
+    from .organic_counts import OrganicCounts
     from .paid_plan import PaidPlan
+    from .paid_totals import PaidTotals
     from .partner import Partner
     from .partner_accounts_closed_encoded import PartnerAccountsClosedEncoded
     from .partner_detail_field import PartnerDetailField
@@ -408,6 +477,8 @@ if typing.TYPE_CHECKING:
     from .platform_unreachable_encoded import PlatformUnreachableEncoded
     from .platform_unreachable_encoded_tag import PlatformUnreachableEncodedTag
     from .post import Post
+    from .post_ad_performance import PostAdPerformance
+    from .post_ad_performance_paid_item import PostAdPerformancePaidItem
     from .post_analytics import PostAnalytics
     from .post_channel import PostChannel
     from .post_content import PostContent
@@ -415,6 +486,8 @@ if typing.TYPE_CHECKING:
     from .post_draft import PostDraft
     from .post_metrics import PostMetrics
     from .post_not_found_encoded import PostNotFoundEncoded
+    from .post_not_promotable_encoded import PostNotPromotableEncoded
+    from .post_not_promotable_encoded_reason import PostNotPromotableEncodedReason
     from .post_not_reviewable_encoded import PostNotReviewableEncoded
     from .post_not_reviewable_encoded_status import PostNotReviewableEncodedStatus
     from .post_origin import PostOrigin
@@ -449,6 +522,7 @@ if typing.TYPE_CHECKING:
     from .prepared_upload import PreparedUpload
     from .probe_state import ProbeState
     from .publication_attempt import PublicationAttempt
+    from .reachable_ad_account import ReachableAdAccount
     from .rejection_reason import RejectionReason
     from .return_url_not_allowed_encoded import ReturnUrlNotAllowedEncoded
     from .review_comment import ReviewComment
@@ -473,6 +547,8 @@ if typing.TYPE_CHECKING:
     )
     from .signed_request import SignedRequest
     from .signed_request_method import SignedRequestMethod
+    from .special_ad_category import SpecialAdCategory
+    from .spend_ceiling_exceeded_encoded import SpendCeilingExceededEncoded
     from .standing import Standing
     from .subscribable_webhook_event_type import SubscribableWebhookEventType
     from .subscription_status import SubscriptionStatus
@@ -598,6 +674,45 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ActivityEvent": ".activity_event",
     "ActivityPage": ".activity_page",
     "ActivityVia": ".activity_via",
+    "Ad": ".ad",
+    "AdAccess": ".ad_access",
+    "AdAccount": ".ad_account",
+    "AdAccountBusyEncoded": ".ad_account_busy_encoded",
+    "AdAccountBusyEncodedTag": ".ad_account_busy_encoded_tag",
+    "AdAccountNotFoundEncoded": ".ad_account_not_found_encoded",
+    "AdAccountSpendCapExceededEncoded": ".ad_account_spend_cap_exceeded_encoded",
+    "AdAccountStatus": ".ad_account_status",
+    "AdAccountUnsupported": ".ad_account_unsupported",
+    "AdAccountUnusableEncoded": ".ad_account_unusable_encoded",
+    "AdAccountUnusableEncodedReason": ".ad_account_unusable_encoded_reason",
+    "AdAuditAction": ".ad_audit_action",
+    "AdAuditEntry": ".ad_audit_entry",
+    "AdAuditEntryBy": ".ad_audit_entry_by",
+    "AdAuditEntryByKind": ".ad_audit_entry_by_kind",
+    "AdAuditPage": ".ad_audit_page",
+    "AdCampaign": ".ad_campaign",
+    "AdCampaignReport": ".ad_campaign_report",
+    "AdConnection": ".ad_connection",
+    "AdConnectionNotFoundEncoded": ".ad_connection_not_found_encoded",
+    "AdInsightDay": ".ad_insight_day",
+    "AdInsightReport": ".ad_insight_report",
+    "AdMoney": ".ad_money",
+    "AdNetwork": ".ad_network",
+    "AdNetworkUnavailableEncoded": ".ad_network_unavailable_encoded",
+    "AdNetworkUnavailableEncodedTag": ".ad_network_unavailable_encoded_tag",
+    "AdObjectStatus": ".ad_object_status",
+    "AdReport": ".ad_report",
+    "AdSignIn": ".ad_sign_in",
+    "AdSignInFailedEncoded": ".ad_sign_in_failed_encoded",
+    "AdSignInFailedEncodedReason": ".ad_sign_in_failed_encoded_reason",
+    "AdSignInFailedEncodedTag": ".ad_sign_in_failed_encoded_tag",
+    "AdSignInResult": ".ad_sign_in_result",
+    "AdSpending": ".ad_spending",
+    "AdSpendingNotEnabledEncoded": ".ad_spending_not_enabled_encoded",
+    "AdSpendingUnavailableEncoded": ".ad_spending_unavailable_encoded",
+    "AdsMode": ".ads_mode",
+    "AdsStatus": ".ads_status",
+    "AdsUnavailableEncoded": ".ads_unavailable_encoded",
     "AlreadyMemberEncoded": ".already_member_encoded",
     "AltTextTooLongEncoded": ".alt_text_too_long_encoded",
     "AltTextTooLongEncodedTag": ".alt_text_too_long_encoded_tag",
@@ -643,6 +758,25 @@ _dynamic_imports: typing.Dict[str, str] = {
     "BillingInterval": ".billing_interval",
     "BillingSubscription": ".billing_subscription",
     "BillingUnavailableEncoded": ".billing_unavailable_encoded",
+    "Boost": ".boost",
+    "BoostAudience": ".boost_audience",
+    "BoostBudget": ".boost_budget",
+    "BoostBudgetKind": ".boost_budget_kind",
+    "BoostDetail": ".boost_detail",
+    "BoostFailureReason": ".boost_failure_reason",
+    "BoostInvalidEncoded": ".boost_invalid_encoded",
+    "BoostKeyReusedEncoded": ".boost_key_reused_encoded",
+    "BoostNotFoundEncoded": ".boost_not_found_encoded",
+    "BoostObjective": ".boost_objective",
+    "BoostPage": ".boost_page",
+    "BoostPlatform": ".boost_platform",
+    "BoostQuote": ".boost_quote",
+    "BoostState": ".boost_state",
+    "BoostStateConflictEncoded": ".boost_state_conflict_encoded",
+    "BoostStep": ".boost_step",
+    "BoostStepOutcome": ".boost_step_outcome",
+    "BoostStepStep": ".boost_step_step",
+    "BoostViolation": ".boost_violation",
     "BreakingChange": ".breaking_change",
     "BulkPost": ".bulk_post",
     "BulkPostResult": ".bulk_post_result",
@@ -652,6 +786,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "BulkPostResult_Refused": ".bulk_post_result",
     "BulkResult": ".bulk_result",
     "CalendarDay": ".calendar_day",
+    "CampaignObjective": ".campaign_objective",
+    "CeilingCurrencyMismatchEncoded": ".ceiling_currency_mismatch_encoded",
+    "CeilingCurrencyMismatchEncodedTag": ".ceiling_currency_mismatch_encoded_tag",
     "ChangesOutcome": ".changes_outcome",
     "Channel": ".channel",
     "ChannelCannotPostEncoded": ".channel_cannot_post_encoded",
@@ -871,6 +1008,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "MetricTotals": ".metric_totals",
     "MetricsSnapshot": ".metrics_snapshot",
     "Money": ".money",
+    "NewBoost": ".new_boost",
     "NonFiniteNumber": ".non_finite_number",
     "NotFoundErrorBody": ".not_found_error_body",
     "NotFoundErrorBody_ReviewLinkNotFound": ".not_found_error_body",
@@ -878,6 +1016,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Notice": ".notice",
     "NoticeChannel": ".notice_channel",
     "NoticeEvent": ".notice_event",
+    "NoticeEventAdBoostChanged": ".notice_event_ad_boost_changed",
+    "NoticeEventAdBoostChangedChange": ".notice_event_ad_boost_changed_change",
+    "NoticeEventAdConnectionReconnectRequired": ".notice_event_ad_connection_reconnect_required",
     "NoticeEventChannelReconnectRequired": ".notice_event_channel_reconnect_required",
     "NoticeEventChannelReconnectSoon": ".notice_event_channel_reconnect_soon",
     "NoticeEventPostApprovalRequested": ".notice_event_post_approval_requested",
@@ -893,6 +1034,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventSubscriptionWithdrawn": ".notice_event_subscription_withdrawn",
     "NoticeEventTrialEnding": ".notice_event_trial_ending",
     "NoticeEventWebhookEndpointDisabled": ".notice_event_webhook_endpoint_disabled",
+    "NoticeEvent_AdBoostChanged": ".notice_event",
+    "NoticeEvent_AdConnectionReconnectRequired": ".notice_event",
     "NoticeEvent_ChannelReconnectRequired": ".notice_event",
     "NoticeEvent_ChannelReconnectSoon": ".notice_event",
     "NoticeEvent_PostApprovalRequested": ".notice_event",
@@ -920,7 +1063,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "OptionConstraint_NeedsOneOf": ".option_constraint",
     "OptionConstraint_NotWith": ".option_constraint",
     "OptionConstraint_OnlyWith": ".option_constraint",
+    "OrganicCounts": ".organic_counts",
     "PaidPlan": ".paid_plan",
+    "PaidTotals": ".paid_totals",
     "Partner": ".partner",
     "PartnerAccountsClosedEncoded": ".partner_accounts_closed_encoded",
     "PartnerDetailField": ".partner_detail_field",
@@ -957,6 +1102,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PlatformUnreachableEncoded": ".platform_unreachable_encoded",
     "PlatformUnreachableEncodedTag": ".platform_unreachable_encoded_tag",
     "Post": ".post",
+    "PostAdPerformance": ".post_ad_performance",
+    "PostAdPerformancePaidItem": ".post_ad_performance_paid_item",
     "PostAnalytics": ".post_analytics",
     "PostChannel": ".post_channel",
     "PostContent": ".post_content",
@@ -964,6 +1111,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostDraft": ".post_draft",
     "PostMetrics": ".post_metrics",
     "PostNotFoundEncoded": ".post_not_found_encoded",
+    "PostNotPromotableEncoded": ".post_not_promotable_encoded",
+    "PostNotPromotableEncodedReason": ".post_not_promotable_encoded_reason",
     "PostNotReviewableEncoded": ".post_not_reviewable_encoded",
     "PostNotReviewableEncodedStatus": ".post_not_reviewable_encoded_status",
     "PostOrigin": ".post_origin",
@@ -998,6 +1147,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PreparedUpload": ".prepared_upload",
     "ProbeState": ".probe_state",
     "PublicationAttempt": ".publication_attempt",
+    "ReachableAdAccount": ".reachable_ad_account",
     "RejectionReason": ".rejection_reason",
     "ReturnUrlNotAllowedEncoded": ".return_url_not_allowed_encoded",
     "ReviewComment": ".review_comment",
@@ -1020,6 +1170,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ServiceUnavailableErrorBody_MediaStoreUnavailable": ".service_unavailable_error_body",
     "SignedRequest": ".signed_request",
     "SignedRequestMethod": ".signed_request_method",
+    "SpecialAdCategory": ".special_ad_category",
+    "SpendCeilingExceededEncoded": ".spend_ceiling_exceeded_encoded",
     "Standing": ".standing",
     "SubscribableWebhookEventType": ".subscribable_webhook_event_type",
     "SubscriptionStatus": ".subscription_status",
@@ -1171,6 +1323,45 @@ __all__ = [
     "ActivityEvent",
     "ActivityPage",
     "ActivityVia",
+    "Ad",
+    "AdAccess",
+    "AdAccount",
+    "AdAccountBusyEncoded",
+    "AdAccountBusyEncodedTag",
+    "AdAccountNotFoundEncoded",
+    "AdAccountSpendCapExceededEncoded",
+    "AdAccountStatus",
+    "AdAccountUnsupported",
+    "AdAccountUnusableEncoded",
+    "AdAccountUnusableEncodedReason",
+    "AdAuditAction",
+    "AdAuditEntry",
+    "AdAuditEntryBy",
+    "AdAuditEntryByKind",
+    "AdAuditPage",
+    "AdCampaign",
+    "AdCampaignReport",
+    "AdConnection",
+    "AdConnectionNotFoundEncoded",
+    "AdInsightDay",
+    "AdInsightReport",
+    "AdMoney",
+    "AdNetwork",
+    "AdNetworkUnavailableEncoded",
+    "AdNetworkUnavailableEncodedTag",
+    "AdObjectStatus",
+    "AdReport",
+    "AdSignIn",
+    "AdSignInFailedEncoded",
+    "AdSignInFailedEncodedReason",
+    "AdSignInFailedEncodedTag",
+    "AdSignInResult",
+    "AdSpending",
+    "AdSpendingNotEnabledEncoded",
+    "AdSpendingUnavailableEncoded",
+    "AdsMode",
+    "AdsStatus",
+    "AdsUnavailableEncoded",
     "AlreadyMemberEncoded",
     "AltTextTooLongEncoded",
     "AltTextTooLongEncodedTag",
@@ -1216,6 +1407,25 @@ __all__ = [
     "BillingInterval",
     "BillingSubscription",
     "BillingUnavailableEncoded",
+    "Boost",
+    "BoostAudience",
+    "BoostBudget",
+    "BoostBudgetKind",
+    "BoostDetail",
+    "BoostFailureReason",
+    "BoostInvalidEncoded",
+    "BoostKeyReusedEncoded",
+    "BoostNotFoundEncoded",
+    "BoostObjective",
+    "BoostPage",
+    "BoostPlatform",
+    "BoostQuote",
+    "BoostState",
+    "BoostStateConflictEncoded",
+    "BoostStep",
+    "BoostStepOutcome",
+    "BoostStepStep",
+    "BoostViolation",
     "BreakingChange",
     "BulkPost",
     "BulkPostResult",
@@ -1225,6 +1435,9 @@ __all__ = [
     "BulkPostResult_Refused",
     "BulkResult",
     "CalendarDay",
+    "CampaignObjective",
+    "CeilingCurrencyMismatchEncoded",
+    "CeilingCurrencyMismatchEncodedTag",
     "ChangesOutcome",
     "Channel",
     "ChannelCannotPostEncoded",
@@ -1444,6 +1657,7 @@ __all__ = [
     "MetricTotals",
     "MetricsSnapshot",
     "Money",
+    "NewBoost",
     "NonFiniteNumber",
     "NotFoundErrorBody",
     "NotFoundErrorBody_ReviewLinkNotFound",
@@ -1451,6 +1665,9 @@ __all__ = [
     "Notice",
     "NoticeChannel",
     "NoticeEvent",
+    "NoticeEventAdBoostChanged",
+    "NoticeEventAdBoostChangedChange",
+    "NoticeEventAdConnectionReconnectRequired",
     "NoticeEventChannelReconnectRequired",
     "NoticeEventChannelReconnectSoon",
     "NoticeEventPostApprovalRequested",
@@ -1466,6 +1683,8 @@ __all__ = [
     "NoticeEventSubscriptionWithdrawn",
     "NoticeEventTrialEnding",
     "NoticeEventWebhookEndpointDisabled",
+    "NoticeEvent_AdBoostChanged",
+    "NoticeEvent_AdConnectionReconnectRequired",
     "NoticeEvent_ChannelReconnectRequired",
     "NoticeEvent_ChannelReconnectSoon",
     "NoticeEvent_PostApprovalRequested",
@@ -1493,7 +1712,9 @@ __all__ = [
     "OptionConstraint_NeedsOneOf",
     "OptionConstraint_NotWith",
     "OptionConstraint_OnlyWith",
+    "OrganicCounts",
     "PaidPlan",
+    "PaidTotals",
     "Partner",
     "PartnerAccountsClosedEncoded",
     "PartnerDetailField",
@@ -1530,6 +1751,8 @@ __all__ = [
     "PlatformUnreachableEncoded",
     "PlatformUnreachableEncodedTag",
     "Post",
+    "PostAdPerformance",
+    "PostAdPerformancePaidItem",
     "PostAnalytics",
     "PostChannel",
     "PostContent",
@@ -1537,6 +1760,8 @@ __all__ = [
     "PostDraft",
     "PostMetrics",
     "PostNotFoundEncoded",
+    "PostNotPromotableEncoded",
+    "PostNotPromotableEncodedReason",
     "PostNotReviewableEncoded",
     "PostNotReviewableEncodedStatus",
     "PostOrigin",
@@ -1571,6 +1796,7 @@ __all__ = [
     "PreparedUpload",
     "ProbeState",
     "PublicationAttempt",
+    "ReachableAdAccount",
     "RejectionReason",
     "ReturnUrlNotAllowedEncoded",
     "ReviewComment",
@@ -1593,6 +1819,8 @@ __all__ = [
     "ServiceUnavailableErrorBody_MediaStoreUnavailable",
     "SignedRequest",
     "SignedRequestMethod",
+    "SpecialAdCategory",
+    "SpendCeilingExceededEncoded",
     "Standing",
     "SubscribableWebhookEventType",
     "SubscriptionStatus",
