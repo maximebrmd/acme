@@ -25,6 +25,7 @@ import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import type { AccountRules } from "./account-rules.ts";
+import { ApprovalGate } from "./approval-gate.ts";
 import { AttachableMedia } from "./attachable-media.ts";
 import { ContentFingerprints } from "./content-fingerprints.ts";
 import { PostAllowance } from "./post-allowance.ts";
@@ -49,6 +50,12 @@ export interface CheckPostRequest {
 
 /** What sending a post would come to. */
 export interface PostCheck {
+  /**
+   * Whether the post, sent with a time, would wait for an approval before
+   * it is scheduled (`ApprovalGate.holds`). Waiting refuses nothing: the
+   * post would be made, and held.
+   */
+  readonly awaitsApproval: boolean;
   /** One per channel of the workspace it names, in the order given. */
   readonly channels: readonly ChannelPreview[];
   /**
@@ -78,6 +85,7 @@ export const isSendable = (check: PostCheck): boolean =>
 
 type Ports =
   | AccountRules
+  | ApprovalGate
   | AttachableMedia
   | ContentFingerprints
   | PostAllowance
@@ -110,6 +118,7 @@ export class PostChecks extends Context.Service<
       const workspaceChannels = yield* WorkspaceChannels;
       const attachable = yield* AttachableMedia;
       const fingerprints = yield* ContentFingerprints;
+      const gate = yield* ApprovalGate;
       const ports = yield* Effect.context<Ports>();
 
       // The first limit of the plan a post at `at` would pass, as
@@ -251,7 +260,13 @@ export class PostChecks extends Context.Service<
                 }),
         });
 
+        // A draft's content is sent nowhere: nothing waits.
+        const awaitsApproval = Option.isSome(when)
+          ? yield* gate.holds(actor)
+          : false;
+
         const checked: PostCheck = {
+          awaitsApproval,
           channels: channels.map((channel) =>
             previewOn(
               content,

@@ -26,7 +26,7 @@ export class DuplicatePost extends Schema.TaggedError<DuplicatePost>()(
     duplicates: Schema.Array(DuplicateOnChannelSchema),
   },
   {
-    description: `Another post of the workspace sends the same content (the text the channel receives and the same media, in the same order) to some of the same channels, less than ${duplicateWindowHours} hours from this one's time: nothing was made. \`duplicates\` names each such channel and that post. Only posts that go out or went out count: not drafts, cancelled posts, nor a channel where the post failed. When it is meant, send the request again with \`allowDuplicate: true\`.`,
+    description: `Another post of the workspace sends the same content (the text the channel receives and the same media, in the same order) to some of the same channels, less than ${duplicateWindowHours} hours from this one's time: nothing was made. \`duplicates\` names each such channel and that post. Only posts that go out or went out count, those that wait for an approval among them: not drafts, cancelled posts, nor a channel where the post failed. When it is meant, send the request again with \`allowDuplicate: true\`.`,
     httpApiStatus: 409,
   }
 ) {}

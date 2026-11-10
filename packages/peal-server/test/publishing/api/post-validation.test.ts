@@ -64,6 +64,7 @@ describe("the validate endpoint", () => {
           });
 
           assert.deepStrictEqual(fine, {
+            awaitsApproval: false,
             channels: [
               {
                 channelId: mastodon,

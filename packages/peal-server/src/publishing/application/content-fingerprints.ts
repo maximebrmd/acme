@@ -40,7 +40,8 @@ export class ContentFingerprints extends Context.Service<
      * The workspace's other posts that send the same content to the same
      * channel, with a time between `after` and `before`: one per channel,
      * the nearest first in time. Only posts that go out or went out
-     * count: scheduled, publishing or finished, on a target that is
+     * count: waiting for an approval, scheduled, publishing or finished, on
+     * a target that is
      * pending, publishing, published or unconfirmed. A draft, a cancelled
      * post and a target that failed sent nothing.
      *

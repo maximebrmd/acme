@@ -2401,9 +2401,11 @@ export const studioGroupsLive = (studio: Studio) =>
             }
 
             const { when } = payload;
-            const { posts: all } = yield* Ref.get(studio.state);
+            const { policy, posts: all } = yield* Ref.get(studio.state);
 
             const validation: Omit<PostValidation, "valid"> = {
+              // Where every post waits, this one would.
+              awaitsApproval: when !== undefined && policy === "always",
               channels: payload.channelIds.flatMap((channelId) => {
                 const channel = channels.find(({ id }) => id === channelId);
 

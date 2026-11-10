@@ -53,6 +53,7 @@ const validationView = (
     : "invalidTimeZone";
 
   return {
+    awaitsApproval: check.awaitsApproval,
     channels: check.channels.map(previewView),
     duplicates: check.duplicates.map(({ channelId, postId }) => ({
       channelId,

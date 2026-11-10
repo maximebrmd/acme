@@ -2105,7 +2105,16 @@ and no socket, for tests.
   `updateWorkspace` are kept in that workspace's log by their handlers
   (`recordMade`), as its path is not under the workspace. Its refusals say
   why, like any other: `missingScope` with the partner scope a key lacks.
-- A check leaves no event: `posts.validate` (`checksOnly` in
+- The approval gate holds on every way of making a post: `send`, each
+  post of a batch and each row of an import go through
+  `PostScheduling.send`, and whoever the gate lets ask (`mayAsk`) may
+  send several as one. A held post takes its room in the month, counts
+  for the duplicate refusal as one that goes out, and gets no job, so a
+  wait for its outcome answers at once. `PostChecks` says a post would be
+  held (`awaitsApproval`, from `ApprovalGate.holds`, which records
+  nothing): it refuses nothing.
+- A check leaves no event: `posts.validate` and `lookups.run`, which read
+  though they are sent as POST (`checksOnly` in
   `#workspace/api/security.ts`), and a request whose handler says first
   thing that it changes nothing (`changesNothing`, `#shared/api/change-mark.ts`:
   an import's dry run), which the ConnectionJournal leaves out too. A

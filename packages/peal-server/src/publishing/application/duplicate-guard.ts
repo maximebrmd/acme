@@ -29,13 +29,15 @@ const contentsOf = (
 /**
  * The workspace's other posts that send what the scheduled post sends, to
  * the same channels, within `duplicateWindow` of its time. None for a post
- * that has no time.
+ * that has no time: only one scheduled, or held until it is approved, has.
  */
 export const duplicatesOf = Effect.fn("Publishing.duplicatesOf")(
   function* duplicatesOf(post: Post, targets: readonly PostTarget[]) {
     const { status } = post;
 
-    if (status._tag !== "scheduled") {
+    // A post that waits for an approval has its time too, and goes out
+    // once approved.
+    if (status._tag !== "scheduled" && status._tag !== "awaitingApproval") {
       return [];
     }
 

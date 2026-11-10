@@ -67,20 +67,22 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/validate
   "unknownMedia": [],
   "schedule": "ok",
   "planLimit": null,
+  "awaitsApproval": false,
   "duplicates": []
 }
 ```
 
-| Field             | What it holds                                                                                                                                                                                      |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `valid`           | True when nothing below refuses the post                                                                                                                                                           |
-| `channels`        | One entry per channel of the workspace the post names, in the order given                                                                                                                          |
-| `violations`      | What is wrong whatever the channel: no channel at all, or a text or options for a channel the post does not go to                                                                                  |
-| `unknownChannels` | The channels it names that are not the workspace's                                                                                                                                                 |
-| `unknownMedia`    | The media it shows that are not the workspace's, or not ready                                                                                                                                      |
-| `schedule`        | `ok`; `inPast`, more than a minute ago; or `invalidTimeZone`, when the zone is no IANA zone. Null without `when`.                                                                                  |
-| `planLimit`       | The limit of the workspace's plan the post would pass, as `PlanLimitReached` tells it. Null when the plan has room, on an instance that does not bill, or without `when`.                          |
-| `duplicates`      | The channels that already have the same content from another post near its time, each with that post ([Duplicate posts](#duplicates)). None without `when`, or when the request allows duplicates. |
+| Field             | What it holds                                                                                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `valid`           | True when nothing below refuses the post                                                                                                                                                                                             |
+| `channels`        | One entry per channel of the workspace the post names, in the order given                                                                                                                                                            |
+| `violations`      | What is wrong whatever the channel: no channel at all, or a text or options for a channel the post does not go to                                                                                                                    |
+| `unknownChannels` | The channels it names that are not the workspace's                                                                                                                                                                                   |
+| `unknownMedia`    | The media it shows that are not the workspace's, or not ready                                                                                                                                                                        |
+| `schedule`        | `ok`; `inPast`, more than a minute ago; or `invalidTimeZone`, when the zone is no IANA zone. Null without `when`.                                                                                                                    |
+| `planLimit`       | The limit of the workspace's plan the post would pass, as `PlanLimitReached` tells it. Null when the plan has room, on an instance that does not bill, or without `when`.                                                            |
+| `awaitsApproval`  | Whether the post, sent as it is, would wait for an [approval](/review) before it is scheduled, as the workspace asks of this caller: it would be made, with the status `awaitingApproval`. It refuses nothing. False without `when`. |
+| `duplicates`      | The channels that already have the same content from another post near its time, each with that post ([Duplicate posts](#duplicates)). None without `when`, or when the request allows duplicates.                                   |
 
 Each entry of `channels` holds:
 
@@ -362,7 +364,7 @@ A post made in one call is refused when another post of the workspace already se
 
 - **The same content** is the text the channel receives and the same media, in the same order.
 - **23 hours** is the shortest day a time zone has, so a post that repeats every day at the same local time is never refused.
-- **Only posts that go out or went out count**: not drafts, cancelled posts, nor a channel where the post failed.
+- **Only posts that go out or went out count**, those that wait for an approval among them, as they go out once approved: not drafts, cancelled posts, nor a channel where the post failed.
 - **What is checked**: `send`, each item of `bulk`, each row of `import`, the MCP tools `create_post` and `create_posts`, and `peal post`. Scheduling an existing draft, moving a post and reposting on a channel where it failed are never refused.
 - **When it is meant**, send the request again with `allowDuplicate: true`, on the post or on the bulk item, or `allow_duplicate` set to `true` on the CSV row.
 

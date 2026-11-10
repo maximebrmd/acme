@@ -67,20 +67,22 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/validate
   "unknownMedia": [],
   "schedule": "ok",
   "planLimit": null,
+  "awaitsApproval": false,
   "duplicates": []
 }
 ```
 
-| Champ             | Ce qu’il contient                                                                                                                                                                                                           |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `valid`           | Vrai quand rien de ce qui suit ne refuse la publication                                                                                                                                                                     |
-| `channels`        | Une entrée par canal de l’espace de travail que nomme la publication, dans l’ordre donné                                                                                                                                    |
-| `violations`      | Ce qui ne va pas quel que soit le canal : aucun canal, ou un texte ou des options pour un canal où la publication ne va pas                                                                                                 |
-| `unknownChannels` | Les canaux qu’elle nomme et qui ne sont pas à l’espace de travail                                                                                                                                                           |
-| `unknownMedia`    | Les médias qu’elle montre et qui ne sont pas à l’espace de travail, ou pas prêts                                                                                                                                            |
-| `schedule`        | `ok` ; `inPast`, une heure passée de plus d’une minute ; ou `invalidTimeZone`, quand le fuseau n’est pas un fuseau IANA. Null sans `when`.                                                                                  |
-| `planLimit`       | La limite de l’abonnement de l’espace de travail que la publication dépasserait, telle que la dit `PlanLimitReached`. Null quand l’abonnement a de la place, sur une instance qui ne facture pas, ou sans `when`.           |
-| `duplicates`      | Les canaux qui ont déjà le même contenu par une autre publication proche de son heure, chacun avec cette publication ([Publications en double](#duplicates)). Aucun sans `when`, ou quand la requête autorise les doublons. |
+| Champ             | Ce qu’il contient                                                                                                                                                                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `valid`           | Vrai quand rien de ce qui suit ne refuse la publication                                                                                                                                                                                                     |
+| `channels`        | Une entrée par canal de l’espace de travail que nomme la publication, dans l’ordre donné                                                                                                                                                                    |
+| `violations`      | Ce qui ne va pas quel que soit le canal : aucun canal, ou un texte ou des options pour un canal où la publication ne va pas                                                                                                                                 |
+| `unknownChannels` | Les canaux qu’elle nomme et qui ne sont pas à l’espace de travail                                                                                                                                                                                           |
+| `unknownMedia`    | Les médias qu’elle montre et qui ne sont pas à l’espace de travail, ou pas prêts                                                                                                                                                                            |
+| `schedule`        | `ok` ; `inPast`, une heure passée de plus d’une minute ; ou `invalidTimeZone`, quand le fuseau n’est pas un fuseau IANA. Null sans `when`.                                                                                                                  |
+| `planLimit`       | La limite de l’abonnement de l’espace de travail que la publication dépasserait, telle que la dit `PlanLimitReached`. Null quand l’abonnement a de la place, sur une instance qui ne facture pas, ou sans `when`.                                           |
+| `awaitsApproval`  | Si la publication, envoyée telle quelle, attendrait une [approbation](/review) avant d’être programmée, comme l’espace de travail le demande à cet appelant : elle serait créée, avec le statut `awaitingApproval`. Cela ne refuse rien. False sans `when`. |
+| `duplicates`      | Les canaux qui ont déjà le même contenu par une autre publication proche de son heure, chacun avec cette publication ([Publications en double](#duplicates)). Aucun sans `when`, ou quand la requête autorise les doublons.                                 |
 
 Chaque entrée de `channels` contient :
 
@@ -362,7 +364,7 @@ Une publication créée en un seul appel est refusée quand une autre publicatio
 
 - **Le même contenu**, c’est le texte que reçoit le canal et les mêmes médias, dans le même ordre.
 - **23 heures**, c’est la journée la plus courte qu’ait un fuseau horaire : une publication qui se répète chaque jour à la même heure locale n’est donc jamais refusée.
-- **Seules comptent les publications qui partent ou sont parties** : ni les brouillons, ni les publications annulées, ni un canal où la publication a échoué.
+- **Seules comptent les publications qui partent ou sont parties**, y compris celles qui attendent une approbation, puisqu’elles partent une fois approuvées : ni les brouillons, ni les publications annulées, ni un canal où la publication a échoué.
 - **Ce qui est vérifié** : `send`, chaque élément de `bulk`, chaque ligne d’`import`, les outils MCP `create_post` et `create_posts`, et `peal post`. Programmer un brouillon existant, déplacer une publication et republier sur un canal où elle a échoué ne sont jamais refusés.
 - **Quand c’est voulu**, renvoyez la requête avec `allowDuplicate: true`, sur la publication ou sur l’élément de `bulk`, ou avec `allow_duplicate` à `true` sur la ligne du CSV.
 

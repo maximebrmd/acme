@@ -143,7 +143,9 @@ const check = (
 
       if (validation.valid) {
         yield* Console.log(
-          "Checked, and made nothing: the post would go through."
+          validation.awaitsApproval
+            ? "Checked, and made nothing: the post would be made, and wait for an approval before it goes out."
+            : "Checked, and made nothing: the post would go through."
         );
       }
 

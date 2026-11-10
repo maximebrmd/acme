@@ -191,6 +191,14 @@ const mayChange = (actor: Actor, { status }: Post) =>
 export class PostScheduling extends Context.Service<
   PostScheduling,
   {
+    /**
+     * Whether the actor may ask for posts to go out: whoever may schedule,
+     * and whoever the workspace's gate lets ask, whose posts then wait for
+     * an approval. `MissingPermission` (post:schedule) otherwise.
+     */
+    readonly mayAsk: (
+      actor: Actor
+    ) => Effect.Effect<Actor, DatabaseError | MissingPermission>;
     /** Creates a post scheduled on the given channels. */
     readonly schedule: (
       actor: Actor,
@@ -918,6 +926,7 @@ export class PostScheduling extends Context.Service<
       return PostScheduling.of({
         cancel,
         forgetExpiredKeys,
+        mayAsk,
         reschedule,
         schedule,
         scheduleDraft,

@@ -37,6 +37,7 @@ export const ReviewApprovalGate = Layer.effect(
           )
         ),
       forgotten: intake.forgotten,
+      holds: intake.holds,
       maySubmit: intake.maySubmit,
       withdrawn: intake.withdrawn,
     });

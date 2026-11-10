@@ -83,6 +83,11 @@ export type PlanShortfall = typeof PlanShortfallSchema.Type;
  * nothing below refuses it.
  */
 export const PostValidationSchema = Schema.Struct({
+  // Whether the post, sent as it is, would wait for an approval before it
+  // is scheduled, as the workspace asks of this caller: it would be made,
+  // with the status `awaitingApproval`, and go out only once approved.
+  // False when the request gave no time.
+  awaitsApproval: Schema.Boolean,
   // One per channel of the workspace the post names, in the order given.
   channels: Schema.Array(ChannelPreviewSchema),
   // The channels that already have the same content from another post

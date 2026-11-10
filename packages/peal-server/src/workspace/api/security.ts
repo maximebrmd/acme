@@ -76,7 +76,11 @@ const contentGroups: ReadonlySet<string> = new Set([
 // and answers, so its connection is not kept, and the activity log, which
 // keeps what was asked to change, leaves it out. A request that makes
 // nothing only when asked not to (a dry run) says so itself (ChangeMark).
-const checksOnly: ReadonlySet<string> = new Set(["posts.validate"]);
+const checksOnly: ReadonlySet<string> = new Set([
+  // A lookup reads the platform, and answers: its input comes in a body.
+  "lookups.run",
+  "posts.validate",
+]);
 
 // Whether the request changes content.
 const changesContent = (

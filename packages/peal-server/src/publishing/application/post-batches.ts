@@ -6,7 +6,6 @@ import type { PostContentRejected } from "#publishing/domain/post-content-reject
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import { authorize } from "#shared/domain/authorize.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
@@ -67,7 +66,8 @@ const refused = (refusal: SendRefusal) =>
  *
  * A request sent again is made safe post by post, by the idempotency key
  * each carries: the posts already made are answered, the others made.
- * Needs post:schedule.
+ * Needs post:schedule, or what the workspace's approval gate lets ask
+ * (`PostScheduling.mayAsk`): posts it holds are made, and wait.
  */
 export class PostBatches extends Context.Service<
   PostBatches,
@@ -131,7 +131,7 @@ export class PostBatches extends Context.Service<
         actor: Actor,
         requests: readonly SendPostRequest[]
       ) {
-        yield* Effect.fromResult(authorize(actor, "post:schedule"));
+        yield* scheduling.mayAsk(actor);
 
         return yield* Effect.forEach(
           requests,
@@ -144,7 +144,7 @@ export class PostBatches extends Context.Service<
         actor: Actor,
         requests: readonly SendPostRequest[]
       ) {
-        yield* Effect.fromResult(authorize(actor, "post:schedule"));
+        yield* scheduling.mayAsk(actor);
 
         const since = DateTime.subtractDuration(
           yield* DateTime.now,

@@ -77,6 +77,9 @@ export const DrizzleContentFingerprints = Layer.effect(
                     Option.getOrUndefined
                   ),
                   inArray(posts.status, [
+                    // A post that waits for an approval keeps its time, and
+                    // goes out once approved.
+                    "awaitingApproval",
                     "scheduled",
                     "publishing",
                     "finished",

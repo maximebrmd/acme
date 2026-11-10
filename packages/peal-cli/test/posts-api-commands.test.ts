@@ -464,8 +464,38 @@ describe("peal post --dry-run", () => {
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect(
+    "says a post would wait, where the workspace asks for approvals",
+    () =>
+      Effect.gen(function* waits() {
+        const session = yield* signedIn();
+
+        yield* Ref.update(session.studio.state, (state) => ({
+          ...state,
+          policy: "always" as const,
+        }));
+
+        const printed = yield* session.printed(
+          note(
+            "--channel",
+            mastodonId,
+            "--at",
+            "2026-11-25T09:00:00Z",
+            "--dry-run"
+          )
+        );
+
+        assert.include(
+          printed,
+          "the post would be made, and wait for an approval before it goes out"
+        );
+        assert.notInclude(printed, "would go through");
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it("says what a plan lacks, and a zone Peal does not know", () => {
     const validation: PostValidation = {
+      awaitsApproval: false,
       channels: [],
       duplicates: [],
       planLimit: {
