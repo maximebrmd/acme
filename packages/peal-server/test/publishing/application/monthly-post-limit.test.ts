@@ -556,4 +556,50 @@ describe("the channel limit", () => {
         )
       )
   );
+
+  it.effect(
+    "lets it send nothing in one call either, now or later, and keeps no idempotency key for what it refused",
+    () =>
+      setTime("2026-06-10T07:00:00Z").pipe(
+        Effect.andThen(
+          Effect.gen(function* sendOverChannels() {
+            const workspaceId = yield* freshWorkspace;
+            const channel = yield* connect(workspaceId, "mastodon");
+            const scheduling = yield* PostScheduling;
+            const actor = actorIn(workspaceId);
+
+            const over = new PlanLimitReached({
+              allowed: 3,
+              limit: "channels",
+              needed: 4,
+              used: 4,
+            });
+
+            const request = {
+              channelIds: [channel] as const,
+              content: contentOf("Hi"),
+              idempotency: Option.some({
+                fingerprint: "synthetic-fingerprint",
+                key: "synthetic-over-plan",
+              }),
+              timeZone: scheduleIn("2026-06-20T08:00:00Z").timeZone,
+            };
+
+            for (const at of [
+              Option.none(),
+              Option.some(scheduleIn("2026-06-20T08:00:00Z").at),
+            ]) {
+              // Sent again with its key, it is refused again: the first
+              // refusal made no post for the key to answer.
+              assert.deepStrictEqual(
+                yield* scheduling
+                  .send(actor, { ...request, at })
+                  .pipe(Effect.flip),
+                over
+              );
+            }
+          }).pipe(Effect.provide(OverChannelsServer))
+        )
+      )
+  );
 });
