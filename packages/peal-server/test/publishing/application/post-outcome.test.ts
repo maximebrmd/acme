@@ -1,11 +1,12 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Duration, Effect, Fiber, Option } from "effect";
+import { DateTime, Duration, Effect, Fiber, Option, Ref } from "effect";
 import { TestClock } from "effect/testing";
 
 import {
   makePostOutcomes,
   PostOutcomes,
 } from "#publishing/application/post-outcomes.ts";
+import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
@@ -57,6 +58,58 @@ const answerOf = <A, E>(waiting: Fiber.Fiber<A, E>) =>
 
       yield* TestClock.adjust(Duration.seconds(1));
       yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+    }
+
+    return yield* Fiber.join(waiting);
+  });
+
+// Whether the request answered, or read the post more than `seen` times.
+const movedOn = <A, E>(
+  waiting: Fiber.Fiber<A, E>,
+  reads: Ref.Ref<number>,
+  seen: number
+) =>
+  Ref.get(reads).pipe(
+    Effect.map((read) => waiting.pollUnsafe() !== undefined || read > seen)
+  );
+
+// Waits, in real time, until the request answered or read the post again.
+const untilMovedOn = <A, E>(
+  waiting: Fiber.Fiber<A, E>,
+  reads: Ref.Ref<number>,
+  seen: number
+) =>
+  Effect.gen(function* settling() {
+    for (let round = 0; round < 2000; round += 1) {
+      if (yield* movedOn(waiting, reads, seen)) {
+        return;
+      }
+
+      yield* TestClock.withLive(Effect.sleep(Duration.millis(5)));
+    }
+
+    assert.fail("The waiting request neither read the post nor answered");
+  });
+
+// The answer a waiting request comes to, with virtual time moved a second
+// each time it has read the post again: never while a read is under way.
+const answerAfterReads = <A, E>(
+  waiting: Fiber.Fiber<A, E>,
+  reads: Ref.Ref<number>
+) =>
+  Effect.gen(function* answering() {
+    // Its first read: it has started, and its wait is counted from now.
+    yield* untilMovedOn(waiting, reads, 0);
+
+    for (let round = 0; round < 200; round += 1) {
+      if (waiting.pollUnsafe() !== undefined) {
+        break;
+      }
+
+      const seen = yield* Ref.get(reads);
+
+      yield* TestClock.adjust(Duration.seconds(1));
+      yield* untilMovedOn(waiting, reads, seen);
     }
 
     return yield* Fiber.join(waiting);
@@ -210,20 +263,43 @@ describe("PostOutcomes.await", () => {
 
           assert.isFalse(atOnce.settled);
 
-          // An hour asked is a minute waited.
-          const capped = yield* outcomes
-            .await(actor, hanging.post.id, Duration.hours(1))
-            .pipe(Effect.forkChild);
+          // An hour asked is a minute waited. Time moves a second once
+          // the request has read the post again, however long the database
+          // takes: moved on a timer, it runs ahead of a slow read, and the
+          // minute measured grows with the load.
+          const reads = yield* Ref.make(0);
+          const repository = yield* PostRepository;
+
+          const counted = yield* makePostOutcomes(1).pipe(
+            Effect.provideService(
+              PostRepository,
+              PostRepository.of({
+                ...repository,
+                targets: (postId) =>
+                  repository
+                    .targets(postId)
+                    .pipe(
+                      Effect.tap(() => Ref.update(reads, (read) => read + 1))
+                    ),
+              })
+            )
+          );
 
           const before = yield* DateTime.now;
 
-          assert.isFalse((yield* answerOf(capped)).settled);
+          const capped = yield* counted
+            .await(actor, hanging.post.id, Duration.hours(1))
+            .pipe(Effect.forkChild);
 
-          // A minute, give or take the second time moves by here.
-          assert.isAtMost(
-            Duration.toSeconds(DateTime.distance(before, yield* DateTime.now)),
-            62
+          assert.isFalse((yield* answerAfterReads(capped, reads)).settled);
+
+          // A minute, and the second in which it is found over.
+          const waited = Duration.toSeconds(
+            DateTime.distance(before, yield* DateTime.now)
           );
+
+          assert.isAtLeast(waited, 60);
+          assert.isAtMost(waited, 61);
 
           // A server lets so many requests wait at once: one more is
           // answered at once, with the post as it stands, and asks again.
