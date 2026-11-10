@@ -1797,8 +1797,25 @@ and no socket, for tests.
   a profile's channel, and a page LinkedIn answers 403 for, are
   `unsupported`. Clients say "LinkedIn pages" where they list the counted
   platforms.
-- Platforms without a reader (X, Threads and Facebook Pages so
-  far) answer
+- Facebook Pages read a post in three calls with what Peal asks today
+  (`shares`, the reactions edge's `summary=total_count`, the comments
+  edge's summary with `filter=stream`), and its views and clicks
+  (`post_media_view`, `post_clicks`) only for a Page that granted
+  `read_insights`. Threads reads a post's insights for an account that
+  granted `threads_manage_insights`, `paused` otherwise. Neither scope is
+  asked at sign-in yet: Meta grants both after a review. Both share
+  `platforms/meta/graph-read.ts`, where a refused token fails the post and
+  never marks the channel.
+- X bills the server's app for each post and account a read returns, once
+  a UTC day for the same one. Its readers read nothing unless `X_ANALYTICS`
+  is true (`#shared/infrastructure/platforms/x-analytics.ts`, which
+  publishing's capabilities read too), and claim each read first from
+  `PaidReads` (`analytics.paid_reads`: one row a workspace, platform, day
+  and resource, under an advisory lock; `X_ANALYTICS_DAILY_READS` a
+  workspace and day). What the allowance does not cover stays due. A new
+  platform that bills reads goes through `PaidReads` and `BilledReads`.
+- Platforms without a reader (Google Business Profile, and LinkedIn
+  profiles) answer
   `ChannelUnreadable` `unsupported`: their posts end at their first turn,
   with no warning, and the reports leave them out. The platforms with one
   are `countedPlatforms` (`analytics/domain/counted-platforms.ts`), which
@@ -1809,8 +1826,15 @@ and no socket, for tests.
   minute 7: a post is read every hour for 48 hours, then every day until it
   is 30 days old (`analytics/domain/collection-schedule.ts`), each next read
   counted from the run's scheduled time (`ClusterCron.CurrentScheduledTime`).
-- Counts are likes, reposts, replies, and quotes and impressions as Options:
-  none, where a platform does not give one, is not zero. A count is at most
+- Counts are likes, reposts, replies, and quotes, impressions, clicks, reach
+  and saves as Options, each a nullable column of `tracked_posts` and
+  `metric_snapshots`: none, where a platform does not give one, is not
+  zero, in a total too. Add a count as a nullable column with a decoding
+  default (`givenBySome`), so stored snapshots and gate messages still
+  decode, and name it in `analytics/domain/analytics-numbers.ts`, which
+  says which numbers each platform gives; the contract copies the names,
+  and a channel's capabilities list them (`analytics.postCounts`,
+  `accountNumbers`). A count is at most
   2^31 − 1 (`maxCount`), what its column holds: a server saying more fails
   to decode, rather than fail the run's insert.
 - Reads go through the `MetricsReader` port. `GatedMetricsReader` sends each
@@ -1853,6 +1877,40 @@ and no socket, for tests.
   (`saveReadings`, `saveSchedules`), never a transaction a post. A run
   sets `peal.analytics.collection.duration` and `.left`, and one out of
   time logs a warning and counts in `.unfinished`.
+- `CollectAccounts` runs on the `analytics.collect-accounts` cron, hourly
+  at minute 37: it follows every connected channel (the channels context's
+  `ChannelDirectory`, ids and platforms only, a page at a time) in
+  `analytics.tracked_channels`, and reads each account once a day through
+  its gate (`ReadAccount`, `MetricsReader.account`), the ones that waited
+  longest first, saving a page in one statement a table. One snapshot a
+  channel and UTC day (`analytics.account_snapshots`): the counters read
+  that day, and the views and reach the platform counted for a day, which
+  a later read revises. A platform that puts a read off is asked again an
+  hour later, behind the others; `paused` waits a day, `unsupported` a
+  week; a channel gone is marked (`gone_at`) and its days deleted. It stops
+  40 minutes after its scheduled time, and sets
+  `peal.analytics.accounts.duration`, `.left` and `.unfinished`, which an
+  alert rule watches. Account readers live in
+  `platforms/accounts/`: only days a platform dates itself are kept
+  (LinkedIn's `timeRange`, Pinterest's `date`), never an `end_time` to
+  interpret.
+- `PurgeAnalytics` runs on the `analytics.retention` cron, daily: posts
+  and account days past `retentionOf(platform)`
+  (`analytics/domain/analytics-retention.ts`: two years, less where a
+  platform's terms cap it, as LinkedIn's, Pinterest's and Google's do),
+  the posts of a channel gone 30 days, and billed reads past 35 days. The
+  registry (`retentionPeriods.analytics*`), the privacy policy and the
+  docs say the same: change them together. It takes its instant, and its
+  Postgres test runs in 1975, before every other suite's rows.
+- The dashboard (`AnalyticsQueries.dashboard`, put together by the pure
+  `dashboardOf`) answers a range beside the one before it
+  (`previousRange`), by channel and by platform, with followers
+  (`followerChange`: from the last read before the range, or the first in
+  it). A range is `days` (7, 30, 90, ending today in the zone) or `from`
+  and `to`. Exports stream (`exportRows`, `Stream.paginate` over keyset
+  pages of 500; `HttpServerResponse.stream`), as RFC 4180 CSV whose cells
+  never start a formula, or one JSON object a line. Account days are UTC
+  days, written under the range's calendar day of the same name.
 - Summaries take the posts published over a range of days in an IANA zone:
   the domain computes each day's start with `fromWallClock`, and Postgres
   buckets snapshots with those instants (`width_bucket`), never its zones.
