@@ -103,6 +103,8 @@ interface Fixture {
   readonly publishing: string;
   /** A token that may only read the workspace. */
   readonly reading: string;
+  /** A token that reads the workspace, with the ads scope and no other. */
+  readonly readingAds: string;
   readonly workspaceId: string;
 }
 
@@ -153,6 +155,15 @@ const ToolsFixtureLive = Layer.effect(
       "openid workspace:read workspace:write workspace:publish"
     );
 
+    // The ads scope beside reading alone: it opens nothing that spends,
+    // which takes publishing too.
+    const readingAds = yield* authorize(
+      owner,
+      clientId,
+      workspaceId,
+      "openid workspace:read workspace:ads"
+    );
+
     const { key } = yield* apiKeyOf(owner, workspaceId, [
       "channel:read",
       "post:read",
@@ -165,6 +176,7 @@ const ToolsFixtureLive = Layer.effect(
       owner,
       publishing,
       reading,
+      readingAds,
       workspaceId,
       writing,
       youtubeId: youtube.id,
@@ -496,6 +508,31 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.isFalse(granted(all, "create_draft"));
           assert.isFalse(granted(all, "schedule_post"));
 
+          // Spending takes the ads scope and publishing together; a quote
+          // checks what spending would, and changes nothing.
+          const adsReader = yield* connected(fixture.readingAds);
+
+          const ads = yield* adsReader.call("find_tools", FoundSchema, {
+            area: "ads",
+          });
+
+          assert.isTrue(granted(ads, "list_boosts"));
+
+          for (const name of [
+            "boost_post",
+            "pause_boost",
+            "quote_boost",
+            "resume_boost",
+            "stop_boost",
+          ]) {
+            assert.isFalse(granted(ads, name), name);
+            assert.strictEqual(
+              ads.tools.find((tool) => tool.name === name)?.scope,
+              "workspace:ads",
+              name
+            );
+          }
+
           // An area, and words in any order and case.
           const media = yield* reader.call("find_tools", FoundSchema, {
             area: "media",
@@ -696,6 +733,16 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               specialAdCategory: "none",
             },
             pause_boost: { boostId },
+            quote_boost: {
+              accountId: postId,
+              audience: { ageMax: 65, ageMin: 18, countries: ["US"] },
+              budget: { amount: 5000, kind: "total" },
+              channelId: fixture.channelId,
+              currency: "EUR",
+              endsAt: "2030-01-08T10:00:00Z",
+              postId,
+              specialAdCategory: "none",
+            },
             resume_boost: { boostId },
             stop_boost: { boostId },
           } satisfies Record<string, ToolArguments>;

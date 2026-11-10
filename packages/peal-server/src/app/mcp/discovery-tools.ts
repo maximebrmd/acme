@@ -41,15 +41,16 @@ export const FoundToolSchema = Schema.Struct({
   // Whether its effect reaches outside Peal: a post on a platform, an
   // email, a request to another server.
   reachesOutside: Schema.Boolean,
-  // The OAuth scope a client needs to call it.
+  // The OAuth scope a client needs to call it: the one to ask for. What
+  // spends on ads takes workspace:publish beside workspace:ads.
   scope: Schema.Literals([
     "workspace:read",
     "workspace:write",
     "workspace:publish",
     "workspace:ads",
   ]),
-  // Whether this connection holds that scope: null for an API key, which
-  // carries permissions, not scopes (whoami lists them).
+  // Whether this connection holds every scope the tool takes: null for an
+  // API key, which carries permissions, not scopes (whoami lists them).
   scopeGranted: Schema.NullOr(Schema.Boolean),
   // What it does, in a sentence. tools/list gives the whole description.
   summary: Schema.String,

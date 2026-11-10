@@ -105,7 +105,10 @@
   numbers and boosts; `boost_post` and `resume_boost` spend the user's
   money: they are `destructive` and `openWorld`, say so first in their
   description with when to call them, take the scope `workspace:ads`
-  (`adsTools`, beside `workspace:publish`; a test calls each without it),
+  (`adsScopeSets` in `catalogue.ts`, from `scopesFor`, with `quote_boost`,
+  `pause_boost` and `stop_boost`; a test calls each without it), and
+  `find_tools` grants a tool only when the connection holds every scope of
+  one of its sets,
   and `boost_post` takes an `idempotencyKey`. No tool signs in to an ad
   network, connects an account or sets a ceiling: those are a person's.
   Instants in parameters are text (`boostFields`).

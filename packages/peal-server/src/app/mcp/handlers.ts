@@ -4,7 +4,7 @@ import type { Member } from "peal-contract";
 
 import { AdsToolsLive } from "#app/mcp/ads-handlers.ts";
 import { CapabilityToolsLive } from "#app/mcp/capabilities-handlers.ts";
-import { findTools, summaryOf } from "#app/mcp/catalogue.ts";
+import { findTools, scopesLetCall, summaryOf } from "#app/mcp/catalogue.ts";
 import { ConnectToolsLive } from "#app/mcp/connect-handlers.ts";
 import { InboxToolsLive } from "#app/mcp/inbox-handlers.ts";
 import { MediaToolsLive } from "#app/mcp/media-handlers.ts";
@@ -141,15 +141,17 @@ const BasicToolsLive = BasicTools.toLayer(
       find_tools: (search) =>
         CurrentMember.pipe(
           Effect.map(({ principal }) => ({
-            tools: findTools(search).map(({ description, ...tool }) => ({
-              ...tool,
-              // An API key carries permissions, not scopes.
-              scopeGranted:
-                principal._tag === "user" && principal.oauth !== undefined
-                  ? principal.oauth.scopes.includes(tool.scope)
-                  : null,
-              summary: summaryOf(description),
-            })),
+            tools: findTools(search).map(
+              ({ description, scopeSets, ...tool }) => ({
+                ...tool,
+                // An API key carries permissions, not scopes.
+                scopeGranted:
+                  principal._tag === "user" && principal.oauth !== undefined
+                    ? scopesLetCall({ scopeSets }, principal.oauth.scopes)
+                    : null,
+                summary: summaryOf(description),
+              })
+            ),
           }))
         ),
       list_channels: ({ platform, search, status }) =>

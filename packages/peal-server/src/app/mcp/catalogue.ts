@@ -16,6 +16,7 @@ import { SavedTools } from "#app/mcp/saved-tools.ts";
 import { TagTools } from "#app/mcp/tags-tools.ts";
 import { BasicTools } from "#app/mcp/tools.ts";
 import { WebhookTools } from "#app/mcp/webhooks-tools.ts";
+import { scopesFor } from "#workspace/domain/oauth-grant.ts";
 import type { WorkspaceScope } from "#workspace/domain/oauth-grant.ts";
 
 // What the catalogue reads of a tool.
@@ -84,35 +85,60 @@ export interface CatalogueTool {
   readonly destructive: boolean;
   readonly name: string;
   readonly reachesOutside: boolean;
-  /** The scope an OAuth client needs to call it. */
+  /** The scope an OAuth client needs to call it: the one to ask for. */
   readonly scope: WorkspaceScope;
+  /**
+   * Every set of scopes that lets an OAuth client call it: holding all of
+   * one is enough. Most tools have one set of one scope.
+   */
+  readonly scopeSets: readonly (readonly WorkspaceScope[])[];
   readonly title: string;
 }
 
 /**
- * The tools that spend on ads, or change what spends: their use cases
- * check `ads:spend` or `ads:manage`, which the scope `workspace:ads`
- * leaves to an OAuth client, beside `workspace:publish` for those that
- * spend. A test calls each with a connection that lacks the scope.
+ * The tools that spend on ads, or change or quote what spends, with the
+ * scopes each takes: their use cases check `ads:spend` (a quote checks
+ * what spending would), or, to pause or stop, `ads:spend` or `ads:manage`,
+ * which the scope `workspace:ads` leaves to an OAuth client beside
+ * `workspace:publish` or `workspace:write` (`scopesFor`). A test calls
+ * each with a connection that lacks the scope.
  */
-export const adsTools: ReadonlySet<string> = new Set([
-  "boost_post",
-  "pause_boost",
-  "resume_boost",
-  "stop_boost",
-]);
+const adsScopeSets: Readonly<
+  Record<string, readonly (readonly WorkspaceScope[])[]>
+> = {
+  boost_post: [scopesFor("ads:spend")],
+  pause_boost: [scopesFor("ads:spend"), scopesFor("ads:manage")],
+  quote_boost: [scopesFor("ads:spend")],
+  resume_boost: [scopesFor("ads:spend")],
+  stop_boost: [scopesFor("ads:spend"), scopesFor("ads:manage")],
+};
 
-const scopeOf = (name: string, changes: boolean): WorkspaceScope => {
-  if (adsTools.has(name)) {
-    return "workspace:ads";
+/** The tools that take the scope `workspace:ads`. */
+export const adsTools: ReadonlySet<string> = new Set(Object.keys(adsScopeSets));
+
+const scopeSetsOf = (
+  name: string,
+  changes: boolean
+): readonly (readonly WorkspaceScope[])[] => {
+  const ads = adsScopeSets[name];
+
+  if (ads !== undefined) {
+    return ads;
   }
 
   if (publishingTools.has(name)) {
-    return "workspace:publish";
+    return [["workspace:publish"]];
   }
 
-  return changes ? "workspace:write" : "workspace:read";
+  return [[changes ? "workspace:write" : "workspace:read"]];
 };
+
+/** Whether scopes an OAuth client holds let it call the tool. */
+export const scopesLetCall = (
+  tool: Pick<CatalogueTool, "scopeSets">,
+  held: readonly string[]
+): boolean =>
+  tool.scopeSets.some((set) => set.every((scope) => held.includes(scope)));
 
 /** Every tool the endpoint offers, area by area, in the order they list. */
 export const toolCatalogue = (): readonly CatalogueTool[] =>
@@ -122,6 +148,8 @@ export const toolCatalogue = (): readonly CatalogueTool[] =>
         Context.getOrElse(tool.annotations, annotation, () => false);
 
       const changes = !hint(Tool.Readonly);
+      const scopeSets = scopeSetsOf(tool.name, changes);
+      const [[scope = "workspace:read"] = []] = scopeSets;
 
       return {
         area,
@@ -130,7 +158,8 @@ export const toolCatalogue = (): readonly CatalogueTool[] =>
         destructive: hint(Tool.Destructive),
         name: tool.name,
         reachesOutside: hint(Tool.OpenWorld),
-        scope: scopeOf(tool.name, changes),
+        scope,
+        scopeSets,
         title: Context.getOrElse(tool.annotations, Tool.Title, () => tool.name),
       };
     })
