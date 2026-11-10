@@ -336,7 +336,7 @@ export class CollectMetrics extends Context.Service<
           at: DateTime.Utc,
           deadline: DateTime.Utc
         ) {
-          const { channelId } = Arr.headNonEmpty(posts);
+          const { channelId, workspaceId } = Arr.headNonEmpty(posts);
           let total = emptyTally;
           let left = [...posts];
 
@@ -363,6 +363,7 @@ export class CollectMetrics extends Context.Service<
                   platformPostId,
                   targetId,
                 })),
+                workspaceId,
               })
               .pipe(Effect.result);
 

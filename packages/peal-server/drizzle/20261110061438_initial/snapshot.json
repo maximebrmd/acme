@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "5bc7bc50-9f33-4398-b5cc-f2fe8cf72320",
+  "id": "1451c75a-c104-4c76-a216-393298a59705",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -184,6 +184,25 @@
         "n|rel|analytics.metric_snapshots",
         "n|type|analytics.metric_snapshots",
         "n|rel|analytics.metric_snapshots_pkey"
+      ],
+      "reads": [
+        "n|sch|analytics"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "analytics",
+        "paid_reads"
+      ],
+      "writes": [
+        "s|tbl|analytics.paid_reads",
+        "n|tbl|analytics.paid_reads",
+        "e|tbl|analytics.paid_reads",
+        "n|rel|analytics.paid_reads",
+        "n|type|analytics.paid_reads",
+        "n|rel|analytics.paid_reads_pkey"
       ],
       "reads": [
         "n|sch|analytics"
@@ -1267,6 +1286,26 @@
       ],
       "reads": [
         "n|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "analytics",
+        "paid_reads",
+        "paid_reads_day"
+      ],
+      "writes": [
+        "s|idx|analytics.paid_reads_day",
+        "n|idx|analytics.paid_reads_day",
+        "e|idx|analytics.paid_reads_day",
+        "n|rel|analytics.paid_reads_day"
+      ],
+      "reads": [
+        "n|tbl|analytics.paid_reads",
+        "n|sch|analytics",
+        "n|col|analytics.paid_reads.day"
       ]
     },
     {
@@ -3773,6 +3812,12 @@
     },
     {
       "schema": "analytics",
+      "name": "paid_reads",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "analytics",
       "name": "tracked_posts",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -4254,6 +4299,58 @@
       "schema": "analytics",
       "table": "metric_snapshots",
       "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "paid_reads",
+      "name": "day",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "paid_reads",
+      "name": "platform",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "paid_reads",
+      "name": "resource",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "paid_reads",
+      "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
@@ -12000,6 +12097,27 @@
     },
     {
       "schema": "analytics",
+      "table": "paid_reads",
+      "name": "paid_reads_day",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "day",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "analytics",
       "table": "tracked_posts",
       "name": "tracked_posts_due",
       "nameExplicit": true,
@@ -14537,6 +14655,19 @@
       "columns": [
         "target_id",
         "collected_at"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "analytics",
+      "table": "paid_reads",
+      "name": "paid_reads_pkey",
+      "columns": [
+        "workspace_id",
+        "platform",
+        "day",
+        "resource"
       ],
       "nameExplicit": false,
       "entityType": "pks"

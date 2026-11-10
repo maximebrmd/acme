@@ -42,6 +42,14 @@ CREATE TABLE "analytics"."metric_snapshots" (
 	CONSTRAINT "metric_snapshots_counts" CHECK ("likes" >= 0 AND "reposts" >= 0 AND "replies" >= 0 AND coalesce("quotes", 0) >= 0 AND coalesce("impressions", 0) >= 0 AND coalesce("clicks", 0) >= 0 AND coalesce("reach", 0) >= 0 AND coalesce("saves", 0) >= 0)
 );
 --> statement-breakpoint
+CREATE TABLE "analytics"."paid_reads" (
+	"day" date,
+	"platform" text,
+	"resource" text,
+	"workspace_id" uuid,
+	CONSTRAINT "paid_reads_pkey" PRIMARY KEY("workspace_id","platform","day","resource")
+);
+--> statement-breakpoint
 CREATE TABLE "analytics"."tracked_posts" (
 	"channel_id" uuid NOT NULL,
 	"clicks" integer,
@@ -832,6 +840,7 @@ CREATE TABLE "auth"."verification" (
 	"updated_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
+CREATE INDEX "paid_reads_day" ON "analytics"."paid_reads" ("day");--> statement-breakpoint
 CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collection_at","channel_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_channel_due" ON "analytics"."tracked_posts" ("channel_id","next_collection_at","target_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" ("workspace_id","published_at");--> statement-breakpoint

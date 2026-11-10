@@ -41,6 +41,8 @@ export const countedPlatforms = [
   "pinterest",
   // Company pages only: a LinkedIn profile's posts have no counts.
   "linkedin",
+  // On a server whose operator turned X reads on: X bills each one.
+  "x",
 ] as const satisfies readonly Platform[];
 
 /**

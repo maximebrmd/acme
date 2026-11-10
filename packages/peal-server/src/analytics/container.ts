@@ -6,8 +6,10 @@ import type { MetricsReader } from "#analytics/application/metrics-reader.ts";
 import { CollectionPaceLive } from "#analytics/infrastructure/collection-pace.ts";
 import { DrizzleAnalyticsRecords } from "#analytics/infrastructure/drizzle-analytics-records.ts";
 import { DrizzleTrackedPosts } from "#analytics/infrastructure/drizzle-tracked-posts.ts";
+import { PlatformMetricsReaderLive as PlatformReaders } from "#analytics/infrastructure/platforms/platform-metrics-reader.ts";
 import { PublishingPublishedPosts } from "#analytics/infrastructure/publishing-published-posts.ts";
 import { SqlAnalyticsReports } from "#analytics/infrastructure/sql-analytics-reports.ts";
+import { SqlPaidReads } from "#analytics/infrastructure/sql-paid-reads.ts";
 
 /**
  * Reading a workspace's analytics (AnalyticsQueries), for the handlers, and
@@ -46,6 +48,11 @@ export { CollectMetricsCron as AnalyticsCronsLive } from "#analytics/infrastruct
 
 /**
  * The platforms' readers, Mastodon, Bluesky, TikTok, YouTube, Instagram and
- * Pinterest, which the channels' gates run. Need the channels context's ChannelAccess, and Dns.
+ * Pinterest, LinkedIn pages and, where the operator turned its reads on,
+ * X, whose reads are counted against each workspace's allowance for the
+ * day (PaidReads). The channels' gates run them. Need the channels
+ * context's ChannelAccess, Dns and the database.
  */
-export { PlatformMetricsReaderLive } from "#analytics/infrastructure/platforms/platform-metrics-reader.ts";
+export const PlatformMetricsReaderLive = PlatformReaders.pipe(
+  Layer.provide(SqlPaidReads)
+);

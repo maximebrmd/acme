@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  date,
   index,
   integer,
   pgSchema,
@@ -105,3 +106,26 @@ export const erasedWorkspaces = analytics.table("erased_workspaces", {
   erasedAt: instant("erased_at").notNull(),
   workspaceId: uuid("workspace_id").primaryKey(),
 });
+
+/**
+ * What a workspace read on a platform that bills the server's app for each
+ * resource a read returns (X), by UTC day: the platform's id of each post
+ * or account read, once a day, as the platform bills it. The rows of a day
+ * are what the workspace's allowance for it is counted from; the retention
+ * job deletes them once they are 35 days old.
+ */
+export const paidReads = analytics.table(
+  "paid_reads",
+  {
+    day: date("day").notNull(),
+    platform: text("platform").notNull(),
+    resource: text("resource").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.workspaceId, table.platform, table.day, table.resource],
+    }),
+    index("paid_reads_day").on(table.day),
+  ]
+);

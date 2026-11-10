@@ -3,6 +3,7 @@ import { Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 import { SqlClient } from "effect/sql";
 
+import type { PaidReads } from "#analytics/application/paid-reads.ts";
 import { TrackedPosts } from "#analytics/application/tracked-posts.ts";
 import { PostMetrics } from "#analytics/domain/post-metrics.ts";
 import {
@@ -21,6 +22,7 @@ import {
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
+import { paidReadsOf } from "#test/analytics/fakes/memory-paid-reads.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 
 // Stand-ins for what analytics reads from other contexts and platforms,
@@ -80,7 +82,10 @@ export const readersWith = ({
   metaAppSecret = "meta-app-secret-synthetic",
   metaGraph = "http://127.0.0.1:9",
   pinterestApi = "http://127.0.0.1:9",
+  paidReads = paidReadsOf(1000),
   tiktokApi = "http://127.0.0.1:9",
+  xApi = "http://127.0.0.1:9",
+  xReads = true,
   youtubeApi = "http://127.0.0.1:9",
 }: {
   readonly appView?: string | undefined;
@@ -89,7 +94,10 @@ export const readersWith = ({
   readonly metaAppSecret?: string | undefined;
   readonly metaGraph?: string | undefined;
   readonly pinterestApi?: string | undefined;
+  readonly paidReads?: Layer.Layer<PaidReads> | undefined;
   readonly tiktokApi?: string | undefined;
+  readonly xApi?: string | undefined;
+  readonly xReads?: boolean | undefined;
   readonly youtubeApi?: string | undefined;
 } = {}) => {
   const graph = new URL(metaGraph);
@@ -113,12 +121,15 @@ export const readersWith = ({
     metaHosts,
     pinterestApi: new URL(pinterestApi),
     tiktokApi: new URL(tiktokApi),
+    xApi: new URL(xApi),
+    xReads,
     youtubeApi: new URL(youtubeApi),
   }).pipe(
     Layer.provide(
       Layer.mergeAll(
         FetchHttpClient.layer,
         OpenOutboundGuard,
+        paidReads,
         Mac.layerWebCrypto.pipe(Layer.provide(SecureRandom.layerWebCrypto))
       )
     )

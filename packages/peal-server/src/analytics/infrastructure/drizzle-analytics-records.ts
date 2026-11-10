@@ -10,7 +10,12 @@ import type {
 } from "#shared/application/personal-data.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { erasedWorkspaces, metricSnapshots, trackedPosts } from "./schema.ts";
+import {
+  erasedWorkspaces,
+  metricSnapshots,
+  paidReads,
+  trackedPosts,
+} from "./schema.ts";
 import { shareTrackingLock } from "./tracking-lock.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
@@ -114,6 +119,10 @@ export const DrizzleAnalyticsRecords = Layer.effect(
               yield* db
                 .delete(trackedPosts)
                 .where(eq(trackedPosts.workspaceId, workspaceId));
+
+              yield* db
+                .delete(paidReads)
+                .where(eq(paidReads.workspaceId, workspaceId));
             })
           )
           .pipe(Effect.mapError(failed));

@@ -18,6 +18,7 @@ import { linkedinMetrics } from "#analytics/infrastructure/platforms/linkedin/li
 import { mastodonMetrics } from "#analytics/infrastructure/platforms/mastodon/mastodon-metrics.ts";
 import { pinterestMetrics } from "#analytics/infrastructure/platforms/pinterest/pinterest-metrics.ts";
 import { tiktokMetrics } from "#analytics/infrastructure/platforms/tiktok/tiktok-metrics.ts";
+import { xMetrics } from "#analytics/infrastructure/platforms/x/x-metrics.ts";
 import { youtubeMetrics } from "#analytics/infrastructure/platforms/youtube/youtube-metrics.ts";
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
@@ -28,6 +29,7 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 import { pinterestHostsConfig } from "#shared/infrastructure/platforms/pinterest-api.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
+import { xAnalyticsConfig } from "#shared/infrastructure/platforms/x-analytics.ts";
 
 /** Where the platforms' counts are read. */
 export interface MetricsReaderSettings {
@@ -50,6 +52,10 @@ export interface MetricsReaderSettings {
   readonly pinterestApi: URL;
   /** TikTok's API. */
   readonly tiktokApi: URL;
+  /** X's API. */
+  readonly xApi: URL;
+  /** Whether the operator turned X reads, which X bills, on. */
+  readonly xReads: boolean;
   /** The YouTube Data API. */
   readonly youtubeApi: URL;
 }
@@ -59,7 +65,8 @@ export interface MetricsReaderSettings {
  * found through the channels context (ChannelAccess), which says who it
  * posts as, what it allowed, and whether it still works. Every request
  * goes through the public HTTP client, so the outbound guard checks the
- * servers users chose. Needs an HttpClient, the OutboundGuard and Mac.
+ * servers users chose. Needs an HttpClient, the OutboundGuard, Mac, and
+ * PaidReads for the platform that bills reads.
  */
 export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
   Layer.effect(
@@ -102,6 +109,12 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
         http,
       });
 
+      const x = yield* xMetrics({
+        api: settings.xApi,
+        enabled: settings.xReads,
+        http,
+      });
+
       const read = Effect.fn("MetricsReader.read")(function* read(
         request: MetricsRequest
       ) {
@@ -113,7 +126,7 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
           })
         );
 
-        if (!isCounted(account.platform)) {
+        if (!isCounted(account.platform, { x: settings.xReads })) {
           return yield* new ChannelUnreadable({ reason: "unsupported" });
         }
 
@@ -135,6 +148,10 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
 
         if (account.platform === "youtube") {
           return yield* youtube.read(account, request.posts);
+        }
+
+        if (account.platform === "x") {
+          return yield* x.read(account, request);
         }
 
         if (account.platform === "pinterest") {
@@ -169,6 +186,8 @@ export const PlatformMetricsReaderLive = Layer.unwrap(
       metaHosts,
       pinterestApi: pinterest.api,
       tiktokApi: tiktokHosts.api,
+      xApi: new URL("https://api.x.com"),
+      xReads: yield* xAnalyticsConfig,
       youtubeApi: new URL("https://www.googleapis.com"),
     });
   })

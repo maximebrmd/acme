@@ -2,7 +2,11 @@ import { Context, Schema } from "effect";
 import type { Effect } from "effect";
 
 import { PostMetrics } from "#analytics/domain/post-metrics.ts";
-import { ChannelIdSchema, PostTargetIdSchema } from "#shared/domain/ids.ts";
+import {
+  ChannelIdSchema,
+  PostTargetIdSchema,
+  WorkspaceIdSchema,
+} from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 
@@ -16,10 +20,15 @@ export const PostToReadSchema = Schema.Struct({
 
 export type PostToRead = typeof PostToReadSchema.Type;
 
-/** Posts of one channel to read, 25 at most. Ids only, never content. */
+/**
+ * Posts of one channel to read, 25 at most. Ids only, never content. The
+ * workspace is the one whose allowance a platform that bills reads is
+ * counted against; a request that names none reads nothing there.
+ */
 export const MetricsRequestSchema = Schema.Struct({
   channelId: ChannelIdSchema,
   posts: Schema.Array(PostToReadSchema).check(Schema.isMaxLength(25)),
+  workspaceId: Schema.optionalKey(WorkspaceIdSchema),
 });
 
 export type MetricsRequest = typeof MetricsRequestSchema.Type;
