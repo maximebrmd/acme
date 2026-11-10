@@ -31,7 +31,13 @@ import type { Me } from "peal-contract";
 
 import { makeAuthorizationServer } from "./authorization-server.ts";
 import type { AuthorizationServer } from "./authorization-server.ts";
-import { makeStudio, studioAccessLive, studioGroupsLive } from "./studio.ts";
+import {
+  makeStudio,
+  storeHost,
+  storePut,
+  studioAccessLive,
+  studioGroupsLive,
+} from "./studio.ts";
 import type { Studio } from "./studio.ts";
 
 const unused = Effect.die("not used by the CLI tests");
@@ -136,6 +142,11 @@ const securityLive = (authorization: AuthorizationServer, studio: Studio) =>
               Effect.provideService(CurrentPrincipal, {
                 _tag: "user",
                 impersonatedBy: null,
+                oauth: {
+                  clientId: "peal-cli",
+                  scopes: authorization.scopes,
+                  workspaceId: null,
+                },
                 userId: syntheticMe.user.id,
               })
             );
@@ -158,18 +169,6 @@ const signedInGroupsLive = (
         create: () => refusing,
         list: () => refusing,
         revoke: () => refusing,
-      })
-    ),
-    HttpApiBuilder.group(Api, "media", (handlers) =>
-      handlers.handleAll({
-        complete: () => refusing,
-        create: () => refusing,
-        delete: () => refusing,
-        describe: () => refusing,
-        get: () => refusing,
-        importFromUrl: () => refusing,
-        list: () => refusing,
-        usage: () => refusing,
       })
     ),
     HttpApiBuilder.group(Api, "notices", (handlers) =>
@@ -321,7 +320,13 @@ export const inMemoryServer = (
           })
       );
 
-      return fetching(async (request) => await app.handler(request));
+      // The media store is another host: signed requests go to it, never
+      // to the API.
+      return fetching(async (request) =>
+        new URL(request.url).host === storeHost
+          ? await storePut(workspaces, request)
+          : await app.handler(request)
+      );
     })
   );
 

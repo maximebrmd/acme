@@ -1,5 +1,6 @@
-import { Console, Effect, Match } from "effect";
+import { Console, Effect, Match, Schema } from "effect";
 import { Argument, Command } from "effect/cli";
+import { ChannelSchema } from "peal-contract";
 import type {
   Channel,
   ChannelStatus,
@@ -8,6 +9,7 @@ import type {
 } from "peal-contract";
 
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
@@ -32,13 +34,19 @@ const platformOf = (channel: Channel): string =>
 
 const list = Command.make(
   "list",
-  { workspace: workspaceFlag },
-  Effect.fn("channels.list")(function* list({ workspace: choice }) {
+  { json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("channels.list")(function* list({ json, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const channels = yield* client.channels
       .list({ params: { workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(Schema.Array(ChannelSchema), channels);
+
+      return;
+    }
 
     if (channels.length === 0) {
       yield* Console.log(

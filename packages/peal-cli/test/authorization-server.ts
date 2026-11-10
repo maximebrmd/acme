@@ -41,12 +41,20 @@ export interface AuthorizationServerOptions {
   readonly deny?: boolean;
   /** Whether MCP clients may register themselves. */
   readonly registration?: boolean;
+  /** The scopes the user approves: all the command line asks for, unless told. */
+  readonly scope?: string;
 }
+
+/** Everything the command line asks for, scheduling and publishing included. */
+export const fullScope =
+  "offline_access workspace:read workspace:write workspace:publish";
 
 const refused = (error: string) => Effect.fail({ error });
 
 export const makeAuthorizationServer = Effect.fn("makeAuthorizationServer")(
   function* makeAuthorizationServer(options: AuthorizationServerOptions = {}) {
+    const scope = options.scope ?? fullScope;
+
     const state = yield* Ref.make<AuthorizationState>({
       deviceRequests: [],
       generation: 0,
@@ -62,7 +70,7 @@ export const makeAuthorizationServer = Effect.fn("makeAuthorizationServer")(
           access_token: accessTokenOf(generation),
           expires_in: 900,
           refresh_token: refreshTokenOf(generation),
-          scope: "offline_access workspace:read workspace:write",
+          scope,
           token_type: "Bearer",
         },
         { ...current, generation },
@@ -169,6 +177,8 @@ export const makeAuthorizationServer = Effect.fn("makeAuthorizationServer")(
         )
       ),
       handlers: Layer.mergeAll(discovery, tokens, clients),
+      /** The scopes its access tokens carry. */
+      scopes: scope.split(" "),
       state: Ref.get(state),
     };
   }

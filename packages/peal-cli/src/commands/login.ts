@@ -173,7 +173,10 @@ export const login = Command.make(
       })
     );
 
-    yield* store.write(baseUrl, credentialsOf(token, yield* DateTime.now));
+    yield* store.write(
+      baseUrl,
+      credentialsOf(token, yield* DateTime.now, loginScope)
+    );
 
     yield* Console.log(
       `Signed in to ${url}. The sign-in is saved in ${yield* store.file}, which only you may read.`
