@@ -69,6 +69,11 @@ export const posts = publishing.table(
       table.workspaceId,
       table.scheduledAt
     ),
+    // The posts waiting to go out, in every workspace, by their time: what
+    // the staff console counts as due and overdue.
+    index("posts_scheduled")
+      .on(table.scheduledAt)
+      .where(sql`${table.status} = 'scheduled'`),
     // A workspace's drafts, newest first: ids are UUIDv7s.
     index("posts_workspace_drafts")
       .on(table.workspaceId, table.id)

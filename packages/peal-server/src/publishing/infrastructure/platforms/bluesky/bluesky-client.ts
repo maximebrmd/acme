@@ -30,6 +30,7 @@ import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
 
 import {
@@ -413,10 +414,8 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
           return yield* new MediaRejected({ code: "tooLarge" });
         }
 
-        const bytes = yield* Stream.mkUint8Array(
-          media.open(post.workspaceId, attachment.mediaId)
-        );
-
+        // Up to 300 MB: streamed from the store to the video service,
+        // never held whole.
         const status = yield* withSession(post, (session) =>
           serviceToken(session).pipe(
             Effect.flatMap((token) =>
@@ -429,7 +428,13 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
                     name: described.fileName,
                   }),
                   HttpClientRequest.bearerToken(token),
-                  HttpClientRequest.bodyUint8Array(bytes, "video/mp4")
+                  streamedBody(
+                    media.open(post.workspaceId, attachment.mediaId),
+                    {
+                      contentLength: described.byteSize,
+                      contentType: "video/mp4",
+                    }
+                  )
                 )
               )
             ),

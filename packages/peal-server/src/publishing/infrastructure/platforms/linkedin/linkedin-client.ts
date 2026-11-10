@@ -39,6 +39,7 @@ import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
+import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 
 import { mediaRefusal, postRefusal } from "./linkedin-refusal.ts";
 import type { LinkedInRefusal } from "./linkedin-refusal.ts";
@@ -334,20 +335,17 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
 
         const uploadUrl = yield* uploadUrlOf(value.uploadUrl);
 
-        const bytes = yield* Stream.mkUint8Array(
-          media.open(post.workspaceId, attachment.mediaId)
-        );
-
+        // Streamed from the store to LinkedIn, never held whole.
         yield* mediaCall(
           post,
           uploads,
           (token) =>
             HttpClientRequest.put(uploadUrl).pipe(
               HttpClientRequest.bearerToken(token),
-              HttpClientRequest.bodyUint8Array(
-                bytes,
-                "application/octet-stream"
-              )
+              streamedBody(media.open(post.workspaceId, attachment.mediaId), {
+                contentLength: described.byteSize,
+                contentType: "application/octet-stream",
+              })
             ),
           acknowledged
         );

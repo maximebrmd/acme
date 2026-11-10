@@ -1,10 +1,13 @@
-import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
+import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import { TrackedPosts } from "#analytics/application/tracked-posts.ts";
-import type { LatestPublication } from "#analytics/application/tracked-posts.ts";
+import type {
+  DueChannel,
+  LatestPublication,
+} from "#analytics/application/tracked-posts.ts";
 import type { PostMetrics } from "#analytics/domain/post-metrics.ts";
 import { TrackedPost } from "#analytics/domain/tracked-post.ts";
-import type { PostTargetId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostTargetId } from "#shared/domain/ids.ts";
 
 /** A snapshot the store kept. */
 export interface StoredSnapshot {
@@ -60,114 +63,150 @@ const byDue = (left: TrackedPost, right: TrackedPost) =>
     onSome: ([leftAt, rightAt]) => DateTime.Order(leftAt, rightAt),
   }) || left.targetId.localeCompare(right.targetId);
 
+const isDue = (post: TrackedPost, at: DateTime.Utc) =>
+  Option.exists(nextAtOf(post), (nextAt) =>
+    DateTime.isLessThanOrEqualTo(nextAt, at)
+  );
+
+// The order channels with due posts come in: how long they waited, then id.
+const byWait = (left: DueChannel, right: DueChannel) =>
+  DateTime.Order(left.dueSince, right.dueSince) ||
+  left.channelId.localeCompare(right.channelId);
+
 /**
  * TrackedPosts in memory, as the Drizzle store behaves: posts by target,
- * the due ones taking turns between channels, each channel's by when they
- * are due then target id, a reading saved with its snapshot, a schedule
+ * the channels with due ones by how long they waited, each channel's posts
+ * by when they are due then target id, a reading saved with its snapshot, a schedule
  * saved on its own.
  */
 export const MemoryTrackedPosts = Layer.effectContext(
-  Effect.gen(function* MemoryTrackedPosts() {
-    const entries = yield* Ref.make(new Map<PostTargetId, Entry>());
+  Effect.sync(() => {
+    // Changed in place: a run saves tens of thousands of posts.
+    const entries = new Map<PostTargetId, Entry>();
 
     const update = (targetId: PostTargetId, change: (entry: Entry) => Entry) =>
-      Ref.update(entries, (before) => {
-        const entry = before.get(targetId);
+      Effect.sync(() => {
+        const entry = entries.get(targetId);
 
-        return entry === undefined
-          ? before
-          : new Map(before).set(targetId, change(entry));
+        if (entry !== undefined) {
+          entries.set(targetId, change(entry));
+        }
       });
 
+    const saveReading = (post: TrackedPost) =>
+      update(post.targetId, (entry) => ({
+        post,
+        snapshots: Option.match(
+          Option.all({
+            collectedAt: post.lastCollectedAt,
+            metrics: post.latest,
+          }),
+          {
+            onNone: () => entry.snapshots,
+            onSome: (snapshot) => [...entry.snapshots, snapshot],
+          }
+        ),
+      }));
+
+    const saveSchedule = (post: TrackedPost) =>
+      update(post.targetId, (entry) => ({
+        ...entry,
+        post: withCollection(entry.post, post.collection),
+      }));
+
     const store = TrackedPosts.of({
-      due: (at, limit) =>
-        Ref.get(entries).pipe(
-          Effect.map((all) => {
-            const due = [...all.values()]
-              .flatMap(({ post }) =>
-                Option.exists(nextAtOf(post), (nextAt) =>
-                  DateTime.isLessThanOrEqualTo(nextAt, at)
-                )
-                  ? [post]
-                  : []
-              )
-              .toSorted(byDue);
-
-            // Each post's turn on its channel, as row_number() numbers it.
-            const seen = new Map<string, number>();
-            const turns = new Map<PostTargetId, number>();
-
-            for (const post of due) {
-              const turn = (seen.get(post.channelId) ?? 0) + 1;
-
-              seen.set(post.channelId, turn);
-              turns.set(post.targetId, turn);
-            }
-
-            return due
-              .toSorted(
-                (left, right) =>
-                  (turns.get(left.targetId) ?? 0) -
-                    (turns.get(right.targetId) ?? 0) || byDue(left, right)
-              )
-              .slice(0, limit);
-          })
+      countDue: (at) =>
+        Effect.sync(
+          () =>
+            [...entries.values()].filter(({ post }) => isDue(post, at)).length
         ),
-      latestPublication: (before) =>
-        Ref.get(entries).pipe(
-          Effect.map((all) => {
-            const [latest] = [...all.values()]
-              .flatMap(({ post }) =>
-                DateTime.isLessThanOrEqualTo(post.publishedAt, before)
-                  ? [post]
-                  : []
-              )
-              .toSorted(
-                (left, right) =>
-                  DateTime.Order(right.publishedAt, left.publishedAt) ||
-                  right.targetId.localeCompare(left.targetId)
+      dueChannels: (at, limit, after) =>
+        Effect.sync(() => {
+          const since = new Map<ChannelId, DateTime.Utc>();
+
+          for (const { post } of entries.values()) {
+            const nextAt = nextAtOf(post);
+
+            if (Option.isSome(nextAt) && isDue(post, at)) {
+              const known = since.get(post.channelId);
+
+              since.set(
+                post.channelId,
+                known === undefined
+                  ? nextAt.value
+                  : DateTime.min(known, nextAt.value)
               );
-
-            return Option.fromUndefinedOr(latest).pipe(
-              Option.map(({ publishedAt, targetId }): LatestPublication => ({
-                publishedAt,
-                targetId,
-              }))
-            );
-          })
-        ),
-      saveReading: (post) =>
-        update(post.targetId, (entry) => ({
-          post,
-          snapshots: Option.match(
-            Option.all({
-              collectedAt: post.lastCollectedAt,
-              metrics: post.latest,
-            }),
-            {
-              onNone: () => entry.snapshots,
-              onSome: (snapshot) => [...entry.snapshots, snapshot],
             }
-          ),
-        })),
-      saveSchedule: (post) =>
-        update(post.targetId, (entry) => ({
-          ...entry,
-          post: withCollection(entry.post, post.collection),
-        })),
+          }
+
+          return [...since]
+            .flatMap(([channelId, dueSince]) => {
+              const channel: DueChannel = { channelId, dueSince };
+
+              return Option.exists(after, (last) => byWait(channel, last) <= 0)
+                ? []
+                : [channel];
+            })
+            .toSorted(byWait)
+            .slice(0, limit);
+        }),
+      dueOn: (at, channelIds, perChannel) =>
+        Effect.sync(() => {
+          const wanted = new Set<ChannelId>(channelIds);
+          const taken = new Map<ChannelId, number>();
+
+          return [...entries.values()]
+            .flatMap(({ post }) =>
+              isDue(post, at) && wanted.has(post.channelId) ? [post] : []
+            )
+            .toSorted(byDue)
+            .filter((post) => {
+              const turn = (taken.get(post.channelId) ?? 0) + 1;
+
+              taken.set(post.channelId, turn);
+
+              return turn <= perChannel;
+            });
+        }),
+      latestPublication: (before) =>
+        Effect.sync(() => {
+          const [latest] = [...entries.values()]
+            .flatMap(({ post }) =>
+              DateTime.isLessThanOrEqualTo(post.publishedAt, before)
+                ? [post]
+                : []
+            )
+            .toSorted(
+              (left, right) =>
+                DateTime.Order(right.publishedAt, left.publishedAt) ||
+                right.targetId.localeCompare(left.targetId)
+            );
+
+          return Option.fromUndefinedOr(latest).pipe(
+            Option.map(({ publishedAt, targetId }): LatestPublication => ({
+              publishedAt,
+              targetId,
+            }))
+          );
+        }),
+      saveReading,
+      saveReadings: (posts) =>
+        Effect.forEach(posts, saveReading, { discard: true }),
+      saveSchedule,
+      saveSchedules: (posts) =>
+        Effect.forEach(posts, saveSchedule, { discard: true }),
       track: (posts) =>
-        Ref.modify(entries, (before) => {
-          const after = new Map(before);
+        Effect.sync(() => {
           let added = 0;
 
           for (const post of posts) {
-            if (!after.has(post.targetId)) {
-              after.set(post.targetId, { post, snapshots: [] });
+            if (!entries.has(post.targetId)) {
+              entries.set(post.targetId, { post, snapshots: [] });
               added += 1;
             }
           }
 
-          return [added, after];
+          return added;
         }),
     });
 
@@ -176,15 +215,11 @@ export const MemoryTrackedPosts = Layer.effectContext(
         StoredPosts,
         StoredPosts.of({
           post: (targetId) =>
-            Ref.get(entries).pipe(
-              Effect.map((all) =>
-                Option.fromUndefinedOr(all.get(targetId)?.post)
-              )
+            Effect.sync(() =>
+              Option.fromUndefinedOr(entries.get(targetId)?.post)
             ),
           snapshots: (targetId) =>
-            Ref.get(entries).pipe(
-              Effect.map((all) => all.get(targetId)?.snapshots ?? [])
-            ),
+            Effect.sync(() => entries.get(targetId)?.snapshots ?? []),
         })
       )
     );

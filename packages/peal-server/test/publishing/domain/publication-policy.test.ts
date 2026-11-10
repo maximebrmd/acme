@@ -9,6 +9,7 @@ import {
 import {
   decide,
   defaultPublicationPolicy,
+  earlierRefusalsOf,
   failureReasonOf,
   isTooLate,
 } from "#publishing/domain/publication-policy.ts";
@@ -62,6 +63,22 @@ const published: AttemptOutcome = {
   permalink: "https://social.example/@peal/1",
   platformPostId: PlatformPostIdSchema.make("1"),
 };
+
+describe(earlierRefusalsOf, () => {
+  it("counts rate limits and outages, and an app refused for its billing as neither", () => {
+    expect(
+      earlierRefusalsOf([
+        new PlatformUnavailable(),
+        new PlatformUnavailable({ code: operatorRefusalCodes.creditsDepleted }),
+        new RateLimited({}),
+        new PlatformUnavailable({ code: operatorRefusalCodes.usageCapped }),
+        new PlatformUnavailable({ code: "other" }),
+        new RateLimited({ retryAfter: Duration.minutes(1) }),
+        new RateLimited({}),
+      ])
+    ).toStrictEqual({ rateLimited: 3, unavailable: 2 });
+  });
+});
 
 describe(decide, () => {
   it("settles a published post", () => {
@@ -211,19 +228,41 @@ describe(decide, () => {
     );
   });
 
-  it.each(Object.values(operatorRefusalCodes))(
-    "waits as for an outage when the platform refuses the server's app (%s), then blames its billing",
+  describe.each(Object.values(operatorRefusalCodes))(
+    "a platform that refuses the server's app until it is paid for (%s)",
     (code) => {
       const refused = new PlatformUnavailable({ code });
 
-      expect(decide(refused, first)).toStrictEqual(retry(Duration.minutes(1)));
-      expect(decide(refused, after({ unavailable: 5 }))).toStrictEqual(
-        giveUp("appBillingLimit", code)
+      it.each([0, 1, 5, 40])(
+        "tries again half an hour later, after %i outages",
+        (unavailable) => {
+          expect(decide(refused, after({ unavailable }))).toStrictEqual(
+            retry(Duration.minutes(30))
+          );
+        }
       );
-      expect(failureReasonOf(refused)).toBe("appBillingLimit");
-      expect(failureReasonOf(new PlatformUnavailable({ code: "other" }))).toBe(
-        "unavailable"
-      );
+
+      it("keeps waiting until a day after the scheduled time, then blames the app's billing", () => {
+        expect(decide(refused, after({}, Duration.hours(23)))).toStrictEqual(
+          retry(Duration.minutes(30))
+        );
+        expect(
+          decide(refused, after({}, Duration.minutes(23 * 60 + 30)))
+        ).toStrictEqual(retry(Duration.minutes(30)));
+        expect(
+          decide(refused, after({}, Duration.minutes(23 * 60 + 31)))
+        ).toStrictEqual(giveUp("appBillingLimit", code));
+        expect(decide(refused, after({}, Duration.hours(30)))).toStrictEqual(
+          giveUp("appBillingLimit", code)
+        );
+      });
+
+      it("fails as the app's billing, not as an outage", () => {
+        expect(failureReasonOf(refused)).toBe("appBillingLimit");
+        expect(
+          failureReasonOf(new PlatformUnavailable({ code: "other" }))
+        ).toBe("unavailable");
+      });
     }
   );
 

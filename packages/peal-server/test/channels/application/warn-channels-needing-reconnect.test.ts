@@ -120,6 +120,58 @@ layer(FileTest)("warning about channels to reconnect", (it) => {
     })
   );
 
+  it.effect(
+    "warns about every channel, however many there are and were warned before",
+    () =>
+      Effect.gen(function* everyChannel() {
+        const workspaceId = yield* freshWorkspace;
+        const now = yield* DateTime.now;
+
+        // More than a run used to take, all within their last week, and
+        // some expired: a run that stopped at its first thousand would
+        // list the same thousand again the next day.
+        const expiring = 1300;
+        const expired = 200;
+
+        yield* Effect.forEach(
+          Array.from({ length: expiring }, (_, index) => index),
+          (index) =>
+            stored(
+              workspaceId,
+              issuedAgo(now, Duration.days(54 + (index % 6)))
+            ),
+          { concurrency: 8 }
+        );
+
+        yield* Effect.forEach(
+          Array.from({ length: expired }, (_, index) => index),
+          () => stored(workspaceId, issuedAgo(now, "61 days")),
+          { concurrency: 8 }
+        );
+
+        const report = yield* runIn(workspaceId);
+
+        // Each once: an expired channel is marked, and not told again when
+        // the run reaches the marked ones.
+        assert.deepStrictEqual(report, {
+          expired,
+          reconnectRequired: 0,
+          reconnectSoon: expiring,
+        });
+
+        const notices = yield* RecordedNotices.use((recorded) =>
+          recorded.of(workspaceId)
+        );
+
+        assert.lengthOf(notices, expiring + expired);
+        assert.lengthOf(
+          new Set(notices.map(({ channelId }) => channelId)),
+          expiring + expired
+        );
+      }),
+    120_000
+  );
+
   it.effect("asks again about channels already marked", () =>
     Effect.gen(function* marked() {
       const workspaceId = yield* freshWorkspace;

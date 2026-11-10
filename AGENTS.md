@@ -646,8 +646,20 @@ and no socket, for tests.
   refreshable policy's `sweep` renews tokens `beforeExpiry` (`ahead` of it)
   or keeps them alive (`keepAlive`: only once `unused` that long past their
   expiry, the access being renewed when a call needs it, through
-  `ChannelAccess`). X's keep alive after 30 days, rather than rotating every
-  two hours: its refresh tokens have no stated lifetime.
+  `ChannelAccess`). X's, TikTok's and YouTube's keep alive after 30 days,
+  rather than being renewed ahead of every expiry: a hours-long token is
+  never swept `beforeExpiry`, which would refresh every channel a dozen
+  times a day (a test lists each policy's sweep).
+- `RefreshChannelTokens.sweep` (every 10 minutes) and
+  `WarnChannelsNeedingReconnect` (daily) page through what is due by
+  cursor (`dueForRefresh`, `needingReconnect`: `after`), never with a cap,
+  which would leave the same channels behind at every run. The sweep takes
+  the tokens about to lapse before the keep-alives, three channels at a
+  time (one channel lock stays free for a post's renewal), and stops
+  starting refreshes at its budget (8 minutes): it then logs a warning and
+  sets `peal.channels.token_sweep.left` (with `.duration` and
+  `.unfinished`). No publish depends on it: `ChannelAccess` renews an
+  expired refreshable token however long ago it ran out.
 - TikTok's Login Kit for Web takes no PKCE (TikTok asks it of desktop and
   mobile apps only): the state, bound to member and workspace, guards the
   callback, and a token answer naming an `error` is a refusal whatever its
@@ -764,10 +776,15 @@ and no socket, for tests.
   once its pay-per-use credits are used up, `usage-capped` at its spending
   cap) is the operator's problem, never the post's or the account's: the
   adapter fails with `PlatformUnavailable` and a code of
-  `operatorRefusalCodes` (`#publishing/domain/own-refusals.ts`) and logs an
-  error, which the error-log alert reports; the attempt is retried as an
-  outage, and a target that gave up fails as `appBillingLimit`. A refresh
-  answered so leaves the channel's token alone.
+  `operatorRefusalCodes` (`#publishing/domain/own-refusals.ts`), and the
+  policy keeps the target waiting, retried every 30 minutes until 24 hours
+  after its scheduled time (`operatorRefusal`), then fails it as
+  `appBillingLimit`. These attempts use none of an outage's retries
+  (`earlierRefusalsOf`). `publishAttemptRun` tells `OperatorAlerts` of
+  each: `LoggedOperatorAlerts` counts it (`peal.publishing.app_refusals`)
+  and logs an error (`event.name` `peal.app_refused`) at the first, then
+  once an hour per code, never per post, which Grafana's `peal-app-refused`
+  rule reports. A refresh answered so leaves the channel's token alone.
 
 ### Publishing and the cluster
 
@@ -878,9 +895,20 @@ and no socket, for tests.
   (`dailyLimitCodes`) until Pacific midnight, which the policy ends as
   `quotaExceeded`. A video YouTube made private against the options is
   `Published.keptPrivate`, kept on the target and shown on its page.
-- Large uploads go in parts read one at a time from the media stream
-  (`inParts` in `platforms/byte-parts.ts`): LinkedIn's video parts, X's
-  4 MiB appends. LinkedIn calls name `Linkedin-Version`
+- No adapter holds a whole file: large uploads go in parts read one at a
+  time from the media stream (`inParts` in `platforms/byte-parts.ts`:
+  LinkedIn's video parts, X's 4 MiB appends, TikTok's and YouTube's
+  chunks), and a file a platform takes in one request is streamed with
+  `streamedBody` (`#shared/infrastructure/platforms/public-http.ts`), in a
+  form with `multipartBody` (Mastodon), never `Stream.mkUint8Array` or
+  `FormData` (only Bluesky's images, 2 MB at most, are read whole).
+  `streamedBody` names the length, which the public client's fetch sends
+  as Content-Length: Effect's fetch client drops that header, and a body
+  sent chunked is refused by some servers. `limitedUploads`
+  (`publishing/infrastructure/upload-slots.ts`) opens so many files above
+  16 MiB at once (`PEAL_MAX_CONCURRENT_UPLOADS`, by default one per GiB of
+  memory, 2 to 8); the others wait inside their gate, where no timeout
+  runs before the upload begins. LinkedIn calls name `Linkedin-Version`
   (`LINKEDIN_API_VERSION`, a default a test keeps within ten months), and
   send the member's token to LinkedIn's hosts only.
 - Meta's adapters hand Meta public media URLs (`MediaForPublishing.publicUrl`,
@@ -1412,10 +1440,18 @@ and no socket, for tests.
   channel's posts, and a post still unread a day past its window, end.
 - Each run follows the publications after the latest one it follows, then
   looks back 15 minutes for those that settled late, 20 pages of 500 each
-  at most, so it moves on however many went live together. It reads 5000
-  due posts at most, taking turns between channels (`TrackedPosts.due`
-  numbers each channel's with `row_number()`), so posts put off on a
-  platform that is down never crowd the other channels out.
+  at most, so it moves on however many went live together. It then reads
+  every post due, with no cap: a page of 500 channels at a time, those
+  whose post waited longest first and each channel once a run
+  (`TrackedPosts.dueChannels`, then `dueOn`: 1,000 posts a channel at
+  most), so a channel put off, or a platform that is down, never holds the
+  others back. `CollectionPaceRef` paces it: 16 channels at once
+  (`PEAL_ANALYTICS_CONCURRENCY`), each one call at a time through its
+  gate, and no read starts later than 50 minutes after the run's scheduled
+  time. What a read found is saved in one statement a table
+  (`saveReadings`, `saveSchedules`), never a transaction a post. A run
+  sets `peal.analytics.collection.duration` and `.left`, and one out of
+  time logs a warning and counts in `.unfinished`.
 - Summaries take the posts published over a range of days in an IANA zone:
   the domain computes each day's start with `fromWallClock`, and Postgres
   buckets snapshots with those instants (`width_bucket`), never its zones.
@@ -1423,6 +1459,9 @@ and no socket, for tests.
   (`test/analytics/fakes/memory-tracked-posts.ts`). Postgres tests write under
   a workspace of their own, at instants no other suite uses, and delete it
   after (`forgetWorkspace`): the collection reads every row that is due.
+  Run it on Postgres on the real clock, at an instant earlier than every
+  other suite's (`collection-scale.test.ts`): a virtual clock set decades
+  back replays every tick of the pool's timers and never returns.
 
 ### Webhooks
 
@@ -1560,6 +1599,13 @@ and no socket, for tests.
   run `nx run peal-server:db:generate`, which writes a migration folder under
   `packages/peal-server/drizzle/`. Commit the folder as drizzle-kit wrote it;
   never edit a migration that has shipped.
+- A query on a hot path (the calendar, a job that scans every workspace)
+  gets its plan read on a database of the size it will meet:
+  `packages/peal-server/scripts/seed-scale.ts` fills an empty, migrated
+  database whose name ends in `scale` with synthetic rows for so many users
+  (10,000 by default: 40,000 channels, 900,000 posts, 2.25 million targets).
+  A job that takes "everything due" pages by cursor and says what it left;
+  it never stops at a fixed count.
 - The server applies pending migrations before it listens, under an advisory
   lock, so servers starting together take turns. `nx run peal-server:db:migrate`
   applies them without starting the server.
@@ -1580,7 +1626,15 @@ self-hoster needs only Postgres and an S3-compatible store:
 - telemetry: OTLP export of logs, metrics and traces only when
   `OTEL_EXPORTER_OTLP_ENDPOINT` is set (`src/app/observability.ts` defaults
   each `OTEL_<SIGNAL>_EXPORTER` to `otlp`; set one to `none` to turn that
-  signal off).
+  signal off). Traces are head-sampled as `OTEL_TRACES_SAMPLER` and
+  `OTEL_TRACES_SAMPLER_ARG` say (`src/app/trace-sampling.ts`): one in ten
+  in production, all elsewhere. Whatever the ratio, the spans in
+  `alwaysSampledSpans` (each publishing attempt) are sampled, and a span of
+  an unsampled trace is still exported when it ended in a defect, when the
+  server failed the request (5xx) or when it lasted `slowSpan` (10 s), with
+  its parents (`SampledSpan`). Never alert or count on spans, which are a
+  sample: count in a metric (`peal.http.requests`, which the request alerts
+  read) or a log.
 
 - Images read `PORT` and plain environment variables and run anywhere.
 - Self-hosters run `compose.production.yaml` with `compose.self-host.yaml`:

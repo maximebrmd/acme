@@ -107,7 +107,8 @@ const storedTokens = (channel: Channel) =>
     }))
   );
 
-// Makes the channel's token due for a refresh.
+// Makes the channel's token due for the sweep: unused for a month, TikTok's
+// tokens being renewed when a call needs them.
 const makeDue = (channel: Channel) =>
   Effect.gen(function* due() {
     const now = yield* DateTime.now;
@@ -118,7 +119,7 @@ const makeDue = (channel: Channel) =>
         scopes: channel.scopes,
         token: {
           _tag: "refreshable",
-          expiresAt: DateTime.addDuration(now, Duration.minutes(10)),
+          expiresAt: DateTime.subtractDuration(now, Duration.days(31)),
         },
       },
       now

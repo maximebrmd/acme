@@ -2,9 +2,10 @@
 # file mounted beside this one says: Telegram in Peal's production
 # (telegram.yaml), Grafana's default otherwise (none.yaml).
 #
-# Requests are counted from the server's spans, which Tempo's
-# metrics-generator turns into traces_spanmetrics_* series; the container
-# health checks alone keep them above zero while the server runs.
+# Requests are counted by the server itself (peal.http.requests, by status
+# class), every one of them: its traces are sampled, so the span metrics
+# Tempo derives from them show a share of the requests only. The container
+# health checks alone keep the count moving while the server runs.
 
 apiVersion: 1
 
@@ -34,7 +35,7 @@ groups:
             model:
               refId: A
               instant: true
-              expr: sum(rate(traces_spanmetrics_calls_total{service="peal-server", span_kind="SPAN_KIND_SERVER"}[10m]))
+              expr: sum(rate(peal_http_requests_total[10m]))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -65,7 +66,7 @@ groups:
             model:
               refId: A
               instant: true
-              expr: sum(rate(traces_spanmetrics_calls_total{service="peal-server", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR"}[5m]))
+              expr: sum(rate(peal_http_requests_total{status="5xx"}[5m]))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -110,6 +111,41 @@ groups:
                 - evaluator:
                     type: gt
                     params: [5]
+
+      - uid: peal-app-refused
+        title: A platform refuses the server's app until it is paid for
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: A platform refuses every post of this server's app until its account with the platform is paid for (on X, add credits or raise the spending cap in its developer console). The posts wait and are tried again every half hour, for a day after their time.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: loki
+            relativeTimeRange:
+              from: 4500
+              to: 0
+            model:
+              refId: A
+              queryType: instant
+              # The server logs the refusal at the first attempt refused,
+              # then once an hour while it lasts, whatever the number of
+              # posts: over 75 minutes, the alert fires at the first and
+              # stays up, once, until the refusals stop.
+              expr: sum(count_over_time({service_name="peal-server"} | event_name = "peal.app_refused" [75m]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
 
       - uid: peal-web-error-spike
         title: The web app reports a spike of errors

@@ -37,12 +37,14 @@ import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attac
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
+import { LoggedOperatorAlerts } from "#publishing/infrastructure/logged-operator-alerts.ts";
 import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
 import { NamedPostOrigins } from "#publishing/infrastructure/named-post-origins.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
+import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
 import {
   webhookOutcomes,
   WebhookPostEvents,
@@ -100,6 +102,7 @@ export const publishingWith = <
         DrizzlePublishedTargets,
         DrizzleWorkspacePostStore,
         LoggedChannelHealth,
+        LoggedOperatorAlerts,
         WorkflowPublicationScheduler,
         references,
         accounts,
@@ -187,7 +190,8 @@ export const publishingWorkers = <E, R, E2 = never, R2 = never>(
  * The platforms the gates publish to, Mastodon, Bluesky, LinkedIn, X,
  * Threads, Instagram, Facebook Pages, TikTok and YouTube, with the tokens
  * the channels context hands out (ChannelAccess) and the files the media
- * context does (MediaForPlatforms), which the composition root provides
+ * context does (MediaForPlatforms), the large ones a few at a time
+ * (`limitedUploads`), which the composition root provides
  * with Dns, the database and the PostRepository.
  */
 export const PlatformsLive = RoutedPlatformPublisher.pipe(
@@ -195,7 +199,7 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
   Layer.provide(
     Layer.mergeAll(
       ChannelAccessCredentials,
-      LibraryMediaForPublishing,
+      limitedUploads.pipe(Layer.provide(LibraryMediaForPublishing)),
       DrizzlePublicationProgress,
       DrizzleUploadSessions,
       DrizzlePlatformQuota

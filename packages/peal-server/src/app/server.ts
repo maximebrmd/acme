@@ -17,6 +17,7 @@ import { ClusterLive } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
 import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
+import { countRequests } from "#app/request-metrics.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
@@ -326,7 +327,9 @@ const ContextsLive = Layer.mergeAll(
 // database is up to date, and the cluster shares the pool with Drizzle, so a
 // use case can save a post and start its workflow in one transaction.
 export const ServerLive = Layer.mergeAll(
-  HttpRouter.serve(RoutesLive).pipe(Layer.provide(HttpServerLive)),
+  HttpRouter.serve(RoutesLive, { middleware: countRequests }).pipe(
+    Layer.provide(HttpServerLive)
+  ),
   WorkersLive
 ).pipe(
   Layer.provide(ContextsLive),

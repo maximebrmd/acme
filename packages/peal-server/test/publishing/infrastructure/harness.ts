@@ -54,6 +54,7 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
+import { RecordingOperatorAlerts } from "#test/publishing/infrastructure/recorded-app-refusals.ts";
 import { RecordingPublicationOutcomes } from "#test/publishing/infrastructure/recorded-outcomes.ts";
 import {
   actorIn,
@@ -141,6 +142,7 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
         DrizzlePostRepository,
         journal,
         RecordingChannelHealth,
+        RecordingOperatorAlerts,
         RecordingPublicationOutcomes,
         WorkflowPublicationScheduler,
         ReferencesTest,

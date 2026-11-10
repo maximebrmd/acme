@@ -166,6 +166,7 @@ services:
       PEAL_ERASURE_LEDGER_BUCKET:
       TIKTOK_MEDIA_URL_PREFIX:
       PEAL_FFPROBE_PATH:
+      PEAL_MAX_CONCURRENT_UPLOADS:
       PEAL_AI_PROVIDER:
       PEAL_AI_API_KEY:
       PEAL_AI_MODEL:
@@ -180,9 +181,12 @@ services:
       TURNSTILE_VERIFY_URL:
       OTEL_SERVICE_NAME:
       OTEL_TRACES_EXPORTER:
+      OTEL_TRACES_SAMPLER:
+      OTEL_TRACES_SAMPLER_ARG:
       OTEL_METRICS_EXPORTER:
       OTEL_LOGS_EXPORTER:
       PEAL_CLUSTER_RETENTION:
+      PEAL_ANALYTICS_CONCURRENCY:
       PEAL_LEGAL_RETENTION:
       # What the operator declares about its processing, for each user's
       # export: the file PEAL_PRIVACY_DECLARATION names, mounted below.

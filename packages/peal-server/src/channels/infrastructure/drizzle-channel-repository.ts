@@ -1,4 +1,4 @@
-import { and, asc, eq, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, lte, or, sql } from "drizzle-orm";
 import {
   DateTime,
   Duration,
@@ -13,6 +13,7 @@ import { SqlClient, SqlError } from "effect/sql";
 import { ChannelAlreadyConnected } from "#channels/application/channel-already-connected.ts";
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import type { RefreshCutoff } from "#channels/application/channel-repository.ts";
 import { tokenKeyIdOf } from "#channels/application/token-cipher.ts";
 import { Channel } from "#channels/domain/channel.ts";
 import type { TokenLifetime } from "#channels/domain/channel.ts";
@@ -115,6 +116,25 @@ const credentialColumns = ({
   tokenKeyId: tokenKeyIdOf(accessToken),
 });
 
+// Whether the channel already asks for a reconnect.
+const isMarked = sql<boolean>`(${channels.status} = 'refreshNeeded')`;
+
+// The active channels whose token renews itself and expires before its
+// platform's cutoff.
+const dueBefore = (cutoffs: readonly RefreshCutoff[]) =>
+  and(
+    eq(channels.status, "active"),
+    eq(channels.tokenKind, "refreshable"),
+    or(
+      ...cutoffs.map(({ before, platform }) =>
+        and(
+          eq(channels.platform, platform),
+          lte(channels.tokenExpiresAt, date(before))
+        )
+      )
+    )
+  );
+
 const byId = (workspaceId: WorkspaceId, channelId: ChannelId) =>
   and(eq(channels.workspaceId, workspaceId), eq(channels.id, channelId));
 
@@ -164,6 +184,17 @@ export const DrizzleChannelRepository = Layer.effect(
             ),
             Effect.withSpan("ChannelRepository.addingTo")
           ),
+      countDueForRefresh: (cutoffs) =>
+        cutoffs.length === 0
+          ? Effect.succeed(0)
+          : db
+              .select({ due: count() })
+              .from(channels)
+              .where(dueBefore(cutoffs))
+              .pipe(
+                Effect.mapError(failed),
+                Effect.map(([row]) => row?.due ?? 0)
+              ),
       credentials: (channelId) =>
         db
           .select({
@@ -183,24 +214,22 @@ export const DrizzleChannelRepository = Layer.effect(
                   }).pipe(Effect.orDie, Effect.map(Option.some))
             )
           ),
-      dueForRefresh: ({ cutoffs, limit }) => {
-        const due = cutoffs.map(({ before, platform }) =>
-          and(
-            eq(channels.platform, platform),
-            lte(channels.tokenExpiresAt, date(before))
-          )
-        );
-
-        return due.length === 0
+      dueForRefresh: ({ after, cutoffs, limit }) =>
+        cutoffs.length === 0
           ? Effect.succeed([])
           : db
               .select()
               .from(channels)
               .where(
                 and(
-                  eq(channels.status, "active"),
-                  eq(channels.tokenKind, "refreshable"),
-                  or(...due)
+                  dueBefore(cutoffs),
+                  after.pipe(
+                    Option.map(
+                      ({ channelId, expiresAt }) =>
+                        sql`(${channels.tokenExpiresAt}, ${channels.id}) > (${DateTime.formatIso(expiresAt)}::timestamptz, ${channelId}::uuid)`
+                    ),
+                    Option.getOrUndefined
+                  )
                 )
               )
               .orderBy(asc(channels.tokenExpiresAt), asc(channels.id))
@@ -208,8 +237,7 @@ export const DrizzleChannelRepository = Layer.effect(
               .pipe(
                 Effect.mapError(failed),
                 Effect.flatMap(Effect.forEach(toChannel))
-              );
-      },
+              ),
       findByAccount: (workspaceId, platform, accountId) =>
         db
           .select()
@@ -274,26 +302,31 @@ export const DrizzleChannelRepository = Layer.effect(
           ),
       // The warning window of `reconnectWarningFrom`: the lead time, or half
       // the token's lifetime when that is shorter, before it expires.
-      needingReconnect: ({ leadTime, limit, now }) =>
+      needingReconnect: ({ after, leadTime, limit, now }) =>
         db
           .select()
           .from(channels)
           .where(
-            or(
-              eq(channels.status, "refreshNeeded"),
-              and(
-                eq(channels.status, "active"),
-                eq(channels.tokenKind, "nonRefreshable"),
-                sql`${channels.tokenExpiresAt} - LEAST(make_interval(secs => ${Duration.toSeconds(leadTime)}), (${channels.tokenExpiresAt} - ${channels.tokenIssuedAt}) / 2) <= ${DateTime.formatIso(now)}::timestamptz`
+            and(
+              or(
+                eq(channels.status, "refreshNeeded"),
+                and(
+                  eq(channels.status, "active"),
+                  eq(channels.tokenKind, "nonRefreshable"),
+                  sql`${channels.tokenExpiresAt} - LEAST(make_interval(secs => ${Duration.toSeconds(leadTime)}), (${channels.tokenExpiresAt} - ${channels.tokenIssuedAt}) / 2) <= ${DateTime.formatIso(now)}::timestamptz`
+                )
+              ),
+              after.pipe(
+                Option.map(
+                  ({ channelId, marked, updatedAt }) =>
+                    sql`(${isMarked}, ${channels.updatedAt}, ${channels.id}) > (${marked}::boolean, ${DateTime.formatIso(updatedAt)}::timestamptz, ${channelId}::uuid)`
+                ),
+                Option.getOrUndefined
               )
             )
           )
           // False sorts first: the active channels, then the marked ones.
-          .orderBy(
-            sql`${channels.status} = 'refreshNeeded'`,
-            asc(channels.updatedAt),
-            asc(channels.id)
-          )
+          .orderBy(isMarked, asc(channels.updatedAt), asc(channels.id))
           .limit(limit)
           .pipe(
             Effect.mapError(failed),

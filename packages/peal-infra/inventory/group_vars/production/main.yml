@@ -56,6 +56,15 @@ peal_backup_endpoint: 0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.c
 peal_backup_bucket: peal-production-backups
 peal_backup_path: /production
 
+# The server samples one trace in ten that begins there, and follows the
+# decision a request comes with. Every attempt to publish, every request it
+# fails and every slow span is traced whatever the ratio, and logs and
+# metrics are never sampled (the docs' environment variables page,
+# "Telemetry"). Raise the ratio while you investigate; Tempo keeps 14 days.
+peal_settings:
+  OTEL_TRACES_SAMPLER: parentbased_traceidratio
+  OTEL_TRACES_SAMPLER_ARG: "0.1"
+
 # Read when the static image is built.
 peal_static_build_args:
   SITE_URL: https://peal.social

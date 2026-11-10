@@ -168,7 +168,9 @@ const current = (channel: Channel) =>
 // The refresh sweep, seeing only the test's workspace. Fresh, since the
 // file's layer already built the use case over the whole repository.
 const sweepIn = (workspaceId: WorkspaceId) =>
-  RefreshChannelTokens.use((refresh) => refresh.sweep).pipe(
+  RefreshChannelTokens.use((refresh) =>
+    refresh.sweep({ budget: Duration.minutes(8) })
+  ).pipe(
     Effect.provide(
       Layer.fresh(RefreshChannelTokens.layer).pipe(
         Layer.provide(repositoryScopedTo(workspaceId))
@@ -258,6 +260,7 @@ layer(BlueskyTest)("connecting a Bluesky account", (it) => {
       assert.deepStrictEqual(report, {
         due: 1,
         failed: 0,
+        left: 0,
         reconnectRequired: 0,
         refreshed: 1,
         unavailable: 0,
