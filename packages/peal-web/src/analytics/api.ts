@@ -30,6 +30,13 @@ export const postAnalytics = (workspaceId: string, postId: string) =>
   });
 
 /**
+ * What a post may hold on every platform, which says where this server
+ * reads each post's counts. It changes with the server's settings only.
+ */
+export const platformCapabilities = (workspaceId: string) =>
+  PealApi.query("capabilities", "platforms", { params: { workspaceId } });
+
+/**
  * The workspace's analytics over the range beside the range before it,
  * with the accounts' followers.
  */

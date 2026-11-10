@@ -1884,6 +1884,11 @@ and no socket, for tests.
   the contract copies, kept equal by `test/analytics/api/contract.test.ts`,
   so a post's page says the others have no counts. A platform that gains a
   reader joins that list in the same change, or the reader is never asked.
+  The list is what Peal can read, not what a server does: the web post
+  page (`PostMetrics`) takes the platforms counted from the server's
+  capabilities (`GET …/platforms/capabilities`, `analytics.perPost`:
+  `countedOn`), so X is named only where `X_ANALYTICS` is on, and falls
+  back on the list when it may not read them.
 - `CollectMetrics` runs on the `analytics.collect-metrics` cron, hourly at
   minute 7: a post is read every hour for 48 hours, then every day until it
   is 30 days old (`analytics/domain/collection-schedule.ts`), each next read

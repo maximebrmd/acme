@@ -6,6 +6,7 @@ import type {
   AnalyticsSummary,
   Channel,
   DashboardTotals,
+  Platform,
   PostAnalytics,
 } from "peal-contract";
 import type { ReactNode } from "react";
@@ -17,7 +18,10 @@ import {
 } from "#components/analytics/account-numbers.tsx";
 import { ChannelTotals } from "#components/analytics/channel-totals.tsx";
 import { EngagementChart } from "#components/analytics/engagement-chart.tsx";
-import { PostMetricsView } from "#components/analytics/post-metrics.tsx";
+import {
+  countedOn,
+  PostMetricsView,
+} from "#components/analytics/post-metrics.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 
 const render = async (
@@ -189,6 +193,12 @@ const analytics: PostAnalytics = {
   ],
 };
 
+// A platform as a server's capabilities describe its analytics.
+const described = (platform: Platform, perPost: boolean) => ({
+  analytics: { accountNumbers: [], perPost, postCounts: [] },
+  platform,
+});
+
 describe(PostMetricsView, () => {
   it("gives each channel's latest counts", async () => {
     const html = await render(
@@ -273,6 +283,57 @@ describe(PostMetricsView, () => {
       "Les chiffres ne sont pas disponibles sur les profils LinkedIn et Google Business Profile : Peal ne les relève pour l’instant que sur Mastodon, Bluesky, TikTok, YouTube, Instagram, Pinterest, les pages LinkedIn, Facebook, Threads et X."
     );
     expect(french).not.toContain("dans l’heure");
+  });
+
+  it("follows the server for the platforms it reads: X only where its operator turned it on", async () => {
+    const x: Channel = {
+      ...channel,
+      handle: "@alice_example",
+      id: "01900000-0000-7000-8000-0000000000c7",
+      platform: "x",
+    };
+
+    // This server's capabilities: counts on Mastodon and Bluesky, none on X.
+    const html = await render(
+      "en",
+      <PostMetricsView
+        analytics={{ postId: analytics.postId, targets: [] }}
+        channels={[channel, x]}
+        counted={["mastodon", "bluesky"]}
+        publishedOn={[x.id]}
+      />
+    );
+
+    expect(html).toContain(
+      "Counts are not available on X: Peal reads them on Mastodon and Bluesky only, so far."
+    );
+    expect(html).not.toContain("within the hour");
+
+    // Where the operator turned X reads on, its counts are on their way.
+    const reading = await render(
+      "en",
+      <PostMetricsView
+        analytics={{ postId: analytics.postId, targets: [] }}
+        channels={[channel, x]}
+        counted={["mastodon", "bluesky", "x"]}
+        publishedOn={[x.id]}
+      />
+    );
+
+    expect(reading).toContain(
+      "Peal reads counts on Mastodon, Bluesky, and X so far, within the hour after a post goes live."
+    );
+    expect(reading).not.toContain("not available");
+  });
+
+  it("tells the platforms a server counts from its capabilities", () => {
+    expect(
+      countedOn([
+        described("mastodon", true),
+        described("x", false),
+        described("linkedin", true),
+      ])
+    ).toStrictEqual(["mastodon", "linkedin"]);
   });
 
   it("promises counts on TikTok and YouTube, which Peal reads", async () => {
