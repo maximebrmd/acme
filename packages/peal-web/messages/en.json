@@ -484,6 +484,7 @@
         "empty": "{channel}: there is nothing to publish.",
         "textTooLong": "{channel}: {length} of {maximum} {unit, select, utf8Bytes {bytes} other {characters}}.",
         "tooManyMedia": "{channel}: {count} images or videos, at most {maximum}.",
+        "tooManyParts": "{channel}: {maximum, plural, =1 {this platform takes a post alone, with nothing after it. Remove the other parts, or post them elsewhere} other {{count} parts, at most {maximum}}}.",
         "mediaRequired": "{channel}: needs an image or a video.",
         "tooManyHashtags": "{channel}: {count} hashtags, at most {maximum}.",
         "tooManyMentions": "{channel}: {count} mentions, at most {maximum}.",

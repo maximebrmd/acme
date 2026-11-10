@@ -148,6 +148,12 @@ export const ComposerErrors = ({
           count,
           maximum,
         }),
+      tooManyParts: ({ channelId, count, maximum }) =>
+        t("violation.tooManyParts", {
+          channel: channelName(channelId),
+          count,
+          maximum,
+        }),
     });
 
   const generic = () => t("errors.generic");

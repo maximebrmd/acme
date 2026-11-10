@@ -1,6 +1,7 @@
 import type { Platform } from "#shared/domain/platform.ts";
 
 import type { MediaContentType } from "./media-file.ts";
+import { maxFollowUps } from "./post-part.ts";
 import type { TextUnit } from "./text-length.ts";
 
 /** At most `maximum` of `unit`. */
@@ -50,6 +51,22 @@ export interface MediaRules {
 }
 
 /**
+ * What the parts after a post's first become on a platform: replies in a
+ * `thread`, each to the part before it, or `comment`s under the post.
+ */
+export type FollowUpKind = "comment" | "thread";
+
+/**
+ * The parts a platform takes after a post's first. Each follows the rules
+ * of a post there: its text, its media, their limits.
+ */
+export interface FollowUpRules {
+  readonly kind: FollowUpKind;
+  /** The most parts after the first. */
+  readonly maximum: number;
+}
+
+/**
  * What a platform accepts in one post, as far as Peal checks before
  * publishing. A limit left out is one Peal does not know yet: the platform
  * may still refuse the post when it goes out. So is every media rule of a
@@ -62,6 +79,11 @@ export interface PlatformRules {
   /** Different links, counted by `countLinks`. */
   readonly maxLinks?: number;
   readonly maxMedia?: number;
+  /**
+   * The parts a post may have after its first, and what they become there.
+   * Left out where the platform takes a post alone.
+   */
+  readonly followUps?: FollowUpRules;
   readonly maxMentions?: number;
   readonly media?: MediaRules;
   /** The platform publishes images and videos only, never text alone. */
@@ -234,8 +256,12 @@ const pinterestVideo: FormatLimits = {
   minDurationMs: 4 * second,
 };
 
+// The platforms with threads: a reply chain, as long as a post has parts.
+const thread: FollowUpRules = { kind: "thread", maximum: maxFollowUps };
+
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   bluesky: {
+    followUps: thread,
     maxMedia: 4,
     media: {
       formats: {
@@ -327,6 +353,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 3000, unit: "codePoints" }],
   },
   mastodon: {
+    followUps: thread,
     maxMedia: 4,
     media: {
       formats: {
@@ -396,6 +423,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 2200, unit: "utf16Units" }],
   },
   x: {
+    followUps: thread,
     maxMedia: 4,
     media: {
       formats: {
@@ -427,3 +455,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     textLimits: [{ maximum: 5000, unit: "utf8Bytes" }],
   },
 };
+
+/** The parts the platform takes after a post's first, if it takes any. */
+export const followUpsOn = (platform: Platform): FollowUpRules | undefined =>
+  platformRules[platform].followUps;

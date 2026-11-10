@@ -192,6 +192,10 @@ const brokenRule = (violation: ContentViolation): string =>
       `${String(count)} images and videos, and the platform takes ${String(maximum)}`,
     tooManyMentions: ({ count, maximum }) =>
       `${String(count)} mentions, and the platform takes ${String(maximum)}`,
+    tooManyParts: ({ count, maximum }) =>
+      maximum === 1
+        ? "the platform takes a post alone, with no part after it"
+        : `${String(count)} parts, and the platform takes ${String(maximum)}`,
     tooManyPixels: ({ height, maximum, width }) =>
       `it is ${String(width)}×${String(height)}, and the platform takes ${String(maximum)} pixels in all`,
     tooManyVideos: ({ count, maximum }) =>
@@ -208,6 +212,9 @@ const placeOf = (violation: ContentViolation): string =>
   [
     "channelId" in violation
       ? `channel ${violation.channelId}${"platform" in violation ? ` (${violation.platform})` : ""}`
+      : [],
+    "part" in violation && violation.part !== undefined
+      ? `part ${String(violation.part + 1)}`
       : [],
     "field" in violation ? `option ${violation.field}` : [],
     "mediaId" in violation ? `media ${violation.mediaId}` : [],

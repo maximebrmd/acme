@@ -92,6 +92,10 @@ export const platformCapabilitiesView = (
 
   return {
     analytics: { perPost: capabilities.countsPosts },
+    followUps:
+      rules.followUps === undefined
+        ? null
+        : { kind: rules.followUps.kind, maxCount: rules.followUps.maximum },
     lookups: capabilities.lookups.map(lookupDescriptionView),
     media: {
       altText: {

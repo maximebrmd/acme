@@ -484,6 +484,7 @@
         "empty": "{channel} : il n’y a rien à publier.",
         "textTooLong": "{channel} : {length} sur {maximum} {unit, select, utf8Bytes {octets} other {caractères}}.",
         "tooManyMedia": "{channel} : {count} images ou vidéos, {maximum} au plus.",
+        "tooManyParts": "{channel} :{maximum, plural, =1 {cette plateforme prend une publication seule, sans rien à sa suite. Retirez les autres parties, ou publiez-les ailleurs} other {{count} parties, {maximum} au plus}}.",
         "mediaRequired": "{channel} : une image ou une vidéo est nécessaire.",
         "tooManyHashtags": "{channel} : {count} hashtags, {maximum} au plus.",
         "tooManyMentions": "{channel} : {count} mentions, {maximum} au plus.",

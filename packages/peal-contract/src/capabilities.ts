@@ -136,6 +136,17 @@ export const PlatformCapabilitiesSchema = Schema.Struct({
   // platform, on any of its channels; for a channel, on that one (a LinkedIn
   // company page, not a profile).
   analytics: Schema.Struct({ perPost: Schema.Boolean }),
+  // The parts a post may have there after its first (`content.followUps`):
+  // replies in a `thread`, each to the part before it, or `comment`s under
+  // the post, `maxCount` at most. Each follows the rules of a post there,
+  // text and media. Null: the platform takes a post alone, and a post with
+  // more parts is refused there when it is scheduled (`tooManyParts`).
+  followUps: Schema.NullOr(
+    Schema.Struct({
+      kind: Schema.Literals(["thread", "comment"]),
+      maxCount: Schema.Int,
+    }).annotate({ identifier: "FollowUpCapabilities" })
+  ),
   // What the platform tells about an account, for the options that refer
   // to it.
   lookups: Schema.Array(LookupDescriptionSchema),

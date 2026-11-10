@@ -191,6 +191,22 @@ describe("the platforms' capabilities endpoint", () => {
       });
       assert.deepStrictEqual(bluesky?.analytics, { perPost: false });
       assert.deepStrictEqual(bluesky?.options, { constraints: [], fields: [] });
+
+      // Where a post may have parts after its first, and what they become.
+      assert.deepStrictEqual(
+        all.flatMap(({ followUps, platform }) =>
+          followUps === null ? [] : [[platform, followUps.kind]]
+        ),
+        [
+          ["x", "thread"],
+          ["bluesky", "thread"],
+          ["mastodon", "thread"],
+        ]
+      );
+      assert.deepStrictEqual(bluesky?.followUps, {
+        kind: "thread",
+        maxCount: 24,
+      });
     })
   );
 
