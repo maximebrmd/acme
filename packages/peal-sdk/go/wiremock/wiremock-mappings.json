@@ -1811,9 +1811,165 @@
           }
         }
       }
+    },
+    {
+      "id": "206f778b-5ab6-4cb7-97ee-3bd7a28d5c90",
+      "name": "Describe every platform - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/platforms/capabilities",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"analytics\": {\n      \"perPost\": true\n    },\n    \"lookups\": [\n      {\n        \"fills\": [\n          \"fills\"\n        ],\n        \"input\": [\n          {\n            \"forbiddenCharacters\": [\n              \"forbiddenCharacters\"\n            ],\n            \"ifLeftOut\": null,\n            \"lookup\": null,\n            \"maxLength\": null,\n            \"maximum\": null,\n            \"minimum\": null,\n            \"name\": \"name\",\n            \"pattern\": null,\n            \"required\": true,\n            \"type\": \"boolean\",\n            \"values\": [\n              \"values\"\n            ]\n          }\n        ],\n        \"name\": \"youtubeVideoCategories\",\n        \"paged\": true,\n        \"platform\": \"x\"\n      }\n    ],\n    \"media\": {\n      \"altText\": {\n        \"maxLength\": 1,\n        \"shown\": null\n      },\n      \"formats\": [\n        {\n          \"contentType\": \"image/gif\",\n          \"kind\": \"image\",\n          \"maxAspectRatio\": null,\n          \"maxByteSize\": null,\n          \"maxDurationMs\": null,\n          \"maxMediaWith\": null,\n          \"maxPixels\": null,\n          \"maxSide\": null,\n          \"minAspectRatio\": null,\n          \"minByteSize\": null,\n          \"minDurationMs\": null,\n          \"minSide\": null\n        }\n      ],\n      \"maxCount\": 1,\n      \"maxVideos\": 1,\n      \"mixesKinds\": true,\n      \"required\": true\n    },\n    \"options\": {\n      \"constraints\": [\n        {\n          \"field\": \"field\",\n          \"oneOf\": [\n            \"oneOf\"\n          ],\n          \"_tag\": \"needsOneOf\"\n        }\n      ],\n      \"fields\": [\n        {\n          \"forbiddenCharacters\": [\n            \"forbiddenCharacters\"\n          ],\n          \"ifLeftOut\": null,\n          \"lookup\": null,\n          \"maxLength\": null,\n          \"maximum\": null,\n          \"minimum\": null,\n          \"name\": \"name\",\n          \"pattern\": null,\n          \"required\": true,\n          \"type\": \"boolean\",\n          \"values\": [\n            \"values\"\n          ]\n        }\n      ]\n    },\n    \"platform\": \"x\",\n    \"text\": {\n      \"forbiddenCharacters\": [\n        \"forbiddenCharacters\"\n      ],\n      \"limits\": [\n        {\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"maxHashtags\": 1,\n      \"maxLinks\": 1,\n      \"maxMentions\": 1\n    },\n    \"version\": 1\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "206f778b-5ab6-4cb7-97ee-3bd7a28d5c90",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "cdd73b7a-d082-4e8b-a5a0-fc3ddd8ced5b",
+      "name": "Describe a channel - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/channels/{channelId}/capabilities",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "channelId": {
+            "equalTo": "channelId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"account\": {\n    \"_tag\": \"unrestricted\"\n  },\n  \"capabilities\": {\n    \"analytics\": {\n      \"perPost\": true\n    },\n    \"lookups\": [\n      {\n        \"fills\": [\n          \"fills\"\n        ],\n        \"input\": [\n          {\n            \"forbiddenCharacters\": [\n              \"forbiddenCharacters\"\n            ],\n            \"ifLeftOut\": null,\n            \"lookup\": null,\n            \"maxLength\": null,\n            \"maximum\": null,\n            \"minimum\": null,\n            \"name\": \"name\",\n            \"pattern\": null,\n            \"required\": true,\n            \"type\": \"boolean\",\n            \"values\": [\n              \"values\"\n            ]\n          }\n        ],\n        \"name\": \"youtubeVideoCategories\",\n        \"paged\": true,\n        \"platform\": \"x\"\n      }\n    ],\n    \"media\": {\n      \"altText\": {\n        \"maxLength\": 1,\n        \"shown\": null\n      },\n      \"formats\": [\n        {\n          \"contentType\": \"image/gif\",\n          \"kind\": \"image\",\n          \"maxAspectRatio\": null,\n          \"maxByteSize\": null,\n          \"maxDurationMs\": null,\n          \"maxMediaWith\": null,\n          \"maxPixels\": null,\n          \"maxSide\": null,\n          \"minAspectRatio\": null,\n          \"minByteSize\": null,\n          \"minDurationMs\": null,\n          \"minSide\": null\n        }\n      ],\n      \"maxCount\": 1,\n      \"maxVideos\": 1,\n      \"mixesKinds\": true,\n      \"required\": true\n    },\n    \"options\": {\n      \"constraints\": [\n        {\n          \"field\": \"field\",\n          \"oneOf\": [\n            \"oneOf\"\n          ],\n          \"_tag\": \"needsOneOf\"\n        }\n      ],\n      \"fields\": [\n        {\n          \"forbiddenCharacters\": [\n            \"forbiddenCharacters\"\n          ],\n          \"ifLeftOut\": null,\n          \"lookup\": null,\n          \"maxLength\": null,\n          \"maximum\": null,\n          \"minimum\": null,\n          \"name\": \"name\",\n          \"pattern\": null,\n          \"required\": true,\n          \"type\": \"boolean\",\n          \"values\": [\n            \"values\"\n          ]\n        }\n      ]\n    },\n    \"platform\": \"x\",\n    \"text\": {\n      \"forbiddenCharacters\": [\n        \"forbiddenCharacters\"\n      ],\n      \"limits\": [\n        {\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"maxHashtags\": 1,\n      \"maxLinks\": 1,\n      \"maxMentions\": 1\n    },\n    \"version\": 1\n  },\n  \"channelId\": \"channelId\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "cdd73b7a-d082-4e8b-a5a0-fc3ddd8ced5b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "72188ec9-3202-4233-b8da-b86cc1ad89d4",
+      "name": "List a channel's lookups - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/channels/{channelId}/lookups",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "channelId": {
+            "equalTo": "channelId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"fills\": [\n      \"fills\"\n    ],\n    \"input\": [\n      {\n        \"forbiddenCharacters\": [\n          \"forbiddenCharacters\"\n        ],\n        \"ifLeftOut\": null,\n        \"lookup\": null,\n        \"maxLength\": null,\n        \"maximum\": null,\n        \"minimum\": null,\n        \"name\": \"name\",\n        \"pattern\": null,\n        \"required\": true,\n        \"type\": \"boolean\",\n        \"values\": [\n          \"values\"\n        ]\n      }\n    ],\n    \"name\": \"youtubeVideoCategories\",\n    \"paged\": true,\n    \"platform\": \"x\"\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "72188ec9-3202-4233-b8da-b86cc1ad89d4",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "174fd726-8776-421b-b13d-0598f6a2b06d",
+      "name": "Run a channel's lookup - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/channels/{channelId}/lookups/{name}",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "channelId": {
+            "equalTo": "channelId"
+          },
+          "name": {
+            "equalTo": "name"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"id\": \"id\",\n      \"title\": \"title\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\",\n  \"_tag\": \"youtubeVideoCategories\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "174fd726-8776-421b-b13d-0598f6a2b06d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
     }
   ],
   "meta": {
-    "total": 49
+    "total": 53
   }
 }

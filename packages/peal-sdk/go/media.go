@@ -581,40 +581,6 @@ func (m *Media) String() string {
 	return fmt.Sprintf("%#v", m)
 }
 
-type MediaContentType string
-
-const (
-	MediaContentTypeImageGif       MediaContentType = "image/gif"
-	MediaContentTypeImageJpeg      MediaContentType = "image/jpeg"
-	MediaContentTypeImagePng       MediaContentType = "image/png"
-	MediaContentTypeImageWebp      MediaContentType = "image/webp"
-	MediaContentTypeVideoMp4       MediaContentType = "video/mp4"
-	MediaContentTypeVideoQuicktime MediaContentType = "video/quicktime"
-)
-
-func NewMediaContentTypeFromString(s string) (MediaContentType, error) {
-	switch s {
-	case "image/gif":
-		return MediaContentTypeImageGif, nil
-	case "image/jpeg":
-		return MediaContentTypeImageJpeg, nil
-	case "image/png":
-		return MediaContentTypeImagePng, nil
-	case "image/webp":
-		return MediaContentTypeImageWebp, nil
-	case "video/mp4":
-		return MediaContentTypeVideoMp4, nil
-	case "video/quicktime":
-		return MediaContentTypeVideoQuicktime, nil
-	}
-	var t MediaContentType
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (m MediaContentType) Ptr() *MediaContentType {
-	return &m
-}
-
 var (
 	mediaDimensionsFieldHeight = big.NewInt(1 << 0)
 	mediaDimensionsFieldWidth  = big.NewInt(1 << 1)
@@ -715,28 +681,6 @@ func (m *MediaDimensions) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", m)
-}
-
-type MediaKind string
-
-const (
-	MediaKindImage MediaKind = "image"
-	MediaKindVideo MediaKind = "video"
-)
-
-func NewMediaKindFromString(s string) (MediaKind, error) {
-	switch s {
-	case "image":
-		return MediaKindImage, nil
-	case "video":
-		return MediaKindVideo, nil
-	}
-	var t MediaKind
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (m MediaKind) Ptr() *MediaKind {
-	return &m
 }
 
 var (

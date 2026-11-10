@@ -8,6 +8,9 @@ pub enum NotFoundErrorBody {
     ChannelNotFound {},
 
     #[non_exhaustive]
+    LookupNotFound {},
+
+    #[non_exhaustive]
     WorkspaceNotFound {},
 
     /// Catch-all variant for unrecognized discriminant values.
@@ -20,6 +23,10 @@ pub enum NotFoundErrorBody {
 impl NotFoundErrorBody {
     pub fn channel_not_found() -> Self {
         Self::ChannelNotFound {}
+    }
+
+    pub fn lookup_not_found() -> Self {
+        Self::LookupNotFound {}
     }
 
     pub fn workspace_not_found() -> Self {

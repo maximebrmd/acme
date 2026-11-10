@@ -16,6 +16,8 @@
 //! - **billing**
 //! - **analytics**
 //! - **tiktok**
+//! - **capabilities**
+//! - **lookups**
 
 use crate::{ApiError, ClientConfig};
 
@@ -23,8 +25,10 @@ pub mod analytics;
 pub mod api_keys;
 pub mod assistant;
 pub mod billing;
+pub mod capabilities;
 pub mod channels;
 pub mod invitations;
+pub mod lookups;
 pub mod media;
 pub mod members;
 pub mod notices;
@@ -49,6 +53,8 @@ pub struct PealClient {
     pub billing: BillingClient,
     pub analytics: AnalyticsClient,
     pub tiktok: TiktokClient,
+    pub capabilities: CapabilitiesClient,
+    pub lookups: LookupsClient,
 }
 
 impl PealClient {
@@ -69,6 +75,8 @@ impl PealClient {
             billing: BillingClient::new(config.clone())?,
             analytics: AnalyticsClient::new(config.clone())?,
             tiktok: TiktokClient::new(config.clone())?,
+            capabilities: CapabilitiesClient::new(config.clone())?,
+            lookups: LookupsClient::new(config.clone())?,
         })
     }
 }
@@ -77,8 +85,10 @@ pub use analytics::AnalyticsClient;
 pub use api_keys::ApiKeysClient;
 pub use assistant::AssistantClient;
 pub use billing::BillingClient;
+pub use capabilities::CapabilitiesClient;
 pub use channels::ChannelsClient;
 pub use invitations::InvitationsClient;
+pub use lookups::LookupsClient;
 pub use media::MediaClient;
 pub use members::MembersClient;
 pub use notices::NoticesClient;

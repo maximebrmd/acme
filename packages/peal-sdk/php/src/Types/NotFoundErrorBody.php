@@ -10,6 +10,7 @@ class NotFoundErrorBody extends JsonSerializableType
     /**
      * @var (
      *    'ChannelNotFound'
+     *   |'LookupNotFound'
      *   |'WorkspaceNotFound'
      *   |'_unknown'
      * ) $type
@@ -19,6 +20,7 @@ class NotFoundErrorBody extends JsonSerializableType
     /**
      * @var (
      *    ChannelNotFoundEncoded
+     *   |LookupNotFoundEncoded
      *   |WorkspaceNotFoundEncoded
      *   |mixed
      * ) $value
@@ -29,11 +31,13 @@ class NotFoundErrorBody extends JsonSerializableType
      * @param array{
      *   type: (
      *    'ChannelNotFound'
+     *   |'LookupNotFound'
      *   |'WorkspaceNotFound'
      *   |'_unknown'
      * ),
      *   value: (
      *    ChannelNotFoundEncoded
+     *   |LookupNotFoundEncoded
      *   |WorkspaceNotFoundEncoded
      *   |mixed
      * ),
@@ -55,6 +59,18 @@ class NotFoundErrorBody extends JsonSerializableType
         return new NotFoundErrorBody([
             'type' => 'ChannelNotFound',
             'value' => $channelNotFound,
+        ]);
+    }
+
+    /**
+     * @param LookupNotFoundEncoded $lookupNotFound
+     * @return NotFoundErrorBody
+     */
+    public static function lookupNotFound(LookupNotFoundEncoded $lookupNotFound): NotFoundErrorBody
+    {
+        return new NotFoundErrorBody([
+            'type' => 'LookupNotFound',
+            'value' => $lookupNotFound,
         ]);
     }
 
@@ -86,6 +102,28 @@ class NotFoundErrorBody extends JsonSerializableType
         if (!($this->value instanceof ChannelNotFoundEncoded && $this->type === 'ChannelNotFound')) {
             throw new Exception(
                 "Expected ChannelNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLookupNotFound(): bool
+    {
+        return $this->value instanceof LookupNotFoundEncoded && $this->type === 'LookupNotFound';
+    }
+
+    /**
+     * @return LookupNotFoundEncoded
+     */
+    public function asLookupNotFound(): LookupNotFoundEncoded
+    {
+        if (!($this->value instanceof LookupNotFoundEncoded && $this->type === 'LookupNotFound')) {
+            throw new Exception(
+                "Expected LookupNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -138,6 +176,10 @@ class NotFoundErrorBody extends JsonSerializableType
                 $value = $this->asChannelNotFound()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'LookupNotFound':
+                $value = $this->asLookupNotFound()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'WorkspaceNotFound':
                 $value = $this->asWorkspaceNotFound()->jsonSerialize();
                 $result = array_merge($value, $result);
@@ -180,6 +222,9 @@ class NotFoundErrorBody extends JsonSerializableType
         switch ($type) {
             case 'ChannelNotFound':
                 $args['value'] = ChannelNotFoundEncoded::jsonDeserialize($data);
+                break;
+            case 'LookupNotFound':
+                $args['value'] = LookupNotFoundEncoded::jsonDeserialize($data);
                 break;
             case 'WorkspaceNotFound':
                 $args['value'] = WorkspaceNotFoundEncoded::jsonDeserialize($data);

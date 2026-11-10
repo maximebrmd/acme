@@ -30,12 +30,20 @@ public final class NotFoundErrorBody {
         return new NotFoundErrorBody(new ChannelNotFoundValue(value));
     }
 
+    public static NotFoundErrorBody lookupNotFound(LookupNotFoundEncoded value) {
+        return new NotFoundErrorBody(new LookupNotFoundValue(value));
+    }
+
     public static NotFoundErrorBody workspaceNotFound(WorkspaceNotFoundEncoded value) {
         return new NotFoundErrorBody(new WorkspaceNotFoundValue(value));
     }
 
     public boolean isChannelNotFound() {
         return value instanceof ChannelNotFoundValue;
+    }
+
+    public boolean isLookupNotFound() {
+        return value instanceof LookupNotFoundValue;
     }
 
     public boolean isWorkspaceNotFound() {
@@ -49,6 +57,13 @@ public final class NotFoundErrorBody {
     public Optional<ChannelNotFoundEncoded> getChannelNotFound() {
         if (isChannelNotFound()) {
             return Optional.of(((ChannelNotFoundValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<LookupNotFoundEncoded> getLookupNotFound() {
+        if (isLookupNotFound()) {
+            return Optional.of(((LookupNotFoundValue) value).value);
         }
         return Optional.empty();
     }
@@ -91,13 +106,19 @@ public final class NotFoundErrorBody {
     public interface Visitor<T> {
         T visitChannelNotFound(ChannelNotFoundEncoded channelNotFound);
 
+        T visitLookupNotFound(LookupNotFoundEncoded lookupNotFound);
+
         T visitWorkspaceNotFound(WorkspaceNotFoundEncoded workspaceNotFound);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(ChannelNotFoundValue.class), @JsonSubTypes.Type(WorkspaceNotFoundValue.class)})
+    @JsonSubTypes({
+        @JsonSubTypes.Type(ChannelNotFoundValue.class),
+        @JsonSubTypes.Type(LookupNotFoundValue.class),
+        @JsonSubTypes.Type(WorkspaceNotFoundValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
@@ -129,6 +150,46 @@ public final class NotFoundErrorBody {
         }
 
         private boolean equalTo(ChannelNotFoundValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NotFoundErrorBody{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("LookupNotFound")
+    @JsonIgnoreProperties("_tag")
+    private static final class LookupNotFoundValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private LookupNotFoundEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private LookupNotFoundValue() {}
+
+        private LookupNotFoundValue(LookupNotFoundEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitLookupNotFound(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof LookupNotFoundValue && equalTo((LookupNotFoundValue) other);
+        }
+
+        private boolean equalTo(LookupNotFoundValue other) {
             return value.equals(other.value);
         }
 

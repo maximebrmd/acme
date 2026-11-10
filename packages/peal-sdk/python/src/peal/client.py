@@ -14,8 +14,10 @@ if typing.TYPE_CHECKING:
     from .api_keys.client import ApiKeysClient, AsyncApiKeysClient
     from .assistant.client import AssistantClient, AsyncAssistantClient
     from .billing.client import AsyncBillingClient, BillingClient
+    from .capabilities.client import AsyncCapabilitiesClient, CapabilitiesClient
     from .channels.client import AsyncChannelsClient, ChannelsClient
     from .invitations.client import AsyncInvitationsClient, InvitationsClient
+    from .lookups.client import AsyncLookupsClient, LookupsClient
     from .media.client import AsyncMediaClient, MediaClient
     from .members.client import AsyncMembersClient, MembersClient
     from .notices.client import AsyncNoticesClient, NoticesClient
@@ -124,6 +126,8 @@ class Peal:
         self._billing: typing.Optional[BillingClient] = None
         self._analytics: typing.Optional[AnalyticsClient] = None
         self._tiktok: typing.Optional[TiktokClient] = None
+        self._capabilities: typing.Optional[CapabilitiesClient] = None
+        self._lookups: typing.Optional[LookupsClient] = None
 
     @property
     def system(self):
@@ -236,6 +240,22 @@ class Peal:
 
             self._tiktok = TiktokClient(client_wrapper=self._client_wrapper)
         return self._tiktok
+
+    @property
+    def capabilities(self):
+        if self._capabilities is None:
+            from .capabilities.client import CapabilitiesClient  # noqa: E402
+
+            self._capabilities = CapabilitiesClient(client_wrapper=self._client_wrapper)
+        return self._capabilities
+
+    @property
+    def lookups(self):
+        if self._lookups is None:
+            from .lookups.client import LookupsClient  # noqa: E402
+
+            self._lookups = LookupsClient(client_wrapper=self._client_wrapper)
+        return self._lookups
 
 
 def _make_default_async_client(
@@ -357,6 +377,8 @@ class AsyncPeal:
         self._billing: typing.Optional[AsyncBillingClient] = None
         self._analytics: typing.Optional[AsyncAnalyticsClient] = None
         self._tiktok: typing.Optional[AsyncTiktokClient] = None
+        self._capabilities: typing.Optional[AsyncCapabilitiesClient] = None
+        self._lookups: typing.Optional[AsyncLookupsClient] = None
 
     @property
     def system(self):
@@ -469,6 +491,22 @@ class AsyncPeal:
 
             self._tiktok = AsyncTiktokClient(client_wrapper=self._client_wrapper)
         return self._tiktok
+
+    @property
+    def capabilities(self):
+        if self._capabilities is None:
+            from .capabilities.client import AsyncCapabilitiesClient  # noqa: E402
+
+            self._capabilities = AsyncCapabilitiesClient(client_wrapper=self._client_wrapper)
+        return self._capabilities
+
+    @property
+    def lookups(self):
+        if self._lookups is None:
+            from .lookups.client import AsyncLookupsClient  # noqa: E402
+
+            self._lookups = AsyncLookupsClient(client_wrapper=self._client_wrapper)
+        return self._lookups
 
 
 def _get_base_url(*, base_url: typing.Optional[str] = None, environment: PealEnvironment) -> str:

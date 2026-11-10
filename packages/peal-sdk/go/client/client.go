@@ -7,10 +7,12 @@ import (
 	apikeys "github.com/peal-social/peal/packages/peal-sdk/go/apikeys"
 	assistant "github.com/peal-social/peal/packages/peal-sdk/go/assistant"
 	billing "github.com/peal-social/peal/packages/peal-sdk/go/billing"
+	capabilities "github.com/peal-social/peal/packages/peal-sdk/go/capabilities"
 	channels "github.com/peal-social/peal/packages/peal-sdk/go/channels"
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
 	internal "github.com/peal-social/peal/packages/peal-sdk/go/internal"
 	invitations "github.com/peal-social/peal/packages/peal-sdk/go/invitations"
+	lookups "github.com/peal-social/peal/packages/peal-sdk/go/lookups"
 	media "github.com/peal-social/peal/packages/peal-sdk/go/media"
 	members "github.com/peal-social/peal/packages/peal-sdk/go/members"
 	notices "github.com/peal-social/peal/packages/peal-sdk/go/notices"
@@ -37,6 +39,8 @@ type Client struct {
 	Billing                 *billing.Client
 	Analytics               *analytics.Client
 	Tiktok                  *tiktok.Client
+	Capabilities            *capabilities.Client
+	Lookups                 *lookups.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -60,6 +64,8 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Billing:                 billing.NewClient(options),
 		Analytics:               analytics.NewClient(options),
 		Tiktok:                  tiktok.NewClient(options),
+		Capabilities:            capabilities.NewClient(options),
+		Lookups:                 lookups.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,
 		caller: internal.NewCaller(

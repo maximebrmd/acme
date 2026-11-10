@@ -35,7 +35,6 @@ import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
 import social.peal.resources.assistant.requests.StatusAssistantRequest;
 import social.peal.resources.assistant.requests.SuggestionRequest;
-import social.peal.types.AssistantQuotaExceededEncoded;
 import social.peal.types.AssistantStatus;
 import social.peal.types.ForbiddenEncoded;
 import social.peal.types.Suggestion;
@@ -250,8 +249,7 @@ public class AsyncRawAssistantClient {
                                 return;
                             case 429:
                                 future.completeExceptionally(new TooManyRequestsError(
-                                        ObjectMappers.JSON_MAPPER.readValue(
-                                                responseBodyString, AssistantQuotaExceededEncoded.class),
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
                             case 502:

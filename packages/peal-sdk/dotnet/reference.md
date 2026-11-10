@@ -2744,3 +2744,234 @@ await client.Tiktok.CreatorAsync(
 </dl>
 </details>
 
+## capabilities
+<details><summary><code>client.Capabilities.<a href="/src/Peal/Capabilities/CapabilitiesClient.cs">PlatformsAsync</a>(PlatformsCapabilitiesRequest { ... }) -> WithRawResponseTask&lt;IEnumerable&lt;PlatformCapabilities&gt;&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Describes what a post may hold on every platform, in Peal's order, whether or not the workspace has a channel there: how its text is counted and limited, the images and videos it takes, its options field by field, the lookups that answer their values, and whether Peal reads each post's counts. These are the rules Peal checks when a post is scheduled; a null limit is one Peal does not check, which the platform may still apply. Needs channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Capabilities.PlatformsAsync(
+    new PlatformsCapabilitiesRequest { WorkspaceId = "workspaceId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `PlatformsCapabilitiesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Capabilities.<a href="/src/Peal/Capabilities/CapabilitiesClient.cs">ChannelAsync</a>(ChannelCapabilitiesRequest { ... }) -> WithRawResponseTask&lt;ChannelCapabilities&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Describes what a post on this channel may hold: its platform's capabilities, and what its own account narrows in them, read from the platform now (a TikTok creator's audiences, the interactions they turned off, their longest video). When the platform cannot be asked, `account` says why and the platform's capabilities are answered alone. Needs channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Capabilities.ChannelAsync(
+    new ChannelCapabilitiesRequest { WorkspaceId = "workspaceId", ChannelId = "channelId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ChannelCapabilitiesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## lookups
+<details><summary><code>client.Lookups.<a href="/src/Peal/Lookups/LookupsClient.cs">ListAsync</a>(ListLookupsRequest { ... }) -> WithRawResponseTask&lt;IEnumerable&lt;LookupDescription&gt;&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Lookups.ListAsync(
+    new ListLookupsRequest { WorkspaceId = "workspaceId", ChannelId = "channelId" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListLookupsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Lookups.<a href="/src/Peal/Lookups/LookupsClient.cs">RunAsync</a>(LookupInput { ... }) -> WithRawResponseTask&lt;LookupResult&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Runs one of the channel's lookups: asks the platform now, with the channel's token, and answers a page of items tagged by the lookup's name. It changes nothing, on Peal or on the platform. A paged lookup names the next page in `nextCursor`, to send back as `cursor`. A name the channel's platform does not have is LookupNotFound; an input the lookup does not take, LookupInputInvalid; a channel turned off or to reconnect, ChannelCannotPost; a platform that did not answer, PlatformUnreachable, and one that asked to slow down, PlatformRateLimited. Needs channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Lookups.RunAsync(
+    new LookupInput
+    {
+        WorkspaceId = "workspaceId",
+        ChannelId = "channelId",
+        Name = "name",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `LookupInput` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+

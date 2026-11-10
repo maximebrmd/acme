@@ -10,8 +10,10 @@ import social.peal.resources.analytics.AsyncAnalyticsClient;
 import social.peal.resources.apikeys.AsyncApiKeysClient;
 import social.peal.resources.assistant.AsyncAssistantClient;
 import social.peal.resources.billing.AsyncBillingClient;
+import social.peal.resources.capabilities.AsyncCapabilitiesClient;
 import social.peal.resources.channels.AsyncChannelsClient;
 import social.peal.resources.invitations.AsyncInvitationsClient;
+import social.peal.resources.lookups.AsyncLookupsClient;
 import social.peal.resources.media.AsyncMediaClient;
 import social.peal.resources.members.AsyncMembersClient;
 import social.peal.resources.notices.AsyncNoticesClient;
@@ -52,6 +54,10 @@ public class AsyncPealClient implements AutoCloseable {
 
     protected final Supplier<AsyncTiktokClient> tiktokClient;
 
+    protected final Supplier<AsyncCapabilitiesClient> capabilitiesClient;
+
+    protected final Supplier<AsyncLookupsClient> lookupsClient;
+
     public AsyncPealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new AsyncSystemClient(clientOptions));
@@ -69,6 +75,8 @@ public class AsyncPealClient implements AutoCloseable {
         this.billingClient = Suppliers.memoize(() -> new AsyncBillingClient(clientOptions));
         this.analyticsClient = Suppliers.memoize(() -> new AsyncAnalyticsClient(clientOptions));
         this.tiktokClient = Suppliers.memoize(() -> new AsyncTiktokClient(clientOptions));
+        this.capabilitiesClient = Suppliers.memoize(() -> new AsyncCapabilitiesClient(clientOptions));
+        this.lookupsClient = Suppliers.memoize(() -> new AsyncLookupsClient(clientOptions));
     }
 
     public AsyncSystemClient system() {
@@ -125,6 +133,14 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncTiktokClient tiktok() {
         return this.tiktokClient.get();
+    }
+
+    public AsyncCapabilitiesClient capabilities() {
+        return this.capabilitiesClient.get();
+    }
+
+    public AsyncLookupsClient lookups() {
+        return this.lookupsClient.get();
     }
 
     /**

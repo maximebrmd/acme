@@ -269,7 +269,7 @@ public partial class AssistantClient : IAssistantClient
                         );
                     case 429:
                         throw new TooManyRequestsError(
-                            JsonUtils.Deserialize<AssistantQuotaExceededEncoded>(responseBody),
+                            JsonUtils.Deserialize<object>(responseBody),
                             rawResponse: new Peal.RawResponse()
                             {
                                 StatusCode = response.Raw.StatusCode,

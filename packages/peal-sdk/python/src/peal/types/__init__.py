@@ -6,6 +6,27 @@ import typing
 from importlib import import_module
 
 if typing.TYPE_CHECKING:
+    from .account_restriction import (
+        AccountRestriction,
+        AccountRestriction_MediaTypesRefused,
+        AccountRestriction_OptionFixed,
+        AccountRestriction_OptionValues,
+        AccountRestriction_VideoDuration,
+    )
+    from .account_restriction_media_types_refused import AccountRestrictionMediaTypesRefused
+    from .account_restriction_option_fixed import AccountRestrictionOptionFixed
+    from .account_restriction_option_values import AccountRestrictionOptionValues
+    from .account_restriction_video_duration import AccountRestrictionVideoDuration
+    from .account_standing import (
+        AccountStanding,
+        AccountStanding_Read,
+        AccountStanding_Unread,
+        AccountStanding_Unrestricted,
+    )
+    from .account_standing_read import AccountStandingRead
+    from .account_standing_unread import AccountStandingUnread
+    from .account_standing_unrestricted import AccountStandingUnrestricted
+    from .account_unread_reason import AccountUnreadReason
     from .already_member_encoded import AlreadyMemberEncoded
     from .alt_text_too_long_encoded import AltTextTooLongEncoded
     from .alt_text_too_long_encoded_tag import AltTextTooLongEncodedTag
@@ -45,6 +66,7 @@ if typing.TYPE_CHECKING:
     from .channel_cannot_post_encoded import ChannelCannotPostEncoded
     from .channel_cannot_post_encoded_reason import ChannelCannotPostEncodedReason
     from .channel_cannot_post_encoded_tag import ChannelCannotPostEncodedTag
+    from .channel_capabilities import ChannelCapabilities
     from .channel_metrics import ChannelMetrics
     from .channel_not_found_encoded import ChannelNotFoundEncoded
     from .channel_options import ChannelOptions
@@ -130,6 +152,9 @@ if typing.TYPE_CHECKING:
     from .effect_http_api_error_bad_request_encoded_tag import EffectHttpApiErrorBadRequestEncodedTag
     from .engagement_day import EngagementDay
     from .failure_reason import FailureReason
+    from .field_default import FieldDefault
+    from .field_description import FieldDescription
+    from .field_type import FieldType
     from .forbidden_encoded import ForbiddenEncoded
     from .forbidden_encoded_tag import ForbiddenEncodedTag
     from .instagram_connection import InstagramConnection
@@ -141,13 +166,30 @@ if typing.TYPE_CHECKING:
     from .invalid_time_zone_encoded_tag import InvalidTimeZoneEncodedTag
     from .invitation import Invitation
     from .invitation_not_found_encoded import InvitationNotFoundEncoded
+    from .lookup_description import LookupDescription
+    from .lookup_input_invalid_encoded import LookupInputInvalidEncoded
+    from .lookup_input_invalid_encoded_tag import LookupInputInvalidEncodedTag
+    from .lookup_name import LookupName
+    from .lookup_not_found_encoded import LookupNotFoundEncoded
+    from .lookup_result import (
+        LookupResult,
+        LookupResult_TiktokCreator,
+        LookupResult_YoutubePlaylists,
+        LookupResult_YoutubeVideoCategories,
+    )
+    from .lookup_result_tiktok_creator import LookupResultTiktokCreator
+    from .lookup_result_youtube_playlists import LookupResultYoutubePlaylists
+    from .lookup_result_youtube_video_categories import LookupResultYoutubeVideoCategories
     from .me import Me
     from .me_user import MeUser
     from .me_user_locale import MeUserLocale
     from .media import Media
     from .media_attachment import MediaAttachment
+    from .media_capabilities import MediaCapabilities
+    from .media_capabilities_alt_text import MediaCapabilitiesAltText
     from .media_content_type import MediaContentType
     from .media_dimensions import MediaDimensions
+    from .media_format import MediaFormat
     from .media_in_use_encoded import MediaInUseEncoded
     from .media_in_use_encoded_tag import MediaInUseEncodedTag
     from .media_kind import MediaKind
@@ -177,6 +219,7 @@ if typing.TYPE_CHECKING:
     from .not_found_error_body import (
         NotFoundErrorBody,
         NotFoundErrorBody_ChannelNotFound,
+        NotFoundErrorBody_LookupNotFound,
         NotFoundErrorBody_WorkspaceNotFound,
     )
     from .notice import Notice
@@ -207,6 +250,9 @@ if typing.TYPE_CHECKING:
     from .notice_page import NoticePage
     from .notification_preferences import NotificationPreferences
     from .notification_preferences_email import NotificationPreferencesEmail
+    from .option_constraint import OptionConstraint, OptionConstraint_NeedsOneOf, OptionConstraint_NotWith
+    from .option_constraint_needs_one_of import OptionConstraintNeedsOneOf
+    from .option_constraint_not_with import OptionConstraintNotWith
     from .paid_plan import PaidPlan
     from .period_usage import PeriodUsage
     from .permission import Permission
@@ -218,6 +264,11 @@ if typing.TYPE_CHECKING:
     from .plan_offer import PlanOffer
     from .plan_price import PlanPrice
     from .platform import Platform
+    from .platform_capabilities import PlatformCapabilities
+    from .platform_capabilities_analytics import PlatformCapabilitiesAnalytics
+    from .platform_capabilities_options import PlatformCapabilitiesOptions
+    from .platform_rate_limited_encoded import PlatformRateLimitedEncoded
+    from .platform_rate_limited_encoded_tag import PlatformRateLimitedEncodedTag
     from .platform_unreachable_encoded import PlatformUnreachableEncoded
     from .platform_unreachable_encoded_tag import PlatformUnreachableEncodedTag
     from .post import Post
@@ -252,6 +303,8 @@ if typing.TYPE_CHECKING:
     from .target_metrics import TargetMetrics
     from .target_options import TargetOptions, TargetOptions_Tiktok, TargetOptions_Youtube
     from .target_status_conflict_encoded import TargetStatusConflictEncoded
+    from .text_capabilities import TextCapabilities
+    from .text_limit import TextLimit
     from .text_override import TextOverride
     from .text_unit import TextUnit
     from .tik_tok_account import TikTokAccount
@@ -292,8 +345,27 @@ if typing.TYPE_CHECKING:
     from .workspace_not_found_encoded import WorkspaceNotFoundEncoded
     from .workspace_not_found_encoded_tag import WorkspaceNotFoundEncodedTag
     from .you_tube_options import YouTubeOptions
+    from .you_tube_playlist import YouTubePlaylist
     from .you_tube_privacy import YouTubePrivacy
+    from .you_tube_video_category import YouTubeVideoCategory
 _dynamic_imports: typing.Dict[str, str] = {
+    "AccountRestriction": ".account_restriction",
+    "AccountRestrictionMediaTypesRefused": ".account_restriction_media_types_refused",
+    "AccountRestrictionOptionFixed": ".account_restriction_option_fixed",
+    "AccountRestrictionOptionValues": ".account_restriction_option_values",
+    "AccountRestrictionVideoDuration": ".account_restriction_video_duration",
+    "AccountRestriction_MediaTypesRefused": ".account_restriction",
+    "AccountRestriction_OptionFixed": ".account_restriction",
+    "AccountRestriction_OptionValues": ".account_restriction",
+    "AccountRestriction_VideoDuration": ".account_restriction",
+    "AccountStanding": ".account_standing",
+    "AccountStandingRead": ".account_standing_read",
+    "AccountStandingUnread": ".account_standing_unread",
+    "AccountStandingUnrestricted": ".account_standing_unrestricted",
+    "AccountStanding_Read": ".account_standing",
+    "AccountStanding_Unread": ".account_standing",
+    "AccountStanding_Unrestricted": ".account_standing",
+    "AccountUnreadReason": ".account_unread_reason",
     "AlreadyMemberEncoded": ".already_member_encoded",
     "AltTextTooLongEncoded": ".alt_text_too_long_encoded",
     "AltTextTooLongEncodedTag": ".alt_text_too_long_encoded_tag",
@@ -331,6 +403,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ChannelCannotPostEncoded": ".channel_cannot_post_encoded",
     "ChannelCannotPostEncodedReason": ".channel_cannot_post_encoded_reason",
     "ChannelCannotPostEncodedTag": ".channel_cannot_post_encoded_tag",
+    "ChannelCapabilities": ".channel_capabilities",
     "ChannelMetrics": ".channel_metrics",
     "ChannelNotFoundEncoded": ".channel_not_found_encoded",
     "ChannelOptions": ".channel_options",
@@ -417,6 +490,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "EffectHttpApiErrorBadRequestEncodedTag": ".effect_http_api_error_bad_request_encoded_tag",
     "EngagementDay": ".engagement_day",
     "FailureReason": ".failure_reason",
+    "FieldDefault": ".field_default",
+    "FieldDescription": ".field_description",
+    "FieldType": ".field_type",
     "ForbiddenEncoded": ".forbidden_encoded",
     "ForbiddenEncodedTag": ".forbidden_encoded_tag",
     "InstagramConnection": ".instagram_connection",
@@ -428,13 +504,28 @@ _dynamic_imports: typing.Dict[str, str] = {
     "InvalidTimeZoneEncodedTag": ".invalid_time_zone_encoded_tag",
     "Invitation": ".invitation",
     "InvitationNotFoundEncoded": ".invitation_not_found_encoded",
+    "LookupDescription": ".lookup_description",
+    "LookupInputInvalidEncoded": ".lookup_input_invalid_encoded",
+    "LookupInputInvalidEncodedTag": ".lookup_input_invalid_encoded_tag",
+    "LookupName": ".lookup_name",
+    "LookupNotFoundEncoded": ".lookup_not_found_encoded",
+    "LookupResult": ".lookup_result",
+    "LookupResultTiktokCreator": ".lookup_result_tiktok_creator",
+    "LookupResultYoutubePlaylists": ".lookup_result_youtube_playlists",
+    "LookupResultYoutubeVideoCategories": ".lookup_result_youtube_video_categories",
+    "LookupResult_TiktokCreator": ".lookup_result",
+    "LookupResult_YoutubePlaylists": ".lookup_result",
+    "LookupResult_YoutubeVideoCategories": ".lookup_result",
     "Me": ".me",
     "MeUser": ".me_user",
     "MeUserLocale": ".me_user_locale",
     "Media": ".media",
     "MediaAttachment": ".media_attachment",
+    "MediaCapabilities": ".media_capabilities",
+    "MediaCapabilitiesAltText": ".media_capabilities_alt_text",
     "MediaContentType": ".media_content_type",
     "MediaDimensions": ".media_dimensions",
+    "MediaFormat": ".media_format",
     "MediaInUseEncoded": ".media_in_use_encoded",
     "MediaInUseEncodedTag": ".media_in_use_encoded_tag",
     "MediaKind": ".media_kind",
@@ -461,6 +552,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NonFiniteNumber": ".non_finite_number",
     "NotFoundErrorBody": ".not_found_error_body",
     "NotFoundErrorBody_ChannelNotFound": ".not_found_error_body",
+    "NotFoundErrorBody_LookupNotFound": ".not_found_error_body",
     "NotFoundErrorBody_WorkspaceNotFound": ".not_found_error_body",
     "Notice": ".notice",
     "NoticeChannel": ".notice_channel",
@@ -488,6 +580,11 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticePage": ".notice_page",
     "NotificationPreferences": ".notification_preferences",
     "NotificationPreferencesEmail": ".notification_preferences_email",
+    "OptionConstraint": ".option_constraint",
+    "OptionConstraintNeedsOneOf": ".option_constraint_needs_one_of",
+    "OptionConstraintNotWith": ".option_constraint_not_with",
+    "OptionConstraint_NeedsOneOf": ".option_constraint",
+    "OptionConstraint_NotWith": ".option_constraint",
     "PaidPlan": ".paid_plan",
     "PeriodUsage": ".period_usage",
     "Permission": ".permission",
@@ -499,6 +596,11 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PlanOffer": ".plan_offer",
     "PlanPrice": ".plan_price",
     "Platform": ".platform",
+    "PlatformCapabilities": ".platform_capabilities",
+    "PlatformCapabilitiesAnalytics": ".platform_capabilities_analytics",
+    "PlatformCapabilitiesOptions": ".platform_capabilities_options",
+    "PlatformRateLimitedEncoded": ".platform_rate_limited_encoded",
+    "PlatformRateLimitedEncodedTag": ".platform_rate_limited_encoded_tag",
     "PlatformUnreachableEncoded": ".platform_unreachable_encoded",
     "PlatformUnreachableEncodedTag": ".platform_unreachable_encoded_tag",
     "Post": ".post",
@@ -539,6 +641,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TargetOptions_Tiktok": ".target_options",
     "TargetOptions_Youtube": ".target_options",
     "TargetStatusConflictEncoded": ".target_status_conflict_encoded",
+    "TextCapabilities": ".text_capabilities",
+    "TextLimit": ".text_limit",
     "TextOverride": ".text_override",
     "TextUnit": ".text_unit",
     "TikTokAccount": ".tik_tok_account",
@@ -581,7 +685,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WorkspaceNotFoundEncoded": ".workspace_not_found_encoded",
     "WorkspaceNotFoundEncodedTag": ".workspace_not_found_encoded_tag",
     "YouTubeOptions": ".you_tube_options",
+    "YouTubePlaylist": ".you_tube_playlist",
     "YouTubePrivacy": ".you_tube_privacy",
+    "YouTubeVideoCategory": ".you_tube_video_category",
 }
 
 
@@ -607,6 +713,23 @@ def __dir__():
 
 
 __all__ = [
+    "AccountRestriction",
+    "AccountRestrictionMediaTypesRefused",
+    "AccountRestrictionOptionFixed",
+    "AccountRestrictionOptionValues",
+    "AccountRestrictionVideoDuration",
+    "AccountRestriction_MediaTypesRefused",
+    "AccountRestriction_OptionFixed",
+    "AccountRestriction_OptionValues",
+    "AccountRestriction_VideoDuration",
+    "AccountStanding",
+    "AccountStandingRead",
+    "AccountStandingUnread",
+    "AccountStandingUnrestricted",
+    "AccountStanding_Read",
+    "AccountStanding_Unread",
+    "AccountStanding_Unrestricted",
+    "AccountUnreadReason",
     "AlreadyMemberEncoded",
     "AltTextTooLongEncoded",
     "AltTextTooLongEncodedTag",
@@ -644,6 +767,7 @@ __all__ = [
     "ChannelCannotPostEncoded",
     "ChannelCannotPostEncodedReason",
     "ChannelCannotPostEncodedTag",
+    "ChannelCapabilities",
     "ChannelMetrics",
     "ChannelNotFoundEncoded",
     "ChannelOptions",
@@ -730,6 +854,9 @@ __all__ = [
     "EffectHttpApiErrorBadRequestEncodedTag",
     "EngagementDay",
     "FailureReason",
+    "FieldDefault",
+    "FieldDescription",
+    "FieldType",
     "ForbiddenEncoded",
     "ForbiddenEncodedTag",
     "InstagramConnection",
@@ -741,13 +868,28 @@ __all__ = [
     "InvalidTimeZoneEncodedTag",
     "Invitation",
     "InvitationNotFoundEncoded",
+    "LookupDescription",
+    "LookupInputInvalidEncoded",
+    "LookupInputInvalidEncodedTag",
+    "LookupName",
+    "LookupNotFoundEncoded",
+    "LookupResult",
+    "LookupResultTiktokCreator",
+    "LookupResultYoutubePlaylists",
+    "LookupResultYoutubeVideoCategories",
+    "LookupResult_TiktokCreator",
+    "LookupResult_YoutubePlaylists",
+    "LookupResult_YoutubeVideoCategories",
     "Me",
     "MeUser",
     "MeUserLocale",
     "Media",
     "MediaAttachment",
+    "MediaCapabilities",
+    "MediaCapabilitiesAltText",
     "MediaContentType",
     "MediaDimensions",
+    "MediaFormat",
     "MediaInUseEncoded",
     "MediaInUseEncodedTag",
     "MediaKind",
@@ -774,6 +916,7 @@ __all__ = [
     "NonFiniteNumber",
     "NotFoundErrorBody",
     "NotFoundErrorBody_ChannelNotFound",
+    "NotFoundErrorBody_LookupNotFound",
     "NotFoundErrorBody_WorkspaceNotFound",
     "Notice",
     "NoticeChannel",
@@ -801,6 +944,11 @@ __all__ = [
     "NoticePage",
     "NotificationPreferences",
     "NotificationPreferencesEmail",
+    "OptionConstraint",
+    "OptionConstraintNeedsOneOf",
+    "OptionConstraintNotWith",
+    "OptionConstraint_NeedsOneOf",
+    "OptionConstraint_NotWith",
     "PaidPlan",
     "PeriodUsage",
     "Permission",
@@ -812,6 +960,11 @@ __all__ = [
     "PlanOffer",
     "PlanPrice",
     "Platform",
+    "PlatformCapabilities",
+    "PlatformCapabilitiesAnalytics",
+    "PlatformCapabilitiesOptions",
+    "PlatformRateLimitedEncoded",
+    "PlatformRateLimitedEncodedTag",
     "PlatformUnreachableEncoded",
     "PlatformUnreachableEncodedTag",
     "Post",
@@ -852,6 +1005,8 @@ __all__ = [
     "TargetOptions_Tiktok",
     "TargetOptions_Youtube",
     "TargetStatusConflictEncoded",
+    "TextCapabilities",
+    "TextLimit",
     "TextOverride",
     "TextUnit",
     "TikTokAccount",
@@ -894,5 +1049,7 @@ __all__ = [
     "WorkspaceNotFoundEncoded",
     "WorkspaceNotFoundEncodedTag",
     "YouTubeOptions",
+    "YouTubePlaylist",
     "YouTubePrivacy",
+    "YouTubeVideoCategory",
 ]

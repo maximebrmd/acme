@@ -5834,6 +5834,383 @@ func (f FailureReason) Ptr() *FailureReason {
 	return &f
 }
 
+type FieldDefault struct {
+	Boolean bool
+	Double  float64
+	String  string
+
+	typ string
+}
+
+func (f *FieldDefault) GetBoolean() bool {
+	if f == nil {
+		return false
+	}
+	return f.Boolean
+}
+
+func (f *FieldDefault) GetDouble() float64 {
+	if f == nil {
+		return 0
+	}
+	return f.Double
+}
+
+func (f *FieldDefault) GetString() string {
+	if f == nil {
+		return ""
+	}
+	return f.String
+}
+
+func (f *FieldDefault) UnmarshalJSON(data []byte) error {
+	var valueBoolean bool
+	if err := json.Unmarshal(data, &valueBoolean); err == nil {
+		f.typ = "Boolean"
+		f.Boolean = valueBoolean
+		return nil
+	}
+	var valueDouble float64
+	if err := json.Unmarshal(data, &valueDouble); err == nil {
+		f.typ = "Double"
+		f.Double = valueDouble
+		return nil
+	}
+	var valueString string
+	if err := json.Unmarshal(data, &valueString); err == nil {
+		f.typ = "String"
+		f.String = valueString
+		return nil
+	}
+	return fmt.Errorf("%s cannot be deserialized as a %T", data, f)
+}
+
+func (f FieldDefault) MarshalJSON() ([]byte, error) {
+	if f.typ == "Boolean" || f.Boolean != false {
+		return json.Marshal(f.Boolean)
+	}
+	if f.typ == "Double" || f.Double != 0 {
+		return json.Marshal(f.Double)
+	}
+	if f.typ == "String" || f.String != "" {
+		return json.Marshal(f.String)
+	}
+	return nil, fmt.Errorf("type %T does not include a non-empty union type", f)
+}
+
+type FieldDefaultVisitor interface {
+	VisitBoolean(bool) error
+	VisitDouble(float64) error
+	VisitString(string) error
+}
+
+func (f *FieldDefault) Accept(visitor FieldDefaultVisitor) error {
+	if f.typ == "Boolean" || f.Boolean != false {
+		return visitor.VisitBoolean(f.Boolean)
+	}
+	if f.typ == "Double" || f.Double != 0 {
+		return visitor.VisitDouble(f.Double)
+	}
+	if f.typ == "String" || f.String != "" {
+		return visitor.VisitString(f.String)
+	}
+	return fmt.Errorf("type %T does not include a non-empty union type", f)
+}
+
+var (
+	fieldDescriptionFieldForbiddenCharacters = big.NewInt(1 << 0)
+	fieldDescriptionFieldIfLeftOut           = big.NewInt(1 << 1)
+	fieldDescriptionFieldLookup              = big.NewInt(1 << 2)
+	fieldDescriptionFieldMaxLength           = big.NewInt(1 << 3)
+	fieldDescriptionFieldMaximum             = big.NewInt(1 << 4)
+	fieldDescriptionFieldMinimum             = big.NewInt(1 << 5)
+	fieldDescriptionFieldName                = big.NewInt(1 << 6)
+	fieldDescriptionFieldPattern             = big.NewInt(1 << 7)
+	fieldDescriptionFieldRequired            = big.NewInt(1 << 8)
+	fieldDescriptionFieldType                = big.NewInt(1 << 9)
+	fieldDescriptionFieldValues              = big.NewInt(1 << 10)
+)
+
+// fieldDescriptionNullableFields maps the wire names of FieldDescription's nullable fields (required or optional) to their field bits.
+var fieldDescriptionNullableFields = map[string]*big.Int{
+	"ifLeftOut": fieldDescriptionFieldIfLeftOut,
+	"lookup":    fieldDescriptionFieldLookup,
+	"maxLength": fieldDescriptionFieldMaxLength,
+	"maximum":   fieldDescriptionFieldMaximum,
+	"minimum":   fieldDescriptionFieldMinimum,
+	"pattern":   fieldDescriptionFieldPattern,
+}
+
+type FieldDescription struct {
+	ForbiddenCharacters []string      `json:"forbiddenCharacters" url:"forbiddenCharacters"`
+	IfLeftOut           *FieldDefault `json:"ifLeftOut,omitempty" url:"ifLeftOut,omitempty"`
+	Lookup              *LookupName   `json:"lookup,omitempty" url:"lookup,omitempty"`
+	MaxLength           *int          `json:"maxLength,omitempty" url:"maxLength,omitempty"`
+	Maximum             *int          `json:"maximum,omitempty" url:"maximum,omitempty"`
+	Minimum             *int          `json:"minimum,omitempty" url:"minimum,omitempty"`
+	Name                string        `json:"name" url:"name"`
+	Pattern             *string       `json:"pattern,omitempty" url:"pattern,omitempty"`
+	Required            bool          `json:"required" url:"required"`
+	Type                FieldType     `json:"type" url:"type"`
+	Values              []string      `json:"values" url:"values"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FieldDescription) GetForbiddenCharacters() []string {
+	if f == nil {
+		return nil
+	}
+	return f.ForbiddenCharacters
+}
+
+func (f *FieldDescription) GetIfLeftOut() *FieldDefault {
+	if f == nil {
+		return nil
+	}
+	return f.IfLeftOut
+}
+
+func (f *FieldDescription) GetLookup() *LookupName {
+	if f == nil {
+		return nil
+	}
+	return f.Lookup
+}
+
+func (f *FieldDescription) GetMaxLength() *int {
+	if f == nil {
+		return nil
+	}
+	return f.MaxLength
+}
+
+func (f *FieldDescription) GetMaximum() *int {
+	if f == nil {
+		return nil
+	}
+	return f.Maximum
+}
+
+func (f *FieldDescription) GetMinimum() *int {
+	if f == nil {
+		return nil
+	}
+	return f.Minimum
+}
+
+func (f *FieldDescription) GetName() string {
+	if f == nil {
+		return ""
+	}
+	return f.Name
+}
+
+func (f *FieldDescription) GetPattern() *string {
+	if f == nil {
+		return nil
+	}
+	return f.Pattern
+}
+
+func (f *FieldDescription) GetRequired() bool {
+	if f == nil {
+		return false
+	}
+	return f.Required
+}
+
+func (f *FieldDescription) GetType() FieldType {
+	if f == nil {
+		return ""
+	}
+	return f.Type
+}
+
+func (f *FieldDescription) GetValues() []string {
+	if f == nil {
+		return nil
+	}
+	return f.Values
+}
+
+func (f *FieldDescription) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FieldDescription) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetForbiddenCharacters sets the ForbiddenCharacters field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetForbiddenCharacters(forbiddenCharacters []string) {
+	f.ForbiddenCharacters = forbiddenCharacters
+	f.require(fieldDescriptionFieldForbiddenCharacters)
+}
+
+// SetIfLeftOut sets the IfLeftOut field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetIfLeftOut(ifLeftOut *FieldDefault) {
+	f.IfLeftOut = ifLeftOut
+	f.require(fieldDescriptionFieldIfLeftOut)
+}
+
+// SetLookup sets the Lookup field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetLookup(lookup *LookupName) {
+	f.Lookup = lookup
+	f.require(fieldDescriptionFieldLookup)
+}
+
+// SetMaxLength sets the MaxLength field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetMaxLength(maxLength *int) {
+	f.MaxLength = maxLength
+	f.require(fieldDescriptionFieldMaxLength)
+}
+
+// SetMaximum sets the Maximum field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetMaximum(maximum *int) {
+	f.Maximum = maximum
+	f.require(fieldDescriptionFieldMaximum)
+}
+
+// SetMinimum sets the Minimum field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetMinimum(minimum *int) {
+	f.Minimum = minimum
+	f.require(fieldDescriptionFieldMinimum)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetName(name string) {
+	f.Name = name
+	f.require(fieldDescriptionFieldName)
+}
+
+// SetPattern sets the Pattern field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetPattern(pattern *string) {
+	f.Pattern = pattern
+	f.require(fieldDescriptionFieldPattern)
+}
+
+// SetRequired sets the Required field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetRequired(required bool) {
+	f.Required = required
+	f.require(fieldDescriptionFieldRequired)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetType(type_ FieldType) {
+	f.Type = type_
+	f.require(fieldDescriptionFieldType)
+}
+
+// SetValues sets the Values field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FieldDescription) SetValues(values []string) {
+	f.Values = values
+	f.require(fieldDescriptionFieldValues)
+}
+
+func (f *FieldDescription) UnmarshalJSON(data []byte) error {
+	type unmarshaler FieldDescription
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FieldDescription(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, fieldDescriptionNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		f.require(presentFields)
+	}
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FieldDescription) MarshalJSON() ([]byte, error) {
+	type embed FieldDescription
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FieldDescription) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FieldType string
+
+const (
+	FieldTypeBoolean  FieldType = "boolean"
+	FieldTypeChoice   FieldType = "choice"
+	FieldTypeInteger  FieldType = "integer"
+	FieldTypeText     FieldType = "text"
+	FieldTypeTextList FieldType = "textList"
+)
+
+func NewFieldTypeFromString(s string) (FieldType, error) {
+	switch s {
+	case "boolean":
+		return FieldTypeBoolean, nil
+	case "choice":
+		return FieldTypeChoice, nil
+	case "integer":
+		return FieldTypeInteger, nil
+	case "text":
+		return FieldTypeText, nil
+	case "textList":
+		return FieldTypeTextList, nil
+	}
+	var t FieldType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FieldType) Ptr() *FieldType {
+	return &f
+}
+
 var (
 	forbiddenEncodedFieldTag = big.NewInt(1 << 0)
 )
@@ -6338,6 +6715,387 @@ func (i *InvitationNotFoundEncoded) String() string {
 }
 
 var (
+	lookupDescriptionFieldFills    = big.NewInt(1 << 0)
+	lookupDescriptionFieldInput    = big.NewInt(1 << 1)
+	lookupDescriptionFieldName     = big.NewInt(1 << 2)
+	lookupDescriptionFieldPaged    = big.NewInt(1 << 3)
+	lookupDescriptionFieldPlatform = big.NewInt(1 << 4)
+)
+
+type LookupDescription struct {
+	Fills    []string            `json:"fills" url:"fills"`
+	Input    []*FieldDescription `json:"input" url:"input"`
+	Name     LookupName          `json:"name" url:"name"`
+	Paged    bool                `json:"paged" url:"paged"`
+	Platform Platform            `json:"platform" url:"platform"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LookupDescription) GetFills() []string {
+	if l == nil {
+		return nil
+	}
+	return l.Fills
+}
+
+func (l *LookupDescription) GetInput() []*FieldDescription {
+	if l == nil {
+		return nil
+	}
+	return l.Input
+}
+
+func (l *LookupDescription) GetName() LookupName {
+	if l == nil {
+		return ""
+	}
+	return l.Name
+}
+
+func (l *LookupDescription) GetPaged() bool {
+	if l == nil {
+		return false
+	}
+	return l.Paged
+}
+
+func (l *LookupDescription) GetPlatform() Platform {
+	if l == nil {
+		return ""
+	}
+	return l.Platform
+}
+
+func (l *LookupDescription) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LookupDescription) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetFills sets the Fills field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupDescription) SetFills(fills []string) {
+	l.Fills = fills
+	l.require(lookupDescriptionFieldFills)
+}
+
+// SetInput sets the Input field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupDescription) SetInput(input []*FieldDescription) {
+	l.Input = input
+	l.require(lookupDescriptionFieldInput)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupDescription) SetName(name LookupName) {
+	l.Name = name
+	l.require(lookupDescriptionFieldName)
+}
+
+// SetPaged sets the Paged field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupDescription) SetPaged(paged bool) {
+	l.Paged = paged
+	l.require(lookupDescriptionFieldPaged)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupDescription) SetPlatform(platform Platform) {
+	l.Platform = platform
+	l.require(lookupDescriptionFieldPlatform)
+}
+
+func (l *LookupDescription) UnmarshalJSON(data []byte) error {
+	type unmarshaler LookupDescription
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LookupDescription(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LookupDescription) MarshalJSON() ([]byte, error) {
+	type embed LookupDescription
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LookupDescription) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+var (
+	lookupInputInvalidEncodedFieldTag = big.NewInt(1 << 0)
+)
+
+type LookupInputInvalidEncoded struct {
+	Tag LookupInputInvalidEncodedTag `json:"_tag" url:"_tag"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LookupInputInvalidEncoded) GetTag() LookupInputInvalidEncodedTag {
+	if l == nil {
+		return ""
+	}
+	return l.Tag
+}
+
+func (l *LookupInputInvalidEncoded) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LookupInputInvalidEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupInputInvalidEncoded) SetTag(tag LookupInputInvalidEncodedTag) {
+	l.Tag = tag
+	l.require(lookupInputInvalidEncodedFieldTag)
+}
+
+func (l *LookupInputInvalidEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler LookupInputInvalidEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LookupInputInvalidEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LookupInputInvalidEncoded) MarshalJSON() ([]byte, error) {
+	type embed LookupInputInvalidEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LookupInputInvalidEncoded) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+type LookupInputInvalidEncodedTag string
+
+const (
+	LookupInputInvalidEncodedTagLookupInputInvalid LookupInputInvalidEncodedTag = "LookupInputInvalid"
+)
+
+func NewLookupInputInvalidEncodedTagFromString(s string) (LookupInputInvalidEncodedTag, error) {
+	switch s {
+	case "LookupInputInvalid":
+		return LookupInputInvalidEncodedTagLookupInputInvalid, nil
+	}
+	var t LookupInputInvalidEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (l LookupInputInvalidEncodedTag) Ptr() *LookupInputInvalidEncodedTag {
+	return &l
+}
+
+type LookupName string
+
+const (
+	LookupNameYoutubeVideoCategories LookupName = "youtubeVideoCategories"
+	LookupNameYoutubePlaylists       LookupName = "youtubePlaylists"
+	LookupNameTiktokCreator          LookupName = "tiktokCreator"
+)
+
+func NewLookupNameFromString(s string) (LookupName, error) {
+	switch s {
+	case "youtubeVideoCategories":
+		return LookupNameYoutubeVideoCategories, nil
+	case "youtubePlaylists":
+		return LookupNameYoutubePlaylists, nil
+	case "tiktokCreator":
+		return LookupNameTiktokCreator, nil
+	}
+	var t LookupName
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (l LookupName) Ptr() *LookupName {
+	return &l
+}
+
+type LookupNotFoundEncoded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LookupNotFoundEncoded) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LookupNotFoundEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+func (l *LookupNotFoundEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler LookupNotFoundEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LookupNotFoundEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LookupNotFoundEncoded) MarshalJSON() ([]byte, error) {
+	type embed LookupNotFoundEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LookupNotFoundEncoded) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+type MediaContentType string
+
+const (
+	MediaContentTypeImageGif       MediaContentType = "image/gif"
+	MediaContentTypeImageJpeg      MediaContentType = "image/jpeg"
+	MediaContentTypeImagePng       MediaContentType = "image/png"
+	MediaContentTypeImageWebp      MediaContentType = "image/webp"
+	MediaContentTypeVideoMp4       MediaContentType = "video/mp4"
+	MediaContentTypeVideoQuicktime MediaContentType = "video/quicktime"
+)
+
+func NewMediaContentTypeFromString(s string) (MediaContentType, error) {
+	switch s {
+	case "image/gif":
+		return MediaContentTypeImageGif, nil
+	case "image/jpeg":
+		return MediaContentTypeImageJpeg, nil
+	case "image/png":
+		return MediaContentTypeImagePng, nil
+	case "image/webp":
+		return MediaContentTypeImageWebp, nil
+	case "video/mp4":
+		return MediaContentTypeVideoMp4, nil
+	case "video/quicktime":
+		return MediaContentTypeVideoQuicktime, nil
+	}
+	var t MediaContentType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (m MediaContentType) Ptr() *MediaContentType {
+	return &m
+}
+
+var (
 	mediaInUseEncodedFieldTag     = big.NewInt(1 << 0)
 	mediaInUseEncodedFieldPostIDs = big.NewInt(1 << 1)
 )
@@ -6455,6 +7213,28 @@ func NewMediaInUseEncodedTagFromString(s string) (MediaInUseEncodedTag, error) {
 }
 
 func (m MediaInUseEncodedTag) Ptr() *MediaInUseEncodedTag {
+	return &m
+}
+
+type MediaKind string
+
+const (
+	MediaKindImage MediaKind = "image"
+	MediaKindVideo MediaKind = "video"
+)
+
+func NewMediaKindFromString(s string) (MediaKind, error) {
+	switch s {
+	case "image":
+		return MediaKindImage, nil
+	case "video":
+		return MediaKindVideo, nil
+	}
+	var t MediaKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (m MediaKind) Ptr() *MediaKind {
 	return &m
 }
 
@@ -6796,6 +7576,7 @@ func (n NonFiniteNumber) Ptr() *NonFiniteNumber {
 type NotFoundErrorBody struct {
 	Type              string
 	ChannelNotFound   *ChannelNotFoundEncoded
+	LookupNotFound    *LookupNotFoundEncoded
 	WorkspaceNotFound *WorkspaceNotFoundEncoded
 
 	rawJSON json.RawMessage
@@ -6813,6 +7594,13 @@ func (n *NotFoundErrorBody) GetChannelNotFound() *ChannelNotFoundEncoded {
 		return nil
 	}
 	return n.ChannelNotFound
+}
+
+func (n *NotFoundErrorBody) GetLookupNotFound() *LookupNotFoundEncoded {
+	if n == nil {
+		return nil
+	}
+	return n.LookupNotFound
 }
 
 func (n *NotFoundErrorBody) GetWorkspaceNotFound() *WorkspaceNotFoundEncoded {
@@ -6840,6 +7628,12 @@ func (n *NotFoundErrorBody) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.ChannelNotFound = value
+	case "LookupNotFound":
+		value := new(LookupNotFoundEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.LookupNotFound = value
 	case "WorkspaceNotFound":
 		value := new(WorkspaceNotFoundEncoded)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -6858,6 +7652,9 @@ func (n NotFoundErrorBody) MarshalJSON() ([]byte, error) {
 	if n.ChannelNotFound != nil {
 		return internal.MarshalJSONWithExtraProperty(n.ChannelNotFound, "_tag", "ChannelNotFound")
 	}
+	if n.LookupNotFound != nil {
+		return internal.MarshalJSONWithExtraProperty(n.LookupNotFound, "_tag", "LookupNotFound")
+	}
 	if n.WorkspaceNotFound != nil {
 		return internal.MarshalJSONWithExtraProperty(n.WorkspaceNotFound, "_tag", "WorkspaceNotFound")
 	}
@@ -6869,12 +7666,16 @@ func (n NotFoundErrorBody) MarshalJSON() ([]byte, error) {
 
 type NotFoundErrorBodyVisitor interface {
 	VisitChannelNotFound(*ChannelNotFoundEncoded) error
+	VisitLookupNotFound(*LookupNotFoundEncoded) error
 	VisitWorkspaceNotFound(*WorkspaceNotFoundEncoded) error
 }
 
 func (n *NotFoundErrorBody) Accept(visitor NotFoundErrorBodyVisitor) error {
 	if n.ChannelNotFound != nil {
 		return visitor.VisitChannelNotFound(n.ChannelNotFound)
+	}
+	if n.LookupNotFound != nil {
+		return visitor.VisitLookupNotFound(n.LookupNotFound)
 	}
 	if n.WorkspaceNotFound != nil {
 		return visitor.VisitWorkspaceNotFound(n.WorkspaceNotFound)
@@ -6889,6 +7690,9 @@ func (n *NotFoundErrorBody) validate() error {
 	var fields []string
 	if n.ChannelNotFound != nil {
 		fields = append(fields, "ChannelNotFound")
+	}
+	if n.LookupNotFound != nil {
+		fields = append(fields, "LookupNotFound")
 	}
 	if n.WorkspaceNotFound != nil {
 		fields = append(fields, "WorkspaceNotFound")
@@ -7260,6 +8064,139 @@ func NewPlatformFromString(s string) (Platform, error) {
 }
 
 func (p Platform) Ptr() *Platform {
+	return &p
+}
+
+var (
+	platformRateLimitedEncodedFieldTag               = big.NewInt(1 << 0)
+	platformRateLimitedEncodedFieldRetryAfterSeconds = big.NewInt(1 << 1)
+)
+
+// platformRateLimitedEncodedNullableFields maps the wire names of PlatformRateLimitedEncoded's nullable fields (required or optional) to their field bits.
+var platformRateLimitedEncodedNullableFields = map[string]*big.Int{
+	"retryAfterSeconds": platformRateLimitedEncodedFieldRetryAfterSeconds,
+}
+
+type PlatformRateLimitedEncoded struct {
+	Tag               PlatformRateLimitedEncodedTag `json:"_tag" url:"_tag"`
+	RetryAfterSeconds *int                          `json:"retryAfterSeconds,omitempty" url:"retryAfterSeconds,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PlatformRateLimitedEncoded) GetTag() PlatformRateLimitedEncodedTag {
+	if p == nil {
+		return ""
+	}
+	return p.Tag
+}
+
+func (p *PlatformRateLimitedEncoded) GetRetryAfterSeconds() *int {
+	if p == nil {
+		return nil
+	}
+	return p.RetryAfterSeconds
+}
+
+func (p *PlatformRateLimitedEncoded) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PlatformRateLimitedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformRateLimitedEncoded) SetTag(tag PlatformRateLimitedEncodedTag) {
+	p.Tag = tag
+	p.require(platformRateLimitedEncodedFieldTag)
+}
+
+// SetRetryAfterSeconds sets the RetryAfterSeconds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformRateLimitedEncoded) SetRetryAfterSeconds(retryAfterSeconds *int) {
+	p.RetryAfterSeconds = retryAfterSeconds
+	p.require(platformRateLimitedEncodedFieldRetryAfterSeconds)
+}
+
+func (p *PlatformRateLimitedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler PlatformRateLimitedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PlatformRateLimitedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, platformRateLimitedEncodedNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PlatformRateLimitedEncoded) MarshalJSON() ([]byte, error) {
+	type embed PlatformRateLimitedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PlatformRateLimitedEncoded) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PlatformRateLimitedEncodedTag string
+
+const (
+	PlatformRateLimitedEncodedTagPlatformRateLimited PlatformRateLimitedEncodedTag = "PlatformRateLimited"
+)
+
+func NewPlatformRateLimitedEncodedTagFromString(s string) (PlatformRateLimitedEncodedTag, error) {
+	switch s {
+	case "PlatformRateLimited":
+		return PlatformRateLimitedEncodedTagPlatformRateLimited, nil
+	}
+	var t PlatformRateLimitedEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PlatformRateLimitedEncodedTag) Ptr() *PlatformRateLimitedEncodedTag {
 	return &p
 }
 
@@ -7795,39 +8732,640 @@ func (t *TargetStatusConflictEncoded) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
-// How a platform measures the length of a post's text.
-type TextUnit string
-
-const (
-	TextUnitGraphemes  TextUnit = "graphemes"
-	TextUnitCodePoints TextUnit = "codePoints"
-	TextUnitUtf8Bytes  TextUnit = "utf8Bytes"
-	TextUnitEmojiBytes TextUnit = "emojiBytes"
-	TextUnitUtf16Units TextUnit = "utf16Units"
-	TextUnitWeighted   TextUnit = "weighted"
+var (
+	tikTokAccountFieldPosting     = big.NewInt(1 << 0)
+	tikTokAccountFieldTakesPhotos = big.NewInt(1 << 1)
 )
 
-func NewTextUnitFromString(s string) (TextUnit, error) {
-	switch s {
-	case "graphemes":
-		return TextUnitGraphemes, nil
-	case "codePoints":
-		return TextUnitCodePoints, nil
-	case "utf8Bytes":
-		return TextUnitUtf8Bytes, nil
-	case "emojiBytes":
-		return TextUnitEmojiBytes, nil
-	case "utf16Units":
-		return TextUnitUtf16Units, nil
-	case "weighted":
-		return TextUnitWeighted, nil
+type TikTokAccount struct {
+	Posting     *TikTokAccountPosting `json:"posting" url:"posting"`
+	TakesPhotos bool                  `json:"takesPhotos" url:"takesPhotos"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TikTokAccount) GetPosting() *TikTokAccountPosting {
+	if t == nil {
+		return nil
 	}
-	var t TextUnit
+	return t.Posting
+}
+
+func (t *TikTokAccount) GetTakesPhotos() bool {
+	if t == nil {
+		return false
+	}
+	return t.TakesPhotos
+}
+
+func (t *TikTokAccount) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TikTokAccount) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetPosting sets the Posting field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokAccount) SetPosting(posting *TikTokAccountPosting) {
+	t.Posting = posting
+	t.require(tikTokAccountFieldPosting)
+}
+
+// SetTakesPhotos sets the TakesPhotos field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokAccount) SetTakesPhotos(takesPhotos bool) {
+	t.TakesPhotos = takesPhotos
+	t.require(tikTokAccountFieldTakesPhotos)
+}
+
+func (t *TikTokAccount) UnmarshalJSON(data []byte) error {
+	type unmarshaler TikTokAccount
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TikTokAccount(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TikTokAccount) MarshalJSON() ([]byte, error) {
+	type embed TikTokAccount
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TikTokAccount) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TikTokAccountPosting struct {
+	Type    string
+	Ready   *TikTokAccountPostingReady
+	Blocked *TikTokAccountPostingBlocked
+
+	rawJSON json.RawMessage
+}
+
+func (t *TikTokAccountPosting) GetType() string {
+	if t == nil {
+		return ""
+	}
+	return t.Type
+}
+
+func (t *TikTokAccountPosting) GetReady() *TikTokAccountPostingReady {
+	if t == nil {
+		return nil
+	}
+	return t.Ready
+}
+
+func (t *TikTokAccountPosting) GetBlocked() *TikTokAccountPostingBlocked {
+	if t == nil {
+		return nil
+	}
+	return t.Blocked
+}
+
+func (t *TikTokAccountPosting) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"_tag"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	t.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant _tag", t)
+	}
+	switch unmarshaler.Type {
+	case "ready":
+		value := new(TikTokAccountPostingReady)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Ready = value
+	case "blocked":
+		value := new(TikTokAccountPostingBlocked)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Blocked = value
+	}
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t TikTokAccountPosting) MarshalJSON() ([]byte, error) {
+	if err := t.validate(); err != nil {
+		return nil, err
+	}
+	if t.Ready != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Ready, "_tag", "ready")
+	}
+	if t.Blocked != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Blocked, "_tag", "blocked")
+	}
+	if len(t.rawJSON) > 0 {
+		return t.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", t)
+}
+
+type TikTokAccountPostingVisitor interface {
+	VisitReady(*TikTokAccountPostingReady) error
+	VisitBlocked(*TikTokAccountPostingBlocked) error
+}
+
+func (t *TikTokAccountPosting) Accept(visitor TikTokAccountPostingVisitor) error {
+	if t.Ready != nil {
+		return visitor.VisitReady(t.Ready)
+	}
+	if t.Blocked != nil {
+		return visitor.VisitBlocked(t.Blocked)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", t)
+}
+
+func (t *TikTokAccountPosting) validate() error {
+	if t == nil {
+		return fmt.Errorf("type %T is nil", t)
+	}
+	var fields []string
+	if t.Ready != nil {
+		fields = append(fields, "ready")
+	}
+	if t.Blocked != nil {
+		fields = append(fields, "blocked")
+	}
+	if len(fields) == 0 {
+		if t.Type != "" {
+			if len(t.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", t, t.Type)
+		}
+		return fmt.Errorf("type %T is empty", t)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", t, fields)
+	}
+	if t.Type != "" {
+		field := fields[0]
+		if t.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				t,
+				t.Type,
+				t,
+			)
+		}
+	}
+	return nil
+}
+
+var (
+	tikTokAccountPostingBlockedFieldReason = big.NewInt(1 << 0)
+)
+
+type TikTokAccountPostingBlocked struct {
+	Reason TikTokBlock `json:"reason" url:"reason"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TikTokAccountPostingBlocked) GetReason() TikTokBlock {
+	if t == nil {
+		return ""
+	}
+	return t.Reason
+}
+
+func (t *TikTokAccountPostingBlocked) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TikTokAccountPostingBlocked) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokAccountPostingBlocked) SetReason(reason TikTokBlock) {
+	t.Reason = reason
+	t.require(tikTokAccountPostingBlockedFieldReason)
+}
+
+func (t *TikTokAccountPostingBlocked) UnmarshalJSON(data []byte) error {
+	type unmarshaler TikTokAccountPostingBlocked
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TikTokAccountPostingBlocked(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TikTokAccountPostingBlocked) MarshalJSON() ([]byte, error) {
+	type embed TikTokAccountPostingBlocked
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TikTokAccountPostingBlocked) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+var (
+	tikTokAccountPostingReadyFieldCreator = big.NewInt(1 << 0)
+)
+
+type TikTokAccountPostingReady struct {
+	Creator *TikTokCreator `json:"creator" url:"creator"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TikTokAccountPostingReady) GetCreator() *TikTokCreator {
+	if t == nil {
+		return nil
+	}
+	return t.Creator
+}
+
+func (t *TikTokAccountPostingReady) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TikTokAccountPostingReady) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetCreator sets the Creator field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokAccountPostingReady) SetCreator(creator *TikTokCreator) {
+	t.Creator = creator
+	t.require(tikTokAccountPostingReadyFieldCreator)
+}
+
+func (t *TikTokAccountPostingReady) UnmarshalJSON(data []byte) error {
+	type unmarshaler TikTokAccountPostingReady
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TikTokAccountPostingReady(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TikTokAccountPostingReady) MarshalJSON() ([]byte, error) {
+	type embed TikTokAccountPostingReady
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TikTokAccountPostingReady) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TikTokBlock string
+
+const (
+	TikTokBlockPostLimit   TikTokBlock = "postLimit"
+	TikTokBlockBanned      TikTokBlock = "banned"
+	TikTokBlockClientLimit TikTokBlock = "clientLimit"
+)
+
+func NewTikTokBlockFromString(s string) (TikTokBlock, error) {
+	switch s {
+	case "postLimit":
+		return TikTokBlockPostLimit, nil
+	case "banned":
+		return TikTokBlockBanned, nil
+	case "clientLimit":
+		return TikTokBlockClientLimit, nil
+	}
+	var t TikTokBlock
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
 }
 
-func (t TextUnit) Ptr() *TextUnit {
+func (t TikTokBlock) Ptr() *TikTokBlock {
 	return &t
+}
+
+var (
+	tikTokCreatorFieldAvatarURL          = big.NewInt(1 << 0)
+	tikTokCreatorFieldCommentDisabled    = big.NewInt(1 << 1)
+	tikTokCreatorFieldDuetDisabled       = big.NewInt(1 << 2)
+	tikTokCreatorFieldMaxVideoDurationMs = big.NewInt(1 << 3)
+	tikTokCreatorFieldNickname           = big.NewInt(1 << 4)
+	tikTokCreatorFieldPrivacyLevels      = big.NewInt(1 << 5)
+	tikTokCreatorFieldStitchDisabled     = big.NewInt(1 << 6)
+	tikTokCreatorFieldUsername           = big.NewInt(1 << 7)
+)
+
+// tikTokCreatorNullableFields maps the wire names of TikTokCreator's nullable fields (required or optional) to their field bits.
+var tikTokCreatorNullableFields = map[string]*big.Int{
+	"avatarUrl":          tikTokCreatorFieldAvatarURL,
+	"maxVideoDurationMs": tikTokCreatorFieldMaxVideoDurationMs,
+}
+
+type TikTokCreator struct {
+	AvatarURL          *string              `json:"avatarUrl,omitempty" url:"avatarUrl,omitempty"`
+	CommentDisabled    bool                 `json:"commentDisabled" url:"commentDisabled"`
+	DuetDisabled       bool                 `json:"duetDisabled" url:"duetDisabled"`
+	MaxVideoDurationMs *int                 `json:"maxVideoDurationMs,omitempty" url:"maxVideoDurationMs,omitempty"`
+	Nickname           string               `json:"nickname" url:"nickname"`
+	PrivacyLevels      []TikTokPrivacyLevel `json:"privacyLevels" url:"privacyLevels"`
+	StitchDisabled     bool                 `json:"stitchDisabled" url:"stitchDisabled"`
+	Username           string               `json:"username" url:"username"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TikTokCreator) GetAvatarURL() *string {
+	if t == nil {
+		return nil
+	}
+	return t.AvatarURL
+}
+
+func (t *TikTokCreator) GetCommentDisabled() bool {
+	if t == nil {
+		return false
+	}
+	return t.CommentDisabled
+}
+
+func (t *TikTokCreator) GetDuetDisabled() bool {
+	if t == nil {
+		return false
+	}
+	return t.DuetDisabled
+}
+
+func (t *TikTokCreator) GetMaxVideoDurationMs() *int {
+	if t == nil {
+		return nil
+	}
+	return t.MaxVideoDurationMs
+}
+
+func (t *TikTokCreator) GetNickname() string {
+	if t == nil {
+		return ""
+	}
+	return t.Nickname
+}
+
+func (t *TikTokCreator) GetPrivacyLevels() []TikTokPrivacyLevel {
+	if t == nil {
+		return nil
+	}
+	return t.PrivacyLevels
+}
+
+func (t *TikTokCreator) GetStitchDisabled() bool {
+	if t == nil {
+		return false
+	}
+	return t.StitchDisabled
+}
+
+func (t *TikTokCreator) GetUsername() string {
+	if t == nil {
+		return ""
+	}
+	return t.Username
+}
+
+func (t *TikTokCreator) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TikTokCreator) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetAvatarURL sets the AvatarURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokCreator) SetAvatarURL(avatarURL *string) {
+	t.AvatarURL = avatarURL
+	t.require(tikTokCreatorFieldAvatarURL)
+}
+
+// SetCommentDisabled sets the CommentDisabled field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokCreator) SetCommentDisabled(commentDisabled bool) {
+	t.CommentDisabled = commentDisabled
+	t.require(tikTokCreatorFieldCommentDisabled)
+}
+
+// SetDuetDisabled sets the DuetDisabled field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokCreator) SetDuetDisabled(duetDisabled bool) {
+	t.DuetDisabled = duetDisabled
+	t.require(tikTokCreatorFieldDuetDisabled)
+}
+
+// SetMaxVideoDurationMs sets the MaxVideoDurationMs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokCreator) SetMaxVideoDurationMs(maxVideoDurationMs *int) {
+	t.MaxVideoDurationMs = maxVideoDurationMs
+	t.require(tikTokCreatorFieldMaxVideoDurationMs)
+}
+
+// SetNickname sets the Nickname field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokCreator) SetNickname(nickname string) {
+	t.Nickname = nickname
+	t.require(tikTokCreatorFieldNickname)
+}
+
+// SetPrivacyLevels sets the PrivacyLevels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokCreator) SetPrivacyLevels(privacyLevels []TikTokPrivacyLevel) {
+	t.PrivacyLevels = privacyLevels
+	t.require(tikTokCreatorFieldPrivacyLevels)
+}
+
+// SetStitchDisabled sets the StitchDisabled field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokCreator) SetStitchDisabled(stitchDisabled bool) {
+	t.StitchDisabled = stitchDisabled
+	t.require(tikTokCreatorFieldStitchDisabled)
+}
+
+// SetUsername sets the Username field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokCreator) SetUsername(username string) {
+	t.Username = username
+	t.require(tikTokCreatorFieldUsername)
+}
+
+func (t *TikTokCreator) UnmarshalJSON(data []byte) error {
+	type unmarshaler TikTokCreator
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TikTokCreator(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, tikTokCreatorNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		t.require(presentFields)
+	}
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TikTokCreator) MarshalJSON() ([]byte, error) {
+	type embed TikTokCreator
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TikTokCreator) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
 }
 
 type TikTokPrivacyLevel string

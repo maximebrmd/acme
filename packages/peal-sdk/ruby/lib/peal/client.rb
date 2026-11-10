@@ -89,5 +89,15 @@ module Peal
     def tiktok
       @tiktok ||= Peal::Tiktok::Client.new(client: @raw_client)
     end
+
+    # @return [Peal::Capabilities::Client]
+    def capabilities
+      @capabilities ||= Peal::Capabilities::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::Lookups::Client]
+    def lookups
+      @lookups ||= Peal::Lookups::Client.new(client: @raw_client)
+    end
   end
 end

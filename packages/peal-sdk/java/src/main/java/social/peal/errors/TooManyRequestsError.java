@@ -5,20 +5,19 @@ package social.peal.errors;
 
 import okhttp3.Response;
 import social.peal.core.PealClientApiException;
-import social.peal.types.AssistantQuotaExceededEncoded;
 
 public final class TooManyRequestsError extends PealClientApiException {
     /**
      * The body of the response that triggered the exception.
      */
-    private final AssistantQuotaExceededEncoded body;
+    private final Object body;
 
-    public TooManyRequestsError(AssistantQuotaExceededEncoded body) {
+    public TooManyRequestsError(Object body) {
         super("TooManyRequestsError", 429, body);
         this.body = body;
     }
 
-    public TooManyRequestsError(AssistantQuotaExceededEncoded body, Response rawResponse) {
+    public TooManyRequestsError(Object body, Response rawResponse) {
         super("TooManyRequestsError", 429, body, rawResponse);
         this.body = body;
     }
@@ -27,7 +26,7 @@ public final class TooManyRequestsError extends PealClientApiException {
      * @return the body
      */
     @java.lang.Override
-    public AssistantQuotaExceededEncoded body() {
+    public Object body() {
         return this.body;
     }
 }

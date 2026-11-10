@@ -4,8 +4,10 @@ import { AnalyticsClient } from "./api/resources/analytics/client/Client.js";
 import { ApiKeysClient } from "./api/resources/apiKeys/client/Client.js";
 import { AssistantClient } from "./api/resources/assistant/client/Client.js";
 import { BillingClient } from "./api/resources/billing/client/Client.js";
+import { CapabilitiesClient } from "./api/resources/capabilities/client/Client.js";
 import { ChannelsClient } from "./api/resources/channels/client/Client.js";
 import { InvitationsClient } from "./api/resources/invitations/client/Client.js";
+import { LookupsClient } from "./api/resources/lookups/client/Client.js";
 import { MediaClient } from "./api/resources/media/client/Client.js";
 import { MembersClient } from "./api/resources/members/client/Client.js";
 import { NoticesClient } from "./api/resources/notices/client/Client.js";
@@ -42,6 +44,8 @@ export class PealClient {
     protected _billing: BillingClient | undefined;
     protected _analytics: AnalyticsClient | undefined;
     protected _tiktok: TiktokClient | undefined;
+    protected _capabilities: CapabilitiesClient | undefined;
+    protected _lookups: LookupsClient | undefined;
 
     constructor(options: PealClient.Options = {}) {
 
@@ -102,6 +106,14 @@ export class PealClient {
 
     public get tiktok(): TiktokClient {
         return (this._tiktok ??= new TiktokClient(this._options));
+    }
+
+    public get capabilities(): CapabilitiesClient {
+        return (this._capabilities ??= new CapabilitiesClient(this._options));
+    }
+
+    public get lookups(): LookupsClient {
+        return (this._lookups ??= new LookupsClient(this._options));
     }
 
     /**

@@ -3303,3 +3303,298 @@ $client->tiktok->creator(
 </dl>
 </details>
 
+## capabilities
+<details><summary><code>$client-&gt;capabilities-&gt;platforms($workspaceId) -> ?array</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Describes what a post may hold on every platform, in Peal's order, whether or not the workspace has a channel there: how its text is counted and limited, the images and videos it takes, its options field by field, the lookups that answer their values, and whether Peal reads each post's counts. These are the rules Peal checks when a post is scheduled; a null limit is one Peal does not check, which the platform may still apply. Needs channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->capabilities->platforms(
+    'workspaceId',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;capabilities-&gt;channel($workspaceId, $channelId) -> ?ChannelCapabilities</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Describes what a post on this channel may hold: its platform's capabilities, and what its own account narrows in them, read from the platform now (a TikTok creator's audiences, the interactions they turned off, their longest video). When the platform cannot be asked, `account` says why and the platform's capabilities are answered alone. Needs channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->capabilities->channel(
+    'workspaceId',
+    'channelId',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$channelId:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## lookups
+<details><summary><code>$client-&gt;lookups-&gt;list($workspaceId, $channelId) -> ?array</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->lookups->list(
+    'workspaceId',
+    'channelId',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$channelId:** `string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;lookups-&gt;run($workspaceId, $channelId, $name, $request) -> ?LookupResult</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Runs one of the channel's lookups: asks the platform now, with the channel's token, and answers a page of items tagged by the lookup's name. It changes nothing, on Peal or on the platform. A paged lookup names the next page in `nextCursor`, to send back as `cursor`. A name the channel's platform does not have is LookupNotFound; an input the lookup does not take, LookupInputInvalid; a channel turned off or to reconnect, ChannelCannotPost; a platform that did not answer, PlatformUnreachable, and one that asked to slow down, PlatformRateLimited. Needs channel:read.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->lookups->run(
+    'workspaceId',
+    'channelId',
+    'name',
+    new LookupInput([]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$workspaceId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$channelId:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$name:** `string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$cursor:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$language:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$limit:** `?int` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$regionCode:** `?string` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+

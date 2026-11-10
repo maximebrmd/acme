@@ -25,6 +25,21 @@ class NotFoundErrorBody_ChannelNotFound(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NotFoundErrorBody_LookupNotFound(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["LookupNotFound"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "LookupNotFound"
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class NotFoundErrorBody_WorkspaceNotFound(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["WorkspaceNotFound"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -41,6 +56,8 @@ class NotFoundErrorBody_WorkspaceNotFound(UniversalBaseModel):
 
 
 NotFoundErrorBody = typing_extensions.Annotated[
-    typing.Union[NotFoundErrorBody_ChannelNotFound, NotFoundErrorBody_WorkspaceNotFound],
+    typing.Union[
+        NotFoundErrorBody_ChannelNotFound, NotFoundErrorBody_LookupNotFound, NotFoundErrorBody_WorkspaceNotFound
+    ],
     pydantic.Field(discriminator="type"),
 ]
