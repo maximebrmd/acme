@@ -10,6 +10,7 @@ import { authErrorKey } from "#auth/errors.ts";
 import type { AuthErrorKey } from "#auth/errors.ts";
 import { FormError } from "#components/auth/form-error.tsx";
 import { FormField } from "#components/auth/form-field.tsx";
+import { useOfferAuthUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import { useRouter } from "#i18n/navigation.ts";
 
 // A workspace's slug: its name in lowercase ASCII words, and a random tail
@@ -31,6 +32,7 @@ export const CreateWorkspaceForm = () => {
   const [name, setName] = useState("");
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [isPending, startTransition] = useTransition();
+  const offerUpgrade = useOfferAuthUpgrade();
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -47,6 +49,7 @@ export const CreateWorkspaceForm = () => {
         router.refresh();
       } else {
         setError(authErrorKey(result.error));
+        offerUpgrade(result.error);
       }
     });
   };

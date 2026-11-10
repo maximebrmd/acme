@@ -8,7 +8,7 @@ import {
   PlanSchema,
   withDisplayVat,
 } from "peal-contract";
-import type { PaidPlan, Plan, PlanLimit } from "peal-contract";
+import type { PaidPlan, Plan } from "peal-contract";
 
 import type { AuthClientError } from "#auth/errors.ts";
 
@@ -17,13 +17,15 @@ import type { AuthClientError } from "#auth/errors.ts";
  * was refused, what the workspace holds against what its plan allows, and
  * the smallest plan with room (none on the largest).
  */
-export interface LimitReached {
-  readonly allowed: number;
-  readonly limit: PlanLimit;
-  readonly plan: Plan;
-  readonly planWithRoom: PaidPlan | null;
-  readonly used: number;
-}
+export const LimitReachedSchema = Schema.Struct({
+  allowed: Schema.Int,
+  limit: PlanLimitSchema,
+  plan: PlanSchema,
+  planWithRoom: Schema.NullOr(PaidPlanSchema),
+  used: Schema.Int,
+});
+
+export type LimitReached = typeof LimitReachedSchema.Type;
 
 /**
  * The account already owns a workspace on the free plan, or in its trial:

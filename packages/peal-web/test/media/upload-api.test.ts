@@ -61,7 +61,17 @@ describe(failureOf, () => {
         })
       )
     ).toStrictEqual(
-      new UploadFailed({ limit: 500_000_000, reason: "storageFull" })
+      new UploadFailed({
+        limit: 500_000_000,
+        reached: {
+          allowed: 500_000_000,
+          limit: "mediaStorage",
+          plan: "free",
+          planWithRoom: "starter",
+          used: 480_000_000,
+        },
+        reason: "storageFull",
+      })
     );
   });
 });

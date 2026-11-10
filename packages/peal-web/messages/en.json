@@ -1033,7 +1033,8 @@
     "close": "Not now",
     "tooSmall": "This plan does not hold what the workspace has. Remove these first, or order a larger plan:",
     "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
-    "excessStorage": "{used} of media, {allowed} allowed"
+    "excessStorage": "{used} of media, {allowed} allowed",
+    "closeLabel": "Close"
   },
   "OverPlan": {
     "title": "{workspace} holds more than its plan allows",

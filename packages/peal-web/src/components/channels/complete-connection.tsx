@@ -21,6 +21,7 @@ import {
   forgetConnection,
   pendingWorkspace,
 } from "#channels/pending-connection.ts";
+import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import { AccountPicker } from "#components/channels/account-picker.tsx";
 import { Link, useRouter } from "#i18n/navigation.ts";
 
@@ -84,6 +85,7 @@ export const CompleteConnection = ({
   const errors = useChannelErrorText();
   const router = useRouter();
   const complete = useAtomSet(completeConnection, { mode: "promiseExit" });
+  const offerUpgrade = useOfferUpgrade();
 
   // Kept with its workspace: the tab forgets the connection once it is back.
   const [failure, setFailure] = useState<{
@@ -150,10 +152,11 @@ export const CompleteConnection = ({
         error: Option.getOrElse(failureOf(exit), () => "unknown" as const),
         workspaceId: workspace,
       });
+      offerUpgrade(exit, workspace);
     };
 
     void finish(workspaceId, callback);
-  }, [callback, complete, platform, router, t, workspaceId]);
+  }, [callback, complete, offerUpgrade, platform, router, t, workspaceId]);
 
   if (choice !== null) {
     return (

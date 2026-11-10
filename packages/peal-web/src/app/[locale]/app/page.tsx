@@ -14,6 +14,7 @@ import {
 } from "peal-ui/components/card";
 
 import { currentUser } from "#auth/session.ts";
+import { UpgradePrompts } from "#components/billing/upgrade-prompts.tsx";
 import { CreateWorkspaceForm } from "#components/create-workspace-form.tsx";
 import { Link, redirect } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
@@ -158,7 +159,9 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
           <CardDescription>{t("createDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <CreateWorkspaceForm />
+          <UpgradePrompts current={null}>
+            <CreateWorkspaceForm />
+          </UpgradePrompts>
         </CardContent>
       </Card>
     </div>

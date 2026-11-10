@@ -31,6 +31,7 @@ import { toast } from "sonner";
 
 import { authClient } from "#auth/client.ts";
 import { FormField } from "#components/auth/form-field.tsx";
+import { useOfferAuthUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import { useHydrated } from "#components/media/use-hydrated.ts";
 import { InTimeZone } from "#components/notices/in-time-zone.tsx";
 import { browserTimeZone } from "#posts/zoned-time.ts";
@@ -66,6 +67,7 @@ export const InviteForm = ({
   const [role, setRole] = useState<Role>("editor");
   const [error, setError] = useState<SettingsErrorKey | null>(null);
   const [isPending, startTransition] = useTransition();
+  const offerUpgrade = useOfferAuthUpgrade();
 
   const handleRole = (value: string | null) => {
     if (value !== null && isRole(value)) {
@@ -93,6 +95,7 @@ export const InviteForm = ({
         refresh();
       } else {
         setError(settingsErrorKey(result.error));
+        offerUpgrade(result.error);
       }
     });
   };
@@ -157,6 +160,7 @@ const InvitationRow = ({
   const format = useFormatter();
   const now = useNow();
   const [isResending, startResend] = useTransition();
+  const offerUpgrade = useOfferAuthUpgrade();
   const [isRevoking, startRevoke] = useTransition();
   const { email } = invitation;
   const role = invitation.role ?? "";
@@ -176,6 +180,7 @@ const InvitationRow = ({
         onChanged();
       } else {
         toast.error(errors(settingsErrorKey(result.error)));
+        offerUpgrade(result.error);
       }
     });
   };

@@ -15,6 +15,7 @@ import {
 } from "#channels/channels-api.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
 import { useConnect } from "#channels/use-connect.ts";
+import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import {
   AccountPickerView,
   toggled,
@@ -43,6 +44,7 @@ export const AccountPicker = ({
   const [error, setError] = useState<ChannelErrorKey | null>(null);
   const [isPending, startTransition] = useTransition();
   const signIn = useConnect(workspaceId, platform);
+  const offerUpgrade = useOfferUpgrade();
 
   const handleToggle = (accountId: string, checked: boolean) => {
     setSelected((before) => toggled(accounts, before, accountId, checked));
@@ -64,6 +66,7 @@ export const AccountPicker = ({
       }
 
       setError(Option.getOrElse(failureOf(exit), () => "unknown" as const));
+      offerUpgrade(exit, workspaceId);
     });
   };
 

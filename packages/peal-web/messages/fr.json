@@ -1033,7 +1033,8 @@
     "close": "Pas maintenant",
     "tooSmall": "Cet abonnement ne contient pas ce que l’espace de travail possède. Retirez d’abord ceci, ou commandez un abonnement supérieur :",
     "excess": "{limit, select, channels {{used, number} canaux, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
-    "excessStorage": "{used} de médias, {allowed} permis"
+    "excessStorage": "{used} de médias, {allowed} permis",
+    "closeLabel": "Fermer"
   },
   "OverPlan": {
     "title": "{workspace} dépasse ce que permet son abonnement",

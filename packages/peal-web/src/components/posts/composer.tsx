@@ -26,6 +26,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { PostMetrics } from "#components/analytics/post-metrics.tsx";
+import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
 import { AssistantMenu } from "#components/posts/assistant-menu.tsx";
 import { ChannelPicker } from "#components/posts/channel-picker.tsx";
 import { CharacterCounters } from "#components/posts/character-counters.tsx";
@@ -563,6 +564,7 @@ export const Composer = ({
             failure={requests.failure}
             media={attached}
           />
+          <OfferUpgrade failure={requests.failure} />
         </div>
       </CardContent>
       <CardFooter>
