@@ -108,8 +108,10 @@ export const personOnlyPermissions: ReadonlySet<Permission> = new Set([
 export const scopesFor = (
   permission: Permission
 ): readonly WorkspaceScope[] => {
+  // The ads scope first: it is the one a refusal names to a client that
+  // holds neither.
   if (permission === "ads:spend") {
-    return ["workspace:publish", "workspace:ads"];
+    return ["workspace:ads", "workspace:publish"];
   }
 
   if (publishingPermissions.has(permission)) {

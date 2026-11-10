@@ -19,9 +19,10 @@ export const ToolAreaSchema = Schema.Literals([
   "connect",
   "channels",
   "review",
+  "ads",
 ]).annotate({
   description:
-    "An area of Peal: `account` (who the connection is, its workspace and channels, the server), `posts` (drafts, scheduling, publishing, outcomes), `media` (images and videos), `reports` (analytics, the plan and the activity log), `people` (members and invitations), `webhooks` (endpoints and their deliveries), `connect` (connect links, and the workspace's partner account), `channels` (what each channel's platform takes, and its lookups), `review` (the posts that wait for an approval, and deciding them).",
+    "An area of Peal: `account` (who the connection is, its workspace and channels, the server), `posts` (drafts, scheduling, publishing, outcomes), `media` (images and videos), `reports` (analytics, the plan and the activity log), `people` (members and invitations), `webhooks` (endpoints and their deliveries), `connect` (connect links, and the workspace's partner account), `channels` (what each channel's platform takes, and its lookups), `review` (the posts that wait for an approval, and deciding them), `ads` (ad accounts, campaigns and their numbers, and boosting a published post, which spends money).",
 });
 
 export type ToolArea = typeof ToolAreaSchema.Type;

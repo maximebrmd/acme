@@ -22,32 +22,31 @@ import {
   PostNotPromotable,
   SpendCeilingExceeded,
 } from "peal-contract";
-import type { NewBoost } from "peal-contract";
 
 import { AdConnections } from "#ads/application/ad-connections.ts";
 import { AdReports, auditPageSize } from "#ads/application/ad-reports.ts";
-import type { AskedRange, Report } from "#ads/application/ad-reports.ts";
 import { boostPageSize, Boosts } from "#ads/application/boosts.ts";
-import type { BoostAsk } from "#ads/application/boosts.ts";
 import { SpendAuthorizations } from "#ads/application/spend-authorizations.ts";
-import { Audience } from "#ads/domain/audience.ts";
-import { CurrencySchema, minorUnitDigits, Money } from "#ads/domain/money.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
-import { ChannelIdSchema } from "#shared/domain/ids.ts";
 
 import {
-  dayOf,
-  dayView,
+  askedRange,
+  askOf,
+  reportView,
+  spendDecisionOf,
   toAccountView,
+  toAdRowView,
   toAuditView,
+  toBoostDetailView,
   toBoostView,
+  toCampaignView,
   toConnectionView,
-  toOrganicView,
+  toDayView,
+  toPerformanceView,
+  toQuoteView,
   toReachableView,
   toSpendingView,
-  toStepView,
-  toTotalsView,
 } from "./ads-view.ts";
 
 const adsUnavailable = () => Effect.fail(new AdsUnavailable());
@@ -142,41 +141,11 @@ const networkUnavailable = ({
     )
   );
 
-const askedRange = (query: {
-  readonly from?: string;
-  readonly to?: string;
-}): AskedRange => ({
-  from: Option.fromUndefinedOr(query.from).pipe(Option.map(dayOf)),
-  to: Option.fromUndefinedOr(query.to).pipe(Option.map(dayOf)),
-});
-
-const reportView = <A, B>(report: Report<A>, row: (item: A) => B) => ({
-  account: toAccountView(report.account),
-  from: dayView(report.range.from),
-  rows: report.rows.map(row),
-  to: dayView(report.range.to),
-});
-
-// What the API takes for a boost, as the use case reads it.
-const askOf = (payload: NewBoost): BoostAsk => ({
-  accountId: payload.accountId,
-  audience: new Audience(payload.audience),
-  beneficiary: Option.fromUndefinedOr(payload.beneficiary),
-  budget: { _tag: payload.budget.kind, amount: payload.budget.amount },
-  // An id that names no channel finds no post published on it.
-  channelId: ChannelIdSchema.make(payload.channelId, { disableChecks: true }),
-  currency: CurrencySchema.make(payload.currency),
-  endsAt: payload.endsAt,
-  payer: Option.fromUndefinedOr(payload.payer),
-  postId: payload.postId,
-  specialAdCategory: payload.specialAdCategory,
-  startsAt: Option.fromUndefinedOr(payload.startsAt),
-});
-
 const boostRefusals = {
   AccountSpendCapExceeded: capExceeded,
   AdAccountNotFound: accountNotFound,
   AdAccountUnusable: accountUnusable,
+  DatabaseError: Effect.die,
   InvalidBoost: boostInvalid,
   MissingPermission: forbidden,
   PostNotPromotable: notPromotable,
@@ -191,6 +160,7 @@ const controlRefusals = {
   AdNetworkUnavailable: networkUnavailable,
   BoostNotFound: boostNotFound,
   BoostStateConflict: stateConflict,
+  DatabaseError: Effect.die,
   MissingPermission: forbidden,
   SpendCeilingExceeded: ceilingExceeded,
   SpendingNotEnabled: spendingNotEnabled,
@@ -207,16 +177,27 @@ export const AdsHandlers = HttpApiBuilder.group(
     const reports = yield* AdReports;
     const boosts = yield* Boosts;
 
-    const controlled =
-      (action: "pause" | "resume" | "stop") =>
+    const control = (boostId: string, action: "pause" | "resume" | "stop") =>
+      CurrentMember.pipe(
+        Effect.flatMap((member) =>
+          boosts.control(actorOf(member), boostId, action)
+        ),
+        Effect.map(toBoostView)
+      );
+
+    // Pausing and stopping spend nothing: the refusals of what spends
+    // never come to them.
+    const reduced =
+      (action: "pause" | "stop") =>
       ({ params }: { readonly params: { readonly boostId: string } }) =>
-        CurrentMember.pipe(
-          Effect.flatMap((member) =>
-            boosts.control(actorOf(member), params.boostId, action)
-          ),
-          Effect.map(toBoostView),
-          Effect.catchTags(controlRefusals),
-          Effect.orDie
+        control(params.boostId, action).pipe(
+          Effect.catchTags({
+            ...controlRefusals,
+            AccountSpendCapExceeded: Effect.die,
+            SpendCeilingExceeded: Effect.die,
+            SpendingNotEnabled: Effect.die,
+            SpendingUnavailable: Effect.die,
+          })
         );
 
     return handlers.handleAll({
@@ -235,8 +216,10 @@ export const AdsHandlers = HttpApiBuilder.group(
                 ? (entries.at(-1)?.id ?? null)
                 : null,
           })),
-          Effect.catchTags({ MissingPermission: forbidden }),
-          Effect.orDie
+          Effect.catchTags({
+            DatabaseError: Effect.die,
+            MissingPermission: forbidden,
+          })
         ),
       completeConnect: ({ params, payload }) =>
         CurrentMember.pipe(
@@ -256,10 +239,10 @@ export const AdsHandlers = HttpApiBuilder.group(
             AdNetworkUnavailable: networkUnavailable,
             AdSignInFailed: signInFailed,
             AdsUnavailable: adsUnavailable,
+            DatabaseError: Effect.die,
             MissingPermission: forbidden,
             PersonRequired: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
       connect: ({ params }) =>
         CurrentMember.pipe(
@@ -269,10 +252,10 @@ export const AdsHandlers = HttpApiBuilder.group(
           Effect.map((authorizationUrl) => ({ authorizationUrl })),
           Effect.catchTags({
             AdsUnavailable: adsUnavailable,
+            DatabaseError: Effect.die,
             MissingPermission: forbidden,
             PersonRequired: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
       connectAccounts: ({ params, payload }) =>
         CurrentMember.pipe(
@@ -289,10 +272,10 @@ export const AdsHandlers = HttpApiBuilder.group(
             AdConnectionNotFound: connectionNotFound,
             AdNetworkUnavailable: networkUnavailable,
             AdsUnavailable: adsUnavailable,
+            DatabaseError: Effect.die,
             MissingPermission: forbidden,
             PersonRequired: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
       createBoost: ({ headers, payload }) =>
         CurrentMember.pipe(
@@ -304,8 +287,7 @@ export const AdsHandlers = HttpApiBuilder.group(
             )
           ),
           Effect.map(toBoostView),
-          Effect.catchTags({ ...boostRefusals, BoostKeyReused: keyReused }),
-          Effect.orDie
+          Effect.catchTags({ ...boostRefusals, BoostKeyReused: keyReused })
         ),
       disconnect: ({ params }) =>
         CurrentMember.pipe(
@@ -315,9 +297,9 @@ export const AdsHandlers = HttpApiBuilder.group(
           Effect.catchTags({
             AdAccountBusy: accountBusy,
             AdConnectionNotFound: connectionNotFound,
+            DatabaseError: Effect.die,
             MissingPermission: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
       getAccount: ({ params }) =>
         CurrentMember.pipe(
@@ -327,31 +309,30 @@ export const AdsHandlers = HttpApiBuilder.group(
           Effect.map(toSpendingView),
           Effect.catchTags({
             AdAccountNotFound: accountNotFound,
+            DatabaseError: Effect.die,
             MissingPermission: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
       getBoost: ({ params }) =>
         CurrentMember.pipe(
           Effect.flatMap((member) =>
             boosts.get(actorOf(member), params.boostId)
           ),
-          Effect.map(({ boost, calls }) => ({
-            boost: toBoostView(boost),
-            steps: calls.map(toStepView),
-          })),
+          Effect.map(toBoostDetailView),
           Effect.catchTags({
             BoostNotFound: boostNotFound,
+            DatabaseError: Effect.die,
             MissingPermission: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
       listAccounts: () =>
         CurrentMember.pipe(
           Effect.flatMap((member) => connections.accounts(actorOf(member))),
           Effect.map((accounts) => accounts.map(toAccountView)),
-          Effect.catchTags({ MissingPermission: forbidden }),
-          Effect.orDie
+          Effect.catchTags({
+            DatabaseError: Effect.die,
+            MissingPermission: forbidden,
+          })
         ),
       listAds: ({ params, query }) =>
         CurrentMember.pipe(
@@ -363,24 +344,13 @@ export const AdsHandlers = HttpApiBuilder.group(
               askedRange(query)
             )
           ),
-          Effect.map((report) =>
-            reportView(report, (ad) => ({
-              adSetExternalId: ad.adSetExternalId,
-              campaignExternalId: ad.campaignExternalId,
-              externalId: ad.externalId,
-              name: ad.name,
-              postId: Option.getOrNull(ad.postId),
-              rawStatus: ad.rawStatus,
-              status: ad.status,
-              totals: toTotalsView(ad.totals),
-            }))
-          ),
+          Effect.map((report) => reportView(report, toAdRowView)),
           Effect.catchTags({
             AdAccountNotFound: accountNotFound,
+            DatabaseError: Effect.die,
             InvalidAdRange: invalidRange,
             MissingPermission: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
       listBoosts: ({ query }) =>
         CurrentMember.pipe(
@@ -397,8 +367,10 @@ export const AdsHandlers = HttpApiBuilder.group(
                 ? (listed.at(-1)?.id ?? null)
                 : null,
           })),
-          Effect.catchTags({ MissingPermission: forbidden }),
-          Effect.orDie
+          Effect.catchTags({
+            DatabaseError: Effect.die,
+            MissingPermission: forbidden,
+          })
         ),
       listCampaigns: ({ params, query }) =>
         CurrentMember.pipe(
@@ -409,92 +381,55 @@ export const AdsHandlers = HttpApiBuilder.group(
               askedRange(query)
             )
           ),
-          Effect.map((report) =>
-            reportView(report, (campaign) => ({
-              dailyBudget: Option.getOrNull(campaign.dailyBudget),
-              endsAt: Option.getOrNull(campaign.endsAt),
-              externalId: campaign.externalId,
-              name: campaign.name,
-              objective: campaign.objective,
-              rawStatus: campaign.rawStatus,
-              startsAt: Option.getOrNull(campaign.startsAt),
-              status: campaign.status,
-              syncedAt: campaign.syncedAt,
-              totalBudget: Option.getOrNull(campaign.totalBudget),
-              totals: toTotalsView(campaign.totals),
-            }))
-          ),
+          Effect.map((report) => reportView(report, toCampaignView)),
           Effect.catchTags({
             AdAccountNotFound: accountNotFound,
+            DatabaseError: Effect.die,
             InvalidAdRange: invalidRange,
             MissingPermission: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
       listConnections: () =>
         CurrentMember.pipe(
           Effect.flatMap((member) => connections.list(actorOf(member))),
           Effect.map((listed) => listed.map(toConnectionView)),
-          Effect.catchTags({ MissingPermission: forbidden }),
-          Effect.orDie
+          Effect.catchTags({
+            DatabaseError: Effect.die,
+            MissingPermission: forbidden,
+          })
         ),
       listInsights: ({ params, query }) =>
         CurrentMember.pipe(
           Effect.flatMap((member) =>
             reports.days(actorOf(member), params.accountId, askedRange(query))
           ),
-          Effect.map((report) =>
-            reportView(report, ({ day, ...totals }) => ({
-              day: dayView(day),
-              totals: toTotalsView(totals),
-            }))
-          ),
+          Effect.map((report) => reportView(report, toDayView)),
           Effect.catchTags({
             AdAccountNotFound: accountNotFound,
+            DatabaseError: Effect.die,
             InvalidAdRange: invalidRange,
             MissingPermission: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
-      pauseBoost: controlled("pause"),
+      pauseBoost: reduced("pause"),
       postPerformance: ({ params }) =>
         CurrentMember.pipe(
           Effect.flatMap((member) =>
             reports.ofPost(actorOf(member), params.postId)
           ),
-          Effect.map((performance) => ({
-            boosts: performance.boosts.map(toBoostView),
-            organic: performance.organic.map(toOrganicView),
-            paid: performance.paid.map(({ account, ads, totals }) => ({
-              account: toAccountView(account),
-              ads,
-              totals: toTotalsView(totals),
-            })),
-          })),
-          Effect.catchTags({ MissingPermission: forbidden }),
-          Effect.orDie
+          Effect.map(toPerformanceView),
+          Effect.catchTags({
+            DatabaseError: Effect.die,
+            MissingPermission: forbidden,
+          })
         ),
       quoteBoost: ({ payload }) =>
         CurrentMember.pipe(
           Effect.flatMap((member) =>
             boosts.quote(actorOf(member), askOf(payload))
           ),
-          Effect.map(({ account, plan, room }) => ({
-            capRoom: Option.getOrNull(room.capRoom),
-            ceiling: room.ceiling,
-            commitment: plan.committed,
-            committed: room.committed,
-            currency: account.account.currency,
-            days: plan.days,
-            endsAt: plan.endsAt,
-            minorUnitDigits: minorUnitDigits(
-              account.account.network,
-              account.account.currency
-            ),
-            startsAt: plan.startsAt,
-          })),
-          Effect.catchTags(boostRefusals),
-          Effect.orDie
+          Effect.map(toQuoteView),
+          Effect.catchTags(boostRefusals)
         ),
       reachableAccounts: ({ params }) =>
         CurrentMember.pipe(
@@ -506,10 +441,10 @@ export const AdsHandlers = HttpApiBuilder.group(
             AdConnectionNotFound: connectionNotFound,
             AdNetworkUnavailable: networkUnavailable,
             AdsUnavailable: adsUnavailable,
+            DatabaseError: Effect.die,
             MissingPermission: forbidden,
             PersonRequired: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
       removeAccount: ({ params }) =>
         CurrentMember.pipe(
@@ -519,28 +454,21 @@ export const AdsHandlers = HttpApiBuilder.group(
           Effect.catchTags({
             AdAccountBusy: accountBusy,
             AdAccountNotFound: accountNotFound,
+            DatabaseError: Effect.die,
             MissingPermission: forbidden,
-          }),
-          Effect.orDie
+          })
         ),
-      resumeBoost: controlled("resume"),
+      resumeBoost: ({ params }) =>
+        control(params.boostId, "resume").pipe(
+          Effect.catchTags(controlRefusals)
+        ),
       setSpending: ({ params, payload }) =>
         CurrentMember.pipe(
           Effect.flatMap((member) =>
             spending.decide(
               actorOf(member),
               params.accountId,
-              payload.enabled && payload.monthlyCeiling !== undefined
-                ? {
-                    _tag: "on",
-                    monthlyCeiling: new Money({
-                      amount: payload.monthlyCeiling.amount,
-                      currency: CurrencySchema.make(
-                        payload.monthlyCeiling.currency
-                      ),
-                    }),
-                  }
-                : { _tag: "off" }
+              spendDecisionOf(payload)
             )
           ),
           Effect.map(toSpendingView),
@@ -548,19 +476,20 @@ export const AdsHandlers = HttpApiBuilder.group(
             AdAccountBusy: accountBusy,
             AdAccountNotFound: accountNotFound,
             CeilingCurrencyMismatch: ceilingMismatch,
+            DatabaseError: Effect.die,
             MissingPermission: forbidden,
             PersonRequired: forbidden,
             SpendingUnavailable: spendingUnavailable,
-          }),
-          Effect.orDie
+          })
         ),
       status: () =>
         CurrentMember.pipe(
           Effect.flatMap((member) => connections.status(actorOf(member))),
-          Effect.catchTags({ MissingPermission: forbidden }),
-          Effect.orDie
+          Effect.catchTags({
+            MissingPermission: forbidden,
+          })
         ),
-      stopBoost: controlled("stop"),
+      stopBoost: reduced("stop"),
     });
   })
 );

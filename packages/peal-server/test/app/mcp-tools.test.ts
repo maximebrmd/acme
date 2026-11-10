@@ -15,6 +15,7 @@ import {
 } from "peal-contract";
 import type { TargetOptions } from "peal-contract";
 
+import { adsTools } from "#app/mcp/catalogue.ts";
 import { ListedMemberSchema } from "#app/mcp/people-tools.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
@@ -256,6 +257,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           analytics_summary: [true, false, true, false],
           approve_post: [false, false, false, true],
           await_post: [true, false, true, false],
+          // Spends the user's money at an ad network, and cannot be undone.
+          boost_post: [false, true, false, true],
           cancel_post: [false, true, true, false],
           confirm_target: [false, true, true, false],
           // A link's address lets whoever holds it connect an account,
@@ -269,17 +272,24 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           create_webhook: [false, false, false, true],
           discard_draft: [false, true, true, false],
           find_tools: [true, false, true, false],
+          get_ad_account: [true, false, true, false],
+          get_ad_insights: [true, false, true, false],
+          get_ads_status: [true, false, true, false],
           get_billing: [true, false, true, false],
+          get_boost: [true, false, true, false],
           get_channel_capabilities: [true, false, true, true],
           get_connect_link: [true, false, true, false],
           get_partner_account: [true, false, true, false],
           get_post: [true, false, true, false],
+          get_post_ad_performance: [true, false, true, false],
           get_post_review: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
           import_media: [false, false, false, true],
           invite_member: [false, true, false, true],
           list_activity: [true, false, true, false],
+          list_ad_campaigns: [true, false, true, false],
           list_approvals: [true, false, true, false],
+          list_boosts: [true, false, true, false],
           list_channels: [true, false, true, false],
           list_connect_links: [true, false, true, false],
           list_drafts: [true, false, true, false],
@@ -292,16 +302,20 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_webhook_deliveries: [true, false, true, false],
           list_webhooks: [true, false, true, false],
           list_workspaces: [true, false, true, false],
+          pause_boost: [false, false, true, true],
           post_analytics: [true, false, true, false],
           publish_post: [false, false, false, true],
+          quote_boost: [true, false, true, false],
           repost_target: [false, false, false, true],
           request_changes: [false, true, false, false],
           reschedule_post: [false, true, true, true],
+          resume_boost: [false, true, true, true],
           revoke_connect_link: [false, true, true, false],
           revoke_invitation: [false, true, true, false],
           run_channel_lookup: [true, false, true, true],
           schedule_post: [false, false, false, true],
           server_health: [true, false, true, false],
+          stop_boost: [false, true, true, true],
           unschedule_post: [false, true, true, false],
           update_draft: [false, true, true, false],
           // It asks TikTok what a creator takes.
@@ -473,6 +487,52 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
                 new Map<string, ToolArguments>(Object.entries(bogus)).get(name)
               ),
               "workspace:publish",
+              name
+            );
+          }
+
+          // The tools that spend on ads, or change what spends, take the
+          // ads scope, and refuse a connection without it, naming it,
+          // before reading anything.
+          const boostId = postId;
+
+          const spending = (yield* writer.call(
+            "find_tools",
+            FoundSchema
+          )).tools.filter(({ scope }) => scope === "workspace:ads");
+
+          const unasked = {
+            boost_post: {
+              accountId: postId,
+              audience: { ageMax: 65, ageMin: 18, countries: ["US"] },
+              budget: { amount: 5000, kind: "total" },
+              channelId: fixture.channelId,
+              currency: "EUR",
+              endsAt: "2030-01-08T10:00:00Z",
+              idempotencyKey: "never-made",
+              postId,
+              specialAdCategory: "none",
+            },
+            pause_boost: { boostId },
+            resume_boost: { boostId },
+            stop_boost: { boostId },
+          } satisfies Record<string, ToolArguments>;
+
+          assert.deepStrictEqual(
+            spending.map(({ name }) => name).toSorted(),
+            [...adsTools].toSorted()
+          );
+
+          for (const { name, scopeGranted } of spending) {
+            assert.isFalse(scopeGranted, name);
+            assert.include(
+              yield* writer.refused(
+                name,
+                new Map<string, ToolArguments>(Object.entries(unasked)).get(
+                  name
+                )
+              ),
+              "workspace:ads",
               name
             );
           }

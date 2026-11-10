@@ -142,22 +142,46 @@ describe("the integers of the OpenAPI document", () => {
     // A check that the format is chosen, not sprinkled: no count of items,
     // pixels or milliseconds takes it.
     expect(
-      integers
-        .filter(({ format }) => format === "int64")
-        .map(({ property }) => property)
-        .filter(
-          (property) =>
-            !byteNames.has(property) &&
-            !boundNames.has(property) &&
-            !quantityNames.has(property)
-        )
-        .toSorted((left, right) => left.localeCompare(right))
+      [
+        ...new Set(
+          integers
+            .filter(({ format }) => format === "int64")
+            .map(({ property }) => property)
+            .filter(
+              (property) =>
+                !byteNames.has(property) &&
+                !boundNames.has(property) &&
+                !quantityNames.has(property)
+            )
+        ),
+      ].toSorted((left, right) => left.localeCompare(right))
     ).toStrictEqual([
+      // Ads: money in a currency's minor units, which passes 2^31 for a
+      // budget in a currency without cents, and what ads did summed over
+      // days and campaigns.
+      "amount",
+      "amountSpent",
       // A plan's allowances, limit by limit; `mediaStorage` among them.
       "assistantRequests",
+      "capRoom",
+      "ceiling",
       "channels",
+      "clicks",
+      "commitment",
+      "committed",
+      "committedThisMonth",
+      "dailyBudget",
+      "impressions",
       "members",
+      "monthlyCeiling",
+      "reach",
+      "requested",
+      "results",
+      "room",
       "scheduledPosts",
+      "spend",
+      "spendCap",
+      "totalBudget",
     ]);
   });
 });

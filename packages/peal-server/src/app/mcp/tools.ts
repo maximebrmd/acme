@@ -2,6 +2,7 @@ import { Schema } from "effect";
 import { Tool, Toolkit } from "effect/ai";
 import { ChannelSchema, CurrentMember, PermissionSchema } from "peal-contract";
 
+import { AdsTools } from "#app/mcp/ads-tools.ts";
 import { reading } from "#app/mcp/annotations.ts";
 import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { ConnectTools } from "#app/mcp/connect-tools.ts";
@@ -123,5 +124,6 @@ export const PealTools = Toolkit.merge(
   CapabilityTools,
   ReviewTools,
   WebhookTools,
-  ConnectTools
+  ConnectTools,
+  AdsTools
 );

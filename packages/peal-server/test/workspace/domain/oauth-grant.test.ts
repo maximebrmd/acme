@@ -249,8 +249,8 @@ describe("ads through an OAuth client", () => {
 
   it("names every scope a permission takes", () => {
     assert.deepStrictEqual(scopesFor("ads:spend"), [
-      "workspace:publish",
       "workspace:ads",
+      "workspace:publish",
     ]);
     assert.deepStrictEqual(scopesFor("ads:manage"), [
       "workspace:write",

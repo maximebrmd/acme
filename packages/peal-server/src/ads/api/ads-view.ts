@@ -1,6 +1,7 @@
 import type { DateTime } from "effect";
 import { Option } from "effect";
 import type {
+  NewBoost,
   AdAccount as AdAccountView,
   AdConnection as AdConnectionView,
   AdSpending as AdSpendingView,
@@ -13,16 +14,32 @@ import type {
   AdConnection,
   OfferedAccount,
 } from "#ads/application/ad-connections.ts";
+import type {
+  AskedRange,
+  PostPerformance,
+  Report,
+} from "#ads/application/ad-reports.ts";
+import type { BoostAsk, BoostQuote } from "#ads/application/boosts.ts";
 import type { AuthorizedAccount } from "#ads/application/ports/account-store.ts";
 import type {
   AuditEntry,
   SpendCall,
 } from "#ads/application/ports/boost-store.ts";
 import type { OrganicOnChannel } from "#ads/application/ports/organic-counts.ts";
-import type { PaidTotals } from "#ads/application/ports/read-model.ts";
-import type { SpendStanding } from "#ads/application/spend-authorizations.ts";
+import type {
+  AdRow,
+  CampaignRow,
+  DayTotals,
+  PaidTotals,
+} from "#ads/application/ports/read-model.ts";
+import type {
+  SpendDecision,
+  SpendStanding,
+} from "#ads/application/spend-authorizations.ts";
+import { Audience } from "#ads/domain/audience.ts";
 import type { Boost } from "#ads/domain/boost.ts";
-import { minorUnitDigits } from "#ads/domain/money.ts";
+import { CurrencySchema, minorUnitDigits, Money } from "#ads/domain/money.ts";
+import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
 // The views the ads endpoints and the MCP tools answer: ids, names,
@@ -202,3 +219,116 @@ export const toAuditView = (entry: AuditEntry) => ({
   currency: Option.getOrNull(entry.currency),
   id: entry.id,
 });
+
+/** The days a query asks a report for. */
+export const askedRange = (query: {
+  readonly from?: string;
+  readonly to?: string;
+}): AskedRange => ({
+  from: Option.fromUndefinedOr(query.from).pipe(Option.map(dayOf)),
+  to: Option.fromUndefinedOr(query.to).pipe(Option.map(dayOf)),
+});
+
+export const reportView = <A, B>(report: Report<A>, row: (item: A) => B) => ({
+  account: toAccountView(report.account),
+  from: dayView(report.range.from),
+  rows: report.rows.map(row),
+  to: dayView(report.range.to),
+});
+
+export const toCampaignView = (campaign: CampaignRow) => ({
+  dailyBudget: Option.getOrNull(campaign.dailyBudget),
+  endsAt: Option.getOrNull(campaign.endsAt),
+  externalId: campaign.externalId,
+  name: campaign.name,
+  objective: campaign.objective,
+  rawStatus: campaign.rawStatus,
+  startsAt: Option.getOrNull(campaign.startsAt),
+  status: campaign.status,
+  syncedAt: campaign.syncedAt,
+  totalBudget: Option.getOrNull(campaign.totalBudget),
+  totals: toTotalsView(campaign.totals),
+});
+
+export const toAdRowView = (ad: AdRow) => ({
+  adSetExternalId: ad.adSetExternalId,
+  campaignExternalId: ad.campaignExternalId,
+  externalId: ad.externalId,
+  name: ad.name,
+  postId: Option.getOrNull(ad.postId),
+  rawStatus: ad.rawStatus,
+  status: ad.status,
+  totals: toTotalsView(ad.totals),
+});
+
+export const toDayView = ({ day, ...totals }: DayTotals) => ({
+  day: dayView(day),
+  totals: toTotalsView(totals),
+});
+
+export const toPerformanceView = (performance: PostPerformance) => ({
+  boosts: performance.boosts.map(toBoostView),
+  organic: performance.organic.map(toOrganicView),
+  paid: performance.paid.map(({ account, ads, totals }) => ({
+    account: toAccountView(account),
+    ads,
+    totals: toTotalsView(totals),
+  })),
+});
+
+export const toQuoteView = ({ account, plan, room }: BoostQuote) => ({
+  capRoom: Option.getOrNull(room.capRoom),
+  ceiling: room.ceiling,
+  commitment: plan.committed,
+  committed: room.committed,
+  currency: account.account.currency,
+  days: plan.days,
+  endsAt: plan.endsAt,
+  minorUnitDigits: minorUnitDigits(
+    account.account.network,
+    account.account.currency
+  ),
+  startsAt: plan.startsAt,
+});
+
+export const toBoostDetailView = ({
+  boost,
+  calls,
+}: {
+  readonly boost: Boost;
+  readonly calls: readonly SpendCall[];
+}) => ({ boost: toBoostView(boost), steps: calls.map(toStepView) });
+
+/** What the API takes for a boost, as the use case reads it. */
+export const askOf = (payload: NewBoost): BoostAsk => ({
+  accountId: payload.accountId,
+  audience: new Audience(payload.audience),
+  beneficiary: Option.fromUndefinedOr(payload.beneficiary),
+  budget: { _tag: payload.budget.kind, amount: payload.budget.amount },
+  // An id that names no channel finds no post published on it.
+  channelId: ChannelIdSchema.make(payload.channelId, { disableChecks: true }),
+  currency: CurrencySchema.make(payload.currency),
+  endsAt: payload.endsAt,
+  payer: Option.fromUndefinedOr(payload.payer),
+  postId: payload.postId,
+  specialAdCategory: payload.specialAdCategory,
+  startsAt: Option.fromUndefinedOr(payload.startsAt),
+});
+
+/** What an owner decided, as the use case reads it. */
+export const spendDecisionOf = (payload: {
+  readonly enabled: boolean;
+  readonly monthlyCeiling?: {
+    readonly amount: number;
+    readonly currency: string;
+  };
+}): SpendDecision =>
+  payload.enabled && payload.monthlyCeiling !== undefined
+    ? {
+        _tag: "on",
+        monthlyCeiling: new Money({
+          amount: payload.monthlyCeiling.amount,
+          currency: CurrencySchema.make(payload.monthlyCeiling.currency),
+        }),
+      }
+    : { _tag: "off" };
