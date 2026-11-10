@@ -164,6 +164,27 @@ export type NoticeEventRecord =
       readonly expiresAt: DateTime.Utc;
     }
   | {
+      readonly _tag: "PostApprovalRequested";
+      readonly postId: string;
+      readonly scheduledAt: DateTime.Utc;
+    }
+  | {
+      readonly _tag: "PostApproved";
+      readonly by: string;
+      readonly late: boolean;
+      readonly postId: string;
+    }
+  | {
+      readonly _tag: "PostChangesRequested";
+      readonly by: string;
+      readonly postId: string;
+    }
+  | {
+      readonly _tag: "PostCommented";
+      readonly by: string;
+      readonly postId: string;
+    }
+  | {
       readonly _tag: "PostFailed";
       readonly channel: NoticeChannelRecord | null;
       readonly postId: string;
@@ -235,6 +256,7 @@ export interface PreferencesRecord {
     readonly channelReconnect: boolean;
     readonly postFailed: boolean;
     readonly postPublished: boolean;
+    readonly postReview: boolean;
     readonly postUnconfirmed: boolean;
   };
   readonly everyPost: boolean;

@@ -215,6 +215,7 @@ const PortsLive = Layer.mergeAll(
                 channelReconnect: true,
                 postFailed: true,
                 postPublished: false,
+                postReview: true,
                 postUnconfirmed: true,
               },
               everyPost: false,

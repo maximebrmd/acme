@@ -24,6 +24,7 @@ const preferencesOf = (row: Row) =>
       channelReconnect: row.emailChannelReconnect,
       postFailed: row.emailPostFailed,
       postPublished: row.emailPostPublished,
+      postReview: row.emailPostReview,
       postUnconfirmed: row.emailPostUnconfirmed,
     },
     everyPost: row.everyPost,
@@ -60,6 +61,10 @@ export const DrizzlePreferenceStore = Layer.effect(
             set.emailPostPublished = email.postPublished;
           }
 
+          if (email.postReview !== undefined) {
+            set.emailPostReview = email.postReview;
+          }
+
           if (email.postUnconfirmed !== undefined) {
             set.emailPostUnconfirmed = email.postUnconfirmed;
           }
@@ -74,6 +79,7 @@ export const DrizzlePreferenceStore = Layer.effect(
               emailChannelReconnect: first.email.channelReconnect,
               emailPostFailed: first.email.postFailed,
               emailPostPublished: first.email.postPublished,
+              emailPostReview: first.email.postReview,
               emailPostUnconfirmed: first.email.postUnconfirmed,
               everyPost: first.everyPost,
               updatedAt,

@@ -50,6 +50,24 @@ export interface EmailCatalog {
   };
   /** The platforms' names, as `{platform}`; a platform not listed shows its id. */
   readonly platforms: Readonly<Record<string, string>>;
+  /** A post of `{workspaceName}` waits for an approval, for `{scheduledAt}`. */
+  readonly postApprovalRequested: EmailMessages;
+  /** A post of `{workspaceName}` was approved by `{by}`, and is scheduled. */
+  readonly postApproved: EmailMessages;
+  /** The same, approved after its time: it is a draft again. */
+  readonly postApprovedLate: EmailMessages;
+  /** `{by}` asked for changes to a post of `{workspaceName}`. */
+  readonly postChangesRequested: EmailMessages;
+  /** `{by}` commented on a post of `{workspaceName}`. */
+  readonly postCommented: EmailMessages;
+  /**
+   * Who did something in a review, as `{by}`, at the start of a sentence.
+   */
+  readonly reviewParties: {
+    readonly application: string;
+    readonly member: string;
+    readonly visitor: string;
+  };
   /**
    * A post did not go out on `{channel}`, for `{reason}`, in
    * `{workspaceName}`.
@@ -60,6 +78,11 @@ export interface EmailCatalog {
   /** Whether a post of `{workspaceName}` went live on `{channel}` is unknown. */
   readonly postUnconfirmed: EmailMessages;
   readonly resetPassword: EmailMessages;
+  /**
+   * Someone answered a visitor's comment on a post they were sent a review
+   * link to. It names nothing and links nowhere.
+   */
+  readonly reviewReply: LinklessMessages;
   /**
    * The paid plans' names, as `{plan}` in billing's emails.
    */
@@ -103,6 +126,14 @@ export interface EmailCatalog {
   readonly verifyEmail: EmailMessages;
   /** The workspace `{workspaceName}` was deleted by its owner. */
   readonly workspaceDeleted: EmailMessages;
+}
+
+/** The words of an email without a button. */
+export interface LinklessMessages {
+  readonly body: string;
+  /** Why the reader may ignore the email. */
+  readonly ignore: string;
+  readonly subject: string;
 }
 
 export interface EmailMessages {

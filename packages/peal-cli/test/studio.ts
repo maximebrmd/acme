@@ -314,6 +314,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       channelReconnect: true,
       postFailed: true,
       postPublished: false,
+      postReview: true,
       postUnconfirmed: true,
     },
     everyPost: false,

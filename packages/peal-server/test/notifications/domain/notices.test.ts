@@ -52,6 +52,18 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     channel,
     expiresAt: DateTime.makeUnsafe("2026-12-01T09:30:00Z"),
   },
+  PostApprovalRequested: {
+    _tag: "PostApprovalRequested",
+    postId,
+    scheduledAt: DateTime.makeUnsafe("2026-12-01T09:30:00Z"),
+  },
+  PostApproved: { _tag: "PostApproved", by: "visitor", late: false, postId },
+  PostChangesRequested: {
+    _tag: "PostChangesRequested",
+    by: "member",
+    postId,
+  },
+  PostCommented: { _tag: "PostCommented", by: "visitor", postId },
   PostFailed: {
     _tag: "PostFailed",
     channel: Option.some(channel),
@@ -126,6 +138,7 @@ describe("notice events", () => {
         channelReconnect: false,
         postFailed: false,
         postPublished: false,
+        postReview: true,
         postUnconfirmed: false,
       },
     });
@@ -203,6 +216,47 @@ describe(recipientsOf, () => {
   });
 });
 
+describe("a post's review", () => {
+  const author = UserIdSchema.make("1a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
+  const scheduler = UserIdSchema.make("3a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
+  const outsider = UserIdSchema.make("7a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
+
+  const people = [
+    { followsEveryPost: false, mayAct: false, userId: author },
+    { followsEveryPost: false, mayAct: true, userId: scheduler },
+    { followsEveryPost: false, mayAct: false, userId: outsider },
+  ];
+
+  it("asks everyone who may approve, and tells the author, not who asked", () => {
+    expect(
+      recipientsOf(events.PostApprovalRequested, Option.some(author), people, {
+        except: author,
+      })
+    ).toStrictEqual([scheduler]);
+
+    expect(
+      recipientsOf(events.PostApprovalRequested, Option.some(author), people)
+    ).toStrictEqual([author, scheduler]);
+  });
+
+  it("tells the author and those who follow the post what was decided", () => {
+    expect(
+      recipientsOf(events.PostApproved, Option.some(author), people, {
+        except: scheduler,
+        followers: [outsider],
+      })
+    ).toStrictEqual([author, outsider]);
+  });
+
+  it("tells those who follow a post without an author, not everyone", () => {
+    expect(
+      recipientsOf(events.PostCommented, Option.none(), people, {
+        followers: [outsider],
+      })
+    ).toStrictEqual([outsider]);
+  });
+});
+
 describe("notification preferences", () => {
   it("email what needs the reader, not what went as planned, by default", () => {
     const emailed = Object.values(events).filter((event) =>
@@ -212,6 +266,10 @@ describe("notification preferences", () => {
     expect(emailed.map(emailKindOf)).toStrictEqual([
       Option.some("channelReconnect"),
       Option.some("channelReconnect"),
+      Option.some("postReview"),
+      Option.some("postReview"),
+      Option.some("postReview"),
+      Option.some("postReview"),
       Option.some("postFailed"),
       Option.some("postUnconfirmed"),
       Option.none(),
@@ -231,6 +289,7 @@ describe("notification preferences", () => {
       channelReconnect: true,
       postFailed: false,
       postPublished: true,
+      postReview: true,
       postUnconfirmed: true,
     });
     expect(wantsEmail(changed, events.PostPublished)).toBeTruthy();

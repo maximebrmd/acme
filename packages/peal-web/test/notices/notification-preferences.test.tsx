@@ -10,6 +10,7 @@ const preferences = {
     channelReconnect: true,
     postFailed: true,
     postPublished: false,
+    postReview: true,
     postUnconfirmed: true,
   },
   everyPost: false,
@@ -63,6 +64,10 @@ describe(PreferencesFields, () => {
         ["A post did not go out", { checked: true, labelled: true }],
         [
           "A post may have gone out, and needs checking on the platform",
+          { checked: true, labelled: true },
+        ],
+        [
+          "A post waits for my approval, or a post I follow is commented on, approved or sent back",
           { checked: true, labelled: true },
         ],
         [
