@@ -590,3 +590,114 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
     );
   }
 );
+
+// Billing on, against no Stripe at all: nothing here orders or pays, and a
+// workspace without a subscription is on the free plan.
+const BillingTest = Layer.mergeAll(
+  TestApp.layerWith({
+    ...unconfirmedEmails,
+    PEAL_PARTNER_SELF_SERVICE: "true",
+    STRIPE_API_URL: "http://127.0.0.1:9",
+    STRIPE_SECRET_KEY: "sk_test_synthetic_partner_seams",
+    STRIPE_WEBHOOK_SECRET: "whsec_synthetic_seams_test_secret",
+  }),
+  SqlLive
+);
+
+const ShortfallSchema = Schema.Struct({
+  planLimit: Schema.NullOr(Schema.Struct({ limit: Schema.String })),
+  valid: Schema.Boolean,
+});
+
+const RefusedItemsSchema = Schema.Struct({
+  created: Schema.Int,
+  items: Schema.Array(
+    Schema.Struct({
+      _tag: Schema.Literal("refused"),
+      refusal: Schema.Struct({
+        _tag: Schema.String,
+        code: Schema.String,
+        limit: Schema.String,
+      }),
+    })
+  ),
+});
+
+layer(BillingTest, { excludeTestServices: true, timeout: "180 seconds" })(
+  "a partner's workspaces on a server that bills",
+  (it) => {
+    it.effect(
+      "send nothing, one post or several, while the partner holds more channels than its plan allows across them all",
+      () =>
+        Effect.gen(function* pooled() {
+          const app = yield* TestApp;
+          const { home, owner } = yield* partnerOf("seam-pool");
+          const { key } = yield* keyOf(owner, home);
+          const customer = yield* customerOf(key, "Pooled", "cus_seam_6");
+          const headers = bearer(key);
+          const base = `/api/workspaces/${customer.id}/posts`;
+
+          const channel = yield* seedChannel(customer.id, "one@social.test");
+
+          const post = {
+            channelIds: [channel],
+            content: content("A synthetic post of a pooled plan."),
+            when: later,
+          };
+
+          const validate = app
+            .request(`${base}/validate`, { body: post, headers })
+            .pipe(Effect.flatMap((reply) => bodyOf(ShortfallSchema, reply)));
+
+          // Three channels on the free plan, the home workspace's and the
+          // customer's together: within it.
+          yield* seedChannel(home, "home-one@social.test");
+          yield* seedChannel(home, "home-two@social.test");
+
+          assert.deepStrictEqual(yield* validate, {
+            planLimit: null,
+            valid: true,
+          });
+
+          // A fourth, as a plan that shrank leaves them: no workspace of
+          // the partner holds more than three itself, and all of them
+          // together do.
+          yield* seedChannel(customer.id, "two@social.test");
+
+          assert.deepStrictEqual(yield* validate, {
+            planLimit: { limit: "channels" },
+            valid: false,
+          });
+
+          const bulk = yield* app.request(`${base}/bulk`, {
+            body: { posts: [post, post] },
+            headers,
+          });
+
+          assert.strictEqual(bulk.status, 200);
+
+          const sent = yield* bodyOf(RefusedItemsSchema, bulk);
+
+          assert.strictEqual(sent.created, 0);
+          assert.deepStrictEqual(
+            sent.items.map(({ refusal }) => refusal),
+            [0, 1].map(() => ({
+              _tag: "PlanLimitReached",
+              code: "plan_limit_reached",
+              limit: "channels",
+            }))
+          );
+
+          const imported = yield* app.request(`${base}/import`, {
+            body: {
+              csv: `text,channels,at\nA synthetic row.,${channel},2031-03-04T09:00:00Z`,
+            },
+            headers,
+          });
+
+          assert.strictEqual(imported.status, 200);
+          assert.deepInclude(imported.body, { created: 0 });
+        })
+    );
+  }
+);
