@@ -1,7 +1,7 @@
 // Connect links: whoever holds one connects an account on a hosted page,
 // without a Peal account, once, from the browser that started the sign-in.
 import { assert, layer } from "@effect/vitest";
-import { Effect, Option, Redacted, Schema } from "effect";
+import { Effect, Option, Redacted, Ref, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
@@ -12,6 +12,7 @@ import type { AuthorizationCallback } from "#channels/application/platform-autho
 import { maxLinkStarts } from "#channels/domain/connect-link.ts";
 import { mastodonInstance } from "#test/channels/connect-support.ts";
 import {
+  LinkConnections,
   linked,
   LinksTest,
   manager,
@@ -205,6 +206,22 @@ layer(LinksTest)("connect links", (it) => {
             channels.list(workspaceId)
           ),
           1
+        );
+
+        // The workspace's log is told once, by the link: the refused
+        // attempts connected nothing, and nobody is named.
+        assert.deepStrictEqual(
+          (yield* Ref.get(yield* LinkConnections)).filter(
+            ({ linkId }) => linkId === link.id
+          ),
+          [
+            {
+              channelIds: [channel.id],
+              linkId: link.id,
+              step: "complete",
+              workspaceId,
+            },
+          ]
         );
       }).pipe(Effect.scoped)
   );

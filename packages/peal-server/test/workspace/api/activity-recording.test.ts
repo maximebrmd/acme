@@ -5,6 +5,11 @@ import { HttpApiError } from "effect/http-api";
 import { Forbidden, PostNotFound } from "peal-contract";
 import { errorsByTag } from "peal-contract/errors";
 
+import {
+  ChangeMark,
+  changesNothing,
+  makeChangeMark,
+} from "#shared/api/change-mark.ts";
 import { RequestId } from "#shared/api/request-id.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -18,6 +23,11 @@ import {
 import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import type { AnsweredChange } from "#workspace/application/activity-journal.ts";
 import { ApiKeyPrincipal } from "#workspace/domain/api-key-principal.ts";
+import {
+  PartnerIdSchema,
+  PartnerKeyIdSchema,
+} from "#workspace/domain/partner-id.ts";
+import { PartnerKeyPrincipal } from "#workspace/domain/partner-key-principal.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 import { answerOf } from "#workspace/infrastructure/logged-activity-journal.ts";
 
@@ -43,6 +53,13 @@ const key = new ApiKeyPrincipal({
   apiKeyId: "synthetic-key",
   permissions: ["post:create"],
   workspaceId,
+});
+
+const partnerKey = new PartnerKeyPrincipal({
+  partnerId: PartnerIdSchema.make("0195d2c0-0000-7000-8000-0000000000a1"),
+  partnerKeyId: PartnerKeyIdSchema.make("0195d2c0-0000-7000-8000-0000000000a2"),
+  permissions: ["post:create"],
+  scopes: ["workspaces:read"],
 });
 
 const catalogue = errorsByTag();
@@ -121,8 +138,8 @@ describe("how a request's answer is kept", () => {
 
   it("says how each principal authenticated", () => {
     assert.deepStrictEqual(
-      [viaOf(inPerson), viaOf(throughClient), viaOf(key)],
-      ["session", "oauth", "apiKey"]
+      [viaOf(inPerson), viaOf(throughClient), viaOf(key), viaOf(partnerKey)],
+      ["session", "oauth", "apiKey", "partnerKey"]
     );
   });
 });
@@ -165,6 +182,21 @@ describe("recording a request", () => {
           via: "apiKey",
         },
       ]);
+    })
+  );
+
+  it.effect("keeps nothing of a request that said it changes nothing", () =>
+    Effect.gen(function* dryRun() {
+      const kept = yield* Ref.make<readonly AnsweredChange[]>([]);
+
+      const response = yield* changesNothing.pipe(
+        Effect.as(HttpServerResponse.empty({ status: 200 })),
+        recorded(journalOf(kept), change),
+        Effect.provideService(ChangeMark, yield* makeChangeMark)
+      );
+
+      assert.strictEqual(response.status, 200);
+      assert.deepStrictEqual(yield* Ref.get(kept), []);
     })
   );
 

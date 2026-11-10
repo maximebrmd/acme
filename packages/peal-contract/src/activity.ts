@@ -23,20 +23,27 @@ export const maxActivityPageSize = 100;
  * How a request authenticated: a person's session in the web app
  * (`session`), an API key of the workspace (`apiKey`), an OAuth client
  * acting for a member through the API (`oauth`: the command line, another
- * application), or through the MCP endpoint (`mcp`).
+ * application), through the MCP endpoint (`mcp`), a partner key, in a
+ * workspace its partner owns (`partnerKey`), or a connect link, on its
+ * hosted page, where nobody signs in (`connectLink`).
  */
 export const ActivityViaSchema = Schema.Literals([
   "session",
   "apiKey",
   "oauth",
   "mcp",
+  "partnerKey",
+  "connectLink",
 ]).annotate({ identifier: "ActivityVia" });
 
 export type ActivityVia = typeof ActivityViaSchema.Type;
 
 /**
- * Who asked: a member (`user`), or an API key of the workspace (`apiKey`).
- * A member whose account was closed since is no longer named: `userId` is
+ * Who asked: a member (`user`), or a key (`apiKey`): an API key of the
+ * workspace, a key of the partner that owns it (`via` is `partnerKey`), or
+ * a connect link, as `connect-link:` followed by its id (`via` is
+ * `connectLink`: whoever held the link's address, who is never named). A
+ * member whose account was closed since is no longer named: `userId` is
  * null.
  */
 export const ActivityActorSchema = Schema.Union([

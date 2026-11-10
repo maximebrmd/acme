@@ -17,6 +17,11 @@ import {
 } from "peal-contract";
 import type { Member } from "peal-contract";
 
+import {
+  changedNothing,
+  ChangeMark,
+  makeChangeMark,
+} from "#shared/api/change-mark.ts";
 import { forbidden, refused } from "#shared/api/forbidden.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -61,7 +66,9 @@ const objectIdsOf = (
 const contentGroups: ReadonlySet<string> = new Set(["media", "posts"]);
 
 // The requests sent as writes that make nothing: checking a post reads it
-// and answers, so its connection is not kept.
+// and answers, so its connection is not kept, and the activity log, which
+// keeps what was asked to change, leaves it out. A request that makes
+// nothing only when asked not to (a dry run) says so itself (ChangeMark).
 const checksOnly: ReadonlySet<string> = new Set(["posts.validate"]);
 
 // Whether the request changes content.
@@ -121,20 +128,29 @@ export const contentChangeOf = (
 
 /**
  * Keeps the connection of a request that changed content, once its handler
- * answered without an error. A failure to keep it is logged: the change
- * was made, and the client is told so.
+ * answered without an error, unless it said it changed nothing (a dry
+ * run). A failure to keep it is logged: the change was made, and the
+ * client is told so.
  */
 export const journalled =
   (journal: ConnectionJournal["Service"], change: () => ContentChange) =>
   (response: HttpServerResponse.HttpServerResponse) =>
     response.status >= 400
       ? Effect.succeed(response)
-      : journal.contentChanged(change()).pipe(
-          Effect.catchCause((cause) =>
-            Effect.logError(
-              "Keeping the connection that changed content failed",
-              cause
-            )
+      : changedNothing.pipe(
+          Effect.flatMap((nothing) =>
+            nothing
+              ? Effect.void
+              : journal
+                  .contentChanged(change())
+                  .pipe(
+                    Effect.catchCause((cause) =>
+                      Effect.logError(
+                        "Keeping the connection that changed content failed",
+                        cause
+                      )
+                    )
+                  )
           ),
           Effect.as(response)
         );
@@ -192,8 +208,14 @@ export const AuthenticationLive = Layer.effect(
             return tooManyRequests(limited.value);
           }
 
+          // What the handler says of the request, for what is kept of it.
+          const marked = Effect.provideService(
+            ChangeMark,
+            yield* makeChangeMark
+          );
+
           if (!changesContent(request, group, endpoint)) {
-            return yield* httpEffect.pipe(as(principal));
+            return yield* httpEffect.pipe(as(principal), marked);
           }
 
           const params = yield* HttpRouter.params;
@@ -209,7 +231,8 @@ export const AuthenticationLive = Layer.effect(
                   Option.fromNullishOr(params["workspaceId"])
                 )
               )
-            )
+            ),
+            marked
           );
         }),
       session: (httpEffect, { endpoint, group }) =>
@@ -264,8 +287,13 @@ export const AuthenticationLive = Layer.effect(
               .pipe(Effect.orDie);
           }
 
+          const marked = Effect.provideService(
+            ChangeMark,
+            yield* makeChangeMark
+          );
+
           if (!changesContent(request, group, endpoint)) {
-            return yield* httpEffect.pipe(as(principal));
+            return yield* httpEffect.pipe(as(principal), marked);
           }
 
           return yield* httpEffect.pipe(
@@ -279,7 +307,8 @@ export const AuthenticationLive = Layer.effect(
                   Option.fromNullishOr(params["workspaceId"])
                 )
               )
-            )
+            ),
+            marked
           );
         }),
     });
@@ -294,7 +323,8 @@ export const AuthenticationLive = Layer.effect(
  * HEAD and OPTIONS) is kept in the workspace's activity log once it is
  * answered, done, refused or failed (ActivityJournal): who asked, through
  * what, the endpoint and the ids its path names, the status and the
- * error's code, never what it carried. Reads leave nothing.
+ * error's code, never what it carried. Reads leave nothing, and neither
+ * does a check (`checksOnly`) or a dry run (ChangeMark).
  */
 export const WorkspaceAccessLive = Layer.effect(
   WorkspaceAccess,
@@ -331,14 +361,16 @@ export const WorkspaceAccessLive = Layer.effect(
           explaining(current)
         );
 
-        if (safeMethods.has(request.method)) {
+        const operation = `${group.identifier}.${endpoint.identifier}`;
+
+        if (safeMethods.has(request.method) || checksOnly.has(operation)) {
           return yield* answered;
         }
 
         return yield* answered.pipe(
           recorded(activity, {
             named: params,
-            operation: `${group.identifier}.${endpoint.identifier}`,
+            operation,
             principal,
             workspaceId: workspaceId.value,
           })

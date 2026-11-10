@@ -1,8 +1,9 @@
 // Connect links on the test database, with a fake Mastodon instance to
 // sign in at: for the tests of their use cases and of their endpoints.
-import { Effect, Layer, Option, Redacted } from "effect";
+import { Context, Effect, Layer, Option, Redacted, Ref } from "effect";
 
 import { ConnectLinkAddresses } from "#channels/application/connect-link-addresses.ts";
+import { ConnectLinkJournal } from "#channels/application/connect-link-journal.ts";
 import { ConnectLinks } from "#channels/application/connect-links.ts";
 import type { NewConnectLink } from "#channels/application/connect-links.ts";
 import { LinkHosts } from "#channels/application/link-hosts.ts";
@@ -19,6 +20,39 @@ import {
   OpenOutboundGuard,
 } from "#test/channels/support.ts";
 
+/** What the links told the activity log they connected, oldest first. */
+export interface LinkConnection {
+  readonly channelIds: readonly string[];
+  readonly linkId: string;
+  readonly step: string;
+  readonly workspaceId: string;
+}
+
+export class LinkConnections extends Context.Service<
+  LinkConnections,
+  Ref.Ref<readonly LinkConnection[]>
+>()("peal-server/test/LinkConnections") {}
+
+// A journal that keeps in memory what it is told.
+const RememberedConnections = Layer.effect(
+  ConnectLinkJournal,
+  Effect.gen(function* remembered() {
+    const kept = yield* LinkConnections;
+
+    return ConnectLinkJournal.of({
+      connected: (link, channelIds, step) =>
+        Ref.update(kept, (all) => [
+          ...all,
+          { channelIds, linkId: link.id, step, workspaceId: link.workspaceId },
+        ]),
+    });
+  })
+).pipe(
+  Layer.provideMerge(
+    Layer.effect(LinkConnections, Ref.make<readonly LinkConnection[]>([]))
+  )
+);
+
 /** Where the links' pages are, in these tests. */
 export const pages = "https://peal.test/connect/link/";
 
@@ -30,6 +64,7 @@ export const LinksTest = ConnectLinks.layer.pipe(
   Layer.provideMerge(
     Layer.mergeAll(
       DrizzleConnectLinkStore,
+      RememberedConnections,
       RandomConnectLinkTokens,
       Layer.succeed(
         ConnectLinkAddresses,

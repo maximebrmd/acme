@@ -14,8 +14,10 @@ import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
 const ways: Readonly<Record<ActivityVia, string>> = {
   apiKey: "API key",
+  connectLink: "connect link",
   mcp: "MCP",
   oauth: "application",
+  partnerKey: "partner key",
   session: "web app",
 };
 

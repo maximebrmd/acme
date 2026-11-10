@@ -37,6 +37,7 @@ import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import { readImport } from "#publishing/domain/post-import.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { changesNothing } from "#shared/api/change-mark.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 
@@ -296,6 +297,11 @@ export const PostsHandlers = HttpApiBuilder.group(
         }),
       import: ({ headers, payload }) =>
         Effect.gen(function* importPosts() {
+          // A dry run reads and checks: it is no change to keep a record of.
+          if (payload.dryRun === true) {
+            yield* changesNothing;
+          }
+
           const actor = actorOf(yield* CurrentMember);
 
           const rows = yield* Effect.fromResult(readImport(payload.csv)).pipe(

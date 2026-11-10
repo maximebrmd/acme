@@ -39,7 +39,7 @@ Under **Webhooks**, owners and admins add the addresses Peal calls when somethin
 
 ### The activity log [#activity]
 
-Each workspace keeps a log of who changed what, and through which application: every request that asked to change something in it, whether it was done or refused, and every call of an [MCP](/mcp) tool that changes something. Requests that only read are not kept.
+Each workspace keeps a log of who changed what, and through which application: every request that asked to change something in it, whether it was done or refused, and every call of an [MCP](/mcp) tool that changes something. Requests that only read are not kept, nor those that check and make nothing: validating a post, or importing a file as a dry run. A request that makes several posts at once (`posts.bulk`, `posts.import`) is one event, whatever it made.
 
 Owners read it, and nobody else: it needs the permission `activity:read`, which only the owner role holds. An owner may give that permission to an [API key](#api-keys), and an application an owner connected reads it as they do. The log has no page in the web app yet. Read it:
 
@@ -49,18 +49,18 @@ Owners read it, and nobody else: it needs the permission `activity:read`, which 
 
 `operation` keeps the events of one operation, such as `posts.schedule`, and `actor` those one member, by their user id, or one API key, by its id, asked for.
 
-| Field          | What it holds                                                                                                                                            |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `occurredAt`   | When.                                                                                                                                                    |
-| `operation`    | The endpoint, as the reference names it (`posts.schedule`, `channels.disconnect`), or the MCP tool, as `mcp.` followed by its name (`mcp.create_draft`). |
-| `status`       | The HTTP status answered; `null` for an MCP tool call, which has none.                                                                                   |
-| `errorCode`    | The [error code](/api-conventions#error-codes) when the request was refused or failed; `null` when it was done.                                          |
-| `actor`        | Who asked: a member (`user`, with their `userId`) or an API key (`apiKey`, with its `apiKeyId`).                                                         |
-| `via`          | How they authenticated: `session` (the web app), `apiKey`, `oauth` (an application through the API, such as the command line) or `mcp`.                  |
-| `application`  | The key or the application it came through, with its `id` and the `name` it had then; `null` for a person in the web app.                                |
-| `impersonated` | Whether staff acting as the member asked. Never who.                                                                                                     |
-| `objectIds`    | The ids the request's path named, such as `postId` or `channelId`.                                                                                       |
-| `requestId`    | The request's id, as its `X-Request-Id` header gave it ([Requests and answers](/api-conventions#requests)).                                              |
+| Field          | What it holds                                                                                                                                                                                                                                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `occurredAt`   | When.                                                                                                                                                                                                                                                                                                       |
+| `operation`    | The endpoint, as the reference names it (`posts.schedule`, `channels.disconnect`), or the MCP tool, as `mcp.` followed by its name (`mcp.create_draft`).                                                                                                                                                    |
+| `status`       | The HTTP status answered; `null` for an MCP tool call, which has none.                                                                                                                                                                                                                                      |
+| `errorCode`    | The [error code](/api-conventions#error-codes) when the request was refused or failed; `null` when it was done.                                                                                                                                                                                             |
+| `actor`        | Who asked: a member (`user`, with their `userId`) or a key (`apiKey`, with its `apiKeyId`): an API key of the workspace, a [partner key](/embedding), or a [connect link](/channels#connect-links), as `connect-link:` followed by its id. `via` tells which. Whoever opened a connect link is never named. |
+| `via`          | How they authenticated: `session` (the web app), `apiKey`, `oauth` (an application through the API, such as the command line), `mcp`, `partnerKey` (a partner key, in a workspace its partner account owns) or `connectLink` (an account connected on a connect link's page).                               |
+| `application`  | The key or the application it came through, with its `id` and the `name` it had then; `null` for a person in the web app.                                                                                                                                                                                   |
+| `impersonated` | Whether staff acting as the member asked. Never who.                                                                                                                                                                                                                                                        |
+| `objectIds`    | The ids the request's path named, such as `postId` or `channelId`.                                                                                                                                                                                                                                          |
+| `requestId`    | The request's id, as its `X-Request-Id` header gave it ([Requests and answers](/api-conventions#requests)).                                                                                                                                                                                                 |
 
 The log holds no more than that: never what a request or its answer carried, a post's text, an address or a browser.
 

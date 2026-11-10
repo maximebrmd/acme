@@ -108,6 +108,7 @@ export const CreatedPartnerKeySchema = Schema.Struct({
  * source; a test keeps the two equal.
  */
 export const partnerKeyPermissions = [
+  "activity:read",
   "analytics:read",
   "assistant:use",
   "billing:read",

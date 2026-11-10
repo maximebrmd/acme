@@ -36,7 +36,7 @@ Une clé partenaire commence par `peal_partner_`, et s’envoie en `Authorizatio
 | `workspaces:write`  | Les créer, les renommer, changer leur identifiant externe   |
 | `workspaces:delete` | En supprimer un, avec tout ce qu’il contient                |
 
-Dans chaque espace de travail qu’il possède, une clé partenaire détient les [permissions](/scheduling#roles) que vous avez cochées, parmi celles dont un produit a besoin pour ses clients : `channel:*`, `media:*`, `post:*`, `analytics:read`, `assistant:use`, `webhook:*` et `billing:read`. Elle ne détient jamais ce qui revient aux personnes : les membres, les invitations, les clés d’API, les changements de facturation.
+Dans chaque espace de travail qu’il possède, une clé partenaire détient les [permissions](/scheduling#roles) que vous avez cochées, parmi celles dont un produit a besoin pour ses clients : `channel:*`, `media:*`, `post:*`, `analytics:read`, `assistant:use`, `webhook:*`, `billing:read` et `activity:read`, qui lit le [journal d’activité](/settings#activity) de l’espace de travail : ce que votre clé a demandé d’y changer, et les comptes connectés par des liens de connexion. Elle ne détient jamais ce qui revient aux personnes : les membres, les invitations, les clés d’API, les changements de facturation.
 
 ### Ce qu’atteint une clé partenaire [#isolation]
 

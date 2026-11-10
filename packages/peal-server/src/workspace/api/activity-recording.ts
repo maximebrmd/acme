@@ -3,6 +3,7 @@ import type { HttpServerResponse } from "effect/http";
 import { HttpApiError } from "effect/http-api";
 import type { Member } from "peal-contract";
 
+import { changedNothing } from "#shared/api/change-mark.ts";
 import { RequestId } from "#shared/api/request-id.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -55,14 +56,15 @@ export const outcomeOf = <E>(
 };
 
 /** How a principal authenticated to the API. */
-export const viaOf = (principal: Principal): "apiKey" | "oauth" | "session" => {
+export const viaOf = (
+  principal: Principal
+): "apiKey" | "oauth" | "partnerKey" | "session" => {
   if (principal._tag === "ApiKeyPrincipal") {
     return "apiKey";
   }
 
-  // A partner key is a key too.
   if (principal._tag === "PartnerKeyPrincipal") {
-    return "apiKey";
+    return "partnerKey";
   }
 
   return Option.isSome(principal.oauth) ? "oauth" : "session";
@@ -101,6 +103,7 @@ export interface RequestedChange {
 /**
  * Keeps a request that asks for a change in its workspace's activity log
  * once its handler answered, whatever the answer: done, refused or failed.
+ * A request whose handler said it changes nothing (a dry run) is left out.
  * The answer is the handler's, unchanged, whether or not the log took it.
  */
 export const recorded =
@@ -114,14 +117,18 @@ export const recorded =
           Effect.onExit((exit) => {
             const outcome = outcomeOf(exit);
 
-            return erased(change.operation, outcome)
-              ? Effect.void
-              : kept(journal, {
-                  ...change,
-                  outcome,
-                  requestId,
-                  via: viaOf(change.principal),
-                });
+            return changedNothing.pipe(
+              Effect.flatMap((nothing) =>
+                nothing || erased(change.operation, outcome)
+                  ? Effect.void
+                  : kept(journal, {
+                      ...change,
+                      outcome,
+                      requestId,
+                      via: viaOf(change.principal),
+                    })
+              )
+            );
           })
         )
       )

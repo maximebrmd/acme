@@ -51,6 +51,8 @@ import type {
 } from "./connect-channel.ts";
 import { ConnectChannel } from "./connect-channel.ts";
 import { ConnectLinkAddresses } from "./connect-link-addresses.ts";
+import { ConnectLinkJournal } from "./connect-link-journal.ts";
+import type { ConnectingStep } from "./connect-link-journal.ts";
 import { ConnectLinkNotFound } from "./connect-link-not-found.ts";
 import { ConnectLinkStore } from "./connect-link-store.ts";
 import { ConnectLinkTokens } from "./connect-link-tokens.ts";
@@ -286,6 +288,7 @@ export class ConnectLinks extends Context.Service<
       const tokens = yield* ConnectLinkTokens;
       const addresses = yield* ConnectLinkAddresses;
       const hosts = yield* LinkHosts;
+      const journal = yield* ConnectLinkJournal;
       const channels = yield* ChannelRepository;
       const authorizers = yield* PlatformAuthorizers;
       const connect = yield* ConnectChannel;
@@ -587,15 +590,26 @@ export class ConnectLinks extends Context.Service<
       // connected by a sign-in that started while it was open.
       const completed = Effect.fn("ConnectLinks.completed")(function* completed(
         link: ConnectLink,
-        connected: readonly Channel[]
+        connected: readonly Channel[],
+        step: ConnectingStep
       ) {
-        const done = completeLink(
-          link,
-          connected.map(({ id }) => id),
-          yield* DateTime.now
-        );
+        const channelIds = connected.map(({ id }) => id);
+        const done = completeLink(link, channelIds, yield* DateTime.now);
 
         yield* store.ended(done);
+
+        // The workspace reads that the link connected them. The accounts
+        // are connected either way: a log that cannot be kept is logged.
+        yield* journal
+          .connected(done, channelIds, step)
+          .pipe(
+            Effect.catchCause((cause) =>
+              Effect.logError(
+                "Keeping a connect link's connection in the activity log failed",
+                cause
+              )
+            )
+          );
 
         const outcome: HostedOutcome = {
           _tag: "connected",
@@ -623,7 +637,7 @@ export class ConnectLinks extends Context.Service<
           );
 
           if (outcome._tag === "connected") {
-            return yield* completed(pending, [outcome.channel]);
+            return yield* completed(pending, [outcome.channel], "complete");
           }
 
           const choice: HostedOutcome = {
@@ -656,7 +670,7 @@ export class ConnectLinks extends Context.Service<
             choice
           );
 
-          return yield* completed(pending, connected);
+          return yield* completed(pending, connected, "choose");
         }).pipe(told(link));
       });
 

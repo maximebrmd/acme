@@ -38,6 +38,7 @@ import {
   ChannelOAuthApiLive,
   ChannelsApiLive,
   ChannelsLive,
+  ConnectLinkJournalLive,
   ConnectLinksApiLive,
   DataDeletionApiLive,
   TokenCipherLive,
@@ -166,6 +167,8 @@ const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
 // channels context, which sends notices and webhook events, as publishing
 // does.
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
+  // A connect link's connections go to the workspace's activity log.
+  Layer.provide(ConnectLinkJournalLive),
   Layer.provideMerge(WebhooksContextLive),
   Layer.provideMerge(NoticesLive),
   Layer.provideMerge(

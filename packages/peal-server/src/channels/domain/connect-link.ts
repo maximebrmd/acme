@@ -216,6 +216,13 @@ export const revokeLink = (link: ConnectLink, now: DateTime.Utc): ConnectLink =>
     : link;
 
 /**
+ * The key a link stands as, wherever what it did is kept: the sign-ins it
+ * starts, the workspace's activity log.
+ */
+export const linkKeyOf = (link: ConnectLink): string =>
+  `connect-link:${link.id}`;
+
+/**
  * Who acts through a link: whoever holds it, in its workspace, to connect
  * accounts and nothing else. It stands as a single-purpose key of the
  * workspace, named after the link, so the sign-ins it starts are its own:
@@ -224,6 +231,6 @@ export const revokeLink = (link: ConnectLink, now: DateTime.Utc): ConnectLink =>
 export const linkActor = (link: ConnectLink): Actor =>
   new Actor({
     permissions: ["channel:connect"],
-    subject: { _tag: "apiKey", apiKeyId: `connect-link:${link.id}` },
+    subject: { _tag: "apiKey", apiKeyId: linkKeyOf(link) },
     workspaceId: link.workspaceId,
   });

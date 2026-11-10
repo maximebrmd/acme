@@ -25,11 +25,14 @@ export type PartnerScope = typeof PartnerScopeSchema.Type;
 /**
  * What a partner key may be given in the workspaces its partner owns: what
  * a product does for its customers (channels, media, posts, analytics,
- * the writing assistant, webhooks, reading the plan's usage). Never what
+ * the writing assistant, webhooks, reading the plan's usage), and reading
+ * the activity log, which in a workspace without members nobody else
+ * reads. Never what
  * only people do: members and invitations, API keys, billing changes,
  * deleting through the workspace itself.
  */
 export const partnerKeyPermissions: readonly Permission[] = [
+  "activity:read",
   "analytics:read",
   "assistant:use",
   "billing:read",

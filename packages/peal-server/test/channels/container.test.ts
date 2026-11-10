@@ -6,6 +6,7 @@ import { Dns } from "effect/net";
 
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { ConnectLinkJournal } from "#channels/application/connect-link-journal.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
@@ -38,7 +39,8 @@ const Neighbours = Layer.mergeAll(
     WebhookEvents.of({ publish: () => Effect.void })
   ),
   UnmeteredTest,
-  PartnerOwnership.layerNone
+  PartnerOwnership.layerNone,
+  ConnectLinkJournal.none
 );
 
 // The channels context as the server builds it, with these settings. A blank

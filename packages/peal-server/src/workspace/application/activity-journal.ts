@@ -33,10 +33,10 @@ export interface AnsweredChange {
   readonly principal: Principal;
   readonly requestId: Option.Option<string>;
   /**
-   * How it authenticated: `session` (the web app), `apiKey`, `oauth` (the
-   * command line or another client of the API), or `mcp`.
+   * How it authenticated: `session` (the web app), `apiKey`, `partnerKey`,
+   * `oauth` (the command line or another client of the API), or `mcp`.
    */
-  readonly via: "apiKey" | "mcp" | "oauth" | "session";
+  readonly via: "apiKey" | "mcp" | "oauth" | "partnerKey" | "session";
   readonly workspaceId: WorkspaceId;
 }
 

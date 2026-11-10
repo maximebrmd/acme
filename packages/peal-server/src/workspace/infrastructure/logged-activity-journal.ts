@@ -17,7 +17,7 @@ const whoOf = (principal: Principal) => {
     };
   }
 
-  // A partner key, by its own id.
+  // A partner key, by its own id: `via` says it is the partner's.
   if (principal._tag === "PartnerKeyPrincipal") {
     return {
       actor: { _tag: "apiKey" as const, apiKeyId: principal.partnerKeyId },

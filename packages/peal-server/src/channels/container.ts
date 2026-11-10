@@ -105,8 +105,8 @@ const UseCasesLive = Layer.mergeAll(
  * ChannelOversight for the staff console. Needs the
  * database (Drizzle and SqlClient), migrated, Ids, Dns, the notifications
  * context's Notify, the webhooks context's WebhookEvents, the billing
- * context's WorkspaceEntitlements and the workspace context's
- * PartnerOwnership.
+ * context's WorkspaceEntitlements, the workspace context's
+ * PartnerOwnership and a ConnectLinkJournal.
  */
 export const ChannelsLive = UseCasesLive.pipe(Layer.provideMerge(AdaptersLive));
 
@@ -142,3 +142,9 @@ export { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-ciphe
 
 /** The token refresh sweep and the daily reconnect warnings. */
 export { ChannelsCronsLive } from "#channels/infrastructure/crons.ts";
+
+/**
+ * ConnectLinkJournal in the workspaces' activity logs. Needs the activity
+ * context's ActivityLog.
+ */
+export { LoggedConnectLinkJournal as ConnectLinkJournalLive } from "#channels/infrastructure/logged-connect-link-journal.ts";
