@@ -436,6 +436,41 @@ describe("a sign-in without the permission to schedule and publish", () => {
 
 describe("peal post", () => {
   it.effect(
+    "says a post waits for an approval, where the workspace asks for one, rather than that it is scheduled",
+    () =>
+      Effect.gen(function* waits() {
+        const session = yield* signedIn();
+
+        yield* Ref.update(session.studio.state, (state) => ({
+          ...state,
+          policy: "always" as const,
+        }));
+
+        const printed = yield* session.printed(
+          note("--channel", mastodonId, "--at", "2026-11-20T09:00:00Z")
+        );
+
+        assert.include(printed, "waits for an approval");
+        assert.include(printed, "nothing goes out until then");
+        assert.include(printed, "peal approvals list");
+        assert.notInclude(printed, "Scheduled for");
+
+        // Scripts read the status itself.
+        const json = yield* session.printed(
+          note(
+            "--channel",
+            mastodonId,
+            "--at",
+            "2026-11-21T09:00:00Z",
+            "--json"
+          )
+        );
+
+        assert.include(json, '"status": "awaitingApproval"');
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
     "sends nothing unless told when: publishing is never the default",
     () =>
       Effect.gen(function* refuses() {

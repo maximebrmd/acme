@@ -40,7 +40,7 @@ export const GetPostReview = Tool.make("get_post_review", {
 export const ApprovePost = Tool.make("approve_post", {
   dependencies: [CurrentMember],
   description:
-    "Approves a post that waits for an approval, in the user's name: it is scheduled for the time it was asked for, and then goes out on its channels, which cannot be undone once published. Approved after that time, nothing is published late: it goes back to draft, still approved, and `late` is true. Recorded with who approved and when. Only a post a member asked for in person can be approved here: one an application or an API key asked for waits for a person, in the web app or through a review link. Approve only a post the user named, after showing them what it says (get_post).",
+    "Approves a post that waits for an approval, in the user's name: it is scheduled for the time it was asked for, and then goes out on its channels, which cannot be undone once published. Approved after that time, nothing is published late: it goes back to draft, still approved, and `late` is true. Recorded with who approved and when. Only a post a member asked for in person can be approved here: one an application or an API key asked for waits for a person, in the web app or through a review link. Approve only a post the user named, after showing them what it says (get_post). Approving is publishing: it needs the scope workspace:publish, which the user grants when they connect this client, and a role that approves posts (owner, admin or editor).",
   failure: ToolRefused,
   parameters: Schema.Struct({ postId }),
   success: ApprovalOutcomeSchema,
@@ -53,7 +53,7 @@ export const ApprovePost = Tool.make("approve_post", {
 export const RequestChanges = Tool.make("request_changes", {
   dependencies: [CurrentMember],
   description:
-    "Sends a post that waits for an approval back to draft, with a comment that says what to change, in the user's name: it no longer goes out at its time, and its author and whoever asked are told. Ask for changes only on a post the user named, with the comment they gave.",
+    "Sends a post that waits for an approval back to draft, with a comment that says what to change, in the user's name: it no longer goes out at its time, and its author and whoever asked are told. Ask for changes only on a post the user named, with the comment they gave. Needs the scope workspace:publish and a role that approves posts, as approving does.",
   failure: ToolRefused,
   parameters: Schema.Struct({
     comment: ChangesRequestSchema.fields.comment,

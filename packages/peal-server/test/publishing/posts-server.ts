@@ -7,6 +7,7 @@ import { ListChannels } from "#channels/application/list-channels.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
+import { PostEvents } from "#publishing/application/post-events.ts";
 import { publishingBehind, publishingWorkers } from "#publishing/container.ts";
 import { FakePlatformPublisher } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
@@ -48,16 +49,19 @@ export const attachableVideo: MediaAssetId = MediaAssetIdSchema.make(
  * with the media posts may show from `media`, and the posts a month allows
  * from `allowance`.
  */
-export const postsServerBehind = <G, E2, R2, E, R>(
+export const postsServerBehind = <G, E2, R2, E, R, H, R4>(
   gate: Layer.Layer<ApprovalGate | G, E2, R2>,
   media: Layer.Layer<AttachableMedia, E, R>,
-  allowance: ReturnType<typeof postAllowance> = postAllowance()
+  allowance: ReturnType<typeof postAllowance>,
+  // Who hears what happens to posts, and what a test reads it with.
+  events: Layer.Layer<PostEvents | H, never, R4>
 ) =>
   publishingWorkers(FakePlatformPublisher).pipe(
     Layer.provideMerge(
       publishingBehind(
         gate,
-        Layer.mergeAll(ListedWorkspaceChannels, media, allowance)
+        Layer.mergeAll(ListedWorkspaceChannels, media, allowance),
+        events
       )
     ),
     Layer.provideMerge(RecordingPublicationOutcomes),
@@ -77,7 +81,7 @@ export const postsServerBehind = <G, E2, R2, E, R>(
 export const postsServerWith = <E, R>(
   media: Layer.Layer<AttachableMedia, E, R>,
   allowance: ReturnType<typeof postAllowance> = postAllowance()
-) => postsServerBehind(ApprovalGate.open, media, allowance);
+) => postsServerBehind(ApprovalGate.open, media, allowance, PostEvents.none);
 
 export const PostsServerTest = postsServerWith(
   attachableMedia([

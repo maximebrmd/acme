@@ -64,7 +64,7 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 
 // The use cases over their adapters, asking whatever ApprovalGate they are
 // given before a post is scheduled.
-const publishingOver = <E, R, E2, R2, E3, R3, R4>(
+const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
@@ -72,7 +72,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, R4>(
   >,
   accounts: Layer.Layer<AccountRules, E2, R2>,
   origins: Layer.Layer<PostOrigins, E3, R3>,
-  events: Layer.Layer<PostEvents, never, R4>
+  events: Layer.Layer<PostEvents | H, never, R4>
 ) =>
   Layer.mergeAll(
     PostDrafts.layer,
@@ -143,16 +143,16 @@ export const publishingWith = <
 /**
  * The same behind `gate`, which says which posts wait for an approval, and
  * may bring what a test reads it with; `events` hears what happens to
- * posts (by default, nobody).
+ * posts, and may bring what a test reads that with too.
  */
-export const publishingBehind = <G, E3, R3, E, R, R4 = never>(
+export const publishingBehind = <G, E3, R3, E, R, H, R4>(
   gate: Layer.Layer<ApprovalGate | G, E3, R3>,
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
     R
   >,
-  events: Layer.Layer<PostEvents, never, R4> = PostEvents.none
+  events: Layer.Layer<PostEvents | H, never, R4>
 ) =>
   publishingOver(
     references,

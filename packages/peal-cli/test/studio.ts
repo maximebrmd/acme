@@ -1401,7 +1401,13 @@ export const studioGroupsLive = (studio: Studio) =>
                 ? { at: studioNow, timeZone: payload.when.timeZone ?? "UTC" }
                 : { at: payload.when.at, timeZone: payload.when.timeZone };
 
-            const status = yield* checkTime(when.at, when.timeZone);
+            const asked = yield* checkTime(when.at, when.timeZone);
+
+            // Where every post waits, this one does: nothing goes out.
+            const status =
+              before.policy === "always"
+                ? ("awaitingApproval" as const)
+                : asked;
 
             yield* checkContent(
               payload.channelIds,

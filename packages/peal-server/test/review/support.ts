@@ -1,6 +1,7 @@
 import { Context, Effect, Layer, Option, Ref } from "effect";
 import type { Scope } from "effect";
 
+import { PostEvents } from "#publishing/application/post-events.ts";
 import { ApprovalIntake } from "#review/application/approval-intake.ts";
 import type { VisitorContact } from "#review/application/ports/comment-store.ts";
 import { MediaPreviews } from "#review/application/ports/media-previews.ts";
@@ -29,10 +30,15 @@ import { SecureLinkTokens } from "#review/infrastructure/secure-link-tokens.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
-import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { PostId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { setTime } from "#test/publishing/infrastructure/harness.ts";
 import { postsServerBehind } from "#test/publishing/posts-server.ts";
-import { actorAs, attachableMedia } from "#test/publishing/support.ts";
+import {
+  actorAs,
+  attachableMedia,
+  postAllowance,
+} from "#test/publishing/support.ts";
+import { Heard } from "#test/review/heard.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 // The review context over Postgres, with publishing as the server runs it
@@ -95,6 +101,26 @@ const Recording = Layer.effectContext(
   })
 );
 
+// PostEvents that keeps what it is told, as the webhooks would be.
+const Hearing = Layer.effectContext(
+  Effect.gen(function* Hearing() {
+    const heard = yield* Ref.make<readonly (readonly [string, PostId])[]>([]);
+
+    const hear = (kind: string) => (post: { readonly id: PostId }) =>
+      Ref.update(heard, (events) => [...events, [kind, post.id] as const]);
+
+    return Context.make(
+      PostEvents,
+      PostEvents.of({
+        cancelled: hear("cancelled"),
+        confirmed: hear("confirmed"),
+        scheduled: hear("scheduled"),
+        unscheduled: hear("unscheduled"),
+      })
+    ).pipe(Context.add(Heard, Heard.of({ events: Ref.get(heard) })));
+  })
+);
+
 const Stores = Layer.mergeAll(
   DrizzleApprovalStore,
   DrizzleCommentStore,
@@ -148,7 +174,9 @@ export const reviewServerWith = <E, R>(
         guard
       )
     ),
-    Layer.provideMerge(postsServerBehind(Gate, attachableMedia()))
+    Layer.provideMerge(
+      postsServerBehind(Gate, attachableMedia(), postAllowance(), Hearing)
+    )
   );
 
 export const ReviewServerTest = reviewServerWith(VisitorGuard.open);

@@ -4,6 +4,7 @@ import type { Layer } from "effect";
 
 import { HeldPosts } from "#publishing/application/held-posts.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
+import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { newId } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -27,6 +28,7 @@ import {
   actorIn,
   attachableMedia,
   contentOf,
+  postAllowance,
 } from "#test/publishing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
@@ -40,7 +42,12 @@ const start = "2026-06-15T07:00:00Z";
 
 const at8 = scheduleIn("2026-06-15T08:00:00Z");
 
-const GatedServer = postsServerBehind(FakeApprovalGate, attachableMedia());
+const GatedServer = postsServerBehind(
+  FakeApprovalGate,
+  attachableMedia(),
+  postAllowance(),
+  PostEvents.none
+);
 
 const onGatedServer = <A, E>(
   test: Effect.Effect<A, E, Layer.Success<typeof GatedServer>>

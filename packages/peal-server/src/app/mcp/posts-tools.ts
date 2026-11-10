@@ -201,6 +201,9 @@ const reachesThePublic =
 const refusedWhole =
   "The post is checked against every channel's platform first (text length, media types, sizes and counts, required options, and what the account itself refuses): when anything is wrong, nothing is scheduled, and the refusal lists every violation at once, each with its channel, and its field or media, so one more call can fix them all.";
 
+const mayWait =
+  "In a workspace that asks for approvals, what this client sends or schedules is not refused but waits: the post answered has the status awaitingApproval, keeps its time, and goes out only once a person approves it (in the web app, or through a review link), or goes back to draft when that time passes first. Tell the user it waits; do not send it again.";
+
 const needsPublishing =
   "Needs the scope workspace:publish, which the user grants when they connect this client, and a role that schedules posts (owner, admin or editor).";
 
@@ -235,7 +238,7 @@ export const ListPostAttempts = Tool.make("list_post_attempts", {
 
 export const SchedulePost = Tool.make("schedule_post", {
   dependencies: [CurrentMember],
-  description: `Schedules a draft to go out at an instant: on \`channelIds\` when given, which become its channels (those it had keep their options, new ones have none), otherwise on the channels it has. ${reachesThePublic} ${refusedWhole} Until its time, unschedule_post takes it back to draft and cancel_post cancels it. On a server that bills, the month must have room for it in the workspace's plan. ${needsPublishing}`,
+  description: `Schedules a draft to go out at an instant: on \`channelIds\` when given, which become its channels (those it had keep their options, new ones have none), otherwise on the channels it has. ${reachesThePublic} ${refusedWhole} Until its time, unschedule_post takes it back to draft and cancel_post cancels it. On a server that bills, the month must have room for it in the workspace's plan. ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     at,
@@ -258,7 +261,7 @@ export const SchedulePost = Tool.make("schedule_post", {
 
 export const PublishPost = Tool.make("publish_post", {
   dependencies: [CurrentMember],
-  description: `Publishes a draft, or a post scheduled for later, now, on the channels it has: it goes out within seconds, and cannot be stopped once it started. ${reachesThePublic} ${refusedWhole} Then read it with get_post until its status is finished: its outcome and each target say how it went. ${needsPublishing}`,
+  description: `Publishes a draft, or a post scheduled for later, now, on the channels it has: it goes out within seconds, and cannot be stopped once it started. ${reachesThePublic} ${refusedWhole} Then read it with get_post until its status is finished: its outcome and each target say how it went. ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({ postId }),
   success: PostSchema,
@@ -270,7 +273,7 @@ export const PublishPost = Tool.make("publish_post", {
 
 export const ReschedulePost = Tool.make("reschedule_post", {
   dependencies: [CurrentMember],
-  description: `Moves a scheduled post to another instant, replacing the time it had; what it says and where it goes stay. A draft is scheduled with schedule_post, and a post already publishing or finished is refused. ${reachesThePublic} ${needsPublishing}`,
+  description: `Moves a scheduled post to another instant, replacing the time it had; what it says and where it goes stay. A draft is scheduled with schedule_post, and a post already publishing or finished is refused. ${reachesThePublic} ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({ at, postId, timeZone }),
   success: PostSchema,
@@ -294,7 +297,7 @@ export const CancelPost = Tool.make("cancel_post", {
 
 export const CreatePost = Tool.make("create_post", {
   dependencies: [CurrentMember],
-  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. ${needsPublishing}`,
+  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelIds: NewPostSchema.fields.channelIds,

@@ -9,6 +9,7 @@ import { PostReview } from "#review/application/post-review.ts";
 import { ApprovalNotPending } from "#review/domain/approval-not-pending.ts";
 import { reviewerOf } from "#review/domain/reviewer.ts";
 import { newId } from "#shared/application/ids.ts";
+import type { Actor } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
@@ -24,6 +25,7 @@ import {
 } from "#test/publishing/infrastructure/harness.ts";
 import { connect } from "#test/publishing/posts-server.ts";
 import { actorAs, apiKeyIn, contentOf } from "#test/publishing/support.ts";
+import { Heard } from "#test/review/heard.ts";
 import {
   impersonating,
   onReviewServerAt,
@@ -212,6 +214,94 @@ describe("a workspace where contributors and applications wait", () => {
             "settled",
             "approved",
           ]);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "holds a post sent in one call as one scheduled in two, and tells nobody it is scheduled until it is approved",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* sends() {
+          const scheduling = yield* PostScheduling;
+          const review = yield* PostReview;
+          const heard = Heard.use(({ events }) => events);
+          const { channelId, contributor, editor, workspaceId } = yield* team;
+
+          yield* withPolicy(workspaceId, "contributorsAndApplications");
+
+          const sent = (actor: Actor, text: string) =>
+            scheduling.send(actor, {
+              at: Option.some(at8.at),
+              channelIds: [channelId],
+              content: contentOf(text),
+              idempotency: Option.none(),
+              timeZone: at8.timeZone,
+            });
+
+          // An application's, and a contributor's, who may not schedule
+          // but may ask here.
+          const byKey = yield* sent(apiKeyIn(workspaceId), "Sent by a key.");
+          const byContributor = yield* sent(contributor, "Sent by a member.");
+
+          assert.deepStrictEqual(
+            [byKey.post.status._tag, byContributor.post.status._tag],
+            ["awaitingApproval", "awaitingApproval"]
+          );
+          assert.isTrue(
+            Option.isNone((yield* storedPost(byKey.post.id)).execution)
+          );
+          assert.deepStrictEqual(yield* heard, []);
+
+          // An editor's goes straight out, and is told at once.
+          const byEditor = yield* sent(editor, "Sent by an editor.");
+
+          assert.strictEqual(byEditor.post.status._tag, "scheduled");
+          assert.deepStrictEqual(yield* heard, [
+            ["scheduled", byEditor.post.id],
+          ]);
+
+          // Approved, the key's post is scheduled, and told then.
+          yield* review.approve(editor, byKey.post.id);
+
+          assert.deepStrictEqual(yield* heard, [
+            ["scheduled", byEditor.post.id],
+            ["scheduled", byKey.post.id],
+          ]);
+
+          // Taken back while it waits, the contributor's was never
+          // scheduled: nothing says it was unscheduled.
+          yield* scheduling.unschedule(contributor, byContributor.post.id);
+
+          assert.lengthOf(yield* heard, 2);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "sends nothing for someone who may not schedule where nobody approves",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* refused() {
+          const scheduling = yield* PostScheduling;
+          const { channelId, contributor } = yield* team;
+
+          assert.deepStrictEqual(
+            yield* Effect.flip(
+              scheduling.send(contributor, {
+                at: Option.none(),
+                channelIds: [channelId],
+                content: contentOf("Not theirs to send."),
+                idempotency: Option.none(),
+                timeZone: at8.timeZone,
+              })
+            ),
+            new MissingPermission({ permission: "post:schedule" })
+          );
         })
       ),
     timeout

@@ -3,7 +3,7 @@ import { Argument, Command, Flag } from "effect/cli";
 import { ApprovalPolicySchema } from "peal-contract";
 import type { ApprovalPolicy, ApprovalRequest } from "peal-contract";
 
-import { explain } from "#explain.ts";
+import { explain, explainingPublishing } from "#explain.ts";
 import { columns, instant } from "#print.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
@@ -81,7 +81,7 @@ const approve = Command.make(
 
     const { approval, late } = yield* client.review
       .approve({ params: { postId, workspaceId: workspace.id } })
-      .pipe(Effect.mapError(explain(url)));
+      .pipe(explainingPublishing(url));
 
     yield* Console.log(
       late
@@ -91,7 +91,7 @@ const approve = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Approve a post that waits: it is scheduled for the time it was asked for. Approved after that time, it goes back to draft instead, still approved. Needs the right to approve posts."
+    "Approve a post that waits: it is scheduled for the time it was asked for. Approved after that time, it goes back to draft instead, still approved. Approving is publishing: it needs a sign-in that may schedule and publish, and a role that approves posts."
   )
 );
 
@@ -119,7 +119,7 @@ const requestChanges = Command.make(
         params: { postId, workspaceId: workspace.id },
         payload: { comment },
       })
-      .pipe(Effect.mapError(explain(url)));
+      .pipe(explainingPublishing(url));
 
     yield* Console.log(
       `Asked for changes to post ${postId}: it is a draft again, with your comment, and its author is told.`
