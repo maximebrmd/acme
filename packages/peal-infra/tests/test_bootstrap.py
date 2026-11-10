@@ -108,3 +108,25 @@ def test_an_account_s_name_is_read_as_written() -> None:
 
     assert pattern.search("cloud.user ALL=(ALL) NOPASSWD:ALL")
     assert not pattern.search("cloudXuser ALL=(ALL) NOPASSWD:ALL")
+
+
+def _refused(connected_as: str, bootstrap_user: str) -> bool:
+    """Whether the ssh role stops, connected as this account."""
+    guard = _ssh_task("Refuse to remove the account Ansible is connected as")
+    condition = guard["ansible.builtin.assert"]["that"]
+    return not ansible_render(
+        "{{ " + condition + " }}",
+        ansible_user=connected_as,
+        ssh_image_users=_leaving(bootstrap_user),
+    )
+
+
+def test_the_account_ansible_is_connected_as_is_never_removed() -> None:
+    """`site.yml -e ansible_user=ubuntu` would otherwise delete the account
+    the run is logged in as, in the middle of the play."""
+    assert _refused("ubuntu", "ubuntu") is True
+    assert _refused("ops", "ubuntu") is False
+    assert _refused("root", "root") is False
+    assert SSH_NAMES.index("Refuse to remove the account Ansible is connected as") < SSH_NAMES.index(
+        "Remove the account the image came with"
+    )

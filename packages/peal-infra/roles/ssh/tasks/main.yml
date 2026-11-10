@@ -37,7 +37,17 @@
 # goes, with its home, even if a session of the bootstrap is still open
 # (force), and with the sudo rule cloud-init wrote for it. cloud-init makes
 # it once per instance, not at each boot; a server made again from a snapshot
-# is a new instance, and the next run removes it again.
+# is a new instance, and the next run removes it again. A run connected as
+# that account itself (`-e ansible_user=…`) stops first: it would delete the
+# account under its own session.
+- name: Refuse to remove the account Ansible is connected as
+  ansible.builtin.assert:
+    that: ansible_user | default('') not in ssh_image_users
+    fail_msg: >-
+      This run is connected as {{ ansible_user | default('') }}, the account
+      the image came with, which this role removes: run it as {{ admin_user }}.
+    quiet: true
+
 - name: Remove the account the image came with
   ansible.builtin.user:
     name: "{{ item }}"
