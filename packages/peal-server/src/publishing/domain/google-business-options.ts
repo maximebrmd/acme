@@ -48,8 +48,11 @@ export type GoogleBusinessCallToAction =
   typeof GoogleBusinessCallToActionSchema.Type;
 
 /**
- * The longest title of an event or an offer, in characters: the count
- * Google's own editor shows (its reference names no limit).
+ * The longest title of an event or an offer, in characters: the figure
+ * commonly reported for Google's editor. Google's own pages name none: not
+ * the localPosts reference (`LocalPostEvent.title`, "Name of the event"),
+ * nor Business Profile Help's page on posts, as read in November 2026. A
+ * title Google finds too long fails the post with Google's own refusal.
  */
 export const maxGoogleBusinessTitleLength = 58;
 

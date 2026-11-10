@@ -101,9 +101,11 @@ const minute = 60 * second;
 //   ">"; no post without its one video.
 // - Pinterest: a Pin's description, at most 800 characters (pins/create);
 //   no Pin without an image or a video; up to 5 images, a carousel.
-// - Google Business Profile: a local post's `summary` takes 1,500
-//   characters, the count Google's own editor shows (its reference names
-//   no limit). How many photos one post takes is not stated either.
+// - Google Business Profile: a local post's `summary` is held to 1,500
+//   characters, the figure commonly reported for Google's editor. Google's
+//   own pages name none (the localPosts reference, "Description/body of
+//   the local post", and Business Profile Help's page on posts, as read in
+//   November 2026). How many photos one post takes is not stated either.
 //
 // "Characters" with no other word count code points, the stricter reading.
 //
