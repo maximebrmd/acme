@@ -10,6 +10,7 @@ import {
 import { Authentication } from "./authentication.ts";
 import { ChannelNotFound } from "./channel-not-found.ts";
 import { Forbidden } from "./forbidden.ts";
+import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { InboxActionFailed } from "./inbox-action-failed.ts";
 import { InboxActionUnavailable } from "./inbox-action-unavailable.ts";
 import { InboxCommentGone } from "./inbox-comment-gone.ts";
@@ -17,6 +18,10 @@ import { InboxCommentNotFound } from "./inbox-comment-not-found.ts";
 import { InboxReplyNotFound } from "./inbox-reply-not-found.ts";
 import { InboxThreadNotFound } from "./inbox-thread-not-found.ts";
 import { PlatformSchema } from "./platform.ts";
+import {
+  idempotencyKeyLifetimeHours,
+  maxIdempotencyKeyLength,
+} from "./posts.ts";
 import { ReplyInvalid } from "./reply-invalid.ts";
 import { ReplyPending } from "./reply-pending.ts";
 import { ReplyStatusConflict } from "./reply-status-conflict.ts";
@@ -362,13 +367,21 @@ export class InboxApi extends HttpApiGroup.make("inbox")
         InboxActionUnavailable,
         ReplyInvalid,
         ReplyPending,
+        IdempotencyKeyReused,
       ],
+      headers: {
+        "idempotency-key": Schema.optionalKey(
+          Schema.String.check(
+            Schema.isBetweenLength(1, maxIdempotencyKeyLength)
+          )
+        ),
+      },
       params: comment,
       payload: NewInboxReplySchema,
       success: InboxReplySchema.pipe(HttpApiSchema.status(202)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply \`sending\`, and the thread shows how it ended. A reply whose outcome is unknown is \`unconfirmed\` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 \`ReplyPending\`). ${acting}`,
+        description: `Answers a comment in public, as the channel's account: everyone who sees the post sees the reply. The reply is checked against the platform's length, journalled, and sent by a job: the answer is the reply \`sending\`, and the thread shows how it ended. A reply whose outcome is unknown is \`unconfirmed\` and never sent again: check the platform, then confirm it. While a reply to a comment is on its way or unconfirmed, another to the same comment is refused (409 \`ReplyPending\`), whichever request came first when two are sent together. With an \`Idempotency-Key\` header (any text of your choosing, ${maxIdempotencyKeyLength} characters at most, new for each reply), the request is safe to send again after a lost answer: within ${idempotencyKeyLifetimeHours} hours the same key with the same comment and text answers the reply the first request made, however it stands, and makes no other; with another comment or text it is refused (409 \`IdempotencyKeyReused\`). ${acting}`,
         summary: "Reply to a comment",
       })
     ),

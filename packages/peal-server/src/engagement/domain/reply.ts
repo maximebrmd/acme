@@ -119,14 +119,28 @@ export class Reply extends Schema.Class<Reply>(
 }) {}
 
 /**
- * How long after it was written a reply may still be `sending`: its job
- * waits its turn at the channel's gate, behind a video being uploaded at
- * worst, and retries a database that is down for a few minutes. One still
- * on its way past that has no job left to settle it (the job gave up on
- * the database, or was lost): it is handed to a person as `unconfirmed`,
- * never sent again.
+ * How long after it was written a reply may still be `sending` before it
+ * is handed to a person as `unconfirmed`: its job usually ends in seconds,
+ * and retries a database that is down for a few minutes. Past that the
+ * job gave up, was lost, or still waits its turn at the channel's gate
+ * behind long uploads: whichever it is, the handover stops it for good
+ * (`SendReply.settleStranded`), so the reply is never sent after.
  */
 export const strandedAfter = Duration.hours(1);
+
+/**
+ * The longest a call to a platform that a gate claimed can still be
+ * making: its requests are each bounded, and it makes a few. A reply
+ * whose call was claimed more recently is never handed over, as the call
+ * may yet answer.
+ */
+export const callBound = Duration.minutes(10);
+
+/**
+ * How long an idempotency key names the reply it made: the same key with
+ * the same request answers that reply, and never makes another.
+ */
+export const replyKeyLifetime = Duration.hours(24);
 
 type Transition = Result.Result<Reply, InvalidReplyTransition>;
 

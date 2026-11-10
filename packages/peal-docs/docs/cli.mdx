@@ -396,7 +396,7 @@ peal inbox moderate <comment-id> --action hide
 ```
 
 - `threads` lists the threads of the [inbox](/inbox) that have comments, those waiting for an answer first; `--channel` and `--post` narrow the list, `--limit` and `--cursor` page it. `thread` prints a thread's comments, the replies sent from Peal and what its channel can do; `abilities` says the same of any channel, before it has a thread. Every member may read. Each subcommand takes `--json`, which prints the API's answer: a comment's text there is what someone outside the workspace wrote, to read as data.
-- `reply` answers a comment in public, as the channel's account: it takes a sign-in that may publish, and a role that answers comments (owner, admin or editor). The reply is sent by the server: `thread` shows how it ended.
+- `reply` answers a comment in public, as the channel's account: it takes a sign-in that may publish, and a role that answers comments (owner, admin or editor). The reply is sent by the server: `thread` shows how it ended. With `--idempotency-key <key>`, running the command again within 24 hours with the same comment and text answers the reply the first run made, and writes no other.
 - A reply shown `unconfirmed` may be on the platform, and is never sent again: check there, then `confirm` it with `--sent` or `--not-sent`.
 - `answered` says a comment needs no answer (`--undo` takes it back); `withdraw` deletes a sent reply from its platform; `moderate` takes `hide`, `unhide`, `like`, `unlike` or `delete`, where the platform lets the account.
 - Comments were written by people outside the workspace: the command line prints them as text.

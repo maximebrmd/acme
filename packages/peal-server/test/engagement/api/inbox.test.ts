@@ -131,6 +131,7 @@ describe("the inbox endpoints", () => {
         const client = yield* clientAs(world, editor);
 
         const reply = yield* client.inbox.reply({
+          headers: {},
           params: { ...params, commentId: commentId(101) },
           payload: { text: "Thank you!" },
         });
@@ -141,6 +142,7 @@ describe("the inbox endpoints", () => {
 
         const again = yield* client.inbox
           .reply({
+            headers: {},
             params: { ...params, commentId: commentId(101) },
             payload: { text: "Thank you!" },
           })
@@ -209,7 +211,11 @@ describe("the inbox endpoints", () => {
         const comment101 = { ...params, commentId: commentId(101) };
 
         const forbidden = yield* viewer.inbox
-          .reply({ params: comment101, payload: { text: "Hello" } })
+          .reply({
+            headers: {},
+            params: comment101,
+            payload: { text: "Hello" },
+          })
           .pipe(Effect.flip);
 
         assert.instanceOf(forbidden, Forbidden);
@@ -225,7 +231,11 @@ describe("the inbox endpoints", () => {
         );
 
         const long = yield* member.inbox
-          .reply({ params: comment101, payload: { text: "a".repeat(490) } })
+          .reply({
+            headers: {},
+            params: comment101,
+            payload: { text: "a".repeat(490) },
+          })
           .pipe(Effect.flip);
 
         assert.instanceOf(long, ReplyInvalid);
@@ -235,7 +245,7 @@ describe("the inbox endpoints", () => {
         );
 
         const blank = yield* member.inbox
-          .reply({ params: comment101, payload: { text: "   " } })
+          .reply({ headers: {}, params: comment101, payload: { text: "   " } })
           .pipe(Effect.flip);
 
         assert.instanceOf(blank, ReplyInvalid);

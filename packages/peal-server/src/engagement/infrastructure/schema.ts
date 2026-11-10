@@ -129,6 +129,8 @@ export const comments = engagement.table(
  * A reply sent from Peal as the channel's account, and the journal of its
  * sending: written `sending` before any call, `attempted_at` set and
  * committed before the request that can put it out, then how it ended.
+ * Rows are inserted once and then only moved from the status they were
+ * read in (`EngagementStore.advanceReply`).
  * `author_id` is the member who wrote it, null for an API key or once
  * their account is closed (no foreign key: Better Auth's table is another
  * context's).
@@ -138,12 +140,18 @@ export const replies = engagement.table(
   {
     attemptedAt: instant("attempted_at"),
     authorId: uuid("author_id"),
+    // When a gate last claimed the reply for a call to its platform: a
+    // call that may still be making keeps the reply from being handed over.
+    callClaimedAt: instant("call_claimed_at"),
     channelId: uuid("channel_id").notNull(),
     commentId: uuid("comment_id")
       .notNull()
       .references(() => comments.id, { onDelete: "cascade" }),
     createdAt: instant("created_at").notNull(),
     id: uuid("id").primaryKey(),
+    // The SHA-256 of the idempotency key the request came with, never the
+    // key; null without one, and once the key is forgotten.
+    keyDigest: text("key_digest"),
     permalink: text("permalink"),
     platformCommentId: text("platform_comment_id"),
     reason: text("reason"),
@@ -158,6 +166,15 @@ export const replies = engagement.table(
   (table) => [
     index("replies_thread").on(table.threadId, table.id),
     index("replies_comment").on(table.commentId),
+    // One reply to a comment is on its way or unconfirmed at a time: two
+    // requests sent together journal one, whatever each read before.
+    uniqueIndex("replies_pending_comment")
+      .on(table.commentId)
+      .where(sql`${table.status} IN ('sending', 'unconfirmed')`),
+    // One reply an idempotency key, in its workspace.
+    uniqueIndex("replies_key")
+      .on(table.workspaceId, table.keyDigest)
+      .where(sql`${table.keyDigest} IS NOT NULL`),
     // The replies no job settled, which the collection hands to a person.
     index("replies_sending")
       .on(table.createdAt, table.id)

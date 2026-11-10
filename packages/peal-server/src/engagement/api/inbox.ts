@@ -5,6 +5,7 @@ import {
   ChannelNotFound,
   CurrentMember,
   defaultInboxPageSize,
+  IdempotencyKeyReused,
   InboxActionFailed,
   InboxActionUnavailable,
   InboxCommentGone,
@@ -210,7 +211,7 @@ export const InboxHandlers = HttpApiBuilder.group(
             })
           );
         }),
-      reply: ({ params, payload }) =>
+      reply: ({ headers, params, payload }) =>
         Effect.gen(function* reply() {
           const actor = actorOf(yield* CurrentMember);
 
@@ -219,19 +220,27 @@ export const InboxHandlers = HttpApiBuilder.group(
             commentNotFound
           );
 
-          return yield* replies.reply(actor, commentId, payload.text).pipe(
-            Effect.map(toReplyView),
-            Effect.catchTags({
-              AbilityUnavailable: unavailable,
-              CommentGone: commentGone,
-              CommentNotFound: commentNotFound,
-              DatabaseError: Effect.die,
-              MissingPermission: forbidden,
-              ReplyEmpty: empty,
-              ReplyPending: pending,
-              ReplyTooLong: tooLong,
-            })
-          );
+          return yield* replies
+            .reply(
+              actor,
+              commentId,
+              payload.text,
+              Option.fromUndefinedOr(headers["idempotency-key"])
+            )
+            .pipe(
+              Effect.map(toReplyView),
+              Effect.catchTags({
+                AbilityUnavailable: unavailable,
+                CommentGone: commentGone,
+                CommentNotFound: commentNotFound,
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+                ReplyEmpty: empty,
+                ReplyKeyReused: () => Effect.fail(new IdempotencyKeyReused()),
+                ReplyPending: pending,
+                ReplyTooLong: tooLong,
+              })
+            );
         }),
       setAnswered: ({ params, payload }) =>
         Effect.gen(function* setAnswered() {

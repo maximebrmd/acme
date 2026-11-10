@@ -12,7 +12,7 @@ import {
 import type { Comment } from "#engagement/domain/comment.ts";
 import { abilitiesOf } from "#engagement/domain/engagement-abilities.ts";
 import type { EngagementAbility } from "#engagement/domain/engagement-abilities.ts";
-import type { InvalidReplyTransition } from "#engagement/domain/invalid-reply-transition.ts";
+import { InvalidReplyTransition } from "#engagement/domain/invalid-reply-transition.ts";
 import { abilityFor } from "#engagement/domain/moderation.ts";
 import type { ModerationAction } from "#engagement/domain/moderation.ts";
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
@@ -21,6 +21,7 @@ import { maxReplyLength, outgoingText } from "#engagement/domain/reply-text.ts";
 import {
   answers,
   confirmReply,
+  replyKeyLifetime,
   withdrawReply,
   writeReply,
 } from "#engagement/domain/reply.ts";
@@ -32,6 +33,7 @@ import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { storableText } from "#shared/domain/platform-text.ts";
 
 import { AbilityUnavailable } from "./ability-unavailable.ts";
 import { CommentGone } from "./comment-gone.ts";
@@ -45,6 +47,7 @@ import { ReplyJobs } from "./ports/reply-jobs.ts";
 import { ReplyLimits } from "./ports/reply-limits.ts";
 import { ReplySender } from "./ports/reply-sender.ts";
 import { ReplyEmpty } from "./reply-empty.ts";
+import { ReplyKeyReused } from "./reply-key-reused.ts";
 import { ReplyNotFound } from "./reply-not-found.ts";
 import { ReplyPending } from "./reply-pending.ts";
 import { ReplyTooLong } from "./reply-too-long.ts";
@@ -87,7 +90,13 @@ export class EngagementReplies extends Context.Service<
     readonly reply: (
       actor: Actor,
       commentId: CommentId,
-      text: string
+      text: string,
+      /**
+       * The request's idempotency key, if it came with one: within
+       * `replyKeyLifetime` the same key with the same comment and text
+       * answers the reply the first request made, however it stands.
+       */
+      key?: Option.Option<string>
     ) => Effect.Effect<
       Reply,
       | AbilityUnavailable
@@ -95,6 +104,7 @@ export class EngagementReplies extends Context.Service<
       | CommentNotFound
       | Refused
       | ReplyEmpty
+      | ReplyKeyReused
       | ReplyPending
       | ReplyTooLong
     >;
@@ -217,12 +227,16 @@ export class EngagementReplies extends Context.Service<
       const reply = Effect.fn("EngagementReplies.reply")(function* reply(
         actor: Actor,
         commentId: CommentId,
-        text: string
+        typed: string,
+        key: Option.Option<string> = Option.none()
       ) {
         yield* Effect.fromResult(authorize(actor, "engagement:reply"));
 
         const comment = yield* commentOf(actor, commentId);
         const channel = yield* able(comment.channelId, "reply");
+
+        // What a member typed is made storable like any text from outside.
+        const text = storableText(typed, maxReplyLength + 1);
 
         if (text.trim() === "") {
           return yield* new ReplyEmpty();
@@ -243,31 +257,77 @@ export class EngagementReplies extends Context.Service<
           return yield* new ReplyTooLong(overflow.value);
         }
 
-        const pending = (yield* store.repliesOf(comment.threadId)).find(
-          (other) =>
-            other.commentId === comment.id &&
-            (other.status._tag === "sending" ||
-              other.status._tag === "unconfirmed")
-        );
-
-        if (pending !== undefined) {
-          return yield* new ReplyPending({ commentId, replyId: pending.id });
-        }
+        const now = yield* DateTime.now;
 
         const written = writeReply(
           yield* newId(ReplyIdSchema).pipe(Effect.provideService(Ids, ids)),
           comment,
           writerOf(actor),
           outgoing,
-          yield* DateTime.now
+          now
         );
 
-        // The journal row and its job, together.
-        yield* transaction(
-          store.saveReply(written).pipe(Effect.andThen(jobs.start(written.id)))
+        // The journal row and its job, together. The database holds one
+        // reply on its way or unconfirmed a comment, and one reply a key:
+        // of two requests sent together, one is journalled and has a job.
+        const journalled = yield* transaction(
+          store
+            .journalReply(
+              written,
+              key.pipe(
+                Option.map((given) => ({
+                  key: given,
+                  since: DateTime.subtractDuration(now, replyKeyLifetime),
+                }))
+              )
+            )
+            .pipe(
+              Effect.tap((made) =>
+                made._tag === "journalled"
+                  ? jobs.start(written.id)
+                  : Effect.void
+              )
+            )
         );
 
-        return written;
+        if (journalled._tag === "pending") {
+          return yield* new ReplyPending({
+            commentId,
+            replyId: journalled.replyId,
+          });
+        }
+
+        if (journalled._tag === "keyReused") {
+          return yield* new ReplyKeyReused();
+        }
+
+        if (journalled._tag === "dropped") {
+          return yield* new CommentNotFound({ commentId });
+        }
+
+        return journalled._tag === "replayed" ? journalled.reply : written;
+      });
+
+      // Moves a reply as a person decided, unless it changed since it was
+      // read: then the decision was about a reply that is no more.
+      const decided = Effect.fn("EngagementReplies.decided")(function* decided(
+        next: Reply,
+        from: Reply
+      ) {
+        if (yield* store.advanceReply(next, from)) {
+          return next;
+        }
+
+        const now = yield* store.reply(from.id);
+
+        return yield* Option.match(now, {
+          onNone: () => new ReplyNotFound({ replyId: from.id }),
+          onSome: (current) =>
+            new InvalidReplyTransition({
+              from: current.status._tag,
+              replyId: from.id,
+            }),
+        });
       });
 
       const confirm = Effect.fn("EngagementReplies.confirm")(function* confirm(
@@ -286,7 +346,10 @@ export class EngagementReplies extends Context.Service<
 
         yield* transaction(
           Effect.gen(function* confirming() {
-            yield* store.saveReply(confirmed);
+            yield* decided(confirmed, unconfirmed);
+            // What a person found is final: no job of this reply may act
+            // after it, whatever state it was left in.
+            yield* jobs.cancel(confirmed.id);
 
             const comment = yield* store.comment(confirmed.commentId);
             const others = yield* store.repliesOf(confirmed.threadId);
@@ -344,9 +407,7 @@ export class EngagementReplies extends Context.Service<
             withdrawReply(sent, yield* DateTime.now)
           );
 
-          yield* store.saveReply(withdrawn);
-
-          return withdrawn;
+          return yield* decided(withdrawn, sent);
         }
       );
 

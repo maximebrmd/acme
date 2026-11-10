@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Duration } from "effect";
 import {
+  idempotencyKeyLifetimeHours,
   InboxAbilitySchema,
   InboxAbilityStandingSchema,
   InboxCollectionEndSchema,
@@ -29,6 +30,7 @@ import { maxReplyLength } from "#engagement/domain/reply-text.ts";
 import {
   ReplyDoubtSchema,
   ReplyFailureSchema,
+  replyKeyLifetime,
   ReplyStatusSchema,
 } from "#engagement/domain/reply.ts";
 import { CollectionEndSchema } from "#engagement/domain/thread.ts";
@@ -36,6 +38,12 @@ import { CollectionEndSchema } from "#engagement/domain/thread.ts";
 // The contract copies the engagement context's vocabulary and figures, for
 // clients that cannot import the server: change them together.
 describe("the contract's inbox", () => {
+  it("keeps a reply's idempotency key as long as the contract says", () => {
+    expect(Duration.toHours(replyKeyLifetime)).toBe(
+      idempotencyKeyLifetimeHours
+    );
+  });
+
   it("names the abilities and their standings as the domain does", () => {
     expect(InboxAbilitySchema.literals).toStrictEqual(
       EngagementAbilitySchema.literals

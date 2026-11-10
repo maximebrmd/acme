@@ -1,4 +1,4 @@
-import { Effect, Layer, Option } from "effect";
+import { DateTime, Effect, Layer, Option } from "effect";
 import { Digest, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
@@ -51,6 +51,11 @@ const notDone = (reason: ReplyFailure): ActionOutcome => ({
   _tag: "failed",
   reason,
 });
+
+// What the gate answers for a reply it did not call the platform for
+// and cannot tell the fate of: one no longer on its way, whose job then
+// finds it settled and keeps nothing of this, or a resumed one.
+const notClaimed: SendOutcome = { _tag: "unconfirmed", reason: "interrupted" };
 
 /**
  * The platforms Peal reads comments on (`engagedPlatforms`), as the
@@ -154,21 +159,34 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
         Effect.gen(function* send() {
           const found = yield* outgoing(request);
 
+          // A resumed reply may be out since its first run: whatever
+          // keeps this run from asking the platform proves nothing.
+          const stopped = (reason: ReplyFailure): SendOutcome =>
+            mode === "send" ? failedWith(reason) : notClaimed;
+
           if (Option.isNone(found)) {
-            return failedWith("commentGone");
+            return stopped("commentGone");
           }
 
           const reached = yield* reach(request.channelId).pipe(Effect.result);
 
           if (reached._tag === "Failure") {
-            return failedWith(reached.failure);
+            return stopped(reached.failure);
           }
 
           if (Option.isNone(reached.success)) {
-            return failedWith("channelUnavailable");
+            return stopped("channelUnavailable");
           }
 
           const [account, platform] = reached.success.value;
+
+          // Claimed just before the call, and only while the reply is on
+          // its way: one a person settled meanwhile, or that was handed
+          // over as stranded while this call waited its turn, is not
+          // sent, nor looked up to be sent. Its job finds it settled.
+          if (!(yield* store.claimCall(request.replyId, yield* DateTime.now))) {
+            return notClaimed;
+          }
 
           return yield* platform[mode](account, found.value.sending);
         }).pipe(

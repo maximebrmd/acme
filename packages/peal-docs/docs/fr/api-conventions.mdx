@@ -373,6 +373,8 @@ Les clés sont gardées par espace de travail. [Publier depuis un agent IA](/age
 
 `POST …/posts/bulk` et `POST …/posts/import` acceptent le même en-tête, pour la requête entière, et chacun de leurs éléments ou de leurs lignes peut porter sa propre clé ([Publier par l’API](/posting-api)) ; la création de l’espace de travail d’un client par l’API partenaire en accepte une aussi ([Intégrer Peal](/embedding)).
 
+`POST …/inbox/comments/{commentId}/replies`, qui répond à un commentaire en public, accepte aussi l’en-tête : dans les 24 heures, la même clé avec le même commentaire et le même texte répond la réponse créée par la première requête, dans son état du moment, sans en écrire une autre ; avec un autre commentaire ou un autre texte, elle répond 409 `idempotency_key_reused`. Sans clé, une seconde requête n’est refusée (409 `reply_pending`) que tant que la première réponse est en route ou non confirmée.
+
 Les autres écritures ne prennent pas de clé. Ce que fait chacune décide si elle peut être renvoyée sans risque :
 
 | Requête                                                                                                | Renvoyée                                                                                                                                                                                                                                                              |

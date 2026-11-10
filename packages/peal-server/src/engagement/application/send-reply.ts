@@ -12,6 +12,7 @@ import { markAnswered } from "#engagement/domain/comment.ts";
 import type { ReplyId } from "#engagement/domain/reply-id.ts";
 import {
   beginSending,
+  callBound,
   settleReply,
   strandedAfter,
   wasAttempted,
@@ -22,6 +23,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 
 import { EngagementOutcomes } from "./ports/engagement-outcomes.ts";
 import { EngagementStore } from "./ports/engagement-store.ts";
+import { ReplyJobs } from "./ports/reply-jobs.ts";
 import { ReplySender } from "./ports/reply-sender.ts";
 
 /** Replies that ended, by how. */
@@ -57,10 +59,12 @@ export class SendReply extends Context.Service<
     ) => Effect.Effect<SendResult, DatabaseError>;
     /**
      * Hands to a person the replies no job settled: those still `sending`
-     * `strandedAfter` they were written become `unconfirmed`, which a
-     * member settles after checking the platform. Nothing is sent, nor
-     * looked up: no run of their job is left to act on what a lookup
-     * finds. Answers how many.
+     * `strandedAfter` they were written, and whose call to the platform,
+     * if a gate claimed one, was claimed `callBound` ago or more, become
+     * `unconfirmed`, which a member settles after checking the platform.
+     * The reply's job is stopped in the same transaction, and a gate
+     * refuses a reply that is no longer on its way: nothing is sent after
+     * the handover, nor looked up. Answers how many.
      */
     readonly settleStranded: Effect.Effect<number, DatabaseError>;
   }
@@ -70,6 +74,7 @@ export class SendReply extends Context.Service<
     Effect.gen(function* SendReplyLive() {
       const store = yield* EngagementStore;
       const sender = yield* ReplySender;
+      const jobs = yield* ReplyJobs;
       const outcomes = yield* EngagementOutcomes;
       const { transaction } = yield* TransactionRunner;
 
@@ -97,7 +102,12 @@ export class SendReply extends Context.Service<
           return "superseded" as const;
         }
 
-        yield* store.saveReply(settled.success);
+        // Only from the state it was read in: a reply a person, or the
+        // handover of stranded replies, settled meanwhile stays as they
+        // left it.
+        if (!(yield* store.advanceReply(settled.success, reply.value))) {
+          return "superseded" as const;
+        }
 
         // A reply that went out, or may have, answers its comment.
         if (outcome._tag !== "failed") {
@@ -136,7 +146,11 @@ export class SendReply extends Context.Service<
         }
 
         // Committed before the call: from here on, the reply may be out.
-        yield* store.saveReply(begun.success);
+        // Another run that began meanwhile, or a person who settled the
+        // reply, keeps it: this run sends nothing.
+        if (!(yield* store.advanceReply(begun.success, reply))) {
+          return "superseded" as const;
+        }
 
         const outcome = yield* sender.send(request);
         const result = yield* transaction(settle(replyId, outcome));
@@ -156,15 +170,23 @@ export class SendReply extends Context.Service<
 
         const stranded = yield* store.strandedReplies(
           DateTime.subtractDuration(now, strandedAfter),
+          DateTime.subtractDuration(now, callBound),
           strandedPerRun
         );
 
         let settled = 0;
 
-        // One transaction a reply, so one that fails undoes no other.
+        // One transaction a reply, so one that fails undoes no other. Its
+        // job is stopped in the same transaction: it cannot wake after
+        // the reply is a person's to settle, and the gate, which claims a
+        // reply before any call, refuses one that is no longer on its way.
         for (const { id } of stranded) {
           const result = yield* transaction(
-            settle(id, { _tag: "unconfirmed", reason: "interrupted" })
+            settle(id, { _tag: "unconfirmed", reason: "interrupted" }).pipe(
+              Effect.tap((ended) =>
+                ended === "settled" ? jobs.cancel(id) : Effect.void
+              )
+            )
           );
 
           settled += result === "settled" ? 1 : 0;

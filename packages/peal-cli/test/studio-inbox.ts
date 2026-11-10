@@ -1,6 +1,7 @@
 import { DateTime, Effect, Ref } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 import {
+  IdempotencyKeyReused,
   Api,
   ChannelNotFound,
   CurrentMember,
@@ -110,11 +111,17 @@ const unconfirmed: InboxReply = {
 
 export interface InboxState {
   readonly comments: readonly InboxComment[];
+  /** What each idempotency key made, with the text it came with. */
+  readonly keys: ReadonlyMap<
+    string,
+    { readonly id: string; readonly text: string }
+  >;
   readonly replies: readonly InboxReply[];
 }
 
 export const makeInbox = Ref.make<InboxState>({
   comments,
+  keys: new Map(),
   replies: [unconfirmed],
 });
 
@@ -233,12 +240,23 @@ export const studioInboxLive = (state: Ref.Ref<InboxState>) => {
             standing: payload.action === "like" ? "reconnect" : "unsupported",
           });
         }),
-      reply: ({ params, payload }) =>
+      reply: ({ headers, params, payload }) =>
         Effect.gen(function* reply() {
           yield* allowed("engagement:reply");
 
           const comment = yield* commentOf(params.commentId);
           const current = yield* Ref.get(state);
+          const key = headers["idempotency-key"];
+          const made = key === undefined ? undefined : current.keys.get(key);
+
+          // The same key with the same reply answers the one it made.
+          if (made !== undefined) {
+            const first = current.replies.find(({ id }) => id === made.id);
+
+            return made.text === payload.text && first !== undefined
+              ? first
+              : yield* new IdempotencyKeyReused();
+          }
 
           const pending = current.replies.find(
             (other) =>
@@ -275,6 +293,16 @@ export const studioInboxLive = (state: Ref.Ref<InboxState>) => {
           };
 
           yield* saveReply(written);
+
+          if (key !== undefined) {
+            yield* Ref.update(state, (before) => ({
+              ...before,
+              keys: new Map([
+                ...before.keys,
+                [key, { id: written.id, text: payload.text }],
+              ]),
+            }));
+          }
 
           return written;
         }),

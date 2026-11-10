@@ -363,10 +363,12 @@ CREATE TABLE "engagement"."erased_workspaces" (
 CREATE TABLE "engagement"."replies" (
 	"attempted_at" timestamp with time zone,
 	"author_id" uuid,
+	"call_claimed_at" timestamp with time zone,
 	"channel_id" uuid NOT NULL,
 	"comment_id" uuid NOT NULL,
 	"created_at" timestamp with time zone NOT NULL,
 	"id" uuid PRIMARY KEY,
+	"key_digest" text,
 	"permalink" text,
 	"platform_comment_id" text,
 	"reason" text,
@@ -1085,6 +1087,8 @@ CREATE UNIQUE INDEX "comments_platform_id" ON "engagement"."comments" ("thread_i
 CREATE INDEX "comments_thread_written" ON "engagement"."comments" ("thread_id","written_at");--> statement-breakpoint
 CREATE INDEX "replies_thread" ON "engagement"."replies" ("thread_id","id");--> statement-breakpoint
 CREATE INDEX "replies_comment" ON "engagement"."replies" ("comment_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "replies_pending_comment" ON "engagement"."replies" ("comment_id") WHERE "status" IN ('sending', 'unconfirmed');--> statement-breakpoint
+CREATE UNIQUE INDEX "replies_key" ON "engagement"."replies" ("workspace_id","key_digest") WHERE "key_digest" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "replies_sending" ON "engagement"."replies" ("created_at","id") WHERE "status" = 'sending';--> statement-breakpoint
 CREATE INDEX "replies_author" ON "engagement"."replies" ("author_id") WHERE "author_id" IS NOT NULL;--> statement-breakpoint
 CREATE UNIQUE INDEX "threads_target" ON "engagement"."threads" ("target_id");--> statement-breakpoint

@@ -12,5 +12,11 @@ export class ReplyJobs extends Context.Service<
   ReplyJobs,
   {
     readonly start: (replyId: ReplyId) => Effect.Effect<void>;
+    /**
+     * Stops the reply's job for good, whether it sleeps, waits its turn or
+     * is lost: in a transaction, with what hands the reply to a person, so
+     * the job cannot wake after. A job that has ended is left as it is.
+     */
+    readonly cancel: (replyId: ReplyId) => Effect.Effect<void>;
   }
 >()("peal-server/engagement/application/ReplyJobs") {}

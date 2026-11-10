@@ -4,12 +4,14 @@ import {
   CurrentMember,
   InboxCommentSchema,
   InboxModerationActionSchema,
+  idempotencyKeyLifetimeHours,
   inboxPlatforms,
   InboxReplySchema,
   inboxRetentionDays,
   InboxThreadDetailSchema,
   InboxThreadPageSchema,
   inboxWindowDays,
+  maxIdempotencyKeyLength,
   maxInboxPageSize,
   maxInboxReplyLength,
 } from "peal-contract";
@@ -59,10 +61,18 @@ export const GetCommentThread = Tool.make("get_comment_thread", {
 
 export const ReplyToComment = Tool.make("reply_to_comment", {
   dependencies: [CurrentMember],
-  description: `Answers a comment in public, as the channel's account: everyone who sees the post sees the reply, at once, and Peal cannot unsend it everywhere it was already seen. Write only what the user asked to say. The reply is journalled and sent by a job, so the answer is the reply \`sending\`: get_comment_thread shows how it ended. A reply whose outcome is unknown is \`unconfirmed\` and is never sent again: do not call this tool again for that comment, tell the user to check the platform, then confirm_comment_reply. On Mastodon the mention of the person answered is put first, and counts in the length. ${needsReplying}`,
+  description: `Answers a comment in public, as the channel's account: everyone who sees the post sees the reply, at once, and Peal cannot unsend it everywhere it was already seen. Write only what the user asked to say. The reply is journalled and sent by a job, so the answer is the reply \`sending\`: get_comment_thread shows how it ended. A reply whose outcome is unknown is \`unconfirmed\` and is never sent again: do not call this tool again for that comment, tell the user to check the platform, then confirm_comment_reply. Pass an \`idempotencyKey\` so that calling again after a lost answer makes no second reply: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same comment and text answers the reply the first call made; with another it is refused. On Mastodon the mention of the person answered is put first, and counts in the length. ${needsReplying}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     commentId: Schema.String,
+    idempotencyKey: Schema.optionalKey(
+      Schema.String.check(
+        Schema.isBetweenLength(1, maxIdempotencyKeyLength)
+      ).annotate({
+        description:
+          "Any text of your choosing, new for each reply: calling again with it after a lost answer answers the reply the first call made, and never makes a second.",
+      })
+    ),
     text: Schema.String.check(Schema.isBetweenLength(1, maxInboxReplyLength)),
   }),
   success: InboxReplySchema,

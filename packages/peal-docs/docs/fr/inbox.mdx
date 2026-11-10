@@ -64,7 +64,9 @@ Le fil montre où en est chaque réponse :
 | `unconfirmed` | Peal ne sait pas si elle est partie : la plateforme n’a pas répondu, ou le serveur s’est arrêté pendant l’appel. |
 | `withdrawn`   | Envoyée, puis supprimée de la plateforme par un membre.                                                          |
 
-Peal ne renvoie jamais une réponse non confirmée, car cela pourrait publier deux fois la même réponse. Regardez la publication sur la plateforme, puis dites à Peal ce que vous y avez trouvé : **Elle y est**, ou **Elle n’est pas partie**. D’ici là, aucune autre réponse ne peut être écrite à ce commentaire. Une réponse encore en route une heure après que vous l’avez écrite devient elle aussi non confirmée : Peal a perdu sa trace, et n’envoie plus rien pour elle.
+Peal ne renvoie jamais une réponse non confirmée, car cela pourrait publier deux fois la même réponse. Regardez la publication sur la plateforme, puis dites à Peal ce que vous y avez trouvé : **Elle y est**, ou **Elle n’est pas partie**. D’ici là, aucune autre réponse ne peut être écrite à ce commentaire. Une réponse encore en route une heure après que vous l’avez écrite devient elle aussi non confirmée : Peal arrête alors son envoi pour de bon, et rien ne part plus pour elle, quoi que vous trouviez ensuite sur la plateforme.
+
+Un commentaire n’a qu’une réponse en route à la fois : de deux requêtes envoyées ensemble pour y répondre, l’une est refusée. Par l’API, un en-tête `Idempotency-Key` permet de renvoyer sans risque une requête dont la réponse s’est perdue ([Idempotence](/api-conventions#idempotency)).
 
 Une réponse envoyée peut être retirée : Peal la supprime de la plateforme. Les personnes qui l’ont déjà vue ont pu la garder.
 

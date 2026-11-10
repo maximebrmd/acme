@@ -92,6 +92,49 @@ describe("peal inbox", () => {
   );
 
   it.effect(
+    "answers a reply's first run when run again under its idempotency key",
+    () =>
+      Effect.gen(function* repliesOnce() {
+        const session = yield* signedIn();
+
+        const run = (text: string) =>
+          session.printed([
+            "inbox",
+            "reply",
+            waitingCommentId,
+            "--text",
+            text,
+            "--idempotency-key",
+            "synthetic-reply-key-1",
+            ...inStudio,
+          ]);
+
+        const first = yield* run("Until Sunday.");
+        const again = yield* run("Until Sunday.");
+
+        assert.strictEqual(again, first);
+
+        const { replies: kept } = yield* Ref.get(session.studio.inbox);
+
+        assert.lengthOf(kept, 2);
+
+        const other = yield* session.refused([
+          "inbox",
+          "reply",
+          waitingCommentId,
+          "--text",
+          "Until Monday.",
+          "--idempotency-key",
+          "synthetic-reply-key-1",
+          ...inStudio,
+        ]);
+
+        assert.include(other, "with another reply");
+        assert.lengthOf((yield* Ref.get(session.studio.inbox)).replies, 2);
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
     "writes no second reply while one may have gone out, and settles it by what was found",
     () =>
       Effect.gen(function* settles() {

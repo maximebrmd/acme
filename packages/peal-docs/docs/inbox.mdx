@@ -64,7 +64,9 @@ The thread shows where each reply is:
 | `unconfirmed` | Peal cannot tell whether it went out: the platform did not answer, or the server stopped during the call. |
 | `withdrawn`   | Sent, then deleted from the platform by a member.                                                         |
 
-Peal never sends an unconfirmed reply again, as that could post the same answer twice. Look at the post on the platform, then tell Peal what you found: **It is there**, or **It did not go out**. Until then, no other reply can be written to that comment. A reply still on its way an hour after you wrote it becomes unconfirmed too: Peal lost track of it, and sends nothing more for it.
+Peal never sends an unconfirmed reply again, as that could post the same answer twice. Look at the post on the platform, then tell Peal what you found: **It is there**, or **It did not go out**. Until then, no other reply can be written to that comment. A reply still on its way an hour after you wrote it becomes unconfirmed too: Peal stops its sending for good at that moment, so nothing goes out for it afterwards, whatever you then find on the platform.
+
+One comment has one reply on its way at a time: of two requests to answer it sent together, one is refused. Through the API, an `Idempotency-Key` header makes a request safe to send again after a lost answer ([Idempotency](/api-conventions#idempotency)).
 
 A sent reply can be taken back: Peal deletes it from the platform. People who already saw it may have kept it.
 

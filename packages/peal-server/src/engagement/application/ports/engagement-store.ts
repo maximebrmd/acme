@@ -55,6 +55,21 @@ export interface ThreadCursor {
   readonly waiting: boolean;
 }
 
+/** An idempotency key a reply came with, and since when it counts. */
+export interface ReplyKey {
+  readonly key: string;
+  /** Uses of the key before this instant are forgotten. */
+  readonly since: DateTime.Utc;
+}
+
+/** How journalling a reply ended. */
+export type Journalled =
+  | { readonly _tag: "journalled" }
+  | { readonly _tag: "dropped" }
+  | { readonly _tag: "pending"; readonly replyId: ReplyId }
+  | { readonly _tag: "replayed"; readonly reply: Reply }
+  | { readonly _tag: "keyReused" };
+
 /**
  * The engagement context's rows: threads, the comments read under them and
  * the replies sent from Peal, whose rows are the journal of what was sent.
@@ -128,14 +143,49 @@ export class EngagementStore extends Context.Service<
     ) => Effect.Effect<Option.Option<Reply>, DatabaseError>;
     /**
      * The replies still `sending` that were written at `writtenBefore` or
-     * earlier, oldest first, `limit` at most: those no job settled.
+     * earlier, and whose call to the platform, if one was claimed, was
+     * claimed at `calledBefore` or earlier, oldest first, `limit` at
+     * most: those no job settled, and no call can still be making.
      */
     readonly strandedReplies: (
       writtenBefore: DateTime.Utc,
+      calledBefore: DateTime.Utc,
       limit: number
     ) => Effect.Effect<readonly Reply[], DatabaseError>;
-    /** Saves a reply, new or changed. One whose thread is gone is dropped. */
-    readonly saveReply: (reply: Reply) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Journals a new reply, which nothing else does: at most one reply to
+     * a comment is `sending` or `unconfirmed` at a time, and one
+     * idempotency key names one reply, both held by the database, so
+     * requests sent together journal one. With a `key` used in the last
+     * `keyLifetime` it answers the reply the key made when the request is
+     * the same (its comment and its text), and `keyReused` otherwise. A
+     * reply whose comment is gone is `dropped`.
+     */
+    readonly journalReply: (
+      reply: Reply,
+      key: Option.Option<ReplyKey>
+    ) => Effect.Effect<Journalled, DatabaseError>;
+    /**
+     * Moves a reply from the status it was read in (`from`) to `next`, and
+     * says whether it did: false when the reply changed meanwhile, or is
+     * gone, and nothing was written. Every change to a journalled reply
+     * goes through it, so no run and no person overwrites what another
+     * decided.
+     */
+    readonly advanceReply: (
+      next: Reply,
+      from: Reply
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * Claims the reply for the call to its platform that starts now, at
+     * `at`, and says whether it may be made: only while the reply is
+     * `sending`. The gate asks just before the call, so a reply a person
+     * settled, or one handed over as stranded, is never sent after.
+     */
+    readonly claimCall: (
+      replyId: ReplyId,
+      at: DateTime.Utc
+    ) => Effect.Effect<boolean, DatabaseError>;
     /**
      * Deletes up to `limit` threads whose collection ended at `endedBefore`
      * or earlier, with their comments and replies, and says how many.

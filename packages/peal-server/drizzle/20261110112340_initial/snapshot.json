@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "42c93d36-8f62-4f58-9ad5-40142926a32f",
+  "id": "347aa32c-ac69-45b8-876f-89c75bf5f4a0",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -2466,6 +2466,47 @@
         "n|tbl|engagement.replies",
         "n|sch|engagement",
         "n|col|engagement.replies.comment_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "replies",
+        "replies_pending_comment"
+      ],
+      "writes": [
+        "s|idx|engagement.replies_pending_comment",
+        "n|idx|engagement.replies_pending_comment",
+        "e|idx|engagement.replies_pending_comment",
+        "n|rel|engagement.replies_pending_comment"
+      ],
+      "reads": [
+        "n|tbl|engagement.replies",
+        "n|sch|engagement",
+        "n|col|engagement.replies.comment_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "replies",
+        "replies_key"
+      ],
+      "writes": [
+        "s|idx|engagement.replies_key",
+        "n|idx|engagement.replies_key",
+        "e|idx|engagement.replies_key",
+        "n|rel|engagement.replies_key"
+      ],
+      "reads": [
+        "n|tbl|engagement.replies",
+        "n|sch|engagement",
+        "n|col|engagement.replies.workspace_id",
+        "n|col|engagement.replies.key_digest"
       ]
     },
     {
@@ -8406,6 +8447,19 @@
     {
       "schema": "engagement",
       "table": "replies",
+      "name": "call_claimed_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
       "name": "channel_id",
       "type": "uuid",
       "typeSchema": null,
@@ -8449,6 +8503,19 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "key_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -16055,6 +16122,55 @@
       ],
       "isUnique": false,
       "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "replies_pending_comment",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "comment_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"status\" IN ('sending', 'unconfirmed')",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "replies_key",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "key_digest",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": "\"key_digest\" IS NOT NULL",
       "with": "",
       "method": "btree",
       "concurrently": false,

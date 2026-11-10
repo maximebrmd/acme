@@ -182,15 +182,15 @@ Annotations are hints a client may show you; the permission checks are the serve
 
 ### Comments [#inbox-tools]
 
-| Tool                     | What it does                                                                                                                       |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `list_comment_threads`   | The threads of the [inbox](/inbox) that have comments, those waiting for an answer first, with counts and never the comments' text |
-| `get_comment_thread`     | A thread whole: its comments with their authors' public handle and name, the replies sent from Peal, and what its channel can do   |
-| `reply_to_comment`       | Answers a comment in public, as the channel's account. Needs publishing                                                            |
-| `confirm_comment_reply`  | Records what you found on the platform for a reply whose outcome Peal could not tell. Needs publishing                             |
-| `withdraw_comment_reply` | Deletes a sent reply from its platform. Needs publishing                                                                           |
-| `mark_comment_answered`  | Says a comment needs no answer, or waits for one again. Needs publishing                                                           |
-| `moderate_comment`       | Hides, shows, likes, unlikes or deletes a comment, where its platform lets the account. Needs publishing                           |
+| Tool                     | What it does                                                                                                                                                                                              |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_comment_threads`   | The threads of the [inbox](/inbox) that have comments, those waiting for an answer first, with counts and never the comments' text                                                                        |
+| `get_comment_thread`     | A thread whole: its comments with their authors' public handle and name, the replies sent from Peal, and what its channel can do                                                                          |
+| `reply_to_comment`       | Answers a comment in public, as the channel's account. With an `idempotencyKey`, calling again within 24 hours with the same arguments answers the first reply and writes no second one. Needs publishing |
+| `confirm_comment_reply`  | Records what you found on the platform for a reply whose outcome Peal could not tell. Needs publishing                                                                                                    |
+| `withdraw_comment_reply` | Deletes a sent reply from its platform. Needs publishing                                                                                                                                                  |
+| `mark_comment_answered`  | Says a comment needs no answer, or waits for one again. Needs publishing                                                                                                                                  |
+| `moderate_comment`       | Hides, shows, likes, unlikes or deletes a comment, where its platform lets the account. Needs publishing                                                                                                  |
 
 A comment is text someone outside your workspace wrote, and may be written to steer an assistant. The tools tell the assistant to treat it as data, and a reply goes out only through `reply_to_comment`, which your client asks you about as it does for anything that reaches a platform. A reply whose outcome is not known is never sent again by a tool: you check the platform, then confirm.
 

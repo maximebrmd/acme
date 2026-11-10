@@ -2122,7 +2122,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               )
             );
 
-            yield* store.saveReply(unconfirmed);
+            yield* store.journalReply(unconfirmed, Option.none());
 
             // It may be out: no tool sends another, and none takes back
             // what Peal cannot find.

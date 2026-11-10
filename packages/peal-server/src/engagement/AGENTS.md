@@ -46,23 +46,43 @@
   enough for the longest post), so comments under every part are kept, a
   part is the account's own reply and never a comment, and a comment
   under a later part answers the post (`parentId` null).
-- A reply follows publishing's contract. `EngagementReplies.reply` checks
-  the permission, the comment, the channel's ability and the platform's
-  length (`ReplyLimits`, on publishing's `textOverflowOn`; on Mastodon
-  `outgoingText` puts the mention first), refuses while another reply to
-  the comment is `sending` or `unconfirmed`, then saves the row in
-  `engagement.replies`, which is the journal, with the start of
-  `SendReplyV1` in one transaction. `SendReply` commits `attempted_at`
-  before the call; a run that finds it set never sends: it calls
+- A reply follows publishing's contract, under one rule: a public reply is
+  never sent twice, and never sent after a person was told it did not go
+  out. `EngagementReplies.reply` checks the permission, the comment, the
+  channel's ability and the platform's length (`ReplyLimits`, on
+  publishing's `textOverflowOn`; on Mastodon `outgoingText` puts the
+  mention first), then journals the row in `engagement.replies` with the
+  start of `SendReplyV1` in one transaction. `EngagementStore.journalReply`
+  only inserts, and the database decides: `replies_pending_comment` (unique
+  on the comment while a reply is `sending` or `unconfirmed`) refuses a
+  second reply whichever request came first (`ReplyPending`), and
+  `replies_key` (unique on the workspace and the SHA-256 of the
+  `Idempotency-Key`, kept `replyKeyLifetime`, the contract's 24 hours)
+  answers a request sent again with the reply it made, or
+  `ReplyKeyReused` for another comment or text.
+- A reply's status changes only through `EngagementStore.advanceReply`,
+  from the state it was read in: a job, the handover and a person never
+  overwrite each other. `SendReply` commits `attempted_at` before the
+  call; a run that finds it set never sends: it calls
   `ReplySender.resume`, which looks the reply up by a key every run
   derives (Bluesky's record key from the reply's time and id; Mastodon's
-  Idempotency-Key, the reply's id, for 50 minutes) and answers
-  `unconfirmed` when it cannot tell. An unconfirmed reply is settled by a
-  person (`confirm`). A reply still `sending` an hour after it was written
-  (`strandedAfter`: its job gave up on the database, or was lost) blocks
-  its comment and has no job left: the collection's cron hands it to a
-  person as `unconfirmed` (`SendReply.settleStranded`), sending nothing. `SendReplyV1` (payload `replyId`, activity `send`) is
-  persisted contract.
+  Idempotency-Key, the reply's id, for 50 minutes). A resume answers
+  `failed` only on an answer that proves nothing was made (Bluesky: the
+  record absent, then its own create refused; Mastodon: a 422 with
+  Mastodon's JSON error, as it validates only a status the key did not
+  make); anything else, the channel or the store unreadable included, is
+  `unconfirmed`, which a person settles (`confirm`), for good.
+- The gate (`platform-engagement.ts`) claims the call
+  (`EngagementStore.claimCall`, `call_claimed_at`) immediately before the
+  platform request, and makes none for a reply that is not `sending`: one
+  settled or handed over while its call waited its turn is not sent, nor
+  looked up. A reply still `sending` an hour after it was written
+  (`strandedAfter`), with no call claimed in the last `callBound` (10
+  minutes, far past a call's 20-second timeout), is handed to a person as
+  `unconfirmed` (`SendReply.settleStranded`, from the collection's cron),
+  and its job is interrupted in the same transaction (`ReplyJobs.cancel`),
+  so it cannot wake later. `SendReplyV1` (payload `replyId`, activity
+  `send`) is persisted contract.
 - Acting needs `engagement:reply`, which is in `publishingPermissions` (an
   OAuth client needs `workspace:publish`) and in
   `withheldWhileImpersonating`, with `engagement:read`: staff neither read

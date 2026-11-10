@@ -15,6 +15,7 @@ import type { EngagedChannel } from "#engagement/application/ports/engagement-ch
 import { EngagementOutcomes } from "#engagement/application/ports/engagement-outcomes.ts";
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import type {
+  Journalled,
   ThreadFilter,
   ThreadSummary,
 } from "#engagement/application/ports/engagement-store.ts";
@@ -77,9 +78,14 @@ interface Told {
 
 /** What a test's world holds, and how its platform answers. */
 export interface WorldState {
+  readonly cancelled: ReplyId[];
   readonly channels: Map<ChannelId, EngagedChannel>;
+  /** When a gate claimed each reply's call, by reply. */
+  readonly claims: Map<string, DateTime.Utc>;
   readonly comments: Map<string, Comment>;
   readonly jobs: ReplyId[];
+  /** The reply each idempotency key made. */
+  readonly keys: Map<string, ReplyId>;
   readonly moderated: ModerationRequest[];
   moderation: ActionOutcome;
   readonly posts: FollowedPost[];
@@ -133,9 +139,12 @@ const matches = (
 /** A world of its own for one test. */
 export const makeWorld = () => {
   const state: WorldState = {
+    cancelled: [],
     channels: new Map(),
+    claims: new Map(),
     comments: new Map(),
     jobs: [],
+    keys: new Map(),
     moderated: [],
     moderation: { _tag: "done" },
     posts: [],
@@ -167,6 +176,31 @@ export const makeWorld = () => {
     );
 
   const store = EngagementStore.of({
+    advanceReply: (next, from) =>
+      Effect.sync(() => {
+        const current = state.replies.get(from.id);
+
+        if (
+          current === undefined ||
+          JSON.stringify(current.status) !== JSON.stringify(from.status)
+        ) {
+          return false;
+        }
+
+        state.replies.set(next.id, next);
+
+        return true;
+      }),
+    claimCall: (replyId, at) =>
+      Effect.sync(() => {
+        if (state.replies.get(replyId)?.status._tag !== "sending") {
+          return false;
+        }
+
+        state.claims.set(replyId, at);
+
+        return true;
+      }),
     comment: (commentId) =>
       Effect.succeed(Option.fromUndefinedOr(state.comments.get(commentId))),
     commentsOf: (threadId) =>
@@ -231,6 +265,51 @@ export const makeWorld = () => {
         }
 
         return count;
+      }),
+    journalReply: (reply, key) =>
+      Effect.sync((): Journalled => {
+        if (!state.comments.has(reply.commentId)) {
+          return { _tag: "dropped" };
+        }
+
+        const made = key.pipe(
+          Option.flatMap((given) =>
+            Option.fromUndefinedOr(state.keys.get(given.key)).pipe(
+              Option.flatMap((id) =>
+                Option.fromUndefinedOr(state.replies.get(id))
+              ),
+              Option.filter((earlier) =>
+                DateTime.isGreaterThan(earlier.createdAt, given.since)
+              )
+            )
+          )
+        );
+
+        if (Option.isSome(made)) {
+          return made.value.commentId === reply.commentId &&
+            made.value.text === reply.text
+            ? { _tag: "replayed", reply: made.value }
+            : { _tag: "keyReused" };
+        }
+
+        const pending = [...state.replies.values()].find(
+          (other) =>
+            other.commentId === reply.commentId &&
+            (other.status._tag === "sending" ||
+              other.status._tag === "unconfirmed")
+        );
+
+        if (pending !== undefined) {
+          return { _tag: "pending", replyId: pending.id };
+        }
+
+        state.replies.set(reply.id, reply);
+
+        if (Option.isSome(key)) {
+          state.keys.set(key.value.key, reply.id);
+        }
+
+        return { _tag: "journalled" };
       }),
     latestFollowed: () =>
       Effect.succeed(
@@ -332,20 +411,19 @@ export const makeWorld = () => {
           })
         )
       ),
-    saveReply: (reply) =>
-      Effect.sync(() => {
-        if (state.threads.has(reply.threadId)) {
-          state.replies.set(reply.id, reply);
-        }
-      }),
-    strandedReplies: (writtenBefore, limit) =>
+    strandedReplies: (writtenBefore, calledBefore, limit) =>
       Effect.succeed(
         [...state.replies.values()]
-          .filter(
-            (reply) =>
+          .filter((reply) => {
+            const claimed = state.claims.get(reply.id);
+
+            return (
               reply.status._tag === "sending" &&
-              DateTime.isLessThanOrEqualTo(reply.createdAt, writtenBefore)
-          )
+              DateTime.isLessThanOrEqualTo(reply.createdAt, writtenBefore) &&
+              (claimed === undefined ||
+                DateTime.isLessThanOrEqualTo(claimed, calledBefore))
+            );
+          })
           .toSorted(
             (left, right) =>
               before(left.createdAt, right.createdAt) ||
@@ -432,6 +510,10 @@ export const makeWorld = () => {
     Layer.succeed(
       ReplyJobs,
       ReplyJobs.of({
+        cancel: (replyId) =>
+          Effect.sync(() => {
+            state.cancelled.push(replyId);
+          }),
         start: (replyId) =>
           Effect.sync(() => {
             state.jobs.push(replyId);

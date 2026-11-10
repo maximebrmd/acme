@@ -2,6 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import {
   Context,
   DateTime,
+  Deferred,
   Effect,
   Exit,
   Fiber,
@@ -84,6 +85,8 @@ const went: SendOutcome = {
 
 /** The platform behind the gate: what it was asked, and how it answers. */
 interface Platform {
+  /** What a like or a hide waits for, holding the channel's gate. */
+  moderate: Effect.Effect<void>;
   readonly moderated: ModerationRequest[];
   readonly read: CommentsRequest[];
   resume: (request: SendRequest) => Effect.Effect<SendOutcome>;
@@ -94,6 +97,7 @@ interface Platform {
 }
 
 const makePlatform = (): Platform => ({
+  moderate: Effect.void,
   moderated: [],
   read: [],
   resume: () => Effect.succeed({ _tag: "unconfirmed", reason: "interrupted" }),
@@ -105,9 +109,29 @@ const makePlatform = (): Platform => ({
 
 const done: ActionOutcome = { _tag: "done" };
 
-// What the gate's handlers call: the platform's adapters, scripted.
-const adaptersOf = (platform: Platform) =>
-  Layer.mergeAll(
+// What the gate's handlers call: the platform's adapters, scripted. As
+// the real ones, they claim a reply's call before making it, and make
+// none for a reply that is no longer on its way.
+const adaptersOf = (world: World, platform: Platform) => {
+  const claimed = (
+    request: SendRequest,
+    call: () => Effect.Effect<SendOutcome>
+  ) =>
+    EngagementStore.use((store) =>
+      DateTime.now.pipe(
+        Effect.flatMap((now) => store.claimCall(request.replyId, now))
+      )
+    ).pipe(
+      Effect.provide(world.ports),
+      Effect.orDie,
+      Effect.flatMap((mine): Effect.Effect<SendOutcome> =>
+        mine
+          ? call()
+          : Effect.succeed({ _tag: "unconfirmed", reason: "interrupted" })
+      )
+    );
+
+  return Layer.mergeAll(
     Layer.succeed(
       CommentSource,
       CommentSource.of({
@@ -131,19 +155,19 @@ const adaptersOf = (platform: Platform) =>
       ReplySender,
       ReplySender.of({
         moderate: (request) =>
-          Effect.sync(() => {
+          Effect.suspend(() => {
             platform.moderated.push(request);
 
-            return done;
+            return platform.moderate.pipe(Effect.as(done));
           }),
         resume: (request) =>
-          Effect.suspend(() => {
+          claimed(request, () => {
             platform.resumed.push(request);
 
             return platform.resume(request);
           }),
         send: (request) =>
-          Effect.suspend(() => {
+          claimed(request, () => {
             platform.sent.push(request);
 
             return platform.send(request);
@@ -157,6 +181,7 @@ const adaptersOf = (platform: Platform) =>
       })
     )
   );
+};
 
 /**
  * One server: the reply use cases of `world` with their job started as a
@@ -191,7 +216,7 @@ const serverOver = <S, E, R>(
           Layer.mergeAll(
             FakePlatformPublisher,
             UnreadMetrics,
-            adaptersOf(platform)
+            adaptersOf(world, platform)
           )
         )
       )
@@ -507,6 +532,82 @@ describe("SendReplyV1 on a cluster", () => {
 
         yield* shutDown(after);
       }),
+    timeout
+  );
+});
+
+describe("a reply handed over as stranded", () => {
+  it.effect(
+    "is never sent once handed over, however late its turn at the gate comes",
+    () => {
+      const world = worldWithComment();
+      const platform = makePlatform();
+
+      return setTime(start).pipe(
+        Effect.andThen(
+          Effect.gen(function* handsOver() {
+            // Another call holds the channel's gate, as a long upload does.
+            const release = yield* Deferred.make<true>();
+
+            platform.moderate = Deferred.await(release).pipe(Effect.asVoid);
+
+            const sender = yield* ReplySender;
+
+            const holding = yield* Effect.forkChild(
+              sender.moderate({
+                action: "like",
+                channelId: channelId(1),
+                commentId: commentId(101),
+              }),
+              { startImmediately: true }
+            );
+
+            yield* eventually(
+              "the gate is held",
+              Effect.sync(() => platform.moderated.length === 1)
+            );
+
+            const reply = yield* replying;
+
+            yield* TestClock.adjust("61 minutes");
+            yield* settle(5);
+
+            assert.lengthOf(platform.sent, 0);
+
+            const handed = yield* SendReply.use(
+              (sending) => sending.settleStranded
+            );
+
+            assert.strictEqual(handed, 1);
+            assert.strictEqual(statusOf(world, reply.id), "unconfirmed");
+
+            // A member finds nothing on the platform: that is final.
+            yield* EngagementReplies.use((replies) =>
+              replies.confirm(editor, reply.id, false)
+            );
+
+            // The gate is free at last, and the reply's turn comes.
+            yield* Deferred.succeed(release, true);
+            yield* eventually(
+              "the held call ends",
+              Effect.sync(() => holding.pollUnsafe() !== undefined)
+            );
+            yield* eventually("the reply's job ends", jobEnded(reply.id));
+            yield* ReplyJobs.use((jobs) => jobs.start(reply.id));
+            yield* TestClock.adjust("2 hours");
+            yield* settle(10);
+
+            assert.strictEqual(statusOf(world, reply.id), "failed");
+            assert.lengthOf(platform.sent, 0);
+            assert.lengthOf(platform.resumed, 0);
+          }).pipe(
+            Effect.provide(
+              serverOver(world, platform, MessageStorage.layerMemory)
+            )
+          )
+        )
+      );
+    },
     timeout
   );
 });

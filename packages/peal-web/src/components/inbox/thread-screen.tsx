@@ -353,6 +353,7 @@ const ReplyBox = ({
     setError(null);
     startSending(async () => {
       const exit = await send({
+        headers: {},
         params: { commentId: comment.id, workspaceId: context.workspaceId },
         payload: { text },
         reactivityKeys: inboxChanged(context.workspaceId, comment.threadId),

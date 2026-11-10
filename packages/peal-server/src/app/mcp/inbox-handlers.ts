@@ -181,27 +181,38 @@ export const InboxToolsLive = InboxTools.toLayer(
             })
           );
         }),
-      reply_to_comment: ({ commentId, text }) =>
+      reply_to_comment: ({ commentId, idempotencyKey, text }) =>
         Effect.gen(function* reply() {
           const id = yield* idOr(decodeCommentId(commentId), noComment);
 
-          return yield* replies.reply(yield* actor, id, text).pipe(
-            Effect.map(toReplyView),
-            Effect.catchTags({
-              AbilityUnavailable: unavailable,
-              CommentGone: gone,
-              CommentNotFound: noComment,
-              DatabaseError: Effect.die,
-              MissingPermission: notAllowed("answer comments"),
-              ReplyEmpty: () =>
-                refuse("The reply says nothing: nothing was sent."),
-              ReplyPending: ({ replyId }) =>
-                refuse(
-                  `A reply to this comment is on its way, or may have gone out (${replyId}): nothing more was sent. If it is unconfirmed, the user checks the platform, then confirm_comment_reply records what they found.`
-                ),
-              ReplyTooLong: tooLong,
-            })
-          );
+          return yield* replies
+            .reply(
+              yield* actor,
+              id,
+              text,
+              Option.fromUndefinedOr(idempotencyKey)
+            )
+            .pipe(
+              Effect.map(toReplyView),
+              Effect.catchTags({
+                AbilityUnavailable: unavailable,
+                CommentGone: gone,
+                CommentNotFound: noComment,
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("answer comments"),
+                ReplyEmpty: () =>
+                  refuse("The reply says nothing: nothing was sent."),
+                ReplyKeyReused: () =>
+                  refuse(
+                    "This idempotencyKey was first sent with another comment or another text: nothing was made. Call again under a new key."
+                  ),
+                ReplyPending: ({ replyId }) =>
+                  refuse(
+                    `A reply to this comment is on its way, or may have gone out (${replyId}): nothing more was sent. If it is unconfirmed, the user checks the platform, then confirm_comment_reply records what they found.`
+                  ),
+                ReplyTooLong: tooLong,
+              })
+            );
         }),
       withdraw_comment_reply: ({ replyId }) =>
         Effect.gen(function* withdraw() {

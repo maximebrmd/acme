@@ -1,6 +1,7 @@
 import { Console, Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
+  idempotencyKeyLifetimeHours,
   InboxAbilitiesSchema,
   InboxCommentSchema,
   InboxModerationActionSchema,
@@ -10,6 +11,7 @@ import {
   InboxThreadDetailSchema,
   InboxThreadPageSchema,
   inboxWindowDays,
+  maxIdempotencyKeyLength,
   maxInboxPageSize,
 } from "peal-contract";
 import type {
@@ -223,10 +225,30 @@ const thread = Command.make(
   )
 );
 
+// Refused before any request: the server would refuse the key too.
+const keyChecked = (key: Option.Option<string>) =>
+  Option.exists(
+    key,
+    (given) => given === "" || given.length > maxIdempotencyKeyLength
+  )
+    ? Effect.fail(
+        new Refused({
+          reason: `--idempotency-key takes 1 to ${String(maxIdempotencyKeyLength)} characters.`,
+        })
+      )
+    : Effect.void;
+
 const reply = Command.make(
   "reply",
   {
     commentId: commentArgument,
+    idempotencyKey: Flag.String("idempotency-key").pipe(
+      Flag.withMetavar("<key>"),
+      Flag.withDescription(
+        `Any text of your choosing, ${String(maxIdempotencyKeyLength)} characters at most, such as a UUID, that makes the command safe to run again: within ${String(idempotencyKeyLifetimeHours)} hours, the same key with the same reply to the same comment answers the reply the first run made, and writes no other; with anything else it is refused. Without it, a second run is refused only while the first reply is on its way or unconfirmed: once it went out, a second run answers the comment again.`
+      ),
+      Flag.optional
+    ),
     json: jsonFlag,
     text: Flag.String("text").pipe(
       Flag.withMetavar("<text>"),
@@ -235,14 +257,35 @@ const reply = Command.make(
     workspace: workspaceFlag,
   },
   Effect.fn("inbox.reply")(function* reply(flags) {
+    yield* keyChecked(flags.idempotencyKey);
+
     const { client, url, workspace } = yield* inWorkspace(flags.workspace);
 
     const sent = yield* client.inbox
       .reply({
+        headers: Option.match(flags.idempotencyKey, {
+          onNone: () => ({}),
+          onSome: (key) => ({ "idempotency-key": key }),
+        }),
         params: { commentId: flags.commentId, workspaceId: workspace.id },
         payload: { text: flags.text },
       })
-      .pipe(Effect.mapError(explain(url)));
+      .pipe(
+        // Said for a reply: the general words speak of a post.
+        Effect.mapError((failure) => {
+          const refused = explain(url)(failure);
+
+          return failure._tag === "IdempotencyKeyReused" &&
+            refused instanceof Refused
+            ? new Refused({
+                code: refused.code,
+                error: refused.error,
+                reason: `This idempotency key was sent in the last ${String(idempotencyKeyLifetimeHours)} hours with another reply, or for another comment: nothing was written. Send this one under a new --idempotency-key.`,
+                requestId: refused.requestId,
+              })
+            : refused;
+        })
+      );
 
     if (flags.json) {
       yield* printJson(InboxReplySchema, sent);

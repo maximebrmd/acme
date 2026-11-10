@@ -373,6 +373,8 @@ Keys are kept per workspace. [Posting from an AI agent](/agents#api) shows a who
 
 `POST …/posts/bulk` and `POST …/posts/import` take the same header, for the whole request, and each of their items or rows may carry a key of its own ([Posting through the API](/posting-api)); creating a customer's workspace through the partner API takes one too ([Embedding Peal](/embedding)).
 
+`POST …/inbox/comments/{commentId}/replies`, which answers a comment in public, takes the header too: within 24 hours, the same key with the same comment and text answers the reply the first request made, however it stands, and writes no other; with another comment or text it answers 409 `idempotency_key_reused`. Without a key, a second request is refused (409 `reply_pending`) only while the first reply is on its way or unconfirmed.
+
 The other writes take no key. Whether one is safe to send again depends on what it does:
 
 | Request                                                                           | Sent again                                                                                                                                                                                        |

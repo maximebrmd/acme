@@ -183,15 +183,15 @@ Les annotations sont des indications qu’un client peut vous montrer ; les vér
 
 ### Commentaires [#inbox-tools]
 
-| Outil                    | Ce qu’il fait                                                                                                                                                         |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_comment_threads`   | Les fils de la [boîte de réception](/inbox) qui ont des commentaires, ceux qui attendent une réponse en premier, avec des nombres et jamais le texte des commentaires |
-| `get_comment_thread`     | Un fil entier : ses commentaires avec l’identifiant public et le nom de leurs auteurs, les réponses envoyées depuis Peal, et ce que son canal peut faire              |
-| `reply_to_comment`       | Répond à un commentaire en public, au nom du compte du canal. Demande la publication                                                                                  |
-| `confirm_comment_reply`  | Enregistre ce que vous avez trouvé sur la plateforme pour une réponse dont Peal n’a pas pu connaître l’issue. Demande la publication                                  |
-| `withdraw_comment_reply` | Supprime une réponse envoyée de sa plateforme. Demande la publication                                                                                                 |
-| `mark_comment_answered`  | Dit qu’un commentaire n’appelle pas de réponse, ou en attend de nouveau une. Demande la publication                                                                   |
-| `moderate_comment`       | Masque, montre, aime, n’aime plus ou supprime un commentaire, quand sa plateforme le permet au compte. Demande la publication                                         |
+| Outil                    | Ce qu’il fait                                                                                                                                                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_comment_threads`   | Les fils de la [boîte de réception](/inbox) qui ont des commentaires, ceux qui attendent une réponse en premier, avec des nombres et jamais le texte des commentaires                                                             |
+| `get_comment_thread`     | Un fil entier : ses commentaires avec l’identifiant public et le nom de leurs auteurs, les réponses envoyées depuis Peal, et ce que son canal peut faire                                                                          |
+| `reply_to_comment`       | Répond à un commentaire en public, au nom du compte du canal. Avec un `idempotencyKey`, un nouvel appel dans les 24 heures avec les mêmes arguments répond la première réponse sans en écrire une seconde. Demande la publication |
+| `confirm_comment_reply`  | Enregistre ce que vous avez trouvé sur la plateforme pour une réponse dont Peal n’a pas pu connaître l’issue. Demande la publication                                                                                              |
+| `withdraw_comment_reply` | Supprime une réponse envoyée de sa plateforme. Demande la publication                                                                                                                                                             |
+| `mark_comment_answered`  | Dit qu’un commentaire n’appelle pas de réponse, ou en attend de nouveau une. Demande la publication                                                                                                                               |
+| `moderate_comment`       | Masque, montre, aime, n’aime plus ou supprime un commentaire, quand sa plateforme le permet au compte. Demande la publication                                                                                                     |
 
 Un commentaire est un texte écrit par quelqu’un d’extérieur à votre espace de travail, et peut être écrit pour orienter un assistant. Les outils disent à l’assistant de le traiter comme une donnée, et une réponse ne part que par `reply_to_comment`, pour lequel votre client vous demande votre accord comme pour tout ce qui atteint une plateforme. Une réponse dont l’issue n’est pas connue n’est jamais renvoyée par un outil : vous vérifiez sur la plateforme, puis vous confirmez.
 

@@ -4,6 +4,7 @@ import { TestClock } from "effect/testing";
 
 import { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
 import { EngagementReplies } from "#engagement/application/engagement-replies.ts";
+import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
 import { SendReply } from "#engagement/application/send-reply.ts";
 import { forgetComment, markAnswered } from "#engagement/domain/comment.ts";
@@ -424,6 +425,194 @@ describe("sending a reply", () => {
 
           // Settled once: the next run finds none left.
           assert.strictEqual(yield* send.settleStranded, 0);
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "journals one reply when two requests answer the same comment at once",
+    () => {
+      const world = worldWith();
+
+      return at(
+        Effect.gen(function* together() {
+          const results = yield* Effect.all(
+            [
+              replying("Thank you!").pipe(Effect.result),
+              replying("Thanks a lot!").pipe(Effect.result),
+            ],
+            { concurrency: "unbounded" }
+          );
+
+          assert.deepStrictEqual(
+            results.map((result) =>
+              Result.isSuccess(result)
+                ? result.success.status._tag
+                : result.failure._tag
+            ),
+            ["sending", "ReplyPending"]
+          );
+          // One row, and one job.
+          assert.lengthOf([...world.state.replies.values()], 1);
+          assert.lengthOf(world.state.jobs, 1);
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "answers the reply a key made when the same request comes again, however it stands, and never a second",
+    () => {
+      const world = worldWith([{}, {}]);
+      const key = Option.some("synthetic-reply-key");
+
+      const keyed = (text: string, to = commentId(101)) =>
+        EngagementReplies.use((replies) =>
+          replies.reply(editor, to, text, key)
+        );
+
+      return at(
+        Effect.gen(function* retried() {
+          const first = yield* keyed("Thank you!");
+
+          // The answer was lost, and the client sends the request again:
+          // while the reply is on its way, then once it went out.
+          assert.strictEqual((yield* keyed("Thank you!")).id, first.id);
+
+          yield* sending(first.id);
+
+          const after = yield* keyed("Thank you!");
+
+          assert.strictEqual(after.id, first.id);
+          assert.strictEqual(after.status._tag, "sent");
+
+          assert.lengthOf([...world.state.replies.values()], 1);
+          assert.lengthOf(world.state.jobs, 1);
+          assert.lengthOf(world.state.sent, 1);
+
+          // The key names that reply: another text or comment is refused.
+          const other = yield* keyed("Something else.").pipe(Effect.flip);
+
+          const elsewhere = yield* keyed("Thank you!", commentId(102)).pipe(
+            Effect.flip
+          );
+
+          assert.deepStrictEqual(
+            [other._tag, elsewhere._tag],
+            ["ReplyKeyReused", "ReplyKeyReused"]
+          );
+
+          // A day on, the key is forgotten, and is a new request's.
+          yield* TestClock.adjust("25 hours");
+
+          const later = yield* keyed("Thank you!", commentId(102));
+
+          assert.notStrictEqual(later.id, first.id);
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "sends nothing for a reply a person settled while its job waited, and never puts it back on its way",
+    () => {
+      const world = worldWith();
+
+      return at(
+        Effect.gen(function* settledMeanwhile() {
+          const reply = yield* replying("Thank you!");
+          const send = yield* SendReply;
+          const replies = yield* EngagementReplies;
+
+          // An hour passes with the job still waiting its turn: the reply
+          // is handed over, and its job stopped with it.
+          yield* TestClock.adjust("61 minutes");
+          assert.strictEqual(yield* send.settleStranded, 1);
+          assert.deepStrictEqual(world.state.cancelled, [reply.id]);
+
+          // The member looks, finds nothing, and says so.
+          const settled = yield* replies.confirm(editor, reply.id, false);
+
+          assert.strictEqual(settled.status._tag, "failed");
+
+          // A run of its job that wakes now does nothing at all.
+          assert.strictEqual(yield* sending(reply.id), "superseded");
+          assert.lengthOf(world.state.sent, 0);
+          assert.lengthOf(world.state.resumed, 0);
+          assert.strictEqual(
+            world.state.replies.get(reply.id)?.status._tag,
+            "failed"
+          );
+
+          // And the comment can be answered, once.
+          assert.strictEqual(
+            (yield* replying("Thank you, again!")).status._tag,
+            "sending"
+          );
+        })
+      ).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect("keeps what a person decided when a run ends after them", () => {
+    const world = worldWith();
+
+    return at(
+      Effect.gen(function* decidedFirst() {
+        const reply = yield* replying("Thank you!");
+        const send = yield* SendReply;
+
+        // What a run read of the reply, before it was handed over in
+        // the middle of that run.
+        const stale = world.state.replies.get(reply.id);
+
+        assert.isDefined(stale);
+
+        yield* TestClock.adjust("61 minutes");
+        yield* send.settleStranded;
+
+        // The run's own writes are from the status it read: refused.
+        const store = yield* EngagementStore;
+
+        assert.isFalse(
+          yield* store.advanceReply(
+            Result.getOrThrow(beginSending(stale, now)),
+            stale
+          )
+        );
+        assert.strictEqual(
+          world.state.replies.get(reply.id)?.status._tag,
+          "unconfirmed"
+        );
+      })
+    ).pipe(Effect.provide(world.layer));
+  });
+
+  it.effect(
+    "does not hand over a reply whose call a gate claimed minutes ago",
+    () => {
+      const world = worldWith();
+
+      return at(
+        Effect.gen(function* callInFlight() {
+          const reply = yield* replying("Thank you!");
+          const send = yield* SendReply;
+          const store = yield* EngagementStore;
+
+          yield* TestClock.adjust("61 minutes");
+
+          // The gate reached it at last, and its call is being made.
+          assert.isTrue(yield* store.claimCall(reply.id, yield* DateTime.now));
+          assert.strictEqual(yield* send.settleStranded, 0);
+
+          // A call cannot last that long: past its bound, nothing will
+          // answer for this reply.
+          yield* TestClock.adjust("11 minutes");
+          assert.strictEqual(yield* send.settleStranded, 1);
+
+          // Handed over, it is no longer claimed for any call.
+          assert.isFalse(yield* store.claimCall(reply.id, yield* DateTime.now));
         })
       ).pipe(Effect.provide(world.layer));
     }

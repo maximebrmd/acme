@@ -352,6 +352,208 @@ layer(StoreTest)("the engagement store", (it) => {
       })
   );
 
+  it.effect(
+    "journals one reply a comment at a time and one a key, whatever requests come together",
+    () =>
+      Effect.gen(function* oneAtATime() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* EngagementStore;
+
+        const thread = yield* threadOn(
+          workspaceId,
+          yield* newId(ChannelIdSchema),
+          "2043-03-08T10:20:00.000Z"
+        );
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([thread]);
+
+          const first = yield* commentOn(thread, 1, "2043-03-08T10:25:00.000Z");
+
+          const second = yield* commentOn(
+            thread,
+            2,
+            "2043-03-08T10:26:00.000Z"
+          );
+
+          yield* store.saveComments([first, second]);
+
+          const at = utc("2043-03-08T10:30:00.000Z");
+
+          const written = (to: typeof first, text: string) =>
+            newId(ReplyIdSchema).pipe(
+              Effect.map((id) => writeReply(id, to, Option.none(), text, at))
+            );
+
+          // Eight requests to answer one comment, sent together, each on
+          // a connection of its own: the database lets one through.
+          const together = yield* Effect.forEach(
+            Array.from({ length: 8 }, (_, n) => `Thank you, ${String(n)}!`),
+            (text) =>
+              written(first, text).pipe(
+                Effect.flatMap((reply) =>
+                  store.journalReply(reply, Option.none())
+                )
+              ),
+            { concurrency: "unbounded" }
+          );
+
+          assert.lengthOf(
+            together.filter(({ _tag }) => _tag === "journalled"),
+            1
+          );
+          assert.lengthOf(
+            together.filter(({ _tag }) => _tag === "pending"),
+            7
+          );
+
+          const [pending] = yield* store.repliesOf(thread.id);
+
+          assert.isDefined(pending);
+          assert.deepInclude(together, {
+            _tag: "pending",
+            replyId: pending.id,
+          });
+
+          // A key names the reply it made: the same request again answers
+          // it, another is refused, and both make nothing.
+          const key = Option.some({
+            key: "synthetic-reply-key",
+            since: utc("2043-03-07T10:30:00.000Z"),
+          });
+
+          const keyed = yield* written(second, "With a key.");
+
+          assert.deepStrictEqual(yield* store.journalReply(keyed, key), {
+            _tag: "journalled",
+          });
+          assert.deepStrictEqual(
+            yield* store.journalReply(
+              yield* written(second, "With a key."),
+              key
+            ),
+            { _tag: "replayed", reply: keyed }
+          );
+          assert.deepStrictEqual(
+            yield* store.journalReply(
+              yield* written(second, "Something else."),
+              key
+            ),
+            { _tag: "keyReused" }
+          );
+
+          // Without the key, the comment has a reply on its way.
+          assert.deepStrictEqual(
+            yield* store.journalReply(
+              yield* written(second, "With a key."),
+              Option.none()
+            ),
+            { _tag: "pending", replyId: keyed.id }
+          );
+
+          // A use of the key older than its lifetime is forgotten.
+          const settled = Result.getOrThrow(
+            settleReply(keyed, { _tag: "failed", reason: "refused" }, at)
+          );
+
+          assert.isTrue(yield* store.advanceReply(settled, keyed));
+
+          const later = yield* written(second, "A new request.");
+
+          assert.deepStrictEqual(
+            yield* store.journalReply(
+              later,
+              Option.some({ key: "synthetic-reply-key", since: at })
+            ),
+            { _tag: "journalled" }
+          );
+          assert.lengthOf(yield* store.repliesOf(thread.id), 3);
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
+  it.effect(
+    "moves a reply only from the status it was read in, and claims a call only while it is on its way",
+    () =>
+      Effect.gen(function* conditional() {
+        const workspaceId = yield* freshWorkspace;
+        const store = yield* EngagementStore;
+
+        const thread = yield* threadOn(
+          workspaceId,
+          yield* newId(ChannelIdSchema),
+          "2043-03-09T10:20:00.000Z"
+        );
+
+        yield* Effect.gen(function* checks() {
+          yield* store.follow([thread]);
+
+          const comment = yield* commentOn(
+            thread,
+            1,
+            "2043-03-09T10:25:00.000Z"
+          );
+
+          yield* store.saveComments([comment]);
+
+          const at = utc("2043-03-09T10:30:00.000Z");
+
+          const written = writeReply(
+            yield* newId(ReplyIdSchema),
+            comment,
+            Option.none(),
+            "Thank you!",
+            at
+          );
+
+          yield* store.journalReply(written, Option.none());
+
+          const begun = Result.getOrThrow(beginSending(written, at));
+
+          const handedOver = Result.getOrThrow(
+            settleReply(
+              written,
+              { _tag: "unconfirmed", reason: "interrupted" },
+              at
+            )
+          );
+
+          // A gate claims its call; while the claim is fresh the reply is
+          // not among those to hand over, and past it, it is.
+          assert.isTrue(yield* store.claimCall(written.id, at));
+
+          const stranded = (called: string) =>
+            store
+              .strandedReplies(at, utc(called), 1000)
+              .pipe(
+                Effect.map(
+                  (found) => found.filter(({ id }) => id === written.id).length
+                )
+              );
+
+          assert.strictEqual(yield* stranded("2043-03-09T10:29:59.000Z"), 0);
+          assert.strictEqual(yield* stranded("2043-03-09T10:30:00.000Z"), 1);
+
+          // The handover wins: a run that read the reply on its way moves
+          // nothing after it, and no gate claims a call for it.
+          assert.isTrue(yield* store.advanceReply(handedOver, written));
+          assert.isFalse(yield* store.advanceReply(begun, written));
+          assert.isFalse(yield* store.claimCall(written.id, at));
+          assert.deepStrictEqual(
+            yield* store.reply(written.id),
+            Option.some(handedOver)
+          );
+
+          // Nor does a run that had begun settle a reply a person settled.
+          const found = Result.getOrThrow(
+            settleReply(begun, { _tag: "failed", reason: "refused" }, at)
+          );
+
+          assert.isFalse(yield* store.advanceReply(found, begun));
+        }).pipe(Effect.ensuring(forget(workspaceId)));
+      })
+  );
+
   it.effect("journals a reply through every state", () =>
     Effect.gen(function* journals() {
       const workspaceId = yield* freshWorkspace;
@@ -382,7 +584,10 @@ layer(StoreTest)("the engagement store", (it) => {
           utc("2043-03-05T10:30:00.000Z")
         );
 
-        yield* store.saveReply(written);
+        assert.deepStrictEqual(
+          yield* store.journalReply(written, Option.none()),
+          { _tag: "journalled" }
+        );
         assert.deepStrictEqual(
           yield* store.reply(written.id),
           Option.some(written)
@@ -391,7 +596,7 @@ layer(StoreTest)("the engagement store", (it) => {
         // On its way: listed among those written by then, and not before.
         const onTheirWay = (before: string) =>
           store
-            .strandedReplies(utc(before), 1000)
+            .strandedReplies(utc(before), utc(before), 1000)
             .pipe(
               Effect.map((found) => found.filter(({ id }) => id === written.id))
             );
@@ -408,7 +613,7 @@ layer(StoreTest)("the engagement store", (it) => {
           beginSending(written, utc("2043-03-05T10:30:01.000Z"))
         );
 
-        yield* store.saveReply(begun);
+        assert.isTrue(yield* store.advanceReply(begun, written));
         assert.deepStrictEqual(
           yield* store.reply(written.id),
           Option.some(begun)
@@ -426,7 +631,7 @@ layer(StoreTest)("the engagement store", (it) => {
           )
         );
 
-        yield* store.saveReply(sent);
+        assert.isTrue(yield* store.advanceReply(sent, begun));
         assert.deepStrictEqual(yield* store.repliesOf(thread.id), [sent]);
         assert.deepStrictEqual(
           yield* onTheirWay("2043-03-05T11:00:00.000Z"),
@@ -502,7 +707,7 @@ layer(StoreTest)("the engagement store", (it) => {
             utc("2043-03-06T10:30:00.000Z")
           );
 
-          yield* store.saveReply(reply);
+          yield* store.journalReply(reply, Option.none());
           yield* records.eraseWorkspace(workspaceId);
 
           assert.deepStrictEqual(yield* store.thread(thread.id), Option.none());
@@ -513,7 +718,10 @@ layer(StoreTest)("the engagement store", (it) => {
           yield* store.saveComments([
             yield* commentOn(thread, 2, "2043-03-06T10:26:00.000Z"),
           ]);
-          yield* store.saveReply(reply);
+          assert.deepStrictEqual(
+            yield* store.journalReply(reply, Option.none()),
+            { _tag: "dropped" }
+          );
           yield* store.saveCollections([thread]);
 
           assert.deepStrictEqual(yield* store.commentsOf(thread.id), []);

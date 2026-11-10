@@ -8,21 +8,27 @@ import {
   gt,
   inArray,
   isNotNull,
+  isNull,
   lte,
+  or,
   sql as drizzleSql,
 } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
+import { Digest } from "effect/crypto";
 import { SqlClient } from "effect/sql";
 
 import { EngagementStore } from "#engagement/application/ports/engagement-store.ts";
 import type {
   DueChannel,
+  Journalled,
   LatestFollowed,
+  ReplyKey,
   ThreadCursor,
   ThreadFilter,
   ThreadSummary,
 } from "#engagement/application/ports/engagement-store.ts";
 import { Comment } from "#engagement/domain/comment.ts";
+import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
 import { Reply } from "#engagement/domain/reply.ts";
 import type { ReplyStatus } from "#engagement/domain/reply.ts";
 import { Thread } from "#engagement/domain/thread.ts";
@@ -309,11 +315,16 @@ const filtered = (workspaceId: WorkspaceId, filter: ThreadFilter) =>
   );
 
 /** The engagement context's rows, in its schema, through Drizzle. */
+const encoder = new TextEncoder();
+
+const decodeReplyId = Schema.decodeUnknownEffect(ReplyIdSchema);
+
 export const DrizzleEngagementStore = Layer.effect(
   EngagementStore,
   Effect.gen(function* DrizzleEngagementStore() {
     const db = yield* Drizzle;
     const sql = yield* SqlClient.SqlClient;
+    const digest = yield* Digest.Digest;
 
     // Under the following lock, which no erasure in progress holds then: a
     // workspace erased since its posts were listed is passed over.
@@ -685,14 +696,22 @@ export const DrizzleEngagementStore = Layer.effect(
     });
 
     const strandedReplies = Effect.fn("EngagementStore.strandedReplies")(
-      function* strandedReplies(writtenBefore: DateTime.Utc, limit: number) {
+      function* strandedReplies(
+        writtenBefore: DateTime.Utc,
+        calledBefore: DateTime.Utc,
+        limit: number
+      ) {
         const rows = yield* db
           .select()
           .from(replies)
           .where(
             and(
               eq(replies.status, "sending"),
-              lte(replies.createdAt, DateTime.toDateUtc(writtenBefore))
+              lte(replies.createdAt, DateTime.toDateUtc(writtenBefore)),
+              or(
+                isNull(replies.callClaimedAt),
+                lte(replies.callClaimedAt, DateTime.toDateUtc(calledBefore))
+              )
             )
           )
           .orderBy(asc(replies.createdAt), asc(replies.id))
@@ -703,17 +722,75 @@ export const DrizzleEngagementStore = Layer.effect(
       }
     );
 
-    // A reply whose comment went, with its thread or its workspace, is
-    // dropped: the insert selects its comment, and finds none.
-    const saveReply = Effect.fn("EngagementStore.saveReply")(
-      function* saveReply(saved: Reply) {
+    const hashOf = (text: string) =>
+      digest
+        .digestHex(Digest.sha256, encoder.encode(text))
+        .pipe(Effect.mapError(failed));
+
+    // The reply a key made in the workspace, compared with the request
+    // that comes with the key now.
+    const madeUnder = Effect.fn("EngagementStore.madeUnder")(
+      function* madeUnder(saved: Reply, keyDigest: string) {
+        const [row] = yield* db
+          .select()
+          .from(replies)
+          .where(
+            and(
+              eq(replies.workspaceId, saved.workspaceId),
+              eq(replies.keyDigest, keyDigest)
+            )
+          )
+          .limit(1)
+          .pipe(Effect.mapError(failed));
+
+        if (row === undefined) {
+          return Option.none<Journalled>();
+        }
+
+        const earlier = yield* replyOf(row);
+
+        const same =
+          earlier.commentId === saved.commentId && earlier.text === saved.text;
+
+        return Option.some<Journalled>(
+          same ? { _tag: "replayed", reply: earlier } : { _tag: "keyReused" }
+        );
+      }
+    );
+
+    // Insert only, and only when no unique index refuses it: one reply on
+    // its way or unconfirmed a comment, one reply a key. A reply whose
+    // comment went, with its thread or its workspace, is dropped: the
+    // insert selects its comment, and finds none.
+    const journalReply = Effect.fn("EngagementStore.journalReply")(
+      function* journalReply(saved: Reply, key: Option.Option<ReplyKey>) {
+        const keyDigest = Option.isSome(key)
+          ? yield* hashOf(key.value.key)
+          : null;
+
+        if (Option.isSome(key) && keyDigest !== null) {
+          // A use of the key older than its lifetime is forgotten.
+          yield* sql`
+            UPDATE engagement.replies SET key_digest = NULL
+            WHERE workspace_id = ${saved.workspaceId}::uuid
+              AND key_digest = ${keyDigest}
+              AND created_at <= ${DateTime.formatIso(key.value.since)}::timestamptz
+          `.pipe(Effect.mapError(failed));
+
+          const made = yield* madeUnder(saved, keyDigest);
+
+          if (Option.isSome(made)) {
+            return made.value;
+          }
+        }
+
         const status = statusColumns(saved.status);
 
-        yield* sql`
+        const inserted = yield* sql`
           INSERT INTO engagement.replies (
             id, thread_id, comment_id, workspace_id, channel_id, author_id,
             text, created_at, status, attempted_at, settled_at, reason,
-            platform_comment_id, permalink
+            platform_comment_id, permalink, key_digest
           )
           SELECT ${saved.id}::uuid, comment.thread_id, comment.id,
                  comment.workspace_id, comment.channel_id,
@@ -721,18 +798,89 @@ export const DrizzleEngagementStore = Layer.effect(
                  ${DateTime.formatIso(saved.createdAt)}::timestamptz,
                  ${saved.status._tag}, ${status.attemptedAt}::timestamptz,
                  ${status.settledAt}::timestamptz, ${status.reason}::text,
-                 ${status.platformCommentId}::text, ${status.permalink}::text
+                 ${status.platformCommentId}::text, ${status.permalink}::text,
+                 ${keyDigest}::text
           FROM engagement.comments AS comment
           WHERE comment.id = ${saved.commentId}::uuid
-          ON CONFLICT (id) DO UPDATE
-          SET author_id = excluded.author_id,
-              status = excluded.status,
-              attempted_at = excluded.attempted_at,
-              settled_at = excluded.settled_at,
-              reason = excluded.reason,
-              platform_comment_id = excluded.platform_comment_id,
-              permalink = excluded.permalink
+          ON CONFLICT DO NOTHING
+          RETURNING id
         `.pipe(Effect.mapError(failed));
+
+        if (inserted.length === 1) {
+          const journalled: Journalled = { _tag: "journalled" };
+
+          return journalled;
+        }
+
+        // Refused: by the key, used by a request that came just before,
+        // by a reply to the comment that is not settled, or the comment
+        // is gone.
+        if (keyDigest !== null) {
+          const made = yield* madeUnder(saved, keyDigest);
+
+          if (Option.isSome(made)) {
+            return made.value;
+          }
+        }
+
+        const [pending] = yield* db
+          .select({ id: replies.id })
+          .from(replies)
+          .where(
+            and(
+              eq(replies.commentId, saved.commentId),
+              inArray(replies.status, ["sending", "unconfirmed"])
+            )
+          )
+          .limit(1)
+          .pipe(Effect.mapError(failed));
+
+        const refused: Journalled =
+          pending === undefined
+            ? { _tag: "dropped" }
+            : {
+                _tag: "pending",
+                replyId: yield* decodeReplyId(pending.id).pipe(Effect.orDie),
+              };
+
+        return refused;
+      }
+    );
+
+    // Only from the status it was read in, attempt included.
+    const advanceReply = Effect.fn("EngagementStore.advanceReply")(
+      function* advanceReply(next: Reply, from: Reply) {
+        const status = statusColumns(next.status);
+        const before = statusColumns(from.status);
+
+        const moved = yield* sql`
+          UPDATE engagement.replies
+          SET status = ${next.status._tag},
+              attempted_at = ${status.attemptedAt}::timestamptz,
+              settled_at = ${status.settledAt}::timestamptz,
+              reason = ${status.reason}::text,
+              platform_comment_id = ${status.platformCommentId}::text,
+              permalink = ${status.permalink}::text
+          WHERE id = ${next.id}::uuid
+            AND status = ${from.status._tag}
+            AND attempted_at IS NOT DISTINCT FROM ${before.attemptedAt}::timestamptz
+          RETURNING id
+        `.pipe(Effect.mapError(failed));
+
+        return moved.length === 1;
+      }
+    );
+
+    const claimCall = Effect.fn("EngagementStore.claimCall")(
+      function* claimCall(replyId: string, at: DateTime.Utc) {
+        const claimed = yield* sql`
+          UPDATE engagement.replies
+          SET call_claimed_at = ${DateTime.formatIso(at)}::timestamptz
+          WHERE id = ${replyId}::uuid AND status = 'sending'
+          RETURNING id
+        `.pipe(Effect.mapError(failed));
+
+        return claimed.length === 1;
       }
     );
 
@@ -762,12 +910,15 @@ export const DrizzleEngagementStore = Layer.effect(
     });
 
     return EngagementStore.of({
+      advanceReply,
+      claimCall,
       comment,
       commentsOf,
       countDue,
       dueChannels,
       dueOn,
       follow,
+      journalReply,
       latestFollowed,
       listThreads,
       purge,
@@ -775,9 +926,8 @@ export const DrizzleEngagementStore = Layer.effect(
       reply,
       saveCollections,
       saveComments,
-      saveReply,
       strandedReplies,
       thread,
     });
   })
-);
+).pipe(Layer.provide(Digest.layerWebCrypto));

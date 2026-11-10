@@ -16,6 +16,14 @@ export const WorkflowReplyJobs = Layer.effect(
     const engine = yield* WorkflowEngine.WorkflowEngine;
 
     return ReplyJobs.of({
+      // An interrupt is a persisted message too: it commits with what
+      // hands the reply over, and the job ends wherever it was.
+      cancel: (replyId) =>
+        SendReplyV1.executionId({ replyId }).pipe(
+          Effect.flatMap((executionId) => SendReplyV1.interrupt(executionId)),
+          Effect.provideService(WorkflowEngine.WorkflowEngine, engine),
+          Effect.orDie
+        ),
       start: (replyId) =>
         SendReplyV1.execute(
           { replyId },
