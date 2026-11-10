@@ -1265,6 +1265,8 @@ export const studioGroupsLive = (studio: Studio) =>
               }),
             });
           }),
+        // No command lists posts by filter yet.
+        search: () => Effect.fail(new Forbidden()),
         send: ({ headers, params, payload }) =>
           Effect.gen(function* send() {
             yield* publishing;

@@ -237,10 +237,12 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
         // Every tool is listed; those that change something refuse.
         assert.deepStrictEqual(results.names, [
           "analytics_summary",
+          "await_post",
           "cancel_post",
           "confirm_target",
           "create_draft",
           "create_post",
+          "create_posts",
           "create_webhook",
           "discard_draft",
           "get_billing",
@@ -267,6 +269,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "server_health",
           "unschedule_post",
           "update_draft",
+          "validate_post",
           "whoami",
         ]);
         assert.strictEqual(results.whoami.user.id, fixture.owner.id);

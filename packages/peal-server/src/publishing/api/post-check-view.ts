@@ -1,6 +1,7 @@
-import { Option } from "effect";
+import { Effect, Option } from "effect";
 import type {
   ChannelPreview as PreviewView,
+  CurrentMember,
   LimitedCount as CountView,
   PlanShortfall,
   PostValidation,
@@ -12,6 +13,7 @@ import type {
   ChannelPreview,
   LimitedCount,
 } from "#publishing/domain/channel-preview.ts";
+import type { LimitRefusal } from "#shared/api/limit-reached.ts";
 
 import type { CheckInputRead } from "./post-check-input.ts";
 
@@ -41,7 +43,7 @@ const previewView = (preview: ChannelPreview): PreviewView => ({
  * request wrote that name nothing, the zone it gave when it is none, and
  * the plan's limit as PlanLimitReached tells it (`shortfall`).
  */
-export const validationView = (
+const validationView = (
   check: PostCheck,
   read: CheckInputRead,
   shortfall: Option.Option<PlanShortfall>
@@ -68,3 +70,32 @@ export const validationView = (
     violations: [...check.violations],
   };
 };
+
+/**
+ * What clients see of a check, with the limit of the plan it found, if
+ * any, told as PlanLimitReached tells it (`limitReached`).
+ */
+export const validationOf =
+  (limitReached: LimitRefusal) =>
+  (
+    check: PostCheck,
+    read: CheckInputRead
+  ): Effect.Effect<PostValidation, never, CurrentMember> =>
+    Option.match(check.planLimit, {
+      onNone: () => Effect.succeed(Option.none<PlanShortfall>()),
+      onSome: (reached) =>
+        limitReached(reached).pipe(
+          Effect.flip,
+          Effect.map(
+            ({ allowed, billingUrl, limit, plan, planWithRoom, used }) =>
+              Option.some<PlanShortfall>({
+                allowed,
+                billingUrl,
+                limit,
+                plan,
+                planWithRoom,
+                used,
+              })
+          )
+        ),
+    }).pipe(Effect.map((shortfall) => validationView(check, read, shortfall)));

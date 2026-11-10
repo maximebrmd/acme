@@ -17,6 +17,7 @@ import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostSearch } from "#publishing/application/post-search.ts";
 import { PostUsage } from "#publishing/application/post-usage.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
@@ -59,7 +60,7 @@ import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publis
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 /**
- * The publishing context's use cases (`PostBatches`, `PostChecks`, `PostDrafts`, `PostOutcomes`, `PostQueries`,
+ * The publishing context's use cases (`PostBatches`, `PostChecks`, `PostDrafts`, `PostOutcomes`, `PostQueries`, `PostSearch`,
  * `PostScheduling`, `PostFollowUp`, for the handlers; `PostRecords`, for the
  * workspace context's exports and erasures; `PostUsage`, for billing;
  * `PublishedTargets`, which analytics follows; `PostOversight`, for the
@@ -97,6 +98,7 @@ export const publishingWith = <
     PostOutcomes.layer,
     PostQueries.layer,
     PostRecords.layer,
+    PostSearch.layer,
     PostFollowUp.layer,
     PostUsage.layer
   ).pipe(

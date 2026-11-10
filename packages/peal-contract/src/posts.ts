@@ -15,6 +15,7 @@ import { ImportUnreadable } from "./import-unreadable.ts";
 import { InvalidTimeRange } from "./invalid-time-range.ts";
 import { InvalidTimeZone } from "./invalid-time-zone.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
+import { PlatformSchema } from "./platform.ts";
 import {
   ImportCellProblemSchema,
   maxBulkPosts,
@@ -471,6 +472,45 @@ export const DraftPageSchema = Schema.Struct({
 
 export type DraftPage = typeof DraftPageSchema.Type;
 
+/**
+ * How a list of posts is ordered: by creation or by scheduled instant,
+ * newest (`Desc`) or oldest (`Asc`) first.
+ */
+export const PostSortSchema = Schema.Literals([
+  "createdDesc",
+  "createdAsc",
+  "scheduledDesc",
+  "scheduledAsc",
+]).annotate({ identifier: "PostSort" });
+
+export type PostSort = typeof PostSortSchema.Type;
+
+/** A channel a page's posts go to, and its platform. */
+export const PostChannelSchema = Schema.Struct({
+  channelId: Schema.String,
+  platform: PlatformSchema,
+}).annotate({ identifier: "PostChannel" });
+
+export type PostChannel = typeof PostChannelSchema.Type;
+
+/** A page of posts, in the order asked. */
+export const PostPageSchema = Schema.Struct({
+  // The channels the page's posts go to that are still connected, with
+  // their platforms, so a client names each target without another call.
+  channels: Schema.Array(PostChannelSchema),
+  items: Schema.Array(PostSchema),
+  // Pass it as `cursor` for the next page; null on the last one.
+  nextCursor: Schema.NullOr(Schema.String),
+}).annotate({ identifier: "PostPage" });
+
+export type PostPage = typeof PostPageSchema.Type;
+
+/** How many posts a page holds, unless `limit` says otherwise. */
+export const defaultPostPageSize = 20;
+
+/** The most posts a page holds. */
+export const maxPostPageSize = 100;
+
 /** How many drafts a page holds, unless `limit` says otherwise. */
 export const defaultDraftPageSize = 20;
 
@@ -602,6 +642,33 @@ export class PostsApi extends HttpApiGroup.make("posts")
         description:
           "Lists the posts scheduled from `from` (included) to `to` (excluded), at most 62 days apart, by scheduled instant, with their channels and how each went. Drafts have no time and are not listed; cancelled posts are, with the time they had. Needs post:read.",
         summary: "List scheduled posts",
+      })
+    ),
+    HttpApiEndpoint.get("search", "/search", {
+      error: [Forbidden, InvalidTimeRange, HttpApiError.BadRequest],
+      params: workspace,
+      query: {
+        authorId: Schema.optionalKey(Schema.String),
+        channelId: Schema.optionalKey(Schema.String),
+        createdVia: Schema.optionalKey(PostOriginViaSchema),
+        cursor: Schema.optionalKey(Schema.String),
+        from: Schema.optionalKey(Schema.DateTimeUtc),
+        limit: Schema.optionalKey(
+          Schema.Int.check(
+            Schema.isBetween({ maximum: maxPostPageSize, minimum: 1 })
+          )
+        ),
+        outcome: Schema.optionalKey(PostOutcomeSchema),
+        platform: Schema.optionalKey(PlatformSchema),
+        sort: Schema.optionalKey(PostSortSchema),
+        status: Schema.optionalKey(PostStatusSchema),
+        to: Schema.optionalKey(Schema.DateTimeUtc),
+      },
+      success: PostPageSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Lists the workspace's posts, whatever their state, a page at a time: ${defaultPostPageSize} unless \`limit\` (at most ${maxPostPageSize}) says otherwise. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended, such as \`failed\` or \`partiallyPublished\`), \`channelId\` (posts with a target on that channel), \`platform\` (posts with a target on a connected channel of that platform), \`from\` (included) and \`to\` (excluded), on the scheduled instant, which leave out posts without a time, \`createdVia\` (\`web\`, \`apiKey\` or \`application\`) and \`authorId\`. \`sort\` orders them by creation (\`createdDesc\`, the default, or \`createdAsc\`) or by scheduled instant (\`scheduledDesc\`, \`scheduledAsc\`, which list only posts with a time). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and \`channels\` gives the platform of each channel the page names. Needs post:read and channel:read.`,
+        summary: "List posts",
       })
     ),
     HttpApiEndpoint.post("create", "/", {

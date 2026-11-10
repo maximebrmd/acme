@@ -31,6 +31,7 @@ import type { Confirmation } from "#publishing/application/post-follow-up.ts";
 import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostSearch } from "#publishing/application/post-search.ts";
 import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
@@ -38,12 +39,11 @@ import type { PostContentRejected } from "#publishing/domain/post-content-reject
 import { readImport } from "#publishing/domain/post-import.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
-import type { PlanLimitReached as LimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import { keyAt, newPostOf, readPost, sendRead } from "./post-batch.ts";
 import type { ReadPost } from "./post-batch.ts";
 import { checkRequestFrom } from "./post-check-input.ts";
-import { validationView } from "./post-check-view.ts";
+import { validationOf } from "./post-check-view.ts";
 import {
   channelIdsFrom,
   contentFrom,
@@ -55,6 +55,7 @@ import {
   targetIdFrom,
 } from "./post-input.ts";
 import { refusalOfCheck } from "./post-refusal.ts";
+import { pageView, searchRequestFrom } from "./post-search.ts";
 import { attemptView, postView } from "./post-view.ts";
 
 // How the use cases' failures answer. A database failure is a server error.
@@ -112,23 +113,10 @@ export const PostsHandlers = HttpApiBuilder.group(
     const outcomes = yield* PostOutcomes;
     const queries = yield* PostQueries;
     const scheduling = yield* PostScheduling;
+    const searching = yield* PostSearch;
     const limitReached = yield* limitRefusal;
 
-    // The plan's limit a check found, as PlanLimitReached would tell it.
-    const shortfallOf = (reached: LimitReached) =>
-      limitReached(reached).pipe(
-        Effect.flip,
-        Effect.map(
-          ({ allowed, billingUrl, limit, plan, planWithRoom, used }) => ({
-            allowed,
-            billingUrl,
-            limit,
-            plan,
-            planWithRoom,
-            used,
-          })
-        )
-      );
+    const toValidation = validationOf(limitReached);
 
     return handlers.handleAll({
       attempts: ({ params }) =>
@@ -522,6 +510,22 @@ export const PostsHandlers = HttpApiBuilder.group(
 
           return postView(scheduled);
         }),
+      search: ({ query }) =>
+        Effect.gen(function* search() {
+          const actor = actorOf(yield* CurrentMember);
+          const request = searchRequestFrom(query);
+
+          const page = yield* searching.search(actor, request).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              InvalidCursor: () => Effect.fail(new HttpApiError.BadRequest()),
+              InvalidTimeRange: () => Effect.fail(new InvalidTimeRange()),
+              MissingPermission: forbidden,
+            })
+          );
+
+          return pageView(page);
+        }),
       send: ({ headers, payload, query }) =>
         Effect.gen(function* send() {
           const actor = actorOf(yield* CurrentMember);
@@ -616,12 +620,7 @@ export const PostsHandlers = HttpApiBuilder.group(
             })
           );
 
-          const shortfall = yield* Option.match(check.planLimit, {
-            onNone: () => Effect.succeed(Option.none()),
-            onSome: (reached) => shortfallOf(reached).pipe(Effect.asSome),
-          });
-
-          return validationView(check, read, shortfall);
+          return yield* toValidation(check, read);
         }),
     });
   })

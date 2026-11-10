@@ -7,8 +7,14 @@ import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { PostingMonth } from "#publishing/domain/posting-month.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { MediaAssetId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type {
+  ChannelId,
+  MediaAssetId,
+  PostId,
+  WorkspaceId,
+} from "#shared/domain/ids.ts";
 
+import type { PostPageRequest, StoredPostPage } from "./post-listing.ts";
 import type { ExecutionId } from "./publication-scheduler.ts";
 
 /** A stored post, and the job started for its current revision, if any. */
@@ -108,6 +114,17 @@ export class PostRepository extends Context.Service<
       workspaceId: WorkspaceId,
       page: DraftPageRequest
     ) => Effect.Effect<DraftPage, DatabaseError>;
+    /**
+     * A page of the workspace's posts that match the filter, in the order
+     * asked, from the position given: `limit` at most.
+     */
+    readonly search: (
+      page: PostPageRequest
+    ) => Effect.Effect<StoredPostPage, DatabaseError>;
+    /** The channels the workspace's posts have a target on, each once. */
+    readonly channelsUsed: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly ChannelId[], DatabaseError>;
     /** The workspace's posts in one of `statuses` that show the media. */
     readonly showing: (
       workspaceId: WorkspaceId,
