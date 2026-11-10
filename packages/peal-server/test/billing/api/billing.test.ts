@@ -2,6 +2,7 @@ import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
+import { TestClock } from "effect/testing";
 import { Api, Forbidden, Unauthenticated } from "peal-contract";
 import type { Member } from "peal-contract";
 
@@ -108,6 +109,9 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
     "show a member with billing:read the plan, its limits, the usage and every plan",
     () =>
       Effect.gen(function* shows() {
+        // The day the subscription started.
+        yield* TestClock.setTime(startedAt.epochMilliseconds);
+
         const client = yield* as(permissionsFor("admin"));
         const billing = yield* client.billing.get({ params });
 
