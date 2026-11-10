@@ -2,6 +2,7 @@ import { Effect, Layer, Option } from "effect";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { HeldPosts } from "#publishing/application/held-posts.ts";
+import { plainOptions } from "#publishing/application/plain-options.ts";
 import type { PostWithTargets } from "#publishing/application/post-repository.ts";
 import { ReviewedPosts } from "#review/application/ports/reviewed-posts.ts";
 import type {
@@ -61,17 +62,18 @@ export const PublishingReviewedPosts = Layer.effect(
       const { post, targets } = found.value;
 
       const shown = yield* Effect.all(
-        targets.map(({ channelId }) =>
-          channels.get(channelId).pipe(
+        targets.map((target) =>
+          channels.get(target.channelId).pipe(
             // Only a channel of the post's workspace is named.
             Effect.map(
               Option.filter((known) => known.workspaceId === workspaceId)
             ),
             Effect.map((channel) => ({
-              channelId,
+              channelId: target.channelId,
               handle: channel.pipe(Option.map(({ handle }) => handle)),
+              options: plainOptions(target),
               platform: channel.pipe(Option.map(({ platform }) => platform)),
-              text: textOn(post, channelId),
+              text: textOn(post, target.channelId),
             }))
           )
         )

@@ -1,5 +1,6 @@
 import type { DateTime } from "effect";
-import { Option } from "effect";
+import { Option, Schema } from "effect";
+import { TargetOptionsSchema } from "peal-contract";
 import type {
   ApprovalRequest as ApprovalView,
   ReviewComment as CommentView,
@@ -146,13 +147,18 @@ export const textsOf =
       channels.find((channel) => channel.channelId === channelId)
     ).pipe(Option.map(({ text }) => text));
 
+const shownOptions = Schema.decodeUnknownSync(TargetOptionsSchema);
+
 /** The post on each of its channels, as the channel will receive it. */
 export const channelsView = ({
   channels,
 }: ReviewedPost): PageView["channels"] =>
-  channels.map(({ channelId, handle, platform, text }) => ({
+  channels.map(({ channelId, handle, options, platform, text }) => ({
     channelId,
     handle: Option.getOrNull(handle),
+    // Options the contract cannot describe are a bug, never left out: an
+    // approval covers them.
+    options: options.pipe(Option.map(shownOptions), Option.getOrNull),
     platform: Option.getOrNull(platform),
     text,
   }));

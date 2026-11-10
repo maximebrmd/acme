@@ -2239,6 +2239,9 @@ export const studioGroupsLive = (studio: Studio) =>
               channels: post.targets.map(({ channelId }) => ({
                 channelId,
                 handle: "@studio@social.example.test",
+                options:
+                  post.targets.find((target) => target.channelId === channelId)
+                    ?.options ?? null,
                 platform: "mastodon" as const,
                 text: post.content.text,
               })),

@@ -19,6 +19,7 @@ import { PostNotReviewable } from "./post-not-reviewable.ts";
 import { PostScheduleSchema } from "./posts.ts";
 import { ReviewLinkAccessSchema } from "./review-link-access.ts";
 import { ReviewLinkNotFound } from "./review-link-not-found.ts";
+import { TargetOptionsSchema } from "./target-options.ts";
 import { TooManyReviewLinks } from "./too-many-review-links.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
@@ -240,6 +241,10 @@ export const ReviewedChannelSchema = Schema.Struct({
   channelId: Schema.String,
   // The account's name on its platform; null once it was disconnected.
   handle: Schema.NullOr(Schema.String),
+  // What the post has there that only the platform knows (a Pin's link and
+  // board, a video's title and privacy): an approval covers them. Null
+  // where the platform takes none.
+  options: Schema.NullOr(TargetOptionsSchema),
   platform: Schema.NullOr(PlatformSchema),
   text: Schema.String,
 }).annotate({ identifier: "ReviewedChannel" });

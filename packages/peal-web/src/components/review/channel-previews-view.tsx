@@ -2,7 +2,10 @@
 
 import { useTranslations } from "next-intl";
 import Image from "next/image";
+import type { TargetOptions } from "peal-contract";
 
+import { shownOptionsOf } from "#review/shown-options.ts";
+import type { ShownOption } from "#review/shown-options.ts";
 import { channelText } from "#review/use-chosen-words.ts";
 
 /** A post on one channel, as the channel will receive it. */
@@ -10,6 +13,8 @@ export interface PreviewedChannel {
   readonly channelId: string;
   /** The account's name; none once it was disconnected. */
   readonly handle: string | null;
+  /** What the post has there that only its platform knows; none if none. */
+  readonly options: TargetOptions | null;
   readonly platform: string | null;
   readonly text: string;
 }
@@ -87,6 +92,44 @@ const MediaView = ({ media }: { readonly media: PreviewedMedia }) => {
   );
 };
 
+// What the post has on a channel besides its text (where a Pin leads, what
+// a video is called and who sees it), under the composer's own names: an
+// approval covers it, so reviewers read it with the text.
+const OptionsView = ({ options }: { readonly options: TargetOptions }) => {
+  const t = useTranslations("Review");
+  const name = useTranslations("Posts.Options");
+
+  const written = ({ value }: ShownOption) => {
+    if (value.kind === "text") {
+      return value.text;
+    }
+
+    return value.kind === "label"
+      ? name(value.label)
+      : t(value.kind === "yes" ? "preview.optionYes" : "preview.optionNo");
+  };
+
+  const shown = shownOptionsOf(options);
+
+  return shown.length === 0 ? null : (
+    <div className="flex flex-col gap-2">
+      <p className="text-muted-foreground text-sm">{t("preview.options")}</p>
+      <dl className="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[max-content_1fr]">
+        {shown.map((option) => (
+          <div key={option.name} className="contents">
+            <dt className="text-muted-foreground">
+              {option.label === null ? option.name : name(option.label)}
+            </dt>
+            <dd className="break-words whitespace-pre-wrap">
+              {written(option)}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+};
+
 /**
  * The post as each channel will receive it: the channel's name and
  * platform, then the text it has there, as plain text. An honest preview,
@@ -131,6 +174,9 @@ export const ChannelPreviewsView = ({
               >
                 {channel.text}
               </p>
+            )}
+            {channel.options === null ? null : (
+              <OptionsView options={channel.options} />
             )}
           </li>
         ))}

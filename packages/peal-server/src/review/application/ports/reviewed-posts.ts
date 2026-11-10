@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { DateTime, Effect, Option } from "effect";
+import type { DateTime, Effect, Option, Schema } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
@@ -12,11 +12,21 @@ import type {
 import type { Platform } from "#shared/domain/platform.ts";
 import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 
+/** A channel's options as plain values, as the contract describes them. */
+export type ShownOptions = Readonly<Record<string, Schema.Json>>;
+
 /** A post on one of its channels, as the channel will receive it. */
 export interface ReviewedChannel {
   readonly channelId: ChannelId;
   /** The account's name on its platform; none once it was disconnected. */
   readonly handle: Option.Option<string>;
+  /**
+   * What the post has there that only the channel's platform knows (a
+   * Pin's link and board, a video's title and privacy), as plain values
+   * tagged by `platform`; none where the platform takes none. An approval
+   * covers them, so reviewers are shown them.
+   */
+  readonly options: Option.Option<ShownOptions>;
   readonly platform: Option.Option<Platform>;
   /** The text the post has there: its own, or the channel's. */
   readonly text: string;

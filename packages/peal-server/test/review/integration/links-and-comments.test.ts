@@ -4,6 +4,7 @@ import { SqlClient } from "effect/sql";
 
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { YouTubeOptions } from "#publishing/domain/youtube-options.ts";
 import { CommentRejected } from "#review/application/comment-rejected.ts";
 import { LinkAccessDenied } from "#review/application/link-access-denied.ts";
 import { LinkClosed } from "#review/application/link-closed.ts";
@@ -119,6 +120,7 @@ describe("a review link", () => {
             {
               channelId,
               handle: page.post.channels[0]?.handle ?? Option.none(),
+              options: Option.none(),
               platform: Option.some("mastodon" as const),
               text: `${text} #launch`,
             },
@@ -320,6 +322,61 @@ describe("a review link", () => {
               Option.map(({ at }) => at.epochMilliseconds)
             ),
             Option.some(Date.parse(start))
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "shows the options the post has on a channel, which an approval covers",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* showsOptions() {
+          const visitors = yield* VisitorReview;
+          const review = yield* PostReview;
+          const workspaceId: WorkspaceId = yield* freshWorkspace;
+          const channelId: ChannelId = yield* connect(workspaceId, "youtube");
+          const editor: Actor = actorAs(yield* freshUser, workspaceId);
+
+          const options = new YouTubeOptions({
+            madeForKids: false,
+            platform: "youtube",
+            privacy: "public",
+            title: "A synthetic launch video",
+          });
+
+          const { post } = yield* PostDrafts.use((drafts) =>
+            drafts.create(editor, {
+              channelIds: [channelId],
+              content: contentOf(text),
+              options: [{ channelId, options }],
+            })
+          );
+
+          const { token } = yield* linkTo(editor, post.id, "view");
+
+          const expected = [
+            Option.some({
+              madeForKids: false,
+              platform: "youtube",
+              privacy: "public",
+              title: "A synthetic launch video",
+            }),
+          ];
+
+          assert.deepStrictEqual(
+            (yield* visitors.open(token)).post.channels.map(
+              (channel) => channel.options
+            ),
+            expected
+          );
+          assert.deepStrictEqual(
+            (yield* review.thread(editor, post.id)).post.channels.map(
+              (channel) => channel.options
+            ),
+            expected
           );
         })
       ),

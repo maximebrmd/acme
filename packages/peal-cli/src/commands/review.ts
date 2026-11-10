@@ -42,10 +42,18 @@ const approvalLine = (approval: ApprovalRequest): readonly string[] => [
     : `decided by ${reviewerName(approval.decision.by)}, ${instant(approval.decision.at)}`,
 ];
 
-// The post on one channel: the account, then the text it has there.
+// What the post has on a channel that only its platform knows, as the API
+// names it: an approval covers it, so it is printed with the text.
+const optionLines = (options: ReviewedChannel["options"]): readonly string[] =>
+  Object.entries(options ?? {})
+    .filter(([name]) => name !== "platform")
+    .map(([name, value]) => `    ${name}: ${JSON.stringify(value)}`);
+
+// The post on one channel: the account, the text it has there, its options.
 const channelLines = ({
   channelId,
   handle,
+  options,
   platform,
   text,
 }: ReviewedChannel): readonly string[] => [
@@ -53,6 +61,7 @@ const channelLines = ({
   ...(text === ""
     ? ["    (no text)"]
     : text.split("\n").map((line) => `    ${line}`)),
+  ...optionLines(options),
 ];
 
 // What a comment is about, when it is about some words or a channel.

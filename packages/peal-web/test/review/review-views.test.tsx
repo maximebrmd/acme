@@ -61,7 +61,7 @@ const render = async (
   );
 };
 
-const channelNames = new Map([[channelId, "@studio@example.social"]]);
+const channelNames = new Map([[channelId, "@studio@social.example.test"]]);
 
 const quoted = (located: { end: number; start: number } | null) =>
   comment("a", {
@@ -120,10 +120,12 @@ describe(CommentThreadsView, () => {
       />
     );
 
-    expect(found).toContain("About these words, on @studio@example.social:");
+    expect(found).toContain(
+      "About these words, on @studio@social.example.test:"
+    );
     expect(found).toContain("Friday</blockquote>");
     expect(gone).toContain(
-      "À propos de ces mots, que le texte sur @studio@example.social ne dit plus :"
+      "À propos de ces mots, que le texte sur @studio@social.example.test ne dit plus :"
     );
   });
 
@@ -152,13 +154,15 @@ const previews = (
     channels={[
       {
         channelId,
-        handle: "@studio@example.social",
+        handle: "@studio@social.example.test",
+        options: null,
         platform: "mastodon",
         text: "Launch <day>\nJoin us.",
       },
       {
         channelId: "0190f3a0-0000-7000-8000-00000000c002",
         handle: null,
+        options: null,
         platform: null,
         text: "",
       },
@@ -185,7 +189,7 @@ describe(ChannelPreviewsView, () => {
   it("shows each channel's own text as text, under its name and platform", async () => {
     const html = await render("en", previews);
 
-    expect(html).toContain("@studio@example.social");
+    expect(html).toContain("@studio@social.example.test");
     expect(html).toContain("Mastodon");
     expect(html).toContain("Launch &lt;day&gt;\nJoin us.");
     expect(html).toContain(`data-review-channel="${channelId}"`);
@@ -222,6 +226,50 @@ describe(ChannelPreviewsView, () => {
     );
   });
 
+  it("shows the options a post has on a channel, which an approval covers", async () => {
+    const html = await render(
+      "en",
+      <ChannelPreviewsView
+        channels={[
+          {
+            channelId,
+            handle: "synthetic-pins",
+            options: {
+              boardId: "549755885175",
+              link: "https://shop.example.test/<spring>",
+              platform: "pinterest",
+              title: "Spring catalogue",
+            },
+            platform: "pinterest",
+            text: "Launch day",
+          },
+          {
+            channelId: "0190f3a0-0000-7000-8000-00000000c002",
+            handle: "synthetic-videos",
+            options: {
+              madeForKids: false,
+              platform: "youtube",
+              privacy: "unlisted",
+              tags: ["field notes", "launch"],
+              title: "A synthetic launch video",
+            },
+            platform: "youtube",
+            text: "Launch day",
+          },
+        ]}
+        media={[]}
+      />
+    );
+
+    // What a reviewer approves with the text: where a Pin leads, what a
+    // video is called and who sees it, in the composer's own words.
+    expect(html).toContain("https://shop.example.test/&lt;spring&gt;");
+    expect(html).toContain("Spring catalogue");
+    expect(html).toContain("549755885175");
+    expect(html).toContain("A synthetic launch video");
+    expect(html).toContain("field notes, launch");
+  });
+
   it("names every platform a post goes to", async () => {
     const html = await render(
       "en",
@@ -229,6 +277,7 @@ describe(ChannelPreviewsView, () => {
         channels={PlatformSchema.literals.map((platform, index) => ({
           channelId: `0190f3a0-0000-7000-8000-00000000c1${String(index).padStart(2, "0")}`,
           handle: `synthetic-${platform}`,
+          options: null,
           platform,
           text: "Launch day",
         }))}

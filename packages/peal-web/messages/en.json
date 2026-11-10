@@ -2020,7 +2020,10 @@
       "document": "A PDF document, shown page by page on LinkedIn.",
       "openDocument": "Open the document in a new tab",
       "altText": "Alt text: {text}",
-      "noAltText": "No alt text."
+      "noAltText": "No alt text.",
+      "options": "What this channel also receives with the post:",
+      "optionYes": "Yes",
+      "optionNo": "No"
     },
     "approval": {
       "status": "{status, select, pending {Awaiting approval} approved {Approved} changesRequested {Changes requested} withdrawn {Withdrawn} other {{status}}}",
