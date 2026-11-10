@@ -163,6 +163,7 @@ services:
       PEAL_S3_FORCE_PATH_STYLE:
       PEAL_S3_KEY_PREFIX:
       PEAL_MEDIA_PUBLIC_BASE_URL:
+      PEAL_ERASURE_LEDGER_BUCKET:
       TIKTOK_MEDIA_URL_PREFIX:
       PEAL_FFPROBE_PATH:
       PEAL_AI_PROVIDER:
@@ -183,6 +184,13 @@ services:
       OTEL_LOGS_EXPORTER:
       PEAL_CLUSTER_RETENTION:
       PEAL_LEGAL_RETENTION:
+      # What the operator declares about its processing, for each user's
+      # export: the file PEAL_PRIVACY_DECLARATION names, mounted below.
+      PEAL_PRIVACY_DECLARATION_FILE: /etc/peal/privacy-declaration.json
+    volumes:
+      # Declares nothing unless PEAL_PRIVACY_DECLARATION names a file of
+      # the operator's, as self-host/privacy-declaration.example.json shows.
+      - ${PEAL_PRIVACY_DECLARATION:-./config/production/privacy-declaration.json}:/etc/peal/privacy-declaration.json:ro
     ports:
       - 127.0.0.1:${PEAL_SERVER_PORT:-3000}:3000
     depends_on:

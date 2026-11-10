@@ -319,14 +319,57 @@ En se faisant passer pour un membre, l’équipe ne peut ni connecter de canaux,
 
 ## Conservation légale [#legal-retention]
 
-La loi française impose à un hébergeur de conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu, afin que l’autorité judiciaire puisse les requérir (loi n° 2004-575, article 6, V, et décret n° 2021-1362). Peal le fait par défaut, dans le schéma `legal`, que rien d’autre dans le serveur ne lit :
+La loi française impose à un hébergeur de conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu, afin que l’autorité judiciaire puisse les requérir (loi n° 2004-575, article 6, V, et décret n° 2021-1362). Peal sait le faire, et ne le fait pas par défaut : `PEAL_LEGAL_RETENTION` vaut `false` tant que vous ne le définissez pas.
 
-- chaque requête qui crée, modifie ou supprime des publications ou des médias, depuis l’application web, une clé d’API, la ligne de commande ou un client MCP : quand, depuis quelle adresse (lue comme la connexion la lit, depuis `AUTH_IP_HEADERS`), par quel protocole et avec quel moyen de connexion, conservée 1 an ;
-- à la fermeture d’un compte, les nom et adresse e-mail de son titulaire, conservés 5 ans, et ses moyens de connexion (l’identifiant de chaque méthode de connexion, jamais le mot de passe ni son empreinte) et ses clients Stripe, conservés 1 an.
+**Qui doit l’activer.** Vous, si ces deux conditions sont réunies :
 
-Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donnée une fois sa durée écoulée. L’équipe ne lit ces données qu’en répondant à une réquisition dans la [console de l’équipe](/staff#legal-requests), et chaque réponse est consignée. L’export de chaque utilisateur liste ses connexions et ce que la fermeture de son compte laisserait.
+- vous êtes établi en France, ou vous proposez votre Peal à des personnes qui s’y trouvent ;
+- votre Peal stocke des contenus pour d’autres que vous : des clients, le public, toute personne extérieure à votre organisation.
 
-Si vous exploitez Peal hors de France et qu’aucune loi ne vous oblige à les conserver, définissez `PEAL_LEGAL_RETENTION=false` : le serveur n’en conserve alors aucune, et la fermeture d’un compte ne laisse rien. Votre propre politique de confidentialité doit dire ce que vous avez choisi.
+Définissez alors `PEAL_LEGAL_RETENTION=true`. Ne pas conserver ces données est un délit (même article 6, V, B). Si vous n’êtes pas certain que la loi s’applique à vous, consultez un avocat avant d’ouvrir votre serveur à d’autres.
+
+**Qui doit la laisser désactivée.** Tous les autres : une équipe qui exploite Peal pour ses propres publications, ou un exploitant sans lien avec la France. Le droit de la protection des données (RGPD, article 5, paragraphe 1, point c) interdit de conserver ces données sans y être obligé.
+
+**Ce qu’elle conserve**, dans le schéma `legal`, que rien d’autre dans le serveur ne lit :
+
+- chaque requête qui crée, modifie ou supprime des publications ou des médias, depuis l’application web, une clé d’API, la ligne de commande ou un client MCP : quand, depuis quelle adresse (lue comme la connexion la lit, depuis `AUTH_IP_HEADERS`), par quel protocole et avec quel moyen de connexion, conservée {{keep-legal-connections-fr}}. Jamais ce que la requête contenait ;
+- à la fermeture d’un compte, les nom et adresse e-mail de son titulaire, conservés {{keep-legal-identity-fr}}, et ses moyens de connexion (l’identifiant de chaque méthode de connexion, jamais le mot de passe ni son empreinte) et ses clients Stripe, conservés {{keep-legal-account-fr}}.
+
+Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donnée une fois sa durée écoulée. L’équipe ne lit ces données qu’en répondant à une réquisition dans la [console de l’équipe](/staff#legal-requests), et chaque réponse est consignée et conservée {{keep-legal-disclosures-fr}}. L’export de chaque utilisateur liste ses connexions et ce que la fermeture de son compte laisserait. Votre propre politique de confidentialité doit dire que vous les conservez.
+
+**Désactivée**, le serveur n’écrit rien dans le schéma `legal`, et la fermeture d’un compte efface tout.
+
+**La désactiver après l’avoir activée** ne conserve plus rien de nouveau, et ne supprime rien sur-le-champ : ce que le serveur détient déjà reste jusqu’à son terme, puisque la loi vous imposait de le conserver aussi longtemps, et la tâche quotidienne continue de le supprimer. D’ici là, l’équipe dotée du rôle juridique peut encore répondre à une réquisition qui le concerne, et l’export de chaque utilisateur liste encore les connexions conservées à son sujet.
+
+## Suppressions et sauvegardes [#erasure-ledger]
+
+Une sauvegarde contient ce qui a été supprimé après elle. La restaurer fait revenir les comptes et les espaces de travail que leurs utilisateurs ont supprimés depuis, et la loi vous impose de les supprimer de nouveau avant que quiconque puisse s’en servir. Peal conserve ce qu’il faut pour cela hors de la base de données, qu’une restauration ferait reculer elle aussi : à chaque suppression d’un espace de travail ou fermeture d’un compte, le serveur écrit une petite entrée dans le stockage d’objets, sous `erasures/`, avec les identifiants et la date, et rien d’autre (ni nom, ni adresse, ni contenu). L’entrée est écrite avant que la suppression soit définitive, pour qu’aucune ne passe sans trace : si le stockage est injoignable, la suppression est refusée et peut être retentée.
+
+Après toute restauration, et avant de démarrer le serveur, appliquez de nouveau ce registre :
+
+```sh
+docker compose … run --rm --no-deps server packages/peal-server/src/replay-erasures.ts
+```
+
+Depuis une copie du dépôt, `bun nx run peal-server:erasures:replay` fait de même. La commande supprime de nouveau ce que la restauration a fait revenir, affiche ce qu’elle a fait par identifiant, et peut être relancée sans risque : ce qui a disparu reste disparu. Elle ne résilie rien chez Stripe et n’envoie aucun e-mail, puisque c’était fait lors de la suppression d’origine. Une suppression refusée, par exemple à cause d’une publication en cours d’envoi, la fait sortir en erreur : gardez le serveur arrêté tant qu’elle ne passe pas. Une entrée que le serveur n’a jamais confirmée, parce qu’il s’est arrêté au milieu d’une suppression, est listée et laissée telle quelle ; `--apply-unconfirmed` applique aussi celles-là, une fois que vous avez établi que chacune avait bien été demandée.
+
+Le registre se trouve par défaut dans le bucket des médias. Rien n’y est servi : le serveur ne signe aucun lien vers `erasures/`. Si votre bucket des médias est public (`PEAL_MEDIA_PUBLIC_BASE_URL`), nommez un bucket privé avec `PEAL_ERASURE_LEDGER_BUCKET`, sur le même stockage et accessible avec la même clé : le serveur vous en avertit au démarrage tant que ce n’est pas fait. N’utilisez pas le bucket de vos sauvegardes : un serveur qui peut y écrire peut les supprimer.
+
+Les entrées sont conservées {{keep-erasure-ledger-fr}}, un peu plus longtemps que les sauvegardes ne gardent les données supprimées ({{keep-backups-fr}} avec les quatre sauvegardes complètes hebdomadaires de la pile) : une tâche quotidienne (`workspace.erasure-ledger-retention`, à 04 h 17 UTC) retire les plus anciennes. Gardez vos sauvegardes moins longtemps que cela. Si le stockage propose des règles de cycle de vie, ajoutez-en une en seconde protection, sur le bucket du registre ou sur son seul préfixe : avec Cloudflare R2, `wrangler r2 bucket lifecycle add <bucket> expire-erasures erasures/ --expire-days 42`. Une règle qui vise le mauvais préfixe supprimerait vos médias : vérifiez-la avant de l’enregistrer.
+
+## Déclaration de confidentialité [#privacy-declaration]
+
+Chaque utilisateur peut télécharger une copie de ses données (**Compte**, **Vos données**, ou `peal account export`). Elle s’accompagne de ce que le RGPD, article 15, impose au responsable de traitement d’indiquer : pour chaque catégorie de données, sa finalité, sa base légale, sa durée de conservation et son origine ; qui la reçoit ; et les droits qui s’y attachent. Peal en écrit l’essentiel à partir d’un registre unique dans son code, d’où vient aussi le tableau des durées de sa propre politique de confidentialité : les deux ne peuvent pas diverger.
+
+Ce qui dépend de vous, Peal ne peut pas le savoir, et ne le devine jamais. Déclarez-le dans un fichier JSON, comme le montre `self-host/privacy-declaration.example.json`, et nommez ce fichier avec `PEAL_PRIVACY_DECLARATION` (la pile Compose le monte ; un serveur lancé autrement lit `PEAL_PRIVACY_DECLARATION_FILE`) :
+
+- `controller` : qui décide des finalités du traitement, c’est-à-dire vous : `name`, et si vous le souhaitez `address`, `contact` (où adresser les demandes) et `dataProtectionOfficer` ;
+- `policyUrl` : l’adresse de votre politique de confidentialité ;
+- `supervisoryAuthority` : l’autorité de protection des données dont vous relevez, `name` et `url` ;
+- `recipients` : chaque prestataire qui traite pour vous les données de vos utilisateurs (hébergement, stockage des médias, e-mail, paiements, protection contre les robots, IA, alertes), avec son `name`, le `service` rendu, le `country` où il traite les données, et le `safeguard` d’un transfert hors de l’Espace économique européen, ou `null` ;
+- `retention` : seulement si vous exploitez une autre pile que celle de ce dépôt, la durée pendant laquelle la vôtre conserve `technicalLogs` et `backups`, en anglais (`en`) et en français (`fr`). Le registre indique sinon celles de la pile de production : journaux {{keep-logs-fr}}, traces {{keep-traces-fr}}, métriques {{keep-metrics-fr}}, et données supprimées disparues des sauvegardes sous {{keep-backups-fr}}.
+
+Chaque partie est facultative. Ce que vous omettez apparaît comme non déclaré dans chaque export, qui en dit alors moins aux utilisateurs que ce que la loi vous impose : renseignez-le avant d’ouvrir votre serveur à d’autres. Le serveur lit le fichier au démarrage, et s’arrête s’il ne peut pas le lire.
 
 ## Télémétrie [#telemetry]
 

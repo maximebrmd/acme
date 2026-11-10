@@ -5,6 +5,7 @@ import {
   BillingUnavailable,
   CurrentMember,
   Forbidden,
+  MediaStoreUnavailable,
   WorkspaceBusy,
   WorkspaceNameMismatch,
   WorkspaceNotFound,
@@ -51,6 +52,13 @@ export const WorkspacesHandlers = HttpApiBuilder.group(
                     )
                   ),
                 DatabaseError: Effect.die,
+                ErasureLedgerUnavailable: ({ cause }) =>
+                  Effect.logWarning(
+                    "The erasure ledger could not be written, so nothing was deleted",
+                    cause
+                  ).pipe(
+                    Effect.andThen(Effect.fail(new MediaStoreUnavailable()))
+                  ),
                 MissingPermission: forbidden,
                 NotAMember: () => Effect.fail(new WorkspaceNotFound()),
                 SessionRequired: forbidden,

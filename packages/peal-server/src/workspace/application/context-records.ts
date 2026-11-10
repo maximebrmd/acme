@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { Effect } from "effect";
+import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
@@ -10,6 +10,7 @@ import type {
   ContractsRecord,
   IdentificationRecord,
   LegalHoldRecord,
+  LegalRemainsRecord,
   MediaRecord,
   NoticeRecord,
   PostRecord,
@@ -135,8 +136,17 @@ export class ContextRecords extends Context.Service<
      * signed in and the references of their payments. Runs in the
      * caller's transaction, so no account closes without it.
      */
+    /**
+     * What the law has the server keep of the user's account once it is
+     * closed, and for how long; null when nothing.
+     */
+    readonly legalRemains: (
+      userId: UserId
+    ) => Effect.Effect<LegalRemainsRecord | null, DatabaseError>;
     readonly holdIdentification: (
-      record: IdentificationRecord
+      record: IdentificationRecord,
+      /** When the account closed, if not now. */
+      closedAt?: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
     readonly removeWorkspaceFiles: (
       workspaceId: WorkspaceId

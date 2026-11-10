@@ -1035,7 +1035,8 @@
       "subscribed": "A workspace this would delete has a subscription. Agree to cancel it to go on.",
       "tooManyRequests": "Too many attempts. Wait a minute, then try again.",
       "unknown": "Something went wrong. Try again.",
-      "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes."
+      "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes.",
+      "storeUnavailable": "The deletion could not be recorded where backups cannot undo it, so nothing was deleted. Try again in a few minutes."
     },
     "cancellation": {
       "title": "{count, plural, one {Deleting cancels a subscription} other {Deleting cancels # subscriptions}}",
@@ -1207,7 +1208,7 @@
     },
     "export": {
       "title": "Your data",
-      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, what staff did to your account, the posts you wrote in the workspaces you share, the content of the workspaces where you are the only member, and the connections that created content, which French law has Peal keep, with what it keeps once your account is closed. It holds no password, token or key. We email you each time a copy is downloaded.",
+      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, what staff did to your account, the posts you wrote in the workspaces you share and the content of the workspaces where you are the only member. It holds no password, token or key. We email you each time a copy is downloaded.",
       "download": "Download my data"
     },
     "delete": {
@@ -1215,13 +1216,18 @@
       "description": "Deletes your account for good, with the workspaces where you are the only member and everything in them. You leave the others.",
       "open": "Delete my account…",
       "confirmTitle": "Delete your account for good?",
-      "confirmDescription": "Your profile, sessions, notifications, preferences and connected applications go, with the workspaces where you are the only member, and their subscriptions are cancelled. This cannot be undone. As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for 5 years, and how you signed in and the connections that created content for 1 year, then deletes them. Enter your password to confirm.",
+      "confirmDescription": "Your profile, sessions, notifications, preferences and connected applications go, with the workspaces where you are the only member, and their subscriptions are cancelled. This cannot be undone. Enter your password to confirm.",
       "confirm": "Delete my account",
       "deleting": "Deleting…",
       "deleted": "Your account is deleted. A confirmation is on its way to your inbox.",
       "lastOwnerTitle": "These workspaces need another owner",
       "lastOwnerDescription": "You are the only owner of workspaces other members use. Make one of them an owner, or delete the workspace, then try again:",
       "billingPage": "Open the workspace’s billing page"
+    },
+    "legalHold": {
+      "exported": "On this server, it also lists the connections that created content, which French law has a host keep, with what stays once your account is closed.",
+      "identification": "As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for {identityYears, plural, one {# year} other {# years}}, and how you signed in and the connections that created content for {accountYears, plural, one {# year} other {# years}}, then deletes them.",
+      "connections": "This server kept what French law requires of a host, and no longer does: the connections that created content, kept so far, stay {connectionYears, plural, one {# year} other {# years}} from each, apart, for judicial authorities only, then are deleted."
     }
   },
   "Staff": {
@@ -1233,7 +1239,8 @@
       "system": "System",
       "users": "Accounts",
       "workspaces": "Workspaces",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "legal": "Legal requests"
     },
     "search": {
       "submit": "Search",
@@ -1446,7 +1453,89 @@
       "disabledToReconnect": "Turned off, to reconnect"
     },
     "troubleStatus": "{status, select, failed {Failed} other {Unconfirmed}}",
-    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}"
+    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}",
+    "legal": {
+      "title": "Legal requests",
+      "description": "A judicial authority, or another authority the law empowers, may ask in writing for the data that identifies who contributed content. This page is the only way to read what a closed account left and the connections that created content.",
+      "recordedTitle": "Each answer is recorded",
+      "recorded": "Everything you submit here is recorded under your name before anything is shown, even when nothing is found: the authority, its reference, the legal basis, what was asked about and for, and how many records were returned. The record is kept {years, plural, one {# year} other {# years}}, shows in the audit log to the rest of staff, and can be reviewed by whoever answers for Peal’s compliance. Enter only a request an authority made in writing.",
+      "form": {
+        "title": "Answer a request",
+        "kind": "The request names",
+        "kinds": {
+          "email": "An email address",
+          "userId": "An account id",
+          "workspaceId": "A workspace id"
+        },
+        "identifier": "Identifier",
+        "identifierHint": "An email address finds the closed accounts that had it. An account id finds the account, closed or not. A workspace id finds the connections made in it.",
+        "authority": "Authority",
+        "authorityHint": "The court, prosecutor or service that asked, as its document names it.",
+        "reference": "Reference",
+        "referenceHint": "The request’s number, the procedure and its date.",
+        "legalBasis": "Legal basis",
+        "legalBasisHint": "The text that gives the authority the power to ask, as its document cites it.",
+        "covers": "What the request asks for",
+        "coversHint": "Tick only what the document asks for: nothing else is read or shown.",
+        "cover": {
+          "identity": "Who held the account: name, email address, creation date",
+          "signIn": "How it signed in: each sign-in method’s identifier, never a password",
+          "payments": "Payment references: the payment provider’s customer ids",
+          "connections": "Connections that created, changed or deleted content: time, IP address, protocol"
+        },
+        "since": "Connections from (UTC day)",
+        "until": "Connections to (UTC day)",
+        "periodHint": "Leave both empty when the request names no period.",
+        "submit": "Record the request and show the answer",
+        "pending": "Recording…",
+        "incomplete": "Fill in the authority, the reference, the legal basis and the identifier, and tick what the request asks for.",
+        "clear": "Clear the answer"
+      },
+      "answer": {
+        "recorded": "Answer recorded as",
+        "held": "Closed accounts",
+        "noHeld": "No closed account is held for this subject.",
+        "connections": "Connections",
+        "noConnections": "No connection is held for this subject in this period.",
+        "notCovered": "Not covered by this request",
+        "noneKept": "None kept",
+        "userId": "Account id",
+        "closedAt": "Closed",
+        "identity": "Who held it",
+        "createdAt": "Created",
+        "signIn": "How it signed in",
+        "payments": "Payment references",
+        "columns": {
+          "at": "When",
+          "ipAddress": "IP address",
+          "protocol": "Protocol",
+          "access": "Signed in with",
+          "userId": "Account id",
+          "apiKeyId": "API key id",
+          "workspaceId": "Workspace id"
+        }
+      },
+      "past": {
+        "title": "Answers given",
+        "description": "Newest first. What was handed over is never kept here, only what was asked and how many records it returned.",
+        "empty": "No legal request has been answered yet.",
+        "columns": {
+          "at": "When",
+          "staff": "Answered by",
+          "authority": "Authority and reference",
+          "legalBasis": "Legal basis",
+          "subject": "About",
+          "covers": "Covered",
+          "returned": "Returned"
+        },
+        "subject": "{kind, select, email {Email address} userId {Account} workspaceId {Workspace} other {{kind}}}",
+        "cover": "{cover, select, identity {Identity} signIn {Sign-in} payments {Payments} connections {Connections} other {{cover}}}",
+        "period": "Connections from {since} to {until}",
+        "open": "the start",
+        "now": "the answer",
+        "returned": "{held, plural, =0 {No closed account} one {# closed account} other {# closed accounts}}, {connections, plural, =0 {no connection} one {# connection} other {# connections}}"
+      }
+    }
   },
   "Impersonation": {
     "label": "Acting as another account",

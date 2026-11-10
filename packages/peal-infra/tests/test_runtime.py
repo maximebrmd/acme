@@ -35,6 +35,50 @@ def test_host_env_holds_one_setting_a_line(rendered: Path, environment: str) -> 
     assert host_env["PUBLIC_URL"] == f"https://{settings(environment)['peal_hostnames']['app']}"
 
 
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_peals_servers_keep_what_french_law_has_a_host_keep(rendered: Path, environment: str) -> None:
+    """The software keeps nothing by default; Peal, a host established in
+    France, must (loi n° 2004-575, art. 6, V, A)."""
+    assert _host_env(rendered, environment)["PEAL_LEGAL_RETENTION"] == "true"
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_the_server_reads_the_privacy_declaration_the_role_writes(rendered: Path, environment: str) -> None:
+    host_env = _host_env(rendered, environment)
+
+    assert host_env["PEAL_PRIVACY_DECLARATION"] == f"{settings(environment)['peal_root']}/privacy-declaration.json"
+    written = task("peal_runtime", "Write the privacy declaration")
+    assert written["ansible.builtin.copy"]["dest"] == "{{ peal_root }}/privacy-declaration.json"
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_no_provider_is_declared_before_the_owner_confirms_it(environment: str) -> None:
+    """Each user's export repeats the declaration: a provider guessed here
+    would be told to users as a fact."""
+    assert settings(environment)["peal_privacy_declaration"] == {}
+
+
+def _ledger_exposed(**names: Any) -> bool:
+    """Whether peal_runtime refuses the settings: media served publicly
+    while the erasure ledger sits in the same bucket."""
+    found = task("peal_runtime", "Refuse a public media bucket that holds the erasure ledger")
+    return ansible_render(found["vars"]["peal_runtime_ledger_exposed"], **names)
+
+
+def test_the_erasure_ledger_stays_in_the_media_bucket_while_it_is_private(rendered: Path) -> None:
+    for environment in ENVIRONMENTS:
+        assert "PEAL_ERASURE_LEDGER_BUCKET" not in _host_env(rendered, environment)
+        assert "PEAL_MEDIA_PUBLIC_BASE_URL" not in _host_env(rendered, environment)
+
+
+def test_a_public_media_bucket_needs_a_ledger_bucket_of_its_own() -> None:
+    public = {"PEAL_MEDIA_PUBLIC_BASE_URL": "https://media.example.com"}
+
+    assert _ledger_exposed(peal_runtime_host_settings=public) is True
+    assert _ledger_exposed(peal_runtime_host_settings={**public, "PEAL_ERASURE_LEDGER_BUCKET": "peal-erasures"}) is False
+    assert _ledger_exposed(peal_runtime_host_settings={}) is False
+
+
 def test_production_sends_its_heartbeat(rendered: Path) -> None:
     host_env = _host_env(rendered, "production")
 

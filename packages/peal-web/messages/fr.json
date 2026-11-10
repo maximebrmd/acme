@@ -1035,7 +1035,8 @@
       "subscribed": "Un espace de travail que cette action supprimerait a un abonnement. Acceptez sa résiliation pour continuer.",
       "tooManyRequests": "Trop de tentatives. Patientez une minute, puis réessayez.",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "billingUnavailable": "Stripe n’a pas pu être joint pour clore les paiements encore ouverts d’un espace de travail que ceci supprimerait, donc rien n’a été supprimé. Réessayez dans quelques minutes."
+      "billingUnavailable": "Stripe n’a pas pu être joint pour clore les paiements encore ouverts d’un espace de travail que ceci supprimerait, donc rien n’a été supprimé. Réessayez dans quelques minutes.",
+      "storeUnavailable": "La suppression n’a pas pu être consignée là où les sauvegardes ne peuvent pas la défaire, donc rien n’a été supprimé. Réessayez dans quelques minutes."
     },
     "cancellation": {
       "title": "{count, plural, one {La suppression résilie un abonnement} other {La suppression résilie # abonnements}}",
@@ -1207,7 +1208,7 @@
     },
     "export": {
       "title": "Vos données",
-      "description": "Un fichier JSON de tout ce que Peal conserve sur vous : votre compte, vos sessions, vos adhésions, vos invitations, vos applications connectées, vos notifications et préférences, ce que l’équipe de Peal a fait sur votre compte, les publications que vous avez écrites dans les espaces de travail partagés, le contenu des espaces de travail dont vous êtes le seul membre, et les connexions ayant créé du contenu, que la loi française impose à Peal de conserver, avec ce qu’il conserve une fois votre compte fermé. Il ne contient aucun mot de passe, jeton ni clé. Nous vous prévenons par e-mail à chaque téléchargement.",
+      "description": "Un fichier JSON de tout ce que Peal conserve sur vous : votre compte, vos sessions, vos adhésions, vos invitations, vos applications connectées, vos notifications et préférences, ce que l’équipe de Peal a fait sur votre compte, les publications que vous avez écrites dans les espaces de travail partagés et le contenu des espaces de travail dont vous êtes le seul membre. Il ne contient aucun mot de passe, jeton ni clé. Nous vous prévenons par e-mail à chaque téléchargement.",
       "download": "Télécharger mes données"
     },
     "delete": {
@@ -1215,13 +1216,18 @@
       "description": "Supprime définitivement votre compte, avec les espaces de travail dont vous êtes le seul membre et tout leur contenu. Vous quittez les autres.",
       "open": "Supprimer mon compte…",
       "confirmTitle": "Supprimer définitivement votre compte ?",
-      "confirmDescription": "Votre profil, vos sessions, notifications, préférences et applications connectées disparaissent, avec les espaces de travail dont vous êtes le seul membre, dont les abonnements sont résiliés. C’est définitif. Comme la loi française l’impose à un hébergeur, Peal conserve à part, pour les seules autorités judiciaires, vos nom et adresse e-mail pendant 5 ans, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant 1 an, puis les supprime. Saisissez votre mot de passe pour confirmer.",
+      "confirmDescription": "Votre profil, vos sessions, notifications, préférences et applications connectées disparaissent, avec les espaces de travail dont vous êtes le seul membre, dont les abonnements sont résiliés. C’est définitif. Saisissez votre mot de passe pour confirmer.",
       "confirm": "Supprimer mon compte",
       "deleting": "Suppression…",
       "deleted": "Votre compte est supprimé. Une confirmation arrive dans votre boîte de réception.",
       "lastOwnerTitle": "Ces espaces de travail ont besoin d’un autre propriétaire",
       "lastOwnerDescription": "Vous êtes le seul propriétaire d’espaces de travail que d’autres membres utilisent. Nommez l’un d’eux propriétaire, ou supprimez l’espace de travail, puis réessayez :",
       "billingPage": "Ouvrir la page de facturation de l’espace de travail"
+    },
+    "legalHold": {
+      "exported": "Sur ce serveur, il liste aussi les connexions ayant créé du contenu, que la loi française impose à un hébergeur de conserver, avec ce qui reste une fois votre compte fermé.",
+      "identification": "Comme la loi française l’impose à un hébergeur, Peal conserve à part, pour les seules autorités judiciaires, vos nom et adresse e-mail pendant {identityYears, plural, one {# an} other {# ans}}, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant {accountYears, plural, one {# an} other {# ans}}, puis les supprime.",
+      "connections": "Ce serveur conservait ce que la loi française impose à un hébergeur, et ne le fait plus : les connexions ayant créé du contenu, conservées jusqu’ici, le restent {connectionYears, plural, one {# an} other {# ans}} à compter de chacune, à part, pour les seules autorités judiciaires, puis sont supprimées."
     }
   },
   "Staff": {
@@ -1233,7 +1239,8 @@
       "system": "Système",
       "users": "Comptes",
       "workspaces": "Espaces de travail",
-      "audit": "Journal d’audit"
+      "audit": "Journal d’audit",
+      "legal": "Réquisitions"
     },
     "search": {
       "submit": "Rechercher",
@@ -1446,7 +1453,89 @@
       "disabledToReconnect": "Désactivé, à reconnecter"
     },
     "troubleStatus": "{status, select, failed {Échec} other {Non confirmé}}",
-    "reason": "{reason, select, contentRejected {Contenu refusé} channelDisconnected {Canal déconnecté} channelDisabled {Canal désactivé} mediaRemoved {Média supprimé} mediaRejected {Média refusé} missed {Manquée} notPublished {Introuvable après vérification} rateLimited {Limite de débit} tokenExpired {Autorisation expirée} unavailable {Plateforme injoignable} appNotAudited {Publications privées seulement, application non auditée} quotaExceeded {Allocation quotidienne de mises en ligne épuisée} appBillingLimit {Application du serveur non réglée} planLimit {Limite de l’abonnement atteinte} noResponse {Pas de réponse} unreadableResponse {Réponse illisible} interrupted {Interrompue} adapterFailure {Échec pendant l’appel} other {{reason}}}"
+    "reason": "{reason, select, contentRejected {Contenu refusé} channelDisconnected {Canal déconnecté} channelDisabled {Canal désactivé} mediaRemoved {Média supprimé} mediaRejected {Média refusé} missed {Manquée} notPublished {Introuvable après vérification} rateLimited {Limite de débit} tokenExpired {Autorisation expirée} unavailable {Plateforme injoignable} appNotAudited {Publications privées seulement, application non auditée} quotaExceeded {Allocation quotidienne de mises en ligne épuisée} appBillingLimit {Application du serveur non réglée} planLimit {Limite de l’abonnement atteinte} noResponse {Pas de réponse} unreadableResponse {Réponse illisible} interrupted {Interrompue} adapterFailure {Échec pendant l’appel} other {{reason}}}",
+    "legal": {
+      "title": "Réquisitions",
+      "description": "L’autorité judiciaire, ou une autre autorité que la loi habilite, peut demander par écrit les données permettant d’identifier quiconque a contribué à la création d’un contenu. Cette page est le seul moyen de lire ce qu’un compte fermé a laissé et les connexions ayant créé du contenu.",
+      "recordedTitle": "Chaque réponse est consignée",
+      "recorded": "Tout ce que vous envoyez ici est consigné à votre nom avant tout affichage, même lorsque rien n’est trouvé : l’autorité, sa référence, le fondement juridique, ce sur quoi portait la demande et ce qu’elle demandait, et le nombre de données renvoyées. Cette trace est conservée {years, plural, one {# an} other {# ans}}, apparaît dans le journal d’audit pour le reste de l’équipe, et peut être contrôlée par la personne qui répond de la conformité de Peal. Ne saisissez qu’une demande faite par écrit par une autorité.",
+      "form": {
+        "title": "Répondre à une réquisition",
+        "kind": "La demande désigne",
+        "kinds": {
+          "email": "Une adresse e-mail",
+          "userId": "Un identifiant de compte",
+          "workspaceId": "Un identifiant d’espace de travail"
+        },
+        "identifier": "Identifiant",
+        "identifierHint": "Une adresse e-mail retrouve les comptes fermés qui l’avaient. Un identifiant de compte retrouve le compte, fermé ou non. Un identifiant d’espace de travail retrouve les connexions qui y ont été faites.",
+        "authority": "Autorité",
+        "authorityHint": "La juridiction, le parquet ou le service qui demande, tel que son document le nomme.",
+        "reference": "Référence",
+        "referenceHint": "Le numéro de la demande, la procédure et sa date.",
+        "legalBasis": "Fondement juridique",
+        "legalBasisHint": "Le texte qui donne à l’autorité le pouvoir de demander, tel que son document le cite.",
+        "covers": "Ce que la demande vise",
+        "coversHint": "Ne cochez que ce que le document demande : rien d’autre n’est lu ni affiché.",
+        "cover": {
+          "identity": "Le titulaire du compte : nom, adresse e-mail, date de création",
+          "signIn": "Ses moyens de connexion : l’identifiant de chaque méthode, jamais un mot de passe",
+          "payments": "Les références de paiement : les identifiants client du prestataire de paiement",
+          "connections": "Les connexions ayant créé, modifié ou supprimé un contenu : date, adresse IP, protocole"
+        },
+        "since": "Connexions à partir du (jour UTC)",
+        "until": "Connexions jusqu’au (jour UTC)",
+        "periodHint": "Laissez les deux vides si la demande ne vise aucune période.",
+        "submit": "Consigner la demande et afficher la réponse",
+        "pending": "Consignation…",
+        "incomplete": "Renseignez l’autorité, la référence, le fondement juridique et l’identifiant, et cochez ce que la demande vise.",
+        "clear": "Effacer la réponse"
+      },
+      "answer": {
+        "recorded": "Réponse consignée sous",
+        "held": "Comptes fermés",
+        "noHeld": "Aucun compte fermé n’est conservé pour ce sujet.",
+        "connections": "Connexions",
+        "noConnections": "Aucune connexion n’est conservée pour ce sujet sur cette période.",
+        "notCovered": "Non visé par cette demande",
+        "noneKept": "Rien de conservé",
+        "userId": "Identifiant du compte",
+        "closedAt": "Fermé le",
+        "identity": "Titulaire",
+        "createdAt": "Créé le",
+        "signIn": "Moyens de connexion",
+        "payments": "Références de paiement",
+        "columns": {
+          "at": "Date",
+          "ipAddress": "Adresse IP",
+          "protocol": "Protocole",
+          "access": "Connecté avec",
+          "userId": "Identifiant du compte",
+          "apiKeyId": "Identifiant de la clé d’API",
+          "workspaceId": "Identifiant de l’espace de travail"
+        }
+      },
+      "past": {
+        "title": "Réponses données",
+        "description": "Les plus récentes d’abord. Ce qui a été remis n’est jamais conservé ici, seulement ce qui était demandé et le nombre de données renvoyées.",
+        "empty": "Aucune réquisition n’a encore reçu de réponse.",
+        "columns": {
+          "at": "Date",
+          "staff": "Réponse de",
+          "authority": "Autorité et référence",
+          "legalBasis": "Fondement juridique",
+          "subject": "Sujet",
+          "covers": "Visé",
+          "returned": "Renvoyé"
+        },
+        "subject": "{kind, select, email {Adresse e-mail} userId {Compte} workspaceId {Espace de travail} other {{kind}}}",
+        "cover": "{cover, select, identity {Identité} signIn {Connexion} payments {Paiements} connections {Connexions} other {{cover}}}",
+        "period": "Connexions du {since} au {until}",
+        "open": "début",
+        "now": "jour de la réponse",
+        "returned": "{held, plural, =0 {Aucun compte fermé} one {# compte fermé} other {# comptes fermés}}, {connections, plural, =0 {aucune connexion} one {# connexion} other {# connexions}}"
+      }
+    }
   },
   "Impersonation": {
     "label": "Vous agissez à la place d’un autre compte",

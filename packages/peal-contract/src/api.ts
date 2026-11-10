@@ -29,11 +29,16 @@ export { DatabaseUnavailable } from "./database-unavailable.ts";
 
 export {
   AccountApi,
+  AccountClosureSchema,
   AccountExportSchema,
   DeleteAccountSchema,
 } from "./account.ts";
 
-export type { AccountExport, DeleteAccount } from "./account.ts";
+export type {
+  AccountClosure,
+  AccountExport,
+  DeleteAccount,
+} from "./account.ts";
 
 export { ConnectedAppNotFound } from "./connected-app-not-found.ts";
 
@@ -602,13 +607,24 @@ export {
   LegalAnswerSchema,
   LegalApi,
   LegalConnectionSchema,
+  LegalCoverSchema,
+  LegalDisclosurePageSchema,
+  LegalDisclosureSchema,
+  legalDisclosureYears,
   LegalHeldAccountSchema,
   LegalRequestSchema,
   LegalSubjectSchema,
   maxLegalTextLength,
 } from "./legal.ts";
 
-export type { LegalAnswer, LegalRequest, LegalSubject } from "./legal.ts";
+export type {
+  LegalAnswer,
+  LegalCover,
+  LegalDisclosure,
+  LegalDisclosurePage,
+  LegalRequest,
+  LegalSubject,
+} from "./legal.ts";
 
 export { StaffAccess } from "./staff-access.ts";
 
@@ -675,3 +691,22 @@ export class Api extends HttpApi.make("peal")
       title: "Peal API",
     })
   ) {}
+
+export {
+  complaintRight,
+  dataRights,
+  processingLocales,
+  processingRegister,
+  recipientCategories,
+  retentionPeriods,
+  retentionTable,
+} from "./data-processing.ts";
+
+export type {
+  DataRight,
+  ProcessingCategory,
+  ProcessingCondition,
+  ProcessingLocale,
+  ProcessingText,
+  RecipientCategory,
+} from "./data-processing.ts";

@@ -13,6 +13,7 @@ import { HttpApiTest } from "effect/http-api";
 import { Api } from "peal-contract";
 import type { Member, Principal } from "peal-contract";
 
+import { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -34,11 +35,14 @@ import { ConnectedAppStore } from "#workspace/application/connected-app-store.ts
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { ContextRecords } from "#workspace/application/context-records.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
+import { ErasureLedger } from "#workspace/application/erasure-ledger.ts";
 import { PasswordCheck } from "#workspace/application/password-check.ts";
+import { PrivacyDeclaration } from "#workspace/application/privacy-declaration.ts";
 import { TooManyPasswordAttempts } from "#workspace/application/too-many-password-attempts.ts";
 import { WorkspaceBusy } from "#workspace/application/workspace-busy.ts";
 import { WorkspaceSubscribed } from "#workspace/application/workspace-subscribed.ts";
 import type { MembershipStanding } from "#workspace/domain/account-closure.ts";
+import { undeclared } from "#workspace/domain/operator-declaration.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 // The settings endpoints on their real use cases, over ports kept in memory.
@@ -250,6 +254,12 @@ const PortsLive = Layer.mergeAll(
           }),
         holdIdentification: (held) =>
           record(`hold:${held.userId}:${held.email}`).pipe(provide),
+        legalRemains: () =>
+          Effect.succeed({
+            accountYears: 1,
+            connectionYears: 1,
+            identityYears: 5,
+          }),
         removeWorkspaceFiles: (id) => record(`removeFiles:${id}`).pipe(provide),
         // Stripe may still bill one, until the person agrees to cancel:
         // nothing is cancelled while another refuses.
@@ -334,10 +344,10 @@ const PortsLive = Layer.mergeAll(
       const provide = Effect.provideService(Fakes, fakes);
 
       return AccountMail.of({
-        deleted: ({ email, locale, subscriptionsCancelled }) =>
-          record(`mail:${email}:${locale}:${subscriptionsCancelled}`).pipe(
-            provide
-          ),
+        deleted: ({ email, legalHold, locale, subscriptionsCancelled }) =>
+          record(
+            `mail:${email}:${locale}:${subscriptionsCancelled}:${legalHold?.identityYears ?? "nothing"}`
+          ).pipe(provide),
         exported: ({ email, locale, via }) =>
           record(`mail:exported:${email}:${locale}:${via}`).pipe(provide),
         workspaceDeleted: ({
@@ -363,6 +373,40 @@ const PortsLive = Layer.mergeAll(
   Layer.succeed(
     TransactionRunner,
     TransactionRunner.of({ transaction: (effect) => effect })
+  ),
+  // The ledger of erasures, which records what it is told.
+  Layer.effect(
+    ErasureLedger,
+    Effect.gen(function* ErasureLedgerTest() {
+      const provide = Effect.provideService(Fakes, yield* Fakes);
+
+      return ErasureLedger.of({
+        discard: () => record("ledger:discard").pipe(provide),
+        entries: Effect.succeed([]),
+        expire: () => Effect.succeed(0),
+        record: ({ confirmed, userId: closed, workspaceIds }) =>
+          record(
+            `ledger:${closed ?? "workspace"}:${workspaceIds.join(",")}:${confirmed ? "confirmed" : "pending"}`
+          ).pipe(provide),
+      });
+    })
+  ),
+  Ids.layerTest,
+  // A server that bills, whose operator declared who it is.
+  Layer.succeed(
+    PrivacyDeclaration,
+    PrivacyDeclaration.of({
+      bills: true,
+      declared: {
+        ...undeclared,
+        controller: {
+          address: null,
+          contact: "privacy@example.test",
+          dataProtectionOfficer: null,
+          name: "Synthetic Operator SAS",
+        },
+      },
+    })
   )
 );
 
@@ -489,6 +533,18 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             "mail:workspaceDeleted:ana@example.test:fr:Harbour:0",
           ]
         );
+
+        // The erasure is in the ledger before it commits, by id only, and
+        // confirmed once it has: a restore of the database knows to
+        // delete the workspace again.
+        const pending = done.indexOf(`ledger:workspace:${harbour}:pending`);
+
+        assert.isAbove(pending, done.indexOf(`deleteWorkspace:${harbour}`));
+        assert.isAbove(
+          done.indexOf(`ledger:workspace:${harbour}:confirmed`),
+          pending
+        );
+        assert.notInclude(done, "ledger:discard");
       })
   );
 
@@ -604,6 +660,11 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           "BillingUnavailable"
         );
         assert.notInclude(yield* calls, `deleteWorkspace:${unreachable}`);
+        // Nothing was erased, so the ledger says nothing was.
+        assert.notInclude(
+          yield* calls,
+          `ledger:workspace:${unreachable}:confirmed`
+        );
       })
   );
 
@@ -644,6 +705,18 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           `attachment; filename="peal-data-${DateTime.formatIsoDate(body.exportedAt)}.json"`
         );
         assert.strictEqual(body.user.email, "ana@example.test");
+        // With what Article 15(1) lists, in Ana's language, from what the
+        // operator declared.
+        assert.strictEqual(body.about.language, "fr");
+        assert.strictEqual(
+          body.about.controller?.contact,
+          "privacy@example.test"
+        );
+        assert.isNull(body.about.processors);
+        assert.includeMembers(
+          body.about.categories.map(({ id }) => id),
+          ["account", "content", "contracts", "legalConnections"]
+        );
         assert.deepStrictEqual(
           body.workspaces.map(({ assistantUsage, billing, name }) => ({
             assistantUsage,
@@ -696,6 +769,33 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
 
           assert.strictEqual(
             yield* failureOf(refused.account.export()),
+            "Forbidden"
+          );
+        }
+      })
+  );
+
+  it.effect(
+    "say what deleting the account would leave, to the user in person only",
+    () =>
+      Effect.gen(function* closure() {
+        const client = yield* as(user());
+
+        assert.deepStrictEqual(yield* client.account.closure(), {
+          legalHold: { accountYears: 1, connectionYears: 1, identityYears: 5 },
+        });
+
+        for (const principal of [
+          apiKey,
+          oauth,
+          mcpClient,
+          otherClient,
+          impersonated,
+        ]) {
+          const refused = yield* as(principal);
+
+          assert.strictEqual(
+            yield* failureOf(refused.account.closure()),
             "Forbidden"
           );
         }
@@ -784,7 +884,10 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             `eraseUser:${userId}`,
             `deleteUser:${userId}`,
             `removeFiles:${harbour}`,
-            "mail:ana@example.test:fr:0",
+            "mail:ana@example.test:fr:0:5",
+            // The closure, with the workspace it deleted, by id only.
+            `ledger:${userId}:${harbour}:pending`,
+            `ledger:${userId}:${harbour}:confirmed`,
           ]
         );
 
@@ -856,7 +959,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             `cancel:${subscribed}`,
             `eraseWorkspace:${subscribed}`,
             `deleteUser:${userId}`,
-            "mail:ana@example.test:fr:1",
+            "mail:ana@example.test:fr:1:5",
           ]
         );
       })

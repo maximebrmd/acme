@@ -1,9 +1,13 @@
-import { Effect, Schedule } from "effect";
+import { DateTime, Effect, Schedule } from "effect";
 
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { newId } from "#shared/application/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import { ErasureEntryIdSchema } from "#workspace/domain/erasure-ledger.ts";
+import type { ErasureEntry } from "#workspace/domain/erasure-ledger.ts";
 
 import { AccountStore } from "./account-store.ts";
 import { ContextRecords } from "./context-records.ts";
+import { ErasureLedger } from "./erasure-ledger.ts";
 
 /**
  * Deletes a workspace and everything every context keeps in it, its media
@@ -60,6 +64,81 @@ export const removeWorkspaceFiles = Effect.fn("Workspace.removeFiles")(
         )
       ),
       Effect.annotateLogs({ workspaceId })
+    );
+  }
+);
+
+/**
+ * The ledger's entry for an erasure about to run, not yet confirmed: the
+ * account closing, if one is, and the workspaces deleted, by id, now.
+ */
+export const erasureOf = Effect.fn("Erasure.entry")(function* erasureOf(
+  userId: UserId | null,
+  workspaceIds: readonly WorkspaceId[]
+) {
+  const entry: ErasureEntry = {
+    at: yield* DateTime.now,
+    confirmed: false,
+    id: yield* newId(ErasureEntryIdSchema),
+    userId,
+    version: 1,
+    workspaceIds,
+  };
+
+  return entry;
+});
+
+/**
+ * Writes the erasure in the ledger, unconfirmed. Run it last in the
+ * erasure's transaction: an erasure that cannot be recorded outside the
+ * database does not commit, as a restore would bring it back unnoticed.
+ */
+export const recordErasure = (entry: ErasureEntry) =>
+  ErasureLedger.use((ledger) => ledger.record(entry));
+
+/**
+ * Takes the entry back out of the ledger when its erasure's transaction
+ * failed, so a restore never deletes what was not. A failure to do so is
+ * logged: the entry stays unconfirmed, which a replay reports and leaves.
+ */
+export const discardOnFailure =
+  (entry: ErasureEntry) =>
+  <A, E, R>(erasure: Effect.Effect<A, E, R>) =>
+    erasure.pipe(
+      Effect.onError(() =>
+        ErasureLedger.use((ledger) => ledger.discard(entry.id)).pipe(
+          Effect.catchCause((cause) =>
+            Effect.logError(
+              "An erasure that failed stays unconfirmed in the ledger",
+              cause
+            ).pipe(Effect.annotateLogs({ erasureId: entry.id }))
+          )
+        )
+      )
+    );
+
+/**
+ * Confirms the entry once its erasure committed. The erasure stands
+ * whatever happens here: an entry the store would not take is logged as
+ * unconfirmed, by id, for whoever replays the ledger after a restore.
+ */
+export const confirmErasure = Effect.fn("Erasure.confirm")(
+  function* confirmErasure(entry: ErasureEntry) {
+    const ledger = yield* ErasureLedger;
+
+    yield* ledger.record({ ...entry, confirmed: true }).pipe(
+      Effect.retry(retry),
+      Effect.catchTag("ErasureLedgerUnavailable", (failure) =>
+        Effect.logError(
+          "An erasure that committed stays unconfirmed in the ledger",
+          failure.cause
+        ).pipe(
+          Effect.annotateLogs({
+            erasureId: entry.id,
+            "event.name": "peal.erasure.unconfirmed",
+          })
+        )
+      )
     );
   }
 );

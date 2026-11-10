@@ -6,6 +6,7 @@ import {
   Forbidden,
   IncorrectPassword,
   LastOwner,
+  MediaStoreUnavailable,
   NoticeEventSchema,
   StaffActionSchema,
   TargetOptionsSchema,
@@ -20,6 +21,7 @@ import { AccountData } from "#workspace/application/account-data.ts";
 import type { AccountExport } from "#workspace/application/account-data.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
 
+import { aboutOf } from "./about.ts";
 import { currentUser } from "./connected-apps.ts";
 import { subscribedOf } from "./subscribed.ts";
 
@@ -78,6 +80,12 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
   );
 
   const view: AccountExportView = {
+    about: aboutOf({
+      bills: exported.bills,
+      declaration: exported.declaration,
+      legalRetention: exported.legalHold !== null,
+      locale: account.user.locale,
+    }),
     authoredPosts,
     connectedApps: exported.connectedApps,
     contracts: exported.contracts,
@@ -131,6 +139,17 @@ export const AccountHandlers = HttpApiBuilder.group(
     const closing = yield* CloseAccount;
 
     return handlers.handleAll({
+      closure: () =>
+        Effect.gen(function* closure() {
+          const legalHold = yield* data.afterClosure(yield* currentUser).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              SessionRequired: forbidden,
+            })
+          );
+
+          return { legalHold };
+        }),
       delete: ({ payload }) =>
         Effect.gen(function* remove() {
           yield* closing
@@ -150,6 +169,13 @@ export const AccountHandlers = HttpApiBuilder.group(
                     )
                   ),
                 DatabaseError: Effect.die,
+                ErasureLedgerUnavailable: ({ cause }) =>
+                  Effect.logWarning(
+                    "The erasure ledger could not be written, so nothing was deleted",
+                    cause
+                  ).pipe(
+                    Effect.andThen(Effect.fail(new MediaStoreUnavailable()))
+                  ),
                 IncorrectPassword: () => Effect.fail(new IncorrectPassword()),
                 LastOwner: ({ workspaces }) =>
                   Effect.fail(new LastOwner({ workspaces })),

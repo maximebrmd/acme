@@ -48,6 +48,11 @@
       "options": { "cwd": "{projectRoot}" },
       "cache": false
     },
+    "erasures:replay": {
+      "command": "bun src/replay-erasures.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
     "db:migrate": {
       "command": "bun src/migrate.ts",
       "options": { "cwd": "{projectRoot}" },

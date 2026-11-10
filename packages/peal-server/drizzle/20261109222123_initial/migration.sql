@@ -110,11 +110,11 @@ CREATE TABLE "billing"."subscriptions" (
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."trials" (
+	"forgotten_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	"plan" text,
 	"reserved_at" timestamp with time zone NOT NULL,
 	"started_at" timestamp with time zone,
-	"forgotten_at" timestamp with time zone,
 	"stripe_subscription_id" text,
 	"user_id" text,
 	"user_pseudonym" text,
@@ -218,11 +218,15 @@ CREATE TABLE "legal"."disclosures" (
 	"at" timestamp with time zone NOT NULL,
 	"authority" text NOT NULL,
 	"connections" integer NOT NULL,
+	"covers" jsonb NOT NULL,
 	"held" integer NOT NULL,
 	"id" uuid PRIMARY KEY,
+	"legal_basis" text NOT NULL,
 	"reference" text NOT NULL,
+	"since" timestamp with time zone,
 	"staff_id" uuid NOT NULL,
-	"subject" jsonb NOT NULL
+	"subject" jsonb NOT NULL,
+	"until" timestamp with time zone
 );
 --> statement-breakpoint
 CREATE TABLE "legal"."identification_holds" (

@@ -1,6 +1,7 @@
 import { Context, Effect, Layer, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
@@ -16,9 +17,15 @@ import { AccountStore } from "./account-store.ts";
 import type { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContextRecords } from "./context-records.ts";
 import type { WorkspaceErasureOptions } from "./context-records.ts";
+import type { ErasureLedgerUnavailable } from "./erasure-ledger-unavailable.ts";
+import type { ErasureLedger } from "./erasure-ledger.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import {
+  confirmErasure,
+  discardOnFailure,
   eraseWorkspace,
+  erasureOf,
+  recordErasure,
   removeWorkspaceFiles,
   reportCancelledFirst,
 } from "./workspace-erasure.ts";
@@ -33,8 +40,10 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
  * transaction, as Stripe's side cannot be rolled back; otherwise the
  * deletion is refused (`WorkspaceSubscribed`, with what cancelling would
  * end). Refused too while Stripe cannot be reached, or while one of its
- * posts is going out. The owner is emailed a confirmation, in their
- * language.
+ * posts is going out. The erasure is written in the ledger kept outside
+ * the database before it commits, by id only, so a restore of the database
+ * deletes the workspace again; when the ledger cannot be written, nothing
+ * is deleted. The owner is emailed a confirmation, in their language.
  */
 export class DeleteWorkspace extends Context.Service<
   DeleteWorkspace,
@@ -48,6 +57,7 @@ export class DeleteWorkspace extends Context.Service<
       void,
       | BillingUnavailable
       | DatabaseError
+      | ErasureLedgerUnavailable
       | MissingPermission
       | NotAMember
       | SessionRequired
@@ -61,7 +71,7 @@ export class DeleteWorkspace extends Context.Service<
     DeleteWorkspace,
     Effect.gen(function* DeleteWorkspaceLive() {
       const ports = yield* Effect.context<
-        AccountStore | ContextRecords | TransactionRunner
+        AccountStore | ContextRecords | ErasureLedger | Ids | TransactionRunner
       >();
 
       const store = yield* AccountStore;
@@ -104,6 +114,8 @@ export class DeleteWorkspace extends Context.Service<
           options
         );
 
+        const erasure = yield* erasureOf(null, [workspaceId]);
+
         yield* transaction(
           Effect.gen(function* deleteInTransaction() {
             // Locked first, as closing an account locks its workspaces
@@ -111,12 +123,19 @@ export class DeleteWorkspace extends Context.Service<
             // deadlock.
             yield* found(workspaceId);
             yield* eraseWorkspace(workspaceId);
+            // Last: nothing is committed that the ledger does not hold.
+            yield* recordErasure(erasure);
           })
-        ).pipe(reportCancelledFirst(subscriptionsCancelled));
+        ).pipe(
+          discardOnFailure(erasure),
+          reportCancelledFirst(subscriptionsCancelled)
+        );
+
+        yield* confirmErasure(erasure);
 
         yield* removeWorkspaceFiles(workspaceId);
 
-        // Ids only: what a restore of the database must delete again.
+        // Ids only, as the ledger holds them.
         yield* Effect.logInfo("Deleted a workspace").pipe(
           Effect.annotateLogs({
             "event.name": "peal.erasure",

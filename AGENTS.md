@@ -454,8 +454,30 @@ and no socket, for tests.
   failing, leaves the workspaces, on the free plan once Stripe's events
   come, and is logged; deleting them again cancels nothing more. The owner is emailed
   (`AccountMail.workspaceDeleted`, `deleted`), saying what was cancelled,
-  and each erasure is logged by id (`event.name` `peal.erasure`) for the
-  restore runbook. Closing an account leaves the
+  and each erasure is logged by id (`event.name` `peal.erasure`). Each is
+  also written to the erasure ledger (`ErasureLedger`, `S3ErasureLedger`:
+  one JSON object under `erasures/` in the media bucket, or the bucket
+  `PEAL_ERASURE_LEDGER_BUCKET` names; never the backups', whose
+  credentials the server must not hold), as a restore of the database
+  brings erased data back and rewinds whatever the database recorded: ids
+  and the time only (`workspace/domain/erasure-ledger.ts`, persisted
+  contract), unconfirmed as the last step of the erasure's transaction
+  (`recordErasure`: no ledger, no erasure, 503 `MediaStoreUnavailable`),
+  confirmed once it commits (`confirmErasure`), discarded when it fails
+  (`discardOnFailure`), so no entry names what was not erased.
+  `ReplayErasures` (`bun src/replay-erasures.ts`, `nx run
+  peal-server:erasures:replay`, in the image too) applies it again after a
+  restore, before the server starts: what the ledger names and the
+  database still holds, each entry in its own transaction, without
+  settling Stripe or emailing anyone, holding a closed account's identity
+  as closed at the entry's time, leaving unconfirmed entries unless
+  `--apply-unconfirmed`, and failing when one is refused. Run twice, it
+  changes nothing more. A new way to erase a workspace or an account goes
+  through the ledger; an erasure the ledger does not cover (a platform's
+  data deletion callback, a single post) comes back with a restore. The
+  `workspace.erasure-ledger-retention` cron drops entries after 42 days,
+  longer than backups hold deleted data: keep it so
+  (`data-processing.test.ts`). Closing an account leaves the
   posts its user wrote in the workspaces that remain without an author
   (`PostRecords.forgetAuthor`: `author_id` has no foreign key), and drops the
   connections and account choices they had in progress
@@ -501,14 +523,26 @@ and no socket, for tests.
   for staff who also hold the legal role (`legal` beside `admin` in Better
   Auth's comma-separated `role`, `LegalOfficers` from `StaffStanding`;
   other staff get 404 too) (`POST /api/admin/legal-requests`, `LegalApi`,
-  StaffAccess), recording the answer (staff, authority, reference,
-  subject, counts) in the transaction that reads it, and in the staff
-  audit log (`legalDisclosure`, through the staff context's
-  `LegalDisclosureAudit`), so the rest of staff see it. The export carries the user's connections
-  and what closing would leave (`legalHold`). `PEAL_LEGAL_RETENTION=false`
-  (`LegalRecords.layerOff`) keeps nothing, for an operator outside France;
-  `legalHold` is then null. A new way to change content (a group, a tool)
-  goes through the journal too.
+  StaffAccess), recording the answer (staff, authority, reference, legal
+  basis, subject, what it covers, counts) in the transaction that reads
+  it, and in the staff audit log (`legalDisclosure`, through the staff
+  context's `LegalDisclosureAudit`), so the rest of staff see it. A
+  request names what it asks for (`covers`: identity, signIn, payments,
+  connections, and the connections' period), and the answer holds nothing
+  else (`disclosedOf`, `legal/domain/legal-scope.ts`): a category not
+  covered is null. `GET …/legal-requests` lists the answers given, never
+  what was handed over, and `…/standing` tells the console who answers
+  them. The export carries the user's connections
+  and what closing would leave (`legalHold`). The software keeps none of
+  it unless `PEAL_LEGAL_RETENTION=true`: only an operator the law obliges
+  may hold it (GDPR minimisation), so the default is off
+  (`LegalRecords.layerOff`: nothing is written to the `legal` schema, and
+  `legalHold` is null), and `peal-infra` turns it on for Peal's servers
+  (`peal_legal_retention`). A server that turns it off after it was on
+  keeps what it holds until its term: the purge cron and `LegalRequests`
+  run whatever the setting, and `legalHold` still lists the connections
+  held. A new way to change content (a group, a tool) goes through the
+  journal too.
 - `AccountData` exports what is tied to the user, the posts they wrote in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and
@@ -528,6 +562,24 @@ and no socket, for tests.
   confirmation is emailed in their language. `PasswordCheck` checks a
   password three times within 10 seconds per account at most, as Better
   Auth's own routes do.
+- The export carries what GDPR Article 15(1) lists (`about`): each
+  category's purposes, legal basis, retention and source, the recipients,
+  the rights and how to exercise them, in the account's language. It is
+  written (`workspace/api/about.ts`) from one registry,
+  `peal-contract/data-processing` (`processingRegister`,
+  `retentionPeriods`), which the privacy policy's retention table
+  (peal-site, en and fr, row for row: `test/privacy-retention.test.ts`),
+  the docs' figures (`{{keep-…}}` variables, `retention-variables.ts`) and
+  the production stack (`peal-docker/test/retention.test.ts`) follow too;
+  `test/workspace/api/data-processing.test.ts` compares each period with
+  the rule that enforces it. Change a period in its rule and the registry
+  together, then the policy's table; a new kind of personal data gets a
+  category there. What only the operator knows (controller, policy URL,
+  sub-processors, supervisory authority, its own logs' and backups'
+  retention) comes from the JSON file `PEAL_PRIVACY_DECLARATION_FILE`
+  names (`PrivacyDeclaration`, `workspace/domain/operator-declaration.ts`),
+  null in the export until declared: never write a provider on a guess,
+  in the software, the policy or `peal_privacy_declaration` (peal-infra).
 - Better Auth is also the OAuth authorization server for the CLI (device
   grant, the `peal-cli` public client registered at startup) and MCP clients
   (authorization code with PKCE, and dynamic registration when
@@ -1382,10 +1434,17 @@ self-hoster needs only Postgres and an S3-compatible store:
   repost and confirm, and its analytics), `…/settings` (with `members`,
   `invitations` and `api-keys`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
-  `admin/workspaces`, `admin/workspaces/[workspaceId]` and `admin/audit`:
-  its layout and pages read the staff endpoints with the visitor's cookies
-  through `staffRead` (`#staff/server.ts`), which shows the not-found page
-  for any 404, and its actions are mutations from `#staff/atoms.ts`.
+  `admin/workspaces`, `admin/workspaces/[workspaceId]`, `admin/audit` and
+  `admin/legal`: its layout and pages read the staff endpoints with the
+  visitor's cookies through `staffRead` (`#staff/server.ts`), which shows
+  the not-found page for any 404, and its actions are mutations from
+  `#staff/atoms.ts`. `admin/legal` (legal requests, `legalRead`) is linked
+  and served for staff with the legal role only (`answersLegalRequests`):
+  its form (`LegalRequestForm`, `#staff/legal-request.ts`) sends nothing
+  without the authority, the reference, the legal basis and what the
+  request covers, `LegalAnswerView` shows what came back, and the page
+  says before anything is entered that each answer is recorded, as staff
+  must be told (Code du travail, art. L1222-4): keep that notice.
   `ImpersonationBanner`, in `AppShell`, shows while staff act as someone.
 - The web app reports its errors to `POST /api/client-errors`:
   `src/instrumentation-client.ts` (uncaught errors, unhandled rejections),
@@ -1685,6 +1744,9 @@ self-hoster needs only Postgres and an S3-compatible store:
   documents in `src/content/legal/<locale>/<document>.md`. Keep a legal
   document `draft: true` (banner and noindex) until legal review approves it,
   and never replace a [bracketed placeholder] with a guess.
+- The privacy policy's retention table is the registry's
+  (`peal-contract/data-processing`), which `nx run peal-site:test` checks
+  in both languages: change the registry, then the table.
 - TypeScript 7 does not read `.astro` files, and `astro check` refuses it: keep
   page logic in typed `.ts` modules and `.astro` files thin. Name files in
   kebab-case.
@@ -1782,9 +1844,14 @@ self-hoster needs only Postgres and an S3-compatible store:
   policy says: change both together.
 - Postgres archives its write-ahead log and is backed up to R2 with
   pgBackRest; the backup passphrase is the one secret kept outside the server
-  too. R2 buckets are in its EU jurisdiction (`<account>.eu.r2…`). `peal_runtime` refuses an R2 endpoint without `.eu.`; any other S3 store in the EU does, with its region in `peal_settings`. A restore
-  brings back deletions made since its point in time: the runbook lists them
-  from the `peal.erasure` logs, which nothing yet applies again. `runbooks/restore-database.md` restores it. The server migrates when it
+  too. R2 buckets are in its EU jurisdiction (`<account>.eu.r2…`).
+  `peal_runtime` refuses an R2 endpoint without `.eu.`; any other S3 store in
+  the EU does, with its region in `peal_settings`. A restore
+  brings back deletions made since its point in time:
+  `runbooks/restore-database.md` restores the database, then replays the
+  erasure ledger before the stack starts. The ledger stays in the media
+  bucket while nothing serves that bucket publicly; `peal_runtime` refuses
+  `PEAL_MEDIA_PUBLIC_BASE_URL` without `peal_erasure_ledger_bucket`. The server migrates when it
   starts, so write migrations that the previous release can still run
   against, and roll back by releasing the previous commit.
 - Changing a server's size or adding any paid resource needs the owner's

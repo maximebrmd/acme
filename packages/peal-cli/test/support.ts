@@ -243,7 +243,11 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
 
 // Nor are legal requests answered.
 const LegalLive = HttpApiBuilder.group(Api, "legal", (handlers) =>
-  handlers.handleAll({ answer: () => notStaff })
+  handlers.handleAll({
+    answer: () => notStaff,
+    answered: () => notStaff,
+    standing: () => notStaff,
+  })
 ).pipe(
   Layer.provideMerge(
     Layer.succeed(StaffAccess, StaffAccess.of({ session: () => notStaff }))

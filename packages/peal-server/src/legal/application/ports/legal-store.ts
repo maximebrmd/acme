@@ -3,6 +3,7 @@ import type { DateTime, Effect } from "effect";
 
 import type { LegalRecordId } from "#legal/domain/legal-record-id.ts";
 import type { LegalCutoffs } from "#legal/domain/legal-retention.ts";
+import type { LegalCover } from "#legal/domain/legal-scope.ts";
 import type { LegalSubject } from "#legal/domain/legal-subject.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
@@ -37,13 +38,28 @@ export interface Disclosure {
   readonly at: DateTime.Utc;
   /** The authority that asked, as staff wrote it. */
   readonly authority: string;
+  /** How many connections it got. */
   readonly connections: number;
+  /** What the request asked for, which is all the answer held. */
+  readonly covers: readonly LegalCover[];
+  /** How many closed accounts it named. */
   readonly held: number;
   readonly id: LegalRecordId;
+  /** The text that gives the authority the power to ask. */
+  readonly legalBasis: string;
   /** Its reference: the requisition's number, the procedure, the date. */
   readonly reference: string;
+  /** The period of the connections it asked for, when it named one. */
+  readonly since: DateTime.Utc | null;
   readonly staffId: string;
   readonly subject: LegalSubject;
+  readonly until: DateTime.Utc | null;
+}
+
+/** A page of a list, and how many rows the whole list has. */
+export interface DisclosurePage {
+  readonly items: readonly Disclosure[];
+  readonly total: number;
 }
 
 /**
@@ -65,15 +81,22 @@ export class LegalStore extends Context.Service<
     ) => Effect.Effect<void, DatabaseError>;
     /**
      * The connections of these accounts, or in these workspaces, oldest
-     * first.
+     * first, made from `since` to `until` when given.
      */
     readonly connections: (named: {
+      readonly since?: DateTime.Utc | null;
+      readonly until?: DateTime.Utc | null;
       readonly userIds: readonly string[];
       readonly workspaceIds: readonly string[];
     }) => Effect.Effect<readonly ConnectionEntry[], DatabaseError>;
     readonly disclose: (
       disclosure: Disclosure
     ) => Effect.Effect<void, DatabaseError>;
+    /** The answers given to legal requests, newest first. */
+    readonly disclosures: (slice: {
+      readonly limit: number;
+      readonly offset: number;
+    }) => Effect.Effect<DisclosurePage, DatabaseError>;
     /**
      * Deletes or trims up to `limit` records of each kind past their
      * retention at `cutoffs`, and says how many it changed.

@@ -76,6 +76,29 @@ peal_required_credentials:
   - TELEGRAM_CHAT_ID
 peal_mail_credentials: [RESEND_API_KEY, SMTP_URL]
 
+# Peal is a host established in France: the law has it keep what identifies
+# whoever contributed content (loi n° 2004-575, art. 6, V, A; décret
+# n° 2021-1362), which the software does only when told to
+# (PEAL_LEGAL_RETENTION). Both environments are Peal's, and keep it.
+peal_legal_retention: true
+
+# Where the server keeps its ledger of erasures (the id and time of each
+# deleted account and workspace, which a restore replays): empty keeps it
+# in the media bucket, under erasures/, which suits a media bucket nothing
+# serves publicly. Name a private bucket of its own here, on the same R2
+# account and reachable with the media token, before giving the media
+# bucket a public domain (PEAL_MEDIA_PUBLIC_BASE_URL): peal_runtime refuses
+# one without the other.
+peal_erasure_ledger_bucket: ""
+
+# What Peal declares about its processing, which each user's copy of their
+# data repeats (GDPR Article 15): the controller, the privacy policy's
+# address, the supervisory authority and every provider that processes
+# users' data (the docs' self-hosting page, "Privacy declaration", gives
+# the shape). Empty until the owner confirms the legal entity and the
+# providers: declare none on a guess, as users are told it as a fact.
+peal_privacy_declaration: {}
+
 # The uptime server's address that Grafana sends its heartbeat to, every few
 # minutes, so the uptime server says when this server's alerting goes silent
 # (README.md, "Uptime"). Empty: no heartbeat.

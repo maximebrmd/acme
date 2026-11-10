@@ -18,6 +18,19 @@ export interface EmailCatalog {
     readonly workspace: string;
   };
   /**
+   * Added to an account deletion's body on a server that keeps what French
+   * law has a host keep: `identification`, what stays and for how long
+   * (`{identity}`, `{account}`: each a number of `years`); `connections`,
+   * on a server that stopped keeping these, for the connections it already
+   * holds, each `{connections}` from when it was made.
+   */
+  readonly legalHold: {
+    readonly connections: string;
+    readonly identification: string;
+    /** A number of years, `{count}`: one, or more. */
+    readonly years: { readonly one: string; readonly other: string };
+  };
+  /**
    * A copy of the account's data was downloaded `{via}`, one of
    * `exportChannels`.
    */

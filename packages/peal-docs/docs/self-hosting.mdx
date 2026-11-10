@@ -319,14 +319,57 @@ While impersonating, staff cannot connect channels, publish, manage API keys or 
 
 ## Legal retention [#legal-retention]
 
-French law has a host keep the data that identifies whoever contributed content, so that a judicial authority can ask for it (loi n° 2004-575, Article 6, V, and décret n° 2021-1362). Peal does it by default, in the `legal` schema, which nothing else in the server reads:
+French law has a host keep the data that identifies whoever contributed content, so that a judicial authority can ask for it (loi n° 2004-575, Article 6, V, and décret n° 2021-1362). Peal can do it, and does not by default: `PEAL_LEGAL_RETENTION` is `false` unless you set it.
 
-- each request that creates, changes or deletes posts or media, through the web app, an API key, the command line or an MCP client: when, from which address (read as sign-in reads it, from `AUTH_IP_HEADERS`), over which protocol and how it signed in, kept 1 year;
-- when an account closes, its holder's name and email address, kept 5 years, and how they signed in (each sign-in method's identifier, never the password or its hash) and their Stripe customers, kept 1 year.
+**Who must turn it on.** You, if both are true:
 
-A daily job (`legal.retention`, at 03:47 UTC) deletes each record once its time is up. Staff read these records only by answering a legal request in the [staff console](/staff#legal-requests), and each answer is recorded. Each user's export lists their connections and what closing their account would leave.
+- you are established in France, or offer your Peal to people there;
+- your Peal stores content for other people: customers, clients, the public, anyone but your own organisation.
 
-If you run Peal outside France and no law obliges you to keep these, set `PEAL_LEGAL_RETENTION=false`: the server then keeps none of them, and closing an account leaves nothing. Your own privacy notice should say which you chose.
+Set `PEAL_LEGAL_RETENTION=true` then. Not keeping the data is an offence (the same Article 6, V, B). If you are not sure the law applies to you, ask a lawyer before you open your server to others.
+
+**Who must leave it off.** Everyone else: a team that runs Peal for its own posts, or an operator with no tie to France. Data protection law (GDPR, Article 5(1)(c)) forbids keeping this data without an obligation to.
+
+**What it keeps**, in the `legal` schema, which nothing else in the server reads:
+
+- each request that creates, changes or deletes posts or media, through the web app, an API key, the command line or an MCP client: when, from which address (read as sign-in reads it, from `AUTH_IP_HEADERS`), over which protocol and how it signed in, kept {{keep-legal-connections-en}}. Never what the request carried;
+- when an account closes, its holder's name and email address, kept {{keep-legal-identity-en}}, and how they signed in (each sign-in method's identifier, never the password or its hash) and their Stripe customers, kept {{keep-legal-account-en}}.
+
+A daily job (`legal.retention`, at 03:47 UTC) deletes each record once its time is up. Staff read these records only by answering a legal request in the [staff console](/staff#legal-requests), and each answer is recorded and kept {{keep-legal-disclosures-en}}. Each user's export lists their connections and what closing their account would leave. Your own privacy notice should say that you keep them.
+
+**Off**, the server writes nothing to the `legal` schema, and closing an account erases everything.
+
+**Turning it off after it was on** keeps nothing more, and deletes nothing at once: what the server already holds stays until its time is up, as the law had you keep it for that long, and the daily job goes on deleting it. Meanwhile staff with the legal role can still answer a request about it, and each user's export still lists the connections kept about them.
+
+## Deletions and backups [#erasure-ledger]
+
+A backup holds what was deleted after it was taken. Restoring one brings back the accounts and workspaces their users deleted since, and the law has you delete them again before anyone can use them. Peal keeps what that takes outside the database, which a restore would rewind too: each time a workspace is deleted or an account closed, the server writes a small entry in the object store, under `erasures/`, with the ids and the time and nothing else (no name, address or content). The entry is written before the deletion is final, so none goes unrecorded: when the store cannot be reached, the deletion is refused and can be tried again.
+
+After any restore, and before you start the server, apply the ledger again:
+
+```sh
+docker compose … run --rm --no-deps server packages/peal-server/src/replay-erasures.ts
+```
+
+From a checkout, `bun nx run peal-server:erasures:replay` does the same. It deletes again whatever the restore brought back, prints what it did by id, and can be run again without harm: what is gone stays gone. It cancels nothing at Stripe and emails no one, as both were done when the deletion first ran. A deletion that was refused, such as a post going out, makes it exit with an error: keep the server stopped until it passes. An entry the server never confirmed, because it stopped in the middle of a deletion, is listed and left alone; `--apply-unconfirmed` applies those too, once you have decided each was asked for.
+
+The ledger lives in the media bucket by default. Nothing there is served: the server signs no link to `erasures/`. If your media bucket is public (`PEAL_MEDIA_PUBLIC_BASE_URL`), name a private bucket with `PEAL_ERASURE_LEDGER_BUCKET`, on the same store and reachable with the same key: the server warns at startup until you do. Do not use your backups' bucket, as a server that can write there can delete the backups.
+
+Entries are kept {{keep-erasure-ledger-en}}, a little longer than the backups hold deleted data ({{keep-backups-en}} with the stack's four weekly full backups): a daily job (`workspace.erasure-ledger-retention`, at 04:17 UTC) drops older ones. Keep your backups shorter than that. Where the store has lifecycle rules, add one as a second guard, on the ledger's bucket or its prefix alone: with Cloudflare R2, `wrangler r2 bucket lifecycle add <bucket> expire-erasures erasures/ --expire-days 42`. A rule that names the wrong prefix would delete your media: check it before you save it.
+
+## Privacy declaration [#privacy-declaration]
+
+Each user can download a copy of their data (**Account**, **Your data**, or `peal account export`). With it comes what the GDPR, Article 15, has a controller tell: for each category of data, what it is for, on which legal basis, how long it is kept and where it came from; who receives it; and the rights over it. Peal writes most of it from one registry in its code, which its own privacy policy's retention table is written from too, so the two cannot disagree.
+
+What depends on you, Peal cannot know, and never guesses. Declare it in a JSON file, as `self-host/privacy-declaration.example.json` shows, and name the file with `PEAL_PRIVACY_DECLARATION` (the Compose stack mounts it; a server run another way reads `PEAL_PRIVACY_DECLARATION_FILE`):
+
+- `controller`: who decides what the data is processed for, that is you: `name`, and if you wish `address`, `contact` (where privacy requests go) and `dataProtectionOfficer`;
+- `policyUrl`: where your privacy policy is;
+- `supervisoryAuthority`: the data protection authority you answer to, `name` and `url`;
+- `recipients`: every provider that processes your users' data for you (hosting, media storage, email, payments, bot protection, AI, alerts), each with its `name`, the `service` it gives, the `country` it processes the data in, and the `safeguard` of a transfer outside the European Economic Area, or `null`;
+- `retention`: only if you run another stack than this repository's, how long yours keeps `technicalLogs` and `backups`, in English (`en`) and French (`fr`). The registry otherwise states the production stack's: logs {{keep-logs-en}}, traces {{keep-traces-en}}, metrics {{keep-metrics-en}}, and deleted data gone from backups within {{keep-backups-en}}.
+
+Every part is optional. What you leave out reads as not declared in each export, which then tells users less than the law has you tell them: fill it in before you open your server to others. The server reads the file when it starts, and stops on one it cannot read.
 
 ## Telemetry [#telemetry]
 
