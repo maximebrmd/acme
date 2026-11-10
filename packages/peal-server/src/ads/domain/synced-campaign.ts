@@ -1,7 +1,6 @@
 import { Schema } from "effect";
 
 import {
-  CampaignObjectiveSchema,
   objectBudget,
   objectName,
   objectSchedule,
