@@ -192,6 +192,18 @@ export class LinkedInOptions extends Schema.Class<LinkedInOptions>(
   }
 }
 
+/**
+ * What a LinkedIn company page refuses that a profile takes: a post only
+ * connections see, as a page has none. LinkedIn would refuse it when the
+ * post goes out; scheduling says so first.
+ */
+export const pageProblems = ({
+  visibility,
+}: LinkedInOptions): readonly OptionProblem<LinkedInField>[] =>
+  visibility === "connections"
+    ? [{ _tag: "invalid", field: "visibility" }]
+    : [];
+
 /** An option of LinkedIn's. */
 export type LinkedInField = Exclude<
   keyof typeof LinkedInOptions.fields,

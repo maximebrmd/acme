@@ -8,6 +8,7 @@ import {
 } from "#publishing/domain/content-rules.ts";
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import { LinkedInOptions } from "#publishing/domain/linkedin-options.ts";
 import { emptyContent, textOn } from "#publishing/domain/post-content.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
@@ -49,6 +50,12 @@ const media = (count: number) =>
       `00000000-0000-7000-8000-${(index + 100).toString().padStart(12, "0")}`
     )
   );
+
+// A channel as violations name it: its id and its platform.
+const channelOf = ({ channelId, platform }: ChannelOnPlatform) => ({
+  channelId,
+  platform,
+});
 
 const violationsOf = (
   result: Result.Result<
@@ -337,6 +344,45 @@ describe(checkDraft, () => {
 
     expect(violationsOf(checkDraft(content, [bluesky]))).toStrictEqual([
       { _tag: "overrideWithoutChannel", channelId: x.channelId },
+    ]);
+  });
+});
+
+describe("a post only a member's connections see", () => {
+  const profile = channel("8", "linkedin");
+  const page = {
+    ...channel("9", "linkedin"),
+    connection: "linkedinPage" as const,
+  };
+  const content = contentOf("For those who know us.");
+
+  const toConnections = (channelId: ChannelOnPlatform["channelId"]) => [
+    {
+      channelId,
+      options: new LinkedInOptions({
+        platform: "linkedin",
+        visibility: "connections",
+      }),
+    },
+  ];
+
+  it("goes out from a LinkedIn profile, and is refused on a page, which has no connections", () => {
+    expect(
+      violationsOf(
+        checkPublishable(
+          content,
+          [profile],
+          [],
+          toConnections(profile.channelId)
+        )
+      )
+    ).toStrictEqual([]);
+    expect(
+      violationsOf(
+        checkPublishable(content, [page], [], toConnections(page.channelId))
+      )
+    ).toStrictEqual([
+      { _tag: "optionInvalid", ...channelOf(page), field: "visibility" },
     ]);
   });
 });

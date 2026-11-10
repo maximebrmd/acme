@@ -1,4 +1,4 @@
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Option } from "effect";
 
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
@@ -14,15 +14,24 @@ export const ListedWorkspaceChannels = Layer.effect(
 
     return WorkspaceChannels.of({
       lookUp: (actor, channelIds) =>
-        listChannels
-          .list(actor)
-          .pipe(
-            Effect.map((channels) =>
-              channels.flatMap(({ id, platform }) =>
-                channelIds.includes(id) ? [{ channelId: id, platform }] : []
-              )
+        listChannels.list(actor).pipe(
+          Effect.map((channels) =>
+            channels.flatMap(({ connection, id, platform }) =>
+              channelIds.includes(id)
+                ? [
+                    Option.match(connection, {
+                      onNone: () => ({ channelId: id, platform }),
+                      onSome: (through) => ({
+                        channelId: id,
+                        connection: through,
+                        platform,
+                      }),
+                    }),
+                  ]
+                : []
             )
-          ),
+          )
+        ),
     });
   })
 );
