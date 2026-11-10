@@ -11,6 +11,7 @@ import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import { emptyContent, textOn } from "#publishing/domain/post-content.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
+import { platforms } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { contentOf, mediaFile } from "#test/publishing/support.ts";
 
@@ -344,7 +345,6 @@ describe("a document in a post", () => {
   const pdf = MediaAssetIdSchema.make("00000000-0000-7000-8000-0000000d0001");
   const image = MediaAssetIdSchema.make("00000000-0000-7000-8000-0000000d0002");
   const linkedin = channel("7", "linkedin");
-  const pinterest = channel("8", "pinterest");
   const mebibyte = 1024 * 1024;
 
   const document = (byteSize = 2 * mebibyte) =>
@@ -386,26 +386,29 @@ describe("a document in a post", () => {
     ]);
   });
 
-  it("is refused everywhere else, where rules are not known too", () => {
-    const content = contentOf("Our menu", { media: [pdf] });
+  // Pinterest and Google Business Profile included: each names the types it
+  // takes, and a PDF is none of them.
+  it.each(platforms.filter((platform) => platform !== "linkedin"))(
+    "is refused on %s, as on every platform but LinkedIn",
+    (platform) => {
+      const elsewhere = channel("8", platform);
 
-    expect(
-      violationsOf(
-        checkPublishable(content, [mastodon, pinterest], [document()])
-      )
-    ).toStrictEqual([
-      {
-        _tag: "mediaTypeUnsupported",
-        ...mastodon,
-        contentType: "application/pdf",
-        mediaId: pdf,
-      },
-      {
-        _tag: "mediaTypeUnsupported",
-        ...pinterest,
-        contentType: "application/pdf",
-        mediaId: pdf,
-      },
-    ]);
-  });
+      expect(
+        violationsOf(
+          checkPublishable(
+            contentOf("Our menu", { media: [pdf] }),
+            [elsewhere],
+            [document()]
+          )
+        ).filter(({ _tag }) => _tag === "mediaTypeUnsupported")
+      ).toStrictEqual([
+        {
+          _tag: "mediaTypeUnsupported",
+          ...elsewhere,
+          contentType: "application/pdf",
+          mediaId: pdf,
+        },
+      ]);
+    }
+  );
 });
