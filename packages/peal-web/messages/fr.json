@@ -1164,7 +1164,7 @@
       "tooManyChannels": "Plus de canaux sont gardés que l’abonnement n’en permet.",
       "tooManyMembers": "Plus de membres sont gardés que l’abonnement n’en permet.",
       "unknownChannel": "Un canal gardé n’est plus connecté. Rechargez la page.",
-      "unknownMember": "Une personne gardée n’est plus membre. Rechargez la page.",
+      "unknownMember": "Une personne gardée n’est plus membre, ou vous ne l’êtes plus : un autre membre a peut-être choisi entre-temps. Rechargez la page.",
       "selfRequired": "Vous devez rester parmi les membres.",
       "ownerRequired": "Seul un propriétaire retire un propriétaire.",
       "generic": "Cela n’a pas fonctionné. Réessayez dans un instant."

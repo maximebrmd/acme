@@ -49,6 +49,13 @@ export const ContextWorkspaceHoldingsLive = Layer.effect(
           }),
           Effect.withSpan("WorkspaceHoldings.keepMembers")
         ),
+      present: (actor) =>
+        members.present(actor).pipe(
+          Effect.catchTag("DirectoryUnavailable", ({ cause }) =>
+            Effect.fail(new DatabaseError({ cause }))
+          ),
+          Effect.withSpan("WorkspaceHoldings.present")
+        ),
     });
   })
 );

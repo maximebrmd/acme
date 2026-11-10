@@ -76,6 +76,17 @@ export class ReduceWorkspace extends Context.Service<
           return yield* new BillingOff();
         }
 
+        // The request was let in as a member's, perhaps before another
+        // member's choice removed them: the standing just read is then
+        // what that choice left, within the plan's members, and nothing
+        // below would find them gone. Read after the standing, so a
+        // removal the standing shows is one this sees too. Such a member
+        // is told so, never that a choice of theirs was applied, and
+        // disconnects nothing.
+        if (!(yield* holdings.present(actor))) {
+          return yield* new ReductionRefused({ reason: "unknownMember" });
+        }
+
         const allowedOf = (limit: "channels" | "members") =>
           Option.fromUndefinedOr(
             before.over.find((excess) => excess.limit === limit)

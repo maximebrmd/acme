@@ -121,6 +121,13 @@ export class WorkspaceMembers extends Context.Service<
       readonly PersonInWorkspace[],
       DirectoryUnavailable | UserRequired
     >;
+    /**
+     * Whether the actor is a member of its workspace now, read again: none
+     * but a user is one.
+     */
+    readonly present: (
+      actor: Actor
+    ) => Effect.Effect<boolean, DirectoryUnavailable>;
     readonly revokeInvitation: (
       actor: Actor,
       invitationId: string
@@ -244,11 +251,19 @@ export class WorkspaceMembers extends Context.Service<
         }
       );
 
+      const present = (actor: Actor) =>
+        actor.subject._tag === "user"
+          ? directory
+              .membership(actor.subject.userId, actor.workspaceId)
+              .pipe(Effect.map(Option.isSome))
+          : Effect.succeed(false);
+
       return WorkspaceMembers.of({
         invitations,
         invite,
         keepOnly,
         list,
+        present,
         revokeInvitation,
       });
     })

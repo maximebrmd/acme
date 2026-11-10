@@ -33,6 +33,12 @@ export class WorkspaceHoldings extends Context.Service<
       channelId: string
     ) => Effect.Effect<void, DatabaseError | MissingPermission>;
     /**
+     * Whether the actor is a member of the workspace now, read again: a
+     * request let in as a member may find another member's choice removed
+     * them since.
+     */
+    readonly present: (actor: Actor) => Effect.Effect<boolean, DatabaseError>;
+    /**
      * Removes every member but those kept, and revokes the pending
      * invitations, or refuses the whole choice.
      */

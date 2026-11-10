@@ -103,6 +103,10 @@ const run = <A, E>(
                 )
               )
             : Effect.fail(new ReductionRefused({ reason: "selfRequired" })),
+        present: () =>
+          Ref.get(state).pipe(
+            Effect.map(({ members }) => members.includes(userId))
+          ),
       })
     );
 
@@ -234,6 +238,30 @@ describe("a workspace over its plan", () => {
       assert.deepStrictEqual(log, ["disconnect:c4"]);
       assert.deepStrictEqual(state.members, [userId, "m2"]);
     })
+  );
+
+  it.effect(
+    "refuses the choice of someone another member's choice just removed, and changes nothing",
+    () =>
+      Effect.gen(function* removedMeanwhile() {
+        // Two owners chose at once: the other's choice came first, the
+        // members are back within the plan, and this one is no longer
+        // among them, though the request was let in while they were.
+        const { log, result, state } = yield* run(
+          on("free"),
+          { channels: ["c1", "c2", "c3", "c4"], members: ["m2"] },
+          reduce({ channels: ["c1", "c2", "c3"], members: [userId] }).pipe(
+            Effect.flip
+          )
+        );
+
+        assert.deepStrictEqual(
+          result,
+          new ReductionRefused({ reason: "unknownMember" })
+        );
+        assert.deepStrictEqual(log, []);
+        assert.deepStrictEqual(state.channels, ["c1", "c2", "c3", "c4"]);
+      })
   );
 
   it.effect("refuses a choice the plan cannot hold, and changes nothing", () =>

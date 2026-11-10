@@ -1164,7 +1164,7 @@
       "tooManyChannels": "More channels are kept than the plan allows.",
       "tooManyMembers": "More members are kept than the plan allows.",
       "unknownChannel": "A channel kept is no longer connected. Reload the page.",
-      "unknownMember": "Someone kept is no longer a member. Reload the page.",
+      "unknownMember": "Someone kept is no longer a member, or you no longer are: another member may have chosen meanwhile. Reload the page.",
       "selfRequired": "You must stay among the members.",
       "ownerRequired": "Only an owner removes an owner.",
       "generic": "That did not work. Try again in a moment."
