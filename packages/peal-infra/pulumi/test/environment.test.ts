@@ -1,11 +1,18 @@
+import { createHash } from "node:crypto";
+
+import * as pulumi from "@pulumi/pulumi";
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { environment } from "../src/environment.ts";
+import { PealEnvironment } from "../src/environment.ts";
 import type { EnvironmentSettings } from "../src/settings.ts";
 import { input, recordResources, valueOf } from "./support.ts";
 
 const made = await recordResources();
+
+const decodeResources = Schema.decodeUnknownSync(
+  Schema.fromJsonString(Schema.Record(Schema.String, Schema.String))
+);
 
 const PoliciesSchema = Schema.Array(
   Schema.Struct({ id: Schema.String, precedence: Schema.Number })
@@ -30,7 +37,7 @@ const sandbox: EnvironmentSettings = {
   zoneId: "zone-synthetic",
 };
 
-const result = environment(sandbox, {
+const result = new PealEnvironment("environment", sandbox, {
   owner: "owner-policy",
   publicCallbacks: "callbacks-policy",
 });
@@ -40,7 +47,7 @@ const ofType = (type: string) =>
 
 describe("the sandbox at Cloudflare", () => {
   it("points each host name at its locally managed tunnel, proxied", async () => {
-    await valueOf(result.tunnelId);
+    await valueOf(result.tunnel.id);
 
     const [tunnel] = ofType(
       "cloudflare:index/zeroTrustTunnelCloudflared:ZeroTrustTunnelCloudflared"
@@ -108,7 +115,7 @@ describe("the sandbox at Cloudflare", () => {
   });
 
   it("keeps the buckets in the EU, and never expires a backup", async () => {
-    await valueOf(result.backupBucket);
+    await valueOf(result.buckets.backups.name);
 
     for (const bucket of ofType("cloudflare:index/r2Bucket:R2Bucket")) {
       expect(input(bucket, "jurisdiction", Schema.String)).toBe("eu");
@@ -134,7 +141,7 @@ describe("the sandbox at Cloudflare", () => {
   });
 
   it("lets browsers upload to the media bucket from the app alone", async () => {
-    await valueOf(result.mediaBucket);
+    await valueOf(result.buckets.media.name);
     const [cors] = ofType("cloudflare:index/r2BucketCors:R2BucketCors");
     expect(input(cors, "rules", Schema.Unknown)).toStrictEqual([
       {
@@ -149,11 +156,44 @@ describe("the sandbox at Cloudflare", () => {
   });
 
   it("describes no other environment yet", () => {
-    expect(() =>
-      environment(
-        { ...sandbox, environment: "production" },
-        { owner: "o", publicCallbacks: "c" }
-      )
+    expect(
+      () =>
+        new PealEnvironment(
+          "production",
+          { ...sandbox, environment: "production" },
+          { owner: "o", publicCallbacks: "c" }
+        )
     ).toThrow("not described yet");
+  });
+
+  it("gives each bucket a key that reaches it alone", async () => {
+    const accessKeyId = await valueOf(result.keys.media.accessKeyId);
+    const secretAccessKey = await valueOf(result.keys.media.secretAccessKey);
+    expect(accessKeyId).toBe("key-media-id");
+    expect(secretAccessKey).toBe(
+      createHash("sha256").update("key-media-value").digest("hex")
+    );
+    const tokens = ofType("cloudflare:index/accountToken:AccountToken");
+
+    const reach = (name: string) =>
+      input(
+        tokens.find((token) => token.name === name),
+        "policies",
+        Schema.Array(Schema.Struct({ resources: Schema.String }))
+      ).map((policy) => Object.keys(decodeResources(policy.resources)));
+
+    expect(reach("key-media")).toStrictEqual([
+      ["com.cloudflare.edge.r2.bucket.account-synthetic_eu_peal-sandbox-media"],
+    ]);
+    expect(reach("key-backups")).toStrictEqual([
+      [
+        "com.cloudflare.edge.r2.bucket.account-synthetic_eu_peal-sandbox-backups",
+      ],
+    ]);
+  });
+
+  it("gives the tunnel's token as a secret", async () => {
+    await expect(valueOf(result.tunnelToken)).resolves.toBe("tunnel-token");
+    await expect(pulumi.isSecret(result.tunnelToken)).resolves.toBeTruthy();
   });
 });

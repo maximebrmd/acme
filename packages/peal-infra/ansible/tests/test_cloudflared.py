@@ -17,18 +17,13 @@ from urllib.parse import unquote, urlsplit
 import pytest
 import yaml
 
-from conftest import INFRA
+from conftest import INFRA, settings
 
 ENVIRONMENTS = ["peal-production", "peal-sandbox"]
 
 
 def _settings(environment: str) -> dict[str, Any]:
-    group = environment.removeprefix("peal-")
-    folder = INFRA / "inventory" / "group_vars"
-    return {
-        **yaml.safe_load((folder / "all" / "main.yml").read_text()),
-        **yaml.safe_load((folder / group / "main.yml").read_text()),
-    }
+    return settings(environment.removeprefix("peal-"))
 
 
 def _go_clean(path: str) -> str:

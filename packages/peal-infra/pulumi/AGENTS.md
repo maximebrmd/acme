@@ -12,8 +12,12 @@ credentials and how to adopt what exists.
   Pulumi's mocks (`test/support.ts`) and never reach Cloudflare.
 - No secret in code or in a `Pulumi.<stack>.yaml` in clear: a stack's
   secrets (the owner's address) are set with `pulumi config set --secret`,
-  encrypted with the passphrase. Tokens and bucket keys stay out of Pulumi
-  altogether (the README, "What stays manual").
+  encrypted with the passphrase, and the secrets it makes (the tunnel's
+  token, the buckets' keys) are secret outputs, which only the Ansible
+  project's `scripts/cloudflare_from_pulumi.py` reads.
+- Resources live in components (`src/account.ts`, `src/environment.ts`).
+  What holds data or routes traffic is `protect`ed, and buckets are
+  `retainOnDelete`.
 - Resource names (the first argument) are what the state knows a resource
   by: renaming one makes Pulumi delete it and make it again. Use an alias.
 - Pin `@pulumi/pulumi` and `@pulumi/cloudflare` exactly, as everything else.

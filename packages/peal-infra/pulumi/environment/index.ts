@@ -1,7 +1,7 @@
 // The environment project: one stack per environment (README.md).
 import * as pulumi from "@pulumi/pulumi";
 
-import { environment } from "../src/environment.ts";
+import { PealEnvironment } from "../src/environment.ts";
 import { importExisting } from "../src/imports.ts";
 import { EnvironmentSettingsSchema, readSettings } from "../src/settings.ts";
 
@@ -18,12 +18,19 @@ const settings = readSettings(EnvironmentSettingsSchema, [
 
 const shared = new pulumi.StackReference(settings.accountStack);
 
-const made = environment(settings, {
+const made = new PealEnvironment("environment", settings, {
   owner: shared.requireOutput("ownerPolicyId").apply(String),
   publicCallbacks: shared
     .requireOutput("publicCallbacksPolicyId")
     .apply(String),
 });
 
-export const { accessAud, backupBucket, mediaBucket, r2Endpoint, tunnelId } =
-  made;
+export const { accessAud, r2Endpoint, tunnelToken } = made;
+export const tunnelId = made.tunnel.id;
+export const mediaBucket = made.buckets.media.name;
+export const backupBucket = made.buckets.backups.name;
+
+// The buckets' keys, secret: scripts/cloudflare_from_pulumi.py in the
+// Ansible project writes them into the environment's vault.
+export const mediaKey = made.keys.media;
+export const backupKey = made.keys.backups;

@@ -15,11 +15,28 @@ the account comes first. Pulumi comes before Ansible: the Ansible project
 configures the servers behind what this one makes, and its inventory holds
 the values this one outputs (the audience tags, the tunnel's id).
 
+## Secrets and Ansible
+
+An environment's stack also makes each bucket's key, an account token
+limited to reading and writing that bucket (its id is the access key id,
+the SHA-256 of its value the secret access key), and gives the tunnel's
+token: secret outputs, encrypted in the state. The Ansible project's
+`scripts/cloudflare_from_pulumi.py` writes them into the environment's vault,
+and the stack's public values (audience tags, buckets, endpoints) into its
+`group_vars/<environment>/cloudflare.yml`: run it after each `up` of the
+environment, then `site.yml`. A key is rotated by replacing its resource
+(`pulumi up --replace <urn>`), then the same two steps.
+
+The tunnel, the host names, the buckets and the policies are protected:
+`up` refuses to delete them, and a bucket removed from the code stays at
+Cloudflare with its data (`retainOnDelete`). Each project's resources are
+grouped in a component (`peal:cloudflare:Account`,
+`peal:cloudflare:Environment`).
+
 ## What stays manual
 
-- The tunnel's token, each bucket's key, and the rest of each environment's
-  vault (the Ansible project's README, "Credentials"): secrets that would
-  otherwise live in Pulumi's state.
+- The rest of each environment's vault (the Ansible project's README,
+  "Credentials"): Resend, Telegram, the backup passphrase.
 - `peal-infra-state`, the bucket that holds the state, its own key, and the
   Cloudflare API token Pulumi uses: what Pulumi needs before it runs.
 - Resend's domain and keys, and the Telegram bots.
@@ -32,11 +49,11 @@ passphrase. `scripts/pulumi.ts` runs the Pulumi CLI in a project with what
 it needs, read from `~/.config/peal/` unless already set in the
 environment:
 
-| File                      | Becomes                                      | What it is                                                                                                                                         |
-| ------------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cloudflare-pulumi.token` | `CLOUDFLARE_API_TOKEN`                       | An account API token: Access Edit, Cloudflare One Connector: cloudflared Edit, R2 Edit; on the zone, DNS Edit, Zone Read, Email Routing Rules Edit |
-| `pulumi-state.env`        | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | An R2 key with Object Read & Write on `peal-infra-state` alone                                                                                     |
-| `pulumi-passphrase`       | `PULUMI_CONFIG_PASSPHRASE_FILE`              | The passphrase of the stacks' secrets                                                                                                              |
+| File                      | Becomes                                      | What it is                                                                                                                                                                  |
+| ------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cloudflare-pulumi.token` | `CLOUDFLARE_API_TOKEN`                       | An account API token: Access Edit, Cloudflare One Connector: cloudflared Edit, R2 Edit, Account API Tokens Edit; on the zone, DNS Edit, Zone Read, Email Routing Rules Edit |
+| `pulumi-state.env`        | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | An R2 key with Object Read & Write on `peal-infra-state` alone                                                                                                              |
+| `pulumi-passphrase`       | `PULUMI_CONFIG_PASSPHRASE_FILE`              | The passphrase of the stacks' secrets                                                                                                                                       |
 
 Keep a copy of each in a password manager: without the passphrase, the
 stacks' secrets cannot be read.

@@ -30,14 +30,19 @@ export const recordResources = async (): Promise<Made[]> => {
   const made: Made[] = [];
   await pulumi.runtime.setMocks(
     {
-      call: () => ({}),
+      // The tunnel's token, from getZeroTrustTunnelCloudflaredToken.
+      call: () => ({ token: "tunnel-token" }),
       newResource: (resource) => {
         const inputs: unknown = resource.inputs;
         made.push({ inputs, name: resource.name, type: resource.type });
 
         return {
           id: `${resource.name}-id`,
-          state: { ...decodeInputs(inputs), aud: `${resource.name}-aud` },
+          state: {
+            ...decodeInputs(inputs),
+            aud: `${resource.name}-aud`,
+            value: `${resource.name}-value`,
+          },
         };
       },
     },

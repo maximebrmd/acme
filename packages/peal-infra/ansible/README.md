@@ -475,6 +475,20 @@ services issue reaches it in one of two ways:
   ssh -t ops@ssh.peal.social 'sudo install -o root -g cloudflared -m 440 /dev/stdin /etc/cloudflared/token'
   ```
 
+For an environment that has a Pulumi stack (the sandbox), Cloudflare's
+part comes from it ([`../pulumi`](../pulumi/README.md)): its Access audience
+tags, its buckets and their endpoints in `group_vars/<environment>/cloudflare.yml`,
+generated and committed, and the tunnel's token and the buckets' keys in its
+vault. After each `pulumi up` of the environment, run
+
+```sh
+uv run python scripts/cloudflare_from_pulumi.py --group sandbox \
+  --vault-password-file ~/.config/peal/vault-sandbox.pass
+```
+
+then `site.yml`. Steps 3 and 4 of [Before the first run](#before-the-first-run)
+are then Pulumi's for that environment, the lifecycle and CORS rules included.
+
 `site.yml` stops and names what is missing either way. Keep a copy of the
 backup passphrase (`PGBACKREST_REPO1_CIPHER_PASS`) outside the server, in a
 password manager: the backups cannot be read without it.

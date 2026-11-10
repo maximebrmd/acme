@@ -2,12 +2,13 @@ import * as pulumi from "@pulumi/pulumi";
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 
-import { account } from "../src/account.ts";
+import { PealAccount } from "../src/account.ts";
 import { input, recordResources, valueOf } from "./support.ts";
 
 const made = await recordResources();
 
-const result = account(
+const result = new PealAccount(
+  "account",
   {
     accountId: "account-synthetic",
     domain: "example.test",
