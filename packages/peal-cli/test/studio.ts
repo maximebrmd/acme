@@ -10,6 +10,7 @@ import {
   ConnectFailed,
   ConnectLinkNotFound,
   CurrentMember,
+  duplicateWindowHours,
   CurrentPrincipal,
   Forbidden,
   DuplicatePost,
@@ -1367,7 +1368,8 @@ const duplicatesOf = (
   all: readonly Post[],
   payload: Pick<NewPost, "allowDuplicate" | "content"> & {
     readonly channelIds: readonly string[];
-  }
+  },
+  near: DateTime.Utc
 ): DuplicateOnChannel[] =>
   payload.allowDuplicate === true
     ? []
@@ -1377,6 +1379,13 @@ const duplicatesOf = (
             (other) =>
               other.status !== "draft" &&
               other.status !== "cancelled" &&
+              other.schedule !== null &&
+              // Less than the window from this one's time, either way.
+              Math.abs(
+                DateTime.toEpochMillis(other.schedule.at) -
+                  DateTime.toEpochMillis(near)
+              ) <
+                duplicateWindowHours * 3_600_000 &&
               other.content.text === payload.content.text &&
               other.targets.some((target) => target.channelId === channelId)
           )
@@ -1408,7 +1417,7 @@ const checkNewPost = (studio: Studio, payload: NewPost) =>
     );
 
     const { posts: all } = yield* Ref.get(studio.state);
-    const duplicates = duplicatesOf(all, payload);
+    const duplicates = duplicatesOf(all, payload, timeOf(payload).at);
 
     if (duplicates.length > 0) {
       return yield* new DuplicatePost({ duplicates });
@@ -2409,7 +2418,10 @@ export const studioGroupsLive = (studio: Studio) =>
                     ];
               }),
               // Without a time, nothing is near it.
-              duplicates: when === undefined ? [] : duplicatesOf(all, payload),
+              duplicates:
+                when === undefined
+                  ? []
+                  : duplicatesOf(all, payload, timeOf({ when }).at),
               planLimit: null,
               schedule:
                 when === undefined ? null : yield* scheduleCheck({ when }),

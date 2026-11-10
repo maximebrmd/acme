@@ -1,6 +1,12 @@
-import { Console, Effect, Option } from "effect";
+import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
-import { maxReviewLinkHours } from "peal-contract";
+import {
+  CreatedReviewLinkSchema,
+  maxReviewLinkHours,
+  PostReviewSchema,
+  ReviewCommentSchema,
+  ReviewLinkSchema,
+} from "peal-contract";
 import type {
   ApprovalRequest,
   ReviewComment,
@@ -10,6 +16,7 @@ import type {
 } from "peal-contract";
 
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
@@ -100,13 +107,21 @@ const threaded = (comments: readonly ReviewComment[]) =>
 
 const show = Command.make(
   "show",
-  { postId: postArgument, workspace: workspaceFlag },
-  Effect.fn("review.show")(function* show({ postId, workspace: choice }) {
+  { json: jsonFlag, postId: postArgument, workspace: workspaceFlag },
+  Effect.fn("review.show")(function* show({ json, postId, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
-    const { approvals, channels, comments, media } = yield* client.review
+    const thread = yield* client.review
       .thread({ params: { postId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(PostReviewSchema, thread);
+
+      return;
+    }
+
+    const { approvals, channels, comments, media } = thread;
 
     yield* Console.log(`Review of post ${postId} in ${workspace.name}.`);
     yield* Console.log("The post, as each channel will receive it:");
@@ -164,6 +179,7 @@ const show = Command.make(
 const comment = Command.make(
   "comment",
   {
+    json: jsonFlag,
     postId: postArgument,
     replyTo: Flag.String("reply-to").pipe(
       Flag.withMetavar("<comment-id>"),
@@ -179,6 +195,7 @@ const comment = Command.make(
     workspace: workspaceFlag,
   },
   Effect.fn("review.comment")(function* comment({
+    json,
     postId,
     replyTo,
     text,
@@ -195,6 +212,12 @@ const comment = Command.make(
         }),
       })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(ReviewCommentSchema, written);
+
+      return;
+    }
 
     yield* Console.log(`Commented on post ${postId}: comment ${written.id}.`);
   })
@@ -213,13 +236,23 @@ const accesses: Readonly<Record<ReviewLinkAccess, string>> = {
 
 const links = Command.make(
   "links",
-  { postId: postArgument, workspace: workspaceFlag },
-  Effect.fn("review.links")(function* links({ postId, workspace: choice }) {
+  { json: jsonFlag, postId: postArgument, workspace: workspaceFlag },
+  Effect.fn("review.links")(function* links({
+    json,
+    postId,
+    workspace: choice,
+  }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const made = yield* client.review
       .links({ params: { postId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(Schema.Array(ReviewLinkSchema), made);
+
+      return;
+    }
 
     if (made.length === 0) {
       yield* Console.log(`Post ${postId} has no review link.`);
@@ -264,12 +297,14 @@ const link = Command.make(
       ),
       Flag.optional
     ),
+    json: jsonFlag,
     postId: postArgument,
     workspace: workspaceFlag,
   },
   Effect.fn("review.link")(function* link({
     access,
     hours,
+    json,
     postId,
     workspace: choice,
   }) {
@@ -294,6 +329,13 @@ const link = Command.make(
       })
       .pipe(Effect.mapError(explain(url)));
 
+    // The answer holds the link's address, which is not shown again.
+    if (json) {
+      yield* printJson(CreatedReviewLinkSchema, made);
+
+      return;
+    }
+
     yield* Console.log(
       `Review link ${made.link.id} for post ${postId}, until ${instant(made.link.expiresAt)}:`
     );
@@ -311,17 +353,28 @@ const link = Command.make(
 const revoke = Command.make(
   "revoke",
   {
+    json: jsonFlag,
     linkId: Argument.String("link-id").pipe(
       Argument.withDescription("The link, as peal review links shows its id.")
     ),
     workspace: workspaceFlag,
   },
-  Effect.fn("review.revoke")(function* revoke({ linkId, workspace: choice }) {
+  Effect.fn("review.revoke")(function* revoke({
+    json,
+    linkId,
+    workspace: choice,
+  }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
-    yield* client.review
+    const revoked = yield* client.review
       .revokeLink({ params: { linkId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(ReviewLinkSchema, revoked);
+
+      return;
+    }
 
     yield* Console.log(
       `Revoked review link ${linkId}: whoever opens it is told it no longer works.`

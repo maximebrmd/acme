@@ -1,9 +1,16 @@
-import { Console, Effect, Option } from "effect";
+import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
-import { ApprovalPolicySchema } from "peal-contract";
+import {
+  ApprovalOutcomeSchema,
+  ApprovalPolicySchema,
+  ApprovalRequestSchema,
+  ChangesOutcomeSchema,
+  ReviewSettingsSchema,
+} from "peal-contract";
 import type { ApprovalPolicy, ApprovalRequest } from "peal-contract";
 
 import { explain, explainingPublishing } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
 import { instant } from "#print.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
@@ -53,13 +60,19 @@ const shownFlags = {
 
 const list = Command.make(
   "list",
-  { workspace: workspaceFlag },
-  Effect.fn("approvals.list")(function* list({ workspace: choice }) {
+  { json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("approvals.list")(function* list({ json, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const waiting = yield* client.review
       .pending({ params: { workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(Schema.Array(ApprovalRequestSchema), waiting);
+
+      return;
+    }
 
     if (waiting.length === 0) {
       yield* Console.log(`No post of ${workspace.name} waits for an approval.`);
@@ -92,21 +105,35 @@ const list = Command.make(
 
 const approve = Command.make(
   "approve",
-  { ...shownFlags, postId: postArgument, workspace: workspaceFlag },
+  {
+    ...shownFlags,
+    json: jsonFlag,
+    postId: postArgument,
+    workspace: workspaceFlag,
+  },
   Effect.fn("approvals.approve")(function* approve({
     approval: approvalId,
+    json,
     postId,
     subject: subjectHash,
     workspace: choice,
   }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
-    const { approval, late } = yield* client.review
+    const outcome = yield* client.review
       .approve({
         params: { postId, workspaceId: workspace.id },
         payload: { approvalId, subjectHash },
       })
       .pipe(explainingPublishing(url));
+
+    if (json) {
+      yield* printJson(ApprovalOutcomeSchema, outcome);
+
+      return;
+    }
+
+    const { approval, late } = outcome;
 
     yield* Console.log(
       late
@@ -130,24 +157,32 @@ const requestChanges = Command.make(
       )
     ),
     ...shownFlags,
+    json: jsonFlag,
     postId: postArgument,
     workspace: workspaceFlag,
   },
   Effect.fn("approvals.requestChanges")(function* requestChanges({
     approval: approvalId,
     comment,
+    json,
     postId,
     subject: subjectHash,
     workspace: choice,
   }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
-    yield* client.review
+    const outcome = yield* client.review
       .requestChanges({
         params: { postId, workspaceId: workspace.id },
         payload: { approvalId, comment, subjectHash },
       })
       .pipe(explainingPublishing(url));
+
+    if (json) {
+      yield* printJson(ChangesOutcomeSchema, outcome);
+
+      return;
+    }
 
     yield* Console.log(
       `Asked for changes to post ${postId}: it is a draft again, with your comment, and its author is told.`
@@ -162,6 +197,7 @@ const requestChanges = Command.make(
 const policy = Command.make(
   "policy",
   {
+    json: jsonFlag,
     set: Flag.Literals("set", ApprovalPolicySchema.literals).pipe(
       Flag.withDescription(
         "Choose which posts wait: never, contributorsAndApplications or always."
@@ -170,11 +206,15 @@ const policy = Command.make(
     ),
     workspace: workspaceFlag,
   },
-  Effect.fn("approvals.policy")(function* policy({ set, workspace: choice }) {
+  Effect.fn("approvals.policy")(function* policy({
+    json,
+    set,
+    workspace: choice,
+  }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
     const params = { workspaceId: workspace.id };
 
-    const { approvalPolicy } = yield* Option.match(set, {
+    const settings = yield* Option.match(set, {
       onNone: () => client.review.settings({ params }),
       onSome: (chosen) =>
         client.review.updateSettings({
@@ -183,7 +223,15 @@ const policy = Command.make(
         }),
     }).pipe(Effect.mapError(explain(url)));
 
-    yield* Console.log(`In ${workspace.name}, ${policies[approvalPolicy]}.`);
+    if (json) {
+      yield* printJson(ReviewSettingsSchema, settings);
+
+      return;
+    }
+
+    yield* Console.log(
+      `In ${workspace.name}, ${policies[settings.approvalPolicy]}.`
+    );
   })
 ).pipe(
   Command.withDescription(

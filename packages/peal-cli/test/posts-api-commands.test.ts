@@ -10,6 +10,7 @@ import { filesLayer, signedIn } from "./signed-in.ts";
 import type { SignedIn } from "./signed-in.ts";
 import {
   blueskyId,
+  awaitingId,
   draftId,
   finishedId,
   mastodonId,
@@ -152,6 +153,7 @@ describe("peal posts list", () => {
         assert.deepStrictEqual(idsIn(printed), [
           draftId,
           scheduledId,
+          awaitingId,
           finishedId,
         ]);
         assert.match(
@@ -187,7 +189,7 @@ describe("peal posts list", () => {
         listing("--limit", "2", "--cursor", scheduledId)
       );
 
-      assert.deepStrictEqual(idsIn(second), [finishedId]);
+      assert.deepStrictEqual(idsIn(second), [awaitingId, finishedId]);
       assert.notInclude(second, "More:");
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
@@ -231,7 +233,7 @@ describe("peal posts list", () => {
         // includes it, --to does not.
         assert.deepStrictEqual(
           yield* listed("--from", "2026-11-20T10:00", "--zone", "Europe/Paris"),
-          [scheduledId]
+          [scheduledId, awaitingId]
         );
         assert.deepStrictEqual(yield* listed("--to", "2026-11-20T09:00:00Z"), [
           finishedId,
@@ -239,6 +241,7 @@ describe("peal posts list", () => {
         assert.deepStrictEqual(yield* listed("--sort", "scheduledAsc"), [
           finishedId,
           scheduledId,
+          awaitingId,
         ]);
         assert.deepStrictEqual(yield* listed("--author", stranger), []);
 
@@ -325,12 +328,12 @@ describe("peal post --dry-run", () => {
         assert.match(
           printed,
           new RegExp(
-            `${mastodonId} \\(mastodon @studio@example\\.social\\) +16 of 500 characters, 1 of 4 images and videos`,
+            `${mastodonId} \\(mastodon @studio@social\\.example\\.test\\) +16 of 500 characters, 1 of 4 images and videos`,
             "u"
           )
         );
         assert.deepStrictEqual(yield* changes(session.studio), []);
-        assert.lengthOf((yield* stateOf(session.studio)).posts, 3);
+        assert.lengthOf((yield* stateOf(session.studio)).posts, 4);
       }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
@@ -507,7 +510,7 @@ describe("peal post --wait and peal posts wait", () => {
       assert.match(
         printed,
         new RegExp(
-          `${mastodonId} \\(mastodon @studio@example\\.social\\) +published at https://example\\.social/`,
+          `${mastodonId} \\(mastodon @studio@social\\.example\\.test\\) +published at https://example\\.social/`,
           "u"
         )
       );
