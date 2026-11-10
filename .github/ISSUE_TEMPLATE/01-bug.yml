@@ -1,0 +1,94 @@
+name: 🐞 Bug report
+description: Something in Peal does not work as it should.
+type: Bug
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. Search the
+        [open issues](https://github.com/peal-social/peal/issues) first.
+        If a single platform behaves oddly (a post refused, cut short or
+        sent twice), the **Platform behaviour** form asks for what helps most.
+
+        **Remove secrets before you send:** API keys, tokens, cookies,
+        `PEAL_TOKEN_KEYS`, email addresses and anyone else's content.
+        For a vulnerability, follow [SECURITY.md](https://github.com/peal-social/peal/blob/main/SECURITY.md) instead.
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where does it happen?
+      options:
+        - peal.social (the hosted service)
+        - A self-hosted instance
+        - Running from source (development)
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Which part of Peal?
+      multiple: true
+      options:
+        - Web app
+        - Server or HTTP API
+        - Publishing or scheduling
+        - Analytics or inbox
+        - Billing
+        - Webhooks
+        - Command line (peal)
+        - MCP or agent skill
+        - SDK
+        - Docker images or compose stacks
+        - Documentation or marketing site
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The commit, image tag or SDK version, or the date you saw it on peal.social.
+      placeholder: "main at 932df602, peal-sdk 0.3.0, …"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The shortest way to make it happen again.
+      placeholder: |
+        1. Open a workspace's **New post**
+        2. …
+        3. See …
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, errors or screenshots
+      description: |
+        The error the app or the API answered (its `requestId` helps), the server's log lines,
+        or a screenshot. Logs are formatted as code for you.
+      render: shell
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Browser and operating system, the settings a self-hosted instance runs with (names, not values), what you tried.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I searched the open issues and found none about this.
+          required: true
+        - label: I removed every secret and personal detail from this report.
+          required: true

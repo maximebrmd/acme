@@ -1,0 +1,92 @@
+name: 📡 Platform behaviour
+description: A channel posts, connects or counts wrongly on one social platform.
+type: Bug
+labels: [bug]
+title: "[Platform] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Platforms change their APIs often, and what they refuse is not always what they say.
+        The details below let us reproduce it without your account.
+
+        **Never paste a token, a cookie or someone else's post.**
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Mastodon
+        - Bluesky
+        - LinkedIn (profile)
+        - LinkedIn (page)
+        - X
+        - Threads
+        - Instagram
+        - Facebook Pages
+        - TikTok
+        - YouTube
+        - Pinterest
+        - Google Business Profile
+        - Meta ads
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: What goes wrong?
+      multiple: true
+      options:
+        - Connecting or reconnecting the account
+        - Publishing a post
+        - Media (images, videos, documents)
+        - Threads or per-channel text
+        - A post marked unconfirmed, or posted twice
+        - Analytics counts
+        - Inbox comments or replies
+        - Something else
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where does it happen?
+      options:
+        - peal.social (the hosted service)
+        - A self-hosted instance
+        - Running from source (development)
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What Peal showed for the channel's attempt, and what you see on the platform itself.
+    validations:
+      required: true
+  - type: textarea
+    id: post
+    attributes:
+      label: The post
+      description: |
+        Its shape, not its content: length, links, mentions, hashtags, emoji, number of parts,
+        and each media's type, size, duration and dimensions.
+      placeholder: "One part, 280 characters, two links, one MP4 of 45 s at 1080×1920, 38 MB"
+  - type: textarea
+    id: error
+    attributes:
+      label: The platform's answer
+      description: The attempt's error in Peal, or the server's log line for it, with tokens and ids removed.
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: "main at 932df602, or the date on peal.social"
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I removed every token, secret and personal detail from this report.
+          required: true

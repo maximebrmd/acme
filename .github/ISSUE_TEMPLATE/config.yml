@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/peal-social/peal/blob/main/SECURITY.md
+    about: Never in a public issue. Write to security@peal.social, as the security policy says.
+  - name: Read the documentation
+    url: https://docs.peal.social
+    about: Guides, self-hosting, every environment variable and the API reference.
+  - name: Check the service status
+    url: https://status.peal.social
+    about: Whether peal.social, the app or the API is down right now.
+  - name: Ask about your personal data
+    url: https://peal.social/privacy
+    about: Access, export or deletion requests go to privacy@peal.social, never to an issue.
