@@ -6,6 +6,8 @@ pub enum LookupName {
     YoutubeVideoCategories,
     YoutubePlaylists,
     TiktokCreator,
+    PinterestBoards,
+    PinterestBoardSections,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -17,6 +19,8 @@ impl Serialize for LookupName {
             Self::YoutubeVideoCategories => serializer.serialize_str("youtubeVideoCategories"),
             Self::YoutubePlaylists => serializer.serialize_str("youtubePlaylists"),
             Self::TiktokCreator => serializer.serialize_str("tiktokCreator"),
+            Self::PinterestBoards => serializer.serialize_str("pinterestBoards"),
+            Self::PinterestBoardSections => serializer.serialize_str("pinterestBoardSections"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -29,6 +33,8 @@ impl<'de> Deserialize<'de> for LookupName {
             "youtubeVideoCategories" => Ok(Self::YoutubeVideoCategories),
             "youtubePlaylists" => Ok(Self::YoutubePlaylists),
             "tiktokCreator" => Ok(Self::TiktokCreator),
+            "pinterestBoards" => Ok(Self::PinterestBoards),
+            "pinterestBoardSections" => Ok(Self::PinterestBoardSections),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -40,6 +46,8 @@ impl fmt::Display for LookupName {
             Self::YoutubeVideoCategories => write!(f, "youtubeVideoCategories"),
             Self::YoutubePlaylists => write!(f, "youtubePlaylists"),
             Self::TiktokCreator => write!(f, "tiktokCreator"),
+            Self::PinterestBoards => write!(f, "pinterestBoards"),
+            Self::PinterestBoardSections => write!(f, "pinterestBoardSections"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

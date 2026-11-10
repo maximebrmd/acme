@@ -148,9 +148,9 @@ echo "k1:$(openssl rand -base64 32)"
 
 The value lists `keyId:key` entries separated by commas, such as `k2:<key>,k1:<key>`. The first key encrypts and every listed key decrypts: to rotate, put a new key first and keep the old ones. A malformed value stops the server at startup. Keep the keys secret, and keep a copy: without them, every channel must be reconnected.
 
-The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, through Bluesky's video service, `https://video.bsky.app`, for videos, on LinkedIn (`www.linkedin.com`, `api.linkedin.com` and the upload addresses LinkedIn gives), on X (`api.x.com`), on TikTok (`open.tiktokapis.com`) and on Meta's APIs. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Peal's client description, and Meta's data deletion requests, below.
+The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, through Bluesky's video service, `https://video.bsky.app`, for videos, on LinkedIn (`www.linkedin.com`, `api.linkedin.com` and the upload addresses LinkedIn gives), on X (`api.x.com`), on TikTok (`open.tiktokapis.com`), on Pinterest (`api.pinterest.com` and the upload addresses Pinterest gives) and on Meta's APIs. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Peal's client description, and Meta's data deletion requests, below.
 
-To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. LinkedIn and X take videos in parts of 4 MiB, and TikTok in parts of 10 MB, so the server holds one part at a time. Give the server the memory for the largest files your members post.
+To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. LinkedIn and X take videos in parts of 4 MiB, and TikTok in parts of 10 MB, so the server holds one part at a time; a Pinterest video is sent as it is read, and never held whole. Give the server the memory for the largest files your members post.
 
 ### Bluesky [#bluesky]
 
@@ -251,6 +251,20 @@ While the project's consent screen is in **Testing**, only the test users you li
 The server calls `oauth2.googleapis.com` and `www.googleapis.com`, and uploads each video there in parts of 8 MiB, holding one at a time; an upload cut off, even by a restart, resumes where YouTube stands. Uploads draw on the project's **Video Uploads** quota, 100 a day unless Google grants more, which resets at midnight Pacific Time: Peal counts them for the whole server, and an upload past `YOUTUBE_DAILY_UPLOADS`, or one YouTube refuses for its quota or the channel's daily limit, waits for the next day. Processing polls and analytics draw on the project's other quota, 10,000 units a day.
 
 Until November 2026, Google kept the videos of API projects it had not audited private. It no longer does, but a channel's settings or Google's restrictions can still keep a video private: Peal compares what YouTube answers with the visibility the member chose, and says so on the post's page.
+
+### Pinterest [#pinterest]
+
+A server connects Pinterest accounts once you register an app for it on Pinterest's developer site:
+
+1. On `developers.pinterest.com`, under **My apps**, connect an app, with a link to your privacy policy. Pinterest reviews the request and grants **Trial access**.
+2. In the app's settings, add `PUBLIC_URL/connect/pinterest/callback` as a redirect URI, such as `https://peal.example.com/connect/pinterest/callback`: Pinterest takes the exact address only.
+3. Put the app id in `PINTEREST_APP_ID` and its secret key in `PINTEREST_APP_SECRET`.
+
+One of the two settings without the other stops the server at startup; without both, **Channels** does not offer Pinterest. Members sign in on Pinterest and allow Peal to read their boards and Pins, to create Pins and to read their account: Peal asks for `boards:read`, `boards:write`, `pins:read`, `pins:write` and `user_accounts:read`, and nothing about secret boards. Access lasts 30 days, and Peal renews it a week ahead with a refresh token Pinterest keeps good for 60 days after each renewal. Pinterest's API revokes no member's access: disconnecting a channel deletes Peal's tokens, and the member removes the app in their Pinterest settings.
+
+With **Trial access**, an app makes 1,000 calls a day in all, and the boards and Pins it creates are seen by their creator alone, in Pinterest's Sandbox: set `PINTEREST_SANDBOX=true`, so that the server calls `api-sandbox.pinterest.com`. The Sandbox creates no video Pin and gives no analytics. To publish for real, ask Pinterest for **Standard access** from the app's page, with a video of your server signing a member in through Pinterest and creating a Pin; once granted, unset `PINTEREST_SANDBOX`, and have members connect their accounts again, as a Sandbox token works nowhere else. Standard access allows each account 100 writes and 60 analytics reads a minute.
+
+The server calls `api.pinterest.com` (or the Sandbox), and sends each video to the address Pinterest names for it, an object store's. Pinterest fetches a Pin's images from links to the media store, valid for two hours: the store must answer Pinterest's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. Pinterest's developer guidelines ask that each Pin be chosen by the member who publishes it, which scheduling a post is, and limit what an app may keep of what it reads: Peal keeps a Pin's id and its counts, for the workspace that published it.
 
 ### Google Business Profile [#google-business]
 

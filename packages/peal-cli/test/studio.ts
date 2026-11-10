@@ -35,6 +35,7 @@ import type {
 import {
   capabilitiesOn,
   describedPlatforms,
+  pinterestLookup,
   playlistPage,
   videoCategories,
 } from "./studio-capabilities.ts";
@@ -110,6 +111,8 @@ export const youtubeId = "0190f3a0-0000-7000-8000-00000000c004";
 
 export const instagramId = "0190f3a0-0000-7000-8000-00000000c005";
 
+export const pinterestId = "0190f3a0-0000-7000-8000-00000000c006";
+
 const channels: readonly Channel[] = [
   {
     avatarUrl: null,
@@ -158,6 +161,16 @@ const channels: readonly Channel[] = [
     handle: "@studio_example",
     id: instagramId,
     platform: "instagram",
+    status: { _tag: "active" },
+    tokenExpiresAt: null,
+  },
+  {
+    avatarUrl: null,
+    connection: null,
+    displayName: "Studio",
+    handle: "@studioexample",
+    id: pinterestId,
+    platform: "pinterest",
     status: { _tag: "active" },
     tokenExpiresAt: null,
   },
@@ -906,6 +919,13 @@ export const studioGroupsLive = (studio: Studio) =>
                 items: [tiktokAccount],
                 nextCursor: null,
               };
+            }
+
+            if (channel.platform === "pinterest") {
+              return (
+                pinterestLookup(params.name, payload.boardId) ??
+                (yield* new LookupInputInvalid())
+              );
             }
 
             if (channel.platform !== "youtube") {

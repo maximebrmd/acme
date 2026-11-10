@@ -26,6 +26,7 @@ import { facebookAuthorizer } from "./meta/facebook-authorizer.ts";
 import { instagramAuthorizer } from "./meta/instagram-authorizer.ts";
 import { instagramLoginAuthorizer } from "./meta/instagram-login-authorizer.ts";
 import { threadsAuthorizer } from "./meta/threads-authorizer.ts";
+import { pinterestAuthorizer } from "./pinterest/pinterest-authorizer.ts";
 import { tiktokAuthorizer } from "./tiktok/tiktok-authorizer.ts";
 import { xAuthorizer, xEndpoints } from "./x/x-authorizer.ts";
 import {
@@ -85,7 +86,8 @@ export const registryOf = (
  * Instagram through Instagram Login with the app's Instagram credentials
  * (preferred to Facebook Login when both are set), Threads with its
  * credentials, TikTok with its client key and secret, YouTube with a Google
- * OAuth client, Google Business Profile with another. Needs an HttpClient, the outbound guard, the
+ * OAuth client, Pinterest with its app's id and secret, Google Business
+ * Profile with a Google OAuth client of its own. Needs an HttpClient, the outbound guard, the
  * database, the TokenCipher, SecureRandom, Digest and Mac.
  */
 export const PlatformAuthorizersLive = Layer.effect(
@@ -182,6 +184,17 @@ export const PlatformAuthorizersLive = Layer.effect(
         ]
       : [];
 
+    const pinterest = Option.isSome(settings.pinterest)
+      ? [
+          yield* pinterestAuthorizer({
+            client: settings.pinterest.value,
+            hosts: settings.pinterestHosts,
+            http,
+            publicUrl: settings.publicUrl,
+          }),
+        ]
+      : [];
+
     const configured = [
       mastodon,
       ...Option.toArray(bluesky),
@@ -192,6 +205,7 @@ export const PlatformAuthorizersLive = Layer.effect(
       ...threads,
       ...tiktok,
       ...Option.toArray(youtube),
+      ...pinterest,
       ...Option.toArray(googleBusiness),
     ];
 
@@ -207,6 +221,7 @@ export const PlatformAuthorizersLive = Layer.effect(
           "threads",
           "tiktok",
           "youtube",
+          "pinterest",
           "googleBusiness",
         ] as const
       ).filter(

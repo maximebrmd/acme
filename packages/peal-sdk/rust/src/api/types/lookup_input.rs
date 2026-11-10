@@ -2,6 +2,9 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct LookupInput {
+    #[serde(rename = "boardId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub board_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cursor: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -22,6 +25,7 @@ impl LookupInput {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct LookupInputBuilder {
+    board_id: Option<String>,
     cursor: Option<String>,
     language: Option<String>,
     limit: Option<i64>,
@@ -29,6 +33,11 @@ pub struct LookupInputBuilder {
 }
 
 impl LookupInputBuilder {
+    pub fn board_id(mut self, value: impl Into<String>) -> Self {
+        self.board_id = Some(value.into());
+        self
+    }
+
     pub fn cursor(mut self, value: impl Into<String>) -> Self {
         self.cursor = Some(value.into());
         self
@@ -52,6 +61,7 @@ impl LookupInputBuilder {
     /// Consumes the builder and constructs a [`LookupInput`].
     pub fn build(self) -> Result<LookupInput, BuildError> {
         Ok(LookupInput {
+            board_id: self.board_id,
             cursor: self.cursor,
             language: self.language,
             limit: self.limit,

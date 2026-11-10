@@ -2,6 +2,8 @@ import { Match, Option, Schema } from "effect";
 import type { useTranslations } from "next-intl";
 import {
   maxGoogleBusinessTitleLength,
+  maxPinterestLinkLength,
+  maxPinterestTitleLength,
   maxYouTubeTitleLength,
   TargetOptionsSchema,
 } from "peal-contract";
@@ -98,9 +100,31 @@ export interface ToggleField extends Described {
   readonly within?: string;
 }
 
+/**
+ * One of the values the account has, which a lookup reads from the
+ * platform (`#posts/lookup-choices.ts`): a Pinterest account's boards.
+ * Under `under`, it shows only once that field has a value, and is cleared
+ * when that value changes, as a board's sections follow the board.
+ */
+export interface LookupField extends Described {
+  /** What to say when the account has none of them. */
+  readonly empty?: OptionsText;
+  readonly kind: "lookup";
+  readonly required?: true;
+  readonly under?: string;
+}
+
+/** A whole number, `minimum` at least. */
+export interface NumberField extends Described {
+  readonly kind: "number";
+  readonly minimum: number;
+}
+
 export type OptionField =
   | ChoiceField
   | LocalTimeField
+  | LookupField
+  | NumberField
   | TagsField
   | TextField
   | ToggleField
@@ -208,6 +232,53 @@ export const optionFields = {
       label: "googleBusiness.terms",
       name: "terms",
       shownWith: offered,
+    },
+  ],
+  pinterest: [
+    {
+      empty: "pinterest.boardEmpty",
+      hint: "pinterest.boardHint",
+      invalid: "pinterest.boardInvalid",
+      kind: "lookup",
+      label: "pinterest.board",
+      name: "boardId",
+      required: true,
+    },
+    {
+      invalid: "pinterest.boardSectionInvalid",
+      kind: "lookup",
+      label: "pinterest.boardSection",
+      name: "boardSectionId",
+      under: "boardId",
+    },
+    {
+      hint: "pinterest.titleHint",
+      kind: "text",
+      label: "pinterest.title",
+      maxLength: maxPinterestTitleLength,
+      name: "title",
+    },
+    {
+      hint: "pinterest.linkHint",
+      invalid: "pinterest.linkInvalid",
+      kind: "text",
+      label: "pinterest.link",
+      maxLength: maxPinterestLinkLength,
+      name: "link",
+    },
+    {
+      hint: "pinterest.coverSecondHint",
+      kind: "number",
+      label: "pinterest.coverSecond",
+      minimum: 0,
+      name: "coverSecond",
+    },
+    {
+      hint: "pinterest.dominantColorHint",
+      invalid: "pinterest.dominantColorInvalid",
+      kind: "text",
+      label: "pinterest.dominantColor",
+      name: "dominantColor",
     },
   ],
   tiktok: [
@@ -357,8 +428,9 @@ export const fieldOf = (
 
 /**
  * What the member has filled in on one channel: text and tags as typed
- * (tags separated by commas), choices by their value, yes or no and boxes
- * as booleans. A field missing is not filled in.
+ * (tags separated by commas, numbers as their digits), choices by their
+ * value, yes or no and boxes as booleans. A field missing is not filled
+ * in.
  */
 export type OptionValues = Readonly<Record<string, boolean | string>>;
 
@@ -371,6 +443,7 @@ const entry = (
 const StoredValueSchema = Schema.Union([
   Schema.String,
   Schema.Boolean,
+  Schema.Number,
   Schema.Array(Schema.String),
 ]);
 
@@ -387,6 +460,10 @@ const decodeBoolean = Schema.decodeUnknownOption(Schema.Boolean);
 
 const decodeTags = Schema.decodeUnknownOption(Schema.Array(Schema.String));
 
+const decodeNumber = Schema.decodeUnknownOption(Schema.Number);
+
+const wholeNumber = /^\d+$/u;
+
 const tagSeparator = ", ";
 
 // The value a stored option shows in its field.
@@ -398,6 +475,8 @@ const valueOf = (
     Match.discriminatorsExhaustive("kind")({
       choice: () => decodeText(stored),
       localTime: () => decodeText(stored),
+      lookup: () => decodeText(stored),
+      number: () => decodeNumber(stored).pipe(Option.map(String)),
       tags: () =>
         decodeTags(stored).pipe(Option.map((tags) => tags.join(tagSeparator))),
       text: () => decodeText(stored),
@@ -494,7 +573,8 @@ export const valuesOfPost = (
 
 /**
  * The values with one field changed. A box under another is cleared when
- * that one is unticked.
+ * that one is unticked, and a lookup under another emptied when that one
+ * changes.
  */
 export const withValue = (
   platform: Platform,
@@ -508,8 +588,16 @@ export const withValue = (
       : []
   );
 
+  const emptied = new Set(
+    fieldsOf(platform).flatMap((field) =>
+      field.kind === "lookup" && field.under === name && values[name] !== value
+        ? [field.name]
+        : []
+    )
+  );
+
   const kept = Object.entries(values).filter(
-    ([key]) => key !== name && !cleared.includes(key)
+    ([key]) => key !== name && !cleared.includes(key) && !emptied.has(key)
   );
 
   const changed = [
@@ -530,9 +618,19 @@ const tagsOf = (typed: string): readonly string[] =>
 const optionOf = (
   field: OptionField,
   value: boolean | string | undefined
-): Option.Option<boolean | string | readonly string[]> => {
+): Option.Option<boolean | number | string | readonly string[]> => {
   if (value === undefined || value === "") {
     return Option.none();
+  }
+
+  // Digits only: anything else is not a number the API would take.
+  if (field.kind === "number") {
+    return decodeText(value).pipe(
+      Option.map((typed) => typed.trim()),
+      Option.filter((typed) => wholeNumber.test(typed)),
+      Option.map(Number),
+      Option.filter((number) => Number.isSafeInteger(number))
+    );
   }
 
   if (field.kind === "tags") {

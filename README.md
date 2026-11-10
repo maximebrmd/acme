@@ -15,8 +15,8 @@ two years after it ships. The API contract and the SDKs in
 It is not released yet. Today you can:
 
 - create an account and workspaces, and connect Mastodon, Bluesky, LinkedIn,
-  X, Threads, Instagram and TikTok accounts, Facebook Pages, YouTube
-  channels and Google Business Profile locations to them;
+  X, Threads, Instagram, TikTok and Pinterest accounts, Facebook Pages,
+  YouTube channels and Google Business Profile locations to them;
 - upload images and videos to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
   with alt text, keep it with the workspace's drafts or discard it, then
@@ -27,7 +27,8 @@ It is not released yet. Today you can:
   whether one Peal could not confirm went out;
 - hear how your posts ended, or every post if you choose, and which
   channels need reconnecting, under a bell in the app and by email;
-- see how posts did on Mastodon, Bluesky, TikTok and YouTube: their likes,
+- see how posts did on Mastodon, Bluesky, TikTok, YouTube, Instagram and
+  Pinterest: their likes,
   reposts, replies and quotes, and a YouTube video's views, read back every
   hour for two days then daily for a month, by
   channel and day, and on each post's page;
@@ -215,6 +216,11 @@ be read, and their channels must be reconnected.
   `YOUTUBE_CLIENT_SECRET`; Google takes `http://localhost:3001` there. While
   the project's consent screen is in testing, only its test users sign in,
   and Google ends their access after 7 days: reconnect then.
+- **Pinterest** needs an app registered on Pinterest's developer site, in
+  `PINTEREST_APP_ID` and `PINTEREST_APP_SECRET`, whose redirect is exactly
+  `PUBLIC_URL/connect/pinterest/callback`. Until Pinterest grants the app
+  Standard access, set `PINTEREST_SANDBOX=true`: Pins then go to Pinterest's
+  Sandbox, where only their creator sees them, and which takes no video.
 
 - **Google Business Profile** needs an OAuth client of the web application
   type in a Google Cloud project that Google gave access to the Business
@@ -391,6 +397,8 @@ In development, these are the ones you may want:
 | `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                |
 | `TIKTOK_CLIENT_KEY`           | unset: TikTok is not offered     | The TikTok app's client key, with `TIKTOK_CLIENT_SECRET`       |
 | `YOUTUBE_CLIENT_ID`           | unset: YouTube is not offered    | The Google OAuth client's id, with `YOUTUBE_CLIENT_SECRET`     |
+| `PINTEREST_APP_ID`            | unset: Pinterest is not offered  | The Pinterest app's id, with `PINTEREST_APP_SECRET`            |
+| `PINTEREST_SANDBOX`           | `false`                          | `true` sends Pinterest's calls to its Sandbox (Trial access)   |
 | `GOOGLE_BUSINESS_CLIENT_ID`   | unset: no Business Profile       | Its Google client's id, with `GOOGLE_BUSINESS_CLIENT_SECRET`   |
 | `PEAL_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                             |
 | `PEAL_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                     |

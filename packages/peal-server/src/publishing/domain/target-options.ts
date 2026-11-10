@@ -12,12 +12,14 @@ import { GoogleBusinessOptions } from "./google-business-options.ts";
 import type { LookupName } from "./lookup.ts";
 import type { OptionConstraint } from "./option-constraint.ts";
 import type { OptionProblem } from "./option-problem.ts";
+import { PinterestOptions } from "./pinterest-options.ts";
 import { TikTokOptions } from "./tiktok-options.ts";
 import { YouTubeOptions } from "./youtube-options.ts";
 
 /**
  * What a post's target says that only its channel's platform knows, such as
- * a YouTube video's title or who sees a TikTok post, tagged by `platform`.
+ * a YouTube video's title, who sees a TikTok post or the board a Pinterest
+ * Pin is saved to, tagged by `platform`.
  * They are stored with the target and handed to the platform's adapter.
  *
  * A platform's options are one class, in a file of its own beside this one:
@@ -29,6 +31,7 @@ import { YouTubeOptions } from "./youtube-options.ts";
 export const TargetOptionsSchema = Schema.Union([
   YouTubeOptions,
   TikTokOptions,
+  PinterestOptions,
   GoogleBusinessOptions,
 ]);
 

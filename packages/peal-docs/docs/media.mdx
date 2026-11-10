@@ -91,6 +91,18 @@ On YouTube:
 | Videos                        | MP4 or QuickTime, up to 256 GiB and 12 hours |
 | Alt text                      | Not sent: the post's text is the description |
 
+On Pinterest:
+
+| Limit                         | Pinterest                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| Images and videos in one post | One video, or up to 5 images, which make a carousel; at least one                        |
+| Images                        | JPEG and PNG, up to 20 MiB                                                               |
+| Videos                        | MP4 or QuickTime, up to 2 GiB, 4 seconds to 15 minutes, from 1:2 (tall) to 1.91:1 (wide) |
+| Images and a video together   | No                                                                                       |
+| Alt text                      | One for the Pin, the first file's, up to 500 characters                                  |
+
+Pinterest recommends images of 2:3, such as 1,000 by 1,500 pixels, and asks a carousel's images to be square or 2:3, which it checks itself.
+
 A video of 3 minutes or less, square or taller than wide, becomes a Short. YouTube takes videos longer than 15 minutes only from channels Google verified; it rejects the others once uploaded, and the post fails with that reason.
 
 On Google Business Profile:
@@ -120,6 +132,7 @@ At the post's time, Peal sends each file from the library to the platform, then 
 - **TikTok**: a video goes up in parts of 10 MB, read one at a time from the media store, unless the server lets TikTok fetch it from the store's public address; photos TikTok always fetches. TikTok then processes the post before it goes live.
 
 - **YouTube**: Peal uploads the video in parts of 8 MiB, picking up where YouTube stands if an upload is cut off, even after the server restarts, then waits while YouTube processes it.
+- **Pinterest**: Peal gives Pinterest a link to each image in the media store, valid for two hours, and Pinterest fetches it when it creates the Pin. A video goes up in one request, read from the media store as it is sent and never held whole in memory, to the address Pinterest gives for it; Pinterest then processes it, usually within seconds.
 - **Google Business Profile**: Peal gives Google a link to each photo in the media store, valid for two hours, and Google fetches it.
 
 Peal waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer; a YouTube video, already uploaded, is left published while YouTube finishes.

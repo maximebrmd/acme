@@ -24,9 +24,9 @@ import { WorkspaceAccess } from "./workspace-access.ts";
 export const maxLookupPageSize = 50;
 
 /**
- * A lookup a channel has: its name, the fields its input takes (none is
- * required), whether its answer comes in pages, and the options of the
- * platform whose values it answers.
+ * A lookup a channel has: its name, the fields its input takes (each says
+ * whether the lookup needs it), whether its answer comes in pages, and the
+ * options of the platform whose values it answers.
  */
 export const LookupDescriptionSchema = Schema.Struct({
   // The names of the platform's options that refer to it.
@@ -41,11 +41,14 @@ export const LookupDescriptionSchema = Schema.Struct({
 export type LookupDescription = typeof LookupDescriptionSchema.Type;
 
 /**
- * What a lookup is asked, every field optional. Each lookup takes only the
- * fields its description lists, and refuses the others
- * (LookupInputInvalid).
+ * What a lookup is asked. Each lookup takes only the fields its
+ * description lists, and refuses the others, or an input without a field
+ * it needs (LookupInputInvalid).
  */
 export const LookupInputSchema = Schema.Struct({
+  // The Pinterest board whose sections are listed, by its id: digits.
+  // `pinterestBoardSections` needs it.
+  boardId: Schema.optionalKey(Schema.String.check(Schema.isPattern(/^\d+$/u))),
   // The page to read, as the page before named it in `nextCursor`.
   cursor: Schema.optionalKey(
     Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(512))
@@ -86,6 +89,21 @@ export const YouTubePlaylistSchema = Schema.Struct({
   title: Schema.String,
 }).annotate({ identifier: "YouTubePlaylist" });
 
+/** A board of a Pinterest account: `boardId` takes `id`. */
+export const PinterestBoardSchema = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  // Who can see it, as Pinterest says: PUBLIC or PROTECTED; null when
+  // Pinterest does not say.
+  privacy: Schema.NullOr(Schema.String),
+}).annotate({ identifier: "PinterestBoard" });
+
+/** A section of a Pinterest board: `boardSectionId` takes `id`. */
+export const PinterestBoardSectionSchema = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+}).annotate({ identifier: "PinterestBoardSection" });
+
 const page = <Item extends Schema.Top>(item: Item) => ({
   items: Schema.Array(item),
   // What the next page's `cursor` takes; null on the last page.
@@ -103,6 +121,11 @@ export const LookupResultSchema = Schema.Union([
   ),
   Schema.TaggedStruct("youtubePlaylists", page(YouTubePlaylistSchema)),
   Schema.TaggedStruct("tiktokCreator", page(TikTokAccountSchema)),
+  Schema.TaggedStruct("pinterestBoards", page(PinterestBoardSchema)),
+  Schema.TaggedStruct(
+    "pinterestBoardSections",
+    page(PinterestBoardSectionSchema)
+  ),
 ]).annotate({ identifier: "LookupResult" });
 
 export type LookupResult = typeof LookupResultSchema.Type;
@@ -119,7 +142,7 @@ export class LookupsApi extends HttpApiGroup.make("lookups")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.",
+          "Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.",
         summary: "List a channel's lookups",
       })
     ),

@@ -181,7 +181,8 @@ export const publishingWorkers = <E, R, E2 = never, R2 = never>(
 
 /**
  * The platforms the gates publish to, Mastodon, Bluesky, LinkedIn, X,
- * Threads, Instagram, Facebook Pages, TikTok and YouTube, with the tokens
+ * Threads, Instagram, Facebook Pages, TikTok, YouTube and Pinterest, with
+ * the tokens
  * the channels context hands out (ChannelAccess) and the files the media
  * context does (MediaForPlatforms), which the composition root provides
  * with Dns, the database and the PostRepository.

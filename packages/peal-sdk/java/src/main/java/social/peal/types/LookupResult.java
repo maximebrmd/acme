@@ -38,6 +38,14 @@ public final class LookupResult {
         return new LookupResult(new TiktokCreatorValue(value));
     }
 
+    public static LookupResult pinterestBoards(LookupResultPinterestBoards value) {
+        return new LookupResult(new PinterestBoardsValue(value));
+    }
+
+    public static LookupResult pinterestBoardSections(LookupResultPinterestBoardSections value) {
+        return new LookupResult(new PinterestBoardSectionsValue(value));
+    }
+
     public boolean isYoutubeVideoCategories() {
         return value instanceof YoutubeVideoCategoriesValue;
     }
@@ -48,6 +56,14 @@ public final class LookupResult {
 
     public boolean isTiktokCreator() {
         return value instanceof TiktokCreatorValue;
+    }
+
+    public boolean isPinterestBoards() {
+        return value instanceof PinterestBoardsValue;
+    }
+
+    public boolean isPinterestBoardSections() {
+        return value instanceof PinterestBoardSectionsValue;
     }
 
     public boolean _isUnknown() {
@@ -71,6 +87,20 @@ public final class LookupResult {
     public Optional<LookupResultTiktokCreator> getTiktokCreator() {
         if (isTiktokCreator()) {
             return Optional.of(((TiktokCreatorValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<LookupResultPinterestBoards> getPinterestBoards() {
+        if (isPinterestBoards()) {
+            return Optional.of(((PinterestBoardsValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<LookupResultPinterestBoardSections> getPinterestBoardSections() {
+        if (isPinterestBoardSections()) {
+            return Optional.of(((PinterestBoardSectionsValue) value).value);
         }
         return Optional.empty();
     }
@@ -110,6 +140,10 @@ public final class LookupResult {
 
         T visitTiktokCreator(LookupResultTiktokCreator tiktokCreator);
 
+        T visitPinterestBoards(LookupResultPinterestBoards pinterestBoards);
+
+        T visitPinterestBoardSections(LookupResultPinterestBoardSections pinterestBoardSections);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -117,7 +151,9 @@ public final class LookupResult {
     @JsonSubTypes({
         @JsonSubTypes.Type(YoutubeVideoCategoriesValue.class),
         @JsonSubTypes.Type(YoutubePlaylistsValue.class),
-        @JsonSubTypes.Type(TiktokCreatorValue.class)
+        @JsonSubTypes.Type(TiktokCreatorValue.class),
+        @JsonSubTypes.Type(PinterestBoardsValue.class),
+        @JsonSubTypes.Type(PinterestBoardSectionsValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -230,6 +266,86 @@ public final class LookupResult {
         }
 
         private boolean equalTo(TiktokCreatorValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "LookupResult{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("pinterestBoards")
+    @JsonIgnoreProperties("_tag")
+    private static final class PinterestBoardsValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private LookupResultPinterestBoards value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PinterestBoardsValue() {}
+
+        private PinterestBoardsValue(LookupResultPinterestBoards value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPinterestBoards(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PinterestBoardsValue && equalTo((PinterestBoardsValue) other);
+        }
+
+        private boolean equalTo(PinterestBoardsValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "LookupResult{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("pinterestBoardSections")
+    @JsonIgnoreProperties("_tag")
+    private static final class PinterestBoardSectionsValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private LookupResultPinterestBoardSections value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PinterestBoardSectionsValue() {}
+
+        private PinterestBoardSectionsValue(LookupResultPinterestBoardSections value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPinterestBoardSections(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PinterestBoardSectionsValue && equalTo((PinterestBoardSectionsValue) other);
+        }
+
+        private boolean equalTo(PinterestBoardSectionsValue other) {
             return value.equals(other.value);
         }
 

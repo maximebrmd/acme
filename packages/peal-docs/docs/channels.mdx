@@ -1,19 +1,19 @@
 ---
 title: Connect channels
-description: Connect the Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok, Facebook Page, YouTube and Google Business Profile accounts a workspace posts to, reconnect them when a platform asks, and disconnect them.
+description: Connect the Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok, Facebook Page, YouTube, Pinterest and Google Business Profile accounts a workspace posts to, reconnect them when a platform asks, and disconnect them.
 sidebar:
   order: 2
 ---
 
-A channel is a social account connected to a workspace: a Mastodon, Bluesky, LinkedIn, X, Threads, Instagram or TikTok account, a Facebook Page, a YouTube channel, or a Google Business Profile location, today. Posts go to channels, so connect at least one before you schedule anything.
+A channel is a social account connected to a workspace: a Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok or Pinterest account, a Facebook Page, a YouTube channel, or a Google Business Profile location, today. Posts go to channels, so connect at least one before you schedule anything.
 
 Open a workspace from **Workspaces**, then **Channels**. Every member sees the workspace's channels; only owners and admins connect, reconnect and disconnect them.
 
-<Callout type="note" title="Ten platforms so far">
-  Peal connects Mastodon, Bluesky, LinkedIn, X, Threads, Instagram and TikTok
-  accounts, Facebook Pages, YouTube channels and Google Business Profile
-  locations. The other platform it knows, Pinterest, cannot be connected yet.
-  **Channels** offers only the platforms the Peal server is set up for.
+<Callout type="note" title="Eleven platforms so far">
+  Peal connects Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok and
+  Pinterest accounts, Facebook Pages, YouTube channels and Google Business
+  Profile locations. **Channels** offers only the platforms the Peal server is
+  set up for.
 </Callout>
 
 ## Connect an account [#connect]
@@ -87,6 +87,12 @@ Under **YouTube**, choose **Connect YouTube**, sign in with Google, and pick the
 
 The Peal server must be set up for YouTube: on a self-hosted instance, see [YouTube](/self-hosting#youtube). Until then, **Channels** does not offer it.
 
+### Pinterest [#pinterest]
+
+Under **Pinterest**, choose **Connect Pinterest**, sign in on Pinterest, and allow Peal to see your boards and Pins, to create Pins, and to read your account's name and picture. Peal asks for nothing about secret boards, so it never lists them and cannot pin to them.
+
+The Peal server must be set up for Pinterest: on a self-hosted instance, see [Pinterest](/self-hosting#pinterest). Until then, **Channels** does not offer it.
+
 ### Google Business Profile [#google-business]
 
 Under **Google Business Profile**, choose **Connect Google Business Profile**, sign in with Google, and allow Peal to manage your Business Profile: Google has one permission for everything about a profile, and Peal uses it to list your locations and to make their posts, nothing else. A sign-in that reaches one location connects it; one that reaches several lists them, each with its address, for you to choose those this workspace posts to. Each location is a channel.
@@ -111,7 +117,7 @@ A channel whose access cannot be renewed also shows the date by which it must be
 
 ## Keep channels connected [#keep-connected]
 
-Peal renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse, X access, which lasts two hours, whenever it posts, and at least once a month for an account that does not post, so X never drops it, Threads access and the access of an Instagram account connected with Instagram, which last 60 days, a week before, TikTok access, which lasts a day or less, half an hour before it ends, and YouTube access, which lasts an hour, every hour. TikTok lets Peal renew it for 180 days after you connected the account: then the channel asks to be reconnected. Google ends YouTube access when the owner removes Peal from their Google account, or six months after Peal last used it; on a self-hosted server whose Google project is in testing, seven days after the channel was connected. Mastodon access, and the Page access Facebook Pages and Instagram accounts connected through a Page post with, do not expire until someone revokes them; Facebook also withdraws a Page's access when the person who connected it changes their password or loses their role on the Page. LinkedIn access cannot be renewed: reconnect the channel every 60 days, as above. When someone removes Peal from their Facebook, Instagram or Threads account, Meta tells Peal, which marks the channels that person connected to be reconnected, in every workspace, and tells the members who manage them, before a post fails on them.
+Peal renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse, X access, which lasts two hours, whenever it posts, and at least once a month for an account that does not post, so X never drops it, Threads access and the access of an Instagram account connected with Instagram, which last 60 days, a week before, TikTok access, which lasts a day or less, half an hour before it ends, YouTube access, which lasts an hour, every hour, and Pinterest access, which lasts 30 days, a week before. Pinterest lets Peal renew it for as long as it keeps doing so, each renewal within 60 days of the last. TikTok lets Peal renew it for 180 days after you connected the account: then the channel asks to be reconnected. Google ends YouTube access when the owner removes Peal from their Google account, or six months after Peal last used it; on a self-hosted server whose Google project is in testing, seven days after the channel was connected. Mastodon access, and the Page access Facebook Pages and Instagram accounts connected through a Page post with, do not expire until someone revokes them; Facebook also withdraws a Page's access when the person who connected it changes their password or loses their role on the Page. LinkedIn access cannot be renewed: reconnect the channel every 60 days, as above. When someone removes Peal from their Facebook, Instagram or Threads account, Meta tells Peal, which marks the channels that person connected to be reconnected, in every workspace, and tells the members who manage them, before a post fails on them.
 
 When a platform refuses Peal's access while Peal posts, Peal renews the access where the platform allows it, and tries once more. When the platform refuses again, or the access cannot be renewed, for example because the account's owner revoked it, the channel turns to **Reconnect needed**, and the workspace's owners and admins are told once, under the bell and by email unless they turned that email off (see [Notifications](/notifications)). When a platform does not answer, Peal tries again later and leaves the channel as it is.
 
@@ -128,6 +134,8 @@ At a post's time, Peal posts it as the channel's account, with its text on that 
 - **TikTok**: Peal posts one video, with the post's text as its caption, or up to 35 photos, with the text as their description, as you chose in the post's [TikTok options](/scheduling#options). Just before, it reads the account's settings on TikTok again, and the post fails if they no longer allow it. A video goes up in parts from the media store, unless TikTok can fetch it itself (see [TikTok](/self-hosting#tiktok)); photos TikTok always fetches. TikTok then processes the post, which Peal follows until it is published: a post others see shows a link to it once TikTok's moderation passed it, one only you see has none. TikTok allows about 15 posts a day to each account, shared by every app.
 - **YouTube**: Peal uploads the post's video to the channel, with the post's text as its description and the title, visibility, made-for-kids answer, tags and category of its [platform options](/scheduling#options), then waits while YouTube processes it. A video YouTube fails to process or rejects, as a duplicate or for its length, fails with YouTube's reason. When YouTube keeps a video private although you chose public or unlisted, the post's page says so: change its visibility in YouTube Studio. A Peal server uploads a limited number of videos a day, across all its channels: past that, a video waits until midnight Pacific Time, when YouTube's quotas reset, and the post's page shows the wait.
 - **Google Business Profile**: Peal makes a post on the location, with the post's text as its description and the type, dates, button and offer of its [platform options](/scheduling#options). Google fetches each photo from the media store; a post takes no video. Google may reject a post for its content policy after taking it: the post then fails. Once the post is live, its page links to it on Google.
+
+- **Pinterest**: Peal creates a Pin on the board, and the board section, of the post's [platform options](/scheduling#options), with the post's text as its description, the first file's alt text as its alt text, and the title and link you gave. One image makes an image Pin, two to five a carousel, which Pinterest fetches from the media store; a video goes up from the media store in one request, Pinterest processes it, and its cover is the frame at the second you chose, the first one otherwise. Pinterest gives Peal nothing to tell a Pin it already made from one it did not: when its answer is lost, Peal looks for the Pin on the board, and never sends it twice.
 
 ## Reconnect [#reconnect]
 

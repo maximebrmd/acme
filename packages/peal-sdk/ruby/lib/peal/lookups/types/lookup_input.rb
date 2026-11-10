@@ -10,6 +10,8 @@ module Peal
 
         field :name, -> { String }, optional: false, nullable: false
 
+        field :board_id, -> { String }, optional: true, nullable: false, api_name: "boardId"
+
         field :cursor, -> { String }, optional: true, nullable: false
 
         field :language, -> { String }, optional: true, nullable: false

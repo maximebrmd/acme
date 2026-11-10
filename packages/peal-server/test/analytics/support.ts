@@ -68,7 +68,8 @@ export const newChannelId = newId(ChannelIdSchema);
 /**
  * The platforms' readers over plain HTTP, against fakes: Mastodon servers
  * at the host the account names, Bluesky's AppView at `appView`, TikTok's
- * API at `tiktokApi`, the YouTube Data API at `youtubeApi`, and both of
+ * API at `tiktokApi`, the YouTube Data API at `youtubeApi`, Pinterest's
+ * API at `pinterestApi`, and both of
  * Meta's Graph hosts at `metaGraph`, whose Facebook Login calls are proved
  * with `metaAppSecret`.
  */
@@ -76,12 +77,14 @@ export const readersWith = ({
   appView = "http://127.0.0.1:9",
   metaAppSecret = "meta-app-secret-synthetic",
   metaGraph = "http://127.0.0.1:9",
+  pinterestApi = "http://127.0.0.1:9",
   tiktokApi = "http://127.0.0.1:9",
   youtubeApi = "http://127.0.0.1:9",
 }: {
   readonly appView?: string | undefined;
   readonly metaAppSecret?: string | undefined;
   readonly metaGraph?: string | undefined;
+  readonly pinterestApi?: string | undefined;
   readonly tiktokApi?: string | undefined;
   readonly youtubeApi?: string | undefined;
 } = {}) => {
@@ -102,6 +105,7 @@ export const readersWith = ({
     mastodonScheme: "http:",
     metaAppSecret: Option.some(Redacted.make(metaAppSecret)),
     metaHosts,
+    pinterestApi: new URL(pinterestApi),
     tiktokApi: new URL(tiktokApi),
     youtubeApi: new URL(youtubeApi),
   }).pipe(

@@ -46,14 +46,14 @@ public class RawLookupsClient {
     }
 
     /**
-     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
      */
     public PealClientHttpResponse<List<LookupDescription>> list(String workspaceId, String channelId) {
         return list(workspaceId, channelId, ListLookupsRequest.builder().build());
     }
 
     /**
-     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
      */
     public PealClientHttpResponse<List<LookupDescription>> list(
             String workspaceId, String channelId, RequestOptions requestOptions) {
@@ -61,7 +61,7 @@ public class RawLookupsClient {
     }
 
     /**
-     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
      */
     public PealClientHttpResponse<List<LookupDescription>> list(
             String workspaceId, String channelId, ListLookupsRequest request) {
@@ -69,7 +69,7 @@ public class RawLookupsClient {
     }
 
     /**
-     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
      */
     public PealClientHttpResponse<List<LookupDescription>> list(
             String workspaceId, String channelId, ListLookupsRequest request, RequestOptions requestOptions) {

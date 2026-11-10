@@ -50,6 +50,10 @@ const onTikTok = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c2");
 
 const onMastodon = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c3");
 
+const onPinterest = ChannelIdSchema.make(
+  "01900000-0000-7000-8000-0000000000c4"
+);
+
 const creator = new TikTokCreator({
   avatarUrl: Option.none(),
   commentDisabled: false,
@@ -62,6 +66,23 @@ const creator = new TikTokCreator({
 });
 
 const answers = {
+  pinterestBoardSections: {
+    _tag: "pinterestBoardSections",
+    items: [{ id: "5000000000001", name: "Salads" }],
+    nextCursor: Option.none(),
+  },
+  pinterestBoards: {
+    _tag: "pinterestBoards",
+    items: [
+      {
+        id: "549755885001",
+        name: "Summer recipes",
+        privacy: Option.some("PUBLIC"),
+      },
+      { id: "549755885002", name: "Drafts", privacy: Option.none() },
+    ],
+    nextCursor: Option.some("page-2"),
+  },
   tiktokCreator: {
     _tag: "tiktokCreator",
     items: [{ posting: { _tag: "ready", creator }, takesPhotos: false }],
@@ -133,6 +154,10 @@ const clientWith = Effect.fn("test.lookupsClient")(function* clientWith(
                             {
                               channelId: onMastodon,
                               platform: "mastodon" as const,
+                            },
+                            {
+                              channelId: onPinterest,
+                              platform: "pinterest" as const,
                             },
                           ].filter(({ channelId }) => ids.includes(channelId))
                         ),
@@ -294,6 +319,102 @@ describe("running a channel's lookup", () => {
           nextCursor: null,
         });
       })
+  );
+
+  it.effect(
+    "answers a Pinterest account's boards, and a board's sections",
+    () =>
+      Effect.gen(function* pinterest() {
+        const { asked, client } = yield* clientWith(viewer);
+        const params = { channelId: onPinterest, workspaceId };
+
+        const described = yield* client.lookups.list({ params });
+
+        const boards = yield* client.lookups.run({
+          params: { ...params, name: "pinterestBoards" },
+          payload: { limit: 2 },
+        });
+
+        const sections = yield* client.lookups.run({
+          params: { ...params, name: "pinterestBoardSections" },
+          payload: { boardId: "549755885001" },
+        });
+
+        assert.deepStrictEqual(
+          described.map(({ fills, input, name }) => ({
+            fills,
+            input: input.map((field) => [field.name, field.required]),
+            name,
+          })),
+          [
+            {
+              fills: ["boardId"],
+              input: [
+                ["cursor", false],
+                ["limit", false],
+              ],
+              name: "pinterestBoards",
+            },
+            {
+              fills: ["boardSectionId"],
+              input: [
+                ["boardId", true],
+                ["cursor", false],
+                ["limit", false],
+              ],
+              name: "pinterestBoardSections",
+            },
+          ]
+        );
+        assert.deepStrictEqual(boards, {
+          _tag: "pinterestBoards",
+          items: [
+            { id: "549755885001", name: "Summer recipes", privacy: "PUBLIC" },
+            { id: "549755885002", name: "Drafts", privacy: null },
+          ],
+          nextCursor: "page-2",
+        });
+        assert.deepStrictEqual(sections, {
+          _tag: "pinterestBoardSections",
+          items: [{ id: "5000000000001", name: "Salads" }],
+          nextCursor: null,
+        });
+        assert.deepStrictEqual(yield* asked, [
+          { _tag: "pinterestBoards", cursor: Option.none(), limit: 2 },
+          {
+            _tag: "pinterestBoardSections",
+            boardId: "549755885001",
+            cursor: Option.none(),
+            limit: 25,
+          },
+        ]);
+      })
+  );
+
+  it.effect("refuses a board's sections asked without the board, unasked", () =>
+    Effect.gen(function* withoutBoard() {
+      const { asked, client } = yield* clientWith(viewer);
+
+      const errors = yield* Effect.forEach(
+        [{}, { boardId: "not-digits" }],
+        (payload) =>
+          client.lookups
+            .run({
+              params: {
+                channelId: onPinterest,
+                name: "pinterestBoardSections",
+                workspaceId,
+              },
+              payload,
+            })
+            .pipe(Effect.flip)
+      );
+
+      // The contract refuses an id that is not digits before the handler.
+      assert.instanceOf(errors[0], LookupInputInvalid);
+      assert.lengthOf(errors, 2);
+      assert.deepStrictEqual(yield* asked, []);
+    })
   );
 
   it.effect("refuses a lookup the channel's platform has not, unasked", () =>

@@ -42,7 +42,8 @@ export const FieldDescriptionSchema = Schema.Struct({
   name: Schema.String,
   // A regular expression the whole text matches.
   pattern: Schema.NullOr(Schema.String),
-  // An option: needed to schedule the post, though a draft may lack it.
+  // An option: needed to schedule the post, though a draft may lack it. A
+  // lookup's input: needed to run the lookup.
   required: Schema.Boolean,
   type: FieldTypeSchema,
   // The values a `choice` takes; empty for any other type.

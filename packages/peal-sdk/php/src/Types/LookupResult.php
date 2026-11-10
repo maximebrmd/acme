@@ -12,6 +12,8 @@ class LookupResult extends JsonSerializableType
      *    'youtubeVideoCategories'
      *   |'youtubePlaylists'
      *   |'tiktokCreator'
+     *   |'pinterestBoards'
+     *   |'pinterestBoardSections'
      *   |'_unknown'
      * ) $type
      */
@@ -22,6 +24,8 @@ class LookupResult extends JsonSerializableType
      *    LookupResultYoutubeVideoCategories
      *   |LookupResultYoutubePlaylists
      *   |LookupResultTiktokCreator
+     *   |LookupResultPinterestBoards
+     *   |LookupResultPinterestBoardSections
      *   |mixed
      * ) $value
      */
@@ -33,12 +37,16 @@ class LookupResult extends JsonSerializableType
      *    'youtubeVideoCategories'
      *   |'youtubePlaylists'
      *   |'tiktokCreator'
+     *   |'pinterestBoards'
+     *   |'pinterestBoardSections'
      *   |'_unknown'
      * ),
      *   value: (
      *    LookupResultYoutubeVideoCategories
      *   |LookupResultYoutubePlaylists
      *   |LookupResultTiktokCreator
+     *   |LookupResultPinterestBoards
+     *   |LookupResultPinterestBoardSections
      *   |mixed
      * ),
      * } $values
@@ -83,6 +91,30 @@ class LookupResult extends JsonSerializableType
         return new LookupResult([
             'type' => 'tiktokCreator',
             'value' => $tiktokCreator,
+        ]);
+    }
+
+    /**
+     * @param LookupResultPinterestBoards $pinterestBoards
+     * @return LookupResult
+     */
+    public static function pinterestBoards(LookupResultPinterestBoards $pinterestBoards): LookupResult
+    {
+        return new LookupResult([
+            'type' => 'pinterestBoards',
+            'value' => $pinterestBoards,
+        ]);
+    }
+
+    /**
+     * @param LookupResultPinterestBoardSections $pinterestBoardSections
+     * @return LookupResult
+     */
+    public static function pinterestBoardSections(LookupResultPinterestBoardSections $pinterestBoardSections): LookupResult
+    {
+        return new LookupResult([
+            'type' => 'pinterestBoardSections',
+            'value' => $pinterestBoardSections,
         ]);
     }
 
@@ -153,6 +185,50 @@ class LookupResult extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isPinterestBoards(): bool
+    {
+        return $this->value instanceof LookupResultPinterestBoards && $this->type === 'pinterestBoards';
+    }
+
+    /**
+     * @return LookupResultPinterestBoards
+     */
+    public function asPinterestBoards(): LookupResultPinterestBoards
+    {
+        if (!($this->value instanceof LookupResultPinterestBoards && $this->type === 'pinterestBoards')) {
+            throw new Exception(
+                "Expected pinterestBoards; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPinterestBoardSections(): bool
+    {
+        return $this->value instanceof LookupResultPinterestBoardSections && $this->type === 'pinterestBoardSections';
+    }
+
+    /**
+     * @return LookupResultPinterestBoardSections
+     */
+    public function asPinterestBoardSections(): LookupResultPinterestBoardSections
+    {
+        if (!($this->value instanceof LookupResultPinterestBoardSections && $this->type === 'pinterestBoardSections')) {
+            throw new Exception(
+                "Expected pinterestBoardSections; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -182,6 +258,14 @@ class LookupResult extends JsonSerializableType
                 break;
             case 'tiktokCreator':
                 $value = $this->asTiktokCreator()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'pinterestBoards':
+                $value = $this->asPinterestBoards()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'pinterestBoardSections':
+                $value = $this->asPinterestBoardSections()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -228,6 +312,12 @@ class LookupResult extends JsonSerializableType
                 break;
             case 'tiktokCreator':
                 $args['value'] = LookupResultTiktokCreator::jsonDeserialize($data);
+                break;
+            case 'pinterestBoards':
+                $args['value'] = LookupResultPinterestBoards::jsonDeserialize($data);
+                break;
+            case 'pinterestBoardSections':
+                $args['value'] = LookupResultPinterestBoardSections::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

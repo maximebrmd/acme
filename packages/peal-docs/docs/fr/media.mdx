@@ -91,6 +91,18 @@ Sur YouTube :
 | Vidéos                           | MP4 ou QuickTime, jusqu’à 256 Gio et 12 heures    |
 | Texte alternatif                 | Pas envoyé : le texte de la publication la décrit |
 
+Sur Pinterest :
+
+| Limite                           | Pinterest                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------- |
+| Images et vidéos par publication | Une vidéo, ou jusqu’à 5 images, qui forment un carrousel ; au moins une                      |
+| Images                           | JPEG et PNG, jusqu’à 20 Mio                                                                  |
+| Vidéos                           | MP4 ou QuickTime, jusqu’à 2 Gio, de 4 secondes à 15 minutes, de 1:2 (haute) à 1,91:1 (large) |
+| Images et vidéo ensemble         | Non                                                                                          |
+| Texte alternatif                 | Un seul pour l’épingle, celui du premier fichier, jusqu’à 500 caractères                     |
+
+Pinterest recommande des images en 2:3, comme 1 000 sur 1 500 pixels, et demande aux images d’un carrousel d’être carrées ou en 2:3, ce qu’il vérifie lui-même.
+
 Une vidéo de 3 minutes ou moins, carrée ou plus haute que large, devient un Short. YouTube n’accepte de vidéos de plus de 15 minutes que des chaînes que Google a vérifiées ; il refuse les autres une fois envoyées, et la publication échoue avec cette raison.
 
 Sur Google Business Profile :
@@ -120,6 +132,7 @@ Un brouillon peut contenir n’importe quel média prêt de son espace de travai
 - **TikTok** : une vidéo part en morceaux de 10 Mo, lus un à la fois dans le stockage des médias, sauf si le serveur laisse TikTok aller la chercher à l’adresse publique du stockage ; TikTok va toujours chercher les photos. TikTok traite ensuite la publication avant sa mise en ligne.
 
 - **YouTube** : Peal envoie la vidéo par parties de 8 Mio, en reprenant là où en est YouTube si un envoi est coupé, même après un redémarrage du serveur, puis attend que YouTube la traite.
+- **Pinterest** : Peal donne à Pinterest un lien vers chaque image du stockage des médias, valable deux heures, et Pinterest va la chercher en créant l’épingle. Une vidéo part en une seule requête, lue dans le stockage des médias à mesure qu’elle est envoyée et jamais gardée entière en mémoire, vers l’adresse que Pinterest donne pour elle ; Pinterest la traite ensuite, d’ordinaire en quelques secondes.
 - **Google Business Profile** : Peal donne à Google un lien vers chaque photo dans le stockage des médias, valable deux heures, et Google va la chercher.
 
 Peal attend jusqu’à 15 minutes qu’une plateforme traite un fichier. Au-delà, il réessaie la publication plus tard, comme pour une plateforme qui ne répond pas ; une vidéo YouTube, déjà envoyée, reste publiée pendant que YouTube termine.

@@ -46,6 +46,24 @@ public record LookupResult
     }
 
     /// <summary>
+    /// Create an instance of LookupResult with <see cref="LookupResult.PinterestBoards"/>.
+    /// </summary>
+    public LookupResult(LookupResult.PinterestBoards value)
+    {
+        Type = "pinterestBoards";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of LookupResult with <see cref="LookupResult.PinterestBoardSections"/>.
+    /// </summary>
+    public LookupResult(LookupResult.PinterestBoardSections value)
+    {
+        Type = "pinterestBoardSections";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -70,6 +88,16 @@ public record LookupResult
     /// Returns true if <see cref="Type"/> is "tiktokCreator"
     /// </summary>
     public bool IsTiktokCreator => Type == "tiktokCreator";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "pinterestBoards"
+    /// </summary>
+    public bool IsPinterestBoards => Type == "pinterestBoards";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "pinterestBoardSections"
+    /// </summary>
+    public bool IsPinterestBoardSections => Type == "pinterestBoardSections";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.LookupResultYoutubeVideoCategories"/> if <see cref="Type"/> is 'youtubeVideoCategories', otherwise throws an exception.
@@ -100,10 +128,32 @@ public record LookupResult
             ? (Peal.LookupResultTiktokCreator)Value!
             : throw new global::System.Exception("LookupResult.Type is not 'tiktokCreator'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.LookupResultPinterestBoards"/> if <see cref="Type"/> is 'pinterestBoards', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'pinterestBoards'.</exception>
+    public Peal.LookupResultPinterestBoards AsPinterestBoards() =>
+        IsPinterestBoards
+            ? (Peal.LookupResultPinterestBoards)Value!
+            : throw new global::System.Exception("LookupResult.Type is not 'pinterestBoards'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.LookupResultPinterestBoardSections"/> if <see cref="Type"/> is 'pinterestBoardSections', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'pinterestBoardSections'.</exception>
+    public Peal.LookupResultPinterestBoardSections AsPinterestBoardSections() =>
+        IsPinterestBoardSections
+            ? (Peal.LookupResultPinterestBoardSections)Value!
+            : throw new global::System.Exception(
+                "LookupResult.Type is not 'pinterestBoardSections'"
+            );
+
     public T Match<T>(
         Func<Peal.LookupResultYoutubeVideoCategories, T> onYoutubeVideoCategories,
         Func<Peal.LookupResultYoutubePlaylists, T> onYoutubePlaylists,
         Func<Peal.LookupResultTiktokCreator, T> onTiktokCreator,
+        Func<Peal.LookupResultPinterestBoards, T> onPinterestBoards,
+        Func<Peal.LookupResultPinterestBoardSections, T> onPinterestBoardSections,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -112,6 +162,8 @@ public record LookupResult
             "youtubeVideoCategories" => onYoutubeVideoCategories(AsYoutubeVideoCategories()),
             "youtubePlaylists" => onYoutubePlaylists(AsYoutubePlaylists()),
             "tiktokCreator" => onTiktokCreator(AsTiktokCreator()),
+            "pinterestBoards" => onPinterestBoards(AsPinterestBoards()),
+            "pinterestBoardSections" => onPinterestBoardSections(AsPinterestBoardSections()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -120,6 +172,8 @@ public record LookupResult
         Action<Peal.LookupResultYoutubeVideoCategories> onYoutubeVideoCategories,
         Action<Peal.LookupResultYoutubePlaylists> onYoutubePlaylists,
         Action<Peal.LookupResultTiktokCreator> onTiktokCreator,
+        Action<Peal.LookupResultPinterestBoards> onPinterestBoards,
+        Action<Peal.LookupResultPinterestBoardSections> onPinterestBoardSections,
         Action<string, object?> onUnknown_
     )
     {
@@ -133,6 +187,12 @@ public record LookupResult
                 break;
             case "tiktokCreator":
                 onTiktokCreator(AsTiktokCreator());
+                break;
+            case "pinterestBoards":
+                onPinterestBoards(AsPinterestBoards());
+                break;
+            case "pinterestBoardSections":
+                onPinterestBoardSections(AsPinterestBoardSections());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -182,6 +242,34 @@ public record LookupResult
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.LookupResultPinterestBoards"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPinterestBoards(out Peal.LookupResultPinterestBoards? value)
+    {
+        if (Type == "pinterestBoards")
+        {
+            value = (Peal.LookupResultPinterestBoards)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.LookupResultPinterestBoardSections"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPinterestBoardSections(out Peal.LookupResultPinterestBoardSections? value)
+    {
+        if (Type == "pinterestBoardSections")
+        {
+            value = (Peal.LookupResultPinterestBoardSections)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator LookupResult(LookupResult.YoutubeVideoCategories value) =>
@@ -190,6 +278,11 @@ public record LookupResult
     public static implicit operator LookupResult(LookupResult.YoutubePlaylists value) => new(value);
 
     public static implicit operator LookupResult(LookupResult.TiktokCreator value) => new(value);
+
+    public static implicit operator LookupResult(LookupResult.PinterestBoards value) => new(value);
+
+    public static implicit operator LookupResult(LookupResult.PinterestBoardSections value) =>
+        new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<LookupResult>
@@ -251,6 +344,18 @@ public record LookupResult
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.LookupResultTiktokCreator"
                         ),
+                "pinterestBoards" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.LookupResultPinterestBoards?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.LookupResultPinterestBoards"
+                        ),
+                "pinterestBoardSections" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.LookupResultPinterestBoardSections?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.LookupResultPinterestBoardSections"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new LookupResult(discriminator, value);
@@ -271,6 +376,11 @@ public record LookupResult
                     ),
                     "youtubePlaylists" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tiktokCreator" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "pinterestBoards" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "pinterestBoardSections" => JsonSerializer.SerializeToNode(
+                        value.Value,
+                        options
+                    ),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -356,6 +466,46 @@ public record LookupResult
 
         public static implicit operator LookupResult.TiktokCreator(
             Peal.LookupResultTiktokCreator value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for pinterestBoards
+    /// </summary>
+    [Serializable]
+    public struct PinterestBoards
+    {
+        public PinterestBoards(Peal.LookupResultPinterestBoards value)
+        {
+            Value = value;
+        }
+
+        internal Peal.LookupResultPinterestBoards Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator LookupResult.PinterestBoards(
+            Peal.LookupResultPinterestBoards value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for pinterestBoardSections
+    /// </summary>
+    [Serializable]
+    public struct PinterestBoardSections
+    {
+        public PinterestBoardSections(Peal.LookupResultPinterestBoardSections value)
+        {
+            Value = value;
+        }
+
+        internal Peal.LookupResultPinterestBoardSections Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator LookupResult.PinterestBoardSections(
+            Peal.LookupResultPinterestBoardSections value
         ) => new(value);
     }
 }

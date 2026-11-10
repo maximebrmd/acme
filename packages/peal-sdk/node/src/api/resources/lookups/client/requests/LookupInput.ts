@@ -12,6 +12,7 @@ export interface LookupInput {
     workspaceId: string;
     channelId: string;
     name: string;
+    boardId?: string;
     cursor?: string;
     language?: string;
     limit?: number;

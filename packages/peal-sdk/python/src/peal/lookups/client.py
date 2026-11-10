@@ -31,7 +31,7 @@ class LookupsClient:
         self, workspace_id: str, channel_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> typing.List[LookupDescription]:
         """
-        Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+        Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
 
         Parameters
         ----------
@@ -68,6 +68,7 @@ class LookupsClient:
         channel_id: str,
         name: str,
         *,
+        board_id: typing.Optional[str] = OMIT,
         cursor: typing.Optional[str] = OMIT,
         language: typing.Optional[str] = OMIT,
         limit: typing.Optional[int] = OMIT,
@@ -84,6 +85,8 @@ class LookupsClient:
         channel_id : str
 
         name : str
+
+        board_id : typing.Optional[str]
 
         cursor : typing.Optional[str]
 
@@ -118,6 +121,7 @@ class LookupsClient:
             workspace_id,
             channel_id,
             name,
+            board_id=board_id,
             cursor=cursor,
             language=language,
             limit=limit,
@@ -146,7 +150,7 @@ class AsyncLookupsClient:
         self, workspace_id: str, channel_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> typing.List[LookupDescription]:
         """
-        Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+        Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
 
         Parameters
         ----------
@@ -191,6 +195,7 @@ class AsyncLookupsClient:
         channel_id: str,
         name: str,
         *,
+        board_id: typing.Optional[str] = OMIT,
         cursor: typing.Optional[str] = OMIT,
         language: typing.Optional[str] = OMIT,
         limit: typing.Optional[int] = OMIT,
@@ -207,6 +212,8 @@ class AsyncLookupsClient:
         channel_id : str
 
         name : str
+
+        board_id : typing.Optional[str]
 
         cursor : typing.Optional[str]
 
@@ -249,6 +256,7 @@ class AsyncLookupsClient:
             workspace_id,
             channel_id,
             name,
+            board_id=board_id,
             cursor=cursor,
             language=language,
             limit=limit,

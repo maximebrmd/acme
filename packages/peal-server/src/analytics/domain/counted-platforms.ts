@@ -11,6 +11,7 @@ export const countedPlatforms = [
   "tiktok",
   "youtube",
   "instagram",
+  "pinterest",
 ] as const satisfies readonly Platform[];
 
 /** Whether Peal reads counts on the platform. */

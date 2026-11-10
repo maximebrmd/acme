@@ -51,6 +51,8 @@ const withoutApps = {
   GOOGLE_BUSINESS_CLIENT_SECRET: "",
   LINKEDIN_CLIENT_ID: "",
   LINKEDIN_CLIENT_SECRET: "",
+  PINTEREST_APP_ID: "",
+  PINTEREST_APP_SECRET: "",
   TIKTOK_CLIENT_KEY: "",
   TIKTOK_CLIENT_SECRET: "",
   X_CLIENT_ID: "",
@@ -169,6 +171,7 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
           "googleBusiness",
           "instagram",
           "linkedin",
+          "pinterest",
           "threads",
           "tiktok",
           "x",
@@ -180,10 +183,10 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
 });
 
 layer(DatabaseTest)(
-  "the channels context's LinkedIn, X, TikTok and Google settings",
+  "the channels context's LinkedIn, X, TikTok, Google and Pinterest settings",
   (it) => {
     it.effect(
-      "connect LinkedIn, X, TikTok, YouTube and Google Business Profile once their apps are set",
+      "connect LinkedIn, X, TikTok, YouTube, Pinterest and Google Business Profile once their apps are set",
       () =>
         Effect.gen(function* configured() {
           const authorizers = yield* PlatformAuthorizers.pipe(
@@ -195,6 +198,8 @@ layer(DatabaseTest)(
                 GOOGLE_BUSINESS_CLIENT_SECRET: "synthetic-business-secret",
                 LINKEDIN_CLIENT_ID: "77synthetic",
                 LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
+                PINTEREST_APP_ID: "1500000",
+                PINTEREST_APP_SECRET: "synthetic-pinterest-secret",
                 TIKTOK_CLIENT_KEY: "awsynthetic",
                 TIKTOK_CLIENT_SECRET: "synthetic-tiktok-secret",
                 X_CLIENT_ID: "c3ludGhldGlj",
@@ -222,6 +227,11 @@ layer(DatabaseTest)(
             "youtube"
           );
           assert.strictEqual(
+            Option.getOrThrow(authorizers.for("pinterest")).platform,
+            "pinterest"
+          );
+          assert.isFalse(authorizers.unconfigured.has("pinterest"));
+          assert.strictEqual(
             Option.getOrThrow(authorizers.for("googleBusiness")).platform,
             "googleBusiness"
           );
@@ -244,6 +254,13 @@ layer(DatabaseTest)(
             {
               ...withoutApps,
               YOUTUBE_CLIENT_SECRET: "synthetic-google-secret",
+            },
+          ],
+          [
+            "pinterest",
+            {
+              ...withoutApps,
+              PINTEREST_APP_SECRET: "synthetic-pinterest-secret",
             },
           ],
           [

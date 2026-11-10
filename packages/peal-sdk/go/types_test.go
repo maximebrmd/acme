@@ -17386,6 +17386,20 @@ func TestEnumLookupName(t *testing.T) {
 		assert.Equal(t, LookupName("tiktokCreator"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_pinterestBoards", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLookupNameFromString("pinterestBoards")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LookupName("pinterestBoards"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_pinterestBoardSections", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLookupNameFromString("pinterestBoardSections")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LookupName("pinterestBoardSections"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewLookupNameFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)

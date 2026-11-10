@@ -8,6 +8,12 @@ use Peal\Core\Json\JsonProperty;
 class LookupInput extends JsonSerializableType
 {
     /**
+     * @var ?string $boardId
+     */
+    #[JsonProperty('boardId')]
+    public ?string $boardId;
+
+    /**
      * @var ?string $cursor
      */
     #[JsonProperty('cursor')]
@@ -33,6 +39,7 @@ class LookupInput extends JsonSerializableType
 
     /**
      * @param array{
+     *   boardId?: ?string,
      *   cursor?: ?string,
      *   language?: ?string,
      *   limit?: ?int,
@@ -42,6 +49,7 @@ class LookupInput extends JsonSerializableType
     public function __construct(
         array $values = [],
     ) {
+        $this->boardId = $values['boardId'] ?? null;
         $this->cursor = $values['cursor'] ?? null;
         $this->language = $values['language'] ?? null;
         $this->limit = $values['limit'] ?? null;

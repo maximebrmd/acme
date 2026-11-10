@@ -63,6 +63,43 @@ const tiktokLookups: readonly LookupDescription[] = [
   },
 ];
 
+const pageInput = [
+  field({ maxLength: 512, name: "cursor", type: "text" }),
+  field({
+    ifLeftOut: 25,
+    maximum: 50,
+    minimum: 1,
+    name: "limit",
+    type: "integer",
+  }),
+];
+
+const pinterestLookups: readonly LookupDescription[] = [
+  {
+    fills: ["boardId"],
+    input: pageInput,
+    name: "pinterestBoards",
+    paged: true,
+    platform: "pinterest",
+  },
+  {
+    fills: ["boardSectionId"],
+    input: [
+      field({
+        lookup: "pinterestBoards",
+        name: "boardId",
+        pattern: String.raw`^\d+$`,
+        required: true,
+        type: "text",
+      }),
+      ...pageInput,
+    ],
+    name: "pinterestBoardSections",
+    paged: true,
+    platform: "pinterest",
+  },
+];
+
 const plain = (platform: Platform): PlatformCapabilities => ({
   analytics: { perPost: platform === "mastodon" },
   lookups: [],
@@ -200,7 +237,38 @@ export const capabilitiesOn = (platform: Platform): PlatformCapabilities => {
     return youtube;
   }
 
+  if (platform === "pinterest") {
+    return { ...plain(platform), lookups: pinterestLookups };
+  }
+
   return platform === "tiktok" ? tiktok : plain(platform);
+};
+
+const studioBoard = "549755885001";
+
+/**
+ * The Pinterest channel's boards, or the sections of its one board: none
+ * for sections asked without the board.
+ */
+export const pinterestLookup = (
+  name: string,
+  boardId: string | undefined
+): LookupResult | undefined => {
+  if (name === "pinterestBoards") {
+    return {
+      _tag: "pinterestBoards",
+      items: [{ id: studioBoard, name: "Studio notes", privacy: "PUBLIC" }],
+      nextCursor: null,
+    };
+  }
+
+  return boardId === studioBoard
+    ? {
+        _tag: "pinterestBoardSections",
+        items: [{ id: "5000000000001", name: "Sketches" }],
+        nextCursor: null,
+      }
+    : undefined;
 };
 
 /** The platforms the studio's server describes, in its order. */

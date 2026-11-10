@@ -108,6 +108,12 @@ describe(refreshDueBefore, () => {
     );
   });
 
+  it("is a week ahead for Pinterest, whose tokens last 30 days", () => {
+    expect(refreshDueBefore(tokenPolicies.pinterest, now)).toStrictEqual(
+      Option.some(after("7 days"))
+    );
+  });
+
   it("is none for tokens that are never refreshed", () => {
     expect(refreshDueBefore(tokenPolicies.mastodon, now)).toStrictEqual(
       Option.none()

@@ -573,17 +573,22 @@ and no socket, for tests.
   `THREADS_APP_ID`/`THREADS_APP_SECRET`, TikTok with
   `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` (`oauthClientConfig`'s
   `idSuffix`), YouTube with `YOUTUBE_CLIENT_ID` and `_CLIENT_SECRET` (a
-  Google OAuth client), Google Business Profile with
-  `GOOGLE_BUSINESS_CLIENT_ID` and `_CLIENT_SECRET` (a client of its own:
-  Google gives access to the Business Profile APIs, quotas and reviews by
-  project). A platform without its settings is in
+  Google OAuth client), Pinterest with
+  `PINTEREST_APP_ID`/`PINTEREST_APP_SECRET` (its `secretSuffix` too),
+  Google Business Profile with `GOOGLE_BUSINESS_CLIENT_ID` and
+  `_CLIENT_SECRET` (a client of its own: Google gives access to the
+  Business Profile APIs, quotas and reviews by project). A platform
+  without its settings is in
   `unconfigured`. Each declares its `TokenPolicy`, data in
   `channels/domain/token-policy.ts`, which the refresh sweep and the
   reconnect warnings follow: LinkedIn's tokens are not renewed and expire
   after 60 days, X's last two hours and rotate on refresh, as TikTok's do
   (`expires_in` decides; refresh tokens end 180 days after sign-in),
   Google's last an hour and do not rotate, Threads' and Instagram Login's
-  (`instagramLogin`) last 60 days and renew themselves a week ahead. A
+  (`instagramLogin`) last 60 days and renew themselves a week ahead,
+  Pinterest's last 30 days and are renewed a week ahead, each refresh
+  bringing a refresh token good for 60 days more, which replaces the one
+  sent. A
   refreshable policy's `sweep` renews tokens `beforeExpiry` (`ahead` of it)
   or keeps them alive (`keepAlive`: only once `unused` that long past their
   expiry, the access being renewed when a call needs it, through
@@ -597,6 +602,17 @@ and no socket, for tests.
   channel is deleted and no other channel, in any workspace, connects the
   same account (`ChannelRepository.accountInUse`), waiting 10 seconds at
   most and logging any failure.
+- Pinterest's OAuth names no PKCE either, takes the app's id and secret as
+  Basic credentials, and separates scopes with commas. Its errors are
+  `{ code, message }`, never RFC 6749's: a 401 from the token endpoint
+  refuses the app (the operator's to fix), any other refusal of a refresh
+  the refresh token. Its API revokes tokens of system users only, so the
+  authorizer has no `revoke`. `PINTEREST_SANDBOX=true`
+  (`pinterestHostsConfig`, `#shared/infrastructure/platforms/pinterest-api.ts`)
+  sends the authorizer's, the adapter's, the lookups' and the reader's
+  calls to Pinterest's Sandbox, all an app with Trial access may write to:
+  its tokens work nowhere else, and it takes no video and gives no
+  analytics.
 - `GET …/channels/platforms` (`ConnectChannel.connectable`, channel:connect)
   lists the platforms the server has an authorizer for, every platform's
   through the one registry; the web app's connect forms offer only those.
@@ -773,8 +789,9 @@ and no socket, for tests.
   publish runs inside the gate: uploads, processing waits, token renewal,
   the post and its confirmation.
 - Platform adapters live in `publishing/infrastructure/platforms/<platform>/`
-  (Mastodon, Bluesky, LinkedIn, X, TikTok, YouTube and Google Business
-  Profile, and Threads, Instagram and Facebook Pages in `meta/`), beside `ChannelGate`, and implement the steps of
+  (Mastodon, Bluesky, LinkedIn, X, TikTok, YouTube, Pinterest and Google
+  Business Profile, and Threads, Instagram and Facebook Pages in `meta/`),
+  beside `ChannelGate`, and implement the steps of
   `publishing/application/publication-steps.ts`, which `sequenced` runs:
   `prepare` uploads the media (safe to repeat: media alone shows nowhere),
   `poll` waits while the platform processes it (15 minutes at most),
@@ -831,6 +848,21 @@ and no socket, for tests.
   the Google user's lost permission (`BadRequest` `permissionDenied`).
   Reviews, questions and a location's metrics are not built: they would be
   a context of their own, reaching Google through `ChannelAccess`.
+- Pinterest's adapter (`platforms/pinterest/`) makes a Pin with one
+  request, pins/create: an image by the public media URL Pinterest fetches
+  (`MediaForPublishing.publicUrl`, two hours), two to five as a carousel
+  (`multiple_image_urls`), or a video registered first (media/create), sent
+  to the address and with the form fields the answer gives, then polled.
+  That upload is one multipart request to an object store, which needs its
+  `Content-Length`: `uploadForm` frames the media stream and
+  `publicStreamedPost` (`#shared/infrastructure/platforms/public-upload.ts`)
+  sends it, as the fetch HttpClient drops the length of a stream body.
+  Pinterest has no idempotency key: `lookUp` searches the Pins of the
+  board, or of its section, made since the attempt started
+  (`pinterest-pin-match.ts`: title, description, link, kind of media), and
+  answers `found` or `unknown`, never `absent`. Refusals are read from the
+  status and whether the body is Pinterest's own (`pinterest-refusal.ts`):
+  only a 401 with it is `TokenRejected`.
 - Large uploads go in parts read one at a time from the media stream
   (`inParts` in `platforms/byte-parts.ts`): LinkedIn's video parts, X's
   4 MiB appends. LinkedIn calls name `Linkedin-Version`
@@ -870,15 +902,16 @@ and no socket, for tests.
   and the call made once more. Mastodon's adapter takes a 401 or 403 as a
   refused token only with Mastodon's JSON error; without it, a proxy on the
   way answered, and the call is `PlatformUnavailable`.
-- Adapters reach platforms only through `publicHttpClient`, or
-  `publicHttpClientWith({ timeout })` for uploads. Test them against the
+- Adapters reach platforms only through `publicHttpClient`,
+  `publicHttpClientWith({ timeout })` for uploads, or `publicStreamedPost`
+  for a whole file sent in one request of a declared length. Test them against the
   loopback fakes in `test/publishing/fakes/` (and the sign-in flows against
   `test/channels/fakes/`).
 - A journal row found in flight is resumed (`PlatformPublisher.resume`, the
   gate's `Resume`), never sent again blindly: Bluesky looks the record up and
   creates it only when absent, Mastodon resends under the same key while its
   window holds, checked again just before the post goes out, X searches the
-  account's recent posts, and an adapter that cannot tell (LinkedIn) answers
+  account's recent posts and Pinterest the board's Pins, and an adapter that cannot tell (LinkedIn) answers
   unconfirmed. A resume refuses a post only when nothing can have gone live,
   and a target whose cancel was requested is never resumed.
 - Tell how each target ended through `PublicationOutcomes`, once, in the
@@ -909,7 +942,7 @@ and no socket, for tests.
   `platform`, in `publishing.post_targets.options` (JSON the domain decodes;
   null on rows from before options and on platforms that take none). A
   platform's options are one `Schema.Class` in its own file
-  (`youtube-options.ts`, `tiktok-options.ts`,
+  (`youtube-options.ts`, `tiktok-options.ts`, `pinterest-options.ts`,
   `google-business-options.ts`): every field optional, so a
   draft holds them unfinished, a `platform: Schema.tag(...)`, and a
   `problems()` method listing what the platform would refuse (`missing`,
@@ -975,7 +1008,9 @@ and no socket, for tests.
   `unread` with the reason, never an error.
 - A lookup is account data an option refers to
   (`#publishing/domain/lookup.ts`): a name prefixed by its platform, an input
-  struct of optional fields with its `notes`, a `LookupQuery` and a
+  struct of optional fields with its `notes` (`required` names those the
+  lookup cannot run without, as the board of `pinterestBoardSections`:
+  `query` answers none without them), a `LookupQuery` and a
   `LookupResult` member (`items` and `nextCursor`), and one adapter in
   `platforms/platform-lookups-live.ts`, whose registry does not compile
   without it. `ChannelLookups` checks channel:read, the platform and the
@@ -1356,6 +1391,11 @@ and no socket, for tests.
   50 ids a call, with the channel's token (`youtube.readonly`): views are
   impressions, comments replies, reposts 0; only a 401 with Google's JSON
   error refuses the token, and a 403 (quota) or 429 halts the read.
+  Pinterest reads pins/analytics, one Pin a call (60 a minute for each
+  account with Standard access), over the 90 days up to today: impressions,
+  saves as reposts, reactions as likes and comments as replies, no quotes;
+  a 404 is a missing Pin, a 429 halts, and only a 401 with Pinterest's own
+  error refuses the token.
 - A halted read leaves the rest due for the next run; a missing post, one a
   read `failed` on (so one the server cannot show never stays first due),
   or a channel off or to reconnect, waits for its next turn; a disconnected
@@ -1549,15 +1589,22 @@ self-hoster needs only Postgres and an S3-compatible store:
 - The composer's options come from `TargetOptionsSection`
   (`components/posts/target-options-panel.tsx`), which renders the fields
   `#posts/target-options.ts` describes for each selected channel's platform
-  (text, tags, choice, yes or no, toggle; `initial`, `inverted` and `within`
-  for TikTok's boxes), turns them into the contract's `TargetOptions` with
+  (text, number, tags, choice, yes or no, toggle, and `lookup`, a choice
+  among what a lookup answers for the account, shown `under` another once
+  that one is chosen; `initial`, `inverted` and `within` for TikTok's
+  boxes), turns them into the contract's `TargetOptions` with
   Schema, and shows each `option*` violation under its field. On a TikTok
   channel, `TikTokChannelOptions` reads `GET …/channels/:id/tiktok-creator`
   and limits the fields by the creator (`#posts/tiktok-account.ts`): their
   nickname, their audiences, interactions they turned off (and set off),
   no Duet or Stitch on photo posts, "Only me" closed to branded content,
   the disclosure's label, and TikTok's consent line, as its content sharing
-  guidelines require.
+  guidelines require. On a Pinterest channel, `PinterestChannelOptions`
+  reads the account's boards, ten pages of 50 at most, and the chosen
+  board's sections (`pinterestBoards` and `pinterestBoardSections` in
+  `#posts/api.ts`, as `LookupChoices`): a field shows that its list is being
+  read, or why it could not be with a way to ask again, and keeps a value
+  the list lacks.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the

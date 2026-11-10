@@ -15,6 +15,9 @@ public record LookupInput
     [JsonIgnore]
     public required string Name { get; set; }
 
+    [JsonPropertyName("boardId")]
+    public string? BoardId { get; set; }
+
     [JsonPropertyName("cursor")]
     public string? Cursor { get; set; }
 

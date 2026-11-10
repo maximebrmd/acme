@@ -14,7 +14,7 @@ import { ToolRefused } from "#app/mcp/tool-refused.ts";
 export const AnalyticsSummary = Tool.make("analytics_summary", {
   dependencies: [CurrentMember],
   description:
-    "Sums up the workspace's posts published from `from` to `to`, both included and 366 days at most, as days run in `timeZone`: their latest likes, reposts, replies, quotes and impressions in all and by channel, what they gained each day, and the five people did the most with. Counts are read from Mastodon, Bluesky, TikTok and YouTube every hour for two days after a post goes live, then daily until it is 30 days old; quotes and impressions are null where the platform gives none.",
+    "Sums up the workspace's posts published from `from` to `to`, both included and 366 days at most, as days run in `timeZone`: their latest likes, reposts, replies, quotes and impressions in all and by channel, what they gained each day, and the five people did the most with. Counts are read from Mastodon, Bluesky, TikTok, YouTube, Instagram and Pinterest (whose saves count as reposts and reactions as likes) every hour for two days after a post goes live, then daily until it is 30 days old; quotes and impressions are null where the platform gives none.",
   failure: ToolRefused,
   parameters: Schema.Struct({
     from: CalendarDaySchema,

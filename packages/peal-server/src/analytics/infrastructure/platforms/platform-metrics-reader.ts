@@ -15,6 +15,7 @@ import {
 } from "#analytics/infrastructure/platforms/channel-refusals.ts";
 import { instagramMetrics } from "#analytics/infrastructure/platforms/instagram/instagram-metrics.ts";
 import { mastodonMetrics } from "#analytics/infrastructure/platforms/mastodon/mastodon-metrics.ts";
+import { pinterestMetrics } from "#analytics/infrastructure/platforms/pinterest/pinterest-metrics.ts";
 import { tiktokMetrics } from "#analytics/infrastructure/platforms/tiktok/tiktok-metrics.ts";
 import { youtubeMetrics } from "#analytics/infrastructure/platforms/youtube/youtube-metrics.ts";
 import { ChannelAccess } from "#channels/application/channel-access.ts";
@@ -22,6 +23,7 @@ import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
+import { pinterestHostsConfig } from "#shared/infrastructure/platforms/pinterest-api.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 
@@ -38,6 +40,8 @@ export interface MetricsReaderSettings {
   readonly metaAppSecret: Option.Option<Redacted.Redacted>;
   /** Where Meta's services are, for Instagram. */
   readonly metaHosts: MetaHosts;
+  /** Pinterest's API: its Sandbox's when the server is set to it. */
+  readonly pinterestApi: URL;
   /** TikTok's API. */
   readonly tiktokApi: URL;
   /** The YouTube Data API. */
@@ -81,6 +85,11 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
         http,
       });
 
+      const pinterest = yield* pinterestMetrics({
+        api: settings.pinterestApi,
+        http,
+      });
+
       const read = Effect.fn("MetricsReader.read")(function* read(
         request: MetricsRequest
       ) {
@@ -112,6 +121,10 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
           return yield* youtube.read(account, request.posts);
         }
 
+        if (account.platform === "pinterest") {
+          return yield* pinterest.read(account, request.posts);
+        }
+
         return yield* bluesky.read(request.posts);
       });
 
@@ -120,23 +133,25 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
   );
 
 /**
- * The platforms as production reaches them, with Meta's app secret read
- * when the server starts. Needs ChannelAccess and Dns, which the
+ * The platforms as production reaches them, with Meta's app secret and
+ * whether Pinterest's calls go to its Sandbox read when the server starts. Needs ChannelAccess and Dns, which the
  * composition root provides.
  */
 export const PlatformMetricsReaderLive = Layer.unwrap(
-  metaAppConfig.pipe(
-    Effect.map((meta) =>
-      platformMetricsReaderWith({
-        blueskyAppView: new URL("https://public.api.bsky.app"),
-        mastodonScheme: "https:",
-        metaAppSecret: meta.pipe(Option.map(({ appSecret }) => appSecret)),
-        metaHosts,
-        tiktokApi: tiktokHosts.api,
-        youtubeApi: new URL("https://www.googleapis.com"),
-      })
-    )
-  )
+  Effect.gen(function* PlatformMetricsReaderLive() {
+    const meta = yield* metaAppConfig;
+    const pinterest = yield* pinterestHostsConfig;
+
+    return platformMetricsReaderWith({
+      blueskyAppView: new URL("https://public.api.bsky.app"),
+      mastodonScheme: "https:",
+      metaAppSecret: meta.pipe(Option.map(({ appSecret }) => appSecret)),
+      metaHosts,
+      pinterestApi: pinterest.api,
+      tiktokApi: tiktokHosts.api,
+      youtubeApi: new URL("https://www.googleapis.com"),
+    });
+  })
 ).pipe(
   Layer.provide(OutboundGuard.layer),
   Layer.provide(FetchHttpClient.layer),

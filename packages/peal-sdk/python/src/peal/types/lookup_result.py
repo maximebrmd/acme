@@ -8,6 +8,8 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .pinterest_board import PinterestBoard
+from .pinterest_board_section import PinterestBoardSection
 from .tik_tok_account import TikTokAccount
 from .you_tube_playlist import YouTubePlaylist
 from .you_tube_video_category import YouTubeVideoCategory
@@ -70,7 +72,51 @@ class LookupResult_TiktokCreator(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class LookupResult_PinterestBoards(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["pinterestBoards"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "pinterestBoards"
+    items: typing.List[PinterestBoard]
+    next_cursor: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="nextCursor"), pydantic.Field(alias="nextCursor")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class LookupResult_PinterestBoardSections(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["pinterestBoardSections"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "pinterestBoardSections"
+    items: typing.List[PinterestBoardSection]
+    next_cursor: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="nextCursor"), pydantic.Field(alias="nextCursor")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 LookupResult = typing_extensions.Annotated[
-    typing.Union[LookupResult_YoutubeVideoCategories, LookupResult_YoutubePlaylists, LookupResult_TiktokCreator],
+    typing.Union[
+        LookupResult_YoutubeVideoCategories,
+        LookupResult_YoutubePlaylists,
+        LookupResult_TiktokCreator,
+        LookupResult_PinterestBoards,
+        LookupResult_PinterestBoardSections,
+    ],
     pydantic.Field(discriminator="type"),
 ]

@@ -16,6 +16,7 @@ import { linkedinAuthorizer } from "#channels/infrastructure/platforms/linkedin/
 import type { LinkedInEndpoints } from "#channels/infrastructure/platforms/linkedin/linkedin-authorizer.ts";
 import { MastodonApps } from "#channels/infrastructure/platforms/mastodon/mastodon-apps.ts";
 import { mastodonAuthorizer } from "#channels/infrastructure/platforms/mastodon/mastodon-authorizer.ts";
+import { pinterestAuthorizer } from "#channels/infrastructure/platforms/pinterest/pinterest-authorizer.ts";
 import { registryOf } from "#channels/infrastructure/platforms/platform-authorizers.ts";
 import { tiktokAuthorizer } from "#channels/infrastructure/platforms/tiktok/tiktok-authorizer.ts";
 import { xAuthorizer } from "#channels/infrastructure/platforms/x/x-authorizer.ts";
@@ -23,11 +24,13 @@ import type { XEndpoints } from "#channels/infrastructure/platforms/x/x-authoriz
 import { youtubeAuthorizer } from "#channels/infrastructure/platforms/youtube/youtube-authorizer.ts";
 import type { YouTubeEndpoints } from "#channels/infrastructure/platforms/youtube/youtube-authorizer.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
+import type { PinterestHosts } from "#shared/infrastructure/platforms/pinterest-api.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
 import { googleClient } from "#test/channels/fakes/fake-google.ts";
 import { linkedinClient } from "#test/channels/fakes/fake-linkedin.ts";
+import { pinterestClient } from "#test/channels/fakes/fake-pinterest.ts";
 import { tiktokClient } from "#test/channels/fakes/fake-tiktok.ts";
 import { xClient } from "#test/channels/fakes/fake-x.ts";
 import {
@@ -224,6 +227,23 @@ export const tiktokAuthorizerOn = (hosts: TikTokHosts) =>
         client: {
           clientId: tiktokClient.clientKey,
           clientSecret: Redacted.make(tiktokClient.clientSecret),
+        },
+        hosts,
+        http,
+        publicUrl: testPublicUrl,
+      })
+    ),
+    Effect.provide(AuthorizerServicesTest)
+  );
+
+/** The Pinterest authorizer with the synthetic app, on the fake's hosts. */
+export const pinterestAuthorizerOn = (hosts: PinterestHosts) =>
+  publicHttpClient.pipe(
+    Effect.flatMap((http) =>
+      pinterestAuthorizer({
+        client: {
+          clientId: pinterestClient.appId,
+          clientSecret: Redacted.make(pinterestClient.appSecret),
         },
         hosts,
         http,
