@@ -173,10 +173,14 @@ if typing.TYPE_CHECKING:
     from .lookup_not_found_encoded import LookupNotFoundEncoded
     from .lookup_result import (
         LookupResult,
+        LookupResult_PinterestBoardSections,
+        LookupResult_PinterestBoards,
         LookupResult_TiktokCreator,
         LookupResult_YoutubePlaylists,
         LookupResult_YoutubeVideoCategories,
     )
+    from .lookup_result_pinterest_board_sections import LookupResultPinterestBoardSections
+    from .lookup_result_pinterest_boards import LookupResultPinterestBoards
     from .lookup_result_tiktok_creator import LookupResultTiktokCreator
     from .lookup_result_youtube_playlists import LookupResultYoutubePlaylists
     from .lookup_result_youtube_video_categories import LookupResultYoutubeVideoCategories
@@ -256,6 +260,9 @@ if typing.TYPE_CHECKING:
     from .paid_plan import PaidPlan
     from .period_usage import PeriodUsage
     from .permission import Permission
+    from .pinterest_board import PinterestBoard
+    from .pinterest_board_section import PinterestBoardSection
+    from .pinterest_options import PinterestOptions
     from .plan import Plan
     from .plan_allowances import PlanAllowances
     from .plan_limit import PlanLimit
@@ -301,7 +308,7 @@ if typing.TYPE_CHECKING:
     from .target_confirmation_not_published import TargetConfirmationNotPublished
     from .target_confirmation_published import TargetConfirmationPublished
     from .target_metrics import TargetMetrics
-    from .target_options import TargetOptions, TargetOptions_Tiktok, TargetOptions_Youtube
+    from .target_options import TargetOptions, TargetOptions_Pinterest, TargetOptions_Tiktok, TargetOptions_Youtube
     from .target_status_conflict_encoded import TargetStatusConflictEncoded
     from .text_capabilities import TextCapabilities
     from .text_limit import TextLimit
@@ -510,9 +517,13 @@ _dynamic_imports: typing.Dict[str, str] = {
     "LookupName": ".lookup_name",
     "LookupNotFoundEncoded": ".lookup_not_found_encoded",
     "LookupResult": ".lookup_result",
+    "LookupResultPinterestBoardSections": ".lookup_result_pinterest_board_sections",
+    "LookupResultPinterestBoards": ".lookup_result_pinterest_boards",
     "LookupResultTiktokCreator": ".lookup_result_tiktok_creator",
     "LookupResultYoutubePlaylists": ".lookup_result_youtube_playlists",
     "LookupResultYoutubeVideoCategories": ".lookup_result_youtube_video_categories",
+    "LookupResult_PinterestBoardSections": ".lookup_result",
+    "LookupResult_PinterestBoards": ".lookup_result",
     "LookupResult_TiktokCreator": ".lookup_result",
     "LookupResult_YoutubePlaylists": ".lookup_result",
     "LookupResult_YoutubeVideoCategories": ".lookup_result",
@@ -588,6 +599,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PaidPlan": ".paid_plan",
     "PeriodUsage": ".period_usage",
     "Permission": ".permission",
+    "PinterestBoard": ".pinterest_board",
+    "PinterestBoardSection": ".pinterest_board_section",
+    "PinterestOptions": ".pinterest_options",
     "Plan": ".plan",
     "PlanAllowances": ".plan_allowances",
     "PlanLimit": ".plan_limit",
@@ -638,6 +652,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TargetConfirmation_Published": ".target_confirmation",
     "TargetMetrics": ".target_metrics",
     "TargetOptions": ".target_options",
+    "TargetOptions_Pinterest": ".target_options",
     "TargetOptions_Tiktok": ".target_options",
     "TargetOptions_Youtube": ".target_options",
     "TargetStatusConflictEncoded": ".target_status_conflict_encoded",
@@ -874,9 +889,13 @@ __all__ = [
     "LookupName",
     "LookupNotFoundEncoded",
     "LookupResult",
+    "LookupResultPinterestBoardSections",
+    "LookupResultPinterestBoards",
     "LookupResultTiktokCreator",
     "LookupResultYoutubePlaylists",
     "LookupResultYoutubeVideoCategories",
+    "LookupResult_PinterestBoardSections",
+    "LookupResult_PinterestBoards",
     "LookupResult_TiktokCreator",
     "LookupResult_YoutubePlaylists",
     "LookupResult_YoutubeVideoCategories",
@@ -952,6 +971,9 @@ __all__ = [
     "PaidPlan",
     "PeriodUsage",
     "Permission",
+    "PinterestBoard",
+    "PinterestBoardSection",
+    "PinterestOptions",
     "Plan",
     "PlanAllowances",
     "PlanLimit",
@@ -1002,6 +1024,7 @@ __all__ = [
     "TargetConfirmation_Published",
     "TargetMetrics",
     "TargetOptions",
+    "TargetOptions_Pinterest",
     "TargetOptions_Tiktok",
     "TargetOptions_Youtube",
     "TargetStatusConflictEncoded",

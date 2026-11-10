@@ -1596,6 +1596,447 @@ func TestSettersMarkExplicitMediaAttachment(t *testing.T) {
 
 }
 
+func TestSettersPinterestOptions(t *testing.T) {
+	t.Run("SetBoardID", func(t *testing.T) {
+		obj := &PinterestOptions{}
+		var fernTestValueBoardID *string
+		obj.SetBoardID(fernTestValueBoardID)
+		assert.Equal(t, fernTestValueBoardID, obj.BoardID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetBoardSectionID", func(t *testing.T) {
+		obj := &PinterestOptions{}
+		var fernTestValueBoardSectionID *string
+		obj.SetBoardSectionID(fernTestValueBoardSectionID)
+		assert.Equal(t, fernTestValueBoardSectionID, obj.BoardSectionID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetCoverSecond", func(t *testing.T) {
+		obj := &PinterestOptions{}
+		var fernTestValueCoverSecond *int
+		obj.SetCoverSecond(fernTestValueCoverSecond)
+		assert.Equal(t, fernTestValueCoverSecond, obj.CoverSecond)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetDominantColor", func(t *testing.T) {
+		obj := &PinterestOptions{}
+		var fernTestValueDominantColor *string
+		obj.SetDominantColor(fernTestValueDominantColor)
+		assert.Equal(t, fernTestValueDominantColor, obj.DominantColor)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetLink", func(t *testing.T) {
+		obj := &PinterestOptions{}
+		var fernTestValueLink *string
+		obj.SetLink(fernTestValueLink)
+		assert.Equal(t, fernTestValueLink, obj.Link)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetTitle", func(t *testing.T) {
+		obj := &PinterestOptions{}
+		var fernTestValueTitle *string
+		obj.SetTitle(fernTestValueTitle)
+		assert.Equal(t, fernTestValueTitle, obj.Title)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersPinterestOptions(t *testing.T) {
+	t.Run("GetBoardID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var expected *string
+		obj.BoardID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetBoardID(), "getter should return the property value")
+	})
+
+	t.Run("GetBoardID_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		obj.BoardID = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetBoardID(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetBoardID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PinterestOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetBoardID() // Should return zero value
+	})
+
+	t.Run("GetBoardSectionID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var expected *string
+		obj.BoardSectionID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetBoardSectionID(), "getter should return the property value")
+	})
+
+	t.Run("GetBoardSectionID_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		obj.BoardSectionID = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetBoardSectionID(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetBoardSectionID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PinterestOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetBoardSectionID() // Should return zero value
+	})
+
+	t.Run("GetCoverSecond", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var expected *int
+		obj.CoverSecond = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetCoverSecond(), "getter should return the property value")
+	})
+
+	t.Run("GetCoverSecond_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		obj.CoverSecond = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetCoverSecond(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetCoverSecond_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PinterestOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetCoverSecond() // Should return zero value
+	})
+
+	t.Run("GetDominantColor", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var expected *string
+		obj.DominantColor = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetDominantColor(), "getter should return the property value")
+	})
+
+	t.Run("GetDominantColor_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		obj.DominantColor = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetDominantColor(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetDominantColor_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PinterestOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetDominantColor() // Should return zero value
+	})
+
+	t.Run("GetLink", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var expected *string
+		obj.Link = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetLink(), "getter should return the property value")
+	})
+
+	t.Run("GetLink_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		obj.Link = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetLink(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetLink_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PinterestOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetLink() // Should return zero value
+	})
+
+	t.Run("GetTitle", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var expected *string
+		obj.Title = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetTitle(), "getter should return the property value")
+	})
+
+	t.Run("GetTitle_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		obj.Title = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetTitle(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetTitle_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PinterestOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetTitle() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitPinterestOptions(t *testing.T) {
+	t.Run("SetBoardID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var fernTestValueBoardID *string
+
+		// Act
+		obj.SetBoardID(fernTestValueBoardID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetBoardSectionID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var fernTestValueBoardSectionID *string
+
+		// Act
+		obj.SetBoardSectionID(fernTestValueBoardSectionID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetCoverSecond_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var fernTestValueCoverSecond *int
+
+		// Act
+		obj.SetCoverSecond(fernTestValueCoverSecond)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetDominantColor_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var fernTestValueDominantColor *string
+
+		// Act
+		obj.SetDominantColor(fernTestValueDominantColor)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetLink_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var fernTestValueLink *string
+
+		// Act
+		obj.SetLink(fernTestValueLink)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetTitle_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+		var fernTestValueTitle *string
+
+		// Act
+		obj.SetTitle(fernTestValueTitle)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
 func TestSettersPost(t *testing.T) {
 	t.Run("SetAuthorID", func(t *testing.T) {
 		obj := &Post{}
@@ -4067,6 +4508,39 @@ func TestGettersTargetOptions(t *testing.T) {
 		_ = obj.GetTiktok() // Should return zero value
 	})
 
+	t.Run("GetPinterest", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &TargetOptions{}
+		var expected *PinterestOptions
+		obj.Pinterest = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetPinterest(), "getter should return the property value")
+	})
+
+	t.Run("GetPinterest_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &TargetOptions{}
+		obj.Pinterest = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetPinterest(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetPinterest_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *TargetOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetPinterest() // Should return zero value
+	})
+
 }
 
 func TestSettersTextOverride(t *testing.T) {
@@ -5567,6 +6041,39 @@ func TestJSONMarshalingMediaAttachment(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingPinterestOptions(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PinterestOptions{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled PinterestOptions
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj PinterestOptions
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj PinterestOptions
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingPost(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -6199,6 +6706,22 @@ func TestStringMediaAttachment(t *testing.T) {
 	})
 }
 
+func TestStringPinterestOptions(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &PinterestOptions{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PinterestOptions
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
 func TestStringPost(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -6788,6 +7311,29 @@ func TestExtraPropertiesMediaAttachment(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *MediaAttachment
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesPinterestOptions(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &PinterestOptions{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PinterestOptions
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

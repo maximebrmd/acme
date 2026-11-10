@@ -12,6 +12,11 @@ public final class LookupName {
     public static final LookupName YOUTUBE_VIDEO_CATEGORIES =
             new LookupName(Value.YOUTUBE_VIDEO_CATEGORIES, "youtubeVideoCategories");
 
+    public static final LookupName PINTEREST_BOARDS = new LookupName(Value.PINTEREST_BOARDS, "pinterestBoards");
+
+    public static final LookupName PINTEREST_BOARD_SECTIONS =
+            new LookupName(Value.PINTEREST_BOARD_SECTIONS, "pinterestBoardSections");
+
     public static final LookupName YOUTUBE_PLAYLISTS = new LookupName(Value.YOUTUBE_PLAYLISTS, "youtubePlaylists");
 
     private final Value value;
@@ -49,6 +54,10 @@ public final class LookupName {
                 return visitor.visitTiktokCreator();
             case YOUTUBE_VIDEO_CATEGORIES:
                 return visitor.visitYoutubeVideoCategories();
+            case PINTEREST_BOARDS:
+                return visitor.visitPinterestBoards();
+            case PINTEREST_BOARD_SECTIONS:
+                return visitor.visitPinterestBoardSections();
             case YOUTUBE_PLAYLISTS:
                 return visitor.visitYoutubePlaylists();
             case UNKNOWN:
@@ -64,6 +73,10 @@ public final class LookupName {
                 return TIKTOK_CREATOR;
             case "youtubeVideoCategories":
                 return YOUTUBE_VIDEO_CATEGORIES;
+            case "pinterestBoards":
+                return PINTEREST_BOARDS;
+            case "pinterestBoardSections":
+                return PINTEREST_BOARD_SECTIONS;
             case "youtubePlaylists":
                 return YOUTUBE_PLAYLISTS;
             default:
@@ -78,6 +91,10 @@ public final class LookupName {
 
         TIKTOK_CREATOR,
 
+        PINTEREST_BOARDS,
+
+        PINTEREST_BOARD_SECTIONS,
+
         UNKNOWN
     }
 
@@ -87,6 +104,10 @@ public final class LookupName {
         T visitYoutubePlaylists();
 
         T visitTiktokCreator();
+
+        T visitPinterestBoards();
+
+        T visitPinterestBoardSections();
 
         T visitUnknown(String unknownType);
     }

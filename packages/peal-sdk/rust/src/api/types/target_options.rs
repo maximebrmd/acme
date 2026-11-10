@@ -56,6 +56,27 @@ pub enum TargetOptions {
         privacy_level: Option<TikTokPrivacyLevel>,
     },
 
+    #[serde(rename = "pinterest")]
+    #[non_exhaustive]
+    Pinterest {
+        #[serde(rename = "boardId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        board_id: Option<String>,
+        #[serde(rename = "boardSectionId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        board_section_id: Option<String>,
+        #[serde(rename = "coverSecond")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cover_second: Option<i64>,
+        #[serde(rename = "dominantColor")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        dominant_color: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        link: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -86,6 +107,17 @@ impl TargetOptions {
             disable_duet: None,
             disable_stitch: None,
             privacy_level: None,
+        }
+    }
+
+    pub fn pinterest() -> Self {
+        Self::Pinterest {
+            board_id: None,
+            board_section_id: None,
+            cover_second: None,
+            dominant_color: None,
+            link: None,
+            title: None,
         }
     }
 
@@ -402,6 +434,114 @@ impl TargetOptions {
             disable_duet,
             disable_stitch,
             privacy_level: Some(privacy_level),
+        }
+    }
+
+    pub fn pinterest_with_board_id(
+        board_id: String,
+        board_section_id: Option<String>,
+        cover_second: Option<i64>,
+        dominant_color: Option<String>,
+        link: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Pinterest {
+            board_id: Some(board_id),
+            board_section_id,
+            cover_second,
+            dominant_color,
+            link,
+            title,
+        }
+    }
+
+    pub fn pinterest_with_board_section_id(
+        board_id: Option<String>,
+        board_section_id: String,
+        cover_second: Option<i64>,
+        dominant_color: Option<String>,
+        link: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Pinterest {
+            board_id,
+            board_section_id: Some(board_section_id),
+            cover_second,
+            dominant_color,
+            link,
+            title,
+        }
+    }
+
+    pub fn pinterest_with_cover_second(
+        board_id: Option<String>,
+        board_section_id: Option<String>,
+        cover_second: i64,
+        dominant_color: Option<String>,
+        link: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Pinterest {
+            board_id,
+            board_section_id,
+            cover_second: Some(cover_second),
+            dominant_color,
+            link,
+            title,
+        }
+    }
+
+    pub fn pinterest_with_dominant_color(
+        board_id: Option<String>,
+        board_section_id: Option<String>,
+        cover_second: Option<i64>,
+        dominant_color: String,
+        link: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::Pinterest {
+            board_id,
+            board_section_id,
+            cover_second,
+            dominant_color: Some(dominant_color),
+            link,
+            title,
+        }
+    }
+
+    pub fn pinterest_with_link(
+        board_id: Option<String>,
+        board_section_id: Option<String>,
+        cover_second: Option<i64>,
+        dominant_color: Option<String>,
+        link: String,
+        title: Option<String>,
+    ) -> Self {
+        Self::Pinterest {
+            board_id,
+            board_section_id,
+            cover_second,
+            dominant_color,
+            link: Some(link),
+            title,
+        }
+    }
+
+    pub fn pinterest_with_title(
+        board_id: Option<String>,
+        board_section_id: Option<String>,
+        cover_second: Option<i64>,
+        dominant_color: Option<String>,
+        link: Option<String>,
+        title: String,
+    ) -> Self {
+        Self::Pinterest {
+            board_id,
+            board_section_id,
+            cover_second,
+            dominant_color,
+            link,
+            title: Some(title),
         }
     }
 

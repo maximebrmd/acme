@@ -6975,6 +6975,8 @@ const (
 	LookupNameYoutubeVideoCategories LookupName = "youtubeVideoCategories"
 	LookupNameYoutubePlaylists       LookupName = "youtubePlaylists"
 	LookupNameTiktokCreator          LookupName = "tiktokCreator"
+	LookupNamePinterestBoards        LookupName = "pinterestBoards"
+	LookupNamePinterestBoardSections LookupName = "pinterestBoardSections"
 )
 
 func NewLookupNameFromString(s string) (LookupName, error) {
@@ -6985,6 +6987,10 @@ func NewLookupNameFromString(s string) (LookupName, error) {
 		return LookupNameYoutubePlaylists, nil
 	case "tiktokCreator":
 		return LookupNameTiktokCreator, nil
+	case "pinterestBoards":
+		return LookupNamePinterestBoards, nil
+	case "pinterestBoardSections":
+		return LookupNamePinterestBoardSections, nil
 	}
 	var t LookupName
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

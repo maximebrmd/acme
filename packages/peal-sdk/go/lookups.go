@@ -49,16 +49,18 @@ var (
 	lookupInputFieldWorkspaceID = big.NewInt(1 << 0)
 	lookupInputFieldChannelID   = big.NewInt(1 << 1)
 	lookupInputFieldName        = big.NewInt(1 << 2)
-	lookupInputFieldCursor      = big.NewInt(1 << 3)
-	lookupInputFieldLanguage    = big.NewInt(1 << 4)
-	lookupInputFieldLimit       = big.NewInt(1 << 5)
-	lookupInputFieldRegionCode  = big.NewInt(1 << 6)
+	lookupInputFieldBoardID     = big.NewInt(1 << 3)
+	lookupInputFieldCursor      = big.NewInt(1 << 4)
+	lookupInputFieldLanguage    = big.NewInt(1 << 5)
+	lookupInputFieldLimit       = big.NewInt(1 << 6)
+	lookupInputFieldRegionCode  = big.NewInt(1 << 7)
 )
 
 type LookupInput struct {
 	WorkspaceID string  `json:"-" url:"-"`
 	ChannelID   string  `json:"-" url:"-"`
 	Name        string  `json:"-" url:"-"`
+	BoardID     *string `json:"boardId,omitempty" url:"-"`
 	Cursor      *string `json:"cursor,omitempty" url:"-"`
 	Language    *string `json:"language,omitempty" url:"-"`
 	Limit       *int    `json:"limit,omitempty" url:"-"`
@@ -96,6 +98,13 @@ func (l *LookupInput) SetChannelID(channelID string) {
 func (l *LookupInput) SetName(name string) {
 	l.Name = name
 	l.require(lookupInputFieldName)
+}
+
+// SetBoardID sets the BoardID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupInput) SetBoardID(boardID *string) {
+	l.BoardID = boardID
+	l.require(lookupInputFieldBoardID)
 }
 
 // SetCursor sets the Cursor field and marks it as non-optional;
@@ -152,6 +161,8 @@ type LookupResult struct {
 	YoutubeVideoCategories *LookupResultYoutubeVideoCategories
 	YoutubePlaylists       *LookupResultYoutubePlaylists
 	TiktokCreator          *LookupResultTiktokCreator
+	PinterestBoards        *LookupResultPinterestBoards
+	PinterestBoardSections *LookupResultPinterestBoardSections
 
 	rawJSON json.RawMessage
 }
@@ -184,6 +195,20 @@ func (l *LookupResult) GetTiktokCreator() *LookupResultTiktokCreator {
 	return l.TiktokCreator
 }
 
+func (l *LookupResult) GetPinterestBoards() *LookupResultPinterestBoards {
+	if l == nil {
+		return nil
+	}
+	return l.PinterestBoards
+}
+
+func (l *LookupResult) GetPinterestBoardSections() *LookupResultPinterestBoardSections {
+	if l == nil {
+		return nil
+	}
+	return l.PinterestBoardSections
+}
+
 func (l *LookupResult) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -214,6 +239,18 @@ func (l *LookupResult) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		l.TiktokCreator = value
+	case "pinterestBoards":
+		value := new(LookupResultPinterestBoards)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		l.PinterestBoards = value
+	case "pinterestBoardSections":
+		value := new(LookupResultPinterestBoardSections)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		l.PinterestBoardSections = value
 	}
 	l.rawJSON = json.RawMessage(data)
 	return nil
@@ -232,6 +269,12 @@ func (l LookupResult) MarshalJSON() ([]byte, error) {
 	if l.TiktokCreator != nil {
 		return internal.MarshalJSONWithExtraProperty(l.TiktokCreator, "_tag", "tiktokCreator")
 	}
+	if l.PinterestBoards != nil {
+		return internal.MarshalJSONWithExtraProperty(l.PinterestBoards, "_tag", "pinterestBoards")
+	}
+	if l.PinterestBoardSections != nil {
+		return internal.MarshalJSONWithExtraProperty(l.PinterestBoardSections, "_tag", "pinterestBoardSections")
+	}
 	if len(l.rawJSON) > 0 {
 		return l.rawJSON, nil
 	}
@@ -242,6 +285,8 @@ type LookupResultVisitor interface {
 	VisitYoutubeVideoCategories(*LookupResultYoutubeVideoCategories) error
 	VisitYoutubePlaylists(*LookupResultYoutubePlaylists) error
 	VisitTiktokCreator(*LookupResultTiktokCreator) error
+	VisitPinterestBoards(*LookupResultPinterestBoards) error
+	VisitPinterestBoardSections(*LookupResultPinterestBoardSections) error
 }
 
 func (l *LookupResult) Accept(visitor LookupResultVisitor) error {
@@ -253,6 +298,12 @@ func (l *LookupResult) Accept(visitor LookupResultVisitor) error {
 	}
 	if l.TiktokCreator != nil {
 		return visitor.VisitTiktokCreator(l.TiktokCreator)
+	}
+	if l.PinterestBoards != nil {
+		return visitor.VisitPinterestBoards(l.PinterestBoards)
+	}
+	if l.PinterestBoardSections != nil {
+		return visitor.VisitPinterestBoardSections(l.PinterestBoardSections)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", l)
 }
@@ -270,6 +321,12 @@ func (l *LookupResult) validate() error {
 	}
 	if l.TiktokCreator != nil {
 		fields = append(fields, "tiktokCreator")
+	}
+	if l.PinterestBoards != nil {
+		fields = append(fields, "pinterestBoards")
+	}
+	if l.PinterestBoardSections != nil {
+		fields = append(fields, "pinterestBoardSections")
 	}
 	if len(fields) == 0 {
 		if l.Type != "" {
@@ -295,6 +352,234 @@ func (l *LookupResult) validate() error {
 		}
 	}
 	return nil
+}
+
+var (
+	lookupResultPinterestBoardSectionsFieldItems      = big.NewInt(1 << 0)
+	lookupResultPinterestBoardSectionsFieldNextCursor = big.NewInt(1 << 1)
+)
+
+// lookupResultPinterestBoardSectionsNullableFields maps the wire names of LookupResultPinterestBoardSections's nullable fields (required or optional) to their field bits.
+var lookupResultPinterestBoardSectionsNullableFields = map[string]*big.Int{
+	"nextCursor": lookupResultPinterestBoardSectionsFieldNextCursor,
+}
+
+type LookupResultPinterestBoardSections struct {
+	Items      []*PinterestBoardSection `json:"items" url:"items"`
+	NextCursor *string                  `json:"nextCursor,omitempty" url:"nextCursor,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LookupResultPinterestBoardSections) GetItems() []*PinterestBoardSection {
+	if l == nil {
+		return nil
+	}
+	return l.Items
+}
+
+func (l *LookupResultPinterestBoardSections) GetNextCursor() *string {
+	if l == nil {
+		return nil
+	}
+	return l.NextCursor
+}
+
+func (l *LookupResultPinterestBoardSections) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LookupResultPinterestBoardSections) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetItems sets the Items field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupResultPinterestBoardSections) SetItems(items []*PinterestBoardSection) {
+	l.Items = items
+	l.require(lookupResultPinterestBoardSectionsFieldItems)
+}
+
+// SetNextCursor sets the NextCursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupResultPinterestBoardSections) SetNextCursor(nextCursor *string) {
+	l.NextCursor = nextCursor
+	l.require(lookupResultPinterestBoardSectionsFieldNextCursor)
+}
+
+func (l *LookupResultPinterestBoardSections) UnmarshalJSON(data []byte) error {
+	type unmarshaler LookupResultPinterestBoardSections
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LookupResultPinterestBoardSections(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, lookupResultPinterestBoardSectionsNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		l.require(presentFields)
+	}
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LookupResultPinterestBoardSections) MarshalJSON() ([]byte, error) {
+	type embed LookupResultPinterestBoardSections
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LookupResultPinterestBoardSections) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+var (
+	lookupResultPinterestBoardsFieldItems      = big.NewInt(1 << 0)
+	lookupResultPinterestBoardsFieldNextCursor = big.NewInt(1 << 1)
+)
+
+// lookupResultPinterestBoardsNullableFields maps the wire names of LookupResultPinterestBoards's nullable fields (required or optional) to their field bits.
+var lookupResultPinterestBoardsNullableFields = map[string]*big.Int{
+	"nextCursor": lookupResultPinterestBoardsFieldNextCursor,
+}
+
+type LookupResultPinterestBoards struct {
+	Items      []*PinterestBoard `json:"items" url:"items"`
+	NextCursor *string           `json:"nextCursor,omitempty" url:"nextCursor,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LookupResultPinterestBoards) GetItems() []*PinterestBoard {
+	if l == nil {
+		return nil
+	}
+	return l.Items
+}
+
+func (l *LookupResultPinterestBoards) GetNextCursor() *string {
+	if l == nil {
+		return nil
+	}
+	return l.NextCursor
+}
+
+func (l *LookupResultPinterestBoards) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LookupResultPinterestBoards) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetItems sets the Items field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupResultPinterestBoards) SetItems(items []*PinterestBoard) {
+	l.Items = items
+	l.require(lookupResultPinterestBoardsFieldItems)
+}
+
+// SetNextCursor sets the NextCursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LookupResultPinterestBoards) SetNextCursor(nextCursor *string) {
+	l.NextCursor = nextCursor
+	l.require(lookupResultPinterestBoardsFieldNextCursor)
+}
+
+func (l *LookupResultPinterestBoards) UnmarshalJSON(data []byte) error {
+	type unmarshaler LookupResultPinterestBoards
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LookupResultPinterestBoards(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, lookupResultPinterestBoardsNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		l.require(presentFields)
+	}
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LookupResultPinterestBoards) MarshalJSON() ([]byte, error) {
+	type embed LookupResultPinterestBoards
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LookupResultPinterestBoards) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
 }
 
 var (
@@ -637,6 +922,238 @@ func (l *LookupResultYoutubeVideoCategories) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", l)
+}
+
+var (
+	pinterestBoardFieldID      = big.NewInt(1 << 0)
+	pinterestBoardFieldName    = big.NewInt(1 << 1)
+	pinterestBoardFieldPrivacy = big.NewInt(1 << 2)
+)
+
+// pinterestBoardNullableFields maps the wire names of PinterestBoard's nullable fields (required or optional) to their field bits.
+var pinterestBoardNullableFields = map[string]*big.Int{
+	"privacy": pinterestBoardFieldPrivacy,
+}
+
+type PinterestBoard struct {
+	ID      string  `json:"id" url:"id"`
+	Name    string  `json:"name" url:"name"`
+	Privacy *string `json:"privacy,omitempty" url:"privacy,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PinterestBoard) GetID() string {
+	if p == nil {
+		return ""
+	}
+	return p.ID
+}
+
+func (p *PinterestBoard) GetName() string {
+	if p == nil {
+		return ""
+	}
+	return p.Name
+}
+
+func (p *PinterestBoard) GetPrivacy() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Privacy
+}
+
+func (p *PinterestBoard) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PinterestBoard) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestBoard) SetID(id string) {
+	p.ID = id
+	p.require(pinterestBoardFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestBoard) SetName(name string) {
+	p.Name = name
+	p.require(pinterestBoardFieldName)
+}
+
+// SetPrivacy sets the Privacy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestBoard) SetPrivacy(privacy *string) {
+	p.Privacy = privacy
+	p.require(pinterestBoardFieldPrivacy)
+}
+
+func (p *PinterestBoard) UnmarshalJSON(data []byte) error {
+	type unmarshaler PinterestBoard
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PinterestBoard(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, pinterestBoardNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PinterestBoard) MarshalJSON() ([]byte, error) {
+	type embed PinterestBoard
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PinterestBoard) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	pinterestBoardSectionFieldID   = big.NewInt(1 << 0)
+	pinterestBoardSectionFieldName = big.NewInt(1 << 1)
+)
+
+type PinterestBoardSection struct {
+	ID   string `json:"id" url:"id"`
+	Name string `json:"name" url:"name"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PinterestBoardSection) GetID() string {
+	if p == nil {
+		return ""
+	}
+	return p.ID
+}
+
+func (p *PinterestBoardSection) GetName() string {
+	if p == nil {
+		return ""
+	}
+	return p.Name
+}
+
+func (p *PinterestBoardSection) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PinterestBoardSection) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestBoardSection) SetID(id string) {
+	p.ID = id
+	p.require(pinterestBoardSectionFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestBoardSection) SetName(name string) {
+	p.Name = name
+	p.require(pinterestBoardSectionFieldName)
+}
+
+func (p *PinterestBoardSection) UnmarshalJSON(data []byte) error {
+	type unmarshaler PinterestBoardSection
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PinterestBoardSection(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PinterestBoardSection) MarshalJSON() ([]byte, error) {
+	type embed PinterestBoardSection
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PinterestBoardSection) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
 }
 
 var (

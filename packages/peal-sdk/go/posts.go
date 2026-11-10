@@ -899,6 +899,173 @@ func (m *MediaAttachment) String() string {
 }
 
 var (
+	pinterestOptionsFieldBoardID        = big.NewInt(1 << 0)
+	pinterestOptionsFieldBoardSectionID = big.NewInt(1 << 1)
+	pinterestOptionsFieldCoverSecond    = big.NewInt(1 << 2)
+	pinterestOptionsFieldDominantColor  = big.NewInt(1 << 3)
+	pinterestOptionsFieldLink           = big.NewInt(1 << 4)
+	pinterestOptionsFieldTitle          = big.NewInt(1 << 5)
+)
+
+// How a post goes out on a Pinterest account, as a Pin. Scheduling needs `boardId`.
+type PinterestOptions struct {
+	BoardID        *string `json:"boardId,omitempty" url:"boardId,omitempty"`
+	BoardSectionID *string `json:"boardSectionId,omitempty" url:"boardSectionId,omitempty"`
+	CoverSecond    *int    `json:"coverSecond,omitempty" url:"coverSecond,omitempty"`
+	DominantColor  *string `json:"dominantColor,omitempty" url:"dominantColor,omitempty"`
+	Link           *string `json:"link,omitempty" url:"link,omitempty"`
+	Title          *string `json:"title,omitempty" url:"title,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PinterestOptions) GetBoardID() *string {
+	if p == nil {
+		return nil
+	}
+	return p.BoardID
+}
+
+func (p *PinterestOptions) GetBoardSectionID() *string {
+	if p == nil {
+		return nil
+	}
+	return p.BoardSectionID
+}
+
+func (p *PinterestOptions) GetCoverSecond() *int {
+	if p == nil {
+		return nil
+	}
+	return p.CoverSecond
+}
+
+func (p *PinterestOptions) GetDominantColor() *string {
+	if p == nil {
+		return nil
+	}
+	return p.DominantColor
+}
+
+func (p *PinterestOptions) GetLink() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Link
+}
+
+func (p *PinterestOptions) GetTitle() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Title
+}
+
+func (p *PinterestOptions) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PinterestOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetBoardID sets the BoardID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetBoardID(boardID *string) {
+	p.BoardID = boardID
+	p.require(pinterestOptionsFieldBoardID)
+}
+
+// SetBoardSectionID sets the BoardSectionID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetBoardSectionID(boardSectionID *string) {
+	p.BoardSectionID = boardSectionID
+	p.require(pinterestOptionsFieldBoardSectionID)
+}
+
+// SetCoverSecond sets the CoverSecond field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetCoverSecond(coverSecond *int) {
+	p.CoverSecond = coverSecond
+	p.require(pinterestOptionsFieldCoverSecond)
+}
+
+// SetDominantColor sets the DominantColor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetDominantColor(dominantColor *string) {
+	p.DominantColor = dominantColor
+	p.require(pinterestOptionsFieldDominantColor)
+}
+
+// SetLink sets the Link field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetLink(link *string) {
+	p.Link = link
+	p.require(pinterestOptionsFieldLink)
+}
+
+// SetTitle sets the Title field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetTitle(title *string) {
+	p.Title = title
+	p.require(pinterestOptionsFieldTitle)
+}
+
+func (p *PinterestOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler PinterestOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PinterestOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PinterestOptions) MarshalJSON() ([]byte, error) {
+	type embed PinterestOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PinterestOptions) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
 	postFieldAuthorID = big.NewInt(1 << 0)
 	postFieldContent  = big.NewInt(1 << 1)
 	postFieldID       = big.NewInt(1 << 2)
@@ -2261,9 +2428,10 @@ func (t *TargetConfirmationPublished) String() string {
 
 // What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
 type TargetOptions struct {
-	Platform string
-	Youtube  *YouTubeOptions
-	Tiktok   *TikTokOptions
+	Platform  string
+	Youtube   *YouTubeOptions
+	Tiktok    *TikTokOptions
+	Pinterest *PinterestOptions
 
 	rawJSON json.RawMessage
 }
@@ -2287,6 +2455,13 @@ func (t *TargetOptions) GetTiktok() *TikTokOptions {
 		return nil
 	}
 	return t.Tiktok
+}
+
+func (t *TargetOptions) GetPinterest() *PinterestOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Pinterest
 }
 
 func (t *TargetOptions) UnmarshalJSON(data []byte) error {
@@ -2313,6 +2488,12 @@ func (t *TargetOptions) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		t.Tiktok = value
+	case "pinterest":
+		value := new(PinterestOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Pinterest = value
 	}
 	t.rawJSON = json.RawMessage(data)
 	return nil
@@ -2328,6 +2509,9 @@ func (t TargetOptions) MarshalJSON() ([]byte, error) {
 	if t.Tiktok != nil {
 		return internal.MarshalJSONWithExtraProperty(t.Tiktok, "platform", "tiktok")
 	}
+	if t.Pinterest != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Pinterest, "platform", "pinterest")
+	}
 	if len(t.rawJSON) > 0 {
 		return t.rawJSON, nil
 	}
@@ -2337,6 +2521,7 @@ func (t TargetOptions) MarshalJSON() ([]byte, error) {
 type TargetOptionsVisitor interface {
 	VisitYoutube(*YouTubeOptions) error
 	VisitTiktok(*TikTokOptions) error
+	VisitPinterest(*PinterestOptions) error
 }
 
 func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
@@ -2345,6 +2530,9 @@ func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
 	}
 	if t.Tiktok != nil {
 		return visitor.VisitTiktok(t.Tiktok)
+	}
+	if t.Pinterest != nil {
+		return visitor.VisitPinterest(t.Pinterest)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", t)
 }
@@ -2359,6 +2547,9 @@ func (t *TargetOptions) validate() error {
 	}
 	if t.Tiktok != nil {
 		fields = append(fields, "tiktok")
+	}
+	if t.Pinterest != nil {
+		fields = append(fields, "pinterest")
 	}
 	if len(fields) == 0 {
 		if t.Platform != "" {

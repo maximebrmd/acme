@@ -4304,7 +4304,7 @@ client.capabilities.channel(
 <dl>
 <dd>
 
-Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
 </dd>
 </dl>
 </dd>
@@ -4374,7 +4374,7 @@ client.lookups.list(
 </dl>
 </details>
 
-<details><summary><code>client.lookups.<a href="src/peal/lookups/client.py#L65-L127">run</a>(...) -> LookupResult</code></summary>
+<details><summary><code>client.lookups.<a href="src/peal/lookups/client.py#L65-L131">run</a>(...) -> LookupResult</code></summary>
 <dl>
 <dd>
 
@@ -4446,6 +4446,14 @@ client.lookups.run(
 <dd>
 
 **name:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**board_id:** `typing.Optional[str]` 
     
 </dd>
 </dl>

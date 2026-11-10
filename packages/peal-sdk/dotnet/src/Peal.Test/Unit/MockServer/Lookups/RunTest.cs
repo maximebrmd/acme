@@ -55,6 +55,7 @@ public class RunTest : BaseMockServerTest
                 WorkspaceId = "workspaceId",
                 ChannelId = "channelId",
                 Name = "name",
+                BoardId = null,
                 Cursor = null,
                 Language = null,
                 Limit = null,

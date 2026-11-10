@@ -34,12 +34,20 @@ public final class TargetOptions {
         return new TargetOptions(new TiktokValue(value));
     }
 
+    public static TargetOptions pinterest(PinterestOptions value) {
+        return new TargetOptions(new PinterestValue(value));
+    }
+
     public boolean isYoutube() {
         return value instanceof YoutubeValue;
     }
 
     public boolean isTiktok() {
         return value instanceof TiktokValue;
+    }
+
+    public boolean isPinterest() {
+        return value instanceof PinterestValue;
     }
 
     public boolean _isUnknown() {
@@ -56,6 +64,13 @@ public final class TargetOptions {
     public Optional<TikTokOptions> getTiktok() {
         if (isTiktok()) {
             return Optional.of(((TiktokValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<PinterestOptions> getPinterest() {
+        if (isPinterest()) {
+            return Optional.of(((PinterestValue) value).value);
         }
         return Optional.empty();
     }
@@ -93,11 +108,17 @@ public final class TargetOptions {
 
         T visitTiktok(TikTokOptions tiktok);
 
+        T visitPinterest(PinterestOptions pinterest);
+
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "platform", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(YoutubeValue.class), @JsonSubTypes.Type(TiktokValue.class)})
+    @JsonSubTypes({
+        @JsonSubTypes.Type(YoutubeValue.class),
+        @JsonSubTypes.Type(TiktokValue.class),
+        @JsonSubTypes.Type(PinterestValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
@@ -169,6 +190,46 @@ public final class TargetOptions {
         }
 
         private boolean equalTo(TiktokValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("pinterest")
+    @JsonIgnoreProperties("platform")
+    private static final class PinterestValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private PinterestOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PinterestValue() {}
+
+        private PinterestValue(PinterestOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPinterest(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PinterestValue && equalTo((PinterestValue) other);
+        }
+
+        private boolean equalTo(PinterestValue other) {
             return value.equals(other.value);
         }
 

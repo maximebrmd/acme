@@ -20,6 +20,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = LookupInput.Builder.class)
 public final class LookupInput {
+    private final Optional<String> boardId;
+
     private final Optional<String> cursor;
 
     private final Optional<String> language;
@@ -31,16 +33,23 @@ public final class LookupInput {
     private final Map<String, Object> additionalProperties;
 
     private LookupInput(
+            Optional<String> boardId,
             Optional<String> cursor,
             Optional<String> language,
             Optional<Integer> limit,
             Optional<String> regionCode,
             Map<String, Object> additionalProperties) {
+        this.boardId = boardId;
         this.cursor = cursor;
         this.language = language;
         this.limit = limit;
         this.regionCode = regionCode;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("boardId")
+    public Optional<String> getBoardId() {
+        return boardId;
     }
 
     @JsonProperty("cursor")
@@ -75,7 +84,8 @@ public final class LookupInput {
     }
 
     private boolean equalTo(LookupInput other) {
-        return cursor.equals(other.cursor)
+        return boardId.equals(other.boardId)
+                && cursor.equals(other.cursor)
                 && language.equals(other.language)
                 && limit.equals(other.limit)
                 && regionCode.equals(other.regionCode);
@@ -83,7 +93,7 @@ public final class LookupInput {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.cursor, this.language, this.limit, this.regionCode);
+        return Objects.hash(this.boardId, this.cursor, this.language, this.limit, this.regionCode);
     }
 
     @java.lang.Override
@@ -97,6 +107,8 @@ public final class LookupInput {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<String> boardId = Optional.empty();
+
         private Optional<String> cursor = Optional.empty();
 
         private Optional<String> language = Optional.empty();
@@ -110,10 +122,22 @@ public final class LookupInput {
         private Builder() {}
 
         public Builder from(LookupInput other) {
+            boardId(other.getBoardId());
             cursor(other.getCursor());
             language(other.getLanguage());
             limit(other.getLimit());
             regionCode(other.getRegionCode());
+            return this;
+        }
+
+        @JsonSetter(value = "boardId", nulls = Nulls.SKIP)
+        public Builder boardId(Optional<String> boardId) {
+            this.boardId = boardId;
+            return this;
+        }
+
+        public Builder boardId(String boardId) {
+            this.boardId = Optional.ofNullable(boardId);
             return this;
         }
 
@@ -162,12 +186,13 @@ public final class LookupInput {
         }
 
         public LookupInput build() {
-            return new LookupInput(cursor, language, limit, regionCode, additionalProperties);
+            return new LookupInput(boardId, cursor, language, limit, regionCode, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("cursor")
+            if (key.equalsIgnoreCase("boardId")
+                    || key.equalsIgnoreCase("cursor")
                     || key.equalsIgnoreCase("language")
                     || key.equalsIgnoreCase("limit")
                     || key.equalsIgnoreCase("regionCode")) {

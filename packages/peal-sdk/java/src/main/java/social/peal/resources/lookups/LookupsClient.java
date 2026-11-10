@@ -29,28 +29,28 @@ public class LookupsClient {
     }
 
     /**
-     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
      */
     public List<LookupDescription> list(String workspaceId, String channelId) {
         return this.rawClient.list(workspaceId, channelId).body();
     }
 
     /**
-     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
      */
     public List<LookupDescription> list(String workspaceId, String channelId, RequestOptions requestOptions) {
         return this.rawClient.list(workspaceId, channelId, requestOptions).body();
     }
 
     /**
-     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
      */
     public List<LookupDescription> list(String workspaceId, String channelId, ListLookupsRequest request) {
         return this.rawClient.list(workspaceId, channelId, request).body();
     }
 
     /**
-     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
+     * Lists the lookups the channel has: what its platform tells about the account that a post's options refer to, such as the categories a YouTube video can be filed under or the boards a Pinterest Pin can be saved to. Each says the input it takes and the options it fills. Empty for a platform without lookups. Needs channel:read.
      */
     public List<LookupDescription> list(
             String workspaceId, String channelId, ListLookupsRequest request, RequestOptions requestOptions) {

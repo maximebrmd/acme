@@ -34,6 +34,26 @@ pub enum LookupResult {
         next_cursor: Option<String>,
     },
 
+    #[serde(rename = "pinterestBoards")]
+    #[non_exhaustive]
+    PinterestBoards {
+        #[serde(default)]
+        items: Vec<PinterestBoard>,
+        #[serde(rename = "nextCursor")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        next_cursor: Option<String>,
+    },
+
+    #[serde(rename = "pinterestBoardSections")]
+    #[non_exhaustive]
+    PinterestBoardSections {
+        #[serde(default)]
+        items: Vec<PinterestBoardSection>,
+        #[serde(rename = "nextCursor")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        next_cursor: Option<String>,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -63,6 +83,20 @@ impl LookupResult {
         }
     }
 
+    pub fn pinterest_boards(items: Vec<PinterestBoard>) -> Self {
+        Self::PinterestBoards {
+            items,
+            next_cursor: None,
+        }
+    }
+
+    pub fn pinterest_board_sections(items: Vec<PinterestBoardSection>) -> Self {
+        Self::PinterestBoardSections {
+            items,
+            next_cursor: None,
+        }
+    }
+
     pub fn youtube_video_categories_with_next_cursor(
         items: Vec<YouTubeVideoCategory>,
         next_cursor: String,
@@ -85,6 +119,26 @@ impl LookupResult {
 
     pub fn tiktok_creator_with_next_cursor(items: Vec<TikTokAccount>, next_cursor: String) -> Self {
         Self::TiktokCreator {
+            items,
+            next_cursor: Some(next_cursor),
+        }
+    }
+
+    pub fn pinterest_boards_with_next_cursor(
+        items: Vec<PinterestBoard>,
+        next_cursor: String,
+    ) -> Self {
+        Self::PinterestBoards {
+            items,
+            next_cursor: Some(next_cursor),
+        }
+    }
+
+    pub fn pinterest_board_sections_with_next_cursor(
+        items: Vec<PinterestBoardSection>,
+        next_cursor: String,
+    ) -> Self {
+        Self::PinterestBoardSections {
             items,
             next_cursor: Some(next_cursor),
         }

@@ -14,6 +14,10 @@ module Peal
       member -> { Peal::Types::LookupResultYoutubePlaylists }, key: "YOUTUBE_PLAYLISTS"
 
       member -> { Peal::Types::LookupResultTiktokCreator }, key: "TIKTOK_CREATOR"
+
+      member -> { Peal::Types::LookupResultPinterestBoards }, key: "PINTEREST_BOARDS"
+
+      member -> { Peal::Types::LookupResultPinterestBoardSections }, key: "PINTEREST_BOARD_SECTIONS"
     end
   end
 end

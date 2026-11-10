@@ -87,6 +87,38 @@ class TargetOptions_Tiktok(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class TargetOptions_Pinterest(UniversalBaseModel):
+    """
+    What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
+    """
+
+    platform: typing.Literal["pinterest"] = "pinterest"
+    board_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="boardId"), pydantic.Field(alias="boardId")
+    ] = None
+    board_section_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="boardSectionId"), pydantic.Field(alias="boardSectionId")
+    ] = None
+    cover_second: typing_extensions.Annotated[
+        typing.Optional[int], FieldMetadata(alias="coverSecond"), pydantic.Field(alias="coverSecond")
+    ] = None
+    dominant_color: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="dominantColor"), pydantic.Field(alias="dominantColor")
+    ] = None
+    link: typing.Optional[str] = None
+    title: typing.Optional[str] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 TargetOptions = typing_extensions.Annotated[
-    typing.Union[TargetOptions_Youtube, TargetOptions_Tiktok], pydantic.Field(discriminator="platform")
+    typing.Union[TargetOptions_Youtube, TargetOptions_Tiktok, TargetOptions_Pinterest],
+    pydantic.Field(discriminator="platform"),
 ]
