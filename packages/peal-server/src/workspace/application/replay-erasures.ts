@@ -50,6 +50,11 @@ export interface ReplayReport {
    * Left alone unless the replay is told to apply them too.
    */
   readonly unconfirmed: readonly ErasureEntry[];
+  /**
+   * The keys of the ledger's objects that do not read as entries: what
+   * each asked to erase is unknown, and was not applied.
+   */
+  readonly unreadable: readonly string[];
 }
 
 /** How a replay treats what it cannot be sure of. */
@@ -257,6 +262,7 @@ export class ReplayErasures extends Context.Service<
             result.failed === null ? [] : [result.failed]
           ),
           unconfirmed,
+          unreadable: yield* ledger.unreadable,
         };
 
         return report;

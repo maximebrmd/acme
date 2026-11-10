@@ -421,6 +421,7 @@ const PortsLive = Layer.mergeAll(
           record(
             `ledger:${closed ?? "workspace"}:${workspaceIds.join(",")}:${confirmed ? "confirmed" : "pending"}`
           ).pipe(provide),
+        unreadable: Effect.succeed([]),
       });
     })
   ),

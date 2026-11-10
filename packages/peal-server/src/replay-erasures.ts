@@ -22,7 +22,7 @@ const program = Effect.gen(function* replayErasures() {
   const report = yield* replays.replay({ applyUnconfirmed });
 
   yield* Console.log(
-    `Erasure ledger: ${report.entries} entries, ${report.erased.length} erased again, ${report.alreadyGone} already gone, ${report.unconfirmed.length} unconfirmed and left, ${report.failed.length} refused.`
+    `Erasure ledger: ${report.entries} entries, ${report.erased.length} erased again, ${report.alreadyGone} already gone, ${report.unconfirmed.length} unconfirmed and left, ${report.failed.length} refused, ${report.unreadable.length} unreadable.`
   );
 
   const lines = [
@@ -35,14 +35,15 @@ const program = Effect.gen(function* replayErasures() {
         `unconfirmed   ${id}  account ${userId ?? "-"}  workspaces ${workspaceIds.join(",") || "-"}  at ${DateTime.formatIso(at)}`
     ),
     ...report.failed.map(({ id, reason }) => `refused       ${id}  ${reason}`),
+    ...report.unreadable.map((key) => `unreadable    ${key}`),
   ];
 
   yield* Console.log(lines.join("\n"));
 
-  if (report.failed.length > 0) {
+  if (report.failed.length > 0 || report.unreadable.length > 0) {
     yield* Effect.fail(
       new Error(
-        `${report.failed.length} erasures were refused: keep the server stopped until each is applied`
+        `${report.failed.length} erasures were refused and ${report.unreadable.length} objects of the ledger do not read: keep the server stopped until each is applied or accounted for`
       )
     );
   }

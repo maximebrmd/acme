@@ -2,6 +2,11 @@
 // of this run's own, so other suites' entries never show.
 import { randomUUID } from "node:crypto";
 
+import {
+  DeleteObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { assert, layer } from "@effect/vitest";
 import { ConfigProvider, DateTime, Effect, Layer } from "effect";
 
@@ -112,5 +117,55 @@ layer(LedgerTest)("the erasure ledger in the object store", (it) => {
       );
       assert.deepStrictEqual(yield* ledger.entries, []);
     })
+  );
+
+  it.effect(
+    "reads and expires its entries past an object that is none, and says which",
+    () =>
+      Effect.gen(function* damaged() {
+        const ledger = yield* ErasureLedger;
+        const entry = entryAt("2026-11-04T10:00:00Z");
+        const key = `${prefix}erasures/not-an-entry.json`;
+
+        const store = new S3Client({
+          credentials: {
+            accessKeyId: "peal",
+            secretAccessKey: "peal-development-secret",
+          },
+          endpoint: "http://127.0.0.1:18333",
+          forcePathStyle: true,
+          region: "auto",
+        });
+
+        // Written by hand, or cut short: no entry, beside one that is.
+        yield* Effect.promise(
+          async () =>
+            await store.send(
+              new PutObjectCommand({
+                Body: '{"at":"2026-11-04',
+                Bucket: "peal-media",
+                Key: key,
+              })
+            )
+        );
+        yield* ledger.record(entry);
+
+        assert.deepStrictEqual(yield* ledger.entries, [entry]);
+        assert.deepStrictEqual(yield* ledger.unreadable, [key]);
+        assert.strictEqual(
+          yield* ledger.expire(DateTime.makeUnsafe("2027-01-01T00:00:00Z")),
+          1
+        );
+        // Kept for whoever looks at it.
+        assert.deepStrictEqual(yield* ledger.unreadable, [key]);
+
+        yield* Effect.promise(
+          async () =>
+            await store.send(
+              new DeleteObjectCommand({ Bucket: "peal-media", Key: key })
+            )
+        );
+        store.destroy();
+      })
   );
 });

@@ -27,12 +27,27 @@ export class ErasureLedger extends Context.Service<
     readonly discard: (
       id: ErasureEntryId
     ) => Effect.Effect<void, ErasureLedgerUnavailable>;
-    /** Every entry, oldest first. */
+    /**
+     * Every entry that reads, oldest first. An object that does not read
+     * as an entry, as one written by hand or cut short, is left out, and
+     * listed by `unreadable`: it never keeps the others from being read.
+     */
     readonly entries: Effect.Effect<
       readonly ErasureEntry[],
       ErasureLedgerUnavailable
     >;
-    /** Deletes the entries made before `cutoff`, and says how many. */
+    /**
+     * The keys of the ledger's objects that do not read as entries: each
+     * may be an erasure nobody can apply again, for a person to look at.
+     */
+    readonly unreadable: Effect.Effect<
+      readonly string[],
+      ErasureLedgerUnavailable
+    >;
+    /**
+     * Deletes the entries made before `cutoff`, and says how many. What
+     * does not read is kept: nothing says how old it is.
+     */
     readonly expire: (
       cutoff: DateTime.Utc
     ) => Effect.Effect<number, ErasureLedgerUnavailable>;

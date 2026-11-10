@@ -150,6 +150,11 @@ answers (step 5) and before the stack starts (step 7):
      every check, but nothing says whether it had taken effect before the
      incident: tell the owner, who decides. `--apply-unconfirmed` after the
      file name applies them too.
+   - `unreadable`: an object of the ledger that is no entry, by its key,
+     as one cut short: what it asked to erase is unknown and was not
+     applied. The command exits with an error. Read the object in the
+     store, tell the owner, and apply by hand what it can still be read to
+     name before starting the stack.
    - `refused`: the deletion could not be applied, with why
      (`WorkspaceBusy`: a post marked as publishing, see step 6;
      `WorkspaceSubscribed` or `BillingUnavailable`: Stripe still bills it,

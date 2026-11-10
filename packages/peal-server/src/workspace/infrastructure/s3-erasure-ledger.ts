@@ -149,13 +149,37 @@ export const S3ErasureLedger = Layer.effect(
         return (await answer.Body?.transformToString()) ?? "";
       });
 
-      const entry = yield* decode(text).pipe(Effect.mapError(unavailable));
+      // An object that is no entry is told apart from a store that did
+      // not answer: it is reported, and the rest of the ledger still read.
+      const entry = yield* decode(text).pipe(
+        Effect.map(Option.some),
+        Effect.catch(() =>
+          Effect.logError("An object of the erasure ledger is no entry").pipe(
+            Effect.annotateLogs({
+              "event.name": "peal.erasure.unreadable",
+              key,
+            }),
+            Effect.as(Option.none<ErasureEntry>())
+          )
+        )
+      );
 
       return { entry, key };
     });
 
-    const stored = keys().pipe(
+    const objects = keys().pipe(
       Effect.flatMap((found) => Effect.forEach(found, read, { concurrency }))
+    );
+
+    const stored = objects.pipe(
+      Effect.map((found) =>
+        found.flatMap(({ entry, key }) =>
+          Option.match(entry, {
+            onNone: () => [],
+            onSome: (readable) => [{ entry: readable, key }],
+          })
+        )
+      )
     );
 
     const expire = Effect.fn("ErasureLedger.expire")(function* expire(
@@ -182,6 +206,12 @@ export const S3ErasureLedger = Layer.effect(
       ),
       expire,
       record,
+      unreadable: objects.pipe(
+        Effect.map((found) =>
+          found.flatMap(({ entry, key }) => (Option.isNone(entry) ? [key] : []))
+        ),
+        Effect.withSpan("ErasureLedger.unreadable")
+      ),
     });
   })
 );
