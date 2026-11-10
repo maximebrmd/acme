@@ -461,6 +461,23 @@ const options: readonly unknown[] = [
   { platform: "googleBusiness", postType: "alert" },
   { callToAction: "getOffer", platform: "googleBusiness" },
   { platform: "googleBusiness", title: "a\u0000b" },
+  { platform: "pinterest" },
+  {
+    boardId: "549755885001",
+    boardSectionId: "5000000000001",
+    coverSecond: 12,
+    dominantColor: "#6E7874",
+    link: "https://example.test/recipes",
+    platform: "pinterest",
+    title: "Tomato salad",
+  },
+  // Unfinished or refused later: kept until the post is scheduled.
+  { boardId: "not digits", platform: "pinterest", title: "a".repeat(101) },
+  { dominantColor: "grey", link: "example.test", platform: "pinterest" },
+  { coverSecond: -1, platform: "pinterest" },
+  { coverSecond: 1.5, platform: "pinterest" },
+  { coverSecond: "12", platform: "pinterest" },
+  { platform: "pinterest", title: "a\u0000b" },
   { platform: "mastodon" },
   { platform: "youtube", title: "A title", unknownOption: true },
 ];
