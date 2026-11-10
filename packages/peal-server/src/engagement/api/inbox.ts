@@ -5,7 +5,6 @@ import {
   ChannelNotFound,
   CurrentMember,
   defaultInboxPageSize,
-  Forbidden,
   InboxActionFailed,
   InboxActionUnavailable,
   InboxCommentGone,
@@ -28,6 +27,7 @@ import type { InvalidReplyTransition } from "#engagement/domain/invalid-reply-tr
 import { ReplyIdSchema } from "#engagement/domain/reply-id.ts";
 import { ThreadIdSchema } from "#engagement/domain/thread-id.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { forbidden } from "#shared/api/forbidden.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 
 import {
@@ -46,8 +46,6 @@ const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
 
 const channelNotFound = () => Effect.fail(new ChannelNotFound());
-
-const forbidden = () => Effect.fail(new Forbidden());
 
 const threadNotFound = () => Effect.fail(new InboxThreadNotFound());
 

@@ -1,9 +1,12 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /** The reply is not in a state that allows this: only an unconfirmed reply is confirmed, and only a sent one, which Peal knows the address of, is taken back. */
 export class ReplyStatusConflict extends Schema.TaggedError<ReplyStatusConflict>()(
   "ReplyStatusConflict",
   {
+    ...errorEnvelope,
     // sending, sent, failed, unconfirmed or withdrawn.
     status: Schema.String,
   },

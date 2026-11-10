@@ -560,6 +560,54 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
               withdrawReply: "InboxReplyNotFound",
             }
           );
+
+          // Every answer of theirs is in the API's envelope: a code that
+          // never changes, words for a person, and the request's id.
+          const Envelope = Schema.decodeUnknownSync(
+            Schema.Struct({
+              code: Schema.String,
+              message: Schema.String,
+              permission: Schema.optionalKey(Schema.String),
+              reason: Schema.optionalKey(Schema.String),
+              requestId: Schema.String,
+              scope: Schema.optionalKey(Schema.String),
+            })
+          );
+
+          const answered = (caller: string, request: string) =>
+            Envelope(new Map(asked).get(caller)?.get(request)?.reply.body);
+
+          assert.deepInclude(answered("owner", "answerComment"), {
+            code: "inbox_comment_not_found",
+          });
+          assert.deepInclude(answered("owner", "confirmReply"), {
+            code: "inbox_reply_not_found",
+          });
+          assert.deepInclude(answered("owner", "readThread"), {
+            code: "inbox_thread_not_found",
+          });
+
+          // A refusal says what is missing, and whose it is to give.
+          assert.deepInclude(answered("writer", "answerComment"), {
+            code: "forbidden",
+            permission: "engagement:reply",
+            reason: "missingScope",
+            scope: "workspace:publish",
+          });
+          assert.deepInclude(answered("draftsKey", "listThreads"), {
+            code: "forbidden",
+            permission: "engagement:read",
+            reason: "missingPermission",
+          });
+          assert.deepInclude(answered("draftsKey", "exportPosts"), {
+            code: "forbidden",
+            permission: "analytics:read",
+            reason: "missingPermission",
+          });
+          assert.deepInclude(answered("impersonating", "listThreads"), {
+            code: "forbidden",
+            permission: "engagement:read",
+          });
         })
     );
 
