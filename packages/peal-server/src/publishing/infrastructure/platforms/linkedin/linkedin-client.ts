@@ -335,19 +335,26 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
 
         const uploadUrl = yield* uploadUrlOf(value.uploadUrl);
 
-        // Streamed from the store to LinkedIn, never held whole.
-        yield* mediaCall(
-          post,
-          uploads,
-          (token) =>
-            HttpClientRequest.put(uploadUrl).pipe(
-              HttpClientRequest.bearerToken(token),
-              streamedBody(media.open(post.workspaceId, attachment.mediaId), {
-                contentLength: described.byteSize,
-                contentType: "application/octet-stream",
-              })
-            ),
-          acknowledged
+        // Streamed from the store to LinkedIn, never held whole, once the
+        // file has its turn: the request opens with its bytes ready.
+        yield* Effect.scoped(
+          media.held(post.workspaceId, attachment.mediaId).pipe(
+            Effect.flatMap((bytes) =>
+              mediaCall(
+                post,
+                uploads,
+                (token) =>
+                  HttpClientRequest.put(uploadUrl).pipe(
+                    HttpClientRequest.bearerToken(token),
+                    streamedBody(bytes, {
+                      contentLength: described.byteSize,
+                      contentType: "application/octet-stream",
+                    })
+                  ),
+                acknowledged
+              )
+            )
+          )
         );
 
         const image: LinkedInImage = {

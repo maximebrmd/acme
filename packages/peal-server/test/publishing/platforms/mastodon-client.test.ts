@@ -332,6 +332,9 @@ describe("publishing on Mastodon", () => {
       instance.script("POST /api/v2/media", [
         json({ error: "Validation failed: File content type is invalid" }, 422),
         json({ error: "Service unavailable" }, 503),
+        // A proxy that gave up waiting for the file's bytes: the file is
+        // not at fault, and nothing was done.
+        empty(408),
       ]);
 
       instance.script("POST /api/v1/statuses", [
@@ -348,6 +351,7 @@ describe("publishing on Mastodon", () => {
 
       const mediaRefused = yield* client.publish(withImage).pipe(Effect.flip);
       const unavailable = yield* client.publish(withImage).pipe(Effect.flip);
+      const timedOut = yield* client.publish(withImage).pipe(Effect.flip);
 
       const postRefused = yield* client
         .publish(yield* outgoing({ accountId }))
@@ -358,6 +362,7 @@ describe("publishing on Mastodon", () => {
         new MediaRejected({ code: "unprocessable" })
       );
       assert.deepStrictEqual(unavailable, new PlatformUnavailable());
+      assert.deepStrictEqual(timedOut, new PlatformUnavailable());
       assert.deepStrictEqual(
         postRefused,
         new BadRequest({ code: "unprocessable" })

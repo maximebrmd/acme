@@ -416,30 +416,39 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
 
         // Up to 300 MB: streamed from the store to the video service,
         // never held whole.
-        const status = yield* withSession(post, (session) =>
-          serviceToken(session).pipe(
-            Effect.flatMap((token) =>
-              uploads.execute(
-                HttpClientRequest.post(
-                  new URL("/xrpc/app.bsky.video.uploadVideo", videoService)
-                ).pipe(
-                  HttpClientRequest.setUrlParams({
-                    did: session.did,
-                    name: described.fileName,
-                  }),
-                  HttpClientRequest.bearerToken(token),
-                  streamedBody(
-                    media.open(post.workspaceId, attachment.mediaId),
-                    {
-                      contentLength: described.byteSize,
-                      contentType: "video/mp4",
-                    }
-                  )
+        // The file's turn among the large uploads is waited for before
+        // the request opens, so the video service never waits on an open
+        // request for its bytes.
+        const status = yield* Effect.scoped(
+          media.held(post.workspaceId, attachment.mediaId).pipe(
+            Effect.flatMap((bytes) =>
+              withSession(post, (session) =>
+                serviceToken(session).pipe(
+                  Effect.flatMap((token) =>
+                    uploads.execute(
+                      HttpClientRequest.post(
+                        new URL(
+                          "/xrpc/app.bsky.video.uploadVideo",
+                          videoService
+                        )
+                      ).pipe(
+                        HttpClientRequest.setUrlParams({
+                          did: session.did,
+                          name: described.fileName,
+                        }),
+                        HttpClientRequest.bearerToken(token),
+                        streamedBody(bytes, {
+                          contentLength: described.byteSize,
+                          contentType: "video/mp4",
+                        })
+                      )
+                    )
+                  ),
+                  Effect.flatMap(jobAnswer),
+                  Effect.catchTags(mediaUnanswered)
                 )
               )
-            ),
-            Effect.flatMap(jobAnswer),
-            Effect.catchTags(mediaUnanswered)
+            )
           )
         );
 

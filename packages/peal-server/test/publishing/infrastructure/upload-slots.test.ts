@@ -56,21 +56,21 @@ const store = Effect.gen(function* makeStore() {
   const most = yield* Ref.make(0);
   const finish = yield* Deferred.make<true>();
 
+  const opened = Stream.fromEffect(
+    Ref.updateAndGet(open, (count) => count + 1).pipe(
+      Effect.tap((count) => Ref.update(most, (seen) => Math.max(seen, count))),
+      Effect.andThen(Deferred.await(finish)),
+      Effect.as(new Uint8Array(1)),
+      Effect.ensuring(Ref.update(open, (count) => count - 1))
+    )
+  );
+
   const layer = Layer.succeed(
     MediaForPublishing,
     MediaForPublishing.of({
       describe: (_workspace, id) => Effect.succeed(described(id)),
-      open: () =>
-        Stream.fromEffect(
-          Ref.updateAndGet(open, (count) => count + 1).pipe(
-            Effect.tap((count) =>
-              Ref.update(most, (seen) => Math.max(seen, count))
-            ),
-            Effect.andThen(Deferred.await(finish)),
-            Effect.as(new Uint8Array(1)),
-            Effect.ensuring(Ref.update(open, (count) => count - 1))
-          )
-        ),
+      held: () => Effect.succeed(opened),
+      open: () => opened,
       publicUrl: () => Effect.succeed("https://media.test/file"),
     })
   );
@@ -120,6 +120,51 @@ describe("upload slots", () => {
 
         assert.strictEqual(yield* files.most, 3);
         assert.strictEqual(yield* files.open, 0);
+        assert.strictEqual(yield* uploadsWaiting, 0);
+      })
+  );
+
+  it.effect(
+    "has a large file wait for its slot before it is handed over, so no request opens to sit idle",
+    () =>
+      Effect.gen(function* held() {
+        const files = yield* store;
+        const handed = yield* Ref.make(0);
+
+        // Each takes its file as an adapter does before it opens its
+        // request, then sends it.
+        const sending = (id: number) =>
+          MediaForPublishing.use((media) =>
+            media.held(workspaceId, mediaId(id)).pipe(
+              Effect.tap(() => Ref.update(handed, (count) => count + 1)),
+              Effect.flatMap(Stream.runDrain),
+              Effect.scoped
+            )
+          );
+
+        const uploads = yield* Effect.forEach([1, 2, 3], sending, {
+          concurrency: "unbounded",
+          discard: true,
+        }).pipe(
+          Effect.provide(
+            limitedUploads.pipe(
+              Layer.provide(files.layer),
+              Layer.provide(settings({ PEAL_MAX_CONCURRENT_UPLOADS: "1" }))
+            )
+          ),
+          Effect.forkChild
+        );
+
+        yield* TestClock.adjust(Duration.minutes(5));
+
+        // One file was handed over; the others wait before any request.
+        assert.strictEqual(yield* Ref.get(handed), 1);
+        assert.strictEqual(yield* uploadsWaiting, 2);
+
+        yield* Deferred.succeed(files.finish, true);
+        yield* Fiber.join(uploads);
+
+        assert.strictEqual(yield* files.most, 1);
         assert.strictEqual(yield* uploadsWaiting, 0);
       })
   );

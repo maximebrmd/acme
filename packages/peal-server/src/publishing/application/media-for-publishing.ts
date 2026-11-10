@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { Duration, Effect, Option, Stream } from "effect";
+import type { Duration, Effect, Option, Scope, Stream } from "effect";
 
 import type { MediaAssetId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MediaRejected } from "#shared/domain/media-rejected.ts";
@@ -41,7 +41,26 @@ export class MediaForPublishing extends Context.Service<
       workspaceId: WorkspaceId,
       mediaId: MediaAssetId
     ) => Effect.Effect<PublishableMedia, MediaFailure>;
-    /** The bytes, as the store sends them. */
+    /**
+     * The bytes, for a request whose body they are: whatever the file must
+     * wait for before it is sent, as its turn among the server's large
+     * uploads, is waited for here, before the request is opened, so no
+     * request sits open and idle, which a server on the way would time
+     * out. The file keeps its turn for the scope, and the stream can be
+     * read again within it, as when the request is sent again.
+     */
+    readonly held: (
+      workspaceId: WorkspaceId,
+      mediaId: MediaAssetId
+    ) => Effect.Effect<
+      Stream.Stream<Uint8Array, MediaFailure>,
+      MediaFailure,
+      Scope.Scope
+    >;
+    /**
+     * The bytes, as the store sends them, read in parts: whatever the file
+     * waits for is waited for when the first part is read.
+     */
     readonly open: (
       workspaceId: WorkspaceId,
       mediaId: MediaAssetId

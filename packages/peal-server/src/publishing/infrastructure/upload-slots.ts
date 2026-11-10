@@ -123,6 +123,16 @@ export const limitedUploads = Layer.effect(
 
     return MediaForPublishing.of({
       describe: media.describe,
+      // The slot is taken before the stream is handed over, and kept for
+      // the caller's scope: the stream is the store's, read without
+      // another wait, as often as the request is sent.
+      held: (workspaceId, mediaId) =>
+        media.describe(workspaceId, mediaId).pipe(
+          Effect.flatMap(({ byteSize }) =>
+            byteSize >= largeUpload ? slot : Effect.void
+          ),
+          Effect.andThen(media.held(workspaceId, mediaId))
+        ),
       open: (workspaceId, mediaId) =>
         Stream.unwrap(
           media

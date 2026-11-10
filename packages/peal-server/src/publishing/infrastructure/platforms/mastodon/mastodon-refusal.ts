@@ -38,7 +38,8 @@ const rejected = (call: MastodonCall, code: string): PublishFailure =>
  * may answer later. 413 and 422 refuse the file or the post as sent; 429 is
  * the rate limit, whose reset time the instance gives in X-RateLimit-Reset.
  * A server error on the post itself leaves its fate unknown; on anything
- * else, it is the instance being down. Error messages are not kept, as they
+ * else, it is the instance being down. A 408 is read as one: the request
+ * timed out on the way, whatever it carried. Error messages are not kept, as they
  * may quote the post.
  */
 const refusal = Effect.fn("MastodonRefusal.of")(function* refusal(
@@ -65,7 +66,9 @@ const refusal = Effect.fn("MastodonRefusal.of")(function* refusal(
       : new RateLimited({});
   }
 
-  if (status >= 500) {
+  // 408: a server on the way gave up waiting for the request, as for a
+  // file's bytes: it did nothing with it, and the file is not at fault.
+  if (status >= 500 || status === 408) {
     return call === "status"
       ? new OutcomeUnknown({ reason: "noResponse" })
       : new PlatformUnavailable();
