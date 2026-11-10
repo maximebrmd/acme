@@ -185,7 +185,7 @@ curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/0190f3a0-0000-7
   -H "Authorization: Bearer $PEAL_API_KEY"
 ```
 
-Without `wait`, it does not wait. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing and holds nothing: the post publishes in its own job either way, and [webhooks](/webhooks#events) still tell how it went on each channel.
+Without `wait`, it does not wait. A draft, a cancelled post and a post scheduled for later than the wait are answered at once, and so is a request that comes while the server, or the workspace (10 at once), has as many requests waiting as it lets: ask again then. Waiting changes nothing and holds nothing: the post publishes in its own job either way, and [webhooks](/webhooks#events) still tell how it went on each channel.
 
 ## Send several posts in one request [#bulk]
 

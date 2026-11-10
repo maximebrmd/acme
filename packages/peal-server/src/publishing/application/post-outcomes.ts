@@ -12,7 +12,7 @@ import type { Post } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
-import type { PostId } from "#shared/domain/ids.ts";
+import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import type { PostNotFound } from "./post-not-found.ts";
@@ -28,6 +28,13 @@ export const maxOutcomeWait = Duration.seconds(60);
  * a second, and a client may open as many as it likes.
  */
 export const maxWaitingRequests = 100;
+
+/**
+ * How many of them one workspace's requests may be: a tenth, so that one
+ * workspace's clients, however many requests they open, leave the others
+ * their places.
+ */
+export const maxWaitingPerWorkspace = 10;
 
 // How often a waiting request reads the post again.
 const readEvery = Duration.millis(500);
@@ -92,9 +99,10 @@ const untilSettled = Effect.fn("PostOutcomes.untilSettled")(
  * does, as for any post, and this only reads the post again, every half
  * second, until it has finished or the time is up. Each read is a query of
  * its own, so no transaction, row lock or advisory lock is held while
- * waiting. A process lets `maxWaitingRequests` wait at once: one more is
- * answered at once with the post as it stands, as when its time ran out,
- * and its client asks again. Needs post:read.
+ * waiting. A process lets `maxWaitingRequests` wait at once, and
+ * `maxWaitingPerWorkspace` of one workspace: one more is answered at once
+ * with the post as it stands, as when its time ran out, and its client
+ * asks again. Needs post:read.
  */
 export class PostOutcomes extends Context.Service<
   PostOutcomes,
@@ -129,11 +137,57 @@ export class PostOutcomes extends Context.Service<
   }
 >()("peal-server/publishing/application/PostOutcomes") {}
 
-/** The use case, letting `waiters` requests wait at once. */
-export const makePostOutcomes = (waiters: number) =>
+/**
+ * The use case, letting `waiters` requests wait at once, `perWorkspace` of
+ * them at most for one workspace.
+ */
+export const makePostOutcomes = (
+  waiters: number,
+  perWorkspace: number = waiters
+) =>
   Effect.gen(function* PostOutcomesLive() {
     const ports = yield* Effect.context<PostRepository>();
     const waiting = yield* Semaphore.make(waiters);
+
+    // How many requests of each workspace wait now: counted in this
+    // process, as the places are.
+    const held = new Map<WorkspaceId, number>();
+
+    const take = (workspaceId: WorkspaceId) =>
+      Effect.sync(() => {
+        const taken = held.get(workspaceId) ?? 0;
+
+        if (taken >= perWorkspace) {
+          return false;
+        }
+
+        held.set(workspaceId, taken + 1);
+
+        return true;
+      });
+
+    const giveBack = (workspaceId: WorkspaceId) =>
+      Effect.sync(() => {
+        const taken = held.get(workspaceId) ?? 0;
+
+        if (taken <= 1) {
+          held.delete(workspaceId);
+        } else {
+          held.set(workspaceId, taken - 1);
+        }
+      });
+
+    // The effect with one of the workspace's places, or none when the
+    // workspace has its share waiting already.
+    const inShare = <A, E, R>(
+      workspaceId: WorkspaceId,
+      effect: Effect.Effect<Option.Option<A>, E, R>
+    ): Effect.Effect<Option.Option<A>, E, R> =>
+      Effect.acquireUseRelease(
+        take(workspaceId),
+        (taken) => (taken ? effect : Effect.succeedNone),
+        (taken) => (taken ? giveBack(workspaceId) : Effect.void)
+      );
 
     const awaitOutcome = Effect.fn("PostOutcomes.await")(function* awaiting(
       actor: Actor,
@@ -142,9 +196,10 @@ export const makePostOutcomes = (waiters: number) =>
     ) {
       yield* Effect.fromResult(authorize(actor, "post:read"));
 
-      const room = yield* waiting
-        .withPermitsIfAvailable(1)(untilSettled(actor, postId, wait))
-        .pipe(Effect.provideContext(ports));
+      const room = yield* inShare(
+        actor.workspaceId,
+        waiting.withPermitsIfAvailable(1)(untilSettled(actor, postId, wait))
+      ).pipe(Effect.provideContext(ports));
 
       // No room to wait: the post as it stands.
       return yield* Option.match(room, {
@@ -176,5 +231,5 @@ export const makePostOutcomes = (waiters: number) =>
 /** The use case as the server runs it. */
 export const PostOutcomesLive = Layer.effect(
   PostOutcomes,
-  makePostOutcomes(maxWaitingRequests)
+  makePostOutcomes(maxWaitingRequests, maxWaitingPerWorkspace)
 );

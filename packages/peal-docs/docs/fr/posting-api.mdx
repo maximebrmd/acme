@@ -185,7 +185,7 @@ curl "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/0190f3a0-0000-7
   -H "Authorization: Bearer $PEAL_API_KEY"
 ```
 
-Sans `wait`, il n’attend pas. Un brouillon, une publication annulée et une publication programmée pour après la fin de l’attente sont répondus aussitôt. Attendre ne change rien et ne retient rien : la publication part dans sa propre tâche dans tous les cas, et les [webhooks](/webhooks#events) disent toujours ce qu’elle est devenue sur chaque canal.
+Sans `wait`, il n’attend pas. Un brouillon, une publication annulée et une publication programmée pour après la fin de l’attente sont répondus aussitôt, comme une requête qui arrive alors que le serveur, ou l’espace de travail (10 à la fois), a autant de requêtes en attente qu’il en accepte : redemandez alors. Attendre ne change rien et ne retient rien : la publication part dans sa propre tâche dans tous les cas, et les [webhooks](/webhooks#events) disent toujours ce qu’elle est devenue sur chaque canal.
 
 ## Envoyer plusieurs publications en une requête [#bulk]
 

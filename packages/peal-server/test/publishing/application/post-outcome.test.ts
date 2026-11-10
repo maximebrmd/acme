@@ -321,6 +321,27 @@ describe("PostOutcomes.await", () => {
           assert.strictEqual(crowded.post.status._tag, "publishing");
           assert.isFalse((yield* answerOf(first)).settled);
 
+          // And so many of one workspace: with room left in the server,
+          // a workspace that already has its share waiting is answered at
+          // once, so no workspace's clients take every place.
+          const shared = yield* makePostOutcomes(5, 1);
+
+          const taking = yield* shared
+            .await(actor, hanging.post.id, Duration.seconds(30))
+            .pipe(Effect.forkChild);
+
+          yield* TestClock.withLive(Effect.sleep(Duration.millis(50)));
+
+          const over = yield* shared
+            .await(actor, hanging.post.id, Duration.seconds(30))
+            .pipe(Effect.forkChild);
+
+          yield* TestClock.withLive(Effect.sleep(Duration.millis(200)));
+
+          assert.isDefined(over.pollUnsafe());
+          assert.isFalse((yield* Fiber.join(over)).settled);
+          assert.isFalse((yield* answerOf(taking)).settled);
+
           yield* platform.release(channel);
           yield* eventually("the post finished", isFinished(hanging.post.id));
 
