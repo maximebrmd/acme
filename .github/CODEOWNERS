@@ -1,0 +1,29 @@
+# Who reviews what. GitHub asks the owners of the last matching pattern
+# to review a pull request that touches a file; branch protection on `main`
+# can require their approval.
+#
+# https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Everything, unless a later rule names other owners.
+*                                   @maximebrmd
+
+# The public API: a change here changes every client and the SDKs.
+/packages/peal-contract/            @maximebrmd
+/packages/peal-sdk/                 @maximebrmd
+
+# Authentication, tokens and billing.
+/packages/peal-server/src/workspace/ @maximebrmd
+/packages/peal-server/src/channels/ @maximebrmd
+/packages/peal-server/src/billing/  @maximebrmd
+
+# Infrastructure, images, releases and CI.
+/packages/peal-infra/               @maximebrmd
+/packages/peal-docker/              @maximebrmd
+/.github/                           @maximebrmd
+
+# Licensing and legal texts.
+/LICENSE.md                         @maximebrmd
+/**/LICENSE                         @maximebrmd
+/**/NOTICE                          @maximebrmd
+/packages/peal-site/src/content/legal/ @maximebrmd
+/SECURITY.md                        @maximebrmd

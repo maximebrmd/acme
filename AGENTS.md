@@ -160,7 +160,7 @@ and Next.js ships its docs in `packages/peal-web/node_modules/next/dist/docs`.
 - Start Postgres, the S3 store (SeaweedFS), Mailpit and the telemetry stack
   with `bun nx run peal-docker:up`, which waits until every service is healthy.
   Stop it with `bun nx run peal-docker:down` (`-- --volumes` also deletes the
-  data). The README lists the ports.
+  data). The [contributing guide](.github/CONTRIBUTING.md) lists the ports.
 - Outside production, the server defaults every outside service to this stack:
   `PEAL_S3_*` to SeaweedFS, `SMTP_URL` to Mailpit, `PUBLIC_URL` to
   `http://localhost:3001`. Only `DATABASE_URL` has no default.
@@ -306,9 +306,11 @@ The servers' other rules are in
 
 ## Maintain these guides
 
-Keep agent instructions in the guides and setup steps in the
-[README](README.md): what applies everywhere here, a package's rules in its
-own `AGENTS.md`, a server context's in `src/<context>/AGENTS.md`. Beside every
+Keep agent instructions in the guides: what applies everywhere here, a
+package's rules in its own `AGENTS.md`, a server context's in
+`src/<context>/AGENTS.md`. Keep setup and development steps in the
+[contributing guide](.github/CONTRIBUTING.md), and what Peal is, how to
+self-host it and its licensing in the [README](README.md). Beside every
 `AGENTS.md`, keep a `CLAUDE.md` holding `@AGENTS.md`, so both clients share
 these instructions. This file is read in every session: keep it short, and put
 a rule in the guide of the code it governs.

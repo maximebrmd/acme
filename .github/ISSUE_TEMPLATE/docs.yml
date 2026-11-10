@@ -1,0 +1,31 @@
+name: 📚 Documentation
+description: Something in the docs, the README or the API reference is wrong, missing or unclear.
+labels: [documentation]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: Its URL, or the file in the repository.
+      placeholder: "https://docs.peal.social/self-hosting#compose"
+    validations:
+      required: true
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - English
+        - French
+        - Both
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording
+      description: If you have one. A pull request is welcome too.
