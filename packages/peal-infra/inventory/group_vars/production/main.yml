@@ -64,6 +64,10 @@ peal_backup_path: /production
 peal_settings:
   OTEL_TRACES_SAMPLER: parentbased_traceidratio
   OTEL_TRACES_SAMPLER_ARG: "0.1"
+  # Where the web app sends people who need more than the largest plan
+  # allows, a page or a mailto: address. Unset, it tells them to write to
+  # whoever runs the server: set it once the address exists.
+  # PEAL_CONTACT_URL: https://peal.social/contact/
 
 # Read when the static image is built.
 peal_static_build_args:
