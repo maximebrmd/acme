@@ -18,12 +18,14 @@ const render = async (
       messages={await loadMessages(locale)}
     >
       <OAuthConsentView
+        allowAds
         allowPublishing
         failed={false}
         pending={false}
         redirectHost="client.example"
         scopes={["openid", "workspace:write", "workspace:publish"]}
         workspaceName="Studio"
+        onAdsChange={constVoid}
         onAllow={constVoid}
         onDeny={constVoid}
         onPublishingChange={constVoid}
@@ -101,7 +103,63 @@ describe(OAuthConsentView, () => {
   });
 });
 
+describe("OAuthConsentView with ads", () => {
+  const scopes = [
+    "openid",
+    "workspace:write",
+    "workspace:publish",
+    "workspace:ads",
+  ];
+
+  it("gives ads a box of their own, ticked at first, beside publishing's", async () => {
+    const html = await render("en", { scopes });
+
+    expect(html.match(/role="checkbox"/gu)).toHaveLength(2);
+    expect(html).toContain(
+      "Let it connect ad accounts and, where it may also publish, spend on ads from them, within the monthly ceiling an owner set"
+    );
+    expect(html).toContain(
+      "Without this, it does nothing with ads: it connects no ad account and spends nothing."
+    );
+    expect(html).not.toContain("<li>Connect ad accounts");
+  });
+
+  it("shows the box unticked once the person leaves ads out", async () => {
+    const html = await render("en", { allowAds: false, scopes });
+
+    expect(html.match(/aria-checked="false"/gu)).toHaveLength(1);
+  });
+
+  it("lists ads as asked when they are all the client asks of the workspace", async () => {
+    const html = await render("en", { scopes: ["openid", "workspace:ads"] });
+
+    expect(html).not.toContain('role="checkbox"');
+    expect(html).toContain("<li>Connect ad accounts");
+  });
+
+  it("writes the choice in French", async () => {
+    const html = await render("fr", { scopes });
+
+    expect(html).toContain(
+      "L’autoriser à connecter des comptes publicitaires et, si elle peut aussi publier, à dépenser en publicité depuis ces comptes, dans la limite du plafond mensuel fixé par un propriétaire"
+    );
+  });
+});
+
 describe(ScopeList, () => {
+  it("gives ads their own line, as the device page shows it", async () => {
+    const html = renderToStaticMarkup(
+      <NextIntlClientProvider locale="en" messages={await loadMessages("en")}>
+        <ScopeList scopes={["workspace:read", "workspace:ads"]} />
+      </NextIntlClientProvider>
+    );
+
+    expect(html.match(/<li>/gu)).toHaveLength(2);
+    expect(html).toContain(
+      "<li>Connect ad accounts and, where it may also publish, spend on ads from them, within the monthly ceiling an owner set"
+    );
+  });
+
   it("gives publishing its own line, as the device page shows it", async () => {
     const html = renderToStaticMarkup(
       <NextIntlClientProvider locale="en" messages={await loadMessages("en")}>

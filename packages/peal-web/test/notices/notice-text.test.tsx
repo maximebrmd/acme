@@ -183,4 +183,78 @@ describe(useNoticeText, () => {
       "Mastodon (@peal_example) dans un espace de travail que vous avez quitté doit être reconnecté"
     );
   });
+
+  it("tells a boost that started, with its budget as money and its end", async () => {
+    const event: NoticeEvent = {
+      _tag: "AdBoostChanged",
+      boostId: "00000000-0000-7000-8000-0000000000b1",
+      budget: { amount: 5000, currency: "EUR" },
+      budgetDigits: 2,
+      change: "started",
+      endsAt: DateTime.makeUnsafe("2026-11-17T22:59:00Z"),
+      postId,
+      reason: null,
+    };
+
+    await expect(render("en", event)).resolves.toContain(
+      `A boost started in Studio Nord: it may spend up to its budget of €50.00, from the ad account’s payment method, until November 17, 2026. Pause or stop it at any time on the post’s page. | Open the post | /app/${workspaceId}/posts/${postId}`
+    );
+    await expect(render("fr", event)).resolves.toMatch(
+      /Une mise en avant a démarré dans Studio Nord\u00A0: elle peut dépenser jusqu’à son budget de 50,00\s€, sur le moyen de paiement du compte publicitaire, jusqu’au 17 novembre 2026\./u
+    );
+  });
+
+  it("says why a boost failed, and that nothing was spent", async () => {
+    const event: NoticeEvent = {
+      _tag: "AdBoostChanged",
+      boostId: "00000000-0000-7000-8000-0000000000b1",
+      budget: { amount: 5000, currency: "JPY" },
+      budgetDigits: 0,
+      change: "failed",
+      endsAt: DateTime.makeUnsafe("2026-11-17T22:59:00Z"),
+      postId,
+      reason: "ceilingExceeded",
+    };
+
+    await expect(render("en", event)).resolves.toContain(
+      "A boost in Studio Nord, with a budget of ¥5,000, could not be made: the monthly ceiling leaves too little room. Nothing ran, and nothing was spent."
+    );
+    await expect(
+      render("en", { ...event, reason: "a code of the network" })
+    ).resolves.toContain("could not be made: the ad network refused it.");
+  });
+
+  it("warns that an unconfirmed boost may be spending", async () => {
+    const event: NoticeEvent = {
+      _tag: "AdBoostChanged",
+      boostId: "00000000-0000-7000-8000-0000000000b1",
+      budget: { amount: 5000, currency: "EUR" },
+      budgetDigits: 2,
+      change: "unconfirmed",
+      endsAt: DateTime.makeUnsafe("2026-11-17T22:59:00Z"),
+      postId,
+      reason: null,
+    };
+
+    await expect(render("en", event)).resolves.toContain(
+      "It may be spending. Check it on the post’s page, and stop it there if it should not run. | Open the post"
+    );
+    await expect(render("fr", event)).resolves.toContain(
+      "Elle dépense peut-être."
+    );
+  });
+
+  it("sends a refused ad network sign-in to the ads page", async () => {
+    const event: NoticeEvent = {
+      _tag: "AdConnectionReconnectRequired",
+      network: "meta",
+    };
+
+    await expect(render("en", event)).resolves.toContain(
+      `Meta refused the sign-in that connects ad accounts to Studio Nord. Their campaigns and numbers are no longer read, and no boost can be made on them, until the person who signed in does so again. Boosts that run keep running at the network. | Open the ads | /app/${workspaceId}/ads`
+    );
+    await expect(render("fr", event)).resolves.toContain(
+      `Meta a refusé la connexion qui relie des comptes publicitaires à Studio Nord. Leurs campagnes et leurs chiffres ne sont plus lus, et aucune mise en avant ne peut y être créée, tant que la personne qui s’était connectée ne le refait pas. Les mises en avant en cours continuent d’être diffusées par le réseau. | Ouvrir la publicité | /app/${workspaceId}/ads`
+    );
+  });
 });

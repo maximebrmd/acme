@@ -48,8 +48,11 @@ import {
 import { Input } from "peal-ui/components/input";
 import { Label } from "peal-ui/components/label";
 import { useCallback, useId, useState, useTransition } from "react";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 
+import { BoostDialog } from "#components/ads/boost-dialog.tsx";
+import { PostPaid } from "#components/ads/post-paid.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
 import { useRefreshWhileVisible } from "#notices/use-refresh-while-visible.ts";
 import {
@@ -80,6 +83,8 @@ interface TargetViewProps {
   readonly channel: Channel | undefined;
   /** Whether a request for this channel runs. */
   readonly busy: boolean;
+  /** What else the member may do on the channel, such as boosting. */
+  readonly extra?: ReactNode;
   readonly onRequest: (request: TargetRequest) => void;
   readonly target: PostTarget;
 }
@@ -290,6 +295,7 @@ export const TargetView = ({
   busy,
   canAct,
   channel,
+  extra,
   onRequest,
   target,
 }: TargetViewProps) => {
@@ -314,6 +320,9 @@ export const TargetView = ({
 
   const repostable =
     target.status === "failed" || target.status === "unconfirmed";
+
+  const acts = canAct && repostable;
+  const hasExtra = extra !== undefined && extra !== null;
 
   return (
     <li>
@@ -359,10 +368,10 @@ export const TargetView = ({
             )}
           </div>
         </CardContent>
-        {canAct && repostable ? (
+        {acts || hasExtra ? (
           <CardFooter>
             <div className="flex flex-wrap gap-2">
-              {target.status === "unconfirmed" ? (
+              {acts && target.status === "unconfirmed" ? (
                 <Check
                   busy={busy}
                   channelName={channelName}
@@ -376,15 +385,18 @@ export const TargetView = ({
                   }}
                 />
               ) : null}
-              <Repost
-                busy={busy}
-                channelName={channelName}
-                platform={platform}
-                unconfirmed={target.status === "unconfirmed"}
-                onRepost={() => {
-                  onRequest({ _tag: "repost", targetId: target.id });
-                }}
-              />
+              {acts ? (
+                <Repost
+                  busy={busy}
+                  channelName={channelName}
+                  platform={platform}
+                  unconfirmed={target.status === "unconfirmed"}
+                  onRepost={() => {
+                    onRequest({ _tag: "repost", targetId: target.id });
+                  }}
+                />
+              ) : null}
+              {extra}
             </div>
           </CardFooter>
         ) : null}
@@ -396,11 +408,21 @@ export const TargetView = ({
 interface PostDetailViewProps {
   /** Every attempt of the post, once loaded. */
   readonly attempts: readonly PublicationAttempt[] | undefined;
+  /**
+   * What else the member may do on a channel the post is on, such as
+   * boosting it there; null where there is nothing.
+   */
+  readonly actionsFor?: (
+    target: PostTarget,
+    channel: Channel | undefined
+  ) => ReactNode;
   /** The channel whose request runs, if any. */
   readonly busy: string | null;
   readonly canAct: boolean;
   readonly channels: readonly Channel[];
   readonly onRequest: (request: TargetRequest) => void;
+  /** The post's boosts and paid numbers, for members who read ads. */
+  readonly paid?: ReactNode;
   readonly post: Post;
   /** The signed-in user, named in how the post came to be. */
   readonly viewerId: string | null;
@@ -412,11 +434,13 @@ interface PostDetailViewProps {
  * check.
  */
 export const PostDetailView = ({
+  actionsFor,
   attempts,
   busy,
   canAct,
   channels,
   onRequest,
+  paid,
   post,
   viewerId,
 }: PostDetailViewProps) => {
@@ -476,21 +500,29 @@ export const PostDetailView = ({
               </output>
             ) : null}
             <ul className="flex flex-col gap-3">
-              {post.targets.map((target) => (
-                <TargetView
-                  key={target.id}
-                  attempts={attempts?.filter(
-                    ({ targetId }) => targetId === target.id
-                  )}
-                  busy={busy === target.id}
-                  canAct={canAct}
-                  channel={channels.find(({ id }) => id === target.channelId)}
-                  target={target}
-                  onRequest={onRequest}
-                />
-              ))}
+              {post.targets.map((target) => {
+                const channel = channels.find(
+                  ({ id }) => id === target.channelId
+                );
+
+                return (
+                  <TargetView
+                    key={target.id}
+                    attempts={attempts?.filter(
+                      ({ targetId }) => targetId === target.id
+                    )}
+                    busy={busy === target.id}
+                    canAct={canAct}
+                    channel={channel}
+                    extra={actionsFor?.(target, channel)}
+                    target={target}
+                    onRequest={onRequest}
+                  />
+                );
+              })}
             </ul>
           </section>
+          {paid}
         </div>
       </CardContent>
     </Card>
@@ -521,12 +553,18 @@ const refreshEvery = 5000;
  * could not tell. It updates while the post is publishing.
  */
 export const PostDetail = ({
+  adsLink,
   channels,
   permissions,
   post,
   userId,
   workspaceId,
 }: {
+  /**
+   * A link to the workspace's ads page, which the boost dialog shows when
+   * no ad account may spend yet.
+   */
+  readonly adsLink: ReactNode;
   readonly channels: readonly Channel[];
   readonly permissions: readonly Permission[];
   readonly post: Post;
@@ -555,9 +593,8 @@ export const PostDetail = ({
 
   useRefreshWhileVisible(refresh, refreshEvery);
 
-  const channelOf = (targetId: string) => {
-    const target = post.targets.find(({ id }) => id === targetId);
-    const channel = channels.find(({ id }) => id === target?.channelId);
+  const channelNamed = (channelId: string | undefined) => {
+    const channel = channels.find(({ id }) => id === channelId);
 
     return channel === undefined
       ? tPosts("disconnectedChannel")
@@ -566,6 +603,32 @@ export const PostDetail = ({
           platform: tPosts("platform", { platform: channel.platform }),
         });
   };
+
+  const channelOf = (targetId: string) =>
+    channelNamed(post.targets.find(({ id }) => id === targetId)?.channelId);
+
+  const maySpend =
+    permissions.includes("ads:read") && permissions.includes("ads:spend");
+
+  // Peal boosts posts published on Facebook Pages and Instagram, for
+  // members who may spend on ads; the dialog shows only on a server that
+  // offers spending.
+  const boostFor = (target: PostTarget, channel: Channel | undefined) =>
+    maySpend &&
+    target.status === "published" &&
+    channel !== undefined &&
+    (channel.platform === "facebook" || channel.platform === "instagram") ? (
+      <BoostDialog
+        adsLink={adsLink}
+        channel={channelNamed(channel.id)}
+        channelId={channel.id}
+        postId={post.id}
+        postText={post.content.text}
+        workspaceId={workspaceId}
+      />
+    ) : null;
+
+  const published = post.targets.some(({ status }) => status === "published");
 
   const handleRequest = (request: TargetRequest) => {
     setBusy(request.targetId);
@@ -618,8 +681,22 @@ export const PostDetail = ({
       busy={busy}
       canAct={permissions.includes("post:schedule")}
       channels={channels}
+      paid={
+        published && permissions.includes("ads:read") ? (
+          <PostPaid
+            channelName={channelNamed}
+            postId={post.id}
+            workspaceId={workspaceId}
+            rights={{
+              manage: permissions.includes("ads:manage"),
+              spend: permissions.includes("ads:spend"),
+            }}
+          />
+        ) : null
+      }
       post={post}
       viewerId={userId}
+      actionsFor={boostFor}
       onRequest={handleRequest}
     />
   );
