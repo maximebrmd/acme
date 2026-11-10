@@ -29,6 +29,8 @@ export const english: EmailCatalog = {
       "You receive this email because you manage the channels of {workspaceName} on Peal. Choose which notifications you receive by email in your notification preferences.",
     subject: "Reconnect {handle} on {platform} by {expiresAt}",
   },
+  contractNumber:
+    "Contract number: {reference}. Give it in Cancel your contract or Withdraw from contract here, at the foot of every page, and your request is applied at once, without signing in.",
   contractRequest: {
     actions: { confirm: "Apply my request", open: "Open Peal" },
     content:
@@ -156,6 +158,7 @@ export const english: EmailCatalog = {
       "You receive this email because you wrote this post in {workspaceName} on Peal, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
     subject: "Check {channel}: a post may have gone out",
   },
+  renewalDeadline: "Last day to refuse the renewal: {renewsAt}",
   resetPassword: {
     action: "Choose a new password",
     body: "Someone asked to reset the password of your Peal account. Choose a new one with the link below.",
@@ -179,14 +182,14 @@ export const english: EmailCatalog = {
   },
   subscriptionRenewing: {
     action: "Open billing",
-    body: "The yearly {plan} plan of {workspaceName} renews on {renewsAt} for {price}, VAT included. To stop it, cancel the subscription on the billing page before that date: it then ends on {renewsAt} and nothing more is charged.",
+    body: "The yearly {plan} plan of {workspaceName} renews on {renewsAt} for {price}, VAT included. You are free not to renew it: until the date below, cancel the contract on the billing page, or with Cancel your contract, at the foot of every page, without signing in. It then ends on {renewsAt} and nothing more is charged.",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your yearly {plan} plan renews on {renewsAt}",
   },
   subscriptionStarted: {
     action: "Open billing",
-    body: "Thank you: {workspaceName} is subscribed to {plan} since {startedAt}, for {price} a {interval}, VAT included, renewed until cancelled. You asked for it to start at once: as a consumer you may still withdraw within 14 days, from the billing page (Withdraw from contract here), and then pay only for the days used. You can cancel it there at any time; the terms of service apply.",
+    body: "Thank you: {workspaceName} is subscribed to {plan} since {startedAt}, for {price} a {interval}, VAT included, renewed until cancelled. You asked for it to start at once: as a consumer you may still withdraw within 14 days, with Withdraw from contract here, at the foot of every page and on the billing page, and then pay only for the days used. You can cancel at any time with Cancel your contract, in the same places. The terms of service apply; they hold the model withdrawal form.",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your {plan} subscription has started",
@@ -207,7 +210,7 @@ export const english: EmailCatalog = {
   },
   trialStarted: {
     action: "Open billing",
-    body: "{workspaceName} is trying {plan} since {startedAt}, until {endsAt}. Nothing is charged, and no payment method was asked for. Unless someone orders {plan} ({price} excluding VAT a month) before then, the workspace moves back to the free plan when the trial ends. You can end the trial at any time from the billing page.",
+    body: "{workspaceName} is trying {plan} since {startedAt}, until {endsAt}. Nothing is charged, and no payment method was asked for. Unless someone orders {plan} ({price} excluding VAT a month) before then, the workspace moves back to the free plan when the trial ends. You can end the trial at any time from the billing page, or with Cancel your contract, at the foot of every page.",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your {plan} trial has started: it ends on {endsAt}",

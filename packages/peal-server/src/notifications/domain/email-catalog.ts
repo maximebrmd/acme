@@ -116,6 +116,16 @@ export interface EmailCatalog {
    * will charge, VAT included.
    */
   readonly subscriptionRenewing: EmailMessages;
+  /**
+   * The last day to refuse a yearly plan's renewal, `{renewsAt}`, which
+   * the reminder sets apart in a box, as French law asks.
+   */
+  readonly renewalDeadline: string;
+  /**
+   * Added to a confirmation's and a reminder's body once the contract has
+   * a number, `{reference}`: what it is for.
+   */
+  readonly contractNumber: string;
   /** The `{plan}` subscription was cancelled, and ends at `{endsAt}`. */
   readonly subscriptionCancelled: EmailMessages;
   /**

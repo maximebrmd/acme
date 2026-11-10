@@ -85,6 +85,46 @@ describe(renderNoticeEmail, () => {
       "Votre abonnement annuel Business se renouvelle le 31 janvier 2027 à 00:00 UTC"
     );
     expect(email.text).toContain("300,00\u00A0€ TTC");
+    // The last day to refuse the renewal, set apart in a box (Code de la
+    // consommation L215-1).
+    expect(email.text).toContain(
+      "\n\nDate limite de non-reconduction : 31 janvier 2027 à 00:00 UTC\n\n"
+    );
+    expect(email.html).toMatch(
+      /<p style="[^"]*border:2px solid[^"]*">Date limite de non-reconduction : 31 janvier 2027 à 00:00 UTC<\/p>/u
+    );
+    expect(email.text).toContain("Résilier votre contrat");
+  });
+
+  it("gives the contract's number with the confirmation and the reminder", () => {
+    const started = render(
+      {
+        _tag: "SubscriptionStarted",
+        interval: "month",
+        plan: "pro",
+        price: { amount: 1500, currency: "eur" },
+        reference: "7K3M-9QXD-42TN",
+        startedAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),
+        trialEnd: Option.none(),
+      },
+      "en"
+    );
+
+    expect(started.text).toContain("Contract number: 7K3M-9QXD-42TN");
+    expect(started.text).toContain("at the foot of every page");
+
+    const renewing = render(
+      {
+        _tag: "SubscriptionRenewing",
+        plan: "business",
+        price: { amount: 30_000, currency: "eur" },
+        reference: "7K3M-9QXD-42TN",
+        renewsAt: DateTime.makeUnsafe("2027-01-31T00:00:00Z"),
+      },
+      "fr"
+    );
+
+    expect(renewing.text).toContain("Numéro de contrat : 7K3M-9QXD-42TN");
   });
 
   it("tells a trial's end and a cancellation's", () => {

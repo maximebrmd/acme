@@ -29,6 +29,8 @@ export const french: EmailCatalog = {
       "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Peal. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Reconnectez {handle} sur {platform} avant le {expiresAt}",
   },
+  contractNumber:
+    "Numéro de contrat : {reference}. Indiquez-le dans Résilier votre contrat ou Renoncer au contrat ici, au pied de chaque page, et votre demande est appliquée immédiatement, sans vous connecter.",
   contractRequest: {
     actions: { confirm: "Appliquer ma demande", open: "Ouvrir Peal" },
     content:
@@ -158,6 +160,7 @@ export const french: EmailCatalog = {
       "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Vérifiez {channel} : une publication est peut-être partie",
   },
+  renewalDeadline: "Date limite de non-reconduction : {renewsAt}",
   resetPassword: {
     action: "Choisir un nouveau mot de passe",
     body: "Quelqu’un a demandé à réinitialiser le mot de passe de votre compte Peal. Choisissez-en un nouveau avec le lien ci-dessous.",
@@ -181,14 +184,14 @@ export const french: EmailCatalog = {
   },
   subscriptionRenewing: {
     action: "Ouvrir la facturation",
-    body: "L’abonnement annuel {plan} de {workspaceName} se renouvelle le {renewsAt} pour {price} TTC. Pour l’arrêter, résiliez l’abonnement depuis la page de facturation avant cette date : il prend alors fin le {renewsAt} et plus rien n’est facturé.",
+    body: "L’abonnement annuel {plan} de {workspaceName} se renouvelle le {renewsAt} pour {price} TTC. Vous êtes libre de ne pas le reconduire : jusqu’à la date ci-dessous, résiliez le contrat depuis la page de facturation, ou avec Résilier votre contrat, au pied de chaque page, sans vous connecter. Il prend alors fin le {renewsAt} et plus rien n’est facturé.",
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "Votre abonnement annuel {plan} se renouvelle le {renewsAt}",
   },
   subscriptionStarted: {
     action: "Ouvrir la facturation",
-    body: "Merci : {workspaceName} est abonné à {plan} depuis le {startedAt}, pour {price} TTC par {interval}, renouvelé jusqu’à résiliation. Vous avez demandé qu’il commence immédiatement : en tant que consommateur, vous pouvez encore vous rétracter dans les 14 jours, depuis la page de facturation (Se rétracter du contrat ici), et ne payer alors que les jours utilisés. Vous pouvez y résilier à tout moment ; les conditions d’utilisation s’appliquent.",
+    body: "Merci : {workspaceName} est abonné à {plan} depuis le {startedAt}, pour {price} TTC par {interval}, renouvelé jusqu’à résiliation. Vous avez demandé qu’il commence immédiatement : en tant que consommateur, vous pouvez encore vous rétracter dans les 14 jours, avec Renoncer au contrat ici, au pied de chaque page et sur la page de facturation, et ne payer alors que les jours utilisés. Vous pouvez résilier à tout moment avec Résilier votre contrat, aux mêmes endroits. Les conditions d’utilisation s’appliquent ; elles contiennent le modèle de formulaire de rétractation.",
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "Votre abonnement {plan} a commencé",
@@ -209,7 +212,7 @@ export const french: EmailCatalog = {
   },
   trialStarted: {
     action: "Ouvrir la facturation",
-    body: "{workspaceName} essaie {plan} depuis le {startedAt}, jusqu’au {endsAt}. Rien n’est facturé, et aucun moyen de paiement n’a été demandé. Sauf si quelqu’un commande {plan} ({price} HT par mois) d’ici là, l’espace de travail repasse à l’offre gratuite à la fin de l’essai. Vous pouvez mettre fin à l’essai à tout moment depuis la page de facturation.",
+    body: "{workspaceName} essaie {plan} depuis le {startedAt}, jusqu’au {endsAt}. Rien n’est facturé, et aucun moyen de paiement n’a été demandé. Sauf si quelqu’un commande {plan} ({price} HT par mois) d’ici là, l’espace de travail repasse à l’offre gratuite à la fin de l’essai. Vous pouvez mettre fin à l’essai à tout moment depuis la page de facturation, ou avec Résilier votre contrat, au pied de chaque page.",
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "Votre essai {plan} a commencé : il prend fin le {endsAt}",

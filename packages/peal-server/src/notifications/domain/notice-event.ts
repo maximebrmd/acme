@@ -89,6 +89,8 @@ export const NoticeEventSchema = Schema.Union([
     interval: Schema.Literals(["month", "year"]),
     plan: PaidPlanSchema,
     price: NoticeMoneySchema,
+    // The contract's number, since contracts have one.
+    reference: Schema.optionalKey(Schema.String),
     startedAt: Schema.DateTimeUtc,
     trialEnd: Schema.Option(Schema.DateTimeUtc),
   }),
@@ -102,6 +104,8 @@ export const NoticeEventSchema = Schema.Union([
   Schema.TaggedStruct("SubscriptionRenewing", {
     plan: PaidPlanSchema,
     price: NoticeMoneySchema,
+    // The contract's number, since contracts have one.
+    reference: Schema.optionalKey(Schema.String),
     renewsAt: Schema.DateTimeUtc,
   }),
   // The subscription was cancelled, and ends at `endsAt`.

@@ -17,6 +17,7 @@ import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
 import { PlaceOrder } from "#billing/application/place-order.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { BillingNotices } from "#billing/application/ports/billing-notices.ts";
+import { ContractReferences } from "#billing/application/ports/contract-references.ts";
 import { ContractRequests } from "#billing/application/ports/contract-requests.ts";
 import { Orders } from "#billing/application/ports/orders.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
@@ -220,6 +221,15 @@ const PortsInMemory = Layer.mergeAll(
             Effect.succeed(Option.some({ amount: 30_000, currency: "eur" })),
         })
       );
+    })
+  ),
+  Layer.succeed(
+    ContractReferences,
+    ContractReferences.of({
+      eraseWorkspace: () => Effect.void,
+      find: () => Effect.succeedNone,
+      issue: ({ stripeSubscriptionId }) =>
+        Effect.succeed(`number-of-${stripeSubscriptionId}`),
     })
   ),
   Layer.effect(
@@ -754,6 +764,7 @@ layer(ActionsTest)("billing's actions", (it) => {
             _tag: "SubscriptionRenewing",
             plan: "business",
             price: { amount: 30_000, currency: "eur" },
+            reference: "number-of-sub_yearly",
             renewsAt: at("2027-01-31T00:00:00Z"),
           },
         },
@@ -815,6 +826,7 @@ layer(ActionsTest)("billing's actions", (it) => {
               interval: "year",
               plan: "business",
               price: { amount: 30_000, currency: "eur" },
+              reference: "number-of-sub_new",
               startedAt: at("2026-11-09T10:30:00Z"),
               trialEnd: Option.none(),
             },

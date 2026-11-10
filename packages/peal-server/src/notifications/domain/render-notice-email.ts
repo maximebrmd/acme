@@ -45,7 +45,19 @@ const channelPhrase = (
       ),
   });
 
+// The body, with what the contract's number is for once it has one.
+const numbered = (
+  messages: EmailMessages,
+  catalog: EmailCatalog,
+  reference: string | undefined
+): EmailMessages =>
+  reference === undefined
+    ? messages
+    : { ...messages, body: `${messages.body} ${catalog.contractNumber}` };
+
 interface Content {
+  /** What the email sets apart in a box, if anything. */
+  readonly highlight?: string;
   readonly messages: EmailMessages;
   readonly values: readonly (readonly [string, string])[];
 }
@@ -93,11 +105,13 @@ const contentOf = (
         ["plan", catalog.plans[plan]],
       ],
     }),
-    SubscriptionRenewing: ({ plan, price, renewsAt }): Content => ({
-      messages: catalog.subscriptionRenewing,
+    SubscriptionRenewing: ({ plan, price, reference, renewsAt }): Content => ({
+      highlight: catalog.renewalDeadline,
+      messages: numbered(catalog.subscriptionRenewing, catalog, reference),
       values: [
         ["plan", catalog.plans[plan]],
         ["price", moneyIn(price, locale)],
+        ["reference", reference ?? ""],
         ["renewsAt", instantIn(renewsAt, locale)],
       ],
     }),
@@ -105,13 +119,15 @@ const contentOf = (
       interval,
       plan,
       price,
+      reference,
       startedAt,
       trialEnd,
     }): Content =>
       Option.match(trialEnd, {
         onNone: (): Content => ({
-          messages: catalog.subscriptionStarted,
+          messages: numbered(catalog.subscriptionStarted, catalog, reference),
           values: [
+            ["reference", reference ?? ""],
             ["interval", catalog.intervals[interval]],
             ["plan", catalog.plans[plan]],
             ["price", moneyIn(price, locale)],
@@ -119,8 +135,9 @@ const contentOf = (
           ],
         }),
         onSome: (endsAt): Content => ({
-          messages: catalog.trialStarted,
+          messages: numbered(catalog.trialStarted, catalog, reference),
           values: [
+            ["reference", reference ?? ""],
             ["endsAt", instantIn(endsAt, locale)],
             ["plan", catalog.plans[plan]],
             ["price", moneyIn(price, locale)],
@@ -149,11 +166,11 @@ const contentOf = (
 export const renderNoticeEmail = (email: NoticeEmail): RenderedEmail => {
   const catalog = catalogs[email.locale];
 
-  const { messages, values: own } = contentOf(
-    email.event,
-    catalog,
-    email.locale
-  );
+  const {
+    highlight,
+    messages,
+    values: own,
+  } = contentOf(email.event, catalog, email.locale);
 
   const values: ReadonlyMap<string, string> = new Map([
     ...own,
@@ -163,19 +180,26 @@ export const renderNoticeEmail = (email: NoticeEmail): RenderedEmail => {
   const inHtml = (template: string) => fill(template, values, escapeHtml);
   const inText = (template: string) => fill(template, values, keep);
 
+  const parts = {
+    action: inHtml(messages.action),
+    body: inHtml(messages.body),
+    ignore: inHtml(messages.ignore),
+    linkFallback: escapeHtml(catalog.layout.linkFallback),
+    locale: email.locale,
+    signature: escapeHtml(catalog.layout.signature),
+    url: escapeHtml(email.url),
+  };
+
   return {
-    html: layout({
-      action: inHtml(messages.action),
-      body: inHtml(messages.body),
-      ignore: inHtml(messages.ignore),
-      linkFallback: escapeHtml(catalog.layout.linkFallback),
-      locale: email.locale,
-      signature: escapeHtml(catalog.layout.signature),
-      url: escapeHtml(email.url),
-    }),
+    html: layout(
+      highlight === undefined
+        ? parts
+        : { ...parts, highlight: inHtml(highlight) }
+    ),
     subject: inText(messages.subject),
     text: [
       inText(messages.body),
+      ...(highlight === undefined ? [] : [inText(highlight)]),
       fill(
         catalog.layout.textLink,
         new Map([

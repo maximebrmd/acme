@@ -12,6 +12,7 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 
 import { BillingMode } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
+import { ContractReferences } from "./ports/contract-references.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 
@@ -51,7 +52,11 @@ const chargedFor = (reminder: Reminder) =>
     });
   });
 
-const noticeOf = (reminder: Reminder, price: Money): BillingNotice => {
+const noticeOf = (
+  reminder: Reminder,
+  price: Money,
+  reference: string
+): BillingNotice => {
   const { subscription } = reminder;
 
   return Match.valueTags(reminder, {
@@ -59,6 +64,7 @@ const noticeOf = (reminder: Reminder, price: Money): BillingNotice => {
       _tag: "SubscriptionRenewing",
       plan: subscription.plan,
       price,
+      reference,
       renewsAt,
     }),
     started: ({ startedAt }): BillingNotice => ({
@@ -66,6 +72,7 @@ const noticeOf = (reminder: Reminder, price: Money): BillingNotice => {
       interval: subscription.interval,
       plan: subscription.plan,
       price,
+      reference,
       startedAt,
       trialEnd:
         subscription.status === "trialing"
@@ -85,7 +92,9 @@ const noticeOf = (reminder: Reminder, price: Money): BillingNotice => {
  * started, the confirmation of the contract on a durable medium (CRD art.
  * 8(7)); that a trial ends in three days; and that a yearly plan renews in
  * about 45 days, so between one and three months before (Code de la
- * consommation L215-1), with its price and how to cancel. The price is
+ * consommation L215-1), with its price and how to cancel. The confirmation
+ * and the renewal give the contract's number, which cancels or withdraws
+ * without signing in. The price is
  * what Stripe charges, taxes included: the first paid invoice's for a
  * confirmation, the next invoice's for a renewal; a notice Stripe cannot
  * price yet, or cannot be asked for, waits for the next run. Runs hourly,
@@ -102,6 +111,7 @@ export class SendBillingReminders extends Context.Service<
       const { enabled } = yield* BillingMode;
       const subscriptions = yield* Subscriptions;
       const notices = yield* BillingNotices;
+      const references = yield* ContractReferences;
       const context = yield* Effect.context<StripeContracts>();
 
       const run = Effect.gen(function* run() {
@@ -131,13 +141,24 @@ export class SendBillingReminders extends Context.Service<
                 Option.match(price, {
                   onNone: () => Effect.succeed(0),
                   onSome: (charged) =>
-                    notices
-                      .tell({
-                        key: reminderKey(reminder),
-                        notice: noticeOf(reminder, charged),
+                    // The contract's number, which its confirmation and
+                    // its reminder give.
+                    references
+                      .issue({
+                        stripeSubscriptionId:
+                          reminder.subscription.stripeSubscriptionId,
                         workspaceId: reminder.subscription.workspaceId,
                       })
-                      .pipe(Effect.as(1)),
+                      .pipe(
+                        Effect.flatMap((reference) =>
+                          notices.tell({
+                            key: reminderKey(reminder),
+                            notice: noticeOf(reminder, charged, reference),
+                            workspaceId: reminder.subscription.workspaceId,
+                          })
+                        ),
+                        Effect.as(1)
+                      ),
                 })
               )
             ),

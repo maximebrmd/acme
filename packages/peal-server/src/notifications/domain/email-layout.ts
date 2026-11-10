@@ -76,6 +76,8 @@ export const keep = (value: string): string => value;
 export const layout = (parts: {
   readonly action: string;
   readonly body: string;
+  /** What the email sets apart in a box under its body, if anything. */
+  readonly highlight?: string;
   readonly ignore: string;
   readonly linkFallback: string;
   readonly locale: Locale;
@@ -89,6 +91,11 @@ export const layout = (parts: {
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">',
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:8px;"><tr><td style="padding:32px;">',
     `<p style="margin:0 0 24px;">${parts.body}</p>`,
+    ...(parts.highlight === undefined
+      ? []
+      : [
+          `<p style="margin:0 0 24px;padding:12px 16px;border:2px solid #18181b;border-radius:6px;font-weight:600;">${parts.highlight}</p>`,
+        ]),
     `<p style="margin:0 0 24px;"><a href="${parts.url}" style="display:inline-block;padding:12px 20px;border-radius:6px;background-color:#18181b;color:#ffffff;font-weight:600;text-decoration:none;">${parts.action}</a></p>`,
     `<p style="margin:0 0 4px;color:#52525b;font-size:14px;">${parts.linkFallback}</p>`,
     `<p style="margin:0 0 24px;font-size:14px;word-break:break-all;"><a href="${parts.url}" style="color:#18181b;">${parts.url}</a></p>`,
