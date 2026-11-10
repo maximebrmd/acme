@@ -12,12 +12,12 @@ import {
 } from "#app/error-envelope.ts";
 import {
   mapFailureResponse,
-  RequestId,
   requestIdAttribute,
   requestIdHeader,
   requestIdOf,
 } from "#app/request-identity.ts";
 import { AnswerHeaders } from "#shared/api/answer-headers.ts";
+import { RequestId } from "#shared/api/request-id.ts";
 
 const pathOf = (url: string) => url.split(/[?#]/u, 1)[0] ?? url;
 

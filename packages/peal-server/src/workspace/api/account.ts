@@ -85,6 +85,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
       legalRetention: exported.legalHold !== null,
       locale: account.user.locale,
     }),
+    activity: exported.activity,
     authoredPosts,
     connectedApps: exported.connectedApps,
     contracts: exported.contracts,

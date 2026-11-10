@@ -1,6 +1,7 @@
 import { Context, Layer } from "effect";
 import { McpProtocol, McpServer, Tool } from "effect/ai";
 
+import { toolCatalogue } from "#app/mcp/catalogue.ts";
 import { PealToolsLive } from "#app/mcp/handlers.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
@@ -15,6 +16,14 @@ const contentTools: ReadonlySet<string> = new Set(
     .values()
     .filter((tool) => !Context.get(tool.annotations, Tool.Readonly))
     .map((tool) => tool.name)
+);
+
+// Every tool that changes something: each call is kept in the workspace's
+// activity log, as the API's writes are.
+const changingTools: ReadonlySet<string> = new Set(
+  toolCatalogue()
+    .filter(({ changes }) => changes)
+    .map(({ name }) => name)
 );
 
 /** Where the MCP endpoint answers, under PUBLIC_URL. */
@@ -64,4 +73,4 @@ export const McpLive = McpServer.layerHttp({
     Layer.provide(PealToolsLive)
   ),
   version: mcpServerVersion,
-}).pipe(Layer.provide(mcpAuthentication(contentTools)));
+}).pipe(Layer.provide(mcpAuthentication({ changingTools, contentTools })));

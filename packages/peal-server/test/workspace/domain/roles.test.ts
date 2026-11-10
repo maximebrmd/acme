@@ -8,10 +8,11 @@ describe(permissionsFor, () => {
     expect(permissionsFor("owner")).toStrictEqual(PermissionSchema.literals);
   });
 
-  it("gives an admin everything but deleting the workspace", () => {
+  it("gives an admin everything but deleting the workspace and reading its activity log", () => {
     expect(permissionsFor("admin")).toStrictEqual(
       PermissionSchema.literals.filter(
-        (permission) => permission !== "organization:delete"
+        (permission) =>
+          permission !== "organization:delete" && permission !== "activity:read"
       )
     );
   });

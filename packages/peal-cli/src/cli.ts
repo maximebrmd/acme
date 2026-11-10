@@ -3,6 +3,7 @@ import { Command } from "effect/cli";
 
 import { PealApi } from "#api.ts";
 import { account } from "#commands/account.ts";
+import { activity } from "#commands/activity.ts";
 import { analytics } from "#commands/analytics.ts";
 import { billing } from "#commands/billing.ts";
 import { channels } from "#commands/channels.ts";
@@ -44,6 +45,7 @@ export const cli = peal.pipe(
     members,
     invitations,
     webhooks,
+    activity,
     account,
   ]),
   Command.provide(({ apiUrl }) => PealApi.layer(apiUrl)),

@@ -20,6 +20,7 @@ import { forbidden, refused } from "#shared/api/forbidden.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
+import { ActivityJournal } from "#workspace/application/activity-journal.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ConnectionJournal } from "#workspace/application/connection-journal.ts";
 import type { ContentChange } from "#workspace/application/connection-journal.ts";
@@ -29,6 +30,7 @@ import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 
+import { recorded } from "./activity-recording.ts";
 import { memberOf, principalOf, toContractPrincipal } from "./principal.ts";
 import { pastLimit, tooManyRequests } from "./rate-limit.ts";
 import { explaining } from "./refusal.ts";
@@ -267,14 +269,22 @@ export const AuthenticationLive = Layer.effect(
 /**
  * WorkspaceAccess: the caller as a member of the workspace in the path. A
  * workspace they do not belong to reads as one that does not exist.
+ *
+ * A member's request that asks to change something (any method but GET,
+ * HEAD and OPTIONS) is kept in the workspace's activity log once it is
+ * answered, done, refused or failed (ActivityJournal): who asked, through
+ * what, the endpoint and the ids its path names, the status and the
+ * error's code, never what it carried. Reads leave nothing.
  */
 export const WorkspaceAccessLive = Layer.effect(
   WorkspaceAccess,
   Effect.gen(function* workspaceAccess() {
     const members = yield* ResolveMember;
+    const activity = yield* ActivityJournal;
 
-    return WorkspaceAccess.of((httpEffect) =>
+    return WorkspaceAccess.of((httpEffect, { endpoint, group }) =>
       Effect.gen(function* member() {
+        const request = yield* HttpServerRequest.HttpServerRequest;
         const principal = principalOf(yield* CurrentPrincipal);
         const params = yield* HttpRouter.params;
         const workspaceId = decodeWorkspaceId(params["workspaceId"]);
@@ -296,9 +306,22 @@ export const WorkspaceAccessLive = Layer.effect(
 
         // A refusal for a missing permission says whose it is: the
         // application's scope, the key's or the role's.
-        return yield* httpEffect.pipe(
+        const answered = httpEffect.pipe(
           Effect.provideService(CurrentMember, current),
           explaining(current)
+        );
+
+        if (safeMethods.has(request.method)) {
+          return yield* answered;
+        }
+
+        return yield* answered.pipe(
+          recorded(activity, {
+            named: params,
+            operation: `${group.identifier}.${endpoint.identifier}`,
+            principal,
+            workspaceId: workspaceId.value,
+          })
         );
       })
     );

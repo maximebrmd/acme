@@ -290,6 +290,18 @@ const ExportedBillingSchema = Schema.Struct({
   ),
 });
 
+// A change the user asked for in a workspace, as its activity log keeps
+// it: when, which operation (`posts.schedule`, or `mcp.<tool>`), how they
+// authenticated (`session`, `apiKey`, `oauth` or `mcp`) and the status
+// answered, null when there is none. Never what the request carried.
+const ExportedActivitySchema = Schema.Struct({
+  at: instant,
+  operation: Schema.String,
+  status: nullable(Schema.Int),
+  via: Schema.String,
+  workspaceId: Schema.String,
+});
+
 // The orders and withdrawals the user made, and their requests to cancel
 // a contract or withdraw from it, kept as the proof of each contract: the
 // workspace is null once it is erased.
@@ -398,7 +410,8 @@ const ExportedWorkspaceSchema = Schema.Struct({
 /**
  * Everything Peal keeps about the user: their account, how they sign in,
  * their sessions, workspaces, invitations, connected applications, notices
- * and preferences, what staff did to their account, the orders and
+ * and preferences, what staff did to their account, the changes they asked
+ * for in workspaces as the activity logs keep them, the orders and
  * withdrawals they made, the posts they wrote in the workspaces they share, the
  * connections that made content and what the law has Peal keep once the
  * account closes, and
@@ -409,6 +422,9 @@ const ExportedWorkspaceSchema = Schema.Struct({
 export const AccountExportSchema = Schema.Struct({
   // The information GDPR Article 15(1) lists about this processing.
   about: ExportedAboutSchema,
+  // The changes the user asked for in workspaces, oldest first, as their
+  // activity logs keep them.
+  activity: Schema.Array(ExportedActivitySchema),
   // The posts the user wrote in the workspaces they share with others.
   authoredPosts: Schema.Array(ExportedAuthoredPostSchema),
   connectedApps: Schema.Array(ConnectedAppSchema),
@@ -492,7 +508,7 @@ export class AccountApi extends HttpApiGroup.make("account")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save, with what GDPR Article 15(1) has the controller tell (`about`: the purposes, legal bases, recipients, retention and source of each category of data, the rights and how to exercise them, in the account's language): their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, what staff did to their account (action, time and reason, not who), the posts they wrote in the workspaces they share, the connections that created, changed or deleted content (time, address, protocol), what the law has Peal keep once the account closes and for how long, and the channels, posts, media details, analytics, API keys, webhook endpoints, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model. Each copy is emailed to the account's address, saying whether the web app or the command line took it.",
+          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save, with what GDPR Article 15(1) has the controller tell (`about`: the purposes, legal bases, recipients, retention and source of each category of data, the rights and how to exercise them, in the account's language): their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, what staff did to their account (action, time and reason, not who), the changes they asked for in workspaces as the activity logs keep them (time, operation, workspace, how they authenticated and the status answered), the posts they wrote in the workspaces they share, the connections that created, changed or deleted content (time, address, protocol), what the law has Peal keep once the account closes and for how long, and the channels, posts, media details, analytics, API keys, webhook endpoints, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model. Each copy is emailed to the account's address, saying whether the web app or the command line took it.",
         summary: "Export my data",
       })
     ),

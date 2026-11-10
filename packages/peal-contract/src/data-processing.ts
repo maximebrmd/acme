@@ -23,6 +23,8 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  * How long each kind of record is kept. Each is the figure a rule or a
  * setting enforces, which a test compares it with:
  *
+ * - `activityLog`: a workspace's log of who changed what
+ *   (`activity/domain/activity-retention.ts`);
  * - `auditLog`, `banRecords`, `banPastEnd`: the staff audit log
  *   (`staff/domain/audit-retention.ts`);
  * - `legalIdentity`, `legalAccount`, `legalConnections`,
@@ -43,6 +45,7 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  *   four weekly full backups, which hold deleted data 5 weeks at most).
  */
 export const retentionPeriods = {
+  activityLog: { days: 90 },
   auditLog: { months: 12 },
   backups: { weeks: 5 },
   banPastEnd: { months: 12 },
@@ -267,6 +270,35 @@ export const processingRegister: readonly ProcessingCategory[] = [
     source: {
       en: "The owners and admins of your workspaces, for the endpoints; the service, from what happens to posts, channels and media; the receiving server, for its answers",
       fr: "Les propriétaires et administrateurs de vos espaces de travail, pour les points de terminaison ; le service, d’après ce qui arrive aux publications, aux canaux et aux médias ; le serveur destinataire, pour ses réponses",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "For each request that asks to change something in a workspace, done, refused or failed: its time, the operation, the identifiers it names, the member or the API key that asked, how they authenticated, the API key or the application it came through and its name then, whether the operator’s staff acted as the member, the status answered and the error’s code; never what the request or its answer carried, an IP address or a browser",
+      fr: "Pour chaque requête qui demande une modification dans un espace de travail, faite, refusée ou échouée : sa date, l’opération, les identifiants visés, le membre ou la clé d’API à son origine, leur mode d’authentification, la clé d’API ou l’application utilisée et son nom à ce moment-là, si l’équipe de l’exploitant agissait au nom du membre, le code de réponse et le code de l’erreur ; jamais le contenu de la requête ou de sa réponse, une adresse IP ou un navigateur",
+    },
+    id: "activity",
+    legalBasis: {
+      en: "Legitimate interests (GDPR Article 6(1)(f)): those of a workspace’s owners and of the operator in the security of the workspace and in accounting for the changes made to it",
+      fr: "Intérêts légitimes (RGPD, article 6, paragraphe 1, point f) : ceux des propriétaires d’un espace de travail et de l’exploitant à la sécurité de l’espace de travail et à pouvoir répondre des modifications qui y sont faites",
+    },
+    name: {
+      en: "Workspace activity logs",
+      fr: "Journaux d’activité des espaces de travail",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Show a workspace’s owners who changed what in it, and through which application",
+      fr: "Montrer aux propriétaires d’un espace de travail qui y a modifié quoi, et par quelle application",
+    },
+    retention: {
+      en: `${p.activityLog.days} days from each request, then deleted within a day, or until the workspace is deleted. Closing an account removes it from the logs of the workspaces that remain at once: what it changed stays there, without who`,
+      fr: `${p.activityLog.days} jours à compter de chaque requête, puis suppression dans la journée, ou jusqu’à la suppression de l’espace de travail. La fermeture d’un compte le retire aussitôt des journaux des espaces de travail qui restent : ce qu’il a modifié y demeure, sans son auteur`,
+    },
+    source: {
+      en: "Your use of the service, and that of the API keys and applications acting in your workspaces",
+      fr: "Votre utilisation du service, et celle des clés d’API et des applications qui agissent dans vos espaces de travail",
     },
   },
   {

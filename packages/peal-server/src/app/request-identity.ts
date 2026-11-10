@@ -1,4 +1,4 @@
-import { Cause, Context, Effect, Option } from "effect";
+import { Cause, Effect, Option } from "effect";
 import { HttpServerError } from "effect/http";
 import type { HttpServerResponse } from "effect/http";
 
@@ -11,14 +11,6 @@ export const requestIdAttribute = "peal.request_id";
 // What a caller may send as an id: 8 to 128 letters, digits, dots, colons,
 // underscores and hyphens, so it goes into a log line or a header as it is.
 const wellFormed = /^[\w.:-]{8,128}$/u;
-
-/**
- * The id of the request being answered, for what is written about it: the
- * error it is told, the activity it leaves.
- */
-export class RequestId extends Context.Service<RequestId, string>()(
-  "peal-server/app/RequestId"
-) {}
 
 /**
  * Answers a failure with the response it would get anyway, changed by

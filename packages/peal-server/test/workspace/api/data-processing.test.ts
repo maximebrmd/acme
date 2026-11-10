@@ -3,11 +3,13 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Duration } from "effect";
 import {
+  activityRetentionDays,
   legalDisclosureYears,
   processingRegister,
   retentionPeriods,
 } from "peal-contract";
 
+import { activityRetention } from "#activity/domain/activity-retention.ts";
 import { contractRetention } from "#billing/domain/contract-retention.ts";
 import { trialMemory } from "#billing/domain/trial-memory.ts";
 import { legalRetention } from "#legal/domain/legal-retention.ts";
@@ -67,6 +69,25 @@ describe("the data processing registry", () => {
     expect(
       Duration.days(retentionPeriods.webhookDeliveries.days)
     ).toStrictEqual(deliveryRetention);
+  });
+
+  it("keeps a workspace's activity log as long as its purge does", () => {
+    expect(Duration.days(retentionPeriods.activityLog.days)).toStrictEqual(
+      activityRetention
+    );
+    // The API's description of the log says the same.
+    expect(activityRetentionDays).toBe(retentionPeriods.activityLog.days);
+    expect([
+      kept("activity"),
+      categoryOf("activity")?.retention.fr,
+    ]).toStrictEqual([
+      expect.stringContaining("90 days from each request"),
+      expect.stringContaining("90 jours à compter de chaque requête"),
+    ]);
+    // Metadata only, as the log is.
+    expect(categoryOf("activity")?.data.en).toContain(
+      "never what the request or its answer carried"
+    );
   });
 
   it("keeps an idempotency key as long as it answers its first post", () => {

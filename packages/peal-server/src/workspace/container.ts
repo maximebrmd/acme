@@ -52,6 +52,7 @@ import { DrizzleImpersonationSessions } from "#workspace/infrastructure/drizzle-
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 import { EmailedAccountMail } from "#workspace/infrastructure/emailed-account-mail.ts";
+import { LoggedActivityJournal } from "#workspace/infrastructure/logged-activity-journal.ts";
 import { PrivacyDeclarationLive } from "#workspace/infrastructure/privacy-declaration-file.ts";
 import { S3ErasureLedger } from "#workspace/infrastructure/s3-erasure-ledger.ts";
 import { StaffImpersonationLog } from "#workspace/infrastructure/staff-impersonation-log.ts";
@@ -84,6 +85,13 @@ const StaffToolsLive = Layer.mergeAll(
   AccountModerationLive
 );
 
+/**
+ * What the workspaces' API keys and the OAuth clients acting for members
+ * are called, for the contexts that record which one did something. Needs
+ * the database.
+ */
+export { DrizzleCredentialNames as CredentialNamesLive } from "#workspace/infrastructure/drizzle-credential-names.ts";
+
 // The account an email address signs in to, which billing asks for when a
 // contract's cancellation comes without a session.
 export { DrizzleAccountLookup as AccountLookupLive } from "#workspace/infrastructure/drizzle-account-lookup.ts";
@@ -112,7 +120,8 @@ const ImpersonationGuardLive = ImpersonationGuard.layer.pipe(
  * context's WorkspaceEntitlements and RecordSubscription, the staff
  * context's ImpersonationAudit, the legal context's LegalRecords and the
  * activity context's RequestLimiter, which counts requests for the rate
- * limit.
+ * limit, and ActivityLog, which keeps the changes members, keys and
+ * applications ask for.
  */
 export const WorkspaceLive = Layer.mergeAll(
   UseCasesLive,
@@ -125,6 +134,7 @@ export const WorkspaceLive = Layer.mergeAll(
   Layer.provideMerge(ImpersonationGuardLive),
   Layer.provideMerge(LegalConnectionJournal),
   Layer.provideMerge(CountedRequestLimits),
+  Layer.provideMerge(LoggedActivityJournal),
   Layer.provideMerge(AuthSettings.layer)
 );
 

@@ -37,6 +37,7 @@ import {
 } from "peal-contract";
 import type {
   AccountExport,
+  ActivityEvent,
   Billing,
   Channel,
   ChannelOptions,
@@ -75,6 +76,7 @@ export const shopId = "6c1d7f75-6e1a-4b8f-8b63-4a2d3e5f6071";
 export const userId = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
 
 const everything: readonly Permission[] = [
+  "activity:read",
   "analytics:read",
   "billing:read",
   "channel:read",
@@ -371,6 +373,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     recipients: [],
     rights: [],
   },
+  activity: [],
   authoredPosts: [],
   connectedApps: [cli],
   contracts: { orders: [], requests: [], withdrawals: [] },
@@ -443,6 +446,54 @@ export interface StoredRequest {
   readonly method: string;
   readonly part: string | null;
 }
+
+export const auditedKeyId = "3d6f0a1b-2c4e-4f5a-8b7c-9d0e1f2a3b4c";
+
+/**
+ * Studio's activity log, newest first: a draft an application made for the
+ * user, a key refused, and a channel the user disconnected in the web app.
+ */
+export const activityLog: readonly ActivityEvent[] = [
+  {
+    actor: { _tag: "user", userId },
+    application: { id: "peal-cli", name: "Peal CLI" },
+    errorCode: null,
+    id: "0190f3a0-0000-7000-8000-0000000a0003",
+    impersonated: false,
+    objectIds: {},
+    occurredAt: at("2026-11-09T11:30:00Z"),
+    operation: "posts.create",
+    requestId: "0190f3a0-0000-7000-8000-0000000b0003",
+    status: 201,
+    via: "oauth",
+  },
+  {
+    actor: { _tag: "apiKey", apiKeyId: auditedKeyId },
+    application: { id: auditedKeyId, name: "ci" },
+    errorCode: "forbidden",
+    id: "0190f3a0-0000-7000-8000-0000000a0002",
+    impersonated: false,
+    objectIds: { postId: "0190f3a0-0000-7000-8000-00000000d002" },
+    occurredAt: at("2026-11-09T10:15:00Z"),
+    operation: "posts.schedule",
+    requestId: "synthetic-request-0002",
+    status: 403,
+    via: "apiKey",
+  },
+  {
+    actor: { _tag: "user", userId },
+    application: null,
+    errorCode: null,
+    id: "0190f3a0-0000-7000-8000-0000000a0001",
+    impersonated: false,
+    objectIds: { channelId: "0190f3a0-0000-7000-8000-00000000c002" },
+    occurredAt: at("2026-11-08T09:00:00Z"),
+    operation: "channels.disconnect",
+    requestId: null,
+    status: 204,
+    via: "session",
+  },
+];
 
 export const hookId = "0190f3a0-0000-7000-8000-00000000b001";
 
@@ -618,6 +669,10 @@ const record = (studio: Studio, change: string) =>
     ...current,
     changes: [...current.changes, change],
   }));
+
+// The actor an event names: the member's user id, or the key's id.
+const actorIdOf = ({ actor }: ActivityEvent): string | null =>
+  actor._tag === "apiKey" ? actor.apiKeyId : actor.userId;
 
 // The member a request acts as, if they may do this.
 const allowed = (permission: Permission) =>
@@ -1978,6 +2033,50 @@ export const studioGroupsLive = (studio: Studio) =>
                 enabled && !found.enabled ? null : found.failingSince,
               updatedAt: now,
             });
+          }),
+      })
+    ),
+    HttpApiBuilder.group(Api, "activity", (handlers) =>
+      handlers.handleAll({
+        list: ({ params, query }) =>
+          Effect.gen(function* list() {
+            const member = yield* CurrentMember;
+
+            // As the server words it, for the member it refuses.
+            if (!member.permissions.includes("activity:read")) {
+              return yield* new Forbidden({
+                message:
+                  "Your role in this workspace does not have the permission activity:read. An owner or an admin of the workspace changes roles, in its settings.",
+                permission: "activity:read",
+                reason: "missingPermission",
+              });
+            }
+
+            const listed = (
+              params.workspaceId === studioId ? activityLog : []
+            ).filter(
+              (event) =>
+                (query.operation === undefined ||
+                  event.operation === query.operation) &&
+                (query.actor === undefined || actorIdOf(event) === query.actor)
+            );
+
+            const start =
+              query.cursor === undefined
+                ? 0
+                : listed.findIndex(({ id }) => id === query.cursor) + 1;
+
+            const limit = query.limit ?? 30;
+            const items = listed.slice(start, start + limit);
+            const last = items.at(-1);
+
+            return {
+              items,
+              nextCursor:
+                last !== undefined && start + limit < listed.length
+                  ? last.id
+                  : null,
+            };
           }),
       })
     ),

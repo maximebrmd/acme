@@ -22,6 +22,24 @@ CREATE SCHEMA "webhooks";
 --> statement-breakpoint
 CREATE SCHEMA "auth";
 --> statement-breakpoint
+CREATE TABLE "activity"."events" (
+	"actor_kind" text NOT NULL,
+	"api_key_id" text,
+	"application_id" text,
+	"application_name" text,
+	"error_code" text,
+	"id" uuid PRIMARY KEY,
+	"impersonated" boolean NOT NULL,
+	"object_ids" jsonb DEFAULT '{}' NOT NULL,
+	"occurred_at" timestamp with time zone NOT NULL,
+	"operation" text NOT NULL,
+	"request_id" text,
+	"status" integer,
+	"user_id" uuid,
+	"via" text NOT NULL,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "activity"."request_counts" (
 	"requests" integer NOT NULL,
 	"subject" text,
@@ -776,6 +794,9 @@ CREATE TABLE "auth"."verification" (
 	"updated_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
+CREATE INDEX "events_workspace" ON "activity"."events" ("workspace_id","id");--> statement-breakpoint
+CREATE INDEX "events_occurred_at" ON "activity"."events" ("occurred_at");--> statement-breakpoint
+CREATE INDEX "events_user" ON "activity"."events" ("user_id");--> statement-breakpoint
 CREATE INDEX "request_counts_window_start" ON "activity"."request_counts" ("window_start");--> statement-breakpoint
 CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collection_at","channel_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_channel_due" ON "analytics"."tracked_posts" ("channel_id","next_collection_at","target_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint

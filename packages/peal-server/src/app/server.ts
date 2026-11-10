@@ -6,7 +6,7 @@ import { HttpApiBuilder } from "effect/http-api";
 import { WorkflowEngine } from "effect/workflow";
 import { Api } from "peal-contract";
 
-import { ActivityLive } from "#activity/container.ts";
+import { ActivityApiLive, ActivityLive } from "#activity/container.ts";
 import {
   AnalyticsApiLive,
   analyticsCollection,
@@ -81,6 +81,7 @@ import {
 import {
   AccountLookupLive,
   AuthRoutesLive,
+  CredentialNamesLive,
   ErasureReplayLive,
   StripeCheckoutsLive,
   WorkspaceApiLive,
@@ -105,6 +106,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   StaffApiLive,
   LegalApiLive,
   WebhooksApiLive,
+  ActivityApiLive,
   ContractRequestsDeskApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
@@ -140,13 +142,20 @@ const BillingContextsLive = BillingLive.pipe(
   Layer.provide(StripeCheckoutsLive)
 );
 
+// The request counts and the workspaces' activity logs, which name the
+// keys and applications behind requests as the workspace context does.
+const ActivityContextLive = ActivityLive.pipe(
+  Layer.provide(CredentialNamesLive)
+);
+
 // Webhooks, whose signing secrets the channels context's cipher encrypts.
 const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
 
 // The workspace context with the notifications it sends, the plans that
 // limit it, the audit log of staff's impersonations it records and the
-// legal records of the connections that change content, and the count of
-// the requests each key and application sends, then the
+// legal records of the connections that change content, the count of
+// the requests each key and application sends and the activity logs of the
+// changes they ask for, then the
 // notices, which read the workspace's members, then the webhooks, which
 // tell a workspace through them that an endpoint was turned off, then the
 // channels context, which sends notices and webhook events, as publishing
@@ -160,7 +169,7 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
       Layer.provideMerge(BillingContextsLive),
       Layer.provide(ImpersonationAuditLive),
       Layer.provideMerge(LegalLive),
-      Layer.provideMerge(ActivityLive)
+      Layer.provideMerge(ActivityContextLive)
     )
   )
 );

@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "eeabcf5b-f14d-4bd5-895a-0ce4ee29698e",
+  "id": "50164964-d242-4d23-b245-52acb0ed4902",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -149,6 +149,25 @@
         "s|sch|auth",
         "n|sch|auth",
         "e|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "activity",
+        "events"
+      ],
+      "writes": [
+        "s|tbl|activity.events",
+        "n|tbl|activity.events",
+        "e|tbl|activity.events",
+        "n|rel|activity.events",
+        "n|type|activity.events",
+        "n|rel|activity.events_pkey"
+      ],
+      "reads": [
+        "n|sch|activity"
       ]
     },
     {
@@ -1210,6 +1229,67 @@
       ],
       "reads": [
         "n|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "activity",
+        "events",
+        "events_workspace"
+      ],
+      "writes": [
+        "s|idx|activity.events_workspace",
+        "n|idx|activity.events_workspace",
+        "e|idx|activity.events_workspace",
+        "n|rel|activity.events_workspace"
+      ],
+      "reads": [
+        "n|tbl|activity.events",
+        "n|sch|activity",
+        "n|col|activity.events.workspace_id",
+        "n|col|activity.events.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "activity",
+        "events",
+        "events_occurred_at"
+      ],
+      "writes": [
+        "s|idx|activity.events_occurred_at",
+        "n|idx|activity.events_occurred_at",
+        "e|idx|activity.events_occurred_at",
+        "n|rel|activity.events_occurred_at"
+      ],
+      "reads": [
+        "n|tbl|activity.events",
+        "n|sch|activity",
+        "n|col|activity.events.occurred_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "activity",
+        "events",
+        "events_user"
+      ],
+      "writes": [
+        "s|idx|activity.events_user",
+        "n|idx|activity.events_user",
+        "e|idx|activity.events_user",
+        "n|rel|activity.events_user"
+      ],
+      "reads": [
+        "n|tbl|activity.events",
+        "n|sch|activity",
+        "n|col|activity.events.user_id"
       ]
     },
     {
@@ -3520,6 +3600,12 @@
     },
     {
       "schema": "activity",
+      "name": "events",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "activity",
       "name": "request_counts",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -3847,6 +3933,201 @@
       "name": "verification",
       "isRlsEnabled": false,
       "entityType": "tables"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "actor_kind",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "api_key_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "application_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "application_name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "error_code",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "impersonated",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "object_ids",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'{}'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "occurred_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "operation",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "request_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "status",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "user_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "via",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
     },
     {
       "schema": "activity",
@@ -11104,6 +11385,76 @@
     },
     {
       "schema": "activity",
+      "table": "events",
+      "name": "events_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "events_occurred_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "occurred_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "events_user",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "activity",
       "table": "request_counts",
       "name": "request_counts_window_start",
       "nameExplicit": true,
@@ -13503,6 +13854,16 @@
       "columns": [
         "bucket",
         "day"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "events_pkey",
+      "columns": [
+        "id"
       ],
       "nameExplicit": false,
       "entityType": "pks"

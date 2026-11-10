@@ -478,6 +478,32 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             before + 1
           );
 
+          // And in the workspace's activity log, by the tool's name and
+          // the key's.
+          const sql = yield* SqlClient.SqlClient;
+
+          const logged =
+            yield* sql`SELECT operation, via, application_name FROM activity.events WHERE workspace_id = ${fixture.workspaceId} AND via = 'mcp'`.pipe(
+              Effect.flatMap(
+                Schema.decodeUnknownEffect(
+                  Schema.Array(
+                    Schema.Struct({
+                      application_name: Schema.NullOr(Schema.String),
+                      operation: Schema.String,
+                      via: Schema.String,
+                    })
+                  )
+                )
+              ),
+              Effect.orDie
+            );
+
+          assert.deepInclude(logged, {
+            application_name: "ci",
+            operation: "mcp.create_draft",
+            via: "mcp",
+          });
+
           // What it was not given is refused, in words about the key: there
           // is no scope to ask a user for.
           const refusal = yield* agent.refused("schedule_post", {

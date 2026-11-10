@@ -14,6 +14,7 @@ import { ClusterCron, RunnerAddress } from "effect/cluster";
 import type { Sharding } from "effect/cluster";
 import { SqlClient } from "effect/sql";
 
+import { ActivityLog } from "#activity/application/activity-log.ts";
 import { RequestLimiter } from "#activity/application/request-limiter.ts";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import { clusterLayer } from "#app/cluster.ts";
@@ -163,6 +164,14 @@ const ChannelJobsTest = Layer.mergeAll(
     RequestLimiter.of({
       admit: () => Effect.die("not used by the crons"),
       purge: Effect.succeed(0),
+    })
+  ),
+  Layer.succeed(
+    ActivityLog,
+    ActivityLog.of({
+      list: () => Effect.die("not used by the crons"),
+      purge: Effect.succeed(0),
+      record: () => Effect.die("not used by the crons"),
     })
   ),
   Layer.succeed(

@@ -1,6 +1,7 @@
 import { HttpApi, OpenApi } from "effect/http-api";
 
 import { AccountApi } from "./account.ts";
+import { ActivityApi } from "./activity.ts";
 import { AnalyticsApi } from "./analytics.ts";
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
@@ -29,6 +30,26 @@ import { WebhooksApi } from "./webhooks.ts";
 import { WorkspacesApi } from "./workspaces.ts";
 
 export { DatabaseUnavailable } from "./database-unavailable.ts";
+
+export {
+  ActivityActorSchema,
+  ActivityApi,
+  ActivityApplicationSchema,
+  ActivityEventSchema,
+  ActivityPageSchema,
+  activityRetentionDays,
+  ActivityViaSchema,
+  defaultActivityPageSize,
+  maxActivityPageSize,
+} from "./activity.ts";
+
+export type {
+  ActivityActor,
+  ActivityApplication,
+  ActivityEvent,
+  ActivityPage,
+  ActivityVia,
+} from "./activity.ts";
 
 export {
   AccountApi,
@@ -883,6 +904,7 @@ export class Api extends HttpApi.make("peal")
   .add(AnalyticsApi)
   .add(TikTokApi)
   .add(WebhooksApi)
+  .add(ActivityApi)
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)
