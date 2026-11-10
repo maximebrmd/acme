@@ -12,6 +12,7 @@ export interface ApprovalRequest {
     requestedVia: Peal.ApprovalOrigin;
     schedule: Peal.PostSchedule;
     status: Peal.ApprovalStatus;
+    subjectHash: string;
 }
 
 export namespace ApprovalRequest {

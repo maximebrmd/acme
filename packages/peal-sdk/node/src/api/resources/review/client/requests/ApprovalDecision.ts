@@ -4,10 +4,14 @@
  * @example
  *     {
  *         workspaceId: "workspaceId",
- *         postId: "postId"
+ *         postId: "postId",
+ *         approvalId: "approvalId",
+ *         subjectHash: "subjectHash"
  *     }
  */
-export interface ApproveReviewRequest {
+export interface ApprovalDecision {
     workspaceId: string;
     postId: string;
+    approvalId: string;
+    subjectHash: string;
 }

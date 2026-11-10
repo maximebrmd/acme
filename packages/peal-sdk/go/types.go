@@ -264,12 +264,7 @@ func (a *APIKeyNotFoundEncoded) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
-var (
-	approvalNotPendingEncodedFieldTag = big.NewInt(1 << 0)
-)
-
-type ApprovalNotPendingEncoded struct {
-	Tag ApprovalNotPendingEncodedTag `json:"_tag" url:"_tag"`
+type ApprovalChangedEncoded struct {
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -278,11 +273,71 @@ type ApprovalNotPendingEncoded struct {
 	rawJSON         json.RawMessage
 }
 
-func (a *ApprovalNotPendingEncoded) GetTag() ApprovalNotPendingEncodedTag {
+func (a *ApprovalChangedEncoded) GetExtraProperties() map[string]interface{} {
 	if a == nil {
-		return ""
+		return nil
 	}
-	return a.Tag
+	return a.extraProperties
+}
+
+func (a *ApprovalChangedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if a.explicitFields != nil {
+		next.Set(a.explicitFields)
+	}
+	next.Or(next, field)
+	a.explicitFields = next
+}
+
+func (a *ApprovalChangedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler ApprovalChangedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*a = ApprovalChangedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *a)
+	if err != nil {
+		return err
+	}
+	a.extraProperties = extraProperties
+	a.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (a *ApprovalChangedEncoded) MarshalJSON() ([]byte, error) {
+	type embed ApprovalChangedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (a *ApprovalChangedEncoded) String() string {
+	if a == nil {
+		return "<nil>"
+	}
+	if len(a.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(a.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(a); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", a)
+}
+
+type ApprovalNotPendingEncoded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
 }
 
 func (a *ApprovalNotPendingEncoded) GetExtraProperties() map[string]interface{} {
@@ -299,13 +354,6 @@ func (a *ApprovalNotPendingEncoded) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	a.explicitFields = next
-}
-
-// SetTag sets the Tag field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (a *ApprovalNotPendingEncoded) SetTag(tag ApprovalNotPendingEncodedTag) {
-	a.Tag = tag
-	a.require(approvalNotPendingEncodedFieldTag)
 }
 
 func (a *ApprovalNotPendingEncoded) UnmarshalJSON(data []byte) error {
@@ -348,25 +396,6 @@ func (a *ApprovalNotPendingEncoded) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", a)
-}
-
-type ApprovalNotPendingEncodedTag string
-
-const (
-	ApprovalNotPendingEncodedTagApprovalNotPending ApprovalNotPendingEncodedTag = "ApprovalNotPending"
-)
-
-func NewApprovalNotPendingEncodedTagFromString(s string) (ApprovalNotPendingEncodedTag, error) {
-	switch s {
-	case "ApprovalNotPending":
-		return ApprovalNotPendingEncodedTagApprovalNotPending, nil
-	}
-	var t ApprovalNotPendingEncodedTag
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (a ApprovalNotPendingEncodedTag) Ptr() *ApprovalNotPendingEncodedTag {
-	return &a
 }
 
 var (
@@ -1406,7 +1435,6 @@ type CommentProblem string
 const (
 	CommentProblemText      CommentProblem = "text"
 	CommentProblemName      CommentProblem = "name"
-	CommentProblemEmail     CommentProblem = "email"
 	CommentProblemParent    CommentProblem = "parent"
 	CommentProblemAnchor    CommentProblem = "anchor"
 	CommentProblemSelection CommentProblem = "selection"
@@ -1418,8 +1446,6 @@ func NewCommentProblemFromString(s string) (CommentProblem, error) {
 		return CommentProblemText, nil
 	case "name":
 		return CommentProblemName, nil
-	case "email":
-		return CommentProblemEmail, nil
 	case "parent":
 		return CommentProblemParent, nil
 	case "anchor":
@@ -6826,6 +6852,280 @@ func (f ForbiddenEncodedTag) Ptr() *ForbiddenEncodedTag {
 	return &f
 }
 
+type GoogleBusinessCallToAction string
+
+const (
+	GoogleBusinessCallToActionBook      GoogleBusinessCallToAction = "book"
+	GoogleBusinessCallToActionOrder     GoogleBusinessCallToAction = "order"
+	GoogleBusinessCallToActionShop      GoogleBusinessCallToAction = "shop"
+	GoogleBusinessCallToActionLearnMore GoogleBusinessCallToAction = "learnMore"
+	GoogleBusinessCallToActionSignUp    GoogleBusinessCallToAction = "signUp"
+	GoogleBusinessCallToActionCall      GoogleBusinessCallToAction = "call"
+)
+
+func NewGoogleBusinessCallToActionFromString(s string) (GoogleBusinessCallToAction, error) {
+	switch s {
+	case "book":
+		return GoogleBusinessCallToActionBook, nil
+	case "order":
+		return GoogleBusinessCallToActionOrder, nil
+	case "shop":
+		return GoogleBusinessCallToActionShop, nil
+	case "learnMore":
+		return GoogleBusinessCallToActionLearnMore, nil
+	case "signUp":
+		return GoogleBusinessCallToActionSignUp, nil
+	case "call":
+		return GoogleBusinessCallToActionCall, nil
+	}
+	var t GoogleBusinessCallToAction
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (g GoogleBusinessCallToAction) Ptr() *GoogleBusinessCallToAction {
+	return &g
+}
+
+var (
+	googleBusinessOptionsFieldCallToAction    = big.NewInt(1 << 0)
+	googleBusinessOptionsFieldCallToActionURL = big.NewInt(1 << 1)
+	googleBusinessOptionsFieldCouponCode      = big.NewInt(1 << 2)
+	googleBusinessOptionsFieldEndsAt          = big.NewInt(1 << 3)
+	googleBusinessOptionsFieldPostType        = big.NewInt(1 << 4)
+	googleBusinessOptionsFieldRedeemURL       = big.NewInt(1 << 5)
+	googleBusinessOptionsFieldStartsAt        = big.NewInt(1 << 6)
+	googleBusinessOptionsFieldTerms           = big.NewInt(1 << 7)
+	googleBusinessOptionsFieldTitle           = big.NewInt(1 << 8)
+)
+
+// How a post goes out on a Google Business Profile location. An `event` or an `offer` needs `title`, `startsAt` and `endsAt`, on the location's own clock; only an `offer` takes `couponCode`, `redeemUrl` and `terms`.
+type GoogleBusinessOptions struct {
+	CallToAction    *GoogleBusinessCallToAction `json:"callToAction,omitempty" url:"callToAction,omitempty"`
+	CallToActionURL *string                     `json:"callToActionUrl,omitempty" url:"callToActionUrl,omitempty"`
+	CouponCode      *string                     `json:"couponCode,omitempty" url:"couponCode,omitempty"`
+	EndsAt          *string                     `json:"endsAt,omitempty" url:"endsAt,omitempty"`
+	PostType        *GoogleBusinessPostType     `json:"postType,omitempty" url:"postType,omitempty"`
+	RedeemURL       *string                     `json:"redeemUrl,omitempty" url:"redeemUrl,omitempty"`
+	StartsAt        *string                     `json:"startsAt,omitempty" url:"startsAt,omitempty"`
+	Terms           *string                     `json:"terms,omitempty" url:"terms,omitempty"`
+	Title           *string                     `json:"title,omitempty" url:"title,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GoogleBusinessOptions) GetCallToAction() *GoogleBusinessCallToAction {
+	if g == nil {
+		return nil
+	}
+	return g.CallToAction
+}
+
+func (g *GoogleBusinessOptions) GetCallToActionURL() *string {
+	if g == nil {
+		return nil
+	}
+	return g.CallToActionURL
+}
+
+func (g *GoogleBusinessOptions) GetCouponCode() *string {
+	if g == nil {
+		return nil
+	}
+	return g.CouponCode
+}
+
+func (g *GoogleBusinessOptions) GetEndsAt() *string {
+	if g == nil {
+		return nil
+	}
+	return g.EndsAt
+}
+
+func (g *GoogleBusinessOptions) GetPostType() *GoogleBusinessPostType {
+	if g == nil {
+		return nil
+	}
+	return g.PostType
+}
+
+func (g *GoogleBusinessOptions) GetRedeemURL() *string {
+	if g == nil {
+		return nil
+	}
+	return g.RedeemURL
+}
+
+func (g *GoogleBusinessOptions) GetStartsAt() *string {
+	if g == nil {
+		return nil
+	}
+	return g.StartsAt
+}
+
+func (g *GoogleBusinessOptions) GetTerms() *string {
+	if g == nil {
+		return nil
+	}
+	return g.Terms
+}
+
+func (g *GoogleBusinessOptions) GetTitle() *string {
+	if g == nil {
+		return nil
+	}
+	return g.Title
+}
+
+func (g *GoogleBusinessOptions) GetExtraProperties() map[string]interface{} {
+	if g == nil {
+		return nil
+	}
+	return g.extraProperties
+}
+
+func (g *GoogleBusinessOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if g.explicitFields != nil {
+		next.Set(g.explicitFields)
+	}
+	next.Or(next, field)
+	g.explicitFields = next
+}
+
+// SetCallToAction sets the CallToAction field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetCallToAction(callToAction *GoogleBusinessCallToAction) {
+	g.CallToAction = callToAction
+	g.require(googleBusinessOptionsFieldCallToAction)
+}
+
+// SetCallToActionURL sets the CallToActionURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetCallToActionURL(callToActionURL *string) {
+	g.CallToActionURL = callToActionURL
+	g.require(googleBusinessOptionsFieldCallToActionURL)
+}
+
+// SetCouponCode sets the CouponCode field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetCouponCode(couponCode *string) {
+	g.CouponCode = couponCode
+	g.require(googleBusinessOptionsFieldCouponCode)
+}
+
+// SetEndsAt sets the EndsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetEndsAt(endsAt *string) {
+	g.EndsAt = endsAt
+	g.require(googleBusinessOptionsFieldEndsAt)
+}
+
+// SetPostType sets the PostType field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetPostType(postType *GoogleBusinessPostType) {
+	g.PostType = postType
+	g.require(googleBusinessOptionsFieldPostType)
+}
+
+// SetRedeemURL sets the RedeemURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetRedeemURL(redeemURL *string) {
+	g.RedeemURL = redeemURL
+	g.require(googleBusinessOptionsFieldRedeemURL)
+}
+
+// SetStartsAt sets the StartsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetStartsAt(startsAt *string) {
+	g.StartsAt = startsAt
+	g.require(googleBusinessOptionsFieldStartsAt)
+}
+
+// SetTerms sets the Terms field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetTerms(terms *string) {
+	g.Terms = terms
+	g.require(googleBusinessOptionsFieldTerms)
+}
+
+// SetTitle sets the Title field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetTitle(title *string) {
+	g.Title = title
+	g.require(googleBusinessOptionsFieldTitle)
+}
+
+func (g *GoogleBusinessOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler GoogleBusinessOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*g = GoogleBusinessOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *g)
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GoogleBusinessOptions) MarshalJSON() ([]byte, error) {
+	type embed GoogleBusinessOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*g),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, g.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (g *GoogleBusinessOptions) String() string {
+	if g == nil {
+		return "<nil>"
+	}
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
+type GoogleBusinessPostType string
+
+const (
+	GoogleBusinessPostTypeStandard GoogleBusinessPostType = "standard"
+	GoogleBusinessPostTypeEvent    GoogleBusinessPostType = "event"
+	GoogleBusinessPostTypeOffer    GoogleBusinessPostType = "offer"
+)
+
+func NewGoogleBusinessPostTypeFromString(s string) (GoogleBusinessPostType, error) {
+	switch s {
+	case "standard":
+		return GoogleBusinessPostTypeStandard, nil
+	case "event":
+		return GoogleBusinessPostTypeEvent, nil
+	case "offer":
+		return GoogleBusinessPostTypeOffer, nil
+	}
+	var t GoogleBusinessPostType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (g GoogleBusinessPostType) Ptr() *GoogleBusinessPostType {
+	return &g
+}
+
 type HeldLimit string
 
 const (
@@ -7352,6 +7652,316 @@ func (i *InvitationNotFoundEncoded) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	linkedInMentionFieldName = big.NewInt(1 << 0)
+	linkedInMentionFieldUrn  = big.NewInt(1 << 1)
+)
+
+type LinkedInMention struct {
+	Name string `json:"name" url:"name"`
+	Urn  string `json:"urn" url:"urn"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LinkedInMention) GetName() string {
+	if l == nil {
+		return ""
+	}
+	return l.Name
+}
+
+func (l *LinkedInMention) GetUrn() string {
+	if l == nil {
+		return ""
+	}
+	return l.Urn
+}
+
+func (l *LinkedInMention) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LinkedInMention) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInMention) SetName(name string) {
+	l.Name = name
+	l.require(linkedInMentionFieldName)
+}
+
+// SetUrn sets the Urn field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInMention) SetUrn(urn string) {
+	l.Urn = urn
+	l.require(linkedInMentionFieldUrn)
+}
+
+func (l *LinkedInMention) UnmarshalJSON(data []byte) error {
+	type unmarshaler LinkedInMention
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LinkedInMention(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LinkedInMention) MarshalJSON() ([]byte, error) {
+	type embed LinkedInMention
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LinkedInMention) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+var (
+	linkedInOptionsFieldDisableReshare  = big.NewInt(1 << 0)
+	linkedInOptionsFieldDocumentTitle   = big.NewInt(1 << 1)
+	linkedInOptionsFieldLinkDescription = big.NewInt(1 << 2)
+	linkedInOptionsFieldLinkTitle       = big.NewInt(1 << 3)
+	linkedInOptionsFieldLinkURL         = big.NewInt(1 << 4)
+	linkedInOptionsFieldMentions        = big.NewInt(1 << 5)
+	linkedInOptionsFieldVisibility      = big.NewInt(1 << 6)
+)
+
+// How a post goes out on a LinkedIn profile or company page. Scheduling needs none of them; a link (`linkUrl`) needs its `linkTitle`.
+type LinkedInOptions struct {
+	DisableReshare  *bool               `json:"disableReshare,omitempty" url:"disableReshare,omitempty"`
+	DocumentTitle   *string             `json:"documentTitle,omitempty" url:"documentTitle,omitempty"`
+	LinkDescription *string             `json:"linkDescription,omitempty" url:"linkDescription,omitempty"`
+	LinkTitle       *string             `json:"linkTitle,omitempty" url:"linkTitle,omitempty"`
+	LinkURL         *string             `json:"linkUrl,omitempty" url:"linkUrl,omitempty"`
+	Mentions        []*LinkedInMention  `json:"mentions,omitempty" url:"mentions,omitempty"`
+	Visibility      *LinkedInVisibility `json:"visibility,omitempty" url:"visibility,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LinkedInOptions) GetDisableReshare() *bool {
+	if l == nil {
+		return nil
+	}
+	return l.DisableReshare
+}
+
+func (l *LinkedInOptions) GetDocumentTitle() *string {
+	if l == nil {
+		return nil
+	}
+	return l.DocumentTitle
+}
+
+func (l *LinkedInOptions) GetLinkDescription() *string {
+	if l == nil {
+		return nil
+	}
+	return l.LinkDescription
+}
+
+func (l *LinkedInOptions) GetLinkTitle() *string {
+	if l == nil {
+		return nil
+	}
+	return l.LinkTitle
+}
+
+func (l *LinkedInOptions) GetLinkURL() *string {
+	if l == nil {
+		return nil
+	}
+	return l.LinkURL
+}
+
+func (l *LinkedInOptions) GetMentions() []*LinkedInMention {
+	if l == nil {
+		return nil
+	}
+	return l.Mentions
+}
+
+func (l *LinkedInOptions) GetVisibility() *LinkedInVisibility {
+	if l == nil {
+		return nil
+	}
+	return l.Visibility
+}
+
+func (l *LinkedInOptions) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LinkedInOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetDisableReshare sets the DisableReshare field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetDisableReshare(disableReshare *bool) {
+	l.DisableReshare = disableReshare
+	l.require(linkedInOptionsFieldDisableReshare)
+}
+
+// SetDocumentTitle sets the DocumentTitle field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetDocumentTitle(documentTitle *string) {
+	l.DocumentTitle = documentTitle
+	l.require(linkedInOptionsFieldDocumentTitle)
+}
+
+// SetLinkDescription sets the LinkDescription field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetLinkDescription(linkDescription *string) {
+	l.LinkDescription = linkDescription
+	l.require(linkedInOptionsFieldLinkDescription)
+}
+
+// SetLinkTitle sets the LinkTitle field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetLinkTitle(linkTitle *string) {
+	l.LinkTitle = linkTitle
+	l.require(linkedInOptionsFieldLinkTitle)
+}
+
+// SetLinkURL sets the LinkURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetLinkURL(linkURL *string) {
+	l.LinkURL = linkURL
+	l.require(linkedInOptionsFieldLinkURL)
+}
+
+// SetMentions sets the Mentions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetMentions(mentions []*LinkedInMention) {
+	l.Mentions = mentions
+	l.require(linkedInOptionsFieldMentions)
+}
+
+// SetVisibility sets the Visibility field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LinkedInOptions) SetVisibility(visibility *LinkedInVisibility) {
+	l.Visibility = visibility
+	l.require(linkedInOptionsFieldVisibility)
+}
+
+func (l *LinkedInOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler LinkedInOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LinkedInOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LinkedInOptions) MarshalJSON() ([]byte, error) {
+	type embed LinkedInOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LinkedInOptions) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+type LinkedInVisibility string
+
+const (
+	LinkedInVisibilityPublic      LinkedInVisibility = "public"
+	LinkedInVisibilityConnections LinkedInVisibility = "connections"
+	LinkedInVisibilityLoggedIn    LinkedInVisibility = "loggedIn"
+)
+
+func NewLinkedInVisibilityFromString(s string) (LinkedInVisibility, error) {
+	switch s {
+	case "public":
+		return LinkedInVisibilityPublic, nil
+	case "connections":
+		return LinkedInVisibilityConnections, nil
+	case "loggedIn":
+		return LinkedInVisibilityLoggedIn, nil
+	}
+	var t LinkedInVisibility
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (l LinkedInVisibility) Ptr() *LinkedInVisibility {
+	return &l
 }
 
 var (
@@ -8809,6 +9419,173 @@ func (p Permission) Ptr() *Permission {
 	return &p
 }
 
+var (
+	pinterestOptionsFieldBoardID        = big.NewInt(1 << 0)
+	pinterestOptionsFieldBoardSectionID = big.NewInt(1 << 1)
+	pinterestOptionsFieldCoverSecond    = big.NewInt(1 << 2)
+	pinterestOptionsFieldDominantColor  = big.NewInt(1 << 3)
+	pinterestOptionsFieldLink           = big.NewInt(1 << 4)
+	pinterestOptionsFieldTitle          = big.NewInt(1 << 5)
+)
+
+// How a post goes out on a Pinterest account, as a Pin. Scheduling needs `boardId`.
+type PinterestOptions struct {
+	BoardID        *string `json:"boardId,omitempty" url:"boardId,omitempty"`
+	BoardSectionID *string `json:"boardSectionId,omitempty" url:"boardSectionId,omitempty"`
+	CoverSecond    *int    `json:"coverSecond,omitempty" url:"coverSecond,omitempty"`
+	DominantColor  *string `json:"dominantColor,omitempty" url:"dominantColor,omitempty"`
+	Link           *string `json:"link,omitempty" url:"link,omitempty"`
+	Title          *string `json:"title,omitempty" url:"title,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PinterestOptions) GetBoardID() *string {
+	if p == nil {
+		return nil
+	}
+	return p.BoardID
+}
+
+func (p *PinterestOptions) GetBoardSectionID() *string {
+	if p == nil {
+		return nil
+	}
+	return p.BoardSectionID
+}
+
+func (p *PinterestOptions) GetCoverSecond() *int {
+	if p == nil {
+		return nil
+	}
+	return p.CoverSecond
+}
+
+func (p *PinterestOptions) GetDominantColor() *string {
+	if p == nil {
+		return nil
+	}
+	return p.DominantColor
+}
+
+func (p *PinterestOptions) GetLink() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Link
+}
+
+func (p *PinterestOptions) GetTitle() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Title
+}
+
+func (p *PinterestOptions) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PinterestOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetBoardID sets the BoardID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetBoardID(boardID *string) {
+	p.BoardID = boardID
+	p.require(pinterestOptionsFieldBoardID)
+}
+
+// SetBoardSectionID sets the BoardSectionID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetBoardSectionID(boardSectionID *string) {
+	p.BoardSectionID = boardSectionID
+	p.require(pinterestOptionsFieldBoardSectionID)
+}
+
+// SetCoverSecond sets the CoverSecond field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetCoverSecond(coverSecond *int) {
+	p.CoverSecond = coverSecond
+	p.require(pinterestOptionsFieldCoverSecond)
+}
+
+// SetDominantColor sets the DominantColor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetDominantColor(dominantColor *string) {
+	p.DominantColor = dominantColor
+	p.require(pinterestOptionsFieldDominantColor)
+}
+
+// SetLink sets the Link field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetLink(link *string) {
+	p.Link = link
+	p.require(pinterestOptionsFieldLink)
+}
+
+// SetTitle sets the Title field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PinterestOptions) SetTitle(title *string) {
+	p.Title = title
+	p.require(pinterestOptionsFieldTitle)
+}
+
+func (p *PinterestOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler PinterestOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PinterestOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PinterestOptions) MarshalJSON() ([]byte, error) {
+	type embed PinterestOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PinterestOptions) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
 type PlanLimit string
 
 const (
@@ -9959,6 +10736,205 @@ func (s *ScheduleInPastEncoded) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
+type TargetOptions struct {
+	Platform       string
+	Youtube        *YouTubeOptions
+	Tiktok         *TikTokOptions
+	Pinterest      *PinterestOptions
+	GoogleBusiness *GoogleBusinessOptions
+	Linkedin       *LinkedInOptions
+
+	rawJSON json.RawMessage
+}
+
+func (t *TargetOptions) GetPlatform() string {
+	if t == nil {
+		return ""
+	}
+	return t.Platform
+}
+
+func (t *TargetOptions) GetYoutube() *YouTubeOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Youtube
+}
+
+func (t *TargetOptions) GetTiktok() *TikTokOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Tiktok
+}
+
+func (t *TargetOptions) GetPinterest() *PinterestOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Pinterest
+}
+
+func (t *TargetOptions) GetGoogleBusiness() *GoogleBusinessOptions {
+	if t == nil {
+		return nil
+	}
+	return t.GoogleBusiness
+}
+
+func (t *TargetOptions) GetLinkedin() *LinkedInOptions {
+	if t == nil {
+		return nil
+	}
+	return t.Linkedin
+}
+
+func (t *TargetOptions) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Platform string `json:"platform"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	t.Platform = unmarshaler.Platform
+	if unmarshaler.Platform == "" {
+		return fmt.Errorf("%T did not include discriminant platform", t)
+	}
+	switch unmarshaler.Platform {
+	case "youtube":
+		value := new(YouTubeOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Youtube = value
+	case "tiktok":
+		value := new(TikTokOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Tiktok = value
+	case "pinterest":
+		value := new(PinterestOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Pinterest = value
+	case "googleBusiness":
+		value := new(GoogleBusinessOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.GoogleBusiness = value
+	case "linkedin":
+		value := new(LinkedInOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.Linkedin = value
+	}
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t TargetOptions) MarshalJSON() ([]byte, error) {
+	if err := t.validate(); err != nil {
+		return nil, err
+	}
+	if t.Youtube != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Youtube, "platform", "youtube")
+	}
+	if t.Tiktok != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Tiktok, "platform", "tiktok")
+	}
+	if t.Pinterest != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Pinterest, "platform", "pinterest")
+	}
+	if t.GoogleBusiness != nil {
+		return internal.MarshalJSONWithExtraProperty(t.GoogleBusiness, "platform", "googleBusiness")
+	}
+	if t.Linkedin != nil {
+		return internal.MarshalJSONWithExtraProperty(t.Linkedin, "platform", "linkedin")
+	}
+	if len(t.rawJSON) > 0 {
+		return t.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", t)
+}
+
+type TargetOptionsVisitor interface {
+	VisitYoutube(*YouTubeOptions) error
+	VisitTiktok(*TikTokOptions) error
+	VisitPinterest(*PinterestOptions) error
+	VisitGoogleBusiness(*GoogleBusinessOptions) error
+	VisitLinkedin(*LinkedInOptions) error
+}
+
+func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
+	if t.Youtube != nil {
+		return visitor.VisitYoutube(t.Youtube)
+	}
+	if t.Tiktok != nil {
+		return visitor.VisitTiktok(t.Tiktok)
+	}
+	if t.Pinterest != nil {
+		return visitor.VisitPinterest(t.Pinterest)
+	}
+	if t.GoogleBusiness != nil {
+		return visitor.VisitGoogleBusiness(t.GoogleBusiness)
+	}
+	if t.Linkedin != nil {
+		return visitor.VisitLinkedin(t.Linkedin)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", t)
+}
+
+func (t *TargetOptions) validate() error {
+	if t == nil {
+		return fmt.Errorf("type %T is nil", t)
+	}
+	var fields []string
+	if t.Youtube != nil {
+		fields = append(fields, "youtube")
+	}
+	if t.Tiktok != nil {
+		fields = append(fields, "tiktok")
+	}
+	if t.Pinterest != nil {
+		fields = append(fields, "pinterest")
+	}
+	if t.GoogleBusiness != nil {
+		fields = append(fields, "googleBusiness")
+	}
+	if t.Linkedin != nil {
+		fields = append(fields, "linkedin")
+	}
+	if len(fields) == 0 {
+		if t.Platform != "" {
+			if len(t.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", t, t.Platform)
+		}
+		return fmt.Errorf("type %T is empty", t)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", t, fields)
+	}
+	if t.Platform != "" {
+		field := fields[0]
+		if t.Platform != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				t,
+				t.Platform,
+				t,
+			)
+		}
+	}
+	return nil
+}
+
 var (
 	targetStatusConflictEncodedFieldStatus = big.NewInt(1 << 0)
 )
@@ -10667,6 +11643,205 @@ func (t *TikTokCreator) MarshalJSON() ([]byte, error) {
 }
 
 func (t *TikTokCreator) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+var (
+	tikTokOptionsFieldAiGenerated       = big.NewInt(1 << 0)
+	tikTokOptionsFieldBrandContent      = big.NewInt(1 << 1)
+	tikTokOptionsFieldBrandOrganic      = big.NewInt(1 << 2)
+	tikTokOptionsFieldCommercialContent = big.NewInt(1 << 3)
+	tikTokOptionsFieldDisableComment    = big.NewInt(1 << 4)
+	tikTokOptionsFieldDisableDuet       = big.NewInt(1 << 5)
+	tikTokOptionsFieldDisableStitch     = big.NewInt(1 << 6)
+	tikTokOptionsFieldPrivacyLevel      = big.NewInt(1 << 7)
+)
+
+// How a post goes out on a TikTok account. Scheduling needs `privacyLevel`.
+type TikTokOptions struct {
+	AiGenerated       *bool               `json:"aiGenerated,omitempty" url:"aiGenerated,omitempty"`
+	BrandContent      *bool               `json:"brandContent,omitempty" url:"brandContent,omitempty"`
+	BrandOrganic      *bool               `json:"brandOrganic,omitempty" url:"brandOrganic,omitempty"`
+	CommercialContent *bool               `json:"commercialContent,omitempty" url:"commercialContent,omitempty"`
+	DisableComment    *bool               `json:"disableComment,omitempty" url:"disableComment,omitempty"`
+	DisableDuet       *bool               `json:"disableDuet,omitempty" url:"disableDuet,omitempty"`
+	DisableStitch     *bool               `json:"disableStitch,omitempty" url:"disableStitch,omitempty"`
+	PrivacyLevel      *TikTokPrivacyLevel `json:"privacyLevel,omitempty" url:"privacyLevel,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TikTokOptions) GetAiGenerated() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.AiGenerated
+}
+
+func (t *TikTokOptions) GetBrandContent() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.BrandContent
+}
+
+func (t *TikTokOptions) GetBrandOrganic() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.BrandOrganic
+}
+
+func (t *TikTokOptions) GetCommercialContent() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.CommercialContent
+}
+
+func (t *TikTokOptions) GetDisableComment() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.DisableComment
+}
+
+func (t *TikTokOptions) GetDisableDuet() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.DisableDuet
+}
+
+func (t *TikTokOptions) GetDisableStitch() *bool {
+	if t == nil {
+		return nil
+	}
+	return t.DisableStitch
+}
+
+func (t *TikTokOptions) GetPrivacyLevel() *TikTokPrivacyLevel {
+	if t == nil {
+		return nil
+	}
+	return t.PrivacyLevel
+}
+
+func (t *TikTokOptions) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TikTokOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetAiGenerated sets the AiGenerated field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetAiGenerated(aiGenerated *bool) {
+	t.AiGenerated = aiGenerated
+	t.require(tikTokOptionsFieldAiGenerated)
+}
+
+// SetBrandContent sets the BrandContent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetBrandContent(brandContent *bool) {
+	t.BrandContent = brandContent
+	t.require(tikTokOptionsFieldBrandContent)
+}
+
+// SetBrandOrganic sets the BrandOrganic field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetBrandOrganic(brandOrganic *bool) {
+	t.BrandOrganic = brandOrganic
+	t.require(tikTokOptionsFieldBrandOrganic)
+}
+
+// SetCommercialContent sets the CommercialContent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetCommercialContent(commercialContent *bool) {
+	t.CommercialContent = commercialContent
+	t.require(tikTokOptionsFieldCommercialContent)
+}
+
+// SetDisableComment sets the DisableComment field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetDisableComment(disableComment *bool) {
+	t.DisableComment = disableComment
+	t.require(tikTokOptionsFieldDisableComment)
+}
+
+// SetDisableDuet sets the DisableDuet field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetDisableDuet(disableDuet *bool) {
+	t.DisableDuet = disableDuet
+	t.require(tikTokOptionsFieldDisableDuet)
+}
+
+// SetDisableStitch sets the DisableStitch field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetDisableStitch(disableStitch *bool) {
+	t.DisableStitch = disableStitch
+	t.require(tikTokOptionsFieldDisableStitch)
+}
+
+// SetPrivacyLevel sets the PrivacyLevel field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TikTokOptions) SetPrivacyLevel(privacyLevel *TikTokPrivacyLevel) {
+	t.PrivacyLevel = privacyLevel
+	t.require(tikTokOptionsFieldPrivacyLevel)
+}
+
+func (t *TikTokOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler TikTokOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TikTokOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TikTokOptions) MarshalJSON() ([]byte, error) {
+	type embed TikTokOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TikTokOptions) String() string {
 	if t == nil {
 		return "<nil>"
 	}
@@ -12517,4 +13692,212 @@ func NewWorkspaceNotFoundEncodedTagFromString(s string) (WorkspaceNotFoundEncode
 
 func (w WorkspaceNotFoundEncodedTag) Ptr() *WorkspaceNotFoundEncodedTag {
 	return &w
+}
+
+var (
+	youTubeOptionsFieldCategoryID             = big.NewInt(1 << 0)
+	youTubeOptionsFieldContainsSyntheticMedia = big.NewInt(1 << 1)
+	youTubeOptionsFieldMadeForKids            = big.NewInt(1 << 2)
+	youTubeOptionsFieldNotifySubscribers      = big.NewInt(1 << 3)
+	youTubeOptionsFieldPrivacy                = big.NewInt(1 << 4)
+	youTubeOptionsFieldTags                   = big.NewInt(1 << 5)
+	youTubeOptionsFieldTitle                  = big.NewInt(1 << 6)
+)
+
+// How a post goes out on a YouTube channel. Scheduling needs `title` and `madeForKids`.
+type YouTubeOptions struct {
+	CategoryID             *string         `json:"categoryId,omitempty" url:"categoryId,omitempty"`
+	ContainsSyntheticMedia *bool           `json:"containsSyntheticMedia,omitempty" url:"containsSyntheticMedia,omitempty"`
+	MadeForKids            *bool           `json:"madeForKids,omitempty" url:"madeForKids,omitempty"`
+	NotifySubscribers      *bool           `json:"notifySubscribers,omitempty" url:"notifySubscribers,omitempty"`
+	Privacy                *YouTubePrivacy `json:"privacy,omitempty" url:"privacy,omitempty"`
+	Tags                   []string        `json:"tags,omitempty" url:"tags,omitempty"`
+	Title                  *string         `json:"title,omitempty" url:"title,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (y *YouTubeOptions) GetCategoryID() *string {
+	if y == nil {
+		return nil
+	}
+	return y.CategoryID
+}
+
+func (y *YouTubeOptions) GetContainsSyntheticMedia() *bool {
+	if y == nil {
+		return nil
+	}
+	return y.ContainsSyntheticMedia
+}
+
+func (y *YouTubeOptions) GetMadeForKids() *bool {
+	if y == nil {
+		return nil
+	}
+	return y.MadeForKids
+}
+
+func (y *YouTubeOptions) GetNotifySubscribers() *bool {
+	if y == nil {
+		return nil
+	}
+	return y.NotifySubscribers
+}
+
+func (y *YouTubeOptions) GetPrivacy() *YouTubePrivacy {
+	if y == nil {
+		return nil
+	}
+	return y.Privacy
+}
+
+func (y *YouTubeOptions) GetTags() []string {
+	if y == nil {
+		return nil
+	}
+	return y.Tags
+}
+
+func (y *YouTubeOptions) GetTitle() *string {
+	if y == nil {
+		return nil
+	}
+	return y.Title
+}
+
+func (y *YouTubeOptions) GetExtraProperties() map[string]interface{} {
+	if y == nil {
+		return nil
+	}
+	return y.extraProperties
+}
+
+func (y *YouTubeOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if y.explicitFields != nil {
+		next.Set(y.explicitFields)
+	}
+	next.Or(next, field)
+	y.explicitFields = next
+}
+
+// SetCategoryID sets the CategoryID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetCategoryID(categoryID *string) {
+	y.CategoryID = categoryID
+	y.require(youTubeOptionsFieldCategoryID)
+}
+
+// SetContainsSyntheticMedia sets the ContainsSyntheticMedia field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetContainsSyntheticMedia(containsSyntheticMedia *bool) {
+	y.ContainsSyntheticMedia = containsSyntheticMedia
+	y.require(youTubeOptionsFieldContainsSyntheticMedia)
+}
+
+// SetMadeForKids sets the MadeForKids field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetMadeForKids(madeForKids *bool) {
+	y.MadeForKids = madeForKids
+	y.require(youTubeOptionsFieldMadeForKids)
+}
+
+// SetNotifySubscribers sets the NotifySubscribers field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetNotifySubscribers(notifySubscribers *bool) {
+	y.NotifySubscribers = notifySubscribers
+	y.require(youTubeOptionsFieldNotifySubscribers)
+}
+
+// SetPrivacy sets the Privacy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetPrivacy(privacy *YouTubePrivacy) {
+	y.Privacy = privacy
+	y.require(youTubeOptionsFieldPrivacy)
+}
+
+// SetTags sets the Tags field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetTags(tags []string) {
+	y.Tags = tags
+	y.require(youTubeOptionsFieldTags)
+}
+
+// SetTitle sets the Title field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (y *YouTubeOptions) SetTitle(title *string) {
+	y.Title = title
+	y.require(youTubeOptionsFieldTitle)
+}
+
+func (y *YouTubeOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler YouTubeOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*y = YouTubeOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *y)
+	if err != nil {
+		return err
+	}
+	y.extraProperties = extraProperties
+	y.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (y *YouTubeOptions) MarshalJSON() ([]byte, error) {
+	type embed YouTubeOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*y),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, y.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (y *YouTubeOptions) String() string {
+	if y == nil {
+		return "<nil>"
+	}
+	if len(y.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(y.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(y); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", y)
+}
+
+type YouTubePrivacy string
+
+const (
+	YouTubePrivacyPublic   YouTubePrivacy = "public"
+	YouTubePrivacyUnlisted YouTubePrivacy = "unlisted"
+	YouTubePrivacyPrivate  YouTubePrivacy = "private"
+)
+
+func NewYouTubePrivacyFromString(s string) (YouTubePrivacy, error) {
+	switch s {
+	case "public":
+		return YouTubePrivacyPublic, nil
+	case "unlisted":
+		return YouTubePrivacyUnlisted, nil
+	case "private":
+		return YouTubePrivacyPrivate, nil
+	}
+	var t YouTubePrivacy
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (y YouTubePrivacy) Ptr() *YouTubePrivacy {
+	return &y
 }

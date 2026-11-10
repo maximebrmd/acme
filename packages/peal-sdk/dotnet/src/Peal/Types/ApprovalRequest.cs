@@ -38,6 +38,9 @@ public record ApprovalRequest : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required ApprovalStatus Status { get; set; }
 
+    [JsonPropertyName("subjectHash")]
+    public required string SubjectHash { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

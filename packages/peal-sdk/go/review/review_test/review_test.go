@@ -253,9 +253,11 @@ func TestReviewApproveWithWireMock(
 		option.WithBaseURL(WireMockBaseURL),
 		option.WithToken("test-token"),
 	)
-	request := &peal.ApproveReviewRequest{
+	request := &peal.ApprovalDecision{
 		WorkspaceID: "workspaceId",
 		PostID:      "postId",
+		ApprovalID:  "approvalId",
+		SubjectHash: "subjectHash",
 	}
 	_, invocationErr := client.Review.Approve(
 		context.TODO(),
@@ -283,6 +285,8 @@ func TestReviewRequestChangesWithWireMock(
 	request := &peal.ChangesRequest{
 		WorkspaceID: "workspaceId",
 		PostID:      "postId",
+		ApprovalID:  "approvalId",
+		SubjectHash: "subjectHash",
 		Comment:     "comment",
 	}
 	_, invocationErr := client.Review.RequestChanges(

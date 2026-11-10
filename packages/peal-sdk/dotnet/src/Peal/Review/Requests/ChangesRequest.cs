@@ -12,6 +12,12 @@ public record ChangesRequest
     [JsonIgnore]
     public required string PostId { get; set; }
 
+    [JsonPropertyName("approvalId")]
+    public required string ApprovalId { get; set; }
+
+    [JsonPropertyName("subjectHash")]
+    public required string SubjectHash { get; set; }
+
     [JsonPropertyName("comment")]
     public required string Comment { get; set; }
 

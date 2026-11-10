@@ -34,7 +34,8 @@ public class PendingTest : BaseMockServerTest
                   "at": "at",
                   "timeZone": "timeZone"
                 },
-                "status": "pending"
+                "status": "pending",
+                "subjectHash": "subjectHash"
               },
               {
                 "decision": {
@@ -56,7 +57,8 @@ public class PendingTest : BaseMockServerTest
                   "at": "at",
                   "timeZone": "timeZone"
                 },
-                "status": "pending"
+                "status": "pending",
+                "subjectHash": "subjectHash"
               }
             ]
             """;
@@ -103,7 +105,8 @@ public class PendingTest : BaseMockServerTest
                   "at": "at",
                   "timeZone": "timeZone"
                 },
-                "status": "pending"
+                "status": "pending",
+                "subjectHash": "subjectHash"
               }
             ]
             """;

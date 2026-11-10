@@ -35,7 +35,8 @@ public class ThreadTest : BaseMockServerTest
                     "at": "at",
                     "timeZone": "timeZone"
                   },
-                  "status": "pending"
+                  "status": "pending",
+                  "subjectHash": "subjectHash"
                 },
                 {
                   "decision": {
@@ -57,7 +58,48 @@ public class ThreadTest : BaseMockServerTest
                     "at": "at",
                     "timeZone": "timeZone"
                   },
-                  "status": "pending"
+                  "status": "pending",
+                  "subjectHash": "subjectHash"
+                }
+              ],
+              "channels": [
+                {
+                  "channelId": "channelId",
+                  "handle": "handle",
+                  "options": {
+                    "platform": "youtube",
+                    "categoryId": "categoryId",
+                    "containsSyntheticMedia": true,
+                    "madeForKids": true,
+                    "notifySubscribers": true,
+                    "privacy": "public",
+                    "tags": [
+                      "tags",
+                      "tags"
+                    ],
+                    "title": "title"
+                  },
+                  "platform": "x",
+                  "text": "text"
+                },
+                {
+                  "channelId": "channelId",
+                  "handle": "handle",
+                  "options": {
+                    "platform": "youtube",
+                    "categoryId": "categoryId",
+                    "containsSyntheticMedia": true,
+                    "madeForKids": true,
+                    "notifySubscribers": true,
+                    "privacy": "public",
+                    "tags": [
+                      "tags",
+                      "tags"
+                    ],
+                    "title": "title"
+                  },
+                  "platform": "x",
+                  "text": "text"
                 }
               ],
               "comments": [
@@ -126,6 +168,20 @@ public class ThreadTest : BaseMockServerTest
                     }
                   },
                   "text": "text"
+                }
+              ],
+              "media": [
+                {
+                  "altText": "altText",
+                  "kind": "image",
+                  "mediaId": "mediaId",
+                  "url": "url"
+                },
+                {
+                  "altText": "altText",
+                  "kind": "image",
+                  "mediaId": "mediaId",
+                  "url": "url"
                 }
               ]
             }
@@ -174,7 +230,19 @@ public class ThreadTest : BaseMockServerTest
                     "at": "at",
                     "timeZone": "timeZone"
                   },
-                  "status": "pending"
+                  "status": "pending",
+                  "subjectHash": "subjectHash"
+                }
+              ],
+              "channels": [
+                {
+                  "channelId": "channelId",
+                  "handle": "handle",
+                  "options": {
+                    "platform": "youtube"
+                  },
+                  "platform": "x",
+                  "text": "text"
                 }
               ],
               "comments": [
@@ -196,6 +264,14 @@ public class ThreadTest : BaseMockServerTest
                     }
                   },
                   "text": "text"
+                }
+              ],
+              "media": [
+                {
+                  "altText": "altText",
+                  "kind": "image",
+                  "mediaId": "mediaId",
+                  "url": "url"
                 }
               ]
             }

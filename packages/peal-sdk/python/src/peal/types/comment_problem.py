@@ -2,4 +2,4 @@
 
 import typing
 
-CommentProblem = typing.Union[typing.Literal["text", "name", "email", "parent", "anchor", "selection"], typing.Any]
+CommentProblem = typing.Union[typing.Literal["text", "name", "parent", "anchor", "selection"], typing.Any]

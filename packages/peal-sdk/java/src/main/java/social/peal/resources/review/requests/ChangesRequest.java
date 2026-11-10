@@ -19,13 +19,30 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ChangesRequest.Builder.class)
 public final class ChangesRequest {
+    private final String approvalId;
+
+    private final String subjectHash;
+
     private final String comment;
 
     private final Map<String, Object> additionalProperties;
 
-    private ChangesRequest(String comment, Map<String, Object> additionalProperties) {
+    private ChangesRequest(
+            String approvalId, String subjectHash, String comment, Map<String, Object> additionalProperties) {
+        this.approvalId = approvalId;
+        this.subjectHash = subjectHash;
         this.comment = comment;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("approvalId")
+    public String getApprovalId() {
+        return approvalId;
+    }
+
+    @JsonProperty("subjectHash")
+    public String getSubjectHash() {
+        return subjectHash;
     }
 
     @JsonProperty("comment")
@@ -45,12 +62,14 @@ public final class ChangesRequest {
     }
 
     private boolean equalTo(ChangesRequest other) {
-        return comment.equals(other.comment);
+        return approvalId.equals(other.approvalId)
+                && subjectHash.equals(other.subjectHash)
+                && comment.equals(other.comment);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.comment);
+        return Objects.hash(this.approvalId, this.subjectHash, this.comment);
     }
 
     @java.lang.Override
@@ -58,14 +77,22 @@ public final class ChangesRequest {
         return ObjectMappers.stringify(this);
     }
 
-    public static CommentStage builder() {
+    public static ApprovalIdStage builder() {
         return new Builder();
+    }
+
+    public interface ApprovalIdStage {
+        SubjectHashStage approvalId(@NotNull String approvalId);
+
+        Builder from(ChangesRequest other);
+    }
+
+    public interface SubjectHashStage {
+        CommentStage subjectHash(@NotNull String subjectHash);
     }
 
     public interface CommentStage {
         _FinalStage comment(@NotNull String comment);
-
-        Builder from(ChangesRequest other);
     }
 
     public interface _FinalStage {
@@ -77,7 +104,11 @@ public final class ChangesRequest {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements CommentStage, _FinalStage {
+    public static final class Builder implements ApprovalIdStage, SubjectHashStage, CommentStage, _FinalStage {
+        private String approvalId;
+
+        private String subjectHash;
+
         private String comment;
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -86,7 +117,23 @@ public final class ChangesRequest {
 
         @java.lang.Override
         public Builder from(ChangesRequest other) {
+            approvalId(other.getApprovalId());
+            subjectHash(other.getSubjectHash());
             comment(other.getComment());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("approvalId")
+        public SubjectHashStage approvalId(@NotNull String approvalId) {
+            this.approvalId = Objects.requireNonNull(approvalId, "approvalId must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("subjectHash")
+        public CommentStage subjectHash(@NotNull String subjectHash) {
+            this.subjectHash = Objects.requireNonNull(subjectHash, "subjectHash must not be null");
             return this;
         }
 
@@ -99,12 +146,14 @@ public final class ChangesRequest {
 
         @java.lang.Override
         public ChangesRequest build() {
-            return new ChangesRequest(comment, additionalProperties);
+            return new ChangesRequest(approvalId, subjectHash, comment, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("comment")) {
+            if (key.equalsIgnoreCase("approvalId")
+                    || key.equalsIgnoreCase("subjectHash")
+                    || key.equalsIgnoreCase("comment")) {
                 return;
             }
             this.additionalProperties.put(key, value);

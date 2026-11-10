@@ -10,19 +10,23 @@ import (
 )
 
 var (
-	approveReviewRequestFieldWorkspaceID = big.NewInt(1 << 0)
-	approveReviewRequestFieldPostID      = big.NewInt(1 << 1)
+	approvalDecisionFieldWorkspaceID = big.NewInt(1 << 0)
+	approvalDecisionFieldPostID      = big.NewInt(1 << 1)
+	approvalDecisionFieldApprovalID  = big.NewInt(1 << 2)
+	approvalDecisionFieldSubjectHash = big.NewInt(1 << 3)
 )
 
-type ApproveReviewRequest struct {
+type ApprovalDecision struct {
 	WorkspaceID string `json:"-" url:"-"`
 	PostID      string `json:"-" url:"-"`
+	ApprovalID  string `json:"approvalId" url:"-"`
+	SubjectHash string `json:"subjectHash" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 }
 
-func (a *ApproveReviewRequest) require(field *big.Int) {
+func (a *ApprovalDecision) require(field *big.Int) {
 	next := new(big.Int)
 	if a.explicitFields != nil {
 		next.Set(a.explicitFields)
@@ -33,16 +37,51 @@ func (a *ApproveReviewRequest) require(field *big.Int) {
 
 // SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (a *ApproveReviewRequest) SetWorkspaceID(workspaceID string) {
+func (a *ApprovalDecision) SetWorkspaceID(workspaceID string) {
 	a.WorkspaceID = workspaceID
-	a.require(approveReviewRequestFieldWorkspaceID)
+	a.require(approvalDecisionFieldWorkspaceID)
 }
 
 // SetPostID sets the PostID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (a *ApproveReviewRequest) SetPostID(postID string) {
+func (a *ApprovalDecision) SetPostID(postID string) {
 	a.PostID = postID
-	a.require(approveReviewRequestFieldPostID)
+	a.require(approvalDecisionFieldPostID)
+}
+
+// SetApprovalID sets the ApprovalID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *ApprovalDecision) SetApprovalID(approvalID string) {
+	a.ApprovalID = approvalID
+	a.require(approvalDecisionFieldApprovalID)
+}
+
+// SetSubjectHash sets the SubjectHash field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *ApprovalDecision) SetSubjectHash(subjectHash string) {
+	a.SubjectHash = subjectHash
+	a.require(approvalDecisionFieldSubjectHash)
+}
+
+func (a *ApprovalDecision) UnmarshalJSON(data []byte) error {
+	type unmarshaler ApprovalDecision
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*a = ApprovalDecision(body)
+	return nil
+}
+
+func (a *ApprovalDecision) MarshalJSON() ([]byte, error) {
+	type embed ApprovalDecision
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*a),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, a.explicitFields)
+	return json.Marshal(explicitMarshaler)
 }
 
 var (
@@ -270,12 +309,16 @@ func (p *PendingReviewRequest) SetWorkspaceID(workspaceID string) {
 var (
 	changesRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	changesRequestFieldPostID      = big.NewInt(1 << 1)
-	changesRequestFieldComment     = big.NewInt(1 << 2)
+	changesRequestFieldApprovalID  = big.NewInt(1 << 2)
+	changesRequestFieldSubjectHash = big.NewInt(1 << 3)
+	changesRequestFieldComment     = big.NewInt(1 << 4)
 )
 
 type ChangesRequest struct {
 	WorkspaceID string `json:"-" url:"-"`
 	PostID      string `json:"-" url:"-"`
+	ApprovalID  string `json:"approvalId" url:"-"`
+	SubjectHash string `json:"subjectHash" url:"-"`
 	Comment     string `json:"comment" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -303,6 +346,20 @@ func (c *ChangesRequest) SetWorkspaceID(workspaceID string) {
 func (c *ChangesRequest) SetPostID(postID string) {
 	c.PostID = postID
 	c.require(changesRequestFieldPostID)
+}
+
+// SetApprovalID sets the ApprovalID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChangesRequest) SetApprovalID(approvalID string) {
+	c.ApprovalID = approvalID
+	c.require(changesRequestFieldApprovalID)
+}
+
+// SetSubjectHash sets the SubjectHash field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChangesRequest) SetSubjectHash(subjectHash string) {
+	c.SubjectHash = subjectHash
+	c.require(changesRequestFieldSubjectHash)
 }
 
 // SetComment sets the Comment field and marks it as non-optional;
@@ -669,6 +726,7 @@ var (
 	approvalRequestFieldRequestedVia    = big.NewInt(1 << 6)
 	approvalRequestFieldSchedule        = big.NewInt(1 << 7)
 	approvalRequestFieldStatus          = big.NewInt(1 << 8)
+	approvalRequestFieldSubjectHash     = big.NewInt(1 << 9)
 )
 
 // approvalRequestNullableFields maps the wire names of ApprovalRequest's nullable fields (required or optional) to their field bits.
@@ -688,6 +746,7 @@ type ApprovalRequest struct {
 	RequestedVia    ApprovalOrigin           `json:"requestedVia" url:"requestedVia"`
 	Schedule        *PostSchedule            `json:"schedule" url:"schedule"`
 	Status          ApprovalStatus           `json:"status" url:"status"`
+	SubjectHash     string                   `json:"subjectHash" url:"subjectHash"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -757,6 +816,13 @@ func (a *ApprovalRequest) GetStatus() ApprovalStatus {
 		return ""
 	}
 	return a.Status
+}
+
+func (a *ApprovalRequest) GetSubjectHash() string {
+	if a == nil {
+		return ""
+	}
+	return a.SubjectHash
 }
 
 func (a *ApprovalRequest) GetExtraProperties() map[string]interface{} {
@@ -836,6 +902,13 @@ func (a *ApprovalRequest) SetSchedule(schedule *PostSchedule) {
 func (a *ApprovalRequest) SetStatus(status ApprovalStatus) {
 	a.Status = status
 	a.require(approvalRequestFieldStatus)
+}
+
+// SetSubjectHash sets the SubjectHash field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *ApprovalRequest) SetSubjectHash(subjectHash string) {
+	a.SubjectHash = subjectHash
+	a.require(approvalRequestFieldSubjectHash)
 }
 
 func (a *ApprovalRequest) UnmarshalJSON(data []byte) error {
@@ -1585,12 +1658,16 @@ func (c *CreatedReviewLink) String() string {
 
 var (
 	postReviewFieldApprovals = big.NewInt(1 << 0)
-	postReviewFieldComments  = big.NewInt(1 << 1)
+	postReviewFieldChannels  = big.NewInt(1 << 1)
+	postReviewFieldComments  = big.NewInt(1 << 2)
+	postReviewFieldMedia     = big.NewInt(1 << 3)
 )
 
 type PostReview struct {
 	Approvals []*ApprovalRequest `json:"approvals" url:"approvals"`
+	Channels  []*ReviewedChannel `json:"channels" url:"channels"`
 	Comments  []*ReviewComment   `json:"comments" url:"comments"`
+	Media     []*ReviewedMedia   `json:"media" url:"media"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1606,11 +1683,25 @@ func (p *PostReview) GetApprovals() []*ApprovalRequest {
 	return p.Approvals
 }
 
+func (p *PostReview) GetChannels() []*ReviewedChannel {
+	if p == nil {
+		return nil
+	}
+	return p.Channels
+}
+
 func (p *PostReview) GetComments() []*ReviewComment {
 	if p == nil {
 		return nil
 	}
 	return p.Comments
+}
+
+func (p *PostReview) GetMedia() []*ReviewedMedia {
+	if p == nil {
+		return nil
+	}
+	return p.Media
 }
 
 func (p *PostReview) GetExtraProperties() map[string]interface{} {
@@ -1636,11 +1727,25 @@ func (p *PostReview) SetApprovals(approvals []*ApprovalRequest) {
 	p.require(postReviewFieldApprovals)
 }
 
+// SetChannels sets the Channels field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostReview) SetChannels(channels []*ReviewedChannel) {
+	p.Channels = channels
+	p.require(postReviewFieldChannels)
+}
+
 // SetComments sets the Comments field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *PostReview) SetComments(comments []*ReviewComment) {
 	p.Comments = comments
 	p.require(postReviewFieldComments)
+}
+
+// SetMedia sets the Media field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostReview) SetMedia(media []*ReviewedMedia) {
+	p.Media = media
+	p.require(postReviewFieldMedia)
 }
 
 func (p *PostReview) UnmarshalJSON(data []byte) error {
@@ -2332,6 +2437,317 @@ func (r *ReviewSettings) MarshalJSON() ([]byte, error) {
 }
 
 func (r *ReviewSettings) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	reviewedChannelFieldChannelID = big.NewInt(1 << 0)
+	reviewedChannelFieldHandle    = big.NewInt(1 << 1)
+	reviewedChannelFieldOptions   = big.NewInt(1 << 2)
+	reviewedChannelFieldPlatform  = big.NewInt(1 << 3)
+	reviewedChannelFieldText      = big.NewInt(1 << 4)
+)
+
+// reviewedChannelNullableFields maps the wire names of ReviewedChannel's nullable fields (required or optional) to their field bits.
+var reviewedChannelNullableFields = map[string]*big.Int{
+	"handle":   reviewedChannelFieldHandle,
+	"options":  reviewedChannelFieldOptions,
+	"platform": reviewedChannelFieldPlatform,
+}
+
+type ReviewedChannel struct {
+	ChannelID string         `json:"channelId" url:"channelId"`
+	Handle    *string        `json:"handle,omitempty" url:"handle,omitempty"`
+	Options   *TargetOptions `json:"options,omitempty" url:"options,omitempty"`
+	Platform  *Platform      `json:"platform,omitempty" url:"platform,omitempty"`
+	Text      string         `json:"text" url:"text"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *ReviewedChannel) GetChannelID() string {
+	if r == nil {
+		return ""
+	}
+	return r.ChannelID
+}
+
+func (r *ReviewedChannel) GetHandle() *string {
+	if r == nil {
+		return nil
+	}
+	return r.Handle
+}
+
+func (r *ReviewedChannel) GetOptions() *TargetOptions {
+	if r == nil {
+		return nil
+	}
+	return r.Options
+}
+
+func (r *ReviewedChannel) GetPlatform() *Platform {
+	if r == nil {
+		return nil
+	}
+	return r.Platform
+}
+
+func (r *ReviewedChannel) GetText() string {
+	if r == nil {
+		return ""
+	}
+	return r.Text
+}
+
+func (r *ReviewedChannel) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *ReviewedChannel) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedChannel) SetChannelID(channelID string) {
+	r.ChannelID = channelID
+	r.require(reviewedChannelFieldChannelID)
+}
+
+// SetHandle sets the Handle field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedChannel) SetHandle(handle *string) {
+	r.Handle = handle
+	r.require(reviewedChannelFieldHandle)
+}
+
+// SetOptions sets the Options field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedChannel) SetOptions(options *TargetOptions) {
+	r.Options = options
+	r.require(reviewedChannelFieldOptions)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedChannel) SetPlatform(platform *Platform) {
+	r.Platform = platform
+	r.require(reviewedChannelFieldPlatform)
+}
+
+// SetText sets the Text field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedChannel) SetText(text string) {
+	r.Text = text
+	r.require(reviewedChannelFieldText)
+}
+
+func (r *ReviewedChannel) UnmarshalJSON(data []byte) error {
+	type unmarshaler ReviewedChannel
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = ReviewedChannel(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, reviewedChannelNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		r.require(presentFields)
+	}
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *ReviewedChannel) MarshalJSON() ([]byte, error) {
+	type embed ReviewedChannel
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *ReviewedChannel) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	reviewedMediaFieldAltText = big.NewInt(1 << 0)
+	reviewedMediaFieldKind    = big.NewInt(1 << 1)
+	reviewedMediaFieldMediaID = big.NewInt(1 << 2)
+	reviewedMediaFieldURL     = big.NewInt(1 << 3)
+)
+
+// reviewedMediaNullableFields maps the wire names of ReviewedMedia's nullable fields (required or optional) to their field bits.
+var reviewedMediaNullableFields = map[string]*big.Int{
+	"kind": reviewedMediaFieldKind,
+	"url":  reviewedMediaFieldURL,
+}
+
+type ReviewedMedia struct {
+	AltText string     `json:"altText" url:"altText"`
+	Kind    *MediaKind `json:"kind,omitempty" url:"kind,omitempty"`
+	MediaID string     `json:"mediaId" url:"mediaId"`
+	URL     *string    `json:"url,omitempty" url:"url,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *ReviewedMedia) GetAltText() string {
+	if r == nil {
+		return ""
+	}
+	return r.AltText
+}
+
+func (r *ReviewedMedia) GetKind() *MediaKind {
+	if r == nil {
+		return nil
+	}
+	return r.Kind
+}
+
+func (r *ReviewedMedia) GetMediaID() string {
+	if r == nil {
+		return ""
+	}
+	return r.MediaID
+}
+
+func (r *ReviewedMedia) GetURL() *string {
+	if r == nil {
+		return nil
+	}
+	return r.URL
+}
+
+func (r *ReviewedMedia) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *ReviewedMedia) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetAltText sets the AltText field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedMedia) SetAltText(altText string) {
+	r.AltText = altText
+	r.require(reviewedMediaFieldAltText)
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedMedia) SetKind(kind *MediaKind) {
+	r.Kind = kind
+	r.require(reviewedMediaFieldKind)
+}
+
+// SetMediaID sets the MediaID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedMedia) SetMediaID(mediaID string) {
+	r.MediaID = mediaID
+	r.require(reviewedMediaFieldMediaID)
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedMedia) SetURL(url *string) {
+	r.URL = url
+	r.require(reviewedMediaFieldURL)
+}
+
+func (r *ReviewedMedia) UnmarshalJSON(data []byte) error {
+	type unmarshaler ReviewedMedia
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = ReviewedMedia(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, reviewedMediaNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		r.require(presentFields)
+	}
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *ReviewedMedia) MarshalJSON() ([]byte, error) {
+	type embed ReviewedMedia
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *ReviewedMedia) String() string {
 	if r == nil {
 		return "<nil>"
 	}

@@ -23,6 +23,9 @@ pub struct ApprovalRequest {
     #[serde(default)]
     pub schedule: PostSchedule,
     pub status: ApprovalStatus,
+    #[serde(rename = "subjectHash")]
+    #[serde(default)]
+    pub subject_hash: String,
 }
 
 impl ApprovalRequest {
@@ -43,6 +46,7 @@ pub struct ApprovalRequestBuilder {
     requested_via: Option<ApprovalOrigin>,
     schedule: Option<PostSchedule>,
     status: Option<ApprovalStatus>,
+    subject_hash: Option<String>,
 }
 
 impl ApprovalRequestBuilder {
@@ -91,6 +95,11 @@ impl ApprovalRequestBuilder {
         self
     }
 
+    pub fn subject_hash(mut self, value: impl Into<String>) -> Self {
+        self.subject_hash = Some(value.into());
+        self
+    }
+
     /// Consumes the builder and constructs a [`ApprovalRequest`].
     /// This method will fail if any of the following fields are not set:
     /// - [`id`](ApprovalRequestBuilder::id)
@@ -99,6 +108,7 @@ impl ApprovalRequestBuilder {
     /// - [`requested_via`](ApprovalRequestBuilder::requested_via)
     /// - [`schedule`](ApprovalRequestBuilder::schedule)
     /// - [`status`](ApprovalRequestBuilder::status)
+    /// - [`subject_hash`](ApprovalRequestBuilder::subject_hash)
     pub fn build(self) -> Result<ApprovalRequest, BuildError> {
         Ok(ApprovalRequest {
             decision: self.decision,
@@ -120,6 +130,9 @@ impl ApprovalRequestBuilder {
             status: self
                 .status
                 .ok_or_else(|| BuildError::missing_field("status"))?,
+            subject_hash: self
+                .subject_hash
+                .ok_or_else(|| BuildError::missing_field("subject_hash"))?,
         })
     }
 }

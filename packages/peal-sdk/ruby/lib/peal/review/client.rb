@@ -195,7 +195,7 @@ module Peal
 
       # Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a
       # thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow
-      # the post are told. Needs post:create or post:approve.
+      # the post are told. Needs post:create or post:approve, and is refused to staff acting as a member.
       #
       # @param request_options [Hash]
       # @param params [Peal::Review::Types::NewComment]
@@ -249,7 +249,7 @@ module Peal
       end
 
       # Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid,
-      # `parent`). Needs post:create or post:approve.
+      # `parent`). Needs post:create or post:approve, and is refused to staff acting as a member.
       #
       # @param request_options [Hash]
       # @param params [Peal::Review::Types::ResolveReviewRequest]
@@ -304,13 +304,17 @@ module Peal
         end
       end
 
-      # Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts.
-      # Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still
-      # approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with
-      # who approved and when. Needs post:approve, and is refused to staff acting as a member.
+      # Approves a post that waits for an approval, as the reviewer was shown it: send the `id` and the `subjectHash` of
+      # the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again
+      # or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time
+      # it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the
+      # post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it
+      # says the same. Recorded with who approved and when. In a workspace that holds more channels or members than its
+      # plan allows, which schedules nothing, nothing is approved (PlanLimitReached) and the post keeps waiting. Needs
+      # post:approve, and is refused to staff acting as a member.
       #
       # @param request_options [Hash]
-      # @param params [Hash]
+      # @param params [Peal::Review::Types::ApprovalDecision]
       # @option request_options [String] :base_url
       # @option request_options [Hash{String => Object}] :additional_headers
       # @option request_options [Hash{String => Object}] :additional_query_parameters
@@ -322,16 +326,23 @@ module Peal
       # @example
       #   client.review.approve(
       #     workspace_id: "workspaceId",
-      #     post_id: "postId"
+      #     post_id: "postId",
+      #     approval_id: "approvalId",
+      #     subject_hash: "subjectHash"
       #   )
       #
       # @return [Peal::Types::ApprovalOutcome]
       def approve(request_options: {}, **params)
         params = Peal::Internal::Types::Utils.normalize_keys(params)
+        request_data = Peal::Review::Types::ApprovalDecision.new(params).to_h
+        non_body_param_names = %w[workspaceId postId]
+        body = request_data.except(*non_body_param_names)
+
         request = Peal::Internal::JSON::Request.new(
           base_url: request_options[:base_url],
           method: "POST",
           path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/posts/#{URI.encode_uri_component(params[:post_id].to_s)}/approve",
+          body: body,
           request_options: request_options,
           max_retries: 0
         )
@@ -347,6 +358,7 @@ module Peal
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
             401 => Peal::Types::UnauthenticatedEncoded,
+            402 => Peal::Types::PlanLimitReachedEncoded,
             403 => Peal::Types::ForbiddenEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
@@ -354,8 +366,9 @@ module Peal
         end
       end
 
-      # Sends a post that waits for an approval back to draft, with a comment that says what to change. Its author and
-      # whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
+      # Sends a post that waits for an approval back to draft, with a comment that says what to change, and the `id` and
+      # `subjectHash` of the approval it refuses, as for approving. Its author and whoever asked are told. Needs
+      # post:approve, and is refused to staff acting as a member.
       #
       # @param request_options [Hash]
       # @param params [Peal::Review::Types::ChangesRequest]
@@ -371,6 +384,8 @@ module Peal
       #   client.review.request_changes(
       #     workspace_id: "workspaceId",
       #     post_id: "postId",
+      #     approval_id: "approvalId",
+      #     subject_hash: "subjectHash",
       #     comment: "comment"
       #   )
       #
@@ -460,7 +475,8 @@ module Peal
       # view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it
       # is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer
       # holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a
-      # member.
+      # member. A link that lets its holders approve is made in the web app only: an API key or an OAuth client is
+      # refused one, as it would approve its own posts with it.
       #
       # @param request_options [Hash]
       # @param params [Peal::Review::Types::NewReviewLink]

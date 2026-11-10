@@ -3,17 +3,10 @@
 import typing
 
 import pydantic
-import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
-from ..core.serialization import FieldMetadata
-from .approval_not_pending_encoded_tag import ApprovalNotPendingEncodedTag
 
 
 class ApprovalNotPendingEncoded(UniversalBaseModel):
-    tag: typing_extensions.Annotated[
-        ApprovalNotPendingEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ]
-
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
     else:

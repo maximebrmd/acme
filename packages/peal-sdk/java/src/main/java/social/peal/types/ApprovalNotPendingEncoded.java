@@ -7,36 +7,24 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ApprovalNotPendingEncoded.Builder.class)
 public final class ApprovalNotPendingEncoded {
-    private final ApprovalNotPendingEncodedTag tag;
-
     private final Map<String, Object> additionalProperties;
 
-    private ApprovalNotPendingEncoded(ApprovalNotPendingEncodedTag tag, Map<String, Object> additionalProperties) {
-        this.tag = tag;
+    private ApprovalNotPendingEncoded(Map<String, Object> additionalProperties) {
         this.additionalProperties = additionalProperties;
-    }
-
-    @JsonProperty("_tag")
-    public ApprovalNotPendingEncodedTag getTag() {
-        return tag;
     }
 
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
-        return other instanceof ApprovalNotPendingEncoded && equalTo((ApprovalNotPendingEncoded) other);
+        return other instanceof ApprovalNotPendingEncoded;
     }
 
     @JsonAnyGetter
@@ -44,79 +32,39 @@ public final class ApprovalNotPendingEncoded {
         return this.additionalProperties;
     }
 
-    private boolean equalTo(ApprovalNotPendingEncoded other) {
-        return tag.equals(other.tag);
-    }
-
-    @java.lang.Override
-    public int hashCode() {
-        return Objects.hash(this.tag);
-    }
-
     @java.lang.Override
     public String toString() {
         return ObjectMappers.stringify(this);
     }
 
-    public static TagStage builder() {
+    public static Builder builder() {
         return new Builder();
     }
 
-    public interface TagStage {
-        _FinalStage tag(@NotNull ApprovalNotPendingEncodedTag tag);
-
-        Builder from(ApprovalNotPendingEncoded other);
-    }
-
-    public interface _FinalStage {
-        ApprovalNotPendingEncoded build();
-
-        _FinalStage additionalProperty(String key, Object value);
-
-        _FinalStage additionalProperties(Map<String, Object> additionalProperties);
-    }
-
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements TagStage, _FinalStage {
-        private ApprovalNotPendingEncodedTag tag;
-
+    public static final class Builder {
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
-        @java.lang.Override
         public Builder from(ApprovalNotPendingEncoded other) {
-            tag(other.getTag());
             return this;
         }
 
-        @java.lang.Override
-        @JsonSetter("_tag")
-        public _FinalStage tag(@NotNull ApprovalNotPendingEncodedTag tag) {
-            this.tag = Objects.requireNonNull(tag, "tag must not be null");
-            return this;
-        }
-
-        @java.lang.Override
         public ApprovalNotPendingEncoded build() {
-            return new ApprovalNotPendingEncoded(tag, additionalProperties);
+            return new ApprovalNotPendingEncoded(additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag")) {
-                return;
-            }
             this.additionalProperties.put(key, value);
         }
 
-        @java.lang.Override
         public Builder additionalProperty(String key, Object value) {
             this.additionalProperties.put(key, value);
             return this;
         }
 
-        @java.lang.Override
         public Builder additionalProperties(Map<String, Object> additionalProperties) {
             this.additionalProperties.putAll(additionalProperties);
             return this;

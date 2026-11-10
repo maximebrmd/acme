@@ -1,4 +1,4 @@
-export type { ApproveReviewRequest } from "./ApproveReviewRequest.js";
+export type { ApprovalDecision } from "./ApprovalDecision.js";
 export type { ChangesRequest } from "./ChangesRequest.js";
 export type { LinksReviewRequest } from "./LinksReviewRequest.js";
 export type { NewComment } from "./NewComment.js";

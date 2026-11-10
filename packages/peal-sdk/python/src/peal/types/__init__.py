@@ -33,8 +33,8 @@ if typing.TYPE_CHECKING:
     from .analytics_summary import AnalyticsSummary
     from .api_key import ApiKey
     from .api_key_not_found_encoded import ApiKeyNotFoundEncoded
+    from .approval_changed_encoded import ApprovalChangedEncoded
     from .approval_not_pending_encoded import ApprovalNotPendingEncoded
-    from .approval_not_pending_encoded_tag import ApprovalNotPendingEncodedTag
     from .approval_origin import ApprovalOrigin
     from .approval_outcome import ApprovalOutcome
     from .approval_policy import ApprovalPolicy
@@ -366,6 +366,8 @@ if typing.TYPE_CHECKING:
     from .review_link_status import ReviewLinkStatus
     from .review_party import ReviewParty
     from .review_settings import ReviewSettings
+    from .reviewed_channel import ReviewedChannel
+    from .reviewed_media import ReviewedMedia
     from .reviewer import Reviewer
     from .reviewer_kind import ReviewerKind
     from .role import Role
@@ -487,8 +489,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AnalyticsSummary": ".analytics_summary",
     "ApiKey": ".api_key",
     "ApiKeyNotFoundEncoded": ".api_key_not_found_encoded",
+    "ApprovalChangedEncoded": ".approval_changed_encoded",
     "ApprovalNotPendingEncoded": ".approval_not_pending_encoded",
-    "ApprovalNotPendingEncodedTag": ".approval_not_pending_encoded_tag",
     "ApprovalOrigin": ".approval_origin",
     "ApprovalOutcome": ".approval_outcome",
     "ApprovalPolicy": ".approval_policy",
@@ -811,6 +813,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ReviewLinkStatus": ".review_link_status",
     "ReviewParty": ".review_party",
     "ReviewSettings": ".review_settings",
+    "ReviewedChannel": ".reviewed_channel",
+    "ReviewedMedia": ".reviewed_media",
     "Reviewer": ".reviewer",
     "ReviewerKind": ".reviewer_kind",
     "Role": ".role",
@@ -960,8 +964,8 @@ __all__ = [
     "AnalyticsSummary",
     "ApiKey",
     "ApiKeyNotFoundEncoded",
+    "ApprovalChangedEncoded",
     "ApprovalNotPendingEncoded",
-    "ApprovalNotPendingEncodedTag",
     "ApprovalOrigin",
     "ApprovalOutcome",
     "ApprovalPolicy",
@@ -1284,6 +1288,8 @@ __all__ = [
     "ReviewLinkStatus",
     "ReviewParty",
     "ReviewSettings",
+    "ReviewedChannel",
+    "ReviewedMedia",
     "Reviewer",
     "ReviewerKind",
     "Role",

@@ -122,7 +122,7 @@ require_relative "peal/review/types/pending_review_request"
 require_relative "peal/review/types/thread_review_request"
 require_relative "peal/review/types/new_comment"
 require_relative "peal/review/types/resolve_review_request"
-require_relative "peal/review/types/approve_review_request"
+require_relative "peal/review/types/approval_decision"
 require_relative "peal/review/types/changes_request"
 require_relative "peal/review/types/links_review_request"
 require_relative "peal/review/types/new_review_link"
@@ -187,7 +187,7 @@ module Peal
     autoload :Permission, ::File.join(__dir__, "peal/types/permission")
     autoload :APIKey, ::File.join(__dir__, "peal/types/api_key")
     autoload :APIKeyNotFoundEncoded, ::File.join(__dir__, "peal/types/api_key_not_found_encoded")
-    autoload :ApprovalNotPendingEncodedTag, ::File.join(__dir__, "peal/types/approval_not_pending_encoded_tag")
+    autoload :ApprovalChangedEncoded, ::File.join(__dir__, "peal/types/approval_changed_encoded")
     autoload :ApprovalNotPendingEncoded, ::File.join(__dir__, "peal/types/approval_not_pending_encoded")
     autoload :ApprovalOrigin, ::File.join(__dir__, "peal/types/approval_origin")
     autoload :ReviewerKind, ::File.join(__dir__, "peal/types/reviewer_kind")
@@ -437,6 +437,8 @@ module Peal
     autoload :PostContentInvalidEncoded, ::File.join(__dir__, "peal/types/post_content_invalid_encoded")
     autoload :PostDraft, ::File.join(__dir__, "peal/types/post_draft")
     autoload :PostNotFoundEncoded, ::File.join(__dir__, "peal/types/post_not_found_encoded")
+    autoload :ReviewedChannel, ::File.join(__dir__, "peal/types/reviewed_channel")
+    autoload :ReviewedMedia, ::File.join(__dir__, "peal/types/reviewed_media")
     autoload :PostReview, ::File.join(__dir__, "peal/types/post_review")
     autoload :PostStatusConflictEncodedTag, ::File.join(__dir__, "peal/types/post_status_conflict_encoded_tag")
     autoload :PostStatusConflictEncoded, ::File.join(__dir__, "peal/types/post_status_conflict_encoded")

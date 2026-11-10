@@ -3,7 +3,6 @@
 export const CommentProblem = {
         Text: "text",
         Name: "name",
-        Email: "email",
         Parent: "parent",
         Anchor: "anchor",
         Selection: "selection"

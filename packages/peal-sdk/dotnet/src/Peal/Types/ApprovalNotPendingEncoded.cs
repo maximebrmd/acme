@@ -11,9 +11,6 @@ public record ApprovalNotPendingEncoded : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
-    [JsonPropertyName("_tag")]
-    public required ApprovalNotPendingEncodedTag Tag { get; set; }
-
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

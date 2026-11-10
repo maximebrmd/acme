@@ -14,8 +14,14 @@ public record PostReview : IJsonOnDeserialized
     [JsonPropertyName("approvals")]
     public IEnumerable<ApprovalRequest> Approvals { get; set; } = new List<ApprovalRequest>();
 
+    [JsonPropertyName("channels")]
+    public IEnumerable<ReviewedChannel> Channels { get; set; } = new List<ReviewedChannel>();
+
     [JsonPropertyName("comments")]
     public IEnumerable<ReviewComment> Comments { get; set; } = new List<ReviewComment>();
+
+    [JsonPropertyName("media")]
+    public IEnumerable<ReviewedMedia> Media { get; set; } = new List<ReviewedMedia>();
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

@@ -9,7 +9,6 @@ module Peal
 
       TEXT = "text"
       NAME = "name"
-      EMAIL = "email"
       PARENT = "parent"
       ANCHOR = "anchor"
       SELECTION = "selection"

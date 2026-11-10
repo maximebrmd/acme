@@ -12,8 +12,6 @@ public readonly record struct CommentProblem : IStringEnum
 
     public static readonly CommentProblem Name = new(Values.Name);
 
-    public static readonly CommentProblem Email = new(Values.Email);
-
     public static readonly CommentProblem Parent = new(Values.Parent);
 
     public static readonly CommentProblem Anchor = new(Values.Anchor);
@@ -119,8 +117,6 @@ public readonly record struct CommentProblem : IStringEnum
         public const string Text = "text";
 
         public const string Name = "name";
-
-        public const string Email = "email";
 
         public const string Parent = "parent";
 

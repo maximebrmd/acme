@@ -12,6 +12,13 @@ public class ApproveTest : BaseMockServerTest
     [NUnit.Framework.Test]
     public async Task MockServerTest_1()
     {
+        const string requestJson = """
+            {
+              "approvalId": "approvalId",
+              "subjectHash": "subjectHash"
+            }
+            """;
+
         const string mockResponse = """
             {
               "approval": {
@@ -34,7 +41,8 @@ public class ApproveTest : BaseMockServerTest
                   "at": "at",
                   "timeZone": "timeZone"
                 },
-                "status": "pending"
+                "status": "pending",
+                "subjectHash": "subjectHash"
               },
               "late": true
             }
@@ -45,7 +53,9 @@ public class ApproveTest : BaseMockServerTest
                 WireMock
                     .RequestBuilders.Request.Create()
                     .WithPath("/api/workspaces/workspaceId/posts/postId/approve")
+                    .WithHeader("Content-Type", "application/json")
                     .UsingPost()
+                    .WithBodyAsJson(requestJson)
             )
             .RespondWith(
                 WireMock
@@ -55,7 +65,13 @@ public class ApproveTest : BaseMockServerTest
             );
 
         var response = await Client.Review.ApproveAsync(
-            new ApproveReviewRequest { WorkspaceId = "workspaceId", PostId = "postId" }
+            new ApprovalDecision
+            {
+                WorkspaceId = "workspaceId",
+                PostId = "postId",
+                ApprovalId = "approvalId",
+                SubjectHash = "subjectHash",
+            }
         );
         JsonAssert.AreEqual(response, mockResponse);
     }
@@ -63,6 +79,13 @@ public class ApproveTest : BaseMockServerTest
     [NUnit.Framework.Test]
     public async Task MockServerTest_2()
     {
+        const string requestJson = """
+            {
+              "approvalId": "approvalId",
+              "subjectHash": "subjectHash"
+            }
+            """;
+
         const string mockResponse = """
             {
               "approval": {
@@ -82,7 +105,8 @@ public class ApproveTest : BaseMockServerTest
                   "at": "at",
                   "timeZone": "timeZone"
                 },
-                "status": "pending"
+                "status": "pending",
+                "subjectHash": "subjectHash"
               },
               "late": true
             }
@@ -93,7 +117,9 @@ public class ApproveTest : BaseMockServerTest
                 WireMock
                     .RequestBuilders.Request.Create()
                     .WithPath("/api/workspaces/workspaceId/posts/postId/approve")
+                    .WithHeader("Content-Type", "application/json")
                     .UsingPost()
+                    .WithBodyAsJson(requestJson)
             )
             .RespondWith(
                 WireMock
@@ -103,7 +129,13 @@ public class ApproveTest : BaseMockServerTest
             );
 
         var response = await Client.Review.ApproveAsync(
-            new ApproveReviewRequest { WorkspaceId = "workspaceId", PostId = "postId" }
+            new ApprovalDecision
+            {
+                WorkspaceId = "workspaceId",
+                PostId = "postId",
+                ApprovalId = "approvalId",
+                SubjectHash = "subjectHash",
+            }
         );
         JsonAssert.AreEqual(response, mockResponse);
     }

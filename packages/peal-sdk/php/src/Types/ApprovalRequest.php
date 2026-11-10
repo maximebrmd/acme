@@ -62,6 +62,12 @@ class ApprovalRequest extends JsonSerializableType
     public string $status;
 
     /**
+     * @var string $subjectHash
+     */
+    #[JsonProperty('subjectHash')]
+    public string $subjectHash;
+
+    /**
      * @param array{
      *   id: string,
      *   postId: string,
@@ -69,6 +75,7 @@ class ApprovalRequest extends JsonSerializableType
      *   requestedVia: value-of<ApprovalOrigin>,
      *   schedule: PostSchedule,
      *   status: value-of<ApprovalStatus>,
+     *   subjectHash: string,
      *   decision?: ?ApprovalRequestDecision,
      *   requestedBy?: ?string,
      *   requestedByName?: ?string,
@@ -86,6 +93,7 @@ class ApprovalRequest extends JsonSerializableType
         $this->requestedVia = $values['requestedVia'];
         $this->schedule = $values['schedule'];
         $this->status = $values['status'];
+        $this->subjectHash = $values['subjectHash'];
     }
 
     /**

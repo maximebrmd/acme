@@ -314,7 +314,7 @@ func (r *RawClient) Resolve(
 
 func (r *RawClient) Approve(
 	ctx context.Context,
-	request *peal.ApproveReviewRequest,
+	request *peal.ApprovalDecision,
 	opts ...option.RequestOption,
 ) (*core.Response[*peal.ApprovalOutcome], error) {
 	options := core.NewRequestOptions(opts...)
@@ -332,6 +332,7 @@ func (r *RawClient) Approve(
 		r.options.ToHeader(),
 		options.ToHeader(),
 	)
+	headers.Add("Content-Type", "application/json")
 	var response *peal.ApprovalOutcome
 	raw, err := r.caller.Call(
 		ctx,
@@ -344,6 +345,7 @@ func (r *RawClient) Approve(
 			BodyProperties:  options.BodyProperties,
 			QueryParameters: options.QueryParameters,
 			Client:          options.HTTPClient,
+			Request:         request,
 			Response:        &response,
 			ErrorDecoder:    internal.NewErrorDecoder(peal.ErrorCodes),
 		},

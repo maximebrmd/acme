@@ -5,7 +5,6 @@ pub use crate::prelude::*;
 pub enum CommentProblem {
     Text,
     Name,
-    Email,
     Parent,
     Anchor,
     Selection,
@@ -19,7 +18,6 @@ impl Serialize for CommentProblem {
         match self {
             Self::Text => serializer.serialize_str("text"),
             Self::Name => serializer.serialize_str("name"),
-            Self::Email => serializer.serialize_str("email"),
             Self::Parent => serializer.serialize_str("parent"),
             Self::Anchor => serializer.serialize_str("anchor"),
             Self::Selection => serializer.serialize_str("selection"),
@@ -34,7 +32,6 @@ impl<'de> Deserialize<'de> for CommentProblem {
         match value.as_str() {
             "text" => Ok(Self::Text),
             "name" => Ok(Self::Name),
-            "email" => Ok(Self::Email),
             "parent" => Ok(Self::Parent),
             "anchor" => Ok(Self::Anchor),
             "selection" => Ok(Self::Selection),
@@ -48,7 +45,6 @@ impl fmt::Display for CommentProblem {
         match self {
             Self::Text => write!(f, "text"),
             Self::Name => write!(f, "name"),
-            Self::Email => write!(f, "email"),
             Self::Parent => write!(f, "parent"),
             Self::Anchor => write!(f, "anchor"),
             Self::Selection => write!(f, "selection"),

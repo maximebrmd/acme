@@ -14,6 +14,8 @@ public class RequestChangesTest : BaseMockServerTest
     {
         const string requestJson = """
             {
+              "approvalId": "approvalId",
+              "subjectHash": "subjectHash",
               "comment": "x"
             }
             """;
@@ -40,7 +42,8 @@ public class RequestChangesTest : BaseMockServerTest
                   "at": "at",
                   "timeZone": "timeZone"
                 },
-                "status": "pending"
+                "status": "pending",
+                "subjectHash": "subjectHash"
               },
               "comment": {
                 "anchor": {
@@ -99,6 +102,8 @@ public class RequestChangesTest : BaseMockServerTest
             {
                 WorkspaceId = "workspaceId",
                 PostId = "postId",
+                ApprovalId = "approvalId",
+                SubjectHash = "subjectHash",
                 Comment = "x",
             }
         );
@@ -110,6 +115,8 @@ public class RequestChangesTest : BaseMockServerTest
     {
         const string requestJson = """
             {
+              "approvalId": "approvalId",
+              "subjectHash": "subjectHash",
               "comment": "comment"
             }
             """;
@@ -133,7 +140,8 @@ public class RequestChangesTest : BaseMockServerTest
                   "at": "at",
                   "timeZone": "timeZone"
                 },
-                "status": "pending"
+                "status": "pending",
+                "subjectHash": "subjectHash"
               },
               "comment": {
                 "anchor": {
@@ -185,6 +193,8 @@ public class RequestChangesTest : BaseMockServerTest
             {
                 WorkspaceId = "workspaceId",
                 PostId = "postId",
+                ApprovalId = "approvalId",
+                SubjectHash = "subjectHash",
                 Comment = "comment",
             }
         );

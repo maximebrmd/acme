@@ -197,7 +197,7 @@ impl ReviewClient {
             .await
     }
 
-    /// Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve.
+    /// Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve, and is refused to staff acting as a member.
     ///
     /// # Arguments
     ///
@@ -257,7 +257,7 @@ impl ReviewClient {
             .await
     }
 
-    /// Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve.
+    /// Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve, and is refused to staff acting as a member.
     ///
     /// # Arguments
     ///
@@ -318,7 +318,7 @@ impl ReviewClient {
             .await
     }
 
-    /// Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.
+    /// Approves a post that waits for an approval, as the reviewer was shown it: send the `id` and the `subjectHash` of the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. In a workspace that holds more channels or members than its plan allows, which schedules nothing, nothing is approved (PlanLimitReached) and the post keeps waiting. Needs post:approve, and is refused to staff acting as a member.
     ///
     /// # Arguments
     ///
@@ -342,7 +342,15 @@ impl ReviewClient {
     ///     let client = PealClient::new(config).expect("Failed to build client");
     ///     client
     ///         .review
-    ///         .approve(&"workspaceId".to_string(), &"postId".to_string(), None)
+    ///         .approve(
+    ///             &"workspaceId".to_string(),
+    ///             &"postId".to_string(),
+    ///             &ApprovalDecision {
+    ///                 approval_id: "approvalId".to_string(),
+    ///                 subject_hash: "subjectHash".to_string(),
+    ///             },
+    ///             None,
+    ///         )
     ///         .await;
     /// }
     /// ```
@@ -350,6 +358,7 @@ impl ReviewClient {
         &self,
         workspace_id: &str,
         post_id: &str,
+        request: &ApprovalDecision,
         options: Option<RequestOptions>,
     ) -> Result<ApprovalOutcome, ApiError> {
         let options = {
@@ -361,14 +370,14 @@ impl ReviewClient {
             .execute_request(
                 Method::POST,
                 &format!("api/workspaces/{}/posts/{}/approve", workspace_id, post_id),
-                None,
+                Some(serde_json::to_value(request).map_err(ApiError::Serialization)?),
                 None,
                 options,
             )
             .await
     }
 
-    /// Sends a post that waits for an approval back to draft, with a comment that says what to change. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
+    /// Sends a post that waits for an approval back to draft, with a comment that says what to change, and the `id` and `subjectHash` of the approval it refuses, as for approving. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
     ///
     /// # Arguments
     ///
@@ -396,6 +405,8 @@ impl ReviewClient {
     ///             &"workspaceId".to_string(),
     ///             &"postId".to_string(),
     ///             &ChangesRequest {
+    ///                 approval_id: "approvalId".to_string(),
+    ///                 subject_hash: "subjectHash".to_string(),
     ///                 comment: "comment".to_string(),
     ///             },
     ///             None,
@@ -477,7 +488,7 @@ impl ReviewClient {
             .await
     }
 
-    /// Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member.
+    /// Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member. A link that lets its holders approve is made in the web app only: an API key or an OAuth client is refused one, as it would approve its own posts with it.
     ///
     /// # Arguments
     ///

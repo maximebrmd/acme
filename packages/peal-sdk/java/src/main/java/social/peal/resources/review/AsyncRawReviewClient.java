@@ -31,9 +31,10 @@ import social.peal.core.RetryInterceptor;
 import social.peal.errors.ConflictError;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.NotFoundError;
+import social.peal.errors.PaymentRequiredError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
-import social.peal.resources.review.requests.ApproveReviewRequest;
+import social.peal.resources.review.requests.ApprovalDecision;
 import social.peal.resources.review.requests.ChangesRequest;
 import social.peal.resources.review.requests.LinksReviewRequest;
 import social.peal.resources.review.requests.NewComment;
@@ -49,6 +50,7 @@ import social.peal.types.ApprovalRequest;
 import social.peal.types.ChangesOutcome;
 import social.peal.types.CreatedReviewLink;
 import social.peal.types.ForbiddenEncoded;
+import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.PostReview;
 import social.peal.types.ReviewComment;
 import social.peal.types.ReviewLink;
@@ -530,7 +532,7 @@ public class AsyncRawReviewClient {
     }
 
     /**
-     * Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve.
+     * Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve, and is refused to staff acting as a member.
      */
     public CompletableFuture<PealClientHttpResponse<ReviewComment>> comment(
             String workspaceId, String postId, NewComment request) {
@@ -538,7 +540,7 @@ public class AsyncRawReviewClient {
     }
 
     /**
-     * Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve.
+     * Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve, and is refused to staff acting as a member.
      */
     public CompletableFuture<PealClientHttpResponse<ReviewComment>> comment(
             String workspaceId, String postId, NewComment request, RequestOptions requestOptions) {
@@ -644,7 +646,7 @@ public class AsyncRawReviewClient {
     }
 
     /**
-     * Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, <code>parent</code>). Needs post:create or post:approve.
+     * Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, <code>parent</code>). Needs post:create or post:approve, and is refused to staff acting as a member.
      */
     public CompletableFuture<PealClientHttpResponse<ReviewComment>> resolve(
             String workspaceId, String postId, String commentId, ResolveReviewRequest request) {
@@ -652,7 +654,7 @@ public class AsyncRawReviewClient {
     }
 
     /**
-     * Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, <code>parent</code>). Needs post:create or post:approve.
+     * Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, <code>parent</code>). Needs post:create or post:approve, and is refused to staff acting as a member.
      */
     public CompletableFuture<PealClientHttpResponse<ReviewComment>> resolve(
             String workspaceId,
@@ -763,33 +765,18 @@ public class AsyncRawReviewClient {
     }
 
     /**
-     * Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and <code>late</code> is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.
-     */
-    public CompletableFuture<PealClientHttpResponse<ApprovalOutcome>> approve(String workspaceId, String postId) {
-        return approve(workspaceId, postId, ApproveReviewRequest.builder().build());
-    }
-
-    /**
-     * Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and <code>late</code> is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.
+     * Approves a post that waits for an approval, as the reviewer was shown it: send the <code>id</code> and the <code>subjectHash</code> of the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and <code>late</code> is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. In a workspace that holds more channels or members than its plan allows, which schedules nothing, nothing is approved (PlanLimitReached) and the post keeps waiting. Needs post:approve, and is refused to staff acting as a member.
      */
     public CompletableFuture<PealClientHttpResponse<ApprovalOutcome>> approve(
-            String workspaceId, String postId, RequestOptions requestOptions) {
-        return approve(workspaceId, postId, ApproveReviewRequest.builder().build(), requestOptions);
-    }
-
-    /**
-     * Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and <code>late</code> is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.
-     */
-    public CompletableFuture<PealClientHttpResponse<ApprovalOutcome>> approve(
-            String workspaceId, String postId, ApproveReviewRequest request) {
+            String workspaceId, String postId, ApprovalDecision request) {
         return approve(workspaceId, postId, request, null);
     }
 
     /**
-     * Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and <code>late</code> is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.
+     * Approves a post that waits for an approval, as the reviewer was shown it: send the <code>id</code> and the <code>subjectHash</code> of the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and <code>late</code> is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. In a workspace that holds more channels or members than its plan allows, which schedules nothing, nothing is approved (PlanLimitReached) and the post keeps waiting. Needs post:approve, and is refused to staff acting as a member.
      */
     public CompletableFuture<PealClientHttpResponse<ApprovalOutcome>> approve(
-            String workspaceId, String postId, ApproveReviewRequest request, RequestOptions requestOptions) {
+            String workspaceId, String postId, ApprovalDecision request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()
                 .addPathSegments("api/workspaces")
@@ -802,16 +789,22 @@ public class AsyncRawReviewClient {
                 httpUrl.addQueryParameter(_key, _value);
             });
         }
-        Request.Builder _requestBuilder = new Request.Builder()
+        RequestBody body;
+        try {
+            body = RequestBody.create(
+                    ObjectMappers.JSON_MAPPER.writeValueAsBytes(BodyProperties.merge(
+                            request, requestOptions != null ? requestOptions.getBodyProperties() : null)),
+                    MediaTypes.APPLICATION_JSON);
+        } catch (JsonProcessingException e) {
+            throw new PealClientException("Failed to serialize request", e);
+        }
+        Request okhttpRequest = new Request.Builder()
                 .url(httpUrl.build())
-                .method(
-                        "POST",
-                        BodyProperties.toRequestBody(
-                                requestOptions != null ? requestOptions.getBodyProperties() : null,
-                                RequestBody.create("", null)))
+                .method("POST", body)
                 .headers(Headers.of(clientOptions.headers(requestOptions)))
-                .addHeader("Accept", "application/json");
-        Request okhttpRequest = _requestBuilder.build();
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json")
+                .build();
         OkHttpClient client = clientOptions.httpClient();
         if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
             client = clientOptions.httpClientWithTimeout(requestOptions);
@@ -839,6 +832,12 @@ public class AsyncRawReviewClient {
                                 future.completeExceptionally(new UnauthorizedError(
                                         ObjectMappers.JSON_MAPPER.readValue(
                                                 responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 402:
+                                future.completeExceptionally(new PaymentRequiredError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, PlanLimitReachedEncoded.class),
                                         response));
                                 return;
                             case 403:
@@ -886,7 +885,7 @@ public class AsyncRawReviewClient {
     }
 
     /**
-     * Sends a post that waits for an approval back to draft, with a comment that says what to change. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
+     * Sends a post that waits for an approval back to draft, with a comment that says what to change, and the <code>id</code> and <code>subjectHash</code> of the approval it refuses, as for approving. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
      */
     public CompletableFuture<PealClientHttpResponse<ChangesOutcome>> requestChanges(
             String workspaceId, String postId, ChangesRequest request) {
@@ -894,7 +893,7 @@ public class AsyncRawReviewClient {
     }
 
     /**
-     * Sends a post that waits for an approval back to draft, with a comment that says what to change. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
+     * Sends a post that waits for an approval back to draft, with a comment that says what to change, and the <code>id</code> and <code>subjectHash</code> of the approval it refuses, as for approving. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
      */
     public CompletableFuture<PealClientHttpResponse<ChangesOutcome>> requestChanges(
             String workspaceId, String postId, ChangesRequest request, RequestOptions requestOptions) {
@@ -1125,7 +1124,7 @@ public class AsyncRawReviewClient {
     }
 
     /**
-     * Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless <code>expiresInHours</code> says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member.
+     * Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless <code>expiresInHours</code> says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member. A link that lets its holders approve is made in the web app only: an API key or an OAuth client is refused one, as it would approve its own posts with it.
      */
     public CompletableFuture<PealClientHttpResponse<CreatedReviewLink>> createLink(
             String workspaceId, String postId, NewReviewLink request) {
@@ -1133,7 +1132,7 @@ public class AsyncRawReviewClient {
     }
 
     /**
-     * Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless <code>expiresInHours</code> says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member.
+     * Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless <code>expiresInHours</code> says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member. A link that lets its holders approve is made in the web app only: an API key or an OAuth client is refused one, as it would approve its own posts with it.
      */
     public CompletableFuture<PealClientHttpResponse<CreatedReviewLink>> createLink(
             String workspaceId, String postId, NewReviewLink request, RequestOptions requestOptions) {

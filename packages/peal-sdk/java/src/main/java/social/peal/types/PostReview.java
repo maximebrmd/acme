@@ -23,14 +23,24 @@ import social.peal.core.ObjectMappers;
 public final class PostReview {
     private final List<ApprovalRequest> approvals;
 
+    private final List<ReviewedChannel> channels;
+
     private final List<ReviewComment> comments;
+
+    private final List<ReviewedMedia> media;
 
     private final Map<String, Object> additionalProperties;
 
     private PostReview(
-            List<ApprovalRequest> approvals, List<ReviewComment> comments, Map<String, Object> additionalProperties) {
+            List<ApprovalRequest> approvals,
+            List<ReviewedChannel> channels,
+            List<ReviewComment> comments,
+            List<ReviewedMedia> media,
+            Map<String, Object> additionalProperties) {
         this.approvals = approvals;
+        this.channels = channels;
         this.comments = comments;
+        this.media = media;
         this.additionalProperties = additionalProperties;
     }
 
@@ -39,9 +49,19 @@ public final class PostReview {
         return approvals;
     }
 
+    @JsonProperty("channels")
+    public List<ReviewedChannel> getChannels() {
+        return channels;
+    }
+
     @JsonProperty("comments")
     public List<ReviewComment> getComments() {
         return comments;
+    }
+
+    @JsonProperty("media")
+    public List<ReviewedMedia> getMedia() {
+        return media;
     }
 
     @java.lang.Override
@@ -56,12 +76,15 @@ public final class PostReview {
     }
 
     private boolean equalTo(PostReview other) {
-        return approvals.equals(other.approvals) && comments.equals(other.comments);
+        return approvals.equals(other.approvals)
+                && channels.equals(other.channels)
+                && comments.equals(other.comments)
+                && media.equals(other.media);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.approvals, this.comments);
+        return Objects.hash(this.approvals, this.channels, this.comments, this.media);
     }
 
     @java.lang.Override
@@ -77,7 +100,11 @@ public final class PostReview {
     public static final class Builder {
         private List<ApprovalRequest> approvals = new ArrayList<>();
 
+        private List<ReviewedChannel> channels = new ArrayList<>();
+
         private List<ReviewComment> comments = new ArrayList<>();
+
+        private List<ReviewedMedia> media = new ArrayList<>();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -85,7 +112,9 @@ public final class PostReview {
 
         public Builder from(PostReview other) {
             approvals(other.getApprovals());
+            channels(other.getChannels());
             comments(other.getComments());
+            media(other.getMedia());
             return this;
         }
 
@@ -106,6 +135,27 @@ public final class PostReview {
         public Builder addAllApprovals(List<ApprovalRequest> approvals) {
             if (approvals != null) {
                 this.approvals.addAll(approvals);
+            }
+            return this;
+        }
+
+        @JsonSetter(value = "channels", nulls = Nulls.SKIP)
+        public Builder channels(List<ReviewedChannel> channels) {
+            this.channels.clear();
+            if (channels != null) {
+                this.channels.addAll(channels);
+            }
+            return this;
+        }
+
+        public Builder addChannels(ReviewedChannel channels) {
+            this.channels.add(channels);
+            return this;
+        }
+
+        public Builder addAllChannels(List<ReviewedChannel> channels) {
+            if (channels != null) {
+                this.channels.addAll(channels);
             }
             return this;
         }
@@ -131,13 +181,37 @@ public final class PostReview {
             return this;
         }
 
+        @JsonSetter(value = "media", nulls = Nulls.SKIP)
+        public Builder media(List<ReviewedMedia> media) {
+            this.media.clear();
+            if (media != null) {
+                this.media.addAll(media);
+            }
+            return this;
+        }
+
+        public Builder addMedia(ReviewedMedia media) {
+            this.media.add(media);
+            return this;
+        }
+
+        public Builder addAllMedia(List<ReviewedMedia> media) {
+            if (media != null) {
+                this.media.addAll(media);
+            }
+            return this;
+        }
+
         public PostReview build() {
-            return new PostReview(approvals, comments, additionalProperties);
+            return new PostReview(approvals, channels, comments, media, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("approvals") || key.equalsIgnoreCase("comments")) {
+            if (key.equalsIgnoreCase("approvals")
+                    || key.equalsIgnoreCase("channels")
+                    || key.equalsIgnoreCase("comments")
+                    || key.equalsIgnoreCase("media")) {
                 return;
             }
             this.additionalProperties.put(key, value);

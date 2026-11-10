@@ -6,7 +6,6 @@ enum CommentProblem: string
 {
     case Text = "text";
     case Name = "name";
-    case Email = "email";
     case Parent_ = "parent";
     case Anchor = "anchor";
     case Selection = "selection";

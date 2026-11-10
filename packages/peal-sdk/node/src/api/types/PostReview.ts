@@ -4,5 +4,7 @@ import * as Peal from "../index.js";
 
 export interface PostReview {
     approvals: Peal.ApprovalRequest[];
+    channels: Peal.ReviewedChannel[];
     comments: Peal.ReviewComment[];
+    media: Peal.ReviewedMedia[];
 }

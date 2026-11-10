@@ -5,11 +5,15 @@
  *     {
  *         workspaceId: "workspaceId",
  *         postId: "postId",
+ *         approvalId: "approvalId",
+ *         subjectHash: "subjectHash",
  *         comment: "comment"
  *     }
  */
 export interface ChangesRequest {
     workspaceId: string;
     postId: string;
+    approvalId: string;
+    subjectHash: string;
     comment: string;
 }

@@ -19,6 +19,7 @@ use Peal\Types\PostReview;
 use Peal\Review\Requests\NewComment;
 use Peal\Types\ReviewComment;
 use Peal\Review\Requests\ResolveReviewRequest;
+use Peal\Review\Requests\ApprovalDecision;
 use Peal\Types\ApprovalOutcome;
 use Peal\Review\Requests\ChangesRequest;
 use Peal\Types\ChangesOutcome;
@@ -292,7 +293,7 @@ class ReviewClient
     }
 
     /**
-     * Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve.
+     * Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve, and is refused to staff acting as a member.
      *
      * Example:
      * ```php
@@ -355,7 +356,7 @@ class ReviewClient
     }
 
     /**
-     * Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve.
+     * Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve, and is refused to staff acting as a member.
      *
      * Example:
      * ```php
@@ -420,18 +421,23 @@ class ReviewClient
     }
 
     /**
-     * Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.
+     * Approves a post that waits for an approval, as the reviewer was shown it: send the `id` and the `subjectHash` of the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. In a workspace that holds more channels or members than its plan allows, which schedules nothing, nothing is approved (PlanLimitReached) and the post keeps waiting. Needs post:approve, and is refused to staff acting as a member.
      *
      * Example:
      * ```php
      * $client->review->approve(
      *     'workspaceId',
      *     'postId',
+     *     new ApprovalDecision([
+     *         'approvalId' => 'approvalId',
+     *         'subjectHash' => 'subjectHash',
+     *     ]),
      * );
      * ```
      *
      * @param string $workspaceId
      * @param string $postId
+     * @param ApprovalDecision $request
      * @param ?array{
      *   baseUrl?: string,
      *   maxRetries?: int,
@@ -444,7 +450,7 @@ class ReviewClient
      * @throws PealException
      * @throws PealApiException
      */
-    public function approve(string $workspaceId, string $postId, ?array $options = null): ?ApprovalOutcome
+    public function approve(string $workspaceId, string $postId, ApprovalDecision $request, ?array $options = null): ?ApprovalOutcome
     {
         $options = array_merge($this->options, $options ?? []);
         $options['maxRetries'] = 0;
@@ -454,6 +460,7 @@ class ReviewClient
                     baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
                     path: "api/workspaces/{$workspaceId}/posts/{$postId}/approve",
                     method: HttpMethod::POST,
+                    body: $request,
                 ),
                 $options,
             );
@@ -478,7 +485,7 @@ class ReviewClient
     }
 
     /**
-     * Sends a post that waits for an approval back to draft, with a comment that says what to change. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
+     * Sends a post that waits for an approval back to draft, with a comment that says what to change, and the `id` and `subjectHash` of the approval it refuses, as for approving. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
      *
      * Example:
      * ```php
@@ -486,6 +493,8 @@ class ReviewClient
      *     'workspaceId',
      *     'postId',
      *     new ChangesRequest([
+     *         'approvalId' => 'approvalId',
+     *         'subjectHash' => 'subjectHash',
      *         'comment' => 'comment',
      *     ]),
      * );
@@ -598,7 +607,7 @@ class ReviewClient
     }
 
     /**
-     * Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member.
+     * Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member. A link that lets its holders approve is made in the web app only: an API key or an OAuth client is refused one, as it would approve its own posts with it.
      *
      * Example:
      * ```php

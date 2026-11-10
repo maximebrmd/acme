@@ -5259,7 +5259,7 @@ client.review.thread(
 <dl>
 <dd>
 
-Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve.
+Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve, and is refused to staff acting as a member.
 </dd>
 </dl>
 </dd>
@@ -5357,7 +5357,7 @@ client.review.comment(
 <dl>
 <dd>
 
-Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve.
+Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve, and is refused to staff acting as a member.
 </dd>
 </dl>
 </dd>
@@ -5436,7 +5436,7 @@ client.review.resolve(
 </dl>
 </details>
 
-<details><summary><code>client.review.<a href="/lib/peal/review/client.rb">approve</a>(workspace_id:, post_id:) -> Peal::Types::ApprovalOutcome</code></summary>
+<details><summary><code>client.review.<a href="/lib/peal/review/client.rb">approve</a>(workspace_id:, post_id:, request) -> Peal::Types::ApprovalOutcome</code></summary>
 <dl>
 <dd>
 
@@ -5448,7 +5448,7 @@ client.review.resolve(
 <dl>
 <dd>
 
-Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.
+Approves a post that waits for an approval, as the reviewer was shown it: send the `id` and the `subjectHash` of the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. In a workspace that holds more channels or members than its plan allows, which schedules nothing, nothing is approved (PlanLimitReached) and the post keeps waiting. Needs post:approve, and is refused to staff acting as a member.
 </dd>
 </dl>
 </dd>
@@ -5465,7 +5465,9 @@ Approves a post that waits for an approval: it is scheduled for the time it was 
 ```ruby
 client.review.approve(
   workspace_id: "workspaceId",
-  post_id: "postId"
+  post_id: "postId",
+  approval_id: "approvalId",
+  subject_hash: "subjectHash"
 )
 ```
 </dd>
@@ -5490,6 +5492,22 @@ client.review.approve(
 <dd>
 
 **post_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**approval_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**subject_hash:** `String` 
     
 </dd>
 </dl>
@@ -5521,7 +5539,7 @@ client.review.approve(
 <dl>
 <dd>
 
-Sends a post that waits for an approval back to draft, with a comment that says what to change. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
+Sends a post that waits for an approval back to draft, with a comment that says what to change, and the `id` and `subjectHash` of the approval it refuses, as for approving. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
 </dd>
 </dl>
 </dd>
@@ -5539,6 +5557,8 @@ Sends a post that waits for an approval back to draft, with a comment that says 
 client.review.request_changes(
   workspace_id: "workspaceId",
   post_id: "postId",
+  approval_id: "approvalId",
+  subject_hash: "subjectHash",
   comment: "comment"
 )
 ```
@@ -5564,6 +5584,22 @@ client.review.request_changes(
 <dd>
 
 **post_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**approval_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**subject_hash:** `String` 
     
 </dd>
 </dl>
@@ -5676,7 +5712,7 @@ client.review.links(
 <dl>
 <dd>
 
-Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member.
+Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member. A link that lets its holders approve is made in the web app only: an API key or an OAuth client is refused one, as it would approve its own posts with it.
 </dd>
 </dl>
 </dd>

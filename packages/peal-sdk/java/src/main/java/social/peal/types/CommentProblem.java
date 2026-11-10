@@ -7,8 +7,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class CommentProblem {
-    public static final CommentProblem EMAIL = new CommentProblem(Value.EMAIL, "email");
-
     public static final CommentProblem TEXT = new CommentProblem(Value.TEXT, "text");
 
     public static final CommentProblem NAME = new CommentProblem(Value.NAME, "name");
@@ -51,8 +49,6 @@ public final class CommentProblem {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
-            case EMAIL:
-                return visitor.visitEmail();
             case TEXT:
                 return visitor.visitText();
             case NAME:
@@ -72,8 +68,6 @@ public final class CommentProblem {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static CommentProblem valueOf(String value) {
         switch (value) {
-            case "email":
-                return EMAIL;
             case "text":
                 return TEXT;
             case "name":
@@ -94,8 +88,6 @@ public final class CommentProblem {
 
         NAME,
 
-        EMAIL,
-
         PARENT,
 
         ANCHOR,
@@ -109,8 +101,6 @@ public final class CommentProblem {
         T visitText();
 
         T visitName();
-
-        T visitEmail();
 
         T visitParent();
 

@@ -14,6 +14,7 @@ from ..core.serialization import convert_and_respect_annotation_metadata
 from ..errors.conflict_error import ConflictError
 from ..errors.forbidden_error import ForbiddenError
 from ..errors.not_found_error import NotFoundError
+from ..errors.payment_required_error import PaymentRequiredError
 from ..errors.unauthorized_error import UnauthorizedError
 from ..errors.unprocessable_entity_error import UnprocessableEntityError
 from ..types.approval_outcome import ApprovalOutcome
@@ -22,6 +23,7 @@ from ..types.approval_request import ApprovalRequest
 from ..types.changes_outcome import ChangesOutcome
 from ..types.created_review_link import CreatedReviewLink
 from ..types.forbidden_encoded import ForbiddenEncoded
+from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 from ..types.post_review import PostReview
 from ..types.review_comment import ReviewComment
 from ..types.review_link import ReviewLink
@@ -365,7 +367,7 @@ class RawReviewClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[ReviewComment]:
         """
-        Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve.
+        Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve, and is refused to staff acting as a member.
 
         Parameters
         ----------
@@ -479,7 +481,7 @@ class RawReviewClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[ReviewComment]:
         """
-        Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve.
+        Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve, and is refused to staff acting as a member.
 
         Parameters
         ----------
@@ -578,16 +580,26 @@ class RawReviewClient:
         raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
 
     def approve(
-        self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        post_id: str,
+        *,
+        approval_id: str,
+        subject_hash: str,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[ApprovalOutcome]:
         """
-        Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.
+        Approves a post that waits for an approval, as the reviewer was shown it: send the `id` and the `subjectHash` of the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. In a workspace that holds more channels or members than its plan allows, which schedules nothing, nothing is approved (PlanLimitReached) and the post keeps waiting. Needs post:approve, and is refused to staff acting as a member.
 
         Parameters
         ----------
         workspace_id : str
 
         post_id : str
+
+        approval_id : str
+
+        subject_hash : str
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -603,7 +615,15 @@ class RawReviewClient:
         _response = self._client_wrapper.httpx_client.request(
             f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/approve",
             method="POST",
+            json={
+                "approvalId": approval_id,
+                "subjectHash": subject_hash,
+            },
+            headers={
+                "content-type": "application/json",
+            },
             request_options=_request_options_with_retries_disabled,
+            omit=OMIT,
         )
         try:
             if 200 <= _response.status_code < 300:
@@ -622,6 +642,17 @@ class RawReviewClient:
                         UnauthenticatedEncoded,
                         parse_obj_as(
                             type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        PlanLimitReachedEncoded,
+                        parse_obj_as(
+                            type_=PlanLimitReachedEncoded,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -669,16 +700,27 @@ class RawReviewClient:
         raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
 
     def request_changes(
-        self, workspace_id: str, post_id: str, *, comment: str, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        post_id: str,
+        *,
+        approval_id: str,
+        subject_hash: str,
+        comment: str,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[ChangesOutcome]:
         """
-        Sends a post that waits for an approval back to draft, with a comment that says what to change. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
+        Sends a post that waits for an approval back to draft, with a comment that says what to change, and the `id` and `subjectHash` of the approval it refuses, as for approving. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
 
         Parameters
         ----------
         workspace_id : str
 
         post_id : str
+
+        approval_id : str
+
+        subject_hash : str
 
         comment : str
 
@@ -697,6 +739,8 @@ class RawReviewClient:
             f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/request-changes",
             method="POST",
             json={
+                "approvalId": approval_id,
+                "subjectHash": subject_hash,
                 "comment": comment,
             },
             headers={
@@ -866,7 +910,7 @@ class RawReviewClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[CreatedReviewLink]:
         """
-        Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member.
+        Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member. A link that lets its holders approve is made in the web app only: an API key or an OAuth client is refused one, as it would approve its own posts with it.
 
         Parameters
         ----------
@@ -1373,7 +1417,7 @@ class AsyncRawReviewClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[ReviewComment]:
         """
-        Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve.
+        Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, 2000 characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve, and is refused to staff acting as a member.
 
         Parameters
         ----------
@@ -1487,7 +1531,7 @@ class AsyncRawReviewClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[ReviewComment]:
         """
-        Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve.
+        Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve, and is refused to staff acting as a member.
 
         Parameters
         ----------
@@ -1586,16 +1630,26 @@ class AsyncRawReviewClient:
         raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
 
     async def approve(
-        self, workspace_id: str, post_id: str, *, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        post_id: str,
+        *,
+        approval_id: str,
+        subject_hash: str,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[ApprovalOutcome]:
         """
-        Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.
+        Approves a post that waits for an approval, as the reviewer was shown it: send the `id` and the `subjectHash` of the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. In a workspace that holds more channels or members than its plan allows, which schedules nothing, nothing is approved (PlanLimitReached) and the post keeps waiting. Needs post:approve, and is refused to staff acting as a member.
 
         Parameters
         ----------
         workspace_id : str
 
         post_id : str
+
+        approval_id : str
+
+        subject_hash : str
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1611,7 +1665,15 @@ class AsyncRawReviewClient:
         _response = await self._client_wrapper.httpx_client.request(
             f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/approve",
             method="POST",
+            json={
+                "approvalId": approval_id,
+                "subjectHash": subject_hash,
+            },
+            headers={
+                "content-type": "application/json",
+            },
             request_options=_request_options_with_retries_disabled,
+            omit=OMIT,
         )
         try:
             if 200 <= _response.status_code < 300:
@@ -1630,6 +1692,17 @@ class AsyncRawReviewClient:
                         UnauthenticatedEncoded,
                         parse_obj_as(
                             type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        PlanLimitReachedEncoded,
+                        parse_obj_as(
+                            type_=PlanLimitReachedEncoded,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -1677,16 +1750,27 @@ class AsyncRawReviewClient:
         raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response_json)
 
     async def request_changes(
-        self, workspace_id: str, post_id: str, *, comment: str, request_options: typing.Optional[RequestOptions] = None
+        self,
+        workspace_id: str,
+        post_id: str,
+        *,
+        approval_id: str,
+        subject_hash: str,
+        comment: str,
+        request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[ChangesOutcome]:
         """
-        Sends a post that waits for an approval back to draft, with a comment that says what to change. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
+        Sends a post that waits for an approval back to draft, with a comment that says what to change, and the `id` and `subjectHash` of the approval it refuses, as for approving. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.
 
         Parameters
         ----------
         workspace_id : str
 
         post_id : str
+
+        approval_id : str
+
+        subject_hash : str
 
         comment : str
 
@@ -1705,6 +1789,8 @@ class AsyncRawReviewClient:
             f"api/workspaces/{encode_path_param(workspace_id)}/posts/{encode_path_param(post_id)}/request-changes",
             method="POST",
             json={
+                "approvalId": approval_id,
+                "subjectHash": subject_hash,
                 "comment": comment,
             },
             headers={
@@ -1874,7 +1960,7 @@ class AsyncRawReviewClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[CreatedReviewLink]:
         """
-        Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member.
+        Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works 14 days unless `expiresInHours` says otherwise (90 days at most), until it is revoked, or the post is published, cancelled or deleted. A post has 20 working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member. A link that lets its holders approve is made in the web app only: an API key or an OAuth client is refused one, as it would approve its own posts with it.
 
         Parameters
         ----------

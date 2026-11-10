@@ -15,22 +15,38 @@ class PostReview extends JsonSerializableType
     public array $approvals;
 
     /**
+     * @var array<ReviewedChannel> $channels
+     */
+    #[JsonProperty('channels'), ArrayType([ReviewedChannel::class])]
+    public array $channels;
+
+    /**
      * @var array<ReviewComment> $comments
      */
     #[JsonProperty('comments'), ArrayType([ReviewComment::class])]
     public array $comments;
 
     /**
+     * @var array<ReviewedMedia> $media
+     */
+    #[JsonProperty('media'), ArrayType([ReviewedMedia::class])]
+    public array $media;
+
+    /**
      * @param array{
      *   approvals: array<ApprovalRequest>,
+     *   channels: array<ReviewedChannel>,
      *   comments: array<ReviewComment>,
+     *   media: array<ReviewedMedia>,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->approvals = $values['approvals'];
+        $this->channels = $values['channels'];
         $this->comments = $values['comments'];
+        $this->media = $values['media'];
     }
 
     /**

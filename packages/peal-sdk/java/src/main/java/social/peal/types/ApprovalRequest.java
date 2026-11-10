@@ -42,6 +42,8 @@ public final class ApprovalRequest {
 
     private final ApprovalStatus status;
 
+    private final String subjectHash;
+
     private final Map<String, Object> additionalProperties;
 
     private ApprovalRequest(
@@ -54,6 +56,7 @@ public final class ApprovalRequest {
             ApprovalOrigin requestedVia,
             PostSchedule schedule,
             ApprovalStatus status,
+            String subjectHash,
             Map<String, Object> additionalProperties) {
         this.decision = decision;
         this.id = id;
@@ -64,6 +67,7 @@ public final class ApprovalRequest {
         this.requestedVia = requestedVia;
         this.schedule = schedule;
         this.status = status;
+        this.subjectHash = subjectHash;
         this.additionalProperties = additionalProperties;
     }
 
@@ -121,6 +125,11 @@ public final class ApprovalRequest {
         return status;
     }
 
+    @JsonProperty("subjectHash")
+    public String getSubjectHash() {
+        return subjectHash;
+    }
+
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("decision")
     private Optional<ApprovalRequestDecision> _getDecision() {
@@ -159,7 +168,8 @@ public final class ApprovalRequest {
                 && requestedByName.equals(other.requestedByName)
                 && requestedVia.equals(other.requestedVia)
                 && schedule.equals(other.schedule)
-                && status.equals(other.status);
+                && status.equals(other.status)
+                && subjectHash.equals(other.subjectHash);
     }
 
     @java.lang.Override
@@ -173,7 +183,8 @@ public final class ApprovalRequest {
                 this.requestedByName,
                 this.requestedVia,
                 this.schedule,
-                this.status);
+                this.status,
+                this.subjectHash);
     }
 
     @java.lang.Override
@@ -208,7 +219,11 @@ public final class ApprovalRequest {
     }
 
     public interface StatusStage {
-        _FinalStage status(@NotNull ApprovalStatus status);
+        SubjectHashStage status(@NotNull ApprovalStatus status);
+    }
+
+    public interface SubjectHashStage {
+        _FinalStage subjectHash(@NotNull String subjectHash);
     }
 
     public interface _FinalStage {
@@ -245,6 +260,7 @@ public final class ApprovalRequest {
                     RequestedViaStage,
                     ScheduleStage,
                     StatusStage,
+                    SubjectHashStage,
                     _FinalStage {
         private String id;
 
@@ -257,6 +273,8 @@ public final class ApprovalRequest {
         private PostSchedule schedule;
 
         private ApprovalStatus status;
+
+        private String subjectHash;
 
         private Optional<String> requestedByName = Optional.empty();
 
@@ -279,6 +297,7 @@ public final class ApprovalRequest {
             requestedVia(other.getRequestedVia());
             schedule(other.getSchedule());
             status(other.getStatus());
+            subjectHash(other.getSubjectHash());
             return this;
         }
 
@@ -319,8 +338,15 @@ public final class ApprovalRequest {
 
         @java.lang.Override
         @JsonSetter("status")
-        public _FinalStage status(@NotNull ApprovalStatus status) {
+        public SubjectHashStage status(@NotNull ApprovalStatus status) {
             this.status = Objects.requireNonNull(status, "status must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("subjectHash")
+        public _FinalStage subjectHash(@NotNull String subjectHash) {
+            this.subjectHash = Objects.requireNonNull(subjectHash, "subjectHash must not be null");
             return this;
         }
 
@@ -411,6 +437,7 @@ public final class ApprovalRequest {
                     requestedVia,
                     schedule,
                     status,
+                    subjectHash,
                     additionalProperties);
         }
 
@@ -424,7 +451,8 @@ public final class ApprovalRequest {
                     || key.equalsIgnoreCase("requestedByName")
                     || key.equalsIgnoreCase("requestedVia")
                     || key.equalsIgnoreCase("schedule")
-                    || key.equalsIgnoreCase("status")) {
+                    || key.equalsIgnoreCase("status")
+                    || key.equalsIgnoreCase("subjectHash")) {
                 return;
             }
             this.additionalProperties.put(key, value);

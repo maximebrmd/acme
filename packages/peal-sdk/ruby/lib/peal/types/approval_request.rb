@@ -22,6 +22,8 @@ module Peal
       field :schedule, -> { Peal::Types::PostSchedule }, optional: false, nullable: false
 
       field :status, -> { Peal::Types::ApprovalStatus }, optional: false, nullable: false
+
+      field :subject_hash, -> { String }, optional: false, nullable: false, api_name: "subjectHash"
     end
   end
 end
