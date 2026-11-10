@@ -50,5 +50,11 @@ export class PublicationScheduler extends Context.Service<
      * post changed: stopping it only frees it sooner.
      */
     readonly cancel: (executionId: ExecutionId) => Effect.Effect<void>;
+    /**
+     * Stops the job that sends one round of a target, as it waits between
+     * two parts or before trying again. A job that already woke runs on,
+     * and finds the target gone.
+     */
+    readonly cancelRound: (target: RepostedTarget) => Effect.Effect<void>;
   }
 >()("peal-server/publishing/application/PublicationScheduler") {}

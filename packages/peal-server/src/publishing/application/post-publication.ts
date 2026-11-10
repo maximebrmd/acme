@@ -349,6 +349,12 @@ const writeOutcome = (
     Effect.retry(outcomeWriteRetry)
   );
 
+// What an attempt decides for a target that is no longer there.
+const gone: PublicationDecision = {
+  _tag: "settle",
+  settlement: { _tag: "cancelled" },
+};
+
 // An earlier run's call, left in flight, that this run does not check.
 const interrupted: AttemptOutcome = {
   _tag: "unconfirmed",
@@ -421,10 +427,15 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
     const journal = yield* PublicationJournal;
     const posts = yield* PostRepository;
 
-    const target = yield* found(
-      yield* posts.findTarget(attempt.targetId),
-      "The target"
-    );
+    const stored = yield* posts.findTarget(attempt.targetId);
+
+    // Erased with its workspace while the job waited, between two parts or
+    // before this try: nothing is sent, and nothing is left to record.
+    if (Option.isNone(stored)) {
+      return gone;
+    }
+
+    const target = stored.value;
 
     // Cancelled since the last attempt, or the last part: nothing more is
     // sent. A run of this attempt that began its call before the cancel
@@ -489,6 +500,9 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
  * ended. The last target of a post to settle finishes it, as a reposted
  * round has no post job to do so.
  */
+// How a round ends for a target that is gone: as one sent again since.
+const erased: TargetOutcome = "superseded";
+
 export const recordTargetRun = Effect.fn("Publishing.recordTarget")(
   function* recordTargetRun(
     targetId: PostTargetId,
@@ -502,21 +516,23 @@ export const recordTargetRun = Effect.fn("Publishing.recordTarget")(
 
     return yield* transaction(
       Effect.gen(function* recordInTransaction() {
-        const unlocked = yield* found(
-          yield* posts.findTarget(targetId),
-          "The target"
-        );
+        const unlocked = yield* posts.findTarget(targetId);
+
+        // Erased with its workspace since the round began.
+        if (Option.isNone(unlocked)) {
+          return erased;
+        }
 
         // The post first, then the target, as every use case locks them.
-        const { post } = yield* found(
-          yield* posts.lock(unlocked.postId),
-          "The post"
-        );
+        const locked = yield* posts.lock(unlocked.value.postId);
+        const held = yield* posts.lockTarget(targetId);
 
-        const target = yield* found(
-          yield* posts.lockTarget(targetId),
-          "The target"
-        );
+        if (Option.isNone(locked) || Option.isNone(held)) {
+          return erased;
+        }
+
+        const { post } = locked.value;
+        const target = held.value;
 
         if (target.round !== round) {
           const outcome: TargetOutcome = "superseded";

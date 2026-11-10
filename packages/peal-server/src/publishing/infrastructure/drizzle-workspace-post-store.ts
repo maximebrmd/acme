@@ -1,10 +1,11 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { DateTime, Effect, Layer, Schema } from "effect";
 
 import { ExecutionIdSchema } from "#publishing/application/publication-scheduler.ts";
 import { WorkspacePostStore } from "#publishing/application/workspace-post-store.ts";
 import { PostOriginSchema } from "#publishing/domain/post-origin.ts";
 import { PostStatusNameSchema } from "#publishing/domain/post-status.ts";
+import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   AuthoredPostRecord,
@@ -14,7 +15,12 @@ import type {
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { idempotencyKeys, posts, postTargets } from "./schema.ts";
+import {
+  idempotencyKeys,
+  posts,
+  postTargets,
+  publicationCalls,
+} from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -23,6 +29,14 @@ const decodeStanding = Schema.decodeUnknownEffect(
     execution: Schema.OptionFromNullOr(ExecutionIdSchema),
     postId: PostIdSchema,
     status: PostStatusNameSchema,
+  })
+);
+
+const decodeRound = Schema.decodeUnknownEffect(
+  Schema.Struct({
+    inFlight: Schema.Boolean,
+    round: Schema.Int,
+    targetId: PostTargetIdSchema,
   })
 );
 
@@ -283,12 +297,62 @@ export const DrizzleWorkspacePostStore = Layer.effect(
       }
     );
 
+    const lockRounds = Effect.fn("WorkspacePostStore.lockRounds")(
+      function* lockRounds(workspaceId: string) {
+        // FOR UPDATE waits for a call that is writing its journal row,
+        // which holds the target's key, and then sees the row.
+        const targets = yield* db
+          .select({ round: postTargets.round, targetId: postTargets.id })
+          .from(postTargets)
+          .innerJoin(posts, eq(posts.id, postTargets.postId))
+          .where(
+            and(
+              eq(posts.workspaceId, workspaceId),
+              eq(posts.status, "publishing")
+            )
+          )
+          .orderBy(asc(postTargets.id))
+          .for("update", { of: postTargets })
+          .pipe(Effect.mapError(failed));
+
+        if (targets.length === 0) {
+          return [];
+        }
+
+        const begun = yield* db
+          .selectDistinct({ targetId: publicationCalls.targetId })
+          .from(publicationCalls)
+          .where(
+            and(
+              inArray(
+                publicationCalls.targetId,
+                targets.map(({ targetId }) => targetId)
+              ),
+              isNull(publicationCalls.finishedAt)
+            )
+          )
+          .pipe(Effect.mapError(failed));
+
+        const inFlight = new Set(begun.map(({ targetId }) => targetId));
+
+        return yield* Effect.all(
+          targets.map((target) =>
+            decodeRound({
+              ...target,
+              inFlight: inFlight.has(target.targetId),
+            }).pipe(Effect.orDie)
+          )
+        );
+      }
+    );
+
     return WorkspacePostStore.of({
       clearAuthor,
       deleteAll,
       exportAll,
       exportAuthored,
       lockAll,
+      lockRounds,
     });
   })
 );

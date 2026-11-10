@@ -2,6 +2,7 @@ import { Context } from "effect";
 import type { Effect, Option } from "effect";
 
 import type { PostStatusName } from "#publishing/domain/post-status.ts";
+import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   AuthoredPostRecord,
@@ -16,6 +17,14 @@ export interface PostStanding {
   readonly execution: Option.Option<ExecutionId>;
   readonly postId: PostId;
   readonly status: PostStatusName;
+}
+
+/** A target of a post that is publishing, in the round being sent. */
+export interface OpenRound {
+  /** A call to the platform was begun for it, and has not ended. */
+  readonly inFlight: boolean;
+  readonly round: number;
+  readonly targetId: PostTargetId;
 }
 
 /**
@@ -33,6 +42,17 @@ export class WorkspacePostStore extends Context.Service<
     readonly lockAll: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly PostStanding[], DatabaseError>;
+    /**
+     * Locks the targets of the workspace's posts that are publishing until
+     * the transaction ends, and answers each with its round and whether a
+     * call to its platform is in flight: begun in the journal, and not
+     * ended. A call begins by writing its journal row under the target, so
+     * none can begin while this transaction holds the target, nor after it
+     * deleted it.
+     */
+    readonly lockRounds: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly OpenRound[], DatabaseError>;
     /** The workspace's posts with their targets, oldest first. */
     readonly exportAll: (
       workspaceId: WorkspaceId

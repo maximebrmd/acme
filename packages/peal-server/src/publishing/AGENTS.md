@@ -44,7 +44,8 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   ids of the first part and of the one before it (`ReplyReference`), and
   refuses it (`replyTargetUnknown`) when Peal has no id for one.
 - A cancel between two parts sets `cancelRequested`: the part that waits is
-  not sent, and the target settles only when its wait ends.
+  not sent, and the target settles only when its wait ends. That wait
+  never keeps the workspace from being erased (see the erasure rule below).
 - Thread adapters: Mastodon sends `in_reply_to_id` under the attempt's key;
   X sends `reply.in_reply_to_tweet_id`, and looks a lost reply up among the
   account's replies, taking it only when it answers the same parent;
@@ -67,7 +68,14 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
 - A post whose outcome is unknown is marked unconfirmed, never retried blindly:
   the user checks the platform before reposting.
 - Erasing a workspace's posts (`PostRecords`) stops its scheduled jobs in the
-  same transaction, and is refused while one of its posts is publishing.
+  same transaction, and is refused only while a call to a platform is in
+  flight for one of its posts (`WorkspacePostStore.lockRounds`: a journal
+  row begun and not ended, read under the targets' locks, which a call's
+  journal row needs before it can begin). A post that is publishing but
+  only waits, between two parts of a thread or before another try, is
+  erased, and its jobs are stopped with it (`PublicationScheduler.cancel`
+  and `cancelRound`); one that wakes all the same finds its target gone
+  and ends `superseded`, sending nothing.
 - A post keeps how it was created and last scheduled (`PostAttribution`,
   `#publishing/domain/post-origin.ts`): in the web app, with an API key or
   through an OAuth application (`Actor.subject.clientId`), with the key's or
