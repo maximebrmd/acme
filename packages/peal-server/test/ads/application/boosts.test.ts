@@ -276,6 +276,38 @@ layer(AdsTest, { excludeTestServices: true })("boosting a post", (it) => {
       }).pipe(Effect.scoped)
   );
 
+  it.effect("makes one boost of the same key sent twice at once", () =>
+    Effect.gen(function* together() {
+      yield* onMeta();
+
+      const { account, owner } = yield* spendingOwner();
+      const boosts = yield* Boosts;
+
+      const post = yield* TestPosts.use((posts) =>
+        posts.publish(owner.workspaceId)
+      );
+
+      const asked = yield* ask(account, post);
+
+      const [first, second] = yield* Effect.all(
+        [
+          boosts.request(owner, asked, "twice"),
+          boosts.request(owner, asked, "twice"),
+        ],
+        { concurrency: 2 }
+      );
+
+      assert.strictEqual(first.id, second.id);
+      assert.lengthOf(
+        yield* boosts.list(owner, {
+          before: Option.none(),
+          postId: Option.some(post.postId),
+        }),
+        1
+      );
+    }).pipe(Effect.scoped)
+  );
+
   it.effect(
     "is for owners and admins, never staff acting as one, and applications need the permission",
     () =>

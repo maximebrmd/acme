@@ -34,9 +34,9 @@ import { WorkspaceAccess } from "./workspace-access.ts";
 // vocabularies and limits below; a test keeps the two equal.
 
 /** The ad networks Peal reaches. */
-export const AdNetworkSchema = Schema.Literals(["meta"]).annotate({
+export const AdNetworkSchema = Schema.Literal("meta").annotate({
   description:
-    "An ad network: `meta` is Meta's, for ads on Facebook and Instagram.",
+    "An ad network: `meta` is Meta's, for ads on Facebook and Instagram. Others may join it.",
   identifier: "AdNetwork",
 });
 
@@ -141,6 +141,15 @@ export const AdConnectionSchema = Schema.Struct({
 
 export type AdConnection = typeof AdConnectionSchema.Type;
 
+/** Why Peal cannot connect an ad account a sign-in reaches. */
+export const AdAccountUnsupportedSchema = Schema.Literal(
+  "timeZoneUnknown"
+).annotate({
+  description:
+    "Why Peal cannot connect an ad account: `timeZoneUnknown`, the network gave a time zone Peal does not know. Others may join it.",
+  identifier: "AdAccountUnsupported",
+});
+
 /** An ad account a sign-in reaches, before it is connected. */
 export const ReachableAdAccountSchema = Schema.Struct({
   // Whether the workspace already connects it.
@@ -155,7 +164,7 @@ export const ReachableAdAccountSchema = Schema.Struct({
   // Null when the network gave a zone Peal does not know.
   timeZone: Schema.NullOr(Schema.String),
   // Why Peal cannot connect it; null when it can.
-  unsupported: Schema.NullOr(Schema.Literals(["timeZoneUnknown"])),
+  unsupported: Schema.NullOr(AdAccountUnsupportedSchema),
 }).annotate({ identifier: "ReachableAdAccount" });
 
 export type ReachableAdAccount = typeof ReachableAdAccountSchema.Type;
@@ -438,7 +447,9 @@ export const BoostSchema = Schema.Struct({
   id: Schema.String,
   // The network's own code for a refusal; null otherwise.
   networkCode: Schema.NullOr(Schema.String),
-  objective: Schema.Literals(["engagement"]),
+  // What the boost is for: more people reacting to the post. Others may
+  // join it.
+  objective: Schema.Literal("engagement"),
   payer: Schema.NullOr(Schema.String),
   platform: Schema.Literals(["facebook", "instagram"]),
   postId: Schema.String,
@@ -451,15 +462,26 @@ export const BoostSchema = Schema.Struct({
 
 export type Boost = typeof BoostSchema.Type;
 
+/** How a request Peal sent the network for a boost ended. */
+export const BoostStepOutcomeSchema = Schema.Literals([
+  "done",
+  "refused",
+  "found",
+  "absent",
+  "unknown",
+]).annotate({
+  description:
+    "How a request to the ad network ended: `done`, confirmed; `refused`, the network answered that nothing changed; `found` or `absent`, its answer was lost and looking the object up found it done, or not; `unknown`, the look-up could not tell.",
+  identifier: "BoostStepOutcome",
+});
+
 /** A request Peal sent the network for a boost, from its journal. */
 export const BoostStepSchema = Schema.Struct({
   finishedAt: Schema.NullOr(Schema.DateTimeUtc),
   networkCode: Schema.NullOr(Schema.String),
   // `done`, `refused`, `found` or `absent` when a lost answer was looked
   // up, `unknown` when the lookup could not tell; null while in flight.
-  outcome: Schema.NullOr(
-    Schema.Literals(["done", "refused", "found", "absent", "unknown"])
-  ),
+  outcome: Schema.NullOr(BoostStepOutcomeSchema),
   startedAt: Schema.DateTimeUtc,
   step: Schema.Literals([
     "createCampaign",

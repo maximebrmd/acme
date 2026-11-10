@@ -398,6 +398,19 @@ export class Boosts extends Context.Service<
                     return yield* new AdAccountNotFound();
                   }
 
+                  // The same key sent twice at once: the second, which
+                  // waited for the lock, finds the boost the first made.
+                  const made = yield* boosts.byKey(
+                    actor.workspaceId,
+                    idempotencyKey
+                  );
+
+                  if (Option.isSome(made)) {
+                    return sameAsk(made.value, ask)
+                      ? made.value
+                      : yield* new BoostKeyReused();
+                  }
+
                   yield* roomFor(current.value, plan);
                   yield* boosts.insert(boost);
                   yield* audit({

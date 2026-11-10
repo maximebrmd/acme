@@ -163,6 +163,7 @@ describe("the integers of the OpenAPI document", () => {
       "amountSpent",
       // A plan's allowances, limit by limit; `mediaStorage` among them.
       "assistantRequests",
+      "budgetAmount",
       "capRoom",
       "ceiling",
       "channels",

@@ -13,7 +13,7 @@ import { ConnectedAppSchema } from "./connected-apps.ts";
 import { DeletionIncomplete } from "./deletion-incomplete.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
-import { ByteCountSchema } from "./int64.ts";
+import { Int64Schema, ByteCountSchema } from "./int64.ts";
 import { LastOwner } from "./last-owner.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { NoticeEventSchema } from "./notices.ts";
@@ -477,7 +477,7 @@ const ExportedAdsSchema = Schema.Struct({
       currency: Schema.String,
       externalId: Schema.String,
       id: Schema.String,
-      monthlyCeiling: nullable(Schema.Number),
+      monthlyCeiling: nullable(Int64Schema),
       name: Schema.String,
       network: Schema.String,
       spendingEnabled: Schema.Boolean,
@@ -499,9 +499,9 @@ const ExportedAdsSchema = Schema.Struct({
       accountId: Schema.String,
       audience: Schema.Unknown,
       beneficiary: nullable(Schema.String),
-      budgetAmount: Schema.Number,
+      budgetAmount: Int64Schema,
       budgetKind: Schema.String,
-      committed: Schema.Number,
+      committed: Int64Schema,
       createdAt: instant,
       currency: Schema.String,
       endsAt: instant,
