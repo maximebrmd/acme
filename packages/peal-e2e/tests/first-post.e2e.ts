@@ -288,6 +288,33 @@ describe("a new member's first post", { serial: true }, () => {
     );
   });
 
+  test("opens the workspace's webhooks, and is told why an address is refused", async ({
+    app,
+    screen,
+  }) => {
+    await app.open(`/app/${workspaceId}/settings`);
+    await screen
+      .getByRole("navigation", "Workspace settings")
+      .getByRole("link", "Webhooks")
+      .tap();
+
+    await expect(
+      screen.getByText("The workspace has no webhook endpoint.")
+    ).toBeVisible();
+
+    // A documentation address (RFC 5737): never a public host, and no name
+    // to look up.
+    await screen.getByLabel("Address").fill("https://192.0.2.10/hooks");
+    await screen.getByLabel("All events").tap();
+    await screen.getByRole("button", "Add the endpoint").tap();
+
+    await expect(
+      screen.getByText(
+        "The address’s host is not public, so Peal does not send requests to it."
+      )
+    ).toBeVisible();
+  });
+
   test("reads the calendar in French", async ({ app, browser, screen }) => {
     await app.open(`/app/${workspaceId}/calendar`);
     await screen.getByRole("button", "Language: English").tap();
