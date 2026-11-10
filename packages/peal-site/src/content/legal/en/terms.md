@@ -60,7 +60,7 @@ Each organisation is on a plan. The plans, their prices and what each one allows
 
 Deleting an organisation, or closing your account so that an organisation is deleted with it, cancels that organisation's subscription at once, once you agree to it on the confirmation screen: nothing more is charged, and the period already paid for is not refunded, except where the law gives a refund, as to a consumer who withdraws within 14 days of subscribing, who is refunded the unused part. Invoices are kept as accounting law requires.
 
-An organisation with more connected channels than its plan allows, as after a trial or a move to a smaller plan, keeps them but cannot schedule posts until it disconnects some; one over its media storage keeps its files but cannot upload more.
+A plan's limits cannot be exceeded: what a plan has no room for is refused, and a larger plan is offered. A plan can still shrink under an organisation, when a trial ends or a subscription is cancelled or left unpaid. Nothing is deleted then, but an organisation with more connected channels or members than its plan allows schedules and publishes nothing until it is back within its plan, by ordering a larger plan or by choosing which channels and members stay; posts already scheduled fail when due, and can be posted again afterwards. A plan too small for what the organisation holds cannot be ordered. An organisation over its media storage keeps its files but cannot upload more.
 
 ## Availability and changes to the service
 
