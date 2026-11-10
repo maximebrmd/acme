@@ -11,7 +11,7 @@ import {
   TargetOptionsSchema as ContractOptionsSchema,
   youTubeTagsLength as contractTagsLength,
 } from "peal-contract";
-import * as contractLinkedIn from "peal-contract";
+import * as contractOptions from "peal-contract";
 import type { ContentViolation as ContractViolation } from "peal-contract";
 import * as ContractText from "peal-contract/post-text";
 
@@ -30,6 +30,10 @@ import {
   maxLinkedInMentions,
 } from "#publishing/domain/linkedin-options.ts";
 import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";
+import {
+  maxPinterestLinkLength,
+  maxPinterestTitleLength,
+} from "#publishing/domain/pinterest-options.ts";
 import { platformRules } from "#publishing/domain/platform-rules.ts";
 import {
   maxMediaPerPost,
@@ -462,22 +466,41 @@ const options: readonly unknown[] = [
 ];
 
 describe("the contract's target options", () => {
-  it("are the server's, with the same limits", () => {
+  it("are the server's, on the same platforms", () => {
     expect(contractOptionsPlatforms).toStrictEqual(optionsPlatforms);
+  });
+
+  it("hold YouTube's limits", () => {
     expect(contractMaxTitleLength).toBe(maxYouTubeTitleLength);
     expect(contractMaxTagsLength).toBe(maxYouTubeTagsLength);
+
+    for (const tags of [[], ["Foo-Baz", "Foo Baz"], ["日本語", "👍🏽 ok"]]) {
+      expect(contractTagsLength(tags)).toBe(youTubeTagsLength(tags));
+    }
+  });
+
+  it("hold Pinterest's limits", () => {
+    expect(contractOptions.maxPinterestTitleLength).toBe(
+      maxPinterestTitleLength
+    );
+    expect(contractOptions.maxPinterestLinkLength).toBe(maxPinterestLinkLength);
+  });
+
+  it("hold Google Business Profile's limits", () => {
     expect(contractMaxBusinessTitleLength).toBe(maxGoogleBusinessTitleLength);
     expect(contractLocalTimePattern.source).toBe(
       googleBusinessLocalTimePattern.source
     );
+  });
 
+  it("hold LinkedIn's limits", () => {
     expect([
-      contractLinkedIn.maxLinkedInDocumentTitleLength,
-      contractLinkedIn.maxLinkedInLinkDescriptionLength,
-      contractLinkedIn.maxLinkedInLinkTitleLength,
-      contractLinkedIn.maxLinkedInLinkUrlLength,
-      contractLinkedIn.maxLinkedInMentionNameLength,
-      contractLinkedIn.maxLinkedInMentions,
+      contractOptions.maxLinkedInDocumentTitleLength,
+      contractOptions.maxLinkedInLinkDescriptionLength,
+      contractOptions.maxLinkedInLinkTitleLength,
+      contractOptions.maxLinkedInLinkUrlLength,
+      contractOptions.maxLinkedInMentionNameLength,
+      contractOptions.maxLinkedInMentions,
     ]).toStrictEqual([
       maxLinkedInDocumentTitleLength,
       maxLinkedInLinkDescriptionLength,
@@ -486,13 +509,9 @@ describe("the contract's target options", () => {
       maxLinkedInMentionNameLength,
       maxLinkedInMentions,
     ]);
-    expect(contractLinkedIn.LinkedInVisibilitySchema.literals).toStrictEqual(
+    expect(contractOptions.LinkedInVisibilitySchema.literals).toStrictEqual(
       LinkedInVisibilitySchema.literals
     );
-
-    for (const tags of [[], ["Foo-Baz", "Foo Baz"], ["日本語", "👍🏽 ok"]]) {
-      expect(contractTagsLength(tags)).toBe(youTubeTagsLength(tags));
-    }
   });
 
   it.each(options)("decode %j as the server does", (input) => {
