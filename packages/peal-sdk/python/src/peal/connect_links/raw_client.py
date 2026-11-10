@@ -15,10 +15,10 @@ from ..errors.not_found_error import NotFoundError
 from ..errors.too_many_requests_error import TooManyRequestsError
 from ..errors.unauthorized_error import UnauthorizedError
 from ..errors.unprocessable_entity_error import UnprocessableEntityError
+from ..types.channel_connection import ChannelConnection
 from ..types.connect_link import ConnectLink
 from ..types.connect_link_locale import ConnectLinkLocale
 from ..types.created_connect_link import CreatedConnectLink
-from ..types.instagram_connection import InstagramConnection
 from ..types.platform import Platform
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
 from pydantic import ValidationError
@@ -97,6 +97,17 @@ class RawConnectLinksClient:
                         ),
                     ),
                 )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
             _response_json = _response.json()
         except JSONDecodeError:
             raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
@@ -112,7 +123,7 @@ class RawConnectLinksClient:
         *,
         platform: Platform,
         channel_id: typing.Optional[str] = OMIT,
-        connection: typing.Optional[InstagramConnection] = OMIT,
+        connection: typing.Optional[ChannelConnection] = OMIT,
         expires_in_hours: typing.Optional[int] = OMIT,
         locale: typing.Optional[ConnectLinkLocale] = OMIT,
         return_url: typing.Optional[str] = OMIT,
@@ -129,7 +140,7 @@ class RawConnectLinksClient:
 
         channel_id : typing.Optional[str]
 
-        connection : typing.Optional[InstagramConnection]
+        connection : typing.Optional[ChannelConnection]
 
         expires_in_hours : typing.Optional[int]
 
@@ -307,6 +318,17 @@ class RawConnectLinksClient:
                         ),
                     ),
                 )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
             _response_json = _response.json()
         except JSONDecodeError:
             raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
@@ -375,6 +397,17 @@ class RawConnectLinksClient:
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,
@@ -464,6 +497,17 @@ class AsyncRawConnectLinksClient:
                         ),
                     ),
                 )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
             _response_json = _response.json()
         except JSONDecodeError:
             raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
@@ -479,7 +523,7 @@ class AsyncRawConnectLinksClient:
         *,
         platform: Platform,
         channel_id: typing.Optional[str] = OMIT,
-        connection: typing.Optional[InstagramConnection] = OMIT,
+        connection: typing.Optional[ChannelConnection] = OMIT,
         expires_in_hours: typing.Optional[int] = OMIT,
         locale: typing.Optional[ConnectLinkLocale] = OMIT,
         return_url: typing.Optional[str] = OMIT,
@@ -496,7 +540,7 @@ class AsyncRawConnectLinksClient:
 
         channel_id : typing.Optional[str]
 
-        connection : typing.Optional[InstagramConnection]
+        connection : typing.Optional[ChannelConnection]
 
         expires_in_hours : typing.Optional[int]
 
@@ -674,6 +718,17 @@ class AsyncRawConnectLinksClient:
                         ),
                     ),
                 )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
             _response_json = _response.json()
         except JSONDecodeError:
             raise ApiError(status_code=_response.status_code, headers=dict(_response.headers), body=_response.text)
@@ -742,6 +797,17 @@ class AsyncRawConnectLinksClient:
                 )
             if _response.status_code == 404:
                 raise NotFoundError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        typing.Any,
+                        parse_obj_as(
+                            type_=typing.Any,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 429:
+                raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         typing.Any,

@@ -346,7 +346,7 @@ class PartnerAccountClient
      *     new NewPartnerKey([
      *         'name' => 'name',
      *         'permissions' => [
-     *             Permission::AnalyticsRead->value,
+     *             Permission::ActivityRead->value,
      *         ],
      *         'scopes' => [
      *             PartnerScope::WorkspacesRead->value,

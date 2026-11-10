@@ -8,7 +8,7 @@ module Peal
 
         field :channel_id, -> { String }, optional: true, nullable: false, api_name: "channelId"
 
-        field :connection, -> { Peal::Types::InstagramConnection }, optional: true, nullable: false
+        field :connection, -> { Peal::Types::ChannelConnection }, optional: true, nullable: false
 
         field :expires_in_hours, -> { Integer }, optional: true, nullable: false, api_name: "expiresInHours"
 

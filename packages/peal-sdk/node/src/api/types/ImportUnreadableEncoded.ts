@@ -4,6 +4,9 @@ import * as Peal from "../index.js";
 
 export interface ImportUnreadableEncoded {
     _tag: ImportUnreadableEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     column: string | null;
     problem: Peal.ImportProblem;
 }

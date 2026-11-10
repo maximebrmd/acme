@@ -14,6 +14,11 @@ class BadRequestErrorBody_InvalidTimeRange(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["InvalidTimeRange"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "InvalidTimeRange"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -2,6 +2,9 @@
 
 export interface WorkspaceBusyEncoded {
     _tag: WorkspaceBusyEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     workspaceId: string;
 }
 

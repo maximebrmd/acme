@@ -32,6 +32,7 @@ export class PartnerClient {
      *
      * @throws {@link Peal.UnauthorizedError}
      * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -64,6 +65,7 @@ export class PartnerClient {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
                 case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -83,6 +85,7 @@ export class PartnerClient {
      *
      * @throws {@link Peal.UnauthorizedError}
      * @throws {@link Peal.ForbiddenError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -122,6 +125,7 @@ export class PartnerClient {
             switch (_response.error.statusCode) {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
                 case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -144,6 +148,7 @@ export class PartnerClient {
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
      * @throws {@link Peal.UnprocessableEntityError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -185,6 +190,7 @@ export class PartnerClient {
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
                 case 422: throw new Peal.UnprocessableEntityError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -205,6 +211,7 @@ export class PartnerClient {
      * @throws {@link Peal.UnauthorizedError}
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -241,6 +248,7 @@ export class PartnerClient {
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
                 case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -262,6 +270,7 @@ export class PartnerClient {
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link Peal.InternalServerError}
      * @throws {@link Peal.ServiceUnavailableError}
      * @throws {@link errors.PealError}
@@ -301,6 +310,7 @@ export class PartnerClient {
                 case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 case 500: throw new Peal.InternalServerError(_response.error.body as Peal.DeletionIncompleteEncoded, _response.rawResponse);
                 case 503: throw new Peal.ServiceUnavailableError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
@@ -325,6 +335,7 @@ export class PartnerClient {
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
      * @throws {@link Peal.UnprocessableEntityError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -366,6 +377,7 @@ export class PartnerClient {
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
                 case 422: throw new Peal.UnprocessableEntityError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,

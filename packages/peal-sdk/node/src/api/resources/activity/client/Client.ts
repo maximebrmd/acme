@@ -76,7 +76,7 @@ export class ActivityClient {
             switch (_response.error.statusCode) {
                 case 400: throw new Peal.BadRequestError(_response.error.body as unknown, _response.rawResponse);
                 case 401: throw new Peal.UnauthorizedError(_response.error.body as Peal.UnauthenticatedEncoded, _response.rawResponse);
-                case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
+                case 403: throw new Peal.ForbiddenError(_response.error.body as unknown, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({

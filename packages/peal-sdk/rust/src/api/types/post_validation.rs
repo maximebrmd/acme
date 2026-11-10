@@ -2,6 +2,9 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 pub struct PostValidation {
+    #[serde(rename = "awaitsApproval")]
+    #[serde(default)]
+    pub awaits_approval: bool,
     #[serde(default)]
     pub channels: Vec<ChannelPreview>,
     #[serde(default)]
@@ -32,6 +35,7 @@ impl PostValidation {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct PostValidationBuilder {
+    awaits_approval: Option<bool>,
     channels: Option<Vec<ChannelPreview>>,
     duplicates: Option<Vec<DuplicateOnChannel>>,
     plan_limit: Option<PlanShortfall>,
@@ -43,6 +47,11 @@ pub struct PostValidationBuilder {
 }
 
 impl PostValidationBuilder {
+    pub fn awaits_approval(mut self, value: bool) -> Self {
+        self.awaits_approval = Some(value);
+        self
+    }
+
     pub fn channels(mut self, value: Vec<ChannelPreview>) -> Self {
         self.channels = Some(value);
         self
@@ -85,6 +94,7 @@ impl PostValidationBuilder {
 
     /// Consumes the builder and constructs a [`PostValidation`].
     /// This method will fail if any of the following fields are not set:
+    /// - [`awaits_approval`](PostValidationBuilder::awaits_approval)
     /// - [`channels`](PostValidationBuilder::channels)
     /// - [`duplicates`](PostValidationBuilder::duplicates)
     /// - [`unknown_channels`](PostValidationBuilder::unknown_channels)
@@ -93,6 +103,9 @@ impl PostValidationBuilder {
     /// - [`violations`](PostValidationBuilder::violations)
     pub fn build(self) -> Result<PostValidation, BuildError> {
         Ok(PostValidation {
+            awaits_approval: self
+                .awaits_approval
+                .ok_or_else(|| BuildError::missing_field("awaits_approval"))?,
             channels: self
                 .channels
                 .ok_or_else(|| BuildError::missing_field("channels"))?,

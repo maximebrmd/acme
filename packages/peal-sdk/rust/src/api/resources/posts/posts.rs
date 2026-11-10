@@ -193,7 +193,70 @@ impl PostsClient {
             .await
     }
 
-    /// Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+    /// Lists the workspace's posts, whatever their state, a page at a time: 20 unless `limit` (at most 100) says otherwise. Every filter given must hold: `status` (draft, scheduled, publishing, finished, cancelled), `outcome` (how a finished post ended, such as `failed` or `partiallyPublished`), `channelId` (posts with a target on that channel), `platform` (posts with a target on a connected channel of that platform), `from` (included) and `to` (excluded), on the scheduled instant, which leave out posts without a time, `createdVia` (`web`, `apiKey` or `application`) and `authorId`. `sort` orders them by creation (`createdDesc`, the default, or `createdAsc`) or by scheduled instant (`scheduledDesc`, `scheduledAsc`, which list only posts with a time). Pass the page's `nextCursor` as `cursor`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and `channels` gives the platform of each channel the page names. Needs post:read and channel:read.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .posts
+    ///         .search(
+    ///             &"workspaceId".to_string(),
+    ///             &SearchQueryRequest {
+    ///                 ..Default::default()
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn search(
+        &self,
+        workspace_id: &str,
+        request: &SearchQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<PostPage, ApiError> {
+        self.http_client
+            .execute_request(
+                Method::GET,
+                &format!("api/workspaces/{}/posts/search", workspace_id),
+                None,
+                QueryBuilder::new()
+                    .string("authorId", request.author_id.clone())
+                    .string("channelId", request.channel_id.clone())
+                    .serialize("createdVia", request.created_via.clone())
+                    .string("cursor", request.cursor.clone())
+                    .string("from", request.from.clone())
+                    .string("limit", request.limit.clone())
+                    .serialize("outcome", request.outcome.clone())
+                    .serialize("platform", request.platform.clone())
+                    .serialize("sort", request.sort.clone())
+                    .serialize("status", request.status.clone())
+                    .string("to", request.to.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
+
+    /// Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status `awaitingApproval`: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than 23 hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says `allowDuplicate: true`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless `wait` says to wait for the outcome: up to that many seconds (60 at most) for a post that goes out now, the answer is then the post once every channel has its result (`status` `finished`, with its `outcome`, each target `published` with its `permalink` or `failed` with its `failureReason`), or the post as it stands when the time runs out, some targets still `pending` or `publishing`: it goes on publishing, and `GET …/posts/{postId}/outcome` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
     ///
     /// # Arguments
     ///
@@ -240,6 +303,8 @@ impl PostsClient {
     ///                         ..Default::default()
     ///                     },
     ///                 },
+    ///                 wait: None,
+    ///                 allow_duplicate: None,
     ///                 options: None,
     ///             },
     ///             None,
@@ -262,6 +327,218 @@ impl PostsClient {
             .execute_request(
                 Method::POST,
                 &format!("api/workspaces/{}/posts/send", workspace_id),
+                Some(serde_json::to_value(request).map_err(ApiError::Serialization)?),
+                QueryBuilder::new()
+                    .string("wait", request.wait.clone())
+                    .build(),
+                options,
+            )
+            .await
+    }
+
+    /// Creates and sends up to 50 posts in one request, each as `send` would: one post per item, each with its own channels, content, options and time, so the same content at several times, or at a time of its own on each channel, is several items. Items are taken in order, one at a time, each on its own: one refused keeps none of the others from being made, and nothing is undone. The answer is 200 whenever the request itself was read, even if every item was refused: `items` says, for each by its place in the request, `created` with its post, or `refused` with what `send` would have answered for it alone (its content's violations, unknown channels or media, a time gone by, the plan's limit, a duplicate). A request that cannot be read at all (malformed, no item, more than 50) is 400, and makes nothing. The plan's limits hold across the request: once the month has no room, the items left are refused. Each item is checked against the posts made before it, the request's earlier items included, for the same content on the same channel (DuplicatePost). An `Idempotency-Key` header makes the whole request safe to send again within 24 hours: each item is kept under the key and its place, so the same request sent again answers the posts it made (`replayed`), makes those that were not made the first time if they now can be, and an item that changed under the same key is refused (IdempotencyKeyReused). An item's own `idempotencyKey` is used instead of the header's for that item. Needs post:schedule and channel:read, and media:read for the items that show media; an OAuth client needs the scope workspace:publish.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .posts
+    ///         .bulk(
+    ///             &"workspaceId".to_string(),
+    ///             &BulkPosts {
+    ///                 posts: vec![BulkPost {
+    ///                     allow_duplicate: None,
+    ///                     channel_ids: vec!["channelIds".to_string()],
+    ///                     content: PostContent {
+    ///                         media: vec![MediaAttachment {
+    ///                             alt_text: "altText".to_string(),
+    ///                             media_id: "mediaId".to_string(),
+    ///                             ..Default::default()
+    ///                         }],
+    ///                         overrides: vec![TextOverride {
+    ///                             channel_id: "channelId".to_string(),
+    ///                             text: "text".to_string(),
+    ///                             ..Default::default()
+    ///                         }],
+    ///                         text: "text".to_string(),
+    ///                         ..Default::default()
+    ///                     },
+    ///                     options: None,
+    ///                     when: PostTiming::Now {
+    ///                         data: PostTimingNow {
+    ///                             ..Default::default()
+    ///                         },
+    ///                     },
+    ///                     idempotency_key: None,
+    ///                 }],
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn bulk(
+        &self,
+        workspace_id: &str,
+        request: &BulkPosts,
+        options: Option<RequestOptions>,
+    ) -> Result<BulkResult, ApiError> {
+        let options = {
+            let mut o = options.unwrap_or_default();
+            o.max_retries = Some(0);
+            Some(o)
+        };
+        self.http_client
+            .execute_request(
+                Method::POST,
+                &format!("api/workspaces/{}/posts/bulk", workspace_id),
+                Some(serde_json::to_value(request).map_err(ApiError::Serialization)?),
+                None,
+                options,
+            )
+            .await
+    }
+
+    /// Creates and sends the posts a CSV file lists, one per row, at most 100 rows under its first line, which names the columns, in any order: `text` and `channels` (channel ids separated by spaces, commas or semicolons) are required columns, `at` too (`now`, an instant with its offset such as 2026-11-20T09:00:00Z, or a local time without one such as 2026-11-20 10:00, read in the row's `time_zone`, an IANA zone, UTC if left out); `media` (ids of ready media of the workspace), `allow_duplicate` (`true` or `false`) and `idempotency_key` are optional. Cells follow RFC 4180: a cell with a comma, a quote or a line break is written between double quotes, a quote inside it doubled. The file is checked first, every row, as `validate` checks a post; unless every row is valid, nothing is made, and `rows` says which are `valid`, `refused` (with what `send` would have answered) or `unreadable` (with the cells at fault). `dryRun` stops there even when every row is valid. Otherwise the rows are then made in order as `bulk` makes its items, each `created` or, when something changed since the check or a row repeats an earlier one, `refused`. The answer is 200 once the file was read; a file that cannot be read at all is ImportUnreadable. An `Idempotency-Key` header works as on `bulk`, by row. Needs post:schedule and channel:read, and media:read for rows with media; an OAuth client needs the scope workspace:publish.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .posts
+    ///         .import(
+    ///             &"workspaceId".to_string(),
+    ///             &PostImport {
+    ///                 csv: "csv".to_string(),
+    ///                 dry_run: None,
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn import(
+        &self,
+        workspace_id: &str,
+        request: &PostImport,
+        options: Option<RequestOptions>,
+    ) -> Result<ImportResult, ApiError> {
+        let options = {
+            let mut o = options.unwrap_or_default();
+            o.max_retries = Some(0);
+            Some(o)
+        };
+        self.http_client
+            .execute_request(
+                Method::POST,
+                &format!("api/workspaces/{}/posts/import", workspace_id),
+                Some(serde_json::to_value(request).map_err(ApiError::Serialization)?),
+                None,
+                options,
+            )
+            .await
+    }
+
+    /// Checks a post without making it, and changes nothing: send what `send` takes, or a draft (no `when`). It answers 200 whether or not the post would go through, with `valid` and everything that would refuse it, all at once: per channel, the text the channel receives, counted as its platform counts it against each of its limits, its hashtags, mentions, links and media, and every violation of the platform's rules (text, media formats, sizes, counts and durations, options) and of the account's own where its platform tells them; the channels and media that are not the workspace's; and, when `when` is given, whether the time can be kept, whether the workspace's plan has room, and the channels that already have the same content from another post (`duplicates`, as DuplicatePost tells them; none with `allowDuplicate`). A post that is valid now can still be refused later: a channel disconnected, a plan's month filled meanwhile. Needs post:read and channel:read, and media:read when it shows media.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .posts
+    ///         .validate(
+    ///             &"workspaceId".to_string(),
+    ///             &PostToValidate {
+    ///                 channel_ids: vec!["channelIds".to_string()],
+    ///                 content: PostContent {
+    ///                     media: vec![MediaAttachment {
+    ///                         alt_text: "altText".to_string(),
+    ///                         media_id: "mediaId".to_string(),
+    ///                         ..Default::default()
+    ///                     }],
+    ///                     overrides: vec![TextOverride {
+    ///                         channel_id: "channelId".to_string(),
+    ///                         text: "text".to_string(),
+    ///                         ..Default::default()
+    ///                     }],
+    ///                     text: "text".to_string(),
+    ///                     ..Default::default()
+    ///                 },
+    ///                 allow_duplicate: None,
+    ///                 options: None,
+    ///                 when: None,
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn validate(
+        &self,
+        workspace_id: &str,
+        request: &PostToValidate,
+        options: Option<RequestOptions>,
+    ) -> Result<PostValidation, ApiError> {
+        let options = {
+            let mut o = options.unwrap_or_default();
+            o.max_retries = Some(0);
+            Some(o)
+        };
+        self.http_client
+            .execute_request(
+                Method::POST,
+                &format!("api/workspaces/{}/posts/validate", workspace_id),
                 Some(serde_json::to_value(request).map_err(ApiError::Serialization)?),
                 None,
                 options,
@@ -422,6 +699,61 @@ impl PostsClient {
                 &format!("api/workspaces/{}/posts/{}", workspace_id, post_id),
                 None,
                 None,
+                options,
+            )
+            .await
+    }
+
+    /// Answers with a post once it has gone out: it waits up to `wait` seconds (60 at most; none unless given) until every channel has its result, and answers the post then (`status` `finished`), or as it stands when the time runs out, which a client asks again. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing and holds nothing: the post publishes in its own job either way. Needs post:read.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .posts
+    ///         .outcome(
+    ///             &"workspaceId".to_string(),
+    ///             &"postId".to_string(),
+    ///             &OutcomeQueryRequest {
+    ///                 ..Default::default()
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn outcome(
+        &self,
+        workspace_id: &str,
+        post_id: &str,
+        request: &OutcomeQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<Post, ApiError> {
+        self.http_client
+            .execute_request(
+                Method::GET,
+                &format!("api/workspaces/{}/posts/{}/outcome", workspace_id, post_id),
+                None,
+                QueryBuilder::new()
+                    .string("wait", request.wait.clone())
+                    .build(),
                 options,
             )
             .await

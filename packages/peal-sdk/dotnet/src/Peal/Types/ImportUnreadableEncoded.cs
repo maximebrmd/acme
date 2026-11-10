@@ -14,6 +14,15 @@ public record ImportUnreadableEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required ImportUnreadableEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
     [JsonPropertyName("column")]
     public string? Column { get; set; }
 

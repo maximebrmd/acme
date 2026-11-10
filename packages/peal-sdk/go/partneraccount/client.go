@@ -178,7 +178,7 @@ func (c *Client) ListKeys(
 //	    WorkspaceID: "workspaceId",
 //	    Name: "name",
 //	    Permissions: []peal.Permission{
-//	        peal.PermissionAnalyticsRead,
+//	        peal.PermissionActivityRead,
 //	    },
 //	    Scopes: []peal.PartnerScope{
 //	        peal.PartnerScopeWorkspacesRead,

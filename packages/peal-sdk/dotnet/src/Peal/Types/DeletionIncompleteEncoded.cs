@@ -14,6 +14,15 @@ public record DeletionIncompleteEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required DeletionIncompleteEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
     [JsonPropertyName("subscriptionsCancelled")]
     public required int SubscriptionsCancelled { get; set; }
 

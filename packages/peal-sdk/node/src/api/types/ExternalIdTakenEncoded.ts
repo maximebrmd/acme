@@ -2,6 +2,9 @@
 
 export interface ExternalIdTakenEncoded {
     _tag: ExternalIdTakenEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     workspaceId: string;
 }
 

@@ -11,6 +11,8 @@ module Peal
       API_KEY = "apiKey"
       OAUTH = "oauth"
       MCP = "mcp"
+      PARTNER_KEY = "partnerKey"
+      CONNECT_LINK = "connectLink"
     end
   end
 end

@@ -13,6 +13,11 @@ class ExternalIdTakenEncoded(UniversalBaseModel):
     tag: typing_extensions.Annotated[
         ExternalIdTakenEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ]
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     workspace_id: typing_extensions.Annotated[
         str, FieldMetadata(alias="workspaceId"), pydantic.Field(alias="workspaceId")
     ]

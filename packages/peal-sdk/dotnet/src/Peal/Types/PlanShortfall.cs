@@ -12,7 +12,7 @@ public record PlanShortfall : IJsonOnDeserialized
         new Dictionary<string, JsonElement>();
 
     [JsonPropertyName("allowed")]
-    public required int Allowed { get; set; }
+    public required long Allowed { get; set; }
 
     [JsonPropertyName("billingUrl")]
     public required string BillingUrl { get; set; }
@@ -27,7 +27,7 @@ public record PlanShortfall : IJsonOnDeserialized
     public PaidPlan? PlanWithRoom { get; set; }
 
     [JsonPropertyName("used")]
-    public required int Used { get; set; }
+    public required long Used { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

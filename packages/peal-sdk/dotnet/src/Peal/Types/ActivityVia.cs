@@ -16,6 +16,10 @@ public readonly record struct ActivityVia : IStringEnum
 
     public static readonly ActivityVia Mcp = new(Values.Mcp);
 
+    public static readonly ActivityVia PartnerKey = new(Values.PartnerKey);
+
+    public static readonly ActivityVia ConnectLink = new(Values.ConnectLink);
+
     public ActivityVia(string value)
     {
         Value = value;
@@ -119,5 +123,9 @@ public readonly record struct ActivityVia : IStringEnum
         public const string Oauth = "oauth";
 
         public const string Mcp = "mcp";
+
+        public const string PartnerKey = "partnerKey";
+
+        public const string ConnectLink = "connectLink";
     }
 }

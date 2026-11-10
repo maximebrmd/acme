@@ -46,6 +46,7 @@ public class ValidateTest : BaseMockServerTest
 
         const string mockResponse = """
             {
+              "awaitsApproval": true,
               "channels": [
                 {
                   "channelId": "channelId",
@@ -141,12 +142,12 @@ public class ValidateTest : BaseMockServerTest
                 }
               ],
               "planLimit": {
-                "allowed": 1,
+                "allowed": 1000000,
                 "billingUrl": "billingUrl",
                 "limit": "channels",
                 "plan": "free",
                 "planWithRoom": "starter",
-                "used": 1
+                "used": 1000000
               },
               "schedule": "ok",
               "unknownChannels": [
@@ -240,6 +241,7 @@ public class ValidateTest : BaseMockServerTest
 
         const string mockResponse = """
             {
+              "awaitsApproval": true,
               "channels": [
                 {
                   "channelId": "channelId",
@@ -278,12 +280,12 @@ public class ValidateTest : BaseMockServerTest
                 }
               ],
               "planLimit": {
-                "allowed": 1,
+                "allowed": 1000000,
                 "billingUrl": "billingUrl",
                 "limit": "channels",
                 "plan": "free",
                 "planWithRoom": "starter",
-                "used": 1
+                "used": 1000000
               },
               "schedule": "ok",
               "unknownChannels": [

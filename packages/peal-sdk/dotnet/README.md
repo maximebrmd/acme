@@ -52,7 +52,7 @@ await client.ApiKeys.CreateAsync(
     {
         WorkspaceId = "workspaceId",
         Name = "name",
-        Permissions = new List<Permission>() { Permission.AnalyticsRead },
+        Permissions = new List<Permission>() { Permission.ActivityRead },
     }
 );
 ```

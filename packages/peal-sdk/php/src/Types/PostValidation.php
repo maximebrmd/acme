@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class PostValidation extends JsonSerializableType
 {
     /**
+     * @var bool $awaitsApproval
+     */
+    #[JsonProperty('awaitsApproval')]
+    public bool $awaitsApproval;
+
+    /**
      * @var array<ChannelPreview> $channels
      */
     #[JsonProperty('channels'), ArrayType([ChannelPreview::class])]
@@ -58,6 +64,7 @@ class PostValidation extends JsonSerializableType
 
     /**
      * @param array{
+     *   awaitsApproval: bool,
      *   channels: array<ChannelPreview>,
      *   duplicates: array<DuplicateOnChannel>,
      *   unknownChannels: array<string>,
@@ -71,6 +78,7 @@ class PostValidation extends JsonSerializableType
     public function __construct(
         array $values,
     ) {
+        $this->awaitsApproval = $values['awaitsApproval'];
         $this->channels = $values['channels'];
         $this->duplicates = $values['duplicates'];
         $this->planLimit = $values['planLimit'] ?? null;

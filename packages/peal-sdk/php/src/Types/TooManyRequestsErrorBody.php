@@ -9,7 +9,7 @@ class TooManyRequestsErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'TooManyWebhookSends'
+     *    'TooManyConnectLinks'
      *   |'TooManyRequests'
      *   |'_unknown'
      * ) $type
@@ -18,7 +18,7 @@ class TooManyRequestsErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    TooManyWebhookSendsEncoded
+     *    TooManyConnectLinksEncoded
      *   |TooManyRequestsEncoded
      *   |mixed
      * ) $value
@@ -28,12 +28,12 @@ class TooManyRequestsErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'TooManyWebhookSends'
+     *    'TooManyConnectLinks'
      *   |'TooManyRequests'
      *   |'_unknown'
      * ),
      *   value: (
-     *    TooManyWebhookSendsEncoded
+     *    TooManyConnectLinksEncoded
      *   |TooManyRequestsEncoded
      *   |mixed
      * ),
@@ -47,14 +47,14 @@ class TooManyRequestsErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param TooManyWebhookSendsEncoded $tooManyWebhookSends
+     * @param TooManyConnectLinksEncoded $tooManyConnectLinks
      * @return TooManyRequestsErrorBody
      */
-    public static function tooManyWebhookSends(TooManyWebhookSendsEncoded $tooManyWebhookSends): TooManyRequestsErrorBody
+    public static function tooManyConnectLinks(TooManyConnectLinksEncoded $tooManyConnectLinks): TooManyRequestsErrorBody
     {
         return new TooManyRequestsErrorBody([
-            'type' => 'TooManyWebhookSends',
-            'value' => $tooManyWebhookSends,
+            'type' => 'TooManyConnectLinks',
+            'value' => $tooManyConnectLinks,
         ]);
     }
 
@@ -73,19 +73,19 @@ class TooManyRequestsErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isTooManyWebhookSends(): bool
+    public function isTooManyConnectLinks(): bool
     {
-        return $this->value instanceof TooManyWebhookSendsEncoded && $this->type === 'TooManyWebhookSends';
+        return $this->value instanceof TooManyConnectLinksEncoded && $this->type === 'TooManyConnectLinks';
     }
 
     /**
-     * @return TooManyWebhookSendsEncoded
+     * @return TooManyConnectLinksEncoded
      */
-    public function asTooManyWebhookSends(): TooManyWebhookSendsEncoded
+    public function asTooManyConnectLinks(): TooManyConnectLinksEncoded
     {
-        if (!($this->value instanceof TooManyWebhookSendsEncoded && $this->type === 'TooManyWebhookSends')) {
+        if (!($this->value instanceof TooManyConnectLinksEncoded && $this->type === 'TooManyConnectLinks')) {
             throw new Exception(
-                "Expected TooManyWebhookSends; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected TooManyConnectLinks; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,8 +134,8 @@ class TooManyRequestsErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'TooManyWebhookSends':
-                $value = $this->asTooManyWebhookSends()->jsonSerialize();
+            case 'TooManyConnectLinks':
+                $value = $this->asTooManyConnectLinks()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case 'TooManyRequests':
@@ -178,8 +178,8 @@ class TooManyRequestsErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'TooManyWebhookSends':
-                $args['value'] = TooManyWebhookSendsEncoded::jsonDeserialize($data);
+            case 'TooManyConnectLinks':
+                $args['value'] = TooManyConnectLinksEncoded::jsonDeserialize($data);
                 break;
             case 'TooManyRequests':
                 $args['value'] = TooManyRequestsEncoded::jsonDeserialize($data);

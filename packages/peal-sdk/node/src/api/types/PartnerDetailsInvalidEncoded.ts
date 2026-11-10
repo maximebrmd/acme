@@ -4,6 +4,9 @@ import * as Peal from "../index.js";
 
 export interface PartnerDetailsInvalidEncoded {
     _tag: PartnerDetailsInvalidEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     field: Peal.PartnerDetailField;
 }
 

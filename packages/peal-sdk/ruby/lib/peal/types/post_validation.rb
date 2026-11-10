@@ -5,6 +5,8 @@ require_relative "../../peal"
 module Peal
   module Types
     class PostValidation < Internal::Types::Model
+      field :awaits_approval, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "awaitsApproval"
+
       field :channels, -> { Internal::Types::Array[Peal::Types::ChannelPreview] }, optional: false, nullable: false
 
       field :duplicates, -> { Internal::Types::Array[Peal::Types::DuplicateOnChannel] }, optional: false, nullable: false

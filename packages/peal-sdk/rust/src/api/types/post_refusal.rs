@@ -6,12 +6,26 @@ pub use crate::prelude::*;
 pub enum PostRefusal {
     #[non_exhaustive]
     PostContentInvalid {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
         #[serde(default)]
         violations: Vec<ContentViolation>,
     },
 
     #[non_exhaustive]
     UnknownChannels {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
         #[serde(rename = "channelIds")]
         #[serde(default)]
         channel_ids: Vec<String>,
@@ -19,16 +33,38 @@ pub enum PostRefusal {
 
     #[non_exhaustive]
     UnknownMedia {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
         #[serde(rename = "mediaIds")]
         #[serde(default)]
         media_ids: Vec<String>,
     },
 
     #[non_exhaustive]
-    ScheduleInPast {},
+    ScheduleInPast {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+    },
 
     #[non_exhaustive]
     InvalidTimeZone {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
         #[serde(rename = "timeZone")]
         #[serde(default)]
         time_zone: String,
@@ -41,13 +77,36 @@ pub enum PostRefusal {
     },
 
     #[non_exhaustive]
-    IdempotencyKeyReused {},
+    IdempotencyKeyReused {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+    },
 
     #[non_exhaustive]
-    PostNotFound {},
+    PostNotFound {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
+    },
 
     #[non_exhaustive]
     DuplicatePost {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+        #[serde(rename = "requestId")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        request_id: Option<String>,
         #[serde(default)]
         duplicates: Vec<DuplicateOnChannel>,
     },
@@ -67,23 +126,47 @@ pub enum PostRefusal {
 
 impl PostRefusal {
     pub fn post_content_invalid(violations: Vec<ContentViolation>) -> Self {
-        Self::PostContentInvalid { violations }
+        Self::PostContentInvalid {
+            code: None,
+            message: None,
+            request_id: None,
+            violations,
+        }
     }
 
     pub fn unknown_channels(channel_ids: Vec<String>) -> Self {
-        Self::UnknownChannels { channel_ids }
+        Self::UnknownChannels {
+            code: None,
+            message: None,
+            request_id: None,
+            channel_ids,
+        }
     }
 
     pub fn unknown_media(media_ids: Vec<String>) -> Self {
-        Self::UnknownMedia { media_ids }
+        Self::UnknownMedia {
+            code: None,
+            message: None,
+            request_id: None,
+            media_ids,
+        }
     }
 
     pub fn schedule_in_past() -> Self {
-        Self::ScheduleInPast {}
+        Self::ScheduleInPast {
+            code: None,
+            message: None,
+            request_id: None,
+        }
     }
 
     pub fn invalid_time_zone(time_zone: String) -> Self {
-        Self::InvalidTimeZone { time_zone }
+        Self::InvalidTimeZone {
+            code: None,
+            message: None,
+            request_id: None,
+            time_zone,
+        }
     }
 
     pub fn plan_limit_reached(data: PlanLimitReachedEncoded) -> Self {
@@ -91,19 +174,350 @@ impl PostRefusal {
     }
 
     pub fn idempotency_key_reused() -> Self {
-        Self::IdempotencyKeyReused {}
+        Self::IdempotencyKeyReused {
+            code: None,
+            message: None,
+            request_id: None,
+        }
     }
 
     pub fn post_not_found() -> Self {
-        Self::PostNotFound {}
+        Self::PostNotFound {
+            code: None,
+            message: None,
+            request_id: None,
+        }
     }
 
     pub fn duplicate_post(duplicates: Vec<DuplicateOnChannel>) -> Self {
-        Self::DuplicatePost { duplicates }
+        Self::DuplicatePost {
+            code: None,
+            message: None,
+            request_id: None,
+            duplicates,
+        }
     }
 
     pub fn forbidden(data: ForbiddenEncoded) -> Self {
         Self::Forbidden { data }
+    }
+
+    pub fn post_content_invalid_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        violations: Vec<ContentViolation>,
+    ) -> Self {
+        Self::PostContentInvalid {
+            code: Some(code),
+            message,
+            request_id,
+            violations,
+        }
+    }
+
+    pub fn post_content_invalid_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        violations: Vec<ContentViolation>,
+    ) -> Self {
+        Self::PostContentInvalid {
+            code,
+            message: Some(message),
+            request_id,
+            violations,
+        }
+    }
+
+    pub fn post_content_invalid_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        violations: Vec<ContentViolation>,
+    ) -> Self {
+        Self::PostContentInvalid {
+            code,
+            message,
+            request_id: Some(request_id),
+            violations,
+        }
+    }
+
+    pub fn unknown_channels_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        channel_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownChannels {
+            code: Some(code),
+            message,
+            request_id,
+            channel_ids,
+        }
+    }
+
+    pub fn unknown_channels_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        channel_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownChannels {
+            code,
+            message: Some(message),
+            request_id,
+            channel_ids,
+        }
+    }
+
+    pub fn unknown_channels_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        channel_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownChannels {
+            code,
+            message,
+            request_id: Some(request_id),
+            channel_ids,
+        }
+    }
+
+    pub fn unknown_media_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        media_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownMedia {
+            code: Some(code),
+            message,
+            request_id,
+            media_ids,
+        }
+    }
+
+    pub fn unknown_media_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        media_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownMedia {
+            code,
+            message: Some(message),
+            request_id,
+            media_ids,
+        }
+    }
+
+    pub fn unknown_media_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        media_ids: Vec<String>,
+    ) -> Self {
+        Self::UnknownMedia {
+            code,
+            message,
+            request_id: Some(request_id),
+            media_ids,
+        }
+    }
+
+    pub fn schedule_in_past_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::ScheduleInPast {
+            code: Some(code),
+            message,
+            request_id,
+        }
+    }
+
+    pub fn schedule_in_past_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::ScheduleInPast {
+            code,
+            message: Some(message),
+            request_id,
+        }
+    }
+
+    pub fn schedule_in_past_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+    ) -> Self {
+        Self::ScheduleInPast {
+            code,
+            message,
+            request_id: Some(request_id),
+        }
+    }
+
+    pub fn invalid_time_zone_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        time_zone: String,
+    ) -> Self {
+        Self::InvalidTimeZone {
+            code: Some(code),
+            message,
+            request_id,
+            time_zone,
+        }
+    }
+
+    pub fn invalid_time_zone_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        time_zone: String,
+    ) -> Self {
+        Self::InvalidTimeZone {
+            code,
+            message: Some(message),
+            request_id,
+            time_zone,
+        }
+    }
+
+    pub fn invalid_time_zone_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        time_zone: String,
+    ) -> Self {
+        Self::InvalidTimeZone {
+            code,
+            message,
+            request_id: Some(request_id),
+            time_zone,
+        }
+    }
+
+    pub fn idempotency_key_reused_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::IdempotencyKeyReused {
+            code: Some(code),
+            message,
+            request_id,
+        }
+    }
+
+    pub fn idempotency_key_reused_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::IdempotencyKeyReused {
+            code,
+            message: Some(message),
+            request_id,
+        }
+    }
+
+    pub fn idempotency_key_reused_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+    ) -> Self {
+        Self::IdempotencyKeyReused {
+            code,
+            message,
+            request_id: Some(request_id),
+        }
+    }
+
+    pub fn post_not_found_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::PostNotFound {
+            code: Some(code),
+            message,
+            request_id,
+        }
+    }
+
+    pub fn post_not_found_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+    ) -> Self {
+        Self::PostNotFound {
+            code,
+            message: Some(message),
+            request_id,
+        }
+    }
+
+    pub fn post_not_found_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+    ) -> Self {
+        Self::PostNotFound {
+            code,
+            message,
+            request_id: Some(request_id),
+        }
+    }
+
+    pub fn duplicate_post_with_code(
+        code: String,
+        message: Option<String>,
+        request_id: Option<String>,
+        duplicates: Vec<DuplicateOnChannel>,
+    ) -> Self {
+        Self::DuplicatePost {
+            code: Some(code),
+            message,
+            request_id,
+            duplicates,
+        }
+    }
+
+    pub fn duplicate_post_with_message(
+        code: Option<String>,
+        message: String,
+        request_id: Option<String>,
+        duplicates: Vec<DuplicateOnChannel>,
+    ) -> Self {
+        Self::DuplicatePost {
+            code,
+            message: Some(message),
+            request_id,
+            duplicates,
+        }
+    }
+
+    pub fn duplicate_post_with_request_id(
+        code: Option<String>,
+        message: Option<String>,
+        request_id: String,
+        duplicates: Vec<DuplicateOnChannel>,
+    ) -> Self {
+        Self::DuplicatePost {
+            code,
+            message,
+            request_id: Some(request_id),
+            duplicates,
+        }
     }
 
     pub fn unknown(value: serde_json::Value) -> Self {

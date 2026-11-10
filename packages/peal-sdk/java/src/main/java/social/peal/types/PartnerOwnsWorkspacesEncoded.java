@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -21,13 +23,27 @@ import social.peal.core.ObjectMappers;
 public final class PartnerOwnsWorkspacesEncoded {
     private final PartnerOwnsWorkspacesEncodedTag tag;
 
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final int owned;
 
     private final Map<String, Object> additionalProperties;
 
     private PartnerOwnsWorkspacesEncoded(
-            PartnerOwnsWorkspacesEncodedTag tag, int owned, Map<String, Object> additionalProperties) {
+            PartnerOwnsWorkspacesEncodedTag tag,
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            int owned,
+            Map<String, Object> additionalProperties) {
         this.tag = tag;
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.owned = owned;
         this.additionalProperties = additionalProperties;
     }
@@ -35,6 +51,21 @@ public final class PartnerOwnsWorkspacesEncoded {
     @JsonProperty("_tag")
     public PartnerOwnsWorkspacesEncodedTag getTag() {
         return tag;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("owned")
@@ -54,12 +85,16 @@ public final class PartnerOwnsWorkspacesEncoded {
     }
 
     private boolean equalTo(PartnerOwnsWorkspacesEncoded other) {
-        return tag.equals(other.tag) && owned == other.owned;
+        return tag.equals(other.tag)
+                && code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && owned == other.owned;
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.owned);
+        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.owned);
     }
 
     @java.lang.Override
@@ -87,6 +122,18 @@ public final class PartnerOwnsWorkspacesEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -95,6 +142,12 @@ public final class PartnerOwnsWorkspacesEncoded {
 
         private int owned;
 
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -102,6 +155,9 @@ public final class PartnerOwnsWorkspacesEncoded {
         @java.lang.Override
         public Builder from(PartnerOwnsWorkspacesEncoded other) {
             tag(other.getTag());
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             owned(other.getOwned());
             return this;
         }
@@ -121,13 +177,56 @@ public final class PartnerOwnsWorkspacesEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public PartnerOwnsWorkspacesEncoded build() {
-            return new PartnerOwnsWorkspacesEncoded(tag, owned, additionalProperties);
+            return new PartnerOwnsWorkspacesEncoded(tag, code, message, requestId, owned, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag") || key.equalsIgnoreCase("owned")) {
+            if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("owned")) {
                 return;
             }
             this.additionalProperties.put(key, value);

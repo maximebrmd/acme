@@ -6,13 +6,14 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
-from .platform_rate_limited_encoded_tag import PlatformRateLimitedEncodedTag
 
 
 class PlatformRateLimitedEncoded(UniversalBaseModel):
-    tag: typing_extensions.Annotated[
-        PlatformRateLimitedEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ]
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     retry_after_seconds: typing_extensions.Annotated[
         typing.Optional[int], FieldMetadata(alias="retryAfterSeconds"), pydantic.Field(alias="retryAfterSeconds")
     ] = None

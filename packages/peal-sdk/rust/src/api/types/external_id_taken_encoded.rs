@@ -1,9 +1,9 @@
 pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct InvalidTimeZoneEncoded {
+pub struct ExternalIdTakenEncoded {
     #[serde(rename = "_tag")]
-    pub tag: InvalidTimeZoneEncodedTag,
+    pub tag: ExternalIdTakenEncodedTag,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -11,29 +11,29 @@ pub struct InvalidTimeZoneEncoded {
     #[serde(rename = "requestId")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub request_id: Option<String>,
-    #[serde(rename = "timeZone")]
+    #[serde(rename = "workspaceId")]
     #[serde(default)]
-    pub time_zone: String,
+    pub workspace_id: String,
 }
 
-impl InvalidTimeZoneEncoded {
-    pub fn builder() -> InvalidTimeZoneEncodedBuilder {
-        <InvalidTimeZoneEncodedBuilder as Default>::default()
+impl ExternalIdTakenEncoded {
+    pub fn builder() -> ExternalIdTakenEncodedBuilder {
+        <ExternalIdTakenEncodedBuilder as Default>::default()
     }
 }
 
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
-pub struct InvalidTimeZoneEncodedBuilder {
-    tag: Option<InvalidTimeZoneEncodedTag>,
+pub struct ExternalIdTakenEncodedBuilder {
+    tag: Option<ExternalIdTakenEncodedTag>,
     code: Option<String>,
     message: Option<String>,
     request_id: Option<String>,
-    time_zone: Option<String>,
+    workspace_id: Option<String>,
 }
 
-impl InvalidTimeZoneEncodedBuilder {
-    pub fn tag(mut self, value: InvalidTimeZoneEncodedTag) -> Self {
+impl ExternalIdTakenEncodedBuilder {
+    pub fn tag(mut self, value: ExternalIdTakenEncodedTag) -> Self {
         self.tag = Some(value);
         self
     }
@@ -53,24 +53,24 @@ impl InvalidTimeZoneEncodedBuilder {
         self
     }
 
-    pub fn time_zone(mut self, value: impl Into<String>) -> Self {
-        self.time_zone = Some(value.into());
+    pub fn workspace_id(mut self, value: impl Into<String>) -> Self {
+        self.workspace_id = Some(value.into());
         self
     }
 
-    /// Consumes the builder and constructs a [`InvalidTimeZoneEncoded`].
+    /// Consumes the builder and constructs a [`ExternalIdTakenEncoded`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`tag`](InvalidTimeZoneEncodedBuilder::tag)
-    /// - [`time_zone`](InvalidTimeZoneEncodedBuilder::time_zone)
-    pub fn build(self) -> Result<InvalidTimeZoneEncoded, BuildError> {
-        Ok(InvalidTimeZoneEncoded {
+    /// - [`tag`](ExternalIdTakenEncodedBuilder::tag)
+    /// - [`workspace_id`](ExternalIdTakenEncodedBuilder::workspace_id)
+    pub fn build(self) -> Result<ExternalIdTakenEncoded, BuildError> {
+        Ok(ExternalIdTakenEncoded {
             tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
             code: self.code,
             message: self.message,
             request_id: self.request_id,
-            time_zone: self
-                .time_zone
-                .ok_or_else(|| BuildError::missing_field("time_zone"))?,
+            workspace_id: self
+                .workspace_id
+                .ok_or_else(|| BuildError::missing_field("workspace_id"))?,
         })
     }
 }

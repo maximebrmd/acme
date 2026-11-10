@@ -1,7 +1,7 @@
 pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
-pub struct ScheduleInPastEncoded {
+pub struct ConnectLinkNotFoundEncoded {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -11,21 +11,21 @@ pub struct ScheduleInPastEncoded {
     pub request_id: Option<String>,
 }
 
-impl ScheduleInPastEncoded {
-    pub fn builder() -> ScheduleInPastEncodedBuilder {
-        <ScheduleInPastEncodedBuilder as Default>::default()
+impl ConnectLinkNotFoundEncoded {
+    pub fn builder() -> ConnectLinkNotFoundEncodedBuilder {
+        <ConnectLinkNotFoundEncodedBuilder as Default>::default()
     }
 }
 
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
-pub struct ScheduleInPastEncodedBuilder {
+pub struct ConnectLinkNotFoundEncodedBuilder {
     code: Option<String>,
     message: Option<String>,
     request_id: Option<String>,
 }
 
-impl ScheduleInPastEncodedBuilder {
+impl ConnectLinkNotFoundEncodedBuilder {
     pub fn code(mut self, value: impl Into<String>) -> Self {
         self.code = Some(value.into());
         self
@@ -41,9 +41,9 @@ impl ScheduleInPastEncodedBuilder {
         self
     }
 
-    /// Consumes the builder and constructs a [`ScheduleInPastEncoded`].
-    pub fn build(self) -> Result<ScheduleInPastEncoded, BuildError> {
-        Ok(ScheduleInPastEncoded {
+    /// Consumes the builder and constructs a [`ConnectLinkNotFoundEncoded`].
+    pub fn build(self) -> Result<ConnectLinkNotFoundEncoded, BuildError> {
+        Ok(ConnectLinkNotFoundEncoded {
             code: self.code,
             message: self.message,
             request_id: self.request_id,

@@ -19,11 +19,11 @@ public record TooManyRequestsErrorBody
     }
 
     /// <summary>
-    /// Create an instance of TooManyRequestsErrorBody with <see cref="TooManyRequestsErrorBody.TooManyWebhookSends"/>.
+    /// Create an instance of TooManyRequestsErrorBody with <see cref="TooManyRequestsErrorBody.TooManyConnectLinks"/>.
     /// </summary>
-    public TooManyRequestsErrorBody(TooManyRequestsErrorBody.TooManyWebhookSends value)
+    public TooManyRequestsErrorBody(TooManyRequestsErrorBody.TooManyConnectLinks value)
     {
-        Type = "TooManyWebhookSends";
+        Type = "TooManyConnectLinks";
         Value = value.Value;
     }
 
@@ -48,9 +48,9 @@ public record TooManyRequestsErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "TooManyWebhookSends"
+    /// Returns true if <see cref="Type"/> is "TooManyConnectLinks"
     /// </summary>
-    public bool IsTooManyWebhookSends => Type == "TooManyWebhookSends";
+    public bool IsTooManyConnectLinks => Type == "TooManyConnectLinks";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "TooManyRequests"
@@ -58,14 +58,14 @@ public record TooManyRequestsErrorBody
     public bool IsTooManyRequests => Type == "TooManyRequests";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.TooManyWebhookSendsEncoded"/> if <see cref="Type"/> is 'TooManyWebhookSends', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.TooManyConnectLinksEncoded"/> if <see cref="Type"/> is 'TooManyConnectLinks', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyWebhookSends'.</exception>
-    public Peal.TooManyWebhookSendsEncoded AsTooManyWebhookSends() =>
-        IsTooManyWebhookSends
-            ? (Peal.TooManyWebhookSendsEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyConnectLinks'.</exception>
+    public Peal.TooManyConnectLinksEncoded AsTooManyConnectLinks() =>
+        IsTooManyConnectLinks
+            ? (Peal.TooManyConnectLinksEncoded)Value!
             : throw new global::System.Exception(
-                "TooManyRequestsErrorBody.Type is not 'TooManyWebhookSends'"
+                "TooManyRequestsErrorBody.Type is not 'TooManyConnectLinks'"
             );
 
     /// <summary>
@@ -80,29 +80,29 @@ public record TooManyRequestsErrorBody
             );
 
     public T Match<T>(
-        Func<Peal.TooManyWebhookSendsEncoded, T> onTooManyWebhookSends,
+        Func<Peal.TooManyConnectLinksEncoded, T> onTooManyConnectLinks,
         Func<Peal.TooManyRequestsEncoded, T> onTooManyRequests,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "TooManyWebhookSends" => onTooManyWebhookSends(AsTooManyWebhookSends()),
+            "TooManyConnectLinks" => onTooManyConnectLinks(AsTooManyConnectLinks()),
             "TooManyRequests" => onTooManyRequests(AsTooManyRequests()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.TooManyWebhookSendsEncoded> onTooManyWebhookSends,
+        Action<Peal.TooManyConnectLinksEncoded> onTooManyConnectLinks,
         Action<Peal.TooManyRequestsEncoded> onTooManyRequests,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "TooManyWebhookSends":
-                onTooManyWebhookSends(AsTooManyWebhookSends());
+            case "TooManyConnectLinks":
+                onTooManyConnectLinks(AsTooManyConnectLinks());
                 break;
             case "TooManyRequests":
                 onTooManyRequests(AsTooManyRequests());
@@ -114,13 +114,13 @@ public record TooManyRequestsErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.TooManyWebhookSendsEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.TooManyConnectLinksEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsTooManyWebhookSends(out Peal.TooManyWebhookSendsEncoded? value)
+    public bool TryAsTooManyConnectLinks(out Peal.TooManyConnectLinksEncoded? value)
     {
-        if (Type == "TooManyWebhookSends")
+        if (Type == "TooManyConnectLinks")
         {
-            value = (Peal.TooManyWebhookSendsEncoded)Value!;
+            value = (Peal.TooManyConnectLinksEncoded)Value!;
             return true;
         }
         value = null;
@@ -144,7 +144,7 @@ public record TooManyRequestsErrorBody
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator TooManyRequestsErrorBody(
-        TooManyRequestsErrorBody.TooManyWebhookSends value
+        TooManyRequestsErrorBody.TooManyConnectLinks value
     ) => new(value);
 
     public static implicit operator TooManyRequestsErrorBody(
@@ -192,10 +192,10 @@ public record TooManyRequestsErrorBody
 
             var value = discriminator switch
             {
-                "TooManyWebhookSends" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyWebhookSendsEncoded?>(options)
+                "TooManyConnectLinks" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyConnectLinksEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.TooManyWebhookSendsEncoded"
+                            "Failed to deserialize Peal.TooManyConnectLinksEncoded"
                         ),
                 "TooManyRequests" => json.Deserialize<Peal.TooManyRequestsEncoded?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.TooManyRequestsEncoded"),
@@ -213,7 +213,7 @@ public record TooManyRequestsErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "TooManyWebhookSends" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "TooManyConnectLinks" => JsonSerializer.SerializeToNode(value.Value, options),
                     "TooManyRequests" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
@@ -244,22 +244,22 @@ public record TooManyRequestsErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for TooManyWebhookSends
+    /// Discriminated union type for TooManyConnectLinks
     /// </summary>
     [Serializable]
-    public struct TooManyWebhookSends
+    public struct TooManyConnectLinks
     {
-        public TooManyWebhookSends(Peal.TooManyWebhookSendsEncoded value)
+        public TooManyConnectLinks(Peal.TooManyConnectLinksEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.TooManyWebhookSendsEncoded Value { get; set; }
+        internal Peal.TooManyConnectLinksEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator TooManyRequestsErrorBody.TooManyWebhookSends(
-            Peal.TooManyWebhookSendsEncoded value
+        public static implicit operator TooManyRequestsErrorBody.TooManyConnectLinks(
+            Peal.TooManyConnectLinksEncoded value
         ) => new(value);
     }
 

@@ -4,7 +4,7 @@ namespace Peal\ConnectLinks\Requests;
 
 use Peal\Core\Json\JsonSerializableType;
 use Peal\Core\Json\JsonProperty;
-use Peal\Types\InstagramConnection;
+use Peal\Types\ChannelConnection;
 use Peal\Types\ConnectLinkLocale;
 use Peal\Types\Platform;
 
@@ -17,7 +17,7 @@ class NewConnectLink extends JsonSerializableType
     public ?string $channelId;
 
     /**
-     * @var ?value-of<InstagramConnection> $connection
+     * @var ?value-of<ChannelConnection> $connection
      */
     #[JsonProperty('connection')]
     public ?string $connection;
@@ -50,7 +50,7 @@ class NewConnectLink extends JsonSerializableType
      * @param array{
      *   platform: value-of<Platform>,
      *   channelId?: ?string,
-     *   connection?: ?value-of<InstagramConnection>,
+     *   connection?: ?value-of<ChannelConnection>,
      *   expiresInHours?: ?int,
      *   locale?: ?value-of<ConnectLinkLocale>,
      *   returnUrl?: ?string,

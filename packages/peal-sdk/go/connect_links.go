@@ -20,13 +20,13 @@ var (
 )
 
 type NewConnectLink struct {
-	WorkspaceID    string               `json:"-" url:"-"`
-	ChannelID      *string              `json:"channelId,omitempty" url:"-"`
-	Connection     *InstagramConnection `json:"connection,omitempty" url:"-"`
-	ExpiresInHours *int                 `json:"expiresInHours,omitempty" url:"-"`
-	Locale         *ConnectLinkLocale   `json:"locale,omitempty" url:"-"`
-	Platform       Platform             `json:"platform" url:"-"`
-	ReturnURL      *string              `json:"returnUrl,omitempty" url:"-"`
+	WorkspaceID    string             `json:"-" url:"-"`
+	ChannelID      *string            `json:"channelId,omitempty" url:"-"`
+	Connection     *ChannelConnection `json:"connection,omitempty" url:"-"`
+	ExpiresInHours *int               `json:"expiresInHours,omitempty" url:"-"`
+	Locale         *ConnectLinkLocale `json:"locale,omitempty" url:"-"`
+	Platform       Platform           `json:"platform" url:"-"`
+	ReturnURL      *string            `json:"returnUrl,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -57,7 +57,7 @@ func (n *NewConnectLink) SetChannelID(channelID *string) {
 
 // SetConnection sets the Connection field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
-func (n *NewConnectLink) SetConnection(connection *InstagramConnection) {
+func (n *NewConnectLink) SetConnection(connection *ChannelConnection) {
 	n.Connection = connection
 	n.require(newConnectLinkFieldConnection)
 }

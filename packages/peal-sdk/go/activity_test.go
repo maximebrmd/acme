@@ -1950,6 +1950,20 @@ func TestEnumActivityVia(t *testing.T) {
 		assert.Equal(t, ActivityVia("mcp"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_partnerKey", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewActivityViaFromString("partnerKey")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, ActivityVia("partnerKey"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_connectLink", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewActivityViaFromString("connectLink")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, ActivityVia("connectLink"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewActivityViaFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)

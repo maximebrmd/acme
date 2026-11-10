@@ -3,5 +3,8 @@
 import * as Peal from "../index.js";
 
 export interface DuplicatePostEncoded {
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     duplicates: Peal.DuplicateOnChannel[];
 }

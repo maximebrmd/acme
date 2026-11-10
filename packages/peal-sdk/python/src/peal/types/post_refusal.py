@@ -10,7 +10,9 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .content_violation import ContentViolation
 from .duplicate_on_channel import DuplicateOnChannel
+from .forbidden_reason import ForbiddenReason
 from .paid_plan import PaidPlan
+from .permission import Permission
 from .plan import Plan
 from .plan_limit import PlanLimit
 
@@ -19,6 +21,11 @@ class PostRefusal_PostContentInvalid(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["PostContentInvalid"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "PostContentInvalid"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     violations: typing.List[ContentViolation]
 
     if IS_PYDANTIC_V2:
@@ -35,6 +42,11 @@ class PostRefusal_UnknownChannels(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["UnknownChannels"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "UnknownChannels"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     channel_ids: typing_extensions.Annotated[
         typing.List[str], FieldMetadata(alias="channelIds"), pydantic.Field(alias="channelIds")
     ]
@@ -53,6 +65,11 @@ class PostRefusal_UnknownMedia(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["UnknownMedia"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "UnknownMedia"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     media_ids: typing_extensions.Annotated[
         typing.List[str], FieldMetadata(alias="mediaIds"), pydantic.Field(alias="mediaIds")
     ]
@@ -71,6 +88,11 @@ class PostRefusal_ScheduleInPast(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["ScheduleInPast"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "ScheduleInPast"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -86,6 +108,11 @@ class PostRefusal_InvalidTimeZone(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["InvalidTimeZone"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "InvalidTimeZone"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     time_zone: typing_extensions.Annotated[str, FieldMetadata(alias="timeZone"), pydantic.Field(alias="timeZone")]
 
     if IS_PYDANTIC_V2:
@@ -102,6 +129,11 @@ class PostRefusal_PlanLimitReached(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["PlanLimitReached"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "PlanLimitReached"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     allowed: int
     billing_url: typing_extensions.Annotated[str, FieldMetadata(alias="billingUrl"), pydantic.Field(alias="billingUrl")]
     limit: PlanLimit
@@ -125,6 +157,11 @@ class PostRefusal_IdempotencyKeyReused(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["IdempotencyKeyReused"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "IdempotencyKeyReused"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -140,6 +177,11 @@ class PostRefusal_PostNotFound(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["PostNotFound"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "PostNotFound"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -155,6 +197,11 @@ class PostRefusal_DuplicatePost(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["DuplicatePost"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "DuplicatePost"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     duplicates: typing.List[DuplicateOnChannel]
 
     if IS_PYDANTIC_V2:
@@ -171,6 +218,14 @@ class PostRefusal_Forbidden(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["Forbidden"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "Forbidden"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+    permission: typing.Optional[Permission] = None
+    reason: typing.Optional[ForbiddenReason] = None
+    scope: typing.Optional[str] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

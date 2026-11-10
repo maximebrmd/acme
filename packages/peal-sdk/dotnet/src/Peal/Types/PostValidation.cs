@@ -11,6 +11,9 @@ public record PostValidation : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("awaitsApproval")]
+    public required bool AwaitsApproval { get; set; }
+
     [JsonPropertyName("channels")]
     public IEnumerable<ChannelPreview> Channels { get; set; } = new List<ChannelPreview>();
 

@@ -14,6 +14,15 @@ public record PartnerOwnsWorkspacesEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required PartnerOwnsWorkspacesEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
     [JsonPropertyName("owned")]
     public required int Owned { get; set; }
 

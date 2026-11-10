@@ -8,10 +8,22 @@ use Peal\Core\Json\JsonProperty;
 class TooManyConnectLinksEncoded extends JsonSerializableType
 {
     /**
-     * @var value-of<TooManyConnectLinksEncodedTag> $tag
+     * @var ?string $code
      */
-    #[JsonProperty('_tag')]
-    public string $tag;
+    #[JsonProperty('code')]
+    public ?string $code;
+
+    /**
+     * @var ?string $message
+     */
+    #[JsonProperty('message')]
+    public ?string $message;
+
+    /**
+     * @var ?string $requestId
+     */
+    #[JsonProperty('requestId')]
+    public ?string $requestId;
 
     /**
      * @var int $allowed
@@ -21,14 +33,18 @@ class TooManyConnectLinksEncoded extends JsonSerializableType
 
     /**
      * @param array{
-     *   tag: value-of<TooManyConnectLinksEncodedTag>,
      *   allowed: int,
+     *   code?: ?string,
+     *   message?: ?string,
+     *   requestId?: ?string,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
-        $this->tag = $values['tag'];
+        $this->code = $values['code'] ?? null;
+        $this->message = $values['message'] ?? null;
+        $this->requestId = $values['requestId'] ?? null;
         $this->allowed = $values['allowed'];
     }
 

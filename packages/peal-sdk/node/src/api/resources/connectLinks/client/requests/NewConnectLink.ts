@@ -12,7 +12,7 @@ import * as Peal from "../../../../index.js";
 export interface NewConnectLink {
     workspaceId: string;
     channelId?: string;
-    connection?: Peal.InstagramConnection;
+    connection?: Peal.ChannelConnection;
     expiresInHours?: number;
     locale?: Peal.ConnectLinkLocale;
     platform: Peal.Platform;

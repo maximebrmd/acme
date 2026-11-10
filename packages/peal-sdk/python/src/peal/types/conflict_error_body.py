@@ -15,6 +15,11 @@ class ConflictErrorBody_PostNotReviewable(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["PostNotReviewable"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "PostNotReviewable"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     status: PostNotReviewableEncodedStatus
 
     if IS_PYDANTIC_V2:
@@ -31,6 +36,11 @@ class ConflictErrorBody_TooManyReviewLinks(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["TooManyReviewLinks"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "TooManyReviewLinks"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     limit: int
 
     if IS_PYDANTIC_V2:

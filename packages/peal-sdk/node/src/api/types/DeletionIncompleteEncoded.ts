@@ -2,6 +2,9 @@
 
 export interface DeletionIncompleteEncoded {
     _tag: DeletionIncompleteEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     subscriptionsCancelled: number;
 }
 

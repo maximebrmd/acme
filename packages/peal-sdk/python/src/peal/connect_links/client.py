@@ -4,10 +4,10 @@ import typing
 
 from ..core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ..core.request_options import RequestOptions
+from ..types.channel_connection import ChannelConnection
 from ..types.connect_link import ConnectLink
 from ..types.connect_link_locale import ConnectLinkLocale
 from ..types.created_connect_link import CreatedConnectLink
-from ..types.instagram_connection import InstagramConnection
 from ..types.platform import Platform
 from .raw_client import AsyncRawConnectLinksClient, RawConnectLinksClient
 
@@ -68,7 +68,7 @@ class ConnectLinksClient:
         *,
         platform: Platform,
         channel_id: typing.Optional[str] = OMIT,
-        connection: typing.Optional[InstagramConnection] = OMIT,
+        connection: typing.Optional[ChannelConnection] = OMIT,
         expires_in_hours: typing.Optional[int] = OMIT,
         locale: typing.Optional[ConnectLinkLocale] = OMIT,
         return_url: typing.Optional[str] = OMIT,
@@ -85,7 +85,7 @@ class ConnectLinksClient:
 
         channel_id : typing.Optional[str]
 
-        connection : typing.Optional[InstagramConnection]
+        connection : typing.Optional[ChannelConnection]
 
         expires_in_hours : typing.Optional[int]
 
@@ -257,7 +257,7 @@ class AsyncConnectLinksClient:
         *,
         platform: Platform,
         channel_id: typing.Optional[str] = OMIT,
-        connection: typing.Optional[InstagramConnection] = OMIT,
+        connection: typing.Optional[ChannelConnection] = OMIT,
         expires_in_hours: typing.Optional[int] = OMIT,
         locale: typing.Optional[ConnectLinkLocale] = OMIT,
         return_url: typing.Optional[str] = OMIT,
@@ -274,7 +274,7 @@ class AsyncConnectLinksClient:
 
         channel_id : typing.Optional[str]
 
-        connection : typing.Optional[InstagramConnection]
+        connection : typing.Optional[ChannelConnection]
 
         expires_in_hours : typing.Optional[int]
 

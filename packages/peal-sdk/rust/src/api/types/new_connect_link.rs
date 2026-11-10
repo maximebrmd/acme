@@ -6,7 +6,7 @@ pub struct NewConnectLink {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub channel_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub connection: Option<InstagramConnection>,
+    pub connection: Option<ChannelConnection>,
     #[serde(rename = "expiresInHours")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expires_in_hours: Option<i64>,
@@ -28,7 +28,7 @@ impl NewConnectLink {
 #[non_exhaustive]
 pub struct NewConnectLinkBuilder {
     channel_id: Option<String>,
-    connection: Option<InstagramConnection>,
+    connection: Option<ChannelConnection>,
     expires_in_hours: Option<i64>,
     locale: Option<ConnectLinkLocale>,
     platform: Option<Platform>,
@@ -41,7 +41,7 @@ impl NewConnectLinkBuilder {
         self
     }
 
-    pub fn connection(mut self, value: InstagramConnection) -> Self {
+    pub fn connection(mut self, value: ChannelConnection) -> Self {
         self.connection = Some(value);
         self
     }

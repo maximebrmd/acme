@@ -2,6 +2,9 @@
 
 export interface PartnerOwnsWorkspacesEncoded {
     _tag: PartnerOwnsWorkspacesEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     owned: number;
 }
 

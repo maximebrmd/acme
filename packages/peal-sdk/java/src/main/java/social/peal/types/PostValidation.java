@@ -25,6 +25,8 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = PostValidation.Builder.class)
 public final class PostValidation {
+    private final boolean awaitsApproval;
+
     private final List<ChannelPreview> channels;
 
     private final List<DuplicateOnChannel> duplicates;
@@ -44,6 +46,7 @@ public final class PostValidation {
     private final Map<String, Object> additionalProperties;
 
     private PostValidation(
+            boolean awaitsApproval,
             List<ChannelPreview> channels,
             List<DuplicateOnChannel> duplicates,
             Optional<PlanShortfall> planLimit,
@@ -53,6 +56,7 @@ public final class PostValidation {
             boolean valid,
             List<ContentViolation> violations,
             Map<String, Object> additionalProperties) {
+        this.awaitsApproval = awaitsApproval;
         this.channels = channels;
         this.duplicates = duplicates;
         this.planLimit = planLimit;
@@ -62,6 +66,11 @@ public final class PostValidation {
         this.valid = valid;
         this.violations = violations;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("awaitsApproval")
+    public boolean getAwaitsApproval() {
+        return awaitsApproval;
     }
 
     @JsonProperty("channels")
@@ -134,7 +143,8 @@ public final class PostValidation {
     }
 
     private boolean equalTo(PostValidation other) {
-        return channels.equals(other.channels)
+        return awaitsApproval == other.awaitsApproval
+                && channels.equals(other.channels)
                 && duplicates.equals(other.duplicates)
                 && planLimit.equals(other.planLimit)
                 && schedule.equals(other.schedule)
@@ -147,6 +157,7 @@ public final class PostValidation {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
+                this.awaitsApproval,
                 this.channels,
                 this.duplicates,
                 this.planLimit,
@@ -162,14 +173,18 @@ public final class PostValidation {
         return ObjectMappers.stringify(this);
     }
 
-    public static ValidStage builder() {
+    public static AwaitsApprovalStage builder() {
         return new Builder();
+    }
+
+    public interface AwaitsApprovalStage {
+        ValidStage awaitsApproval(boolean awaitsApproval);
+
+        Builder from(PostValidation other);
     }
 
     public interface ValidStage {
         _FinalStage valid(boolean valid);
-
-        Builder from(PostValidation other);
     }
 
     public interface _FinalStage {
@@ -223,7 +238,9 @@ public final class PostValidation {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements ValidStage, _FinalStage {
+    public static final class Builder implements AwaitsApprovalStage, ValidStage, _FinalStage {
+        private boolean awaitsApproval;
+
         private boolean valid;
 
         private List<ContentViolation> violations = new ArrayList<>();
@@ -246,6 +263,7 @@ public final class PostValidation {
 
         @java.lang.Override
         public Builder from(PostValidation other) {
+            awaitsApproval(other.getAwaitsApproval());
             channels(other.getChannels());
             duplicates(other.getDuplicates());
             planLimit(other.getPlanLimit());
@@ -254,6 +272,13 @@ public final class PostValidation {
             unknownMedia(other.getUnknownMedia());
             valid(other.getValid());
             violations(other.getViolations());
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("awaitsApproval")
+        public ValidStage awaitsApproval(boolean awaitsApproval) {
+            this.awaitsApproval = awaitsApproval;
             return this;
         }
 
@@ -437,6 +462,7 @@ public final class PostValidation {
         @java.lang.Override
         public PostValidation build() {
             return new PostValidation(
+                    awaitsApproval,
                     channels,
                     duplicates,
                     planLimit,
@@ -450,7 +476,8 @@ public final class PostValidation {
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("channels")
+            if (key.equalsIgnoreCase("awaitsApproval")
+                    || key.equalsIgnoreCase("channels")
                     || key.equalsIgnoreCase("duplicates")
                     || key.equalsIgnoreCase("planLimit")
                     || key.equalsIgnoreCase("schedule")

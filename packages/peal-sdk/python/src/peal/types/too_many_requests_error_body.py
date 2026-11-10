@@ -10,10 +10,10 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 
 
-class TooManyRequestsErrorBody_TooManyWebhookSends(UniversalBaseModel):
+class TooManyRequestsErrorBody_TooManyConnectLinks(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["TooManyWebhookSends"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "TooManyWebhookSends"
+        typing.Literal["TooManyConnectLinks"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "TooManyConnectLinks"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
@@ -59,6 +59,6 @@ class TooManyRequestsErrorBody_TooManyRequests(UniversalBaseModel):
 
 
 TooManyRequestsErrorBody = typing_extensions.Annotated[
-    typing.Union[TooManyRequestsErrorBody_TooManyWebhookSends, TooManyRequestsErrorBody_TooManyRequests],
+    typing.Union[TooManyRequestsErrorBody_TooManyConnectLinks, TooManyRequestsErrorBody_TooManyRequests],
     pydantic.Field(discriminator="type"),
 ]

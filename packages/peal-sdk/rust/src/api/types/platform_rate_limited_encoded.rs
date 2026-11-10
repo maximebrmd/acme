@@ -1,9 +1,14 @@
 pub use crate::prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct PlatformRateLimitedEncoded {
-    #[serde(rename = "_tag")]
-    pub tag: PlatformRateLimitedEncodedTag,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+    #[serde(rename = "requestId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub request_id: Option<String>,
     #[serde(rename = "retryAfterSeconds")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retry_after_seconds: Option<i64>,
@@ -18,13 +23,25 @@ impl PlatformRateLimitedEncoded {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct PlatformRateLimitedEncodedBuilder {
-    tag: Option<PlatformRateLimitedEncodedTag>,
+    code: Option<String>,
+    message: Option<String>,
+    request_id: Option<String>,
     retry_after_seconds: Option<i64>,
 }
 
 impl PlatformRateLimitedEncodedBuilder {
-    pub fn tag(mut self, value: PlatformRateLimitedEncodedTag) -> Self {
-        self.tag = Some(value);
+    pub fn code(mut self, value: impl Into<String>) -> Self {
+        self.code = Some(value.into());
+        self
+    }
+
+    pub fn message(mut self, value: impl Into<String>) -> Self {
+        self.message = Some(value.into());
+        self
+    }
+
+    pub fn request_id(mut self, value: impl Into<String>) -> Self {
+        self.request_id = Some(value.into());
         self
     }
 
@@ -34,11 +51,11 @@ impl PlatformRateLimitedEncodedBuilder {
     }
 
     /// Consumes the builder and constructs a [`PlatformRateLimitedEncoded`].
-    /// This method will fail if any of the following fields are not set:
-    /// - [`tag`](PlatformRateLimitedEncodedBuilder::tag)
     pub fn build(self) -> Result<PlatformRateLimitedEncoded, BuildError> {
         Ok(PlatformRateLimitedEncoded {
-            tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
+            code: self.code,
+            message: self.message,
+            request_id: self.request_id,
             retry_after_seconds: self.retry_after_seconds,
         })
     }

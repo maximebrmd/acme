@@ -2,4 +2,4 @@
 
 import typing
 
-ActivityVia = typing.Union[typing.Literal["session", "apiKey", "oauth", "mcp"], typing.Any]
+ActivityVia = typing.Union[typing.Literal["session", "apiKey", "oauth", "mcp", "partnerKey", "connectLink"], typing.Any]

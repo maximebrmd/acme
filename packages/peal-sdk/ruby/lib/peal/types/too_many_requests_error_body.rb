@@ -9,7 +9,7 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::TooManyWebhookSendsEncoded }, key: "TOO_MANY_WEBHOOK_SENDS"
+      member -> { Peal::Types::TooManyConnectLinksEncoded }, key: "TOO_MANY_CONNECT_LINKS"
 
       member -> { Peal::Types::TooManyRequestsEncoded }, key: "TOO_MANY_REQUESTS"
     end

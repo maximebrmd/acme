@@ -28,7 +28,7 @@ func TestSettersNewConnectLink(t *testing.T) {
 
 	t.Run("SetConnection", func(t *testing.T) {
 		obj := &NewConnectLink{}
-		var fernTestValueConnection *InstagramConnection
+		var fernTestValueConnection *ChannelConnection
 		obj.SetConnection(fernTestValueConnection)
 		assert.Equal(t, fernTestValueConnection, obj.Connection)
 		assert.NotNil(t, obj.explicitFields)
@@ -135,7 +135,7 @@ func TestSettersMarkExplicitNewConnectLink(t *testing.T) {
 		t.Parallel()
 		// Arrange
 		obj := &NewConnectLink{}
-		var fernTestValueConnection *InstagramConnection
+		var fernTestValueConnection *ChannelConnection
 
 		// Act
 		obj.SetConnection(fernTestValueConnection)

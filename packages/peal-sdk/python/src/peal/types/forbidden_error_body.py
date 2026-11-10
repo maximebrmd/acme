@@ -8,12 +8,22 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .forbidden_reason import ForbiddenReason
+from .permission import Permission
 
 
 class ForbiddenErrorBody_Forbidden(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["Forbidden"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "Forbidden"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
+    permission: typing.Optional[Permission] = None
+    reason: typing.Optional[ForbiddenReason] = None
+    scope: typing.Optional[str] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
@@ -29,6 +39,11 @@ class ForbiddenErrorBody_PartnerAccountsClosed(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["PartnerAccountsClosed"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "PartnerAccountsClosed"
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

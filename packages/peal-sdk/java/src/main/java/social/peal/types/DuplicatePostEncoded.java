@@ -16,18 +16,48 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = DuplicatePostEncoded.Builder.class)
 public final class DuplicatePostEncoded {
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final List<DuplicateOnChannel> duplicates;
 
     private final Map<String, Object> additionalProperties;
 
-    private DuplicatePostEncoded(List<DuplicateOnChannel> duplicates, Map<String, Object> additionalProperties) {
+    private DuplicatePostEncoded(
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            List<DuplicateOnChannel> duplicates,
+            Map<String, Object> additionalProperties) {
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.duplicates = duplicates;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("duplicates")
@@ -47,12 +77,15 @@ public final class DuplicatePostEncoded {
     }
 
     private boolean equalTo(DuplicatePostEncoded other) {
-        return duplicates.equals(other.duplicates);
+        return code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && duplicates.equals(other.duplicates);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.duplicates);
+        return Objects.hash(this.code, this.message, this.requestId, this.duplicates);
     }
 
     @java.lang.Override
@@ -66,6 +99,12 @@ public final class DuplicatePostEncoded {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<String> code = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> requestId = Optional.empty();
+
         private List<DuplicateOnChannel> duplicates = new ArrayList<>();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -73,7 +112,43 @@ public final class DuplicatePostEncoded {
         private Builder() {}
 
         public Builder from(DuplicatePostEncoded other) {
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             duplicates(other.getDuplicates());
+            return this;
+        }
+
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public Builder code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public Builder message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        public Builder message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public Builder requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        public Builder requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
             return this;
         }
 
@@ -99,12 +174,15 @@ public final class DuplicatePostEncoded {
         }
 
         public DuplicatePostEncoded build() {
-            return new DuplicatePostEncoded(duplicates, additionalProperties);
+            return new DuplicatePostEncoded(code, message, requestId, duplicates, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("duplicates")) {
+            if (key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("duplicates")) {
                 return;
             }
             this.additionalProperties.put(key, value);

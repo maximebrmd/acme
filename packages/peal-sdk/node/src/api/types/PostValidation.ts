@@ -3,6 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface PostValidation {
+    awaitsApproval: boolean;
     channels: Peal.ChannelPreview[];
     duplicates: Peal.DuplicateOnChannel[];
     planLimit: Peal.PlanShortfall | null;

@@ -5,7 +5,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum TooManyRequestsErrorBody {
     #[non_exhaustive]
-    TooManyWebhookSends {
+    TooManyConnectLinks {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -44,8 +44,8 @@ pub enum TooManyRequestsErrorBody {
 }
 
 impl TooManyRequestsErrorBody {
-    pub fn too_many_webhook_sends(allowed: i64) -> Self {
-        Self::TooManyWebhookSends {
+    pub fn too_many_connect_links(allowed: i64) -> Self {
+        Self::TooManyConnectLinks {
             code: None,
             message: None,
             request_id: None,
@@ -64,13 +64,13 @@ impl TooManyRequestsErrorBody {
         }
     }
 
-    pub fn too_many_webhook_sends_with_code(
+    pub fn too_many_connect_links_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
         allowed: i64,
     ) -> Self {
-        Self::TooManyWebhookSends {
+        Self::TooManyConnectLinks {
             code: Some(code),
             message,
             request_id,
@@ -78,13 +78,13 @@ impl TooManyRequestsErrorBody {
         }
     }
 
-    pub fn too_many_webhook_sends_with_message(
+    pub fn too_many_connect_links_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
         allowed: i64,
     ) -> Self {
-        Self::TooManyWebhookSends {
+        Self::TooManyConnectLinks {
             code,
             message: Some(message),
             request_id,
@@ -92,13 +92,13 @@ impl TooManyRequestsErrorBody {
         }
     }
 
-    pub fn too_many_webhook_sends_with_request_id(
+    pub fn too_many_connect_links_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
         allowed: i64,
     ) -> Self {
-        Self::TooManyWebhookSends {
+        Self::TooManyConnectLinks {
             code,
             message,
             request_id: Some(request_id),

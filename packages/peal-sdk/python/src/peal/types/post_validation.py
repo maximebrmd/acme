@@ -14,6 +14,9 @@ from .schedule_check import ScheduleCheck
 
 
 class PostValidation(UniversalBaseModel):
+    awaits_approval: typing_extensions.Annotated[
+        bool, FieldMetadata(alias="awaitsApproval"), pydantic.Field(alias="awaitsApproval")
+    ]
     channels: typing.List[ChannelPreview]
     duplicates: typing.List[DuplicateOnChannel]
     plan_limit: typing_extensions.Annotated[

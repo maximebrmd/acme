@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -21,13 +23,27 @@ import social.peal.core.ObjectMappers;
 public final class DeletionIncompleteEncoded {
     private final DeletionIncompleteEncodedTag tag;
 
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final int subscriptionsCancelled;
 
     private final Map<String, Object> additionalProperties;
 
     private DeletionIncompleteEncoded(
-            DeletionIncompleteEncodedTag tag, int subscriptionsCancelled, Map<String, Object> additionalProperties) {
+            DeletionIncompleteEncodedTag tag,
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            int subscriptionsCancelled,
+            Map<String, Object> additionalProperties) {
         this.tag = tag;
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.subscriptionsCancelled = subscriptionsCancelled;
         this.additionalProperties = additionalProperties;
     }
@@ -35,6 +51,21 @@ public final class DeletionIncompleteEncoded {
     @JsonProperty("_tag")
     public DeletionIncompleteEncodedTag getTag() {
         return tag;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("subscriptionsCancelled")
@@ -54,12 +85,16 @@ public final class DeletionIncompleteEncoded {
     }
 
     private boolean equalTo(DeletionIncompleteEncoded other) {
-        return tag.equals(other.tag) && subscriptionsCancelled == other.subscriptionsCancelled;
+        return tag.equals(other.tag)
+                && code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && subscriptionsCancelled == other.subscriptionsCancelled;
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.subscriptionsCancelled);
+        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.subscriptionsCancelled);
     }
 
     @java.lang.Override
@@ -87,6 +122,18 @@ public final class DeletionIncompleteEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -95,6 +142,12 @@ public final class DeletionIncompleteEncoded {
 
         private int subscriptionsCancelled;
 
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -102,6 +155,9 @@ public final class DeletionIncompleteEncoded {
         @java.lang.Override
         public Builder from(DeletionIncompleteEncoded other) {
             tag(other.getTag());
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             subscriptionsCancelled(other.getSubscriptionsCancelled());
             return this;
         }
@@ -121,13 +177,57 @@ public final class DeletionIncompleteEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public DeletionIncompleteEncoded build() {
-            return new DeletionIncompleteEncoded(tag, subscriptionsCancelled, additionalProperties);
+            return new DeletionIncompleteEncoded(
+                    tag, code, message, requestId, subscriptionsCancelled, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag") || key.equalsIgnoreCase("subscriptionsCancelled")) {
+            if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("subscriptionsCancelled")) {
                 return;
             }
             this.additionalProperties.put(key, value);

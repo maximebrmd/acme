@@ -245,7 +245,7 @@ class PartnerAccountClient:
         client.partner_account.create_key(
             workspace_id="workspaceId",
             name="name",
-            permissions=["analytics:read"],
+            permissions=["activity:read"],
             scopes=["workspaces:read"],
         )
         """
@@ -625,7 +625,7 @@ class AsyncPartnerAccountClient:
             await client.partner_account.create_key(
                 workspace_id="workspaceId",
                 name="name",
-                permissions=["analytics:read"],
+                permissions=["activity:read"],
                 scopes=["workspaces:read"],
             )
 

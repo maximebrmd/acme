@@ -20,8 +20,8 @@ public class ListKeysTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "permissions": [
-                  "analytics:read",
-                  "analytics:read"
+                  "activity:read",
+                  "activity:read"
                 ],
                 "scopes": [
                   "workspaces:read",
@@ -35,8 +35,8 @@ public class ListKeysTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "permissions": [
-                  "analytics:read",
-                  "analytics:read"
+                  "activity:read",
+                  "activity:read"
                 ],
                 "scopes": [
                   "workspaces:read",
@@ -78,7 +78,7 @@ public class ListKeysTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "permissions": [
-                  "analytics:read"
+                  "activity:read"
                 ],
                 "scopes": [
                   "workspaces:read"

@@ -9,7 +9,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public final class ActivityVia {
     public static final ActivityVia SESSION = new ActivityVia(Value.SESSION, "session");
 
+    public static final ActivityVia CONNECT_LINK = new ActivityVia(Value.CONNECT_LINK, "connectLink");
+
     public static final ActivityVia OAUTH = new ActivityVia(Value.OAUTH, "oauth");
+
+    public static final ActivityVia PARTNER_KEY = new ActivityVia(Value.PARTNER_KEY, "partnerKey");
 
     public static final ActivityVia API_KEY = new ActivityVia(Value.API_KEY, "apiKey");
 
@@ -48,8 +52,12 @@ public final class ActivityVia {
         switch (value) {
             case SESSION:
                 return visitor.visitSession();
+            case CONNECT_LINK:
+                return visitor.visitConnectLink();
             case OAUTH:
                 return visitor.visitOauth();
+            case PARTNER_KEY:
+                return visitor.visitPartnerKey();
             case API_KEY:
                 return visitor.visitApiKey();
             case MCP:
@@ -65,8 +73,12 @@ public final class ActivityVia {
         switch (value) {
             case "session":
                 return SESSION;
+            case "connectLink":
+                return CONNECT_LINK;
             case "oauth":
                 return OAUTH;
+            case "partnerKey":
+                return PARTNER_KEY;
             case "apiKey":
                 return API_KEY;
             case "mcp":
@@ -85,6 +97,10 @@ public final class ActivityVia {
 
         MCP,
 
+        PARTNER_KEY,
+
+        CONNECT_LINK,
+
         UNKNOWN
     }
 
@@ -96,6 +112,10 @@ public final class ActivityVia {
         T visitOauth();
 
         T visitMcp();
+
+        T visitPartnerKey();
+
+        T visitConnectLink();
 
         T visitUnknown(String unknownType);
     }

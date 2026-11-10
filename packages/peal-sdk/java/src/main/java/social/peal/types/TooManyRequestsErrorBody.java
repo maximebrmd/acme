@@ -26,16 +26,16 @@ public final class TooManyRequestsErrorBody {
         return value.visit(visitor);
     }
 
-    public static TooManyRequestsErrorBody tooManyWebhookSends(TooManyWebhookSendsEncoded value) {
-        return new TooManyRequestsErrorBody(new TooManyWebhookSendsValue(value));
+    public static TooManyRequestsErrorBody tooManyConnectLinks(TooManyConnectLinksEncoded value) {
+        return new TooManyRequestsErrorBody(new TooManyConnectLinksValue(value));
     }
 
     public static TooManyRequestsErrorBody tooManyRequests(TooManyRequestsEncoded value) {
         return new TooManyRequestsErrorBody(new TooManyRequestsValue(value));
     }
 
-    public boolean isTooManyWebhookSends() {
-        return value instanceof TooManyWebhookSendsValue;
+    public boolean isTooManyConnectLinks() {
+        return value instanceof TooManyConnectLinksValue;
     }
 
     public boolean isTooManyRequests() {
@@ -46,9 +46,9 @@ public final class TooManyRequestsErrorBody {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<TooManyWebhookSendsEncoded> getTooManyWebhookSends() {
-        if (isTooManyWebhookSends()) {
-            return Optional.of(((TooManyWebhookSendsValue) value).value);
+    public Optional<TooManyConnectLinksEncoded> getTooManyConnectLinks() {
+        if (isTooManyConnectLinks()) {
+            return Optional.of(((TooManyConnectLinksValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,7 +89,7 @@ public final class TooManyRequestsErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitTooManyWebhookSends(TooManyWebhookSendsEncoded tooManyWebhookSends);
+        T visitTooManyConnectLinks(TooManyConnectLinksEncoded tooManyConnectLinks);
 
         T visitTooManyRequests(TooManyRequestsEncoded tooManyRequests);
 
@@ -97,38 +97,38 @@ public final class TooManyRequestsErrorBody {
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(TooManyWebhookSendsValue.class), @JsonSubTypes.Type(TooManyRequestsValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(TooManyConnectLinksValue.class), @JsonSubTypes.Type(TooManyRequestsValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("TooManyWebhookSends")
+    @JsonTypeName("TooManyConnectLinks")
     @JsonIgnoreProperties("_tag")
-    private static final class TooManyWebhookSendsValue implements Value {
+    private static final class TooManyConnectLinksValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private TooManyWebhookSendsEncoded value;
+        private TooManyConnectLinksEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private TooManyWebhookSendsValue() {}
+        private TooManyConnectLinksValue() {}
 
-        private TooManyWebhookSendsValue(TooManyWebhookSendsEncoded value) {
+        private TooManyConnectLinksValue(TooManyConnectLinksEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitTooManyWebhookSends(value);
+            return visitor.visitTooManyConnectLinks(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof TooManyWebhookSendsValue && equalTo((TooManyWebhookSendsValue) other);
+            return other instanceof TooManyConnectLinksValue && equalTo((TooManyConnectLinksValue) other);
         }
 
-        private boolean equalTo(TooManyWebhookSendsValue other) {
+        private boolean equalTo(TooManyConnectLinksValue other) {
             return value.equals(other.value);
         }
 

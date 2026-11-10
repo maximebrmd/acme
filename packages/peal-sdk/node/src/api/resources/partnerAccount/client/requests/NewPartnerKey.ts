@@ -7,7 +7,7 @@ import * as Peal from "../../../../index.js";
  *     {
  *         workspaceId: "workspaceId",
  *         name: "name",
- *         permissions: ["analytics:read"],
+ *         permissions: ["activity:read"],
  *         scopes: ["workspaces:read"]
  *     }
  */

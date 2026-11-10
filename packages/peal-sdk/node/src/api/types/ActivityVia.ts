@@ -4,6 +4,8 @@ export const ActivityVia = {
         Session: "session",
         ApiKey: "apiKey",
         Oauth: "oauth",
-        Mcp: "mcp"
+        Mcp: "mcp",
+        PartnerKey: "partnerKey",
+        ConnectLink: "connectLink"
     } as const;
 export type ActivityVia = typeof ActivityVia[keyof typeof ActivityVia];

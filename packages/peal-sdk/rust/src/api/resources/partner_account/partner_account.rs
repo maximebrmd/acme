@@ -285,7 +285,7 @@ impl PartnerAccountClient {
     ///             &"workspaceId".to_string(),
     ///             &NewPartnerKey {
     ///                 name: "name".to_string(),
-    ///                 permissions: vec![Permission::AnalyticsRead],
+    ///                 permissions: vec![Permission::ActivityRead],
     ///                 scopes: vec![PartnerScope::WorkspacesRead],
     ///                 expires_in_days: None,
     ///             },

@@ -16,8 +16,8 @@ public class CreateKeyTest : BaseMockServerTest
             {
               "name": "x",
               "permissions": [
-                "analytics:read",
-                "analytics:read"
+                "activity:read",
+                "activity:read"
               ],
               "scopes": [
                 "workspaces:read",
@@ -35,8 +35,8 @@ public class CreateKeyTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "permissions": [
-                  "analytics:read",
-                  "analytics:read"
+                  "activity:read",
+                  "activity:read"
                 ],
                 "scopes": [
                   "workspaces:read",
@@ -71,8 +71,8 @@ public class CreateKeyTest : BaseMockServerTest
                 Name = "x",
                 Permissions = new List<Permission>()
                 {
-                    Permission.AnalyticsRead,
-                    Permission.AnalyticsRead,
+                    Permission.ActivityRead,
+                    Permission.ActivityRead,
                 },
                 Scopes = new List<PartnerScope>()
                 {
@@ -91,7 +91,7 @@ public class CreateKeyTest : BaseMockServerTest
             {
               "name": "name",
               "permissions": [
-                "analytics:read"
+                "activity:read"
               ],
               "scopes": [
                 "workspaces:read"
@@ -108,7 +108,7 @@ public class CreateKeyTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "permissions": [
-                  "analytics:read"
+                  "activity:read"
                 ],
                 "scopes": [
                   "workspaces:read"
@@ -139,7 +139,7 @@ public class CreateKeyTest : BaseMockServerTest
             {
                 WorkspaceId = "workspaceId",
                 Name = "name",
-                Permissions = new List<Permission>() { Permission.AnalyticsRead },
+                Permissions = new List<Permission>() { Permission.ActivityRead },
                 Scopes = new List<PartnerScope>() { PartnerScope.WorkspacesRead },
             }
         );

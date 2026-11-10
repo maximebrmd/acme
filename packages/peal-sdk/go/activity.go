@@ -874,10 +874,12 @@ func (a *ActivityPage) String() string {
 type ActivityVia string
 
 const (
-	ActivityViaSession ActivityVia = "session"
-	ActivityViaAPIKey  ActivityVia = "apiKey"
-	ActivityViaOauth   ActivityVia = "oauth"
-	ActivityViaMcp     ActivityVia = "mcp"
+	ActivityViaSession     ActivityVia = "session"
+	ActivityViaAPIKey      ActivityVia = "apiKey"
+	ActivityViaOauth       ActivityVia = "oauth"
+	ActivityViaMcp         ActivityVia = "mcp"
+	ActivityViaPartnerKey  ActivityVia = "partnerKey"
+	ActivityViaConnectLink ActivityVia = "connectLink"
 )
 
 func NewActivityViaFromString(s string) (ActivityVia, error) {
@@ -890,6 +892,10 @@ func NewActivityViaFromString(s string) (ActivityVia, error) {
 		return ActivityViaOauth, nil
 	case "mcp":
 		return ActivityViaMcp, nil
+	case "partnerKey":
+		return ActivityViaPartnerKey, nil
+	case "connectLink":
+		return ActivityViaConnectLink, nil
 	}
 	var t ActivityVia
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

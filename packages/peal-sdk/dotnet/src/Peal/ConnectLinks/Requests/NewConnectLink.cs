@@ -13,7 +13,7 @@ public record NewConnectLink
     public string? ChannelId { get; set; }
 
     [JsonPropertyName("connection")]
-    public InstagramConnection? Connection { get; set; }
+    public ChannelConnection? Connection { get; set; }
 
     [JsonPropertyName("expiresInHours")]
     public int? ExpiresInHours { get; set; }

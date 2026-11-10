@@ -259,7 +259,7 @@ module Peal
       #   client.partner_account.create_key(
       #     workspace_id: "workspaceId",
       #     name: "name",
-      #     permissions: ["analytics:read"],
+      #     permissions: ["activity:read"],
       #     scopes: ["workspaces:read"]
       #   )
       #

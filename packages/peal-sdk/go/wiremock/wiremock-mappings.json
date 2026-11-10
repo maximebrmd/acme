@@ -55,6 +55,33 @@
       "postServeActions": []
     },
     {
+      "id": "6b061a88-19b1-4aaf-a0cd-1882d2ecbd4b",
+      "name": "List what each release of the API changed - default",
+      "request": {
+        "urlPathTemplate": "/api/changelog",
+        "method": "GET"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"entries\": [\n    {\n      \"additions\": 1,\n      \"breaking\": [\n        {\n          \"change\": \"change\",\n          \"reason\": \"reason\"\n        }\n      ],\n      \"date\": \"date\",\n      \"deprecations\": [\n        \"deprecations\"\n      ],\n      \"operations\": [\n        \"operations\"\n      ],\n      \"title\": \"title\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6b061a88-19b1-4aaf-a0cd-1882d2ecbd4b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
       "id": "9bdf0e47-e11e-456c-85e6-4d94caea839c",
       "name": "Get the signed-in user - default",
       "request": {
@@ -68,7 +95,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"impersonatedBy\": \"impersonatedBy\",\n  \"user\": {\n    \"email\": \"email\",\n    \"emailVerified\": true,\n    \"id\": \"id\",\n    \"image\": \"image\",\n    \"locale\": \"en\",\n    \"name\": \"name\"\n  },\n  \"workspaces\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"permissions\": [\n        \"analytics:read\"\n      ],\n      \"role\": \"role\",\n      \"slug\": \"slug\"\n    }\n  ]\n}",
+        "body": "{\n  \"impersonatedBy\": \"impersonatedBy\",\n  \"user\": {\n    \"email\": \"email\",\n    \"emailVerified\": true,\n    \"id\": \"id\",\n    \"image\": \"image\",\n    \"locale\": \"en\",\n    \"name\": \"name\"\n  },\n  \"workspaces\": [\n    {\n      \"id\": \"id\",\n      \"name\": \"name\",\n      \"permissions\": [\n        \"activity:read\"\n      ],\n      \"role\": \"role\",\n      \"slug\": \"slug\"\n    }\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -105,7 +132,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"permissions\": [\n      \"analytics:read\"\n    ],\n    \"start\": \"start\"\n  }\n]",
+        "body": "[\n  {\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"permissions\": [\n      \"activity:read\"\n    ],\n    \"start\": \"start\"\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -141,7 +168,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"apiKey\": {\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"permissions\": [\n      \"analytics:read\"\n    ],\n    \"start\": \"start\"\n  },\n  \"key\": \"key\"\n}",
+        "body": "{\n  \"apiKey\": {\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"permissions\": [\n      \"activity:read\"\n    ],\n    \"start\": \"start\"\n  },\n  \"key\": \"key\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -581,6 +608,42 @@
       }
     },
     {
+      "id": "692f0d0a-aff5-47b7-83f1-b1e75336be2a",
+      "name": "List posts - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/search",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"platform\": \"x\"\n    }\n  ],\n  \"items\": [\n    {\n      \"authorId\": \"authorId\",\n      \"content\": {\n        \"media\": [\n          {\n            \"altText\": \"altText\",\n            \"mediaId\": \"mediaId\"\n          }\n        ],\n        \"overrides\": [\n          {\n            \"channelId\": \"channelId\",\n            \"text\": \"text\"\n          }\n        ],\n        \"text\": \"text\"\n      },\n      \"createdVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"id\": \"id\",\n      \"outcome\": \"published\",\n      \"schedule\": {\n        \"at\": \"at\",\n        \"timeZone\": \"timeZone\"\n      },\n      \"scheduledBy\": \"scheduledBy\",\n      \"scheduledVia\": {\n        \"id\": null,\n        \"name\": null,\n        \"via\": \"web\"\n      },\n      \"status\": \"draft\",\n      \"targets\": [\n        {\n          \"channelId\": \"channelId\",\n          \"failureReason\": null,\n          \"id\": \"id\",\n          \"options\": null,\n          \"permalink\": null,\n          \"publishedAt\": null,\n          \"round\": 1,\n          \"status\": \"pending\",\n          \"unconfirmedReason\": null\n        }\n      ]\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "692f0d0a-aff5-47b7-83f1-b1e75336be2a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "71f0e9ab-a3ad-4acb-b6ea-d3d8f5973ae1",
       "name": "Create and send a post - default",
       "request": {
@@ -605,6 +668,114 @@
         }
       },
       "uuid": "71f0e9ab-a3ad-4acb-b6ea-d3d8f5973ae1",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "0dfbd308-aa0c-4270-82c7-99698fac8fc3",
+      "name": "Create and send several posts - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/bulk",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"created\": 1,\n  \"items\": [\n    {\n      \"index\": 1,\n      \"post\": {\n        \"authorId\": null,\n        \"content\": {\n          \"media\": [\n            {\n              \"altText\": \"altText\",\n              \"mediaId\": \"mediaId\"\n            }\n          ],\n          \"overrides\": [\n            {\n              \"channelId\": \"channelId\",\n              \"text\": \"text\"\n            }\n          ],\n          \"text\": \"text\"\n        },\n        \"createdVia\": null,\n        \"id\": \"id\",\n        \"outcome\": null,\n        \"schedule\": null,\n        \"scheduledBy\": null,\n        \"scheduledVia\": null,\n        \"status\": \"draft\",\n        \"targets\": [\n          {\n            \"channelId\": \"channelId\",\n            \"failureReason\": null,\n            \"id\": \"id\",\n            \"options\": null,\n            \"permalink\": null,\n            \"publishedAt\": null,\n            \"round\": 1,\n            \"status\": \"pending\",\n            \"unconfirmedReason\": null\n          }\n        ]\n      },\n      \"replayed\": true,\n      \"_tag\": \"created\"\n    }\n  ],\n  \"refused\": 1\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "0dfbd308-aa0c-4270-82c7-99698fac8fc3",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "10eebbe6-dbe4-41fe-8a58-479298bea3e2",
+      "name": "Import posts from CSV - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/import",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"created\": 1,\n  \"dryRun\": true,\n  \"rows\": [\n    {\n      \"post\": {\n        \"authorId\": null,\n        \"content\": {\n          \"media\": [\n            {\n              \"altText\": \"altText\",\n              \"mediaId\": \"mediaId\"\n            }\n          ],\n          \"overrides\": [\n            {\n              \"channelId\": \"channelId\",\n              \"text\": \"text\"\n            }\n          ],\n          \"text\": \"text\"\n        },\n        \"createdVia\": null,\n        \"id\": \"id\",\n        \"outcome\": null,\n        \"schedule\": null,\n        \"scheduledBy\": null,\n        \"scheduledVia\": null,\n        \"status\": \"draft\",\n        \"targets\": [\n          {\n            \"channelId\": \"channelId\",\n            \"failureReason\": null,\n            \"id\": \"id\",\n            \"options\": null,\n            \"permalink\": null,\n            \"publishedAt\": null,\n            \"round\": 1,\n            \"status\": \"pending\",\n            \"unconfirmedReason\": null\n          }\n        ]\n      },\n      \"replayed\": true,\n      \"row\": 1,\n      \"_tag\": \"created\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "10eebbe6-dbe4-41fe-8a58-479298bea3e2",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "520614c0-30db-4a2d-82fe-b4d2f7ef99c9",
+      "name": "Validate a post - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/validate",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"awaitsApproval\": true,\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"hashtags\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"links\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"media\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"mentions\": {\n        \"count\": 1,\n        \"maximum\": null\n      },\n      \"platform\": \"x\",\n      \"text\": \"text\",\n      \"textCounts\": [\n        {\n          \"length\": 1,\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"violations\": [\n        {\n          \"_tag\": \"noChannels\"\n        }\n      ]\n    }\n  ],\n  \"duplicates\": [\n    {\n      \"channelId\": \"channelId\",\n      \"postId\": \"postId\"\n    }\n  ],\n  \"planLimit\": {\n    \"allowed\": 1000000,\n    \"billingUrl\": \"billingUrl\",\n    \"limit\": \"channels\",\n    \"plan\": \"free\",\n    \"planWithRoom\": \"starter\",\n    \"used\": 1000000\n  },\n  \"schedule\": \"ok\",\n  \"unknownChannels\": [\n    \"unknownChannels\"\n  ],\n  \"unknownMedia\": [\n    \"unknownMedia\"\n  ],\n  \"valid\": true,\n  \"violations\": [\n    {\n      \"_tag\": \"noChannels\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "520614c0-30db-4a2d-82fe-b4d2f7ef99c9",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -734,6 +905,45 @@
       }
     },
     {
+      "id": "e36e63e1-6a06-4043-b3cb-44324ba38f1b",
+      "name": "Wait for a post's outcome - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/{postId}/outcome",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "postId": {
+            "equalTo": "postId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"content\": {\n    \"media\": [\n      {\n        \"altText\": \"altText\",\n        \"mediaId\": \"mediaId\"\n      }\n    ],\n    \"overrides\": [\n      {\n        \"channelId\": \"channelId\",\n        \"text\": \"text\"\n      }\n    ],\n    \"text\": \"text\"\n  },\n  \"createdVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"id\": \"id\",\n  \"outcome\": \"published\",\n  \"schedule\": {\n    \"at\": \"at\",\n    \"timeZone\": \"timeZone\"\n  },\n  \"scheduledBy\": \"scheduledBy\",\n  \"scheduledVia\": {\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"via\": \"web\"\n  },\n  \"status\": \"draft\",\n  \"targets\": [\n    {\n      \"channelId\": \"channelId\",\n      \"failureReason\": \"contentRejected\",\n      \"id\": \"id\",\n      \"keptPrivate\": true,\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"permalink\": \"permalink\",\n      \"publishedAt\": \"publishedAt\",\n      \"round\": 1,\n      \"status\": \"pending\",\n      \"unconfirmedReason\": \"noResponse\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e36e63e1-6a06-4043-b3cb-44324ba38f1b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "5d23f185-01cc-43c2-888f-fd02ed810e04",
       "name": "List a post's attempts - default",
       "request": {
@@ -755,7 +965,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"attempt\": 1,\n    \"finishedAt\": \"finishedAt\",\n    \"result\": \"published\",\n    \"retryAt\": \"retryAt\",\n    \"round\": 1,\n    \"startedAt\": \"startedAt\",\n    \"targetId\": \"targetId\"\n  }\n]",
+        "body": "[\n  {\n    \"attempt\": 1,\n    \"finishedAt\": \"finishedAt\",\n    \"refusalCode\": \"refusalCode\",\n    \"result\": \"published\",\n    \"retryAt\": \"retryAt\",\n    \"round\": 1,\n    \"startedAt\": \"startedAt\",\n    \"targetId\": \"targetId\"\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2095,7 +2305,7 @@
       },
       "response": {
         "status": 200,
-        "body": "[\n  {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  }\n]",
+        "body": "[\n  {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  }\n]",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2131,7 +2341,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"endpoint\": {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"secret\": \"secret\"\n}",
+        "body": "{\n  \"endpoint\": {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"secret\": \"secret\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2170,7 +2380,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2248,7 +2458,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"scope\": \"workspace\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2287,7 +2497,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"endpoint\": {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"secret\": \"secret\"\n}",
+        "body": "{\n  \"endpoint\": {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"scope\": \"workspace\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"secret\": \"secret\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2413,6 +2623,686 @@
         }
       },
       "uuid": "fe8d4ee4-1c4c-436b-8cee-2fe154fbf1ce",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "0e35e19f-71fc-4d14-bb2f-202ea4bf6553",
+      "name": "List the workspace's activity - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/activity",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"actor\": {\n        \"userId\": null,\n        \"_tag\": \"user\"\n      },\n      \"application\": {\n        \"id\": \"id\",\n        \"name\": null\n      },\n      \"errorCode\": \"errorCode\",\n      \"id\": \"id\",\n      \"impersonated\": true,\n      \"objectIds\": {\n        \"key\": \"value\"\n      },\n      \"occurredAt\": \"occurredAt\",\n      \"operation\": \"operation\",\n      \"requestId\": \"requestId\",\n      \"status\": 1,\n      \"via\": \"session\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "0e35e19f-71fc-4d14-bb2f-202ea4bf6553",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "a045f5be-08ca-4c6d-b6d8-37fc2590dd4f",
+      "name": "Read the partner account - default",
+      "request": {
+        "urlPathTemplate": "/api/partner",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"partner\": {\n    \"createdAt\": \"createdAt\",\n    \"id\": \"id\",\n    \"logoUrl\": \"logoUrl\",\n    \"name\": \"name\",\n    \"returnOrigins\": [\n      \"returnOrigins\"\n    ],\n    \"workspaceId\": \"workspaceId\"\n  },\n  \"usage\": {\n    \"channels\": 1,\n    \"days\": [\n      {\n        \"channels\": 1,\n        \"day\": \"day\",\n        \"workspaces\": 1\n      }\n    ],\n    \"workspaces\": 1\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "a045f5be-08ca-4c6d-b6d8-37fc2590dd4f",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "afa66519-b545-4dbb-8346-1964e45108b2",
+      "name": "List the partner's workspaces - default",
+      "request": {
+        "urlPathTemplate": "/api/partner/workspaces",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"next\": \"next\",\n  \"total\": 1,\n  \"workspaces\": [\n    {\n      \"channels\": 1,\n      \"createdAt\": \"createdAt\",\n      \"externalId\": \"externalId\",\n      \"id\": \"id\",\n      \"name\": \"name\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "afa66519-b545-4dbb-8346-1964e45108b2",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      },
+      "postServeActions": []
+    },
+    {
+      "id": "e6c405ae-25b7-47cd-91b1-57980a6da18d",
+      "name": "Create a workspace for a customer - default",
+      "request": {
+        "urlPathTemplate": "/api/partner/workspaces",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"channels\": 1,\n  \"createdAt\": \"createdAt\",\n  \"externalId\": \"externalId\",\n  \"id\": \"id\",\n  \"name\": \"name\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e6c405ae-25b7-47cd-91b1-57980a6da18d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "24b92f9b-600e-468d-8af6-536b72409900",
+      "name": "Read a workspace of the partner - default",
+      "request": {
+        "urlPathTemplate": "/api/partner/workspaces/{workspaceId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channels\": 1,\n  \"createdAt\": \"createdAt\",\n  \"externalId\": \"externalId\",\n  \"id\": \"id\",\n  \"name\": \"name\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "24b92f9b-600e-468d-8af6-536b72409900",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "e64875f0-26cc-4908-a8ed-a92e88e9705f",
+      "name": "Delete a workspace of the partner - default",
+      "request": {
+        "urlPathTemplate": "/api/partner/workspaces/{workspaceId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "e64875f0-26cc-4908-a8ed-a92e88e9705f",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "2a5897cf-f198-41b7-8105-3f5e4d6fadb9",
+      "name": "Change a workspace of the partner - default",
+      "request": {
+        "urlPathTemplate": "/api/partner/workspaces/{workspaceId}",
+        "method": "PATCH",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channels\": 1,\n  \"createdAt\": \"createdAt\",\n  \"externalId\": \"externalId\",\n  \"id\": \"id\",\n  \"name\": \"name\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "2a5897cf-f198-41b7-8105-3f5e4d6fadb9",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "ad8c8147-708b-4bd6-8f41-b96a2fc22cfb",
+      "name": "Read the workspace's partner account - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/partner",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"canOpen\": true,\n  \"partner\": {\n    \"createdAt\": \"createdAt\",\n    \"id\": \"id\",\n    \"logoUrl\": \"logoUrl\",\n    \"name\": \"name\",\n    \"returnOrigins\": [\n      \"returnOrigins\"\n    ],\n    \"workspaceId\": \"workspaceId\"\n  },\n  \"usage\": {\n    \"channels\": 1,\n    \"days\": [\n      {\n        \"channels\": 1,\n        \"day\": \"day\",\n        \"workspaces\": 1\n      }\n    ],\n    \"workspaces\": 1\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ad8c8147-708b-4bd6-8f41-b96a2fc22cfb",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "d64c2901-89e5-4ac2-92fa-2cae10cd6840",
+      "name": "Open a partner account - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/partner",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"logoUrl\": \"logoUrl\",\n  \"name\": \"name\",\n  \"returnOrigins\": [\n    \"returnOrigins\"\n  ],\n  \"workspaceId\": \"workspaceId\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "d64c2901-89e5-4ac2-92fa-2cae10cd6840",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "8bd9a542-fb1b-4882-a472-3d9f17d0a24c",
+      "name": "Close the partner account - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/partner",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "8bd9a542-fb1b-4882-a472-3d9f17d0a24c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "1e823e0c-53f8-4168-b04b-cdcc7f29ae31",
+      "name": "Change the partner account - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/partner",
+        "method": "PATCH",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"logoUrl\": \"logoUrl\",\n  \"name\": \"name\",\n  \"returnOrigins\": [\n    \"returnOrigins\"\n  ],\n  \"workspaceId\": \"workspaceId\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "1e823e0c-53f8-4168-b04b-cdcc7f29ae31",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "9ae5792c-aacb-405c-8cda-037b773945d1",
+      "name": "List partner keys - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/partner/keys",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"permissions\": [\n      \"activity:read\"\n    ],\n    \"scopes\": [\n      \"workspaces:read\"\n    ],\n    \"start\": \"start\"\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "9ae5792c-aacb-405c-8cda-037b773945d1",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "9ad64f6f-31a8-4c3b-a533-8cbb48c7539c",
+      "name": "Create a partner key - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/partner/keys",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"key\": \"key\",\n  \"partnerKey\": {\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"name\": \"name\",\n    \"permissions\": [\n      \"activity:read\"\n    ],\n    \"scopes\": [\n      \"workspaces:read\"\n    ],\n    \"start\": \"start\"\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "9ad64f6f-31a8-4c3b-a533-8cbb48c7539c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "f1132860-22b7-4b22-aa7e-b4ae3c4966fa",
+      "name": "Revoke a partner key - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/partner/keys/{partnerKeyId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "partnerKeyId": {
+            "equalTo": "partnerKeyId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "f1132860-22b7-4b22-aa7e-b4ae3c4966fa",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "8feb3283-9cd8-4e0d-a042-1ad8e19f443c",
+      "name": "List the partner account's workspaces - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/partner/workspaces",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"next\": \"next\",\n  \"total\": 1,\n  \"workspaces\": [\n    {\n      \"channels\": 1,\n      \"createdAt\": \"createdAt\",\n      \"externalId\": \"externalId\",\n      \"id\": \"id\",\n      \"name\": \"name\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "8feb3283-9cd8-4e0d-a042-1ad8e19f443c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c2998dc0-8396-4b7e-8991-414a50c16c69",
+      "name": "List connect links - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/connect-links",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"channelId\": \"channelId\",\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"completedAt\": \"completedAt\",\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"failedAt\": \"failedAt\",\n    \"failure\": \"platformNotSupported\",\n    \"id\": \"id\",\n    \"platform\": \"x\",\n    \"returnUrl\": \"returnUrl\",\n    \"status\": \"pending\"\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c2998dc0-8396-4b7e-8991-414a50c16c69",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "3d29b099-19f0-4e15-aa1d-63e7a9552e9f",
+      "name": "Create a connect link - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/connect-links",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"link\": {\n    \"channelId\": \"channelId\",\n    \"channelIds\": [\n      \"channelIds\"\n    ],\n    \"completedAt\": \"completedAt\",\n    \"createdAt\": \"createdAt\",\n    \"expiresAt\": \"expiresAt\",\n    \"failedAt\": \"failedAt\",\n    \"failure\": \"platformNotSupported\",\n    \"id\": \"id\",\n    \"platform\": \"x\",\n    \"returnUrl\": \"returnUrl\",\n    \"status\": \"pending\"\n  },\n  \"url\": \"url\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "3d29b099-19f0-4e15-aa1d-63e7a9552e9f",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "a158e308-7a46-48b3-8728-c75d397ac292",
+      "name": "Get a connect link - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/connect-links/{linkId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "linkId": {
+            "equalTo": "linkId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channelId\": \"channelId\",\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"expiresAt\": \"expiresAt\",\n  \"failedAt\": \"failedAt\",\n  \"failure\": \"platformNotSupported\",\n  \"id\": \"id\",\n  \"platform\": \"x\",\n  \"returnUrl\": \"returnUrl\",\n  \"status\": \"pending\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "a158e308-7a46-48b3-8728-c75d397ac292",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "91978f04-8cf2-4c52-862d-9f562c4c9658",
+      "name": "Revoke a connect link - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/connect-links/{linkId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "linkId": {
+            "equalTo": "linkId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"channelId\": \"channelId\",\n  \"channelIds\": [\n    \"channelIds\"\n  ],\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"expiresAt\": \"expiresAt\",\n  \"failedAt\": \"failedAt\",\n  \"failure\": \"platformNotSupported\",\n  \"id\": \"id\",\n  \"platform\": \"x\",\n  \"returnUrl\": \"returnUrl\",\n  \"status\": \"pending\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "91978f04-8cf2-4c52-862d-9f562c4c9658",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -2849,6 +3739,6 @@
     }
   ],
   "meta": {
-    "total": 76
+    "total": 101
   }
 }

@@ -17,8 +17,8 @@ import java.util.Objects;
 import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
+import social.peal.types.ChannelConnection;
 import social.peal.types.ConnectLinkLocale;
-import social.peal.types.InstagramConnection;
 import social.peal.types.Platform;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -26,7 +26,7 @@ import social.peal.types.Platform;
 public final class NewConnectLink {
     private final Optional<String> channelId;
 
-    private final Optional<InstagramConnection> connection;
+    private final Optional<ChannelConnection> connection;
 
     private final Optional<Integer> expiresInHours;
 
@@ -40,7 +40,7 @@ public final class NewConnectLink {
 
     private NewConnectLink(
             Optional<String> channelId,
-            Optional<InstagramConnection> connection,
+            Optional<ChannelConnection> connection,
             Optional<Integer> expiresInHours,
             Optional<ConnectLinkLocale> locale,
             Platform platform,
@@ -61,7 +61,7 @@ public final class NewConnectLink {
     }
 
     @JsonProperty("connection")
-    public Optional<InstagramConnection> getConnection() {
+    public Optional<ChannelConnection> getConnection() {
         return connection;
     }
 
@@ -137,9 +137,9 @@ public final class NewConnectLink {
 
         _FinalStage channelId(String channelId);
 
-        _FinalStage connection(Optional<InstagramConnection> connection);
+        _FinalStage connection(Optional<ChannelConnection> connection);
 
-        _FinalStage connection(InstagramConnection connection);
+        _FinalStage connection(ChannelConnection connection);
 
         _FinalStage expiresInHours(Optional<Integer> expiresInHours);
 
@@ -164,7 +164,7 @@ public final class NewConnectLink {
 
         private Optional<Integer> expiresInHours = Optional.empty();
 
-        private Optional<InstagramConnection> connection = Optional.empty();
+        private Optional<ChannelConnection> connection = Optional.empty();
 
         private Optional<String> channelId = Optional.empty();
 
@@ -230,14 +230,14 @@ public final class NewConnectLink {
         }
 
         @java.lang.Override
-        public _FinalStage connection(InstagramConnection connection) {
+        public _FinalStage connection(ChannelConnection connection) {
             this.connection = Optional.ofNullable(connection);
             return this;
         }
 
         @java.lang.Override
         @JsonSetter(value = "connection", nulls = Nulls.SKIP)
-        public _FinalStage connection(Optional<InstagramConnection> connection) {
+        public _FinalStage connection(Optional<ChannelConnection> connection) {
             this.connection = connection;
             return this;
         }

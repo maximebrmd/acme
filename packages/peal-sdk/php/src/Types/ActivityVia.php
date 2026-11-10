@@ -8,4 +8,6 @@ enum ActivityVia: string
     case ApiKey = "apiKey";
     case Oauth = "oauth";
     case Mcp = "mcp";
+    case PartnerKey = "partnerKey";
+    case ConnectLink = "connectLink";
 }
