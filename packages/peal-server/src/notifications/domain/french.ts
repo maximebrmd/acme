@@ -115,7 +115,7 @@ export const french: EmailCatalog = {
     notPublished:
       "quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.",
     partsNotSent:
-      "ses premières parties sont en ligne, et les suivantes n’ont pas été envoyées : le résultat de celle qui les précède n’était pas confirmé, ou Peal ne connaît pas la publication à laquelle répondre. Ouvrez la publication et renvoyez la suite, ou publiez-la à la main.",
+      "ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. La renvoyer depuis Peal n’est pas possible : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.",
     planLimit:
       "l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.",
     quotaExceeded:

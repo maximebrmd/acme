@@ -288,9 +288,19 @@ describe("PublishTargetV2", () => {
           assert.lengthOf(afterConfirm.liveParts, 2);
           assert.strictEqual(yield* outcomeOf(post.id), "partiallyPublished");
 
+          // Peal has no id for the part found by hand, so the third has
+          // nothing to reply to: a repost is refused rather than started
+          // for a round that could only fail.
+          const refused = yield* followUp
+            .repost(actor, post.id, unconfirmed.id)
+            .pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "InvalidTargetTransition");
+
           yield* settle();
 
           assert.deepStrictEqual(yield* partsSent(channel), [0, 1]);
+          assert.strictEqual((yield* onlyTarget(post.id)).round, 1);
         })
       ),
     timeout

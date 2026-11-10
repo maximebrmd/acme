@@ -18,6 +18,7 @@ import type {
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { platformRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import {
   codeOf,
   commitUnanswered,
@@ -608,7 +609,9 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
                         ({ error }): Effect.Effect<never, PublishFailure> =>
                           Effect.fail(
                             error === "RecordNotFound"
-                              ? new BadRequest({ code: "replyTargetGone" })
+                              ? new BadRequest({
+                                  code: platformRefusalCodes.replyTargetGone,
+                                })
                               : new PlatformUnavailable()
                           )
                       )

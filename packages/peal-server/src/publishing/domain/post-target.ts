@@ -298,9 +298,10 @@ export const cancelTarget = (
  * it, and its address unless they give that.
  *
  * When it was the last of the post's `parts`, the target is published, as
- * its first part. Otherwise the parts after it were never sent, and nothing
- * sends them now: the target fails as `partsNotSent` at `now`, and a repost
- * sends the rest.
+ * its first part. Otherwise the parts after it were never sent, and Peal
+ * cannot send them: a part found by hand has no id the next could reply
+ * to. The target fails as `partsNotSent` at `now`, which no repost takes
+ * up (`isRepostable`): the member posts the rest on the platform.
  */
 export const confirmPublished = (
   target: PostTarget,
@@ -359,9 +360,29 @@ export const confirmPublished = (
   );
 };
 
-/** Whether a member may send the target again, in a new round. */
-export const isRepostable = (target: PostTarget): boolean =>
-  target.status._tag === "failed" || target.status._tag === "unconfirmed";
+/**
+ * Whether a member may send the target again, in a new round: one that
+ * failed or is unconfirmed, unless the round could only stop where this
+ * one did. A round sends from the part after the last that is live, as a
+ * reply to it: when Peal has no id for that part (found by hand), or the
+ * target failed as `partsNotSent` (the part to reply to is gone), there is
+ * nothing to send under.
+ */
+export const isRepostable = (target: PostTarget): boolean => {
+  const { status } = target;
+
+  if (status._tag === "unconfirmed") {
+    return true;
+  }
+
+  return (
+    status._tag === "failed" &&
+    status.reason !== "partsNotSent" &&
+    !Option.exists(Option.fromUndefinedOr(target.liveParts.at(-1)), (last) =>
+      Option.isNone(last.platformPostId)
+    )
+  );
+};
 
 /**
  * Sends a failed or unconfirmed target again: it waits, pending, in the next

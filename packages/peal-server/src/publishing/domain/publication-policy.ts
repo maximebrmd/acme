@@ -239,6 +239,14 @@ const afterRateLimit = (
  */
 export type RefusalReason = Exclude<FailureReason, "missed" | "notPublished">;
 
+// A later part with nothing to reply to, whoever found so: the rest of
+// the post cannot be sent, which is not the fault of its text.
+const partRefusals: ReadonlySet<string> = new Set([
+  ownRefusalCodes.partsNotSupported,
+  ownRefusalCodes.replyTargetUnknown,
+  platformRefusalCodes.replyTargetGone,
+]);
+
 const badRequestReason = (code: string): RefusalReason => {
   if (code === ownRefusalCodes.channelDisconnected) {
     return "channelDisconnected";
@@ -252,7 +260,7 @@ const badRequestReason = (code: string): RefusalReason => {
     return "planLimit";
   }
 
-  if (code === ownRefusalCodes.replyTargetUnknown) {
+  if (partRefusals.has(code)) {
     return "partsNotSent";
   }
 

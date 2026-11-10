@@ -175,7 +175,9 @@ export const RoutedPlatformPublisher = Layer.effect(
       // part that came this far all the same must never go out as a post
       // of its own.
       if (part.index > 0 && followUpsOn(account.platform) === undefined) {
-        return yield* new BadRequest({ code: "partsNotSupported" });
+        return yield* new BadRequest({
+          code: ownRefusalCodes.partsNotSupported,
+        });
       }
 
       const sent: OutgoingPost = {

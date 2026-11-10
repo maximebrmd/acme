@@ -50,10 +50,10 @@ export const FailureReasonSchema = Schema.Literals([
   // a trial or a smaller plan. Nothing was sent; the member can make room
   // or move to a larger plan, then post it again.
   "planLimit",
-  // Some parts of the post are live, and those after them were not sent:
-  // the part before them was unconfirmed until a member found it live, or
-  // Peal does not know the post to reply to, as when a part was found by
-  // hand. A repost sends the rest.
+  // Some parts of the post are live, and those after them cannot be sent
+  // from Peal: it has no post to reply to, as the part before them was
+  // found by hand, which gives no id, or is gone from the platform. No
+  // repost is offered: every round would stop at the same part.
   "partsNotSent",
 ]);
 

@@ -36,7 +36,11 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   `liveParts` stay on a failed, unconfirmed or cancelled one, which makes
   the post `partiallyPublished`. A repost sends from `nextPartOf`, never a
   live part; a member confirming an unconfirmed part that was not the last
-  fails the target as `partsNotSent`. The router gives a later part the
+  fails the target as `partsNotSent`, as a part found by hand has no id
+  the next could reply to. `partsNotSent` (that, a parent gone from the
+  platform, `replyTargetGone`, or the router's own refusals) is never
+  reposted (`isRepostable`): every surface says the rest cannot be sent
+  from Peal, and none offers to send it again. The router gives a later part the
   ids of the first part and of the one before it (`ReplyReference`), and
   refuses it (`replyTargetUnknown`) when Peal has no id for one.
 - A cancel between two parts sets `cancelRequested`: the part that waits is

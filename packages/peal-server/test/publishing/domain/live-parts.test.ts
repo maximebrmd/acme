@@ -8,6 +8,7 @@ import {
   cancelTarget,
   confirmNotPublished,
   confirmPublished,
+  isRepostable,
   livePartsOf,
   nextPartOf,
   PostTarget,
@@ -191,6 +192,20 @@ describe("confirming an unconfirmed part of a post of several", () => {
         round: 1,
       },
     ]);
+  });
+
+  it("offers no repost of a thread whose last live part Peal has no id for", () => {
+    const stopped = Result.getOrThrow(
+      confirmPublished(target(unconfirmed, [live(0)]), found)
+    );
+
+    // The next part would have nothing to reply to, in every round.
+    expect(isRepostable(stopped)).toBeFalsy();
+    expect(Result.isFailure(repostTarget(stopped))).toBeTruthy();
+
+    // A thread that stopped at a part the platform refused goes on from it.
+    expect(isRepostable(target(failed, [live(0)]))).toBeTruthy();
+    expect(isRepostable(target(unconfirmed, [live(0)]))).toBeTruthy();
   });
 
   it("publishes the target, as its first part, when it was the last", () => {

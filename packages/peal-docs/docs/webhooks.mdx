@@ -244,7 +244,7 @@ The post did not go out on the channel.
 | `quotaExceeded`       | A daily allowance of uploads on the platform stayed used up until the attempt gave up.                                            |
 | `appBillingLimit`     | The platform refused the server's app until its operator pays for it. Nothing was sent.                                           |
 | `planLimit`           | The workspace's plan had no room for the post when it was due: too many channels, or the month's posts used up. Nothing was sent. |
-| `partsNotSent`        | Some parts of the post are live, and those after them were not sent. A repost sends the rest.                                     |
+| `partsNotSent`        | Some parts of the post are live, and Peal cannot send those after them: it has no post to reply to. It cannot be reposted.        |
 
 [Notifications](/notifications#events) tells what to do about each.
 

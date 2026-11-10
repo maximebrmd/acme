@@ -67,7 +67,7 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   missed: "Peal was down at its time, and it came too late to send",
   notPublished: "someone checked the platform and did not find it",
   partsNotSent:
-    "its first parts are live and the parts after them were not sent: post it again to send the rest",
+    "its first parts are live and Peal cannot send the parts after them, as it has no post to reply to (the part before them was found by hand, or is gone): it cannot be reposted, so post the rest on the platform",
   planLimit:
     "the workspace's plan had no room for it when it was due: disconnect channels or move to a larger plan, then post it again",
   quotaExceeded:

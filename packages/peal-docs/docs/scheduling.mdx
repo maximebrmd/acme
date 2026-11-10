@@ -66,7 +66,7 @@ Each part follows the rules of a post on its platform: its length, counted as th
 Parts go out in order, each as its own request to the platform:
 
 - nothing is sent after a part that **failed**. The channel reads **Failed**, its page lists the parts that are live, with their addresses, and **Post again** sends the part that failed and those after it, never a part that is live;
-- nothing is sent after a part Peal **cannot confirm**. The channel reads **To check**: look on the platform, then say what you found. When that part is live and others were left, the channel reads **Failed** with the reason **Later parts not sent**, and **Post again** sends the rest. A part you found by hand has no address Peal knows, so the next part cannot reply to it: post the rest on the platform yourself;
+- nothing is sent after a part Peal **cannot confirm**. The channel reads **To check**: look on the platform, then say what you found. When that part is live and others were left, the channel reads **Failed** with the reason **Later parts not sent**: a part you found by hand has no id Peal knows, so the next part cannot reply to it. Peal offers no **Post again** there, and the API refuses a repost (409 `target_status_conflict`): post the rest on the platform yourself, as replies to the last part that is live. The same holds when the part to reply to is gone from the platform;
 - **Cancel** stops the parts not yet sent. A part that waits is not sent once its wait ends, and the parts that went out stay out.
 
 The post's address is its first part's, and [analytics](/analytics) reads the counts of the first part.

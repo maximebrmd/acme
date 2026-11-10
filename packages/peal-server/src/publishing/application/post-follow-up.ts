@@ -75,7 +75,8 @@ export class PostFollowUp extends Context.Service<
      * target: published, when its attempt was made, or failed, and the
      * post's outcome follows. For a post of several parts, it is the part
      * that was unconfirmed they found, or not: found, and not the last, the
-     * target fails as `partsNotSent`, and a repost sends the rest.
+     * target fails as `partsNotSent`: Peal has no id for the part found, so
+     * it cannot send the rest, and no repost is taken.
      */
     readonly confirm: (
       actor: Actor,

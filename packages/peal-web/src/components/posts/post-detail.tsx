@@ -210,6 +210,11 @@ const TargetParts = ({
       {repostable && live.length > 0 ? (
         <p className="text-muted-foreground text-sm">{t("partsRest")}</p>
       ) : null}
+      {target.failureReason === "partsNotSent" ? (
+        <p className="text-muted-foreground text-sm">
+          {t("partsStopped", { platform })}
+        </p>
+      ) : null}
       {target.status === "published" ? (
         <p className="text-muted-foreground text-sm">{t("partsCounts")}</p>
       ) : null}
@@ -375,8 +380,10 @@ export const TargetView = ({
 
   const reasonOf = (reason: string) => tNotices("reason", { reason });
 
+  // A thread Peal has no post to send the rest under takes no repost.
   const repostable =
-    target.status === "failed" || target.status === "unconfirmed";
+    target.status === "unconfirmed" ||
+    (target.status === "failed" && target.failureReason !== "partsNotSent");
 
   return (
     <li>

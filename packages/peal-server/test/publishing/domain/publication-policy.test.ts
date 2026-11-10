@@ -306,6 +306,19 @@ describe(decide, () => {
       outcome: new MediaRejected({ code: ownRefusalCodes.mediaRemoved }),
       reason: "mediaRemoved",
     },
+    // A later part with no post to reply to is not its text's fault.
+    {
+      outcome: new BadRequest({ code: ownRefusalCodes.replyTargetUnknown }),
+      reason: "partsNotSent",
+    },
+    {
+      outcome: new BadRequest({ code: "replyTargetGone" }),
+      reason: "partsNotSent",
+    },
+    {
+      outcome: new BadRequest({ code: "partsNotSupported" }),
+      reason: "partsNotSent",
+    },
   ])(
     "fails at once with $reason when Peal could not use the channel or media",
     ({ outcome, reason }) => {
