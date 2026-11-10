@@ -573,15 +573,28 @@ func (a AssistantInputRejectedEncodedTag) Ptr() *AssistantInputRejectedEncodedTa
 }
 
 var (
-	assistantQuotaExceededEncodedFieldTag        = big.NewInt(1 << 0)
-	assistantQuotaExceededEncodedFieldDailyLimit = big.NewInt(1 << 1)
-	assistantQuotaExceededEncodedFieldResetsAt   = big.NewInt(1 << 2)
+	assistantQuotaExceededEncodedFieldTag          = big.NewInt(1 << 0)
+	assistantQuotaExceededEncodedFieldBillingURL   = big.NewInt(1 << 1)
+	assistantQuotaExceededEncodedFieldDailyLimit   = big.NewInt(1 << 2)
+	assistantQuotaExceededEncodedFieldPlan         = big.NewInt(1 << 3)
+	assistantQuotaExceededEncodedFieldPlanWithRoom = big.NewInt(1 << 4)
+	assistantQuotaExceededEncodedFieldResetsAt     = big.NewInt(1 << 5)
 )
 
+// assistantQuotaExceededEncodedNullableFields maps the wire names of AssistantQuotaExceededEncoded's nullable fields (required or optional) to their field bits.
+var assistantQuotaExceededEncodedNullableFields = map[string]*big.Int{
+	"billingUrl":   assistantQuotaExceededEncodedFieldBillingURL,
+	"plan":         assistantQuotaExceededEncodedFieldPlan,
+	"planWithRoom": assistantQuotaExceededEncodedFieldPlanWithRoom,
+}
+
 type AssistantQuotaExceededEncoded struct {
-	Tag        AssistantQuotaExceededEncodedTag `json:"_tag" url:"_tag"`
-	DailyLimit int                              `json:"dailyLimit" url:"dailyLimit"`
-	ResetsAt   string                           `json:"resetsAt" url:"resetsAt"`
+	Tag          AssistantQuotaExceededEncodedTag `json:"_tag" url:"_tag"`
+	BillingURL   *string                          `json:"billingUrl,omitempty" url:"billingUrl,omitempty"`
+	DailyLimit   int                              `json:"dailyLimit" url:"dailyLimit"`
+	Plan         *Plan                            `json:"plan,omitempty" url:"plan,omitempty"`
+	PlanWithRoom *PaidPlan                        `json:"planWithRoom,omitempty" url:"planWithRoom,omitempty"`
+	ResetsAt     string                           `json:"resetsAt" url:"resetsAt"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -597,11 +610,32 @@ func (a *AssistantQuotaExceededEncoded) GetTag() AssistantQuotaExceededEncodedTa
 	return a.Tag
 }
 
+func (a *AssistantQuotaExceededEncoded) GetBillingURL() *string {
+	if a == nil {
+		return nil
+	}
+	return a.BillingURL
+}
+
 func (a *AssistantQuotaExceededEncoded) GetDailyLimit() int {
 	if a == nil {
 		return 0
 	}
 	return a.DailyLimit
+}
+
+func (a *AssistantQuotaExceededEncoded) GetPlan() *Plan {
+	if a == nil {
+		return nil
+	}
+	return a.Plan
+}
+
+func (a *AssistantQuotaExceededEncoded) GetPlanWithRoom() *PaidPlan {
+	if a == nil {
+		return nil
+	}
+	return a.PlanWithRoom
 }
 
 func (a *AssistantQuotaExceededEncoded) GetResetsAt() string {
@@ -634,11 +668,32 @@ func (a *AssistantQuotaExceededEncoded) SetTag(tag AssistantQuotaExceededEncoded
 	a.require(assistantQuotaExceededEncodedFieldTag)
 }
 
+// SetBillingURL sets the BillingURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantQuotaExceededEncoded) SetBillingURL(billingURL *string) {
+	a.BillingURL = billingURL
+	a.require(assistantQuotaExceededEncodedFieldBillingURL)
+}
+
 // SetDailyLimit sets the DailyLimit field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (a *AssistantQuotaExceededEncoded) SetDailyLimit(dailyLimit int) {
 	a.DailyLimit = dailyLimit
 	a.require(assistantQuotaExceededEncodedFieldDailyLimit)
+}
+
+// SetPlan sets the Plan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantQuotaExceededEncoded) SetPlan(plan *Plan) {
+	a.Plan = plan
+	a.require(assistantQuotaExceededEncodedFieldPlan)
+}
+
+// SetPlanWithRoom sets the PlanWithRoom field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (a *AssistantQuotaExceededEncoded) SetPlanWithRoom(planWithRoom *PaidPlan) {
+	a.PlanWithRoom = planWithRoom
+	a.require(assistantQuotaExceededEncodedFieldPlanWithRoom)
 }
 
 // SetResetsAt sets the ResetsAt field and marks it as non-optional;
@@ -660,6 +715,13 @@ func (a *AssistantQuotaExceededEncoded) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	a.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, assistantQuotaExceededEncodedNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		a.require(presentFields)
+	}
 	a.rawJSON = json.RawMessage(data)
 	return nil
 }
@@ -5776,6 +5838,124 @@ func (e EffectHttpApiErrorBadRequestEncodedTag) Ptr() *EffectHttpApiErrorBadRequ
 	return &e
 }
 
+var (
+	excessFieldAllowed = big.NewInt(1 << 0)
+	excessFieldLimit   = big.NewInt(1 << 1)
+	excessFieldUsed    = big.NewInt(1 << 2)
+)
+
+type Excess struct {
+	Allowed int       `json:"allowed" url:"allowed"`
+	Limit   HeldLimit `json:"limit" url:"limit"`
+	Used    int       `json:"used" url:"used"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (e *Excess) GetAllowed() int {
+	if e == nil {
+		return 0
+	}
+	return e.Allowed
+}
+
+func (e *Excess) GetLimit() HeldLimit {
+	if e == nil {
+		return ""
+	}
+	return e.Limit
+}
+
+func (e *Excess) GetUsed() int {
+	if e == nil {
+		return 0
+	}
+	return e.Used
+}
+
+func (e *Excess) GetExtraProperties() map[string]interface{} {
+	if e == nil {
+		return nil
+	}
+	return e.extraProperties
+}
+
+func (e *Excess) require(field *big.Int) {
+	next := new(big.Int)
+	if e.explicitFields != nil {
+		next.Set(e.explicitFields)
+	}
+	next.Or(next, field)
+	e.explicitFields = next
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *Excess) SetAllowed(allowed int) {
+	e.Allowed = allowed
+	e.require(excessFieldAllowed)
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *Excess) SetLimit(limit HeldLimit) {
+	e.Limit = limit
+	e.require(excessFieldLimit)
+}
+
+// SetUsed sets the Used field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *Excess) SetUsed(used int) {
+	e.Used = used
+	e.require(excessFieldUsed)
+}
+
+func (e *Excess) UnmarshalJSON(data []byte) error {
+	type unmarshaler Excess
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*e = Excess(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *e)
+	if err != nil {
+		return err
+	}
+	e.extraProperties = extraProperties
+	e.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (e *Excess) MarshalJSON() ([]byte, error) {
+	type embed Excess
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*e),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, e.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (e *Excess) String() string {
+	if e == nil {
+		return "<nil>"
+	}
+	if len(e.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(e.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(e); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", e)
+}
+
 type FailureReason string
 
 const (
@@ -5937,6 +6117,31 @@ func NewForbiddenEncodedTagFromString(s string) (ForbiddenEncodedTag, error) {
 
 func (f ForbiddenEncodedTag) Ptr() *ForbiddenEncodedTag {
 	return &f
+}
+
+type HeldLimit string
+
+const (
+	HeldLimitChannels     HeldLimit = "channels"
+	HeldLimitMembers      HeldLimit = "members"
+	HeldLimitMediaStorage HeldLimit = "mediaStorage"
+)
+
+func NewHeldLimitFromString(s string) (HeldLimit, error) {
+	switch s {
+	case "channels":
+		return HeldLimitChannels, nil
+	case "members":
+		return HeldLimitMembers, nil
+	case "mediaStorage":
+		return HeldLimitMediaStorage, nil
+	}
+	var t HeldLimit
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (h HeldLimit) Ptr() *HeldLimit {
+	return &h
 }
 
 var (
@@ -7080,15 +7285,28 @@ func (p PlanLimit) Ptr() *PlanLimit {
 }
 
 var (
-	planLimitReachedEncodedFieldTag     = big.NewInt(1 << 0)
-	planLimitReachedEncodedFieldAllowed = big.NewInt(1 << 1)
-	planLimitReachedEncodedFieldLimit   = big.NewInt(1 << 2)
+	planLimitReachedEncodedFieldTag          = big.NewInt(1 << 0)
+	planLimitReachedEncodedFieldAllowed      = big.NewInt(1 << 1)
+	planLimitReachedEncodedFieldBillingURL   = big.NewInt(1 << 2)
+	planLimitReachedEncodedFieldLimit        = big.NewInt(1 << 3)
+	planLimitReachedEncodedFieldPlan         = big.NewInt(1 << 4)
+	planLimitReachedEncodedFieldPlanWithRoom = big.NewInt(1 << 5)
+	planLimitReachedEncodedFieldUsed         = big.NewInt(1 << 6)
 )
 
+// planLimitReachedEncodedNullableFields maps the wire names of PlanLimitReachedEncoded's nullable fields (required or optional) to their field bits.
+var planLimitReachedEncodedNullableFields = map[string]*big.Int{
+	"planWithRoom": planLimitReachedEncodedFieldPlanWithRoom,
+}
+
 type PlanLimitReachedEncoded struct {
-	Tag     PlanLimitReachedEncodedTag `json:"_tag" url:"_tag"`
-	Allowed int                        `json:"allowed" url:"allowed"`
-	Limit   PlanLimit                  `json:"limit" url:"limit"`
+	Tag          PlanLimitReachedEncodedTag `json:"_tag" url:"_tag"`
+	Allowed      int                        `json:"allowed" url:"allowed"`
+	BillingURL   string                     `json:"billingUrl" url:"billingUrl"`
+	Limit        PlanLimit                  `json:"limit" url:"limit"`
+	Plan         Plan                       `json:"plan" url:"plan"`
+	PlanWithRoom *PaidPlan                  `json:"planWithRoom,omitempty" url:"planWithRoom,omitempty"`
+	Used         int                        `json:"used" url:"used"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -7111,11 +7329,39 @@ func (p *PlanLimitReachedEncoded) GetAllowed() int {
 	return p.Allowed
 }
 
+func (p *PlanLimitReachedEncoded) GetBillingURL() string {
+	if p == nil {
+		return ""
+	}
+	return p.BillingURL
+}
+
 func (p *PlanLimitReachedEncoded) GetLimit() PlanLimit {
 	if p == nil {
 		return ""
 	}
 	return p.Limit
+}
+
+func (p *PlanLimitReachedEncoded) GetPlan() Plan {
+	if p == nil {
+		return ""
+	}
+	return p.Plan
+}
+
+func (p *PlanLimitReachedEncoded) GetPlanWithRoom() *PaidPlan {
+	if p == nil {
+		return nil
+	}
+	return p.PlanWithRoom
+}
+
+func (p *PlanLimitReachedEncoded) GetUsed() int {
+	if p == nil {
+		return 0
+	}
+	return p.Used
 }
 
 func (p *PlanLimitReachedEncoded) GetExtraProperties() map[string]interface{} {
@@ -7148,11 +7394,39 @@ func (p *PlanLimitReachedEncoded) SetAllowed(allowed int) {
 	p.require(planLimitReachedEncodedFieldAllowed)
 }
 
+// SetBillingURL sets the BillingURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlanLimitReachedEncoded) SetBillingURL(billingURL string) {
+	p.BillingURL = billingURL
+	p.require(planLimitReachedEncodedFieldBillingURL)
+}
+
 // SetLimit sets the Limit field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *PlanLimitReachedEncoded) SetLimit(limit PlanLimit) {
 	p.Limit = limit
 	p.require(planLimitReachedEncodedFieldLimit)
+}
+
+// SetPlan sets the Plan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlanLimitReachedEncoded) SetPlan(plan Plan) {
+	p.Plan = plan
+	p.require(planLimitReachedEncodedFieldPlan)
+}
+
+// SetPlanWithRoom sets the PlanWithRoom field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlanLimitReachedEncoded) SetPlanWithRoom(planWithRoom *PaidPlan) {
+	p.PlanWithRoom = planWithRoom
+	p.require(planLimitReachedEncodedFieldPlanWithRoom)
+}
+
+// SetUsed sets the Used field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlanLimitReachedEncoded) SetUsed(used int) {
+	p.Used = used
+	p.require(planLimitReachedEncodedFieldUsed)
 }
 
 func (p *PlanLimitReachedEncoded) UnmarshalJSON(data []byte) error {
@@ -7167,6 +7441,13 @@ func (p *PlanLimitReachedEncoded) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, planLimitReachedEncodedNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
 	p.rawJSON = json.RawMessage(data)
 	return nil
 }

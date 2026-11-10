@@ -4,5 +4,6 @@ import * as Peal from "../index.js";
 
 export interface NoticeEventTrialEnding {
     endsAt: string;
+    over: Peal.Excess[];
     plan: Peal.PaidPlan;
 }

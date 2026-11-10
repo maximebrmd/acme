@@ -14,10 +14,28 @@ class AssistantQuotaExceededEncoded extends JsonSerializableType
     public string $tag;
 
     /**
+     * @var ?string $billingUrl
+     */
+    #[JsonProperty('billingUrl')]
+    public ?string $billingUrl;
+
+    /**
      * @var int $dailyLimit
      */
     #[JsonProperty('dailyLimit')]
     public int $dailyLimit;
+
+    /**
+     * @var ?value-of<Plan> $plan
+     */
+    #[JsonProperty('plan')]
+    public ?string $plan;
+
+    /**
+     * @var ?value-of<PaidPlan> $planWithRoom
+     */
+    #[JsonProperty('planWithRoom')]
+    public ?string $planWithRoom;
 
     /**
      * @var string $resetsAt
@@ -30,13 +48,19 @@ class AssistantQuotaExceededEncoded extends JsonSerializableType
      *   tag: value-of<AssistantQuotaExceededEncodedTag>,
      *   dailyLimit: int,
      *   resetsAt: string,
+     *   billingUrl?: ?string,
+     *   plan?: ?value-of<Plan>,
+     *   planWithRoom?: ?value-of<PaidPlan>,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->tag = $values['tag'];
+        $this->billingUrl = $values['billingUrl'] ?? null;
         $this->dailyLimit = $values['dailyLimit'];
+        $this->plan = $values['plan'] ?? null;
+        $this->planWithRoom = $values['planWithRoom'] ?? null;
         $this->resetsAt = $values['resetsAt'];
     }
 

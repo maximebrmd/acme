@@ -1842,12 +1842,14 @@ func (n *NoticeEventSubscriptionWithdrawn) String() string {
 
 var (
 	noticeEventTrialEndingFieldEndsAt = big.NewInt(1 << 0)
-	noticeEventTrialEndingFieldPlan   = big.NewInt(1 << 1)
+	noticeEventTrialEndingFieldOver   = big.NewInt(1 << 1)
+	noticeEventTrialEndingFieldPlan   = big.NewInt(1 << 2)
 )
 
 type NoticeEventTrialEnding struct {
-	EndsAt string   `json:"endsAt" url:"endsAt"`
-	Plan   PaidPlan `json:"plan" url:"plan"`
+	EndsAt string    `json:"endsAt" url:"endsAt"`
+	Over   []*Excess `json:"over" url:"over"`
+	Plan   PaidPlan  `json:"plan" url:"plan"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1861,6 +1863,13 @@ func (n *NoticeEventTrialEnding) GetEndsAt() string {
 		return ""
 	}
 	return n.EndsAt
+}
+
+func (n *NoticeEventTrialEnding) GetOver() []*Excess {
+	if n == nil {
+		return nil
+	}
+	return n.Over
 }
 
 func (n *NoticeEventTrialEnding) GetPlan() PaidPlan {
@@ -1891,6 +1900,13 @@ func (n *NoticeEventTrialEnding) require(field *big.Int) {
 func (n *NoticeEventTrialEnding) SetEndsAt(endsAt string) {
 	n.EndsAt = endsAt
 	n.require(noticeEventTrialEndingFieldEndsAt)
+}
+
+// SetOver sets the Over field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventTrialEnding) SetOver(over []*Excess) {
+	n.Over = over
+	n.require(noticeEventTrialEndingFieldOver)
 }
 
 // SetPlan sets the Plan field and marks it as non-optional;

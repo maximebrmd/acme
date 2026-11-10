@@ -8,7 +8,9 @@ import social.peal.core.ClientOptions;
 import social.peal.core.PealClientHttpResponse;
 import social.peal.core.RequestOptions;
 import social.peal.resources.billing.requests.GetBillingRequest;
+import social.peal.resources.billing.requests.StandingBillingRequest;
 import social.peal.types.Billing;
+import social.peal.types.Standing;
 
 public class AsyncBillingClient {
     protected final ClientOptions clientOptions;
@@ -77,6 +79,65 @@ public class AsyncBillingClient {
         CompletableFuture<PealClientHttpResponse<Billing>> rawFuture =
                 this.rawClient.get(workspaceId, request, requestOptions);
         CompletableFuture<Billing> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     */
+    public CompletableFuture<Standing> standing(String workspaceId) {
+        CompletableFuture<PealClientHttpResponse<Standing>> rawFuture = this.rawClient.standing(workspaceId);
+        CompletableFuture<Standing> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     */
+    public CompletableFuture<Standing> standing(String workspaceId, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Standing>> rawFuture =
+                this.rawClient.standing(workspaceId, requestOptions);
+        CompletableFuture<Standing> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     */
+    public CompletableFuture<Standing> standing(String workspaceId, StandingBillingRequest request) {
+        CompletableFuture<PealClientHttpResponse<Standing>> rawFuture = this.rawClient.standing(workspaceId, request);
+        CompletableFuture<Standing> future = rawFuture.thenApply(response -> response.body());
+        future.whenComplete((result_, throwable_) -> {
+            if (future.isCancelled()) {
+                rawFuture.cancel(true);
+            }
+        });
+        return future;
+    }
+
+    /**
+     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     */
+    public CompletableFuture<Standing> standing(
+            String workspaceId, StandingBillingRequest request, RequestOptions requestOptions) {
+        CompletableFuture<PealClientHttpResponse<Standing>> rawFuture =
+                this.rawClient.standing(workspaceId, request, requestOptions);
+        CompletableFuture<Standing> future = rawFuture.thenApply(response -> response.body());
         future.whenComplete((result_, throwable_) -> {
             if (future.isCancelled()) {
                 rawFuture.cancel(true);

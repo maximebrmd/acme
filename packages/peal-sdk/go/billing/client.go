@@ -60,3 +60,30 @@ func (c *Client) Get(
 	}
 	return response.Body, nil
 }
+
+// Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with `planLimit`), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+//
+// Example:
+//
+//	request := &peal.StandingBillingRequest{
+//	    WorkspaceID: "workspaceId",
+//	}
+//	_, err := client.Billing.Standing(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Standing(
+	ctx context.Context,
+	request *peal.StandingBillingRequest,
+	opts ...option.RequestOption,
+) (*peal.Standing, error) {
+	response, err := c.WithRawResponse.Standing(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}

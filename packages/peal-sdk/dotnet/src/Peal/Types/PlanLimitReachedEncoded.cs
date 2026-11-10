@@ -17,8 +17,20 @@ public record PlanLimitReachedEncoded : IJsonOnDeserialized
     [JsonPropertyName("allowed")]
     public required int Allowed { get; set; }
 
+    [JsonPropertyName("billingUrl")]
+    public required string BillingUrl { get; set; }
+
     [JsonPropertyName("limit")]
     public required PlanLimit Limit { get; set; }
+
+    [JsonPropertyName("plan")]
+    public required Plan Plan { get; set; }
+
+    [JsonPropertyName("planWithRoom")]
+    public PaidPlan? PlanWithRoom { get; set; }
+
+    [JsonPropertyName("used")]
+    public required int Used { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

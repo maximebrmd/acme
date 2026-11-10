@@ -681,14 +681,14 @@ public class AsyncRawMediaClient {
     }
 
     /**
-     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public CompletableFuture<PealClientHttpResponse<Media>> complete(String workspaceId, String mediaId) {
         return complete(workspaceId, mediaId, CompleteMediaRequest.builder().build());
     }
 
     /**
-     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public CompletableFuture<PealClientHttpResponse<Media>> complete(
             String workspaceId, String mediaId, RequestOptions requestOptions) {
@@ -696,7 +696,7 @@ public class AsyncRawMediaClient {
     }
 
     /**
-     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public CompletableFuture<PealClientHttpResponse<Media>> complete(
             String workspaceId, String mediaId, CompleteMediaRequest request) {
@@ -704,7 +704,7 @@ public class AsyncRawMediaClient {
     }
 
     /**
-     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public CompletableFuture<PealClientHttpResponse<Media>> complete(
             String workspaceId, String mediaId, CompleteMediaRequest request, RequestOptions requestOptions) {
@@ -756,6 +756,12 @@ public class AsyncRawMediaClient {
                                 future.completeExceptionally(new UnauthorizedError(
                                         ObjectMappers.JSON_MAPPER.readValue(
                                                 responseBodyString, UnauthenticatedEncoded.class),
+                                        response));
+                                return;
+                            case 402:
+                                future.completeExceptionally(new PaymentRequiredError(
+                                        ObjectMappers.JSON_MAPPER.readValue(
+                                                responseBodyString, PlanLimitReachedEncoded.class),
                                         response));
                                 return;
                             case 403:
