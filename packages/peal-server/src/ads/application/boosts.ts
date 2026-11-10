@@ -1,4 +1,12 @@
-import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
+import {
+  Context,
+  DateTime,
+  Effect,
+  Equivalence,
+  Layer,
+  Option,
+  Schema,
+} from "effect";
 
 import type { Audience } from "#ads/domain/audience.ts";
 import { Boost, noObjects, planBoost } from "#ads/domain/boost.ts";
@@ -101,6 +109,16 @@ const spending = (actor: Actor) =>
     : Effect.fromResult(authorize(actor, "ads:spend"));
 
 // Whether a boost is what an ask asks for: the same key then answers it.
+// The same countries, whatever their order.
+const sameCountries = (a: readonly string[], b: readonly string[]) =>
+  a.length === b.length && a.every((country) => b.includes(country));
+
+const sameParty = Option.makeEquivalence(Equivalence.strictEqual<string>());
+
+/**
+ * Whether an ask is the one a boost was made of: every field of it. A
+ * start left out stands for whenever the first ask was taken.
+ */
 const sameAsk = (boost: Boost, ask: BoostAsk) =>
   boost.adAccountId === ask.accountId &&
   boost.postId === ask.postId &&
@@ -108,7 +126,16 @@ const sameAsk = (boost: Boost, ask: BoostAsk) =>
   boost.budget._tag === ask.budget._tag &&
   boost.budget.amount === ask.budget.amount &&
   boost.currency === ask.currency &&
-  DateTime.Equivalence(boost.endsAt, ask.endsAt);
+  DateTime.Equivalence(boost.endsAt, ask.endsAt) &&
+  boost.audience.ageMin === ask.audience.ageMin &&
+  boost.audience.ageMax === ask.audience.ageMax &&
+  sameCountries(boost.audience.countries, ask.audience.countries) &&
+  sameParty(boost.beneficiary, ask.beneficiary) &&
+  sameParty(boost.payer, ask.payer) &&
+  Option.match(ask.startsAt, {
+    onNone: () => true,
+    onSome: (startsAt) => DateTime.Equivalence(boost.startsAt, startsAt),
+  });
 
 /** The most boosts a listing answers at once. */
 export const boostPageSize = 50;

@@ -273,6 +273,35 @@ layer(AdsTest, { excludeTestServices: true })("boosting a post", (it) => {
           ),
           "BoostKeyReused"
         );
+
+        // Any other field of the ask is another ask too.
+        for (const changed of [
+          {
+            audience: new Audience({
+              ageMax: 40,
+              ageMin: 18,
+              countries: ["US"],
+            }),
+          },
+          { beneficiary: Option.some("Another synthetic studio") },
+          { payer: Option.some("Another synthetic studio") },
+          {
+            startsAt: Option.some(DateTime.add(first.startsAt, { hours: 1 })),
+          },
+        ]) {
+          assert.strictEqual(
+            yield* tagOf(
+              boosts.request(owner, { ...asked, ...changed }, "key-1")
+            ),
+            "BoostKeyReused"
+          );
+        }
+
+        // Sent again as it was, start left out, it is the same boost.
+        assert.strictEqual(
+          (yield* boosts.request(owner, asked, "key-1")).id,
+          first.id
+        );
       }).pipe(Effect.scoped)
   );
 
