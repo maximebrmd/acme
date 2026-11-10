@@ -2,15 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-<<<<<<<< HEAD:packages/peal-server/drizzle/20261110054621_initial/snapshot.json
-<<<<<<<< HEAD:packages/peal-server/drizzle/20261110054621_initial/snapshot.json
-  "id": "50164964-d242-4d23-b245-52acb0ed4902",
-========
-  "id": "e3de5b63-112f-4b0f-8dce-ca136251f281",
->>>>>>>> origin/feat/posting-api:packages/peal-server/drizzle/20261110051209_initial/snapshot.json
-========
-  "id": "d315868f-5960-4c59-ab3c-6e6e8aa010d4",
->>>>>>>> origin/feat/embedding-kit:packages/peal-server/drizzle/20261110054242_initial/snapshot.json
+  "id": "c9fab1d9-9934-4adb-a827-0257ac0c37cf",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -15269,13 +15261,6 @@
       "entityType": "pks"
     },
     {
-<<<<<<<< HEAD:packages/peal-server/drizzle/20261110054621_initial/snapshot.json
-      "schema": "activity",
-      "table": "events",
-      "name": "events_pkey",
-      "columns": [
-        "id"
-========
       "schema": "workspace",
       "table": "partner_idempotency_keys",
       "name": "partner_idempotency_keys_pkey",
@@ -15293,7 +15278,16 @@
       "columns": [
         "partner_id",
         "day"
->>>>>>>> origin/feat/embedding-kit:packages/peal-server/drizzle/20261110054242_initial/snapshot.json
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "activity",
+      "table": "events",
+      "name": "events_pkey",
+      "columns": [
+        "id"
       ],
       "nameExplicit": false,
       "entityType": "pks"
