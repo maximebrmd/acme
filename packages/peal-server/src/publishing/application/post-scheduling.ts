@@ -322,14 +322,11 @@ export class PostScheduling extends Context.Service<
         withPorts
       );
 
-      // Room in the month the post goes out in, besides the post itself.
-      // Run in the transaction that saves the post: the month stays claimed
-      // until it commits, so posts scheduled together are counted in turn.
-      const roomInMonth = Effect.fn("PostScheduling.roomInMonth")(
-        function* roomInMonth(post: Post) {
-          // A workspace with more channels or members than its plan
-          // allows, as after its trial, schedules nothing until it is back
-          // within it.
+      // A workspace with more channels or members than its plan allows,
+      // as after its trial, schedules and moves nothing until it is back
+      // within it.
+      const withinPlan = Effect.fn("PostScheduling.withinPlan")(
+        function* withinPlan(post: Post) {
           const channels = yield* PostAllowance.use((allowance) =>
             allowance.channels(post.workspaceId)
           );
@@ -345,6 +342,16 @@ export class PostScheduling extends Context.Service<
           yield* Effect.fromResult(
             withinAllowance("members", members.allowed, members.taken)
           );
+        },
+        withPorts
+      );
+
+      // Room in the month the post goes out in, besides the post itself.
+      // Run in the transaction that saves the post: the month stays claimed
+      // until it commits, so posts scheduled together are counted in turn.
+      const roomInMonth = Effect.fn("PostScheduling.roomInMonth")(
+        function* roomInMonth(post: Post) {
+          yield* withinPlan(post);
 
           const allowed = yield* PostAllowance.use((allowance) =>
             allowance.scheduledPerMonth(post.workspaceId)
@@ -422,9 +429,9 @@ export class PostScheduling extends Context.Service<
             (yield* scheduleOf(moved)).at
           );
 
-        if (!staysInMonth) {
-          yield* roomInMonth(moved);
-        }
+        // Within its month it takes no more room, and the plan is still
+        // checked: a workspace over it moves nothing.
+        yield* staysInMonth ? withinPlan(moved) : roomInMonth(moved);
 
         yield* applied(yield* posts.update(moved, current.post));
         yield* stopJob(current);

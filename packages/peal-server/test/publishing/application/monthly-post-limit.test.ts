@@ -75,6 +75,25 @@ const OverChannelsServer = postsServerWith(
   )
 );
 
+// A workspace whose channels the test puts over its plan, as when its
+// trial ends with posts already scheduled.
+const connectedChannels = Ref.makeUnsafe(3);
+
+const TrialEndingServer = postsServerWith(
+  attachableMedia(),
+  Layer.succeed(
+    PostAllowance,
+    PostAllowance.of({
+      channels: () =>
+        Ref.get(connectedChannels).pipe(
+          Effect.map((connected) => ({ allowed: Option.some(3), connected }))
+        ),
+      members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
+      scheduledPerMonth: () => Effect.succeed(Option.none()),
+    })
+  )
+);
+
 // A workspace with five members on a plan of two, as after its trial.
 const OverMembersServer = postsServerWith(
   attachableMedia(),
@@ -599,6 +618,49 @@ describe("the channel limit", () => {
               );
             }
           }).pipe(Effect.provide(OverChannelsServer))
+        )
+      )
+  );
+
+  it.effect(
+    "moves nothing either while it is over, even within the month a post was scheduled in",
+    () =>
+      setTime("2026-06-10T07:00:00Z").pipe(
+        Effect.andThen(
+          Effect.gen(function* moveOverChannels() {
+            yield* Ref.set(connectedChannels, 3);
+
+            const workspaceId = yield* freshWorkspace;
+            const channel = yield* connect(workspaceId, "mastodon");
+            const scheduling = yield* PostScheduling;
+            const actor = actorIn(workspaceId);
+
+            const { postId } = yield* scheduledAt(
+              workspaceId,
+              channel,
+              "2026-06-20T08:00:00Z"
+            );
+
+            // A fourth channel on a plan of three, as when a trial ends.
+            yield* Ref.set(connectedChannels, 4);
+
+            const moved = yield* scheduling
+              .reschedule(actor, postId, scheduleIn("2026-06-21T08:00:00Z"))
+              .pipe(Effect.flip);
+
+            assert.deepStrictEqual(
+              moved,
+              new PlanLimitReached({
+                allowed: 3,
+                limit: "channels",
+                needed: 4,
+                used: 4,
+              })
+            );
+
+            yield* Ref.set(connectedChannels, 3);
+            yield* scheduling.cancel(actor, postId);
+          }).pipe(Effect.provide(TrialEndingServer))
         )
       )
   );
