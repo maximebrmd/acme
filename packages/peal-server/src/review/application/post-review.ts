@@ -1,7 +1,10 @@
 import { Context, Effect, Layer, Option } from "effect";
 
 import type { ApprovalNotPending } from "#review/domain/approval-not-pending.ts";
-import { isImpersonated } from "#review/domain/approval-policy.ts";
+import {
+  isApplication,
+  isImpersonated,
+} from "#review/domain/approval-policy.ts";
 import type { ApprovalRequest } from "#review/domain/approval-request.ts";
 import type { ReviewComment } from "#review/domain/review-comment.ts";
 import type { ReviewCommentId } from "#review/domain/review-ids.ts";
@@ -13,6 +16,7 @@ import { authorize } from "#shared/domain/authorize.ts";
 import type { PostId, UserId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import type { ApprovalNeedsPerson } from "./approval-needs-person.ts";
 import type { CommentNotFound } from "./comment-not-found.ts";
 import type { CommentRejected } from "./comment-rejected.ts";
 import { ApprovalStore } from "./ports/approval-store.ts";
@@ -90,7 +94,9 @@ const mayDecide = (actor: Actor) =>
  *   nor applications let to read only);
  * - approving and asking for changes need post:approve, in person or
  *   through an application, never as staff acting as a member: an approved
- *   post goes out once they are gone.
+ *   post goes out once they are gone. An application approves only what a
+ *   member asked for in person: what an application asked for waits for a
+ *   person (ApprovalNeedsPerson).
  *
  * Whoever may approve may approve a post they wrote or asked to send: an
  * approval says that someone allowed to has looked, not that two people
@@ -125,7 +131,7 @@ export class PostReview extends Context.Service<
       postId: PostId
     ) => Effect.Effect<
       { readonly late: boolean; readonly request: ApprovalRequest },
-      ApprovalNotPending | Refused
+      ApprovalNeedsPerson | ApprovalNotPending | Refused
     >;
     readonly requestChanges: (
       actor: Actor,
@@ -231,7 +237,8 @@ export class PostReview extends Context.Service<
 
         return yield* desk.approve(
           reviewerOf(actor),
-          yield* postOf(actor, postId)
+          yield* postOf(actor, postId),
+          isApplication(actor)
         );
       });
 

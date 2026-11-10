@@ -96,6 +96,8 @@ export const ReviewHandlers = HttpApiBuilder.group(
 
           const { late, request } = yield* review.approve(actor, postId).pipe(
             Effect.catchTags({
+              // An application's request waits for a person.
+              ApprovalNeedsPerson: forbidden,
               ApprovalNotPending: notPending,
               DatabaseError: Effect.die,
               MissingPermission: forbidden,

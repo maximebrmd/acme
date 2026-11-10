@@ -132,10 +132,13 @@ export class ApprovalIntake extends Context.Service<
           submission.postId
         );
 
-        // The request that waits follows the post: its time, and who asks.
+        // The request that waits follows the post: its time, and who asks
+        // now.
         if (Option.isSome(pending)) {
           yield* requests.update(
             changed(pending.value, {
+              requestedBy: requesterOf(actor),
+              requestedVia: originOf(actor),
               scheduledAt: submission.scheduledAt,
               subjectHash: submission.subjectHash,
               timeZone: submission.timeZone,

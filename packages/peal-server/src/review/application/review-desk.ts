@@ -4,6 +4,7 @@ import { ApprovalNotPending } from "#review/domain/approval-not-pending.ts";
 import {
   approve as approveRequest,
   requestChanges as refuseRequest,
+  takesApplicationApproval,
 } from "#review/domain/approval-request.ts";
 import type { ApprovalRequest } from "#review/domain/approval-request.ts";
 import { quotes } from "#review/domain/comment-anchor.ts";
@@ -24,6 +25,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 
 import { requestKeyOf } from "./approval-intake.ts";
+import { ApprovalNeedsPerson } from "./approval-needs-person.ts";
 import { CommentNotFound } from "./comment-not-found.ts";
 import { CommentRejected } from "./comment-rejected.ts";
 import { ApprovalStore } from "./ports/approval-store.ts";
@@ -120,13 +122,18 @@ export class ReviewDesk extends Context.Service<
       ReviewComment,
       CommentNotFound | CommentRejected | DatabaseError
     >;
-    /** Approves the post, which is then scheduled, or back to draft if late. */
+    /**
+     * Approves the post, which is then scheduled, or back to draft if
+     * late. Through an application, only what a member asked for in person
+     * (`takesApplicationApproval`).
+     */
     readonly approve: (
       by: Reviewer,
-      post: ReviewedPost
+      post: ReviewedPost,
+      throughApplication: boolean
     ) => Effect.Effect<
       { readonly late: boolean; readonly request: ApprovalRequest },
-      ApprovalNotPending | DatabaseError
+      ApprovalNeedsPerson | ApprovalNotPending | DatabaseError
     >;
     /** Sends the post back to draft, with a comment that says why. */
     readonly requestChanges: (
@@ -298,12 +305,19 @@ export class ReviewDesk extends Context.Service<
 
       const approve = Effect.fn("ReviewDesk.approve")(function* approve(
         by: Reviewer,
-        post: ReviewedPost
+        post: ReviewedPost,
+        throughApplication: boolean
       ) {
         return yield* transaction(
           Effect.gen(function* approveAndRelease() {
+            const pending = yield* pendingFor(post);
+
+            if (throughApplication && !takesApplicationApproval(pending)) {
+              return yield* new ApprovalNeedsPerson({ postId: post.postId });
+            }
+
             const request = yield* Effect.fromResult(
-              approveRequest(yield* pendingFor(post), by, yield* DateTime.now)
+              approveRequest(pending, by, yield* DateTime.now)
             );
 
             yield* requests.update(request);

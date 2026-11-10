@@ -81,7 +81,13 @@ export const changed = (
   change: Partial<
     Pick<
       ApprovalRequest,
-      "decision" | "scheduledAt" | "status" | "subjectHash" | "timeZone"
+      | "decision"
+      | "requestedBy"
+      | "requestedVia"
+      | "scheduledAt"
+      | "status"
+      | "subjectHash"
+      | "timeZone"
     >
   >
 ): ApprovalRequest =>
@@ -90,8 +96,8 @@ export const changed = (
     id: request.id,
     postId: request.postId,
     requestedAt: request.requestedAt,
-    requestedBy: request.requestedBy,
-    requestedVia: request.requestedVia,
+    requestedBy: change.requestedBy ?? request.requestedBy,
+    requestedVia: change.requestedVia ?? request.requestedVia,
     scheduledAt: change.scheduledAt ?? request.scheduledAt,
     status: change.status ?? request.status,
     subjectHash: change.subjectHash ?? request.subjectHash,
@@ -133,6 +139,16 @@ export const withdraw = (request: ApprovalRequest): ApprovalRequest =>
   request.status === "pending"
     ? changed(request, { status: "withdrawn" })
     : request;
+
+/**
+ * Whether an approval given through an application (an API key, an OAuth
+ * client) is taken: only for what a member asked for in person. What an
+ * application asked for waits for a person, or the policy that holds
+ * applications' posts would hold nothing: the application that scheduled a
+ * post would approve it.
+ */
+export const takesApplicationApproval = (request: ApprovalRequest): boolean =>
+  request.requestedVia === "member";
 
 /** Whether the request is an approval of the post as `subjectHash` says it. */
 export const covers = (request: ApprovalRequest, subjectHash: string) =>

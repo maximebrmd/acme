@@ -3,6 +3,7 @@ import { Effect, Option } from "effect";
 
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { ApprovalNeedsPerson } from "#review/application/approval-needs-person.ts";
 import { ApprovalStore } from "#review/application/ports/approval-store.ts";
 import { PostReview } from "#review/application/post-review.ts";
 import { ApprovalNotPending } from "#review/domain/approval-not-pending.ts";
@@ -211,6 +212,71 @@ describe("a workspace where contributors and applications wait", () => {
             "settled",
             "approved",
           ]);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "takes an application's approval of a member's request, never of an application's",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* applications() {
+          const scheduling = yield* PostScheduling;
+          const review = yield* PostReview;
+          const { channelId, contributor, editor, workspaceId } = yield* team;
+          const client = throughClient(yield* freshUser, workspaceId);
+
+          yield* withPolicy(workspaceId, "contributorsAndApplications");
+
+          const request = {
+            channelIds: [channelId] as const,
+            content: contentOf("A synthetic post an application meets."),
+            schedule: at8,
+          };
+
+          const byMember = yield* scheduling.schedule(contributor, request);
+
+          const byKey = yield* scheduling.schedule(
+            apiKeyIn(workspaceId),
+            request
+          );
+
+          const byClient = yield* scheduling.schedule(client, request);
+
+          // What an application asked for waits for a person.
+          for (const { post } of [byKey, byClient]) {
+            for (const application of [client, apiKeyIn(workspaceId)]) {
+              assert.deepStrictEqual(
+                yield* Effect.flip(review.approve(application, post.id)),
+                new ApprovalNeedsPerson({ postId: post.id })
+              );
+            }
+          }
+
+          assert.strictEqual(
+            (yield* review.approve(client, byMember.post.id)).request.status,
+            "approved"
+          );
+          assert.strictEqual(
+            (yield* review.approve(editor, byKey.post.id)).request.status,
+            "approved"
+          );
+
+          // Moved by an application, a member's request is the application's.
+          const again = yield* scheduling.schedule(contributor, request);
+
+          yield* scheduling.reschedule(
+            client,
+            again.post.id,
+            scheduleIn("2026-06-15T09:00:00Z")
+          );
+
+          assert.deepStrictEqual(
+            yield* Effect.flip(review.approve(client, again.post.id)),
+            new ApprovalNeedsPerson({ postId: again.post.id })
+          );
         })
       ),
     timeout

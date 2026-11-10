@@ -238,7 +238,11 @@ export class VisitorReview extends Context.Service<
         visitor: VisitorIdentity
       ) {
         const { by, post } = yield* admitted(token, visitor, "approve");
-        const { late } = yield* desk.approve(by, post);
+
+        // A visitor is a person: the link's holder, under the name given.
+        const { late } = yield* desk
+          .approve(by, post, false)
+          .pipe(Effect.catchTag("ApprovalNeedsPerson", Effect.die));
 
         return { late };
       });

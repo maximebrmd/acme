@@ -78,6 +78,8 @@ const columnsOf = (request: ApprovalRequest) => {
       Option.flatMapNullishOr(({ by }) => by.userId),
       Option.getOrNull
     ),
+    requestedBy: Option.getOrNull(request.requestedBy),
+    requestedVia: request.requestedVia,
     scheduleZone: request.timeZone,
     scheduledAt: date(request.scheduledAt),
     status: request.status,
@@ -117,8 +119,6 @@ export const DrizzleApprovalStore = Layer.effect(
             id: request.id,
             postId: request.postId,
             requestedAt: date(request.requestedAt),
-            requestedBy: Option.getOrNull(request.requestedBy),
-            requestedVia: request.requestedVia,
             workspaceId: request.workspaceId,
           })
           .pipe(Effect.mapError(failed), Effect.asVoid),

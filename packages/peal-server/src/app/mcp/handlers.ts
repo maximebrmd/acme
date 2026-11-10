@@ -4,6 +4,7 @@ import { CurrentMember } from "peal-contract";
 import { PeopleToolsLive } from "#app/mcp/people-handlers.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
 import { ReportToolsLive } from "#app/mcp/reports-handlers.ts";
+import { ReviewToolsLive } from "#app/mcp/review-handlers.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { BasicTools } from "#app/mcp/tools.ts";
 import { toChannelView } from "#channels/api/channel-view.ts";
@@ -126,5 +127,6 @@ export const PealToolsLive = Layer.mergeAll(
   BasicToolsLive,
   PostToolsLive,
   ReportToolsLive,
-  PeopleToolsLive
+  PeopleToolsLive,
+  ReviewToolsLive
 );

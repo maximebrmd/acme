@@ -52,9 +52,14 @@ const objectIdsOf = (
     Object.entries(params).filter(([name]) => name !== "workspaceId")
   );
 
-// The groups whose writes create, change or delete content: the law has
-// Peal keep each such connection a year (ConnectionJournal).
-const contentGroups: ReadonlySet<string> = new Set(["media", "posts"]);
+// The groups whose writes create, change or delete content, comments and
+// approvals included: the law has Peal keep each such connection a year
+// (ConnectionJournal).
+const contentGroups: ReadonlySet<string> = new Set([
+  "media",
+  "posts",
+  "review",
+]);
 
 // Whether the request changes content.
 const changesContent = (
