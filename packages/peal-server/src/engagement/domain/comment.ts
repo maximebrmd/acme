@@ -78,9 +78,14 @@ export class Comment extends Schema.Class<Comment>(
   writtenAt: Schema.DateTimeUtc,
 }) {}
 
-/** A comment as a read of its platform found it. */
+/**
+ * A comment as a read of its platform found it. One the channel's own
+ * account wrote (`fromAccount`) is not kept: it tells that the comment it
+ * answers was answered, on the platform or from Peal.
+ */
 export const CommentReadingSchema = Schema.Struct({
   author: CommentAuthorSchema,
+  fromAccount: Schema.Boolean,
   // Whether the account hid it on the platform.
   hidden: Schema.Boolean,
   // Whether the account likes it; none when the read cannot tell.

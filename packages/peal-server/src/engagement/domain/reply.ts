@@ -70,8 +70,12 @@ export const SendOutcomeSchema = Schema.Union([
 export type SendOutcome = typeof SendOutcomeSchema.Type;
 
 export const ReplyStatusSchema = Schema.Union([
-  // Journalled, and on its way: the call may be in flight.
-  Schema.TaggedStruct("sending", {}),
+  // Journalled, and on its way. `attemptedAt` is when a run first set out
+  // to call the platform: from then on the call may have left, so a later
+  // run looks the reply up instead of sending it.
+  Schema.TaggedStruct("sending", {
+    attemptedAt: Schema.Option(Schema.DateTimeUtc),
+  }),
   Schema.TaggedStruct("sent", {
     at: Schema.DateTimeUtc,
     permalink: Schema.Option(Schema.String),
@@ -150,11 +154,34 @@ export const writeReply = (
     commentId: comment.id,
     createdAt: now,
     id,
-    status: { _tag: "sending" },
+    status: { _tag: "sending", attemptedAt: Option.none() },
     text,
     threadId: comment.threadId,
     workspaceId: comment.workspaceId,
   });
+
+/**
+ * The reply as a run sets out to call the platform, recorded before the
+ * call. None when the reply is no longer on its way.
+ */
+export const beginSending = (reply: Reply, now: DateTime.Utc): Transition =>
+  reply.status._tag === "sending"
+    ? Result.succeed(
+        withStatus(reply, {
+          _tag: "sending",
+          attemptedAt: Option.orElse(reply.status.attemptedAt, () =>
+            Option.some(now)
+          ),
+        })
+      )
+    : refused(reply);
+
+/**
+ * Whether an earlier run may already have called the platform for this
+ * reply: it is then looked up, never sent again blindly.
+ */
+export const wasAttempted = (reply: Reply): boolean =>
+  reply.status._tag === "sending" && Option.isSome(reply.status.attemptedAt);
 
 /** Records how sending ended. Only a reply on its way can end. */
 export const settleReply = (

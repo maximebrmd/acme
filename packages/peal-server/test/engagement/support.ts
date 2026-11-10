@@ -68,6 +68,7 @@ export const reading = (
     handle: `reader${n}@social.example`,
     platformId: `${7000 + n}`,
   },
+  fromAccount: false,
   hidden: false,
   liked: Option.none(),
   parentPlatformId: Option.none(),

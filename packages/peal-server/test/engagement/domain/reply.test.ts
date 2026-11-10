@@ -3,9 +3,11 @@ import { DateTime, Option, Result } from "effect";
 
 import {
   answers,
+  beginSending,
   confirmReply,
   forgetAuthor,
   settleReply,
+  wasAttempted,
   withdrawReply,
   writeReply,
 } from "#engagement/domain/reply.ts";
@@ -39,10 +41,29 @@ const settled = (outcome: SendOutcome) =>
 
 describe("a reply", () => {
   it("is on its way once written, under its comment and its author", () => {
-    expect(reply.status).toStrictEqual({ _tag: "sending" });
+    expect(reply.status).toStrictEqual({
+      _tag: "sending",
+      attemptedAt: Option.none(),
+    });
+    expect(wasAttempted(reply)).toBeFalsy();
     expect(reply.commentId).toBe(comment(1).id);
     expect(reply.threadId).toBe(comment(1).threadId);
     expect(reply.authorId).toStrictEqual(Option.some(memberId));
+  });
+
+  it("records that a run set out to send it, once, before the call", () => {
+    const begun = Result.getOrThrow(beginSending(reply, later));
+
+    const again = Result.getOrThrow(
+      beginSending(begun, DateTime.addDuration(later, "1 hour"))
+    );
+
+    expect(wasAttempted(begun)).toBeTruthy();
+    expect(again.status).toStrictEqual({
+      _tag: "sending",
+      attemptedAt: Option.some(later),
+    });
+    expect(Result.isFailure(beginSending(settled(sent), later))).toBeTruthy();
   });
 
   it("is sent with the id the platform gave it", () => {

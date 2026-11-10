@@ -10,13 +10,9 @@ import { DateTime, Duration } from "effect";
  */
 export const keptAfterCollection = Duration.days(30);
 
-/** Whether a thread whose collection ended at `endedAt` is deleted at `now`. */
-export const isExpired = (endedAt: DateTime.Utc, now: DateTime.Utc): boolean =>
-  DateTime.isGreaterThanOrEqualTo(
-    now,
-    DateTime.addDuration(endedAt, keptAfterCollection)
-  );
-
-/** The instant before which a collection must have ended to be purged at `now`. */
+/**
+ * The latest instant a collection may have ended at for its thread to be
+ * deleted at `now`.
+ */
 export const purgedBefore = (now: DateTime.Utc): DateTime.Utc =>
   DateTime.subtractDuration(now, keptAfterCollection);
