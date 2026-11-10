@@ -206,6 +206,21 @@ export interface EmailCatalog {
    * for `{reason}`, one of `webhookTurnOffReasons`.
    */
   readonly webhookEndpointDisabled: EmailMessages;
+  /**
+   * A boost of `{budget}` in `{workspaceName}`, which runs until
+   * `{endsAt}`: started, ended, used its budget, failed for `{reason}`
+   * (one of `adBoostFailureReasons`, or `adBoostFailureOther`), or could
+   * not be confirmed.
+   */
+  readonly adBoostStarted: EmailMessages;
+  readonly adBoostEnded: EmailMessages;
+  readonly adBoostBudgetReached: EmailMessages;
+  readonly adBoostFailed: EmailMessages;
+  readonly adBoostUnconfirmed: EmailMessages;
+  readonly adBoostFailureReasons: Readonly<Record<string, string>>;
+  readonly adBoostFailureOther: string;
+  /** An ad network refused a sign-in of `{workspaceName}`. */
+  readonly adConnectionReconnect: EmailMessages;
   readonly webhookTurnOffReasons: {
     readonly failing: string;
     readonly gone: string;

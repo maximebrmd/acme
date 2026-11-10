@@ -23,6 +23,28 @@ const decodeEvent = Schema.decodeUnknownEffect(
 // An event as the notices API lists it: absent values as null.
 const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
   Match.valueTags(event, {
+    AdBoostChanged: ({
+      boostId,
+      budget,
+      budgetDigits,
+      change,
+      endsAt,
+      postId,
+      reason,
+    }): NoticeEventRecord => ({
+      _tag: "AdBoostChanged",
+      boostId,
+      budget,
+      budgetDigits,
+      change,
+      endsAt,
+      postId,
+      reason: Option.getOrNull(reason),
+    }),
+    AdConnectionReconnectRequired: ({ network }): NoticeEventRecord => ({
+      _tag: "AdConnectionReconnectRequired",
+      network,
+    }),
     ChannelReconnectRequired: ({ channel }): NoticeEventRecord => ({
       _tag: "ChannelReconnectRequired",
       channel,

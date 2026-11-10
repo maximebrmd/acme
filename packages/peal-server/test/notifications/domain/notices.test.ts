@@ -46,6 +46,20 @@ const channel: NoticeChannel = {
 // One event of each kind. The record is typed by the tags, so a kind added
 // without a case here fails to compile.
 const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
+  AdBoostChanged: {
+    _tag: "AdBoostChanged",
+    boostId: "00000000-0000-7000-8000-000000000061",
+    budget: { amount: 5000, currency: "EUR" },
+    budgetDigits: 2,
+    change: "started",
+    endsAt: DateTime.makeUnsafe("2026-11-17T10:00:00Z"),
+    postId: PostIdSchema.make("00000000-0000-7000-8000-000000000062"),
+    reason: Option.none(),
+  },
+  AdConnectionReconnectRequired: {
+    _tag: "AdConnectionReconnectRequired",
+    network: "meta",
+  },
   ChannelReconnectRequired: { _tag: "ChannelReconnectRequired", channel },
   ChannelReconnectSoon: {
     _tag: "ChannelReconnectSoon",
@@ -157,6 +171,30 @@ describe("notice events", () => {
       `/app/${workspaceId}/settings/webhooks`
     );
     expect(wantsEmail(nothing, events.WebhookEndpointDisabled)).toBeTruthy();
+  });
+
+  it("tell a boost's news to the owners, who answer for what it spends, always by email", () => {
+    const nothing = changePreferences(defaultPreferences, {
+      email: {
+        channelReconnect: false,
+        postFailed: false,
+        postPublished: false,
+        postUnconfirmed: false,
+      },
+    });
+
+    expect(audienceOf(events.AdBoostChanged)).toBe("ads:authorize");
+    expect(audienceOf(events.AdConnectionReconnectRequired)).toBe("ads:manage");
+    expect(pageOf(events.AdBoostChanged, workspaceId)).toBe(
+      `/app/${workspaceId}/posts/00000000-0000-7000-8000-000000000062`
+    );
+    expect(pageOf(events.AdConnectionReconnectRequired, workspaceId)).toBe(
+      `/app/${workspaceId}/ads`
+    );
+    expect([
+      wantsEmail(nothing, events.AdBoostChanged),
+      wantsEmail(nothing, events.AdConnectionReconnectRequired),
+    ]).toStrictEqual([true, true]);
   });
 
   it("email billing's always, whatever the reader chose", () => {
@@ -291,6 +329,9 @@ describe("notification preferences", () => {
     );
 
     expect(emailed.map(emailKindOf)).toStrictEqual([
+      // A boost's news and an ad network's sign-in to renew: always.
+      Option.none(),
+      Option.none(),
       Option.some("channelReconnect"),
       Option.some("channelReconnect"),
       Option.some("postReview"),

@@ -23,7 +23,6 @@ import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
-import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import { AdAccountBusy } from "./ad-account-busy.ts";
 import { AdAccountNotFound } from "./ad-account-not-found.ts";
@@ -179,7 +178,6 @@ export class AdConnections extends Context.Service<
       | DatabaseError
       | MissingPermission
       | PersonRequired
-      | PlanLimitReached
     >;
     readonly list: (
       actor: Actor

@@ -2,6 +2,7 @@ import { HttpApi, OpenApi } from "effect/http-api";
 
 import { AccountApi } from "./account.ts";
 import { ActivityApi } from "./activity.ts";
+import { AdsApi } from "./ads.ts";
 import { AnalyticsApi } from "./analytics.ts";
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
@@ -1057,6 +1058,105 @@ export type {
 
 export { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
 
+export {
+  AdAccessSchema,
+  AdAccountSchema,
+  AdAccountStatusSchema,
+  AdAuditActionSchema,
+  AdAuditEntrySchema,
+  AdAuditPageSchema,
+  AdCampaignReportSchema,
+  AdCampaignSchema,
+  AdConnectionSchema,
+  adInsightRetentionDays,
+  AdInsightDaySchema,
+  AdInsightReportSchema,
+  AdMoneySchema,
+  AdNetworkSchema,
+  AdObjectStatusSchema,
+  AdReportSchema,
+  AdsApi,
+  AdSchema,
+  AdsModeSchema,
+  AdSpendingDecisionSchema,
+  AdSpendingSchema,
+  BoostAudienceSchema,
+  BoostBudgetSchema,
+  BoostDetailSchema,
+  BoostFailureReasonSchema,
+  BoostPageSchema,
+  BoostQuoteSchema,
+  BoostSchema,
+  BoostStateSchema,
+  BoostStepSchema,
+  CampaignObjectiveSchema,
+  dailyOverspendPercent,
+  maxAdAccountsPerRequest,
+  maxAdAmount,
+  maxBoostAge,
+  maxBoostCountries,
+  maxBoostPartyLength,
+  maxBoostRunDays,
+  maxBoostStartAheadDays,
+  minBoostAge,
+  NewBoostSchema,
+  OrganicCountsSchema,
+  PaidTotalsSchema,
+  PostAdPerformanceSchema,
+  ReachableAdAccountSchema,
+  SpecialAdCategorySchema,
+} from "./ads.ts";
+
+export type {
+  AdAccount,
+  AdConnection,
+  AdMoney,
+  AdNetwork,
+  AdSpending,
+  Boost,
+  BoostFailureReason,
+  BoostState,
+  NewBoost,
+  PaidTotals,
+  ReachableAdAccount,
+} from "./ads.ts";
+
+export { AdAccountBusy } from "./ad-account-busy.ts";
+
+export { AdAccountNotFound } from "./ad-account-not-found.ts";
+
+export { AdAccountSpendCapExceeded } from "./ad-account-spend-cap-exceeded.ts";
+
+export { AdAccountUnusable } from "./ad-account-unusable.ts";
+
+export { AdConnectionNotFound } from "./ad-connection-not-found.ts";
+
+export { AdNetworkUnavailable } from "./ad-network-unavailable.ts";
+
+export { AdSignInFailed } from "./ad-sign-in-failed.ts";
+
+export { AdSpendingNotEnabled } from "./ad-spending-not-enabled.ts";
+
+export { AdSpendingUnavailable } from "./ad-spending-unavailable.ts";
+
+export { AdsUnavailable } from "./ads-unavailable.ts";
+
+export { BoostInvalid, BoostViolationSchema } from "./boost-invalid.ts";
+
+export type { BoostViolation } from "./boost-invalid.ts";
+
+export { BoostKeyReused } from "./boost-key-reused.ts";
+
+export { BoostNotFound } from "./boost-not-found.ts";
+
+export { BoostStateConflict } from "./boost-state-conflict.ts";
+
+export { CeilingCurrencyMismatch } from "./ceiling-currency-mismatch.ts";
+
+export { PostNotPromotable } from "./post-not-promotable.ts";
+
+export { SpendCeilingExceeded } from "./spend-ceiling-exceeded.ts";
+
 export { ConnectLinkIntake } from "./connect-link-intake.ts";
 
 export { ConnectLinkNotFound } from "./connect-link-not-found.ts";
@@ -1323,6 +1423,7 @@ export class Api extends HttpApi.make("peal")
   .add(CapabilitiesApi)
   .add(LookupsApi)
   .add(WebhooksApi)
+  .add(AdsApi)
   .add(ActivityApi)
   .add(PartnerApi)
   .add(PartnerAccountApi)

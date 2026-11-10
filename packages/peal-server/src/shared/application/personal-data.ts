@@ -105,6 +105,57 @@ export interface WebhookRecord {
 }
 
 /**
+ * What ads keep of a workspace: its sign-ins to ad networks without their
+ * tokens, its ad accounts with what an owner allowed them to spend, its
+ * boosts as they were asked, and the audit trail of every decision about
+ * money. Amounts are in each account's minor units. The campaigns and
+ * numbers read from the networks are theirs, and are read there.
+ */
+export interface AdsRecord {
+  readonly accounts: readonly {
+    readonly connectedAt: DateTime.Utc;
+    readonly currency: string;
+    readonly externalId: string;
+    readonly id: string;
+    readonly monthlyCeiling: number | null;
+    readonly name: string;
+    readonly network: string;
+    readonly spendingEnabled: boolean;
+    readonly timeZone: string;
+  }[];
+  readonly audit: readonly {
+    readonly accountId: string | null;
+    readonly action: string;
+    readonly amounts: unknown;
+    readonly at: DateTime.Utc;
+    readonly boostId: string | null;
+    readonly currency: string | null;
+  }[];
+  readonly boosts: readonly {
+    readonly accountId: string;
+    readonly audience: unknown;
+    readonly beneficiary: string | null;
+    readonly budgetAmount: number;
+    readonly budgetKind: string;
+    readonly committed: number;
+    readonly createdAt: DateTime.Utc;
+    readonly currency: string;
+    readonly endsAt: DateTime.Utc;
+    readonly id: string;
+    readonly payer: string | null;
+    readonly postId: string;
+    readonly startsAt: DateTime.Utc;
+    readonly state: string;
+  }[];
+  readonly connections: readonly {
+    readonly createdAt: DateTime.Utc;
+    readonly id: string;
+    readonly network: string;
+    readonly scopes: readonly string[];
+  }[];
+}
+
+/**
  * A change a user asked for in a workspace, as its activity log keeps it:
  * when, which operation (`posts.schedule`), how they authenticated
  * (`session`, `apiKey`, `oauth` or `mcp`) and the status answered, null
@@ -386,6 +437,20 @@ export type NoticeEventRecord =
       readonly endpointId: string;
       readonly host: string;
       readonly reason: string;
+    }
+  | {
+      readonly _tag: "AdBoostChanged";
+      readonly boostId: string;
+      readonly budget: MoneyRecord;
+      readonly budgetDigits: number;
+      readonly change: string;
+      readonly endsAt: DateTime.Utc;
+      readonly postId: string;
+      readonly reason: string | null;
+    }
+  | {
+      readonly _tag: "AdConnectionReconnectRequired";
+      readonly network: string;
     };
 
 /** An amount in cents of its currency. */

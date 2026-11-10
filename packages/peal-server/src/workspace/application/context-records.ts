@@ -3,6 +3,7 @@ import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
+  AdsRecord,
   ActivityRecord,
   AnalyticsRecord,
   AuthoredPostRecord,
@@ -46,6 +47,8 @@ export interface ErasedWorkspace {
 
 /** What the other contexts keep in a workspace. */
 export interface WorkspaceContent {
+  /** Its ad accounts, sign-ins without their tokens, boosts and audit trail. */
+  readonly ads: AdsRecord;
   readonly analytics: readonly AnalyticsRecord[];
   readonly assistantUsage: readonly UsageRecord[];
   readonly billing: BillingRecord;

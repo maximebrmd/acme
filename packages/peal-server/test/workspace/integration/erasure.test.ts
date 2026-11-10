@@ -44,6 +44,7 @@ const count = (rows: ReturnType<Count>) =>
 // hold the jobs' payloads (ids), and are not the migrations'.
 const schemas = [
   "activity",
+  "ads",
   "analytics",
   "assistant",
   "auth",
@@ -65,6 +66,28 @@ const workspaceRows = {
   // The log of who changed what in it.
   "activity.events": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM activity.events WHERE workspace_id = ${id}`,
+  // Its sign-ins to ad networks with their tokens, its ad accounts, what
+  // was read of them, its boosts, their journal and the audit trail.
+  "ads.accounts": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.accounts WHERE workspace_id = ${id}`,
+  "ads.ad_sets": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.ad_sets WHERE workspace_id = ${id}`,
+  "ads.ads": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.ads WHERE workspace_id = ${id}`,
+  "ads.audit_events": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.audit_events WHERE workspace_id = ${id}`,
+  "ads.boosts": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.boosts WHERE workspace_id = ${id}`,
+  "ads.campaigns": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.campaigns WHERE workspace_id = ${id}`,
+  "ads.grants": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.grants WHERE workspace_id = ${id}`,
+  "ads.insight_days": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.insight_days WHERE workspace_id = ${id}`,
+  "ads.sign_in_attempts": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.sign_in_attempts WHERE workspace_id = ${id}`,
+  "ads.spend_calls": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.spend_calls WHERE workspace_id = ${id}`,
   "analytics.metric_snapshots": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM analytics.metric_snapshots s JOIN analytics.tracked_posts t ON t.target_id = s.target_id WHERE t.workspace_id = ${id}`,
   "analytics.tracked_posts": (sql, id) =>
@@ -173,6 +196,19 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM activity.events
       WHERE user_id = ${id}
         OR EXISTS (SELECT 1 FROM jsonb_each_text(object_ids) AS named(name, value) WHERE value = ${id})`,
+  // What stays with the workspaces a closed account shared, without its
+  // id: the ad accounts it connected and allowed to spend, the sign-ins
+  // it made, the boosts it asked for, and the audit trail's lines.
+  "ads.accounts": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.accounts WHERE connected_by = ${id} OR authorized_by = ${id}`,
+  "ads.audit_events": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.audit_events WHERE by_id = ${id}`,
+  "ads.boosts": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.boosts WHERE requested_by_id = ${id}`,
+  "ads.grants": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.grants WHERE granted_by = ${id}`,
+  "ads.sign_in_attempts": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM ads.sign_in_attempts WHERE started_by = ${id}`,
   "auth.account": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.account WHERE user_id = ${id}`,
   "auth.device_code": (sql, id) =>
@@ -429,6 +465,43 @@ const fill = Effect.fn("fill")(function* fill(
   yield* seedOAuthGrant(person.id, workspaceId, "Synthetic erasure client");
   yield* seedConnectChoice(workspaceId, person.id);
   yield* seedNotice(person.id, workspaceId, "@erasure@social.example");
+
+  // A sign-in to an ad network, an ad account it connects that an owner
+  // allowed to spend, what was read of it, a boost that was stopped with
+  // its journal, and the audit trail's line of it.
+  const grantId = uuid7();
+  const adAccountId = uuid7();
+  const boostId = uuid7();
+
+  yield* sql`INSERT INTO ads.sign_in_attempts (state_hash, workspace_id, network, started_by, expires_at)
+    VALUES (${uuid7()}, ${workspaceId}, 'meta', ${person.id}, now() + interval '15 minutes')`;
+
+  yield* sql`INSERT INTO ads.grants (id, workspace_id, network, platform_user_id, token, token_key_id, scopes, access, granted_by, created_at, updated_at)
+    VALUES (${grantId}, ${workspaceId}, 'meta', ${uuid7()}, 'synthetic.iv.ciphertext', 'synthetic', ARRAY['ads_read'], 'working', ${person.id}, now(), now())`;
+
+  yield* sql`INSERT INTO ads.accounts (id, workspace_id, grant_id, network, external_id, name, currency, time_zone, status, connected_by, connected_at, next_sync_at, spending_enabled, monthly_ceiling, authorized_by, authorized_at)
+    VALUES (${adAccountId}, ${workspaceId}, ${grantId}, 'meta', '1001', 'Synthetic account', 'EUR', 'Europe/Paris', 'active', ${person.id}, now(), now() + interval '1 day', true, 10000, ${person.id}, now())`;
+
+  yield* sql`INSERT INTO ads.campaigns (account_id, workspace_id, external_id, name, status, raw_status, objective, synced_at)
+    VALUES (${adAccountId}, ${workspaceId}, '2001', 'Synthetic campaign', 'active', 'ACTIVE', 'engagement', now())`;
+
+  yield* sql`INSERT INTO ads.ad_sets (account_id, workspace_id, external_id, campaign_external_id, name, status, raw_status, synced_at)
+    VALUES (${adAccountId}, ${workspaceId}, '3001', '2001', 'Synthetic ad set', 'active', 'ACTIVE', now())`;
+
+  yield* sql`INSERT INTO ads.ads (account_id, workspace_id, external_id, ad_set_external_id, campaign_external_id, name, status, raw_status, synced_at)
+    VALUES (${adAccountId}, ${workspaceId}, '4001', '3001', '2001', 'Synthetic ad', 'active', 'ACTIVE', now())`;
+
+  yield* sql`INSERT INTO ads.insight_days (account_id, workspace_id, ad_external_id, day, spend, impressions, reach, clicks)
+    VALUES (${adAccountId}, ${workspaceId}, '4001', current_date, 1250, 1000, 800, 12)`;
+
+  yield* sql`INSERT INTO ads.boosts (id, workspace_id, account_id, channel_id, post_id, target_id, platform, objective, audience, budget_kind, budget_amount, committed, currency, starts_at, ends_at, state, state_at, idempotency_key, requested_by_kind, requested_by_id, created_at, updated_at)
+    VALUES (${boostId}, ${workspaceId}, ${adAccountId}, ${uuid7()}, ${uuid7()}, ${uuid7()}, 'facebook', 'engagement', ${JSON.stringify({ ageMax: 65, ageMin: 18, countries: ["US"] })}::jsonb, 'total', 5000, 5000, 'EUR', now() - interval '2 days', now() + interval '5 days', 'stopped', now(), ${uuid7()}, 'user', ${person.id}, now(), now())`;
+
+  yield* sql`INSERT INTO ads.spend_calls (id, workspace_id, boost_id, step, started_at, finished_at, outcome)
+    VALUES (${uuid7()}, ${workspaceId}, ${boostId}, 'createCampaign', now(), now(), 'done')`;
+
+  yield* sql`INSERT INTO ads.audit_events (id, workspace_id, account_id, boost_id, action, amounts, at, by_kind, by_id, currency)
+    VALUES (${uuid7()}, ${workspaceId}, ${adAccountId}, ${boostId}, 'boostRequested', ${JSON.stringify({ budget: 5000 })}::jsonb, now(), 'user', ${person.id}, 'EUR')`;
 
   // A webhook endpoint, with an event on its way to it.
   const endpointId = uuid7();

@@ -32,8 +32,8 @@ import type {
   PaidTotals,
 } from "./ports/read-model.ts";
 
-/** The longest range a report covers: 13 months, what is kept. */
-export const maxRangeDays = 396;
+/** The longest range a report covers: a year, leap day included. */
+export const maxRangeDays = 366;
 
 /** The range a report covers when none is asked: the last 30 days. */
 export const defaultRangeDays = 30;

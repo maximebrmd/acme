@@ -66,6 +66,38 @@ const media = { ...workspace, mediaId: MediaAssetIdSchema };
  * Something that happened in a workspace, as its webhook endpoints hear
  * it: `type` names it, and tells what `data` holds.
  */
+// What every boost event tells: the boost, the post it promotes, the ad
+// account that pays, its budget and what it commits, in the account's
+// minor units, its end, where it stands, and why when it failed.
+const boost = {
+  ...post,
+  adAccountId: Schema.NonEmptyString,
+  boostId: Schema.NonEmptyString,
+  budget: Schema.Struct({
+    amount: Schema.Int,
+    kind: Schema.Literals(["total", "daily"]),
+  }),
+  committed: Schema.Int,
+  currency: Schema.NonEmptyString,
+  endsAt: Schema.DateTimeUtc,
+  reason: Schema.NullOr(Schema.NonEmptyString),
+  state: Schema.NonEmptyString,
+};
+
+const boostEvent = <Type extends string>(type: Type) =>
+  Schema.Struct({ data: Schema.Struct(boost), type: Schema.Literal(type) });
+
+const boostEvents = [
+  boostEvent("boost.started"),
+  boostEvent("boost.paused"),
+  boostEvent("boost.resumed"),
+  boostEvent("boost.stopped"),
+  boostEvent("boost.ended"),
+  boostEvent("boost.failed"),
+  boostEvent("boost.unconfirmed"),
+  boostEvent("boost.budget_reached"),
+] as const;
+
 export const WebhookEventSchema = Schema.Union([
   // A post was scheduled, or moved to another time: it goes out at
   // `scheduledAt`, chosen in `timeZone`, on `targets`.
@@ -175,6 +207,10 @@ export const WebhookEventSchema = Schema.Union([
     data: Schema.Struct({ ...media, reason: Schema.NonEmptyString }),
     type: Schema.Literal("media.failed"),
   }),
+  // A boost of a published post changed: ids, amounts in the ad account's
+  // minor units, and where it stands. Never who it is shown to. The
+  // `webhook.test` event stays last, as the contract lists it.
+  ...boostEvents,
   // A member asked for a test event on the endpoint.
   Schema.Struct({
     data: Schema.Struct({ ...workspace, endpointId: WebhookEndpointIdSchema }),

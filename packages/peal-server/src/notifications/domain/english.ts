@@ -8,6 +8,64 @@ export const english: EmailCatalog = {
       "If you did not ask for this, tell whoever runs this Peal server. Peal sends no more email to this address.",
     subject: "Your Peal account is deleted",
   },
+  adBoostBudgetReached: {
+    action: "Open the post",
+    body: "A boost in {workspaceName} has spent its whole budget of {budget}. The ad network stops showing it; nothing more is spent on it.",
+    ignore:
+      "You receive this email because you own {workspaceName} on Peal. This email is always sent: an owner answers for what its ads spend.",
+    subject: "A boost has used its budget of {budget}",
+  },
+  adBoostEnded: {
+    action: "Open the post",
+    body: "A boost in {workspaceName}, with a budget of {budget}, reached its end date ({endsAt}) and no longer runs. What it spent is on the post’s page, and on your ad account’s bill.",
+    ignore:
+      "You receive this email because you own {workspaceName} on Peal. This email is always sent: an owner answers for what its ads spend.",
+    subject: "A boost has ended",
+  },
+  adBoostFailed: {
+    action: "Open the post",
+    body: "A boost in {workspaceName}, with a budget of {budget}, could not be made: {reason} Nothing ran, and nothing was spent.",
+    ignore:
+      "You receive this email because you own {workspaceName} on Peal. This email is always sent: an owner answers for what its ads spend.",
+    subject: "A boost could not be made",
+  },
+  adBoostFailureOther: "the ad network refused it.",
+  adBoostFailureReasons: {
+    accountSpendCap: "the ad account’s own spend cap leaves too little room.",
+    accountUnusable: "the ad account cannot run ads at the moment.",
+    budgetTooLow: "the budget is under the ad network’s minimum.",
+    ceilingExceeded: "the monthly ceiling leaves too little room.",
+    currencyMismatch: "its currency is not the ad account’s.",
+    networkUnavailable: "the ad network did not answer for too long.",
+    permissionMissing:
+      "the sign-in to the ad network lacks a permission ads need.",
+    postNotPromotable: "the post cannot be shown as an ad.",
+    reconnectNeeded:
+      "the ad network refused the sign-in, which its person renews by signing in again.",
+    spendingOff: "spending was turned off for the ad account.",
+    spendingUnavailable: "this server no longer offers spending on ads.",
+  },
+  adBoostStarted: {
+    action: "Open the post",
+    body: "A boost started in {workspaceName}: it may spend up to its budget of {budget}, from your ad account’s payment method, until {endsAt}. Pause or stop it at any time on the post’s page.",
+    ignore:
+      "You receive this email because you own {workspaceName} on Peal. This email is always sent: an owner answers for what its ads spend.",
+    subject: "A boost started: up to {budget} until {endsAt}",
+  },
+  adBoostUnconfirmed: {
+    action: "Open the post",
+    body: "Peal told the ad network to run a boost in {workspaceName}, with a budget of {budget}, and could not learn whether it runs. It may be spending. Check it on the post’s page, and stop it there if it should not run: Peal does nothing more to it on its own.",
+    ignore:
+      "You receive this email because you own {workspaceName} on Peal. This email is always sent: an owner answers for what its ads spend.",
+    subject: "Check a boost: Peal could not confirm it",
+  },
+  adConnectionReconnect: {
+    action: "Open ads",
+    body: "The ad network refused the sign-in that connects ad accounts to {workspaceName}. Their campaigns and numbers are no longer read, and no boost can be made on them, until the person who signed in does so again. Boosts that run keep running at the network.",
+    ignore:
+      "You receive this email because you manage the ad accounts of {workspaceName} on Peal. This email is always sent: nothing is read or changed on these accounts until someone acts.",
+    subject: "Sign in to your ad network again",
+  },
   billingEnded: {
     account:
       "The subscriptions of the workspaces it deleted were cancelled at once: nothing more is charged, and the period already paid for is not refunded, except where the law gives a refund: if you subscribed as a consumer less than 14 days ago, you may withdraw and be refunded the unused part. Their invoices are kept as accounting law requires; ask whoever runs this Peal server for a copy.",

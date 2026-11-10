@@ -24,6 +24,14 @@ export const SubscribableWebhookEventTypeSchema = Schema.Literals([
   "channel.reconnect_needed",
   "media.ready",
   "media.failed",
+  "boost.started",
+  "boost.paused",
+  "boost.resumed",
+  "boost.stopped",
+  "boost.ended",
+  "boost.failed",
+  "boost.unconfirmed",
+  "boost.budget_reached",
 ]).annotate({
   description: "An event a webhook endpoint can subscribe to.",
   identifier: "SubscribableWebhookEventType",
@@ -123,6 +131,44 @@ const envelope = {
   version: Schema.Literal(webhookEventVersion),
   workspaceExternalId: Schema.NullOr(Schema.String),
 };
+
+// What every boost event tells: the boost, the post it promotes, the ad
+// account that pays, its budget and what it commits against the monthly
+// ceiling, in the account's minor units, its end, where it stands
+// (`state`, a boost state) and why when it failed (`reason`, a boost
+// failure reason). Never who it is shown to: read the boost for that.
+const boost = {
+  ...post,
+  adAccountId: Schema.String,
+  boostId: Schema.String,
+  budget: Schema.Struct({
+    amount: Schema.Int,
+    kind: Schema.Literals(["total", "daily"]),
+  }),
+  committed: Schema.Int,
+  currency: Schema.String,
+  endsAt: Schema.DateTimeUtc,
+  reason: Schema.NullOr(Schema.String),
+  state: Schema.String,
+};
+
+const boostPayload = <Type extends string>(type: Type) =>
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct(boost),
+    type: Schema.Literal(type),
+  });
+
+const boostPayloads = [
+  boostPayload("boost.started"),
+  boostPayload("boost.paused"),
+  boostPayload("boost.resumed"),
+  boostPayload("boost.stopped"),
+  boostPayload("boost.ended"),
+  boostPayload("boost.failed"),
+  boostPayload("boost.unconfirmed"),
+  boostPayload("boost.budget_reached"),
+] as const;
 
 /**
  * The body of a webhook request: `type` names what happened, and tells what
@@ -249,6 +295,10 @@ export const WebhookPayloadSchema = Schema.Union([
     data: Schema.Struct({ ...media, reason: MediaFailureReasonSchema }),
     type: Schema.Literal("media.failed"),
   }),
+  // A boost of a published post changed: it started, was paused, resumed
+  // or stopped by a member, ended, failed, could not be confirmed, or
+  // used its whole budget.
+  ...boostPayloads,
   // A member asked for a test event on the endpoint.
   Schema.Struct({
     ...envelope,

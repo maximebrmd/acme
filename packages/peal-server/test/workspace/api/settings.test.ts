@@ -245,6 +245,7 @@ const PortsLive = Layer.mergeAll(
           }),
         exportWorkspace: () =>
           Effect.succeed({
+            ads: { accounts: [], audit: [], boosts: [], connections: [] },
             analytics: [],
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
             billing: {

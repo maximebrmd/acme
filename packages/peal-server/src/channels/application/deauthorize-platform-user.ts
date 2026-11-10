@@ -11,6 +11,7 @@ import { ChannelNotices } from "./channel-notices.ts";
 import { ChannelRepository } from "./channel-repository.ts";
 import type { InvalidSignedRequest } from "./invalid-signed-request.ts";
 import type { MetaAppNotConfigured } from "./meta-app-not-configured.ts";
+import { PlatformUserGrants } from "./platform-user-grants.ts";
 import { SignedRequests } from "./signed-requests.ts";
 
 /**
@@ -44,6 +45,7 @@ export class DeauthorizePlatformUser extends Context.Service<
   static readonly layer = Layer.effect(
     DeauthorizePlatformUser,
     Effect.gen(function* DeauthorizePlatformUserLive() {
+      const others = yield* PlatformUserGrants;
       const signed = yield* SignedRequests;
       const channels = yield* ChannelRepository;
       const locks = yield* ChannelLocks;
@@ -86,6 +88,9 @@ export class DeauthorizePlatformUser extends Context.Service<
       const deauthorize = Effect.fn("DeauthorizePlatformUser.deauthorize")(
         function* deauthorize(app: MetaAppKind, signedRequest: string) {
           const { issuedAt, userId } = yield* signed.verify(app, signedRequest);
+
+          // The user's sign-ins to the ad network rest on the same grant.
+          yield* others.deauthorized(app, userId);
 
           const found = yield* channels.restingOn({
             signedIn: channelsSignedInWith(app),

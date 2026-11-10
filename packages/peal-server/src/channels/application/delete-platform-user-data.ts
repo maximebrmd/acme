@@ -9,6 +9,7 @@ import { DataDeletionLinks } from "./data-deletion-links.ts";
 import { DataDeletions } from "./data-deletions.ts";
 import type { InvalidSignedRequest } from "./invalid-signed-request.ts";
 import type { MetaAppNotConfigured } from "./meta-app-not-configured.ts";
+import { PlatformUserGrants } from "./platform-user-grants.ts";
 import { SignedRequests } from "./signed-requests.ts";
 
 const isCode = Schema.is(DataDeletion.fields.code);
@@ -52,6 +53,7 @@ export class DeletePlatformUserData extends Context.Service<
       const deletions = yield* DataDeletions;
       const ids = yield* Ids;
       const links = yield* DataDeletionLinks;
+      const others = yield* PlatformUserGrants;
 
       const request = Effect.fn("DeletePlatformUserData.request")(
         function* request(app: MetaAppKind, signedRequest: string) {
@@ -67,6 +69,11 @@ export class DeletePlatformUserData extends Context.Service<
             signedRequest,
             userId,
           });
+
+          // What other contexts keep on the same grant goes too: the
+          // user's sign-ins to the ad network. Asked again, it finds
+          // nothing left.
+          yield* others.erase(app, userId);
 
           const receipt: DeletionReceipt = {
             deletion,
