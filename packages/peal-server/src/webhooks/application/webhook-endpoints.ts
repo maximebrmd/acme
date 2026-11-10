@@ -8,7 +8,10 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
-import { maxEndpointsPerWorkspace } from "#webhooks/domain/delivery-policy.ts";
+import {
+  manualSendsPerHour,
+  maxEndpointsPerWorkspace,
+} from "#webhooks/domain/delivery-policy.ts";
 import type { InvalidWebhookUrl } from "#webhooks/domain/invalid-webhook-url.ts";
 import { RecordedEvent } from "#webhooks/domain/recorded-event.ts";
 import type { WebhookDelivery } from "#webhooks/domain/webhook-delivery.ts";
@@ -32,9 +35,11 @@ import type { DeliveryJobs } from "./ports/delivery-jobs.ts";
 import { DeliveryStore } from "./ports/delivery-store.ts";
 import { EndpointSecrets } from "./ports/endpoint-secrets.ts";
 import { EndpointStore } from "./ports/endpoint-store.ts";
+import { ManualSends } from "./ports/manual-sends.ts";
 import { WebhookTransport } from "./ports/webhook-transport.ts";
 import type { SecretsNotConfigured } from "./secrets-not-configured.ts";
 import { TooManyEndpoints } from "./too-many-endpoints.ts";
+import { TooManyManualSends } from "./too-many-manual-sends.ts";
 import type { UrlNotDeliverable } from "./url-not-deliverable.ts";
 
 /** A new endpoint, as a member asks for one: its address not yet checked. */
@@ -146,7 +151,11 @@ export class WebhookEndpoints extends Context.Service<
       endpointId: string
     ) => Effect.Effect<
       WebhookDelivery,
-      DatabaseError | EndpointDisabled | EndpointNotFound | MissingPermission
+      | DatabaseError
+      | EndpointDisabled
+      | EndpointNotFound
+      | MissingPermission
+      | TooManyManualSends
     >;
   }
 >()("peal-server/webhooks/application/WebhookEndpoints") {
@@ -155,6 +164,7 @@ export class WebhookEndpoints extends Context.Service<
     Effect.gen(function* WebhookEndpointsLive() {
       const store = yield* EndpointStore;
       const deliveries = yield* DeliveryStore;
+      const manual = yield* ManualSends;
       const secrets = yield* EndpointSecrets;
       const transport = yield* WebhookTransport;
       const { transaction } = yield* TransactionRunner;
@@ -289,6 +299,12 @@ export class WebhookEndpoints extends Context.Service<
 
           if (endpoint.status._tag === "disabled") {
             return yield* new EndpointDisabled({ endpointId: endpoint.id });
+          }
+
+          if (!(yield* manual.take(actor.workspaceId))) {
+            return yield* new TooManyManualSends({
+              allowed: manualSendsPerHour,
+            });
           }
 
           const recorded = new RecordedEvent({

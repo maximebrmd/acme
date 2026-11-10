@@ -10,6 +10,7 @@ import {
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
 import { TooManyWebhookEndpoints } from "./too-many-webhook-endpoints.ts";
+import { TooManyWebhookSends } from "./too-many-webhook-sends.ts";
 import { WebhookDeliveryNotFound } from "./webhook-delivery-not-found.ts";
 import { WebhookEndpointDisabled } from "./webhook-endpoint-disabled.ts";
 import { WebhookEndpointNotFound } from "./webhook-endpoint-not-found.ts";
@@ -23,6 +24,12 @@ import { WorkspaceAccess } from "./workspace-access.ts";
 
 /** How many webhook endpoints a workspace may have, whatever its plan. */
 export const maxWebhookEndpoints = 10;
+
+/**
+ * How many test events and deliveries sent again a workspace's members
+ * may start in an hour.
+ */
+export const webhookManualSendsPerHour = 30;
 
 /** The longest a webhook endpoint's address may be. */
 export const maxWebhookUrlLength = 2048;
@@ -287,13 +294,17 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
       })
     ),
     HttpApiEndpoint.post("sendTest", "/:endpointId/test", {
-      error: [Forbidden, WebhookEndpointNotFound, WebhookEndpointDisabled],
+      error: [
+        Forbidden,
+        WebhookEndpointNotFound,
+        WebhookEndpointDisabled,
+        TooManyWebhookSends,
+      ],
       params: endpoint,
       success: WebhookDeliverySchema.pipe(HttpApiSchema.status(202)),
     }).annotateMerge(
       OpenApi.annotations({
-        description:
-          "Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.",
+        description: `Sends the endpoint a \`webhook.test\` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends ${webhookManualSendsPerHour} test events and deliveries again an hour at most (429 \`TooManyWebhookSends\`). Needs webhook:manage.`,
         summary: "Send a test event",
       })
     ),
@@ -327,14 +338,14 @@ export class WebhooksApi extends HttpApiGroup.make("webhooks")
           WebhookEndpointNotFound,
           WebhookDeliveryNotFound,
           WebhookEndpointDisabled,
+          TooManyWebhookSends,
         ],
         params: { ...endpoint, deliveryId: Schema.String },
         success: WebhookDeliverySchema.pipe(HttpApiSchema.status(202)),
       }
     ).annotateMerge(
       OpenApi.annotations({
-        description:
-          "Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same `webhook-id` and body, with a new timestamp and signature. Needs webhook:manage.",
+        description: `Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same \`webhook-id\` and body, with a new timestamp and signature. A workspace sends ${webhookManualSendsPerHour} test events and deliveries again an hour at most (429 \`TooManyWebhookSends\`). Needs webhook:manage.`,
         summary: "Send a delivery again",
       })
     )

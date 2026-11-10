@@ -7,6 +7,7 @@ import {
   Forbidden,
   TooManyWebhookEndpoints,
   WebhookDeliveryNotFound,
+  TooManyWebhookSends,
   WebhookEndpointDisabled,
   WebhookEndpointNotFound,
   WebhooksNotConfigured,
@@ -29,6 +30,9 @@ const forbidden = () => Effect.fail(new Forbidden());
 const endpointNotFound = () => Effect.fail(new WebhookEndpointNotFound());
 
 const endpointDisabled = () => Effect.fail(new WebhookEndpointDisabled());
+
+const tooManySends = ({ allowed }: { readonly allowed: number }) =>
+  Effect.fail(new TooManyWebhookSends({ allowed }));
 
 const urlRefused = ({ reason }: { readonly reason: WebhookUrlRefusal }) =>
   Effect.fail(new WebhookUrlRefused({ reason }));
@@ -162,6 +166,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
                 EndpointDisabled: endpointDisabled,
                 EndpointNotFound: endpointNotFound,
                 MissingPermission: forbidden,
+                TooManyManualSends: tooManySends,
               })
             );
         }),
@@ -190,6 +195,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
               EndpointDisabled: endpointDisabled,
               EndpointNotFound: endpointNotFound,
               MissingPermission: forbidden,
+              TooManyManualSends: tooManySends,
             })
           );
         }),

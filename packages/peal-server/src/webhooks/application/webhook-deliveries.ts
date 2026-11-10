@@ -6,6 +6,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { manualSendsPerHour } from "#webhooks/domain/delivery-policy.ts";
 import { WebhookDeliveryIdSchema } from "#webhooks/domain/webhook-delivery-id.ts";
 import type { WebhookDelivery } from "#webhooks/domain/webhook-delivery.ts";
 import { WebhookEndpointIdSchema } from "#webhooks/domain/webhook-endpoint-id.ts";
@@ -22,6 +23,8 @@ import type {
   DeliveryPageRequest,
 } from "./ports/delivery-store.ts";
 import { EndpointStore } from "./ports/endpoint-store.ts";
+import { ManualSends } from "./ports/manual-sends.ts";
+import { TooManyManualSends } from "./too-many-manual-sends.ts";
 
 const decodeEndpointId = Schema.decodeUnknownOption(WebhookEndpointIdSchema);
 
@@ -58,6 +61,7 @@ export class WebhookDeliveries extends Context.Service<
       | EndpointDisabled
       | EndpointNotFound
       | MissingPermission
+      | TooManyManualSends
     >;
   }
 >()("peal-server/webhooks/application/WebhookDeliveries") {
@@ -66,6 +70,7 @@ export class WebhookDeliveries extends Context.Service<
     Effect.gen(function* WebhookDeliveriesLive() {
       const endpoints = yield* EndpointStore;
       const deliveries = yield* DeliveryStore;
+      const manual = yield* ManualSends;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<DeliveryJobs | DeliveryStore | Ids>();
 
@@ -120,6 +125,12 @@ export class WebhookDeliveries extends Context.Service<
 
           if (endpoint.status._tag === "disabled") {
             return yield* new EndpointDisabled({ endpointId: endpoint.id });
+          }
+
+          if (!(yield* manual.take(actor.workspaceId))) {
+            return yield* new TooManyManualSends({
+              allowed: manualSendsPerHour,
+            });
           }
 
           return yield* transaction(dispatch(endpoint, recorded.value));

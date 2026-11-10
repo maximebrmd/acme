@@ -15,8 +15,12 @@ import {
 } from "#test/webhooks/support.ts";
 import { DeliverWebhook } from "#webhooks/application/deliver-webhook.ts";
 import { EndpointStore } from "#webhooks/application/ports/endpoint-store.ts";
+import { WebhookDeliveries } from "#webhooks/application/webhook-deliveries.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
-import { maxEndpointsPerWorkspace } from "#webhooks/domain/delivery-policy.ts";
+import {
+  manualSendsPerHour,
+  maxEndpointsPerWorkspace,
+} from "#webhooks/domain/delivery-policy.ts";
 import { changeEndpoint } from "#webhooks/domain/webhook-endpoint.ts";
 
 const tagOf = <E extends { readonly _tag: string }, R>(
@@ -409,6 +413,41 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
       });
       assert.lengthOf(yield* transport.sentTo(bystander.host), 0);
     })
+  );
+
+  it.effect(
+    "are sent so many test events and deliveries again an hour, a workspace",
+    () =>
+      Effect.gen(function* capped() {
+        const owner = yield* freshOwner;
+        const other = yield* freshOwner;
+        const endpoints = yield* WebhookEndpoints;
+        const deliveries = yield* WebhookDeliveries;
+        const { endpoint } = yield* freshEndpoint(owner);
+        const theirs = yield* freshEndpoint(other);
+
+        const first = yield* endpoints.sendTest(owner, endpoint.id);
+
+        yield* Effect.forEach(
+          Array.from({ length: manualSendsPerHour - 1 }),
+          () => deliveries.redeliver(owner, endpoint.id, first.id),
+          { discard: true }
+        );
+
+        // The hour's sends are spent, by tests and resends together.
+        assert.deepStrictEqual(
+          yield* Effect.all([
+            tagOf(endpoints.sendTest(owner, endpoint.id)),
+            tagOf(deliveries.redeliver(owner, endpoint.id, first.id)),
+          ]),
+          ["TooManyManualSends", "TooManyManualSends"]
+        );
+
+        // Another workspace has its own, and the hour gives them back.
+        yield* endpoints.sendTest(other, theirs.endpoint.id);
+        yield* TestClock.adjust("61 minutes");
+        yield* endpoints.sendTest(owner, endpoint.id);
+      })
   );
 
   it.effect("belong to no workspace but their own in a list", () =>

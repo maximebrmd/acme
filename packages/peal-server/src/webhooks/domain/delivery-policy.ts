@@ -43,5 +43,13 @@ export const turnOffAfterFailingFor = Duration.days(5);
  */
 export const secretOverlap = Duration.hours(24);
 
+/**
+ * How many test events and deliveries sent again a workspace's members
+ * may start in an hour: each is up to eight requests from Peal's address
+ * to a host they chose. Enough to set a receiver up, too few to aim Peal
+ * at someone. The contract copies it.
+ */
+export const manualSendsPerHour = 30;
+
 /** How long a delivery stays in its endpoint's log, with its event. */
 export const deliveryRetention = Duration.days(30);

@@ -531,6 +531,8 @@ Two actions help while you build:
 - **Send a test event** sends the endpoint a [`webhook.test`](#webhook-test) event.
 - **Send again** sends a delivery's event to the endpoint once more, as a new delivery of the same event: same `webhook-id`, same body, a new timestamp and a new signature. A server that deduplicates will see it as one it already handled.
 
+A workspace sends 30 test events and deliveries again an hour at most, counted together: past it, both answer `TooManyWebhookSends` (429) until the hour is over.
+
 Both need the endpoint to be on.
 
 ## Verify a delivery [#verify]

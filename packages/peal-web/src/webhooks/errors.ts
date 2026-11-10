@@ -12,6 +12,7 @@ export const WebhookErrorKeySchema = Schema.Literals([
   "forbidden",
   "notConfigured",
   "notFound",
+  "tooManySends",
   "unknown",
 ]);
 
@@ -28,6 +29,7 @@ const reasons = new Map<string, WebhookErrorKey>([
   ["Forbidden", "forbidden"],
   ["WebhookDeliveryNotFound", "deliveryNotFound"],
   ["WebhookEndpointDisabled", "endpointDisabled"],
+  ["TooManyWebhookSends", "tooManySends"],
   ["WebhookEndpointNotFound", "notFound"],
   ["WebhooksNotConfigured", "notConfigured"],
 ]);

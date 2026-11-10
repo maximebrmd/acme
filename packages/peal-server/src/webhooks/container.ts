@@ -14,6 +14,7 @@ import { DrizzleEndpointStore } from "#webhooks/infrastructure/drizzle-endpoint-
 import { DrizzleWebhookRecords } from "#webhooks/infrastructure/drizzle-webhook-records.ts";
 import { HttpWebhookTransport } from "#webhooks/infrastructure/http-webhook-transport.ts";
 import { NotifiedEndpointNotices } from "#webhooks/infrastructure/notified-endpoint-notices.ts";
+import { WindowedManualSends } from "#webhooks/infrastructure/windowed-manual-sends.ts";
 import { WorkflowDeliveryJobs } from "#webhooks/infrastructure/workflow-delivery-jobs.ts";
 
 // Deliveries go to hosts members chose: through the outbound guard, which
@@ -39,7 +40,11 @@ export const webhooksWith = <ROut, E, R>(adapters: Layer.Layer<ROut, E, R>) =>
     DeliverWebhook.layer,
     PurgeDeliveries.layer,
     WebhookOversight.layer
-  ).pipe(Layer.provideMerge(adapters));
+  ).pipe(
+    Layer.provideMerge(adapters),
+    // Counted in this process, unless the adapters bring another count.
+    Layer.provide(WindowedManualSends)
+  );
 
 /**
  * The webhooks context as the server runs it: endpoints, events and

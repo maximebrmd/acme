@@ -531,6 +531,8 @@ Deux actions aident pendant la mise au point :
 - **Envoyer un événement de test** envoie au point de terminaison un événement [`webhook.test`](#webhook-test).
 - **Renvoyer** envoie de nouveau l’événement d’une livraison au point de terminaison, comme une nouvelle livraison du même événement : même `webhook-id`, même corps, un nouvel horodatage et une nouvelle signature. Un serveur qui déduplique y verra un événement déjà traité.
 
+Un espace de travail envoie au plus 30 événements de test et renvois par heure, comptés ensemble : au-delà, les deux répondent `TooManyWebhookSends` (429) jusqu’à la fin de l’heure.
+
 Les deux demandent que le point de terminaison soit activé.
 
 ## Vérifier une livraison [#verify]

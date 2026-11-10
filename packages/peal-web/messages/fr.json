@@ -1412,6 +1412,7 @@
       "deliveryNotFound": "Cette livraison n’est plus dans le journal.",
       "notConfigured": "Ce serveur ne peut pas conserver de secrets de signature : la personne qui l’administre n’a pas défini les clés qui les chiffrent.",
       "endpointDisabled": "Le point de terminaison est désactivé. Activez-le d’abord.",
+      "tooManySends": "L’espace de travail a envoyé autant d’événements de test et de renvois qu’il le peut en une heure. Réessayez plus tard.",
       "tooMany": "L’espace de travail a déjà {allowed, number} points de terminaison, le maximum. Supprimez-en un d’abord.",
       "urlRefused": "{reason, select, malformed {Ce n’est pas une adresse.} notHttps {L’adresse doit être en HTTPS, sur le port par défaut.} credentials {L’adresse ne doit porter ni nom d’utilisateur ni mot de passe.} tooLong {L’adresse est trop longue.} notPublic {L’hôte de l’adresse n’est pas public, donc Peal ne lui envoie aucune requête.} unknownHost {L’hôte de l’adresse n’existe pas.} other {Peal ne livre pas à cette adresse.}}",
       "unknown": "Une erreur est survenue. Réessayez."

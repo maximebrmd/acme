@@ -28,6 +28,7 @@ import type {
   TargetStatusConflict,
   TooManyInvitations,
   TooManyWebhookEndpoints,
+  TooManyWebhookSends,
   Unauthenticated,
   UnknownChannels,
   UnknownMedia,
@@ -79,6 +80,7 @@ export type ApiFailure =
   | TargetStatusConflict
   | TooManyInvitations
   | TooManyWebhookEndpoints
+  | TooManyWebhookSends
   | Unauthenticated
   | UnknownChannels
   | UnknownMedia
@@ -301,6 +303,10 @@ export const explain =
       TooManyWebhookEndpoints: ({ allowed }) =>
         refused(
           `The workspace has ${String(allowed)} webhook endpoints, the most it may, whatever its plan: delete one first, with peal webhooks delete.`
+        ),
+      TooManyWebhookSends: ({ allowed }) =>
+        refused(
+          `The workspace sent ${String(allowed)} test events and deliveries again within an hour, the most it may: nothing was sent. Try again later.`
         ),
       Unauthenticated: () => new SignInExpired({ url }),
       UnknownChannels: ({ channelIds }) =>

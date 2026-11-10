@@ -753,6 +753,8 @@ export { UserNotFound } from "./user-not-found.ts";
 
 export { TooManyWebhookEndpoints } from "./too-many-webhook-endpoints.ts";
 
+export { TooManyWebhookSends } from "./too-many-webhook-sends.ts";
+
 export { WebhookDeliveryNotFound } from "./webhook-delivery-not-found.ts";
 
 export { WebhookEndpointDisabled } from "./webhook-endpoint-disabled.ts";
@@ -789,6 +791,7 @@ export {
   maxWebhookDeliveryPageSize,
   maxWebhookDescriptionLength,
   maxWebhookEndpoints,
+  webhookManualSendsPerHour,
   maxWebhookUrlLength,
   NewWebhookEndpointSchema,
   WebhookAttemptErrorSchema,
