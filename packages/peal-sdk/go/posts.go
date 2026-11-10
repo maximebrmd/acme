@@ -522,6 +522,99 @@ func (s *SchedulePost) MarshalJSON() ([]byte, error) {
 	return json.Marshal(explicitMarshaler)
 }
 
+var (
+	newPostFieldIdempotencyKey = big.NewInt(1 << 0)
+	newPostFieldWorkspaceID    = big.NewInt(1 << 1)
+	newPostFieldChannelIDs     = big.NewInt(1 << 2)
+	newPostFieldContent        = big.NewInt(1 << 3)
+	newPostFieldOptions        = big.NewInt(1 << 4)
+	newPostFieldWhen           = big.NewInt(1 << 5)
+)
+
+type NewPost struct {
+	IdempotencyKey *string           `json:"-" url:"-"`
+	WorkspaceID    string            `json:"-" url:"-"`
+	ChannelIDs     []string          `json:"channelIds" url:"-"`
+	Content        *PostContent      `json:"content" url:"-"`
+	Options        []*ChannelOptions `json:"options,omitempty" url:"-"`
+	When           *PostTiming       `json:"when" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (n *NewPost) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetIdempotencyKey sets the IdempotencyKey field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetIdempotencyKey(idempotencyKey *string) {
+	n.IdempotencyKey = idempotencyKey
+	n.require(newPostFieldIdempotencyKey)
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetWorkspaceID(workspaceID string) {
+	n.WorkspaceID = workspaceID
+	n.require(newPostFieldWorkspaceID)
+}
+
+// SetChannelIDs sets the ChannelIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetChannelIDs(channelIDs []string) {
+	n.ChannelIDs = channelIDs
+	n.require(newPostFieldChannelIDs)
+}
+
+// SetContent sets the Content field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetContent(content *PostContent) {
+	n.Content = content
+	n.require(newPostFieldContent)
+}
+
+// SetOptions sets the Options field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetOptions(options []*ChannelOptions) {
+	n.Options = options
+	n.require(newPostFieldOptions)
+}
+
+// SetWhen sets the When field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NewPost) SetWhen(when *PostTiming) {
+	n.When = when
+	n.require(newPostFieldWhen)
+}
+
+func (n *NewPost) UnmarshalJSON(data []byte) error {
+	type unmarshaler NewPost
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*n = NewPost(body)
+	return nil
+}
+
+func (n *NewPost) MarshalJSON() ([]byte, error) {
+	type embed NewPost
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
 type AttemptResult string
 
 const (
@@ -899,30 +992,39 @@ func (m *MediaAttachment) String() string {
 }
 
 var (
-	postFieldAuthorID = big.NewInt(1 << 0)
-	postFieldContent  = big.NewInt(1 << 1)
-	postFieldID       = big.NewInt(1 << 2)
-	postFieldOutcome  = big.NewInt(1 << 3)
-	postFieldSchedule = big.NewInt(1 << 4)
-	postFieldStatus   = big.NewInt(1 << 5)
-	postFieldTargets  = big.NewInt(1 << 6)
+	postFieldAuthorID     = big.NewInt(1 << 0)
+	postFieldContent      = big.NewInt(1 << 1)
+	postFieldCreatedVia   = big.NewInt(1 << 2)
+	postFieldID           = big.NewInt(1 << 3)
+	postFieldOutcome      = big.NewInt(1 << 4)
+	postFieldSchedule     = big.NewInt(1 << 5)
+	postFieldScheduledBy  = big.NewInt(1 << 6)
+	postFieldScheduledVia = big.NewInt(1 << 7)
+	postFieldStatus       = big.NewInt(1 << 8)
+	postFieldTargets      = big.NewInt(1 << 9)
 )
 
 // postNullableFields maps the wire names of Post's nullable fields (required or optional) to their field bits.
 var postNullableFields = map[string]*big.Int{
-	"authorId": postFieldAuthorID,
-	"outcome":  postFieldOutcome,
-	"schedule": postFieldSchedule,
+	"authorId":     postFieldAuthorID,
+	"createdVia":   postFieldCreatedVia,
+	"outcome":      postFieldOutcome,
+	"schedule":     postFieldSchedule,
+	"scheduledBy":  postFieldScheduledBy,
+	"scheduledVia": postFieldScheduledVia,
 }
 
 type Post struct {
-	AuthorID *string       `json:"authorId,omitempty" url:"authorId,omitempty"`
-	Content  *PostContent  `json:"content" url:"content"`
-	ID       string        `json:"id" url:"id"`
-	Outcome  *PostOutcome  `json:"outcome,omitempty" url:"outcome,omitempty"`
-	Schedule *PostSchedule `json:"schedule,omitempty" url:"schedule,omitempty"`
-	Status   PostStatus    `json:"status" url:"status"`
-	Targets  []*PostTarget `json:"targets" url:"targets"`
+	AuthorID     *string       `json:"authorId,omitempty" url:"authorId,omitempty"`
+	Content      *PostContent  `json:"content" url:"content"`
+	CreatedVia   *PostOrigin   `json:"createdVia,omitempty" url:"createdVia,omitempty"`
+	ID           string        `json:"id" url:"id"`
+	Outcome      *PostOutcome  `json:"outcome,omitempty" url:"outcome,omitempty"`
+	Schedule     *PostSchedule `json:"schedule,omitempty" url:"schedule,omitempty"`
+	ScheduledBy  *string       `json:"scheduledBy,omitempty" url:"scheduledBy,omitempty"`
+	ScheduledVia *PostOrigin   `json:"scheduledVia,omitempty" url:"scheduledVia,omitempty"`
+	Status       PostStatus    `json:"status" url:"status"`
+	Targets      []*PostTarget `json:"targets" url:"targets"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -945,6 +1047,13 @@ func (p *Post) GetContent() *PostContent {
 	return p.Content
 }
 
+func (p *Post) GetCreatedVia() *PostOrigin {
+	if p == nil {
+		return nil
+	}
+	return p.CreatedVia
+}
+
 func (p *Post) GetID() string {
 	if p == nil {
 		return ""
@@ -964,6 +1073,20 @@ func (p *Post) GetSchedule() *PostSchedule {
 		return nil
 	}
 	return p.Schedule
+}
+
+func (p *Post) GetScheduledBy() *string {
+	if p == nil {
+		return nil
+	}
+	return p.ScheduledBy
+}
+
+func (p *Post) GetScheduledVia() *PostOrigin {
+	if p == nil {
+		return nil
+	}
+	return p.ScheduledVia
 }
 
 func (p *Post) GetStatus() PostStatus {
@@ -1010,6 +1133,13 @@ func (p *Post) SetContent(content *PostContent) {
 	p.require(postFieldContent)
 }
 
+// SetCreatedVia sets the CreatedVia field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Post) SetCreatedVia(createdVia *PostOrigin) {
+	p.CreatedVia = createdVia
+	p.require(postFieldCreatedVia)
+}
+
 // SetID sets the ID field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *Post) SetID(id string) {
@@ -1029,6 +1159,20 @@ func (p *Post) SetOutcome(outcome *PostOutcome) {
 func (p *Post) SetSchedule(schedule *PostSchedule) {
 	p.Schedule = schedule
 	p.require(postFieldSchedule)
+}
+
+// SetScheduledBy sets the ScheduledBy field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Post) SetScheduledBy(scheduledBy *string) {
+	p.ScheduledBy = scheduledBy
+	p.require(postFieldScheduledBy)
+}
+
+// SetScheduledVia sets the ScheduledVia field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *Post) SetScheduledVia(scheduledVia *PostOrigin) {
+	p.ScheduledVia = scheduledVia
+	p.require(postFieldScheduledVia)
 }
 
 // SetStatus sets the Status field and marks it as non-optional;
@@ -1328,6 +1472,162 @@ func (p *PostDraft) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	postOriginFieldID   = big.NewInt(1 << 0)
+	postOriginFieldName = big.NewInt(1 << 1)
+	postOriginFieldVia  = big.NewInt(1 << 2)
+)
+
+// postOriginNullableFields maps the wire names of PostOrigin's nullable fields (required or optional) to their field bits.
+var postOriginNullableFields = map[string]*big.Int{
+	"id":   postOriginFieldID,
+	"name": postOriginFieldName,
+}
+
+type PostOrigin struct {
+	ID   *string       `json:"id,omitempty" url:"id,omitempty"`
+	Name *string       `json:"name,omitempty" url:"name,omitempty"`
+	Via  PostOriginVia `json:"via" url:"via"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostOrigin) GetID() *string {
+	if p == nil {
+		return nil
+	}
+	return p.ID
+}
+
+func (p *PostOrigin) GetName() *string {
+	if p == nil {
+		return nil
+	}
+	return p.Name
+}
+
+func (p *PostOrigin) GetVia() PostOriginVia {
+	if p == nil {
+		return ""
+	}
+	return p.Via
+}
+
+func (p *PostOrigin) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostOrigin) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostOrigin) SetID(id *string) {
+	p.ID = id
+	p.require(postOriginFieldID)
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostOrigin) SetName(name *string) {
+	p.Name = name
+	p.require(postOriginFieldName)
+}
+
+// SetVia sets the Via field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostOrigin) SetVia(via PostOriginVia) {
+	p.Via = via
+	p.require(postOriginFieldVia)
+}
+
+func (p *PostOrigin) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostOrigin
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostOrigin(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, postOriginNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostOrigin) MarshalJSON() ([]byte, error) {
+	type embed PostOrigin
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostOrigin) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+type PostOriginVia string
+
+const (
+	PostOriginViaWeb         PostOriginVia = "web"
+	PostOriginViaAPIKey      PostOriginVia = "apiKey"
+	PostOriginViaApplication PostOriginVia = "application"
+)
+
+func NewPostOriginViaFromString(s string) (PostOriginVia, error) {
+	switch s {
+	case "web":
+		return PostOriginViaWeb, nil
+	case "apiKey":
+		return PostOriginViaAPIKey, nil
+	case "application":
+		return PostOriginViaApplication, nil
+	}
+	var t PostOriginVia
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PostOriginVia) Ptr() *PostOriginVia {
+	return &p
 }
 
 type PostOutcome string
@@ -1772,6 +2072,320 @@ func NewPostTargetStatusFromString(s string) (PostTargetStatus, error) {
 
 func (p PostTargetStatus) Ptr() *PostTargetStatus {
 	return &p
+}
+
+type PostTiming struct {
+	Type string
+	Now  *PostTimingNow
+	At   *PostTimingAt
+
+	rawJSON json.RawMessage
+}
+
+func (p *PostTiming) GetType() string {
+	if p == nil {
+		return ""
+	}
+	return p.Type
+}
+
+func (p *PostTiming) GetNow() *PostTimingNow {
+	if p == nil {
+		return nil
+	}
+	return p.Now
+}
+
+func (p *PostTiming) GetAt() *PostTimingAt {
+	if p == nil {
+		return nil
+	}
+	return p.At
+}
+
+func (p *PostTiming) UnmarshalJSON(data []byte) error {
+	var unmarshaler struct {
+		Type string `json:"_tag"`
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	p.Type = unmarshaler.Type
+	if unmarshaler.Type == "" {
+		return fmt.Errorf("%T did not include discriminant _tag", p)
+	}
+	switch unmarshaler.Type {
+	case "now":
+		value := new(PostTimingNow)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.Now = value
+	case "at":
+		value := new(PostTimingAt)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		p.At = value
+	}
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p PostTiming) MarshalJSON() ([]byte, error) {
+	if err := p.validate(); err != nil {
+		return nil, err
+	}
+	if p.Now != nil {
+		return internal.MarshalJSONWithExtraProperty(p.Now, "_tag", "now")
+	}
+	if p.At != nil {
+		return internal.MarshalJSONWithExtraProperty(p.At, "_tag", "at")
+	}
+	if len(p.rawJSON) > 0 {
+		return p.rawJSON, nil
+	}
+	return nil, fmt.Errorf("type %T does not define a non-empty union type", p)
+}
+
+type PostTimingVisitor interface {
+	VisitNow(*PostTimingNow) error
+	VisitAt(*PostTimingAt) error
+}
+
+func (p *PostTiming) Accept(visitor PostTimingVisitor) error {
+	if p.Now != nil {
+		return visitor.VisitNow(p.Now)
+	}
+	if p.At != nil {
+		return visitor.VisitAt(p.At)
+	}
+	return fmt.Errorf("type %T does not define a non-empty union type", p)
+}
+
+func (p *PostTiming) validate() error {
+	if p == nil {
+		return fmt.Errorf("type %T is nil", p)
+	}
+	var fields []string
+	if p.Now != nil {
+		fields = append(fields, "now")
+	}
+	if p.At != nil {
+		fields = append(fields, "at")
+	}
+	if len(fields) == 0 {
+		if p.Type != "" {
+			if len(p.rawJSON) > 0 {
+				return nil
+			}
+			return fmt.Errorf("type %T defines a discriminant set to %q but the field is not set", p, p.Type)
+		}
+		return fmt.Errorf("type %T is empty", p)
+	}
+	if len(fields) > 1 {
+		return fmt.Errorf("type %T defines values for %s, but only one value is allowed", p, fields)
+	}
+	if p.Type != "" {
+		field := fields[0]
+		if p.Type != field {
+			return fmt.Errorf(
+				"type %T defines a discriminant set to %q, but it does not match the %T field; either remove or update the discriminant to match",
+				p,
+				p.Type,
+				p,
+			)
+		}
+	}
+	return nil
+}
+
+var (
+	postTimingAtFieldAt       = big.NewInt(1 << 0)
+	postTimingAtFieldTimeZone = big.NewInt(1 << 1)
+)
+
+type PostTimingAt struct {
+	At       string `json:"at" url:"at"`
+	TimeZone string `json:"timeZone" url:"timeZone"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostTimingAt) GetAt() string {
+	if p == nil {
+		return ""
+	}
+	return p.At
+}
+
+func (p *PostTimingAt) GetTimeZone() string {
+	if p == nil {
+		return ""
+	}
+	return p.TimeZone
+}
+
+func (p *PostTimingAt) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostTimingAt) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetAt sets the At field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTimingAt) SetAt(at string) {
+	p.At = at
+	p.require(postTimingAtFieldAt)
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTimingAt) SetTimeZone(timeZone string) {
+	p.TimeZone = timeZone
+	p.require(postTimingAtFieldTimeZone)
+}
+
+func (p *PostTimingAt) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostTimingAt
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostTimingAt(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostTimingAt) MarshalJSON() ([]byte, error) {
+	type embed PostTimingAt
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostTimingAt) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	postTimingNowFieldTimeZone = big.NewInt(1 << 0)
+)
+
+type PostTimingNow struct {
+	TimeZone *string `json:"timeZone,omitempty" url:"timeZone,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostTimingNow) GetTimeZone() *string {
+	if p == nil {
+		return nil
+	}
+	return p.TimeZone
+}
+
+func (p *PostTimingNow) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostTimingNow) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetTimeZone sets the TimeZone field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTimingNow) SetTimeZone(timeZone *string) {
+	p.TimeZone = timeZone
+	p.require(postTimingNowFieldTimeZone)
+}
+
+func (p *PostTimingNow) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostTimingNow
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostTimingNow(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostTimingNow) MarshalJSON() ([]byte, error) {
+	type embed PostTimingNow
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostTimingNow) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
 }
 
 var (

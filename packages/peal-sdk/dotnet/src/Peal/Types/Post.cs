@@ -17,6 +17,9 @@ public record Post : IJsonOnDeserialized
     [JsonPropertyName("content")]
     public required PostContent Content { get; set; }
 
+    [JsonPropertyName("createdVia")]
+    public PostOrigin? CreatedVia { get; set; }
+
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
@@ -25,6 +28,12 @@ public record Post : IJsonOnDeserialized
 
     [JsonPropertyName("schedule")]
     public PostSchedule? Schedule { get; set; }
+
+    [JsonPropertyName("scheduledBy")]
+    public string? ScheduledBy { get; set; }
+
+    [JsonPropertyName("scheduledVia")]
+    public PostOrigin? ScheduledVia { get; set; }
 
     [JsonPropertyName("status")]
     public required PostStatus Status { get; set; }

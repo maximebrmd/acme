@@ -57,6 +57,7 @@ require_relative "peal/posts/client"
 require_relative "peal/posts/types/drafts_posts_request"
 require_relative "peal/posts/types/list_posts_request"
 require_relative "peal/posts/types/create_posts_request"
+require_relative "peal/posts/types/new_post"
 require_relative "peal/posts/types/get_posts_request"
 require_relative "peal/posts/types/update_posts_request"
 require_relative "peal/posts/types/discard_posts_request"
@@ -70,6 +71,7 @@ require_relative "peal/posts/types/cancel_posts_request"
 require_relative "peal/media/client"
 require_relative "peal/media/types/list_media_request"
 require_relative "peal/media/types/new_upload"
+require_relative "peal/media/types/media_import"
 require_relative "peal/media/types/get_media_request"
 require_relative "peal/media/types/delete_media_request"
 require_relative "peal/media/types/media_description"
@@ -112,9 +114,15 @@ module Peal
     autoload :NotFoundErrorBody, ::File.join(__dir__, "peal/types/not_found_error_body")
     autoload :AltTextTooLongEncodedTag, ::File.join(__dir__, "peal/types/alt_text_too_long_encoded_tag")
     autoload :AltTextTooLongEncoded, ::File.join(__dir__, "peal/types/alt_text_too_long_encoded")
+    autoload :MediaSourceFailure, ::File.join(__dir__, "peal/types/media_source_failure")
+    autoload :MediaSourceNotPublicEncoded, ::File.join(__dir__, "peal/types/media_source_not_public_encoded")
+    autoload :MediaSourceUnreachableEncoded, ::File.join(__dir__, "peal/types/media_source_unreachable_encoded")
     autoload :MediaTooLargeEncodedKind, ::File.join(__dir__, "peal/types/media_too_large_encoded_kind")
     autoload :MediaTooLargeEncoded, ::File.join(__dir__, "peal/types/media_too_large_encoded")
+    autoload :RejectionReason, ::File.join(__dir__, "peal/types/rejection_reason")
     autoload :UnsupportedMediaTypeEncoded, ::File.join(__dir__, "peal/types/unsupported_media_type_encoded")
+    autoload :UploadRejectedEncodedTag, ::File.join(__dir__, "peal/types/upload_rejected_encoded_tag")
+    autoload :UploadRejectedEncoded, ::File.join(__dir__, "peal/types/upload_rejected_encoded")
     autoload :UnprocessableEntityErrorBody, ::File.join(__dir__, "peal/types/unprocessable_entity_error_body")
     autoload :AlreadyMemberEncoded, ::File.join(__dir__, "peal/types/already_member_encoded")
     autoload :TooManyInvitationsEncoded, ::File.join(__dir__, "peal/types/too_many_invitations_encoded")
@@ -224,6 +232,8 @@ module Peal
     autoload :MediaAttachment, ::File.join(__dir__, "peal/types/media_attachment")
     autoload :TextOverride, ::File.join(__dir__, "peal/types/text_override")
     autoload :PostContent, ::File.join(__dir__, "peal/types/post_content")
+    autoload :PostOriginVia, ::File.join(__dir__, "peal/types/post_origin_via")
+    autoload :PostOrigin, ::File.join(__dir__, "peal/types/post_origin")
     autoload :PostOutcome, ::File.join(__dir__, "peal/types/post_outcome")
     autoload :PostSchedule, ::File.join(__dir__, "peal/types/post_schedule")
     autoload :PostStatus, ::File.join(__dir__, "peal/types/post_status")
@@ -234,6 +244,8 @@ module Peal
     autoload :DraftPage, ::File.join(__dir__, "peal/types/draft_page")
     autoload :ForbiddenEncodedTag, ::File.join(__dir__, "peal/types/forbidden_encoded_tag")
     autoload :ForbiddenEncoded, ::File.join(__dir__, "peal/types/forbidden_encoded")
+    autoload :IdempotencyKeyReusedEncodedTag, ::File.join(__dir__, "peal/types/idempotency_key_reused_encoded_tag")
+    autoload :IdempotencyKeyReusedEncoded, ::File.join(__dir__, "peal/types/idempotency_key_reused_encoded")
     autoload :InvalidDateRangeEncodedTag, ::File.join(__dir__, "peal/types/invalid_date_range_encoded_tag")
     autoload :InvalidDateRangeEncoded, ::File.join(__dir__, "peal/types/invalid_date_range_encoded")
     autoload :InvalidTimeRangeEncodedTag, ::File.join(__dir__, "peal/types/invalid_time_range_encoded_tag")
@@ -250,7 +262,6 @@ module Peal
     autoload :MediaKind, ::File.join(__dir__, "peal/types/media_kind")
     autoload :MediaStatusPending, ::File.join(__dir__, "peal/types/media_status_pending")
     autoload :MediaStatusReady, ::File.join(__dir__, "peal/types/media_status_ready")
-    autoload :RejectionReason, ::File.join(__dir__, "peal/types/rejection_reason")
     autoload :MediaStatusRejected, ::File.join(__dir__, "peal/types/media_status_rejected")
     autoload :ProbeState, ::File.join(__dir__, "peal/types/probe_state")
     autoload :MediaStatusUploaded, ::File.join(__dir__, "peal/types/media_status_uploaded")
@@ -293,6 +304,9 @@ module Peal
     autoload :PostNotFoundEncoded, ::File.join(__dir__, "peal/types/post_not_found_encoded")
     autoload :PostStatusConflictEncodedTag, ::File.join(__dir__, "peal/types/post_status_conflict_encoded_tag")
     autoload :PostStatusConflictEncoded, ::File.join(__dir__, "peal/types/post_status_conflict_encoded")
+    autoload :PostTimingAt, ::File.join(__dir__, "peal/types/post_timing_at")
+    autoload :PostTimingNow, ::File.join(__dir__, "peal/types/post_timing_now")
+    autoload :PostTiming, ::File.join(__dir__, "peal/types/post_timing")
     autoload :SignedRequestMethod, ::File.join(__dir__, "peal/types/signed_request_method")
     autoload :SignedRequest, ::File.join(__dir__, "peal/types/signed_request")
     autoload :UploadPart, ::File.join(__dir__, "peal/types/upload_part")
@@ -323,8 +337,6 @@ module Peal
     autoload :UnreadNotices, ::File.join(__dir__, "peal/types/unread_notices")
     autoload :UploadIncompleteEncodedTag, ::File.join(__dir__, "peal/types/upload_incomplete_encoded_tag")
     autoload :UploadIncompleteEncoded, ::File.join(__dir__, "peal/types/upload_incomplete_encoded")
-    autoload :UploadRejectedEncodedTag, ::File.join(__dir__, "peal/types/upload_rejected_encoded_tag")
-    autoload :UploadRejectedEncoded, ::File.join(__dir__, "peal/types/upload_rejected_encoded")
     autoload :WorkspaceMember, ::File.join(__dir__, "peal/types/workspace_member")
     autoload :EffectHttpApiErrorBadRequestEncodedTag, ::File.join(__dir__, "peal/types/effect_http_api_error_bad_request_encoded_tag")
     autoload :EffectHttpApiErrorBadRequestEncoded, ::File.join(__dir__, "peal/types/effect_http_api_error_bad_request_encoded")

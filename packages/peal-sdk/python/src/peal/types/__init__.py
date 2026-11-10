@@ -132,6 +132,8 @@ if typing.TYPE_CHECKING:
     from .failure_reason import FailureReason
     from .forbidden_encoded import ForbiddenEncoded
     from .forbidden_encoded_tag import ForbiddenEncodedTag
+    from .idempotency_key_reused_encoded import IdempotencyKeyReusedEncoded
+    from .idempotency_key_reused_encoded_tag import IdempotencyKeyReusedEncodedTag
     from .instagram_connection import InstagramConnection
     from .invalid_date_range_encoded import InvalidDateRangeEncoded
     from .invalid_date_range_encoded_tag import InvalidDateRangeEncodedTag
@@ -153,6 +155,9 @@ if typing.TYPE_CHECKING:
     from .media_kind import MediaKind
     from .media_not_found_encoded import MediaNotFoundEncoded
     from .media_page import MediaPage
+    from .media_source_failure import MediaSourceFailure
+    from .media_source_not_public_encoded import MediaSourceNotPublicEncoded
+    from .media_source_unreachable_encoded import MediaSourceUnreachableEncoded
     from .media_status import (
         MediaStatus,
         MediaStatus_Pending,
@@ -227,6 +232,8 @@ if typing.TYPE_CHECKING:
     from .post_draft import PostDraft
     from .post_metrics import PostMetrics
     from .post_not_found_encoded import PostNotFoundEncoded
+    from .post_origin import PostOrigin
+    from .post_origin_via import PostOriginVia
     from .post_outcome import PostOutcome
     from .post_schedule import PostSchedule
     from .post_status import PostStatus
@@ -234,6 +241,9 @@ if typing.TYPE_CHECKING:
     from .post_status_conflict_encoded_tag import PostStatusConflictEncodedTag
     from .post_target import PostTarget
     from .post_target_status import PostTargetStatus
+    from .post_timing import PostTiming, PostTiming_At, PostTiming_Now
+    from .post_timing_at import PostTimingAt
+    from .post_timing_now import PostTimingNow
     from .prepared_upload import PreparedUpload
     from .probe_state import ProbeState
     from .publication_attempt import PublicationAttempt
@@ -274,8 +284,11 @@ if typing.TYPE_CHECKING:
     from .unprocessable_entity_error_body import (
         UnprocessableEntityErrorBody,
         UnprocessableEntityErrorBody_AltTextTooLong,
+        UnprocessableEntityErrorBody_MediaSourceNotPublic,
+        UnprocessableEntityErrorBody_MediaSourceUnreachable,
         UnprocessableEntityErrorBody_MediaTooLarge,
         UnprocessableEntityErrorBody_UnsupportedMediaType,
+        UnprocessableEntityErrorBody_UploadRejected,
     )
     from .unread_notices import UnreadNotices
     from .unsupported_media_type_encoded import UnsupportedMediaTypeEncoded
@@ -419,6 +432,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "FailureReason": ".failure_reason",
     "ForbiddenEncoded": ".forbidden_encoded",
     "ForbiddenEncodedTag": ".forbidden_encoded_tag",
+    "IdempotencyKeyReusedEncoded": ".idempotency_key_reused_encoded",
+    "IdempotencyKeyReusedEncodedTag": ".idempotency_key_reused_encoded_tag",
     "InstagramConnection": ".instagram_connection",
     "InvalidDateRangeEncoded": ".invalid_date_range_encoded",
     "InvalidDateRangeEncodedTag": ".invalid_date_range_encoded_tag",
@@ -440,6 +455,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "MediaKind": ".media_kind",
     "MediaNotFoundEncoded": ".media_not_found_encoded",
     "MediaPage": ".media_page",
+    "MediaSourceFailure": ".media_source_failure",
+    "MediaSourceNotPublicEncoded": ".media_source_not_public_encoded",
+    "MediaSourceUnreachableEncoded": ".media_source_unreachable_encoded",
     "MediaStatus": ".media_status",
     "MediaStatusPending": ".media_status_pending",
     "MediaStatusReady": ".media_status_ready",
@@ -508,6 +526,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostDraft": ".post_draft",
     "PostMetrics": ".post_metrics",
     "PostNotFoundEncoded": ".post_not_found_encoded",
+    "PostOrigin": ".post_origin",
+    "PostOriginVia": ".post_origin_via",
     "PostOutcome": ".post_outcome",
     "PostSchedule": ".post_schedule",
     "PostStatus": ".post_status",
@@ -515,6 +535,11 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostStatusConflictEncodedTag": ".post_status_conflict_encoded_tag",
     "PostTarget": ".post_target",
     "PostTargetStatus": ".post_target_status",
+    "PostTiming": ".post_timing",
+    "PostTimingAt": ".post_timing_at",
+    "PostTimingNow": ".post_timing_now",
+    "PostTiming_At": ".post_timing",
+    "PostTiming_Now": ".post_timing",
     "PreparedUpload": ".prepared_upload",
     "ProbeState": ".probe_state",
     "PublicationAttempt": ".publication_attempt",
@@ -562,8 +587,11 @@ _dynamic_imports: typing.Dict[str, str] = {
     "UnknownMediaEncoded": ".unknown_media_encoded",
     "UnprocessableEntityErrorBody": ".unprocessable_entity_error_body",
     "UnprocessableEntityErrorBody_AltTextTooLong": ".unprocessable_entity_error_body",
+    "UnprocessableEntityErrorBody_MediaSourceNotPublic": ".unprocessable_entity_error_body",
+    "UnprocessableEntityErrorBody_MediaSourceUnreachable": ".unprocessable_entity_error_body",
     "UnprocessableEntityErrorBody_MediaTooLarge": ".unprocessable_entity_error_body",
     "UnprocessableEntityErrorBody_UnsupportedMediaType": ".unprocessable_entity_error_body",
+    "UnprocessableEntityErrorBody_UploadRejected": ".unprocessable_entity_error_body",
     "UnreadNotices": ".unread_notices",
     "UnsupportedMediaTypeEncoded": ".unsupported_media_type_encoded",
     "UploadIncompleteEncoded": ".upload_incomplete_encoded",
@@ -732,6 +760,8 @@ __all__ = [
     "FailureReason",
     "ForbiddenEncoded",
     "ForbiddenEncodedTag",
+    "IdempotencyKeyReusedEncoded",
+    "IdempotencyKeyReusedEncodedTag",
     "InstagramConnection",
     "InvalidDateRangeEncoded",
     "InvalidDateRangeEncodedTag",
@@ -753,6 +783,9 @@ __all__ = [
     "MediaKind",
     "MediaNotFoundEncoded",
     "MediaPage",
+    "MediaSourceFailure",
+    "MediaSourceNotPublicEncoded",
+    "MediaSourceUnreachableEncoded",
     "MediaStatus",
     "MediaStatusPending",
     "MediaStatusReady",
@@ -821,6 +854,8 @@ __all__ = [
     "PostDraft",
     "PostMetrics",
     "PostNotFoundEncoded",
+    "PostOrigin",
+    "PostOriginVia",
     "PostOutcome",
     "PostSchedule",
     "PostStatus",
@@ -828,6 +863,11 @@ __all__ = [
     "PostStatusConflictEncodedTag",
     "PostTarget",
     "PostTargetStatus",
+    "PostTiming",
+    "PostTimingAt",
+    "PostTimingNow",
+    "PostTiming_At",
+    "PostTiming_Now",
     "PreparedUpload",
     "ProbeState",
     "PublicationAttempt",
@@ -875,8 +915,11 @@ __all__ = [
     "UnknownMediaEncoded",
     "UnprocessableEntityErrorBody",
     "UnprocessableEntityErrorBody_AltTextTooLong",
+    "UnprocessableEntityErrorBody_MediaSourceNotPublic",
+    "UnprocessableEntityErrorBody_MediaSourceUnreachable",
     "UnprocessableEntityErrorBody_MediaTooLarge",
     "UnprocessableEntityErrorBody_UnsupportedMediaType",
+    "UnprocessableEntityErrorBody_UploadRejected",
     "UnreadNotices",
     "UnsupportedMediaTypeEncoded",
     "UploadIncompleteEncoded",

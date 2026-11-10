@@ -7,6 +7,7 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .post_content import PostContent
+from .post_origin import PostOrigin
 from .post_outcome import PostOutcome
 from .post_schedule import PostSchedule
 from .post_status import PostStatus
@@ -18,9 +19,18 @@ class Post(UniversalBaseModel):
         typing.Optional[str], FieldMetadata(alias="authorId"), pydantic.Field(alias="authorId")
     ] = None
     content: PostContent
+    created_via: typing_extensions.Annotated[
+        typing.Optional[PostOrigin], FieldMetadata(alias="createdVia"), pydantic.Field(alias="createdVia")
+    ] = None
     id: str
     outcome: typing.Optional[PostOutcome] = None
     schedule: typing.Optional[PostSchedule] = None
+    scheduled_by: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="scheduledBy"), pydantic.Field(alias="scheduledBy")
+    ] = None
+    scheduled_via: typing_extensions.Annotated[
+        typing.Optional[PostOrigin], FieldMetadata(alias="scheduledVia"), pydantic.Field(alias="scheduledVia")
+    ] = None
     status: PostStatus
     targets: typing.List[PostTarget]
 

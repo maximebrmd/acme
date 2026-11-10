@@ -30,11 +30,17 @@ public final class Post {
 
     private final PostContent content;
 
+    private final Optional<PostOrigin> createdVia;
+
     private final String id;
 
     private final Optional<PostOutcome> outcome;
 
     private final Optional<PostSchedule> schedule;
+
+    private final Optional<String> scheduledBy;
+
+    private final Optional<PostOrigin> scheduledVia;
 
     private final PostStatus status;
 
@@ -45,17 +51,23 @@ public final class Post {
     private Post(
             Optional<String> authorId,
             PostContent content,
+            Optional<PostOrigin> createdVia,
             String id,
             Optional<PostOutcome> outcome,
             Optional<PostSchedule> schedule,
+            Optional<String> scheduledBy,
+            Optional<PostOrigin> scheduledVia,
             PostStatus status,
             List<PostTarget> targets,
             Map<String, Object> additionalProperties) {
         this.authorId = authorId;
         this.content = content;
+        this.createdVia = createdVia;
         this.id = id;
         this.outcome = outcome;
         this.schedule = schedule;
+        this.scheduledBy = scheduledBy;
+        this.scheduledVia = scheduledVia;
         this.status = status;
         this.targets = targets;
         this.additionalProperties = additionalProperties;
@@ -72,6 +84,14 @@ public final class Post {
     @JsonProperty("content")
     public PostContent getContent() {
         return content;
+    }
+
+    @JsonIgnore
+    public Optional<PostOrigin> getCreatedVia() {
+        if (createdVia == null) {
+            return Optional.empty();
+        }
+        return createdVia;
     }
 
     @JsonProperty("id")
@@ -95,6 +115,22 @@ public final class Post {
         return schedule;
     }
 
+    @JsonIgnore
+    public Optional<String> getScheduledBy() {
+        if (scheduledBy == null) {
+            return Optional.empty();
+        }
+        return scheduledBy;
+    }
+
+    @JsonIgnore
+    public Optional<PostOrigin> getScheduledVia() {
+        if (scheduledVia == null) {
+            return Optional.empty();
+        }
+        return scheduledVia;
+    }
+
     @JsonProperty("status")
     public PostStatus getStatus() {
         return status;
@@ -112,6 +148,12 @@ public final class Post {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("createdVia")
+    private Optional<PostOrigin> _getCreatedVia() {
+        return createdVia;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("outcome")
     private Optional<PostOutcome> _getOutcome() {
         return outcome;
@@ -121,6 +163,18 @@ public final class Post {
     @JsonProperty("schedule")
     private Optional<PostSchedule> _getSchedule() {
         return schedule;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("scheduledBy")
+    private Optional<String> _getScheduledBy() {
+        return scheduledBy;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("scheduledVia")
+    private Optional<PostOrigin> _getScheduledVia() {
+        return scheduledVia;
     }
 
     @java.lang.Override
@@ -137,9 +191,12 @@ public final class Post {
     private boolean equalTo(Post other) {
         return authorId.equals(other.authorId)
                 && content.equals(other.content)
+                && createdVia.equals(other.createdVia)
                 && id.equals(other.id)
                 && outcome.equals(other.outcome)
                 && schedule.equals(other.schedule)
+                && scheduledBy.equals(other.scheduledBy)
+                && scheduledVia.equals(other.scheduledVia)
                 && status.equals(other.status)
                 && targets.equals(other.targets);
     }
@@ -147,7 +204,16 @@ public final class Post {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.authorId, this.content, this.id, this.outcome, this.schedule, this.status, this.targets);
+                this.authorId,
+                this.content,
+                this.createdVia,
+                this.id,
+                this.outcome,
+                this.schedule,
+                this.scheduledBy,
+                this.scheduledVia,
+                this.status,
+                this.targets);
     }
 
     @java.lang.Override
@@ -186,6 +252,12 @@ public final class Post {
 
         _FinalStage authorId(Nullable<String> authorId);
 
+        _FinalStage createdVia(Optional<PostOrigin> createdVia);
+
+        _FinalStage createdVia(PostOrigin createdVia);
+
+        _FinalStage createdVia(Nullable<PostOrigin> createdVia);
+
         _FinalStage outcome(Optional<PostOutcome> outcome);
 
         _FinalStage outcome(PostOutcome outcome);
@@ -197,6 +269,18 @@ public final class Post {
         _FinalStage schedule(PostSchedule schedule);
 
         _FinalStage schedule(Nullable<PostSchedule> schedule);
+
+        _FinalStage scheduledBy(Optional<String> scheduledBy);
+
+        _FinalStage scheduledBy(String scheduledBy);
+
+        _FinalStage scheduledBy(Nullable<String> scheduledBy);
+
+        _FinalStage scheduledVia(Optional<PostOrigin> scheduledVia);
+
+        _FinalStage scheduledVia(PostOrigin scheduledVia);
+
+        _FinalStage scheduledVia(Nullable<PostOrigin> scheduledVia);
 
         _FinalStage targets(List<PostTarget> targets);
 
@@ -215,9 +299,15 @@ public final class Post {
 
         private List<PostTarget> targets = new ArrayList<>();
 
+        private Optional<PostOrigin> scheduledVia = Optional.empty();
+
+        private Optional<String> scheduledBy = Optional.empty();
+
         private Optional<PostSchedule> schedule = Optional.empty();
 
         private Optional<PostOutcome> outcome = Optional.empty();
+
+        private Optional<PostOrigin> createdVia = Optional.empty();
 
         private Optional<String> authorId = Optional.empty();
 
@@ -229,9 +319,12 @@ public final class Post {
         public Builder from(Post other) {
             authorId(other.getAuthorId());
             content(other.getContent());
+            createdVia(other.getCreatedVia());
             id(other.getId());
             outcome(other.getOutcome());
             schedule(other.getSchedule());
+            scheduledBy(other.getScheduledBy());
+            scheduledVia(other.getScheduledVia());
             status(other.getStatus());
             targets(other.getTargets());
             return this;
@@ -279,6 +372,56 @@ public final class Post {
             if (targets != null) {
                 this.targets.addAll(targets);
             }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage scheduledVia(Nullable<PostOrigin> scheduledVia) {
+            if (scheduledVia.isNull()) {
+                this.scheduledVia = null;
+            } else if (scheduledVia.isEmpty()) {
+                this.scheduledVia = Optional.empty();
+            } else {
+                this.scheduledVia = Optional.of(scheduledVia.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage scheduledVia(PostOrigin scheduledVia) {
+            this.scheduledVia = Optional.ofNullable(scheduledVia);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "scheduledVia", nulls = Nulls.SKIP)
+        public _FinalStage scheduledVia(Optional<PostOrigin> scheduledVia) {
+            this.scheduledVia = scheduledVia;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage scheduledBy(Nullable<String> scheduledBy) {
+            if (scheduledBy.isNull()) {
+                this.scheduledBy = null;
+            } else if (scheduledBy.isEmpty()) {
+                this.scheduledBy = Optional.empty();
+            } else {
+                this.scheduledBy = Optional.of(scheduledBy.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage scheduledBy(String scheduledBy) {
+            this.scheduledBy = Optional.ofNullable(scheduledBy);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "scheduledBy", nulls = Nulls.SKIP)
+        public _FinalStage scheduledBy(Optional<String> scheduledBy) {
+            this.scheduledBy = scheduledBy;
             return this;
         }
 
@@ -333,6 +476,31 @@ public final class Post {
         }
 
         @java.lang.Override
+        public _FinalStage createdVia(Nullable<PostOrigin> createdVia) {
+            if (createdVia.isNull()) {
+                this.createdVia = null;
+            } else if (createdVia.isEmpty()) {
+                this.createdVia = Optional.empty();
+            } else {
+                this.createdVia = Optional.of(createdVia.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage createdVia(PostOrigin createdVia) {
+            this.createdVia = Optional.ofNullable(createdVia);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "createdVia", nulls = Nulls.SKIP)
+        public _FinalStage createdVia(Optional<PostOrigin> createdVia) {
+            this.createdVia = createdVia;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage authorId(Nullable<String> authorId) {
             if (authorId.isNull()) {
                 this.authorId = null;
@@ -359,16 +527,30 @@ public final class Post {
 
         @java.lang.Override
         public Post build() {
-            return new Post(authorId, content, id, outcome, schedule, status, targets, additionalProperties);
+            return new Post(
+                    authorId,
+                    content,
+                    createdVia,
+                    id,
+                    outcome,
+                    schedule,
+                    scheduledBy,
+                    scheduledVia,
+                    status,
+                    targets,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("authorId")
                     || key.equalsIgnoreCase("content")
+                    || key.equalsIgnoreCase("createdVia")
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("outcome")
                     || key.equalsIgnoreCase("schedule")
+                    || key.equalsIgnoreCase("scheduledBy")
+                    || key.equalsIgnoreCase("scheduledVia")
                     || key.equalsIgnoreCase("status")
                     || key.equalsIgnoreCase("targets")) {
                 return;

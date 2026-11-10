@@ -12,6 +12,9 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
      *    'UnsupportedMediaType'
      *   |'MediaTooLarge'
      *   |'AltTextTooLong'
+     *   |'MediaSourceNotPublic'
+     *   |'MediaSourceUnreachable'
+     *   |'UploadRejected'
      *   |'_unknown'
      * ) $type
      */
@@ -22,6 +25,9 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
      *    UnsupportedMediaTypeEncoded
      *   |MediaTooLargeEncoded
      *   |AltTextTooLongEncoded
+     *   |MediaSourceNotPublicEncoded
+     *   |MediaSourceUnreachableEncoded
+     *   |UploadRejectedEncoded
      *   |mixed
      * ) $value
      */
@@ -33,12 +39,18 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
      *    'UnsupportedMediaType'
      *   |'MediaTooLarge'
      *   |'AltTextTooLong'
+     *   |'MediaSourceNotPublic'
+     *   |'MediaSourceUnreachable'
+     *   |'UploadRejected'
      *   |'_unknown'
      * ),
      *   value: (
      *    UnsupportedMediaTypeEncoded
      *   |MediaTooLargeEncoded
      *   |AltTextTooLongEncoded
+     *   |MediaSourceNotPublicEncoded
+     *   |MediaSourceUnreachableEncoded
+     *   |UploadRejectedEncoded
      *   |mixed
      * ),
      * } $values
@@ -83,6 +95,42 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
         return new UnprocessableEntityErrorBody([
             'type' => 'AltTextTooLong',
             'value' => $altTextTooLong,
+        ]);
+    }
+
+    /**
+     * @param MediaSourceNotPublicEncoded $mediaSourceNotPublic
+     * @return UnprocessableEntityErrorBody
+     */
+    public static function mediaSourceNotPublic(MediaSourceNotPublicEncoded $mediaSourceNotPublic): UnprocessableEntityErrorBody
+    {
+        return new UnprocessableEntityErrorBody([
+            'type' => 'MediaSourceNotPublic',
+            'value' => $mediaSourceNotPublic,
+        ]);
+    }
+
+    /**
+     * @param MediaSourceUnreachableEncoded $mediaSourceUnreachable
+     * @return UnprocessableEntityErrorBody
+     */
+    public static function mediaSourceUnreachable(MediaSourceUnreachableEncoded $mediaSourceUnreachable): UnprocessableEntityErrorBody
+    {
+        return new UnprocessableEntityErrorBody([
+            'type' => 'MediaSourceUnreachable',
+            'value' => $mediaSourceUnreachable,
+        ]);
+    }
+
+    /**
+     * @param UploadRejectedEncoded $uploadRejected
+     * @return UnprocessableEntityErrorBody
+     */
+    public static function uploadRejected(UploadRejectedEncoded $uploadRejected): UnprocessableEntityErrorBody
+    {
+        return new UnprocessableEntityErrorBody([
+            'type' => 'UploadRejected',
+            'value' => $uploadRejected,
         ]);
     }
 
@@ -153,6 +201,72 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isMediaSourceNotPublic(): bool
+    {
+        return $this->value instanceof MediaSourceNotPublicEncoded && $this->type === 'MediaSourceNotPublic';
+    }
+
+    /**
+     * @return MediaSourceNotPublicEncoded
+     */
+    public function asMediaSourceNotPublic(): MediaSourceNotPublicEncoded
+    {
+        if (!($this->value instanceof MediaSourceNotPublicEncoded && $this->type === 'MediaSourceNotPublic')) {
+            throw new Exception(
+                "Expected MediaSourceNotPublic; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isMediaSourceUnreachable(): bool
+    {
+        return $this->value instanceof MediaSourceUnreachableEncoded && $this->type === 'MediaSourceUnreachable';
+    }
+
+    /**
+     * @return MediaSourceUnreachableEncoded
+     */
+    public function asMediaSourceUnreachable(): MediaSourceUnreachableEncoded
+    {
+        if (!($this->value instanceof MediaSourceUnreachableEncoded && $this->type === 'MediaSourceUnreachable')) {
+            throw new Exception(
+                "Expected MediaSourceUnreachable; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isUploadRejected(): bool
+    {
+        return $this->value instanceof UploadRejectedEncoded && $this->type === 'UploadRejected';
+    }
+
+    /**
+     * @return UploadRejectedEncoded
+     */
+    public function asUploadRejected(): UploadRejectedEncoded
+    {
+        if (!($this->value instanceof UploadRejectedEncoded && $this->type === 'UploadRejected')) {
+            throw new Exception(
+                "Expected UploadRejected; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -182,6 +296,18 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
                 break;
             case 'AltTextTooLong':
                 $value = $this->asAltTextTooLong()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'MediaSourceNotPublic':
+                $value = $this->asMediaSourceNotPublic()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'MediaSourceUnreachable':
+                $value = $this->asMediaSourceUnreachable()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'UploadRejected':
+                $value = $this->asUploadRejected()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -228,6 +354,15 @@ class UnprocessableEntityErrorBody extends JsonSerializableType
                 break;
             case 'AltTextTooLong':
                 $args['value'] = AltTextTooLongEncoded::jsonDeserialize($data);
+                break;
+            case 'MediaSourceNotPublic':
+                $args['value'] = MediaSourceNotPublicEncoded::jsonDeserialize($data);
+                break;
+            case 'MediaSourceUnreachable':
+                $args['value'] = MediaSourceUnreachableEncoded::jsonDeserialize($data);
+                break;
+            case 'UploadRejected':
+                $args['value'] = UploadRejectedEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

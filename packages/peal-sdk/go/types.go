@@ -5940,6 +5940,111 @@ func (f ForbiddenEncodedTag) Ptr() *ForbiddenEncodedTag {
 }
 
 var (
+	idempotencyKeyReusedEncodedFieldTag = big.NewInt(1 << 0)
+)
+
+type IdempotencyKeyReusedEncoded struct {
+	Tag IdempotencyKeyReusedEncodedTag `json:"_tag" url:"_tag"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *IdempotencyKeyReusedEncoded) GetTag() IdempotencyKeyReusedEncodedTag {
+	if i == nil {
+		return ""
+	}
+	return i.Tag
+}
+
+func (i *IdempotencyKeyReusedEncoded) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *IdempotencyKeyReusedEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *IdempotencyKeyReusedEncoded) SetTag(tag IdempotencyKeyReusedEncodedTag) {
+	i.Tag = tag
+	i.require(idempotencyKeyReusedEncodedFieldTag)
+}
+
+func (i *IdempotencyKeyReusedEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler IdempotencyKeyReusedEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = IdempotencyKeyReusedEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *IdempotencyKeyReusedEncoded) MarshalJSON() ([]byte, error) {
+	type embed IdempotencyKeyReusedEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *IdempotencyKeyReusedEncoded) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+type IdempotencyKeyReusedEncodedTag string
+
+const (
+	IdempotencyKeyReusedEncodedTagIdempotencyKeyReused IdempotencyKeyReusedEncodedTag = "IdempotencyKeyReused"
+)
+
+func NewIdempotencyKeyReusedEncodedTagFromString(s string) (IdempotencyKeyReusedEncodedTag, error) {
+	switch s {
+	case "IdempotencyKeyReused":
+		return IdempotencyKeyReusedEncodedTagIdempotencyKeyReused, nil
+	}
+	var t IdempotencyKeyReusedEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (i IdempotencyKeyReusedEncodedTag) Ptr() *IdempotencyKeyReusedEncodedTag {
+	return &i
+}
+
+var (
 	invalidDateRangeEncodedFieldTag = big.NewInt(1 << 0)
 )
 
@@ -6511,6 +6616,218 @@ func (m *MediaNotFoundEncoded) MarshalJSON() ([]byte, error) {
 }
 
 func (m *MediaNotFoundEncoded) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+type MediaSourceFailure string
+
+const (
+	MediaSourceFailureUnknownHost      MediaSourceFailure = "unknownHost"
+	MediaSourceFailureNoAnswer         MediaSourceFailure = "noAnswer"
+	MediaSourceFailureBadStatus        MediaSourceFailure = "badStatus"
+	MediaSourceFailureTooManyRedirects MediaSourceFailure = "tooManyRedirects"
+	MediaSourceFailureTooSlow          MediaSourceFailure = "tooSlow"
+)
+
+func NewMediaSourceFailureFromString(s string) (MediaSourceFailure, error) {
+	switch s {
+	case "unknownHost":
+		return MediaSourceFailureUnknownHost, nil
+	case "noAnswer":
+		return MediaSourceFailureNoAnswer, nil
+	case "badStatus":
+		return MediaSourceFailureBadStatus, nil
+	case "tooManyRedirects":
+		return MediaSourceFailureTooManyRedirects, nil
+	case "tooSlow":
+		return MediaSourceFailureTooSlow, nil
+	}
+	var t MediaSourceFailure
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (m MediaSourceFailure) Ptr() *MediaSourceFailure {
+	return &m
+}
+
+type MediaSourceNotPublicEncoded struct {
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MediaSourceNotPublicEncoded) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MediaSourceNotPublicEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+func (m *MediaSourceNotPublicEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler MediaSourceNotPublicEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MediaSourceNotPublicEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MediaSourceNotPublicEncoded) MarshalJSON() ([]byte, error) {
+	type embed MediaSourceNotPublicEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MediaSourceNotPublicEncoded) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+var (
+	mediaSourceUnreachableEncodedFieldReason = big.NewInt(1 << 0)
+	mediaSourceUnreachableEncodedFieldStatus = big.NewInt(1 << 1)
+)
+
+// mediaSourceUnreachableEncodedNullableFields maps the wire names of MediaSourceUnreachableEncoded's nullable fields (required or optional) to their field bits.
+var mediaSourceUnreachableEncodedNullableFields = map[string]*big.Int{
+	"status": mediaSourceUnreachableEncodedFieldStatus,
+}
+
+type MediaSourceUnreachableEncoded struct {
+	Reason MediaSourceFailure `json:"reason" url:"reason"`
+	Status *int               `json:"status,omitempty" url:"status,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MediaSourceUnreachableEncoded) GetReason() MediaSourceFailure {
+	if m == nil {
+		return ""
+	}
+	return m.Reason
+}
+
+func (m *MediaSourceUnreachableEncoded) GetStatus() *int {
+	if m == nil {
+		return nil
+	}
+	return m.Status
+}
+
+func (m *MediaSourceUnreachableEncoded) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MediaSourceUnreachableEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetReason sets the Reason field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaSourceUnreachableEncoded) SetReason(reason MediaSourceFailure) {
+	m.Reason = reason
+	m.require(mediaSourceUnreachableEncodedFieldReason)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaSourceUnreachableEncoded) SetStatus(status *int) {
+	m.Status = status
+	m.require(mediaSourceUnreachableEncodedFieldStatus)
+}
+
+func (m *MediaSourceUnreachableEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler MediaSourceUnreachableEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MediaSourceUnreachableEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, mediaSourceUnreachableEncodedNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		m.require(presentFields)
+	}
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MediaSourceUnreachableEncoded) MarshalJSON() ([]byte, error) {
+	type embed MediaSourceUnreachableEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MediaSourceUnreachableEncoded) String() string {
 	if m == nil {
 		return "<nil>"
 	}
@@ -8203,10 +8520,13 @@ func (u *UnknownMediaEncoded) String() string {
 }
 
 type UnprocessableEntityErrorBody struct {
-	Type                 string
-	UnsupportedMediaType *UnsupportedMediaTypeEncoded
-	MediaTooLarge        *MediaTooLargeEncoded
-	AltTextTooLong       *AltTextTooLongEncoded
+	Type                   string
+	UnsupportedMediaType   *UnsupportedMediaTypeEncoded
+	MediaTooLarge          *MediaTooLargeEncoded
+	AltTextTooLong         *AltTextTooLongEncoded
+	MediaSourceNotPublic   *MediaSourceNotPublicEncoded
+	MediaSourceUnreachable *MediaSourceUnreachableEncoded
+	UploadRejected         *UploadRejectedEncoded
 
 	rawJSON json.RawMessage
 }
@@ -8239,6 +8559,27 @@ func (u *UnprocessableEntityErrorBody) GetAltTextTooLong() *AltTextTooLongEncode
 	return u.AltTextTooLong
 }
 
+func (u *UnprocessableEntityErrorBody) GetMediaSourceNotPublic() *MediaSourceNotPublicEncoded {
+	if u == nil {
+		return nil
+	}
+	return u.MediaSourceNotPublic
+}
+
+func (u *UnprocessableEntityErrorBody) GetMediaSourceUnreachable() *MediaSourceUnreachableEncoded {
+	if u == nil {
+		return nil
+	}
+	return u.MediaSourceUnreachable
+}
+
+func (u *UnprocessableEntityErrorBody) GetUploadRejected() *UploadRejectedEncoded {
+	if u == nil {
+		return nil
+	}
+	return u.UploadRejected
+}
+
 func (u *UnprocessableEntityErrorBody) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -8269,6 +8610,24 @@ func (u *UnprocessableEntityErrorBody) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		u.AltTextTooLong = value
+	case "MediaSourceNotPublic":
+		value := new(MediaSourceNotPublicEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.MediaSourceNotPublic = value
+	case "MediaSourceUnreachable":
+		value := new(MediaSourceUnreachableEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.MediaSourceUnreachable = value
+	case "UploadRejected":
+		value := new(UploadRejectedEncoded)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		u.UploadRejected = value
 	}
 	u.rawJSON = json.RawMessage(data)
 	return nil
@@ -8287,6 +8646,15 @@ func (u UnprocessableEntityErrorBody) MarshalJSON() ([]byte, error) {
 	if u.AltTextTooLong != nil {
 		return internal.MarshalJSONWithExtraProperty(u.AltTextTooLong, "_tag", "AltTextTooLong")
 	}
+	if u.MediaSourceNotPublic != nil {
+		return internal.MarshalJSONWithExtraProperty(u.MediaSourceNotPublic, "_tag", "MediaSourceNotPublic")
+	}
+	if u.MediaSourceUnreachable != nil {
+		return internal.MarshalJSONWithExtraProperty(u.MediaSourceUnreachable, "_tag", "MediaSourceUnreachable")
+	}
+	if u.UploadRejected != nil {
+		return internal.MarshalJSONWithExtraProperty(u.UploadRejected, "_tag", "UploadRejected")
+	}
 	if len(u.rawJSON) > 0 {
 		return u.rawJSON, nil
 	}
@@ -8297,6 +8665,9 @@ type UnprocessableEntityErrorBodyVisitor interface {
 	VisitUnsupportedMediaType(*UnsupportedMediaTypeEncoded) error
 	VisitMediaTooLarge(*MediaTooLargeEncoded) error
 	VisitAltTextTooLong(*AltTextTooLongEncoded) error
+	VisitMediaSourceNotPublic(*MediaSourceNotPublicEncoded) error
+	VisitMediaSourceUnreachable(*MediaSourceUnreachableEncoded) error
+	VisitUploadRejected(*UploadRejectedEncoded) error
 }
 
 func (u *UnprocessableEntityErrorBody) Accept(visitor UnprocessableEntityErrorBodyVisitor) error {
@@ -8308,6 +8679,15 @@ func (u *UnprocessableEntityErrorBody) Accept(visitor UnprocessableEntityErrorBo
 	}
 	if u.AltTextTooLong != nil {
 		return visitor.VisitAltTextTooLong(u.AltTextTooLong)
+	}
+	if u.MediaSourceNotPublic != nil {
+		return visitor.VisitMediaSourceNotPublic(u.MediaSourceNotPublic)
+	}
+	if u.MediaSourceUnreachable != nil {
+		return visitor.VisitMediaSourceUnreachable(u.MediaSourceUnreachable)
+	}
+	if u.UploadRejected != nil {
+		return visitor.VisitUploadRejected(u.UploadRejected)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", u)
 }
@@ -8325,6 +8705,15 @@ func (u *UnprocessableEntityErrorBody) validate() error {
 	}
 	if u.AltTextTooLong != nil {
 		fields = append(fields, "AltTextTooLong")
+	}
+	if u.MediaSourceNotPublic != nil {
+		fields = append(fields, "MediaSourceNotPublic")
+	}
+	if u.MediaSourceUnreachable != nil {
+		fields = append(fields, "MediaSourceUnreachable")
+	}
+	if u.UploadRejected != nil {
+		fields = append(fields, "UploadRejected")
 	}
 	if len(fields) == 0 {
 		if u.Type != "" {

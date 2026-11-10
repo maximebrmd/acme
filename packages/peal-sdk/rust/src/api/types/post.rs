@@ -7,12 +7,21 @@ pub struct Post {
     pub author_id: Option<String>,
     #[serde(default)]
     pub content: PostContent,
+    #[serde(rename = "createdVia")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_via: Option<PostOrigin>,
     #[serde(default)]
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub outcome: Option<PostOutcome>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub schedule: Option<PostSchedule>,
+    #[serde(rename = "scheduledBy")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scheduled_by: Option<String>,
+    #[serde(rename = "scheduledVia")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scheduled_via: Option<PostOrigin>,
     pub status: PostStatus,
     #[serde(default)]
     pub targets: Vec<PostTarget>,
@@ -29,9 +38,12 @@ impl Post {
 pub struct PostBuilder {
     author_id: Option<String>,
     content: Option<PostContent>,
+    created_via: Option<PostOrigin>,
     id: Option<String>,
     outcome: Option<PostOutcome>,
     schedule: Option<PostSchedule>,
+    scheduled_by: Option<String>,
+    scheduled_via: Option<PostOrigin>,
     status: Option<PostStatus>,
     targets: Option<Vec<PostTarget>>,
 }
@@ -47,6 +59,11 @@ impl PostBuilder {
         self
     }
 
+    pub fn created_via(mut self, value: PostOrigin) -> Self {
+        self.created_via = Some(value);
+        self
+    }
+
     pub fn id(mut self, value: impl Into<String>) -> Self {
         self.id = Some(value.into());
         self
@@ -59,6 +76,16 @@ impl PostBuilder {
 
     pub fn schedule(mut self, value: PostSchedule) -> Self {
         self.schedule = Some(value);
+        self
+    }
+
+    pub fn scheduled_by(mut self, value: impl Into<String>) -> Self {
+        self.scheduled_by = Some(value.into());
+        self
+    }
+
+    pub fn scheduled_via(mut self, value: PostOrigin) -> Self {
+        self.scheduled_via = Some(value);
         self
     }
 
@@ -84,9 +111,12 @@ impl PostBuilder {
             content: self
                 .content
                 .ok_or_else(|| BuildError::missing_field("content"))?,
+            created_via: self.created_via,
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             outcome: self.outcome,
             schedule: self.schedule,
+            scheduled_by: self.scheduled_by,
+            scheduled_via: self.scheduled_via,
             status: self
                 .status
                 .ok_or_else(|| BuildError::missing_field("status"))?,

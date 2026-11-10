@@ -5,7 +5,10 @@ import * as Peal from "../index.js";
 export type UnprocessableEntityErrorBody = 
     | Peal.UnprocessableEntityErrorBody.UnsupportedMediaType
     | Peal.UnprocessableEntityErrorBody.MediaTooLarge
-    | Peal.UnprocessableEntityErrorBody.AltTextTooLong;
+    | Peal.UnprocessableEntityErrorBody.AltTextTooLong
+    | Peal.UnprocessableEntityErrorBody.MediaSourceNotPublic
+    | Peal.UnprocessableEntityErrorBody.MediaSourceUnreachable
+    | Peal.UnprocessableEntityErrorBody.UploadRejected;
 
 export namespace UnprocessableEntityErrorBody {
     export interface UnsupportedMediaType extends Peal.UnsupportedMediaTypeEncoded {
@@ -18,5 +21,17 @@ export namespace UnprocessableEntityErrorBody {
 
     export interface AltTextTooLong extends Peal.AltTextTooLongEncoded {
         _tag: "AltTextTooLong";
+    }
+
+    export interface MediaSourceNotPublic extends Peal.MediaSourceNotPublicEncoded {
+        _tag: "MediaSourceNotPublic";
+    }
+
+    export interface MediaSourceUnreachable extends Peal.MediaSourceUnreachableEncoded {
+        _tag: "MediaSourceUnreachable";
+    }
+
+    export interface UploadRejected extends Peal.UploadRejectedEncoded {
+        _tag: "UploadRejected";
     }
 }

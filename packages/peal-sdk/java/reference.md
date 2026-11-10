@@ -1121,6 +1121,139 @@ client.posts().create(
 </dl>
 </details>
 
+<details><summary><code>client.posts.send(workspaceId, request) -> Post</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```java
+client.posts().send(
+    "workspaceId",
+    NewPost
+        .builder()
+        .content(
+            PostContent
+                .builder()
+                .text("text")
+                .media(
+                    Arrays.asList(
+                        MediaAttachment
+                            .builder()
+                            .altText("altText")
+                            .mediaId("mediaId")
+                            .build()
+                    )
+                )
+                .overrides(
+                    Arrays.asList(
+                        TextOverride
+                            .builder()
+                            .channelId("channelId")
+                            .text("text")
+                            .build()
+                    )
+                )
+                .build()
+        )
+        .when(
+            PostTiming.now(
+                PostTimingNow
+                    .builder()
+                    .build()
+            )
+        )
+        .channelIds(
+            Arrays.asList("channelIds")
+        )
+        .build()
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**idempotencyKey:** `Optional<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channelIds:** `List<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**content:** `PostContent` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**options:** `Optional<List<ChannelOptions>>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**when:** `PostTiming` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.posts.get(workspaceId, postId) -> Post</code></summary>
 <dl>
 <dd>
@@ -2071,6 +2204,82 @@ client.media().create(
 <dd>
 
 **contentType:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.media.importFromUrl(workspaceId, request) -> Media</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```java
+client.media().importFromUrl(
+    "workspaceId",
+    MediaImport
+        .builder()
+        .url("url")
+        .build()
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspaceId:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**altText:** `Optional<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**url:** `String` 
     
 </dd>
 </dl>

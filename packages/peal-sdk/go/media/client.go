@@ -90,6 +90,34 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
+//
+// Example:
+//
+//	request := &peal.MediaImport{
+//	    WorkspaceID: "workspaceId",
+//	    URL: "url",
+//	}
+//	_, err := client.Media.ImportFromURL(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) ImportFromURL(
+	ctx context.Context,
+	request *peal.MediaImport,
+	opts ...option.RequestOption,
+) (*peal.Media, error) {
+	response, err := c.WithRawResponse.ImportFromURL(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
 // Shows one of the workspace's media. Needs media:read.
 //
 // Example:

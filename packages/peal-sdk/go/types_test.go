@@ -8682,6 +8682,77 @@ func TestSettersMarkExplicitForbiddenEncoded(t *testing.T) {
 
 }
 
+func TestSettersIdempotencyKeyReusedEncoded(t *testing.T) {
+	t.Run("SetTag", func(t *testing.T) {
+		obj := &IdempotencyKeyReusedEncoded{}
+		var fernTestValueTag IdempotencyKeyReusedEncodedTag
+		obj.SetTag(fernTestValueTag)
+		assert.Equal(t, fernTestValueTag, obj.Tag)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersIdempotencyKeyReusedEncoded(t *testing.T) {
+	t.Run("GetTag", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &IdempotencyKeyReusedEncoded{}
+		var expected IdempotencyKeyReusedEncodedTag
+		obj.Tag = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetTag(), "getter should return the property value")
+	})
+
+	t.Run("GetTag_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *IdempotencyKeyReusedEncoded
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetTag() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitIdempotencyKeyReusedEncoded(t *testing.T) {
+	t.Run("SetTag_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &IdempotencyKeyReusedEncoded{}
+		var fernTestValueTag IdempotencyKeyReusedEncodedTag
+
+		// Act
+		obj.SetTag(fernTestValueTag)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
 func TestSettersInvalidDateRangeEncoded(t *testing.T) {
 	t.Run("SetTag", func(t *testing.T) {
 		obj := &InvalidDateRangeEncoded{}
@@ -9075,6 +9146,149 @@ func TestSettersMarkExplicitMediaInUseEncoded(t *testing.T) {
 
 		// Act
 		obj.SetPostIDs(fernTestValuePostIDs)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersMediaSourceUnreachableEncoded(t *testing.T) {
+	t.Run("SetReason", func(t *testing.T) {
+		obj := &MediaSourceUnreachableEncoded{}
+		var fernTestValueReason MediaSourceFailure
+		obj.SetReason(fernTestValueReason)
+		assert.Equal(t, fernTestValueReason, obj.Reason)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetStatus", func(t *testing.T) {
+		obj := &MediaSourceUnreachableEncoded{}
+		var fernTestValueStatus *int
+		obj.SetStatus(fernTestValueStatus)
+		assert.Equal(t, fernTestValueStatus, obj.Status)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersMediaSourceUnreachableEncoded(t *testing.T) {
+	t.Run("GetReason", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaSourceUnreachableEncoded{}
+		var expected MediaSourceFailure
+		obj.Reason = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetReason(), "getter should return the property value")
+	})
+
+	t.Run("GetReason_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *MediaSourceUnreachableEncoded
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetReason() // Should return zero value
+	})
+
+	t.Run("GetStatus", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaSourceUnreachableEncoded{}
+		var expected *int
+		obj.Status = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetStatus(), "getter should return the property value")
+	})
+
+	t.Run("GetStatus_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaSourceUnreachableEncoded{}
+		obj.Status = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetStatus(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetStatus_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *MediaSourceUnreachableEncoded
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetStatus() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitMediaSourceUnreachableEncoded(t *testing.T) {
+	t.Run("SetReason_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaSourceUnreachableEncoded{}
+		var fernTestValueReason MediaSourceFailure
+
+		// Act
+		obj.SetReason(fernTestValueReason)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetStatus_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaSourceUnreachableEncoded{}
+		var fernTestValueStatus *int
+
+		// Act
+		obj.SetStatus(fernTestValueStatus)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -10363,6 +10577,105 @@ func TestGettersUnprocessableEntityErrorBody(t *testing.T) {
 			}
 		}()
 		_ = obj.GetAltTextTooLong() // Should return zero value
+	})
+
+	t.Run("GetMediaSourceNotPublic", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UnprocessableEntityErrorBody{}
+		var expected *MediaSourceNotPublicEncoded
+		obj.MediaSourceNotPublic = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetMediaSourceNotPublic(), "getter should return the property value")
+	})
+
+	t.Run("GetMediaSourceNotPublic_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UnprocessableEntityErrorBody{}
+		obj.MediaSourceNotPublic = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetMediaSourceNotPublic(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetMediaSourceNotPublic_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *UnprocessableEntityErrorBody
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetMediaSourceNotPublic() // Should return zero value
+	})
+
+	t.Run("GetMediaSourceUnreachable", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UnprocessableEntityErrorBody{}
+		var expected *MediaSourceUnreachableEncoded
+		obj.MediaSourceUnreachable = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetMediaSourceUnreachable(), "getter should return the property value")
+	})
+
+	t.Run("GetMediaSourceUnreachable_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UnprocessableEntityErrorBody{}
+		obj.MediaSourceUnreachable = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetMediaSourceUnreachable(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetMediaSourceUnreachable_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *UnprocessableEntityErrorBody
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetMediaSourceUnreachable() // Should return zero value
+	})
+
+	t.Run("GetUploadRejected", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UnprocessableEntityErrorBody{}
+		var expected *UploadRejectedEncoded
+		obj.UploadRejected = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetUploadRejected(), "getter should return the property value")
+	})
+
+	t.Run("GetUploadRejected_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UnprocessableEntityErrorBody{}
+		obj.UploadRejected = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetUploadRejected(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetUploadRejected_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *UnprocessableEntityErrorBody
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetUploadRejected() // Should return zero value
 	})
 
 }
@@ -12000,6 +12313,39 @@ func TestJSONMarshalingForbiddenEncoded(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingIdempotencyKeyReusedEncoded(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &IdempotencyKeyReusedEncoded{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled IdempotencyKeyReusedEncoded
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj IdempotencyKeyReusedEncoded
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj IdempotencyKeyReusedEncoded
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingInvalidDateRangeEncoded(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -12193,6 +12539,72 @@ func TestJSONMarshalingMediaNotFoundEncoded(t *testing.T) {
 	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
 		t.Parallel()
 		var obj MediaNotFoundEncoded
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingMediaSourceNotPublicEncoded(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaSourceNotPublicEncoded{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled MediaSourceNotPublicEncoded
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj MediaSourceNotPublicEncoded
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj MediaSourceNotPublicEncoded
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingMediaSourceUnreachableEncoded(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &MediaSourceUnreachableEncoded{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled MediaSourceUnreachableEncoded
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj MediaSourceUnreachableEncoded
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj MediaSourceUnreachableEncoded
 		err := json.Unmarshal([]byte(`{}`), &obj)
 		assert.NoError(t, err, "unmarshaling empty object should succeed")
 	})
@@ -12756,6 +13168,49 @@ func TestJSONMarshalingWorkspaceNotFoundEncoded(t *testing.T) {
 		var obj WorkspaceNotFoundEncoded
 		err := json.Unmarshal([]byte(`{}`), &obj)
 		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestRequiredNullableRoundTripMediaSourceUnreachableEncoded(t *testing.T) {
+	requiredNullableKeys := []string{
+		"status",
+	}
+	marshalToMap := func(t *testing.T, obj *MediaSourceUnreachableEncoded) map[string]json.RawMessage {
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		var result map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal(data, &result), "marshaled data should be a JSON object")
+		return result
+	}
+
+	t.Run("NullPreserved", func(t *testing.T) {
+		t.Parallel()
+		var obj MediaSourceUnreachableEncoded
+		require.NoError(t, json.Unmarshal([]byte(`{"status":null}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			value, ok := result[key]
+			require.True(t, ok, "required nullable field %q received as null should be present in the output", key)
+			assert.Equal(t, "null", string(value), "required nullable field %q received as null should be null in the output", key)
+		}
+	})
+
+	t.Run("AbsentStaysAbsent", func(t *testing.T) {
+		t.Parallel()
+		var obj MediaSourceUnreachableEncoded
+		require.NoError(t, json.Unmarshal([]byte(`{}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q absent from the input should be absent from the output", key)
+		}
+	})
+
+	t.Run("FreshValueOmits", func(t *testing.T) {
+		t.Parallel()
+		result := marshalToMap(t, &MediaSourceUnreachableEncoded{})
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q should be omitted from a freshly constructed value", key)
+		}
 	})
 }
 
@@ -13383,6 +13838,22 @@ func TestStringForbiddenEncoded(t *testing.T) {
 	})
 }
 
+func TestStringIdempotencyKeyReusedEncoded(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &IdempotencyKeyReusedEncoded{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *IdempotencyKeyReusedEncoded
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
 func TestStringInvalidDateRangeEncoded(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -13474,6 +13945,38 @@ func TestStringMediaNotFoundEncoded(t *testing.T) {
 	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *MediaNotFoundEncoded
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringMediaSourceNotPublicEncoded(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &MediaSourceNotPublicEncoded{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *MediaSourceNotPublicEncoded
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringMediaSourceUnreachableEncoded(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &MediaSourceUnreachableEncoded{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *MediaSourceUnreachableEncoded
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
 	})
@@ -14299,6 +14802,28 @@ func TestEnumForbiddenEncodedTag(t *testing.T) {
 	})
 }
 
+func TestEnumIdempotencyKeyReusedEncodedTag(t *testing.T) {
+	t.Run("NewFromString_IdempotencyKeyReused", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewIdempotencyKeyReusedEncodedTagFromString("IdempotencyKeyReused")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, IdempotencyKeyReusedEncodedTag("IdempotencyKeyReused"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewIdempotencyKeyReusedEncodedTagFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewIdempotencyKeyReusedEncodedTagFromString("IdempotencyKeyReused")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
 func TestEnumInvalidDateRangeEncodedTag(t *testing.T) {
 	t.Run("NewFromString_InvalidDateRange", func(t *testing.T) {
 		t.Parallel()
@@ -14380,6 +14905,56 @@ func TestEnumMediaInUseEncodedTag(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewMediaInUseEncodedTagFromString("MediaInUse")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumMediaSourceFailure(t *testing.T) {
+	t.Run("NewFromString_unknownHost", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewMediaSourceFailureFromString("unknownHost")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, MediaSourceFailure("unknownHost"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_noAnswer", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewMediaSourceFailureFromString("noAnswer")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, MediaSourceFailure("noAnswer"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_badStatus", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewMediaSourceFailureFromString("badStatus")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, MediaSourceFailure("badStatus"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_tooManyRedirects", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewMediaSourceFailureFromString("tooManyRedirects")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, MediaSourceFailure("tooManyRedirects"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_tooSlow", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewMediaSourceFailureFromString("tooSlow")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, MediaSourceFailure("tooSlow"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewMediaSourceFailureFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewMediaSourceFailureFromString("unknownHost")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)
@@ -16007,6 +16582,29 @@ func TestExtraPropertiesForbiddenEncoded(t *testing.T) {
 	})
 }
 
+func TestExtraPropertiesIdempotencyKeyReusedEncoded(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &IdempotencyKeyReusedEncoded{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *IdempotencyKeyReusedEncoded
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
 func TestExtraPropertiesInvalidDateRangeEncoded(t *testing.T) {
 	t.Run("GetExtraProperties", func(t *testing.T) {
 		t.Parallel()
@@ -16140,6 +16738,52 @@ func TestExtraPropertiesMediaNotFoundEncoded(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *MediaNotFoundEncoded
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesMediaSourceNotPublicEncoded(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &MediaSourceNotPublicEncoded{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *MediaSourceNotPublicEncoded
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesMediaSourceUnreachableEncoded(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &MediaSourceUnreachableEncoded{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *MediaSourceUnreachableEncoded
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

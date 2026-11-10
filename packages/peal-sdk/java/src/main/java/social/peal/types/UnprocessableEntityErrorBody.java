@@ -38,6 +38,18 @@ public final class UnprocessableEntityErrorBody {
         return new UnprocessableEntityErrorBody(new AltTextTooLongValue(value));
     }
 
+    public static UnprocessableEntityErrorBody mediaSourceNotPublic(MediaSourceNotPublicEncoded value) {
+        return new UnprocessableEntityErrorBody(new MediaSourceNotPublicValue(value));
+    }
+
+    public static UnprocessableEntityErrorBody mediaSourceUnreachable(MediaSourceUnreachableEncoded value) {
+        return new UnprocessableEntityErrorBody(new MediaSourceUnreachableValue(value));
+    }
+
+    public static UnprocessableEntityErrorBody uploadRejected(UploadRejectedEncoded value) {
+        return new UnprocessableEntityErrorBody(new UploadRejectedValue(value));
+    }
+
     public boolean isUnsupportedMediaType() {
         return value instanceof UnsupportedMediaTypeValue;
     }
@@ -48,6 +60,18 @@ public final class UnprocessableEntityErrorBody {
 
     public boolean isAltTextTooLong() {
         return value instanceof AltTextTooLongValue;
+    }
+
+    public boolean isMediaSourceNotPublic() {
+        return value instanceof MediaSourceNotPublicValue;
+    }
+
+    public boolean isMediaSourceUnreachable() {
+        return value instanceof MediaSourceUnreachableValue;
+    }
+
+    public boolean isUploadRejected() {
+        return value instanceof UploadRejectedValue;
     }
 
     public boolean _isUnknown() {
@@ -71,6 +95,27 @@ public final class UnprocessableEntityErrorBody {
     public Optional<AltTextTooLongEncoded> getAltTextTooLong() {
         if (isAltTextTooLong()) {
             return Optional.of(((AltTextTooLongValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<MediaSourceNotPublicEncoded> getMediaSourceNotPublic() {
+        if (isMediaSourceNotPublic()) {
+            return Optional.of(((MediaSourceNotPublicValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<MediaSourceUnreachableEncoded> getMediaSourceUnreachable() {
+        if (isMediaSourceUnreachable()) {
+            return Optional.of(((MediaSourceUnreachableValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<UploadRejectedEncoded> getUploadRejected() {
+        if (isUploadRejected()) {
+            return Optional.of(((UploadRejectedValue) value).value);
         }
         return Optional.empty();
     }
@@ -111,6 +156,12 @@ public final class UnprocessableEntityErrorBody {
 
         T visitAltTextTooLong(AltTextTooLongEncoded altTextTooLong);
 
+        T visitMediaSourceNotPublic(MediaSourceNotPublicEncoded mediaSourceNotPublic);
+
+        T visitMediaSourceUnreachable(MediaSourceUnreachableEncoded mediaSourceUnreachable);
+
+        T visitUploadRejected(UploadRejectedEncoded uploadRejected);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -118,7 +169,10 @@ public final class UnprocessableEntityErrorBody {
     @JsonSubTypes({
         @JsonSubTypes.Type(UnsupportedMediaTypeValue.class),
         @JsonSubTypes.Type(MediaTooLargeValue.class),
-        @JsonSubTypes.Type(AltTextTooLongValue.class)
+        @JsonSubTypes.Type(AltTextTooLongValue.class),
+        @JsonSubTypes.Type(MediaSourceNotPublicValue.class),
+        @JsonSubTypes.Type(MediaSourceUnreachableValue.class),
+        @JsonSubTypes.Type(UploadRejectedValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -231,6 +285,126 @@ public final class UnprocessableEntityErrorBody {
         }
 
         private boolean equalTo(AltTextTooLongValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "UnprocessableEntityErrorBody{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("MediaSourceNotPublic")
+    @JsonIgnoreProperties("_tag")
+    private static final class MediaSourceNotPublicValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private MediaSourceNotPublicEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private MediaSourceNotPublicValue() {}
+
+        private MediaSourceNotPublicValue(MediaSourceNotPublicEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitMediaSourceNotPublic(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof MediaSourceNotPublicValue && equalTo((MediaSourceNotPublicValue) other);
+        }
+
+        private boolean equalTo(MediaSourceNotPublicValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "UnprocessableEntityErrorBody{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("MediaSourceUnreachable")
+    @JsonIgnoreProperties("_tag")
+    private static final class MediaSourceUnreachableValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private MediaSourceUnreachableEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private MediaSourceUnreachableValue() {}
+
+        private MediaSourceUnreachableValue(MediaSourceUnreachableEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitMediaSourceUnreachable(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof MediaSourceUnreachableValue && equalTo((MediaSourceUnreachableValue) other);
+        }
+
+        private boolean equalTo(MediaSourceUnreachableValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "UnprocessableEntityErrorBody{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("UploadRejected")
+    @JsonIgnoreProperties("_tag")
+    private static final class UploadRejectedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private UploadRejectedEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private UploadRejectedValue() {}
+
+        private UploadRejectedValue(UploadRejectedEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitUploadRejected(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof UploadRejectedValue && equalTo((UploadRejectedValue) other);
+        }
+
+        private boolean equalTo(UploadRejectedValue other) {
             return value.equals(other.value);
         }
 

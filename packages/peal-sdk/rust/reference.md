@@ -1259,6 +1259,131 @@ async fn main() {
 </dl>
 </details>
 
+<details><summary><code>client.posts.<a href="/src/api/resources/posts/client.rs">send</a>(workspace_id: String, request: NewPost) -> Result&lt;Post, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .posts
+        .send(
+            &"workspaceId".to_string(),
+            &NewPost {
+                channel_ids: vec!["channelIds".to_string()],
+                content: PostContent {
+                    media: vec![MediaAttachment {
+                        alt_text: "altText".to_string(),
+                        media_id: "mediaId".to_string(),
+                        ..Default::default()
+                    }],
+                    overrides: vec![TextOverride {
+                        channel_id: "channelId".to_string(),
+                        text: "text".to_string(),
+                        ..Default::default()
+                    }],
+                    text: "text".to_string(),
+                    ..Default::default()
+                },
+                when: PostTiming::Now {
+                    data: PostTimingNow {
+                        ..Default::default()
+                    },
+                },
+                options: None,
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**channel_ids:** `Vec<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**content:** `PostContent` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**options:** `Option<Vec<ChannelOptions>>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**when:** `PostTiming` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 <details><summary><code>client.posts.<a href="/src/api/resources/posts/client.rs">get</a>(workspace_id: String, post_id: String) -> Result&lt;Post, ApiError&gt;</code></summary>
 <dl>
 <dd>
@@ -2283,6 +2408,96 @@ async fn main() {
 <dd>
 
 **content_type:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.media.<a href="/src/api/resources/media/client.rs">import_from_url</a>(workspace_id: String, request: MediaImport) -> Result&lt;Media, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .media
+        .import_from_url(
+            &"workspaceId".to_string(),
+            &MediaImport {
+                url: "url".to_string(),
+                alt_text: None,
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**alt_text:** `Option<Option<String>>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**url:** `String` 
     
 </dd>
 </dl>

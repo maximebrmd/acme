@@ -179,6 +179,83 @@ module Peal
         end
       end
 
+      # Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at
+      # once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each
+      # platform's limits on text, media and options, the account's own, the plan's), and answers every violation at
+      # once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be
+      # taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header
+      # (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within
+      # 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes
+      # no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that
+      # post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read
+      # when it shows media; an OAuth client needs the scope workspace:publish.
+      #
+      # @param request_options [Hash]
+      # @param params [Peal::Posts::Types::NewPost]
+      # @option request_options [String] :base_url
+      # @option request_options [Hash{String => Object}] :additional_headers
+      # @option request_options [Hash{String => Object}] :additional_query_parameters
+      # @option request_options [Hash{String => Object}] :additional_body_parameters
+      # @option request_options [Integer] :timeout_in_seconds
+      # @option params [String] :workspace_id
+      # @option params [String, nil] :idempotency_key
+      #
+      # @example
+      #   client.posts.send_(
+      #     workspace_id: "workspaceId",
+      #     channel_ids: ["channelIds"],
+      #     content: {
+      #       media: [{
+      #         altText: "altText",
+      #         mediaId: "mediaId"
+      #       }],
+      #       overrides: [{
+      #         channelId: "channelId",
+      #         text: "text"
+      #       }],
+      #       text: "text"
+      #     }
+      #   )
+      #
+      # @return [Peal::Types::Post]
+      def send_(request_options: {}, **params)
+        params = Peal::Internal::Types::Utils.normalize_keys(params)
+        request_data = Peal::Posts::Types::NewPost.new(params).to_h
+        non_body_param_names = %w[workspaceId idempotency-key]
+        body = request_data.except(*non_body_param_names)
+
+        headers = {}
+        headers["idempotency-key"] = params[:idempotency_key] if params[:idempotency_key]
+
+        request = Peal::Internal::JSON::Request.new(
+          base_url: request_options[:base_url],
+          method: "POST",
+          path: "api/workspaces/#{URI.encode_uri_component(params[:workspace_id].to_s)}/posts/send",
+          headers: headers,
+          body: body,
+          request_options: request_options,
+          max_retries: 0
+        )
+        begin
+          response = @client.send(request)
+        rescue Net::HTTPRequestTimeout
+          raise Peal::Errors::TimeoutError
+        end
+        code = response.code.to_i
+        if code.between?(200, 299)
+          (response.body.to_s.empty? ? nil : Peal::Types::Post.load(response.body))
+        else
+          error_class = Peal::Errors::ResponseError.subclass_for_code(code)
+          error_types = {
+            401 => Peal::Types::UnauthenticatedEncoded,
+            402 => Peal::Types::PlanLimitReachedEncoded,
+            403 => Peal::Types::ForbiddenEncoded
+          }
+          error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)
+          raise error_class.new(response.body, code: code, body: error_body, headers: response.to_hash)
+        end
+      end
+
       # Answers with a post of the workspace. Needs post:read.
       #
       # @param request_options [Hash]
