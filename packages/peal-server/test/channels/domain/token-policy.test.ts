@@ -114,6 +114,34 @@ describe(refreshDueBefore, () => {
     );
   });
 
+  it("is a week ahead for a LinkedIn page, and none for a profile", () => {
+    expect(refreshDueBefore(tokenPolicies.linkedinPage, now)).toStrictEqual(
+      Option.some(after("7 days"))
+    );
+    expect(refreshDueBefore(tokenPolicies.linkedin, now)).toStrictEqual(
+      Option.none()
+    );
+  });
+
+  it("is a quarter of an hour ahead for a Google Business Profile location, as for YouTube", () => {
+    expect(refreshDueBefore(tokenPolicies.googleBusiness, now)).toStrictEqual(
+      Option.some(after("15 minutes"))
+    );
+    expect(refreshDueBefore(tokenPolicies.youtube, now)).toStrictEqual(
+      Option.some(after("15 minutes"))
+    );
+  });
+
+  it("names every way in whose refresh token works once", () => {
+    expect(
+      Object.entries(tokenPolicies)
+        .flatMap(([name, { refresh }]) =>
+          refresh._tag === "refreshToken" && refresh.rotates ? [name] : []
+        )
+        .toSorted()
+    ).toStrictEqual(["bluesky", "blueskyLoopback", "pinterest", "tiktok", "x"]);
+  });
+
   it("is none for tokens that are never refreshed", () => {
     expect(refreshDueBefore(tokenPolicies.mastodon, now)).toStrictEqual(
       Option.none()

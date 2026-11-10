@@ -84,6 +84,8 @@ export const registryOf = (
       : Option.fromUndefinedOr(byPlatform.get(platform));
 
   return PlatformAuthorizers.of({
+    every: (platform) =>
+      configured.filter((authorizer) => authorizer.platform === platform),
     for: forPlatform,
     instagramConnections: connectionsOf(
       "instagram",

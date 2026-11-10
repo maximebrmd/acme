@@ -78,7 +78,7 @@ const onLinkedIn = Effect.fn("test.onLinkedIn")(function* onLinkedIn(
 
   const connect = yield* connectChannelOver(profiles, authorizer);
 
-  return { authorizer, connect, linkedin };
+  return { authorizer, connect, linkedin, profiles };
 });
 
 type OnLinkedIn = Effect.Success<ReturnType<typeof onLinkedIn>>;
@@ -365,6 +365,48 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
 
         yield* makeDue(channel);
         assert.strictEqual(yield* refresh, "refreshed");
+        assert.deepStrictEqual(yield* storedTokens(channel), {
+          access: "linkedin-token-2",
+          refresh: Option.some("linkedin-refresh-1"),
+        });
+      }).pipe(Effect.scoped)
+  );
+
+  // The server's first LinkedIn app connects profiles, whose tokens nothing
+  // renews: the sweep must still find the pages the second one renews.
+  it.effect(
+    "sweeps a page's token due for renewal on a server that connects profiles too",
+    () =>
+      Effect.gen(function* swept() {
+        const on = yield* onLinkedIn();
+        const workspaceId = yield* freshWorkspace;
+
+        on.linkedin.issueRefreshTokens();
+
+        const channel = yield* connectedPage(on, workspaceId);
+
+        const sweep = RefreshChannelTokens.use((tokens) => tokens.sweep).pipe(
+          Effect.provide(
+            Layer.mergeAll(
+              RefreshChannelTokens.layer,
+              ChannelAccess.layer
+            ).pipe(
+              Layer.provide(repositoryScopedTo(workspaceId)),
+              Layer.provide(
+                Layer.succeed(
+                  PlatformAuthorizers,
+                  authorizersOf(on.profiles, on.authorizer)
+                )
+              )
+            )
+          )
+        );
+
+        // Not due: 60 days left.
+        assert.strictEqual((yield* sweep).refreshed, 0);
+
+        yield* makeDue(channel);
+        assert.deepInclude(yield* sweep, { due: 1, refreshed: 1 });
         assert.deepStrictEqual(yield* storedTokens(channel), {
           access: "linkedin-token-2",
           refresh: Option.some("linkedin-refresh-1"),

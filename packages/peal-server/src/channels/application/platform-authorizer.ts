@@ -194,6 +194,12 @@ export class PlatformAuthorizers extends Context.Service<
       connection?: Option.Option<ChannelConnection>
     ) => Option.Option<PlatformAuthorizer>;
     /**
+     * Every authorizer this server has for the platform, one for each way
+     * in: the token jobs read each one's policy, as a platform's ways in
+     * renew their tokens differently (LinkedIn's pages, not its profiles).
+     */
+    readonly every: (platform: Platform) => readonly PlatformAuthorizer[];
+    /**
      * The ways this server connects Instagram accounts, the one it prefers
      * first: Instagram Login, then Facebook Login.
      */

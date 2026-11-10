@@ -735,6 +735,11 @@ and no socket, for tests.
   `OutboundGuard` for an open one only to reach loopback fakes.
 - The AT Protocol OAuth client runs on Bun only with the handle resolver built
   on Peal's guarded fetch; its default one needs Node's undici.
+- The refresh sweep takes each platform's cutoff from every way in the
+  server has for it (`PlatformAuthorizers.every`), the latest one, then
+  checks each channel against its own way in's policy: a platform's first
+  authorizer may renew nothing (LinkedIn's profiles) while another does
+  (its pages).
 - Refresh a channel's tokens only inside `ChannelLocks.withLock` (Postgres
   advisory locks). A process holds at most four at once, each on a pool
   connection, so never nest `withLock`. Bluesky and X refresh tokens work

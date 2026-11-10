@@ -1,4 +1,5 @@
 import {
+  Array as Arr,
   Context,
   DateTime,
   Duration,
@@ -248,16 +249,22 @@ export class RefreshChannelTokens extends Context.Service<
       const sweep = Effect.gen(function* sweep() {
         const now = yield* DateTime.now;
 
-        // Each platform's cutoff from the authorizer that connects it: for
-        // Instagram, Instagram Login's, whose tokens alone renew; channels
-        // whose tokens never expire are not due whatever the cutoff.
-        const cutoffs = platforms.flatMap((platform) =>
-          Option.toArray(
-            Option.flatMap(authorizers.for(platform), (authorizer) =>
-              refreshDueBefore(authorizer.policy, now)
-            )
-          ).map((before) => ({ before, platform }))
-        );
+        // Each platform's cutoff is the latest among its ways in, as only
+        // some renew their tokens (Instagram Login's, a LinkedIn page's):
+        // `refresh` then checks each channel against its own way in's
+        // policy, and channels whose tokens never expire, or cannot be
+        // renewed, are not due whatever the cutoff.
+        const cutoffs = platforms.flatMap((platform) => {
+          const befores = authorizers
+            .every(platform)
+            .flatMap(({ policy }) =>
+              Option.toArray(refreshDueBefore(policy, now))
+            );
+
+          return Arr.isReadonlyArrayNonEmpty(befores)
+            ? [{ before: Arr.max(befores, DateTime.Order), platform }]
+            : [];
+        });
 
         const due = yield* channels.dueForRefresh({
           cutoffs,
