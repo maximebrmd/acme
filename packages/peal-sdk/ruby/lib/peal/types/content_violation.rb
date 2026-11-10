@@ -31,6 +31,8 @@ module Peal
 
       member -> { Peal::Types::ContentViolationTooManyMedia }, key: "TOO_MANY_MEDIA"
 
+      member -> { Peal::Types::ContentViolationTooManyParts }, key: "TOO_MANY_PARTS"
+
       member -> { Peal::Types::ContentViolationMediaRequired }, key: "MEDIA_REQUIRED"
 
       member -> { Peal::Types::ContentViolationTooManyHashtags }, key: "TOO_MANY_HASHTAGS"

@@ -3,6 +3,7 @@
 import * as Peal from "../index.js";
 
 export interface PostContent {
+    followUps?: Peal.PostPart[] | undefined;
     media: Peal.MediaAttachment[];
     overrides: Peal.TextOverride[];
     text: string;

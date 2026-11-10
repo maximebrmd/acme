@@ -632,6 +632,7 @@ const (
 	AttemptResultQuotaExceeded       AttemptResult = "quotaExceeded"
 	AttemptResultAppBillingLimit     AttemptResult = "appBillingLimit"
 	AttemptResultPlanLimit           AttemptResult = "planLimit"
+	AttemptResultPartsNotSent        AttemptResult = "partsNotSent"
 )
 
 func NewAttemptResultFromString(s string) (AttemptResult, error) {
@@ -664,6 +665,8 @@ func NewAttemptResultFromString(s string) (AttemptResult, error) {
 		return AttemptResultAppBillingLimit, nil
 	case "planLimit":
 		return AttemptResultPlanLimit, nil
+	case "partsNotSent":
+		return AttemptResultPartsNotSent, nil
 	}
 	var t AttemptResult
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -887,6 +890,153 @@ func (d *DraftPage) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", d)
+}
+
+var (
+	livePartFieldIndex          = big.NewInt(1 << 0)
+	livePartFieldPermalink      = big.NewInt(1 << 1)
+	livePartFieldPlatformPostID = big.NewInt(1 << 2)
+	livePartFieldPublishedAt    = big.NewInt(1 << 3)
+)
+
+// livePartNullableFields maps the wire names of LivePart's nullable fields (required or optional) to their field bits.
+var livePartNullableFields = map[string]*big.Int{
+	"permalink":      livePartFieldPermalink,
+	"platformPostId": livePartFieldPlatformPostID,
+}
+
+type LivePart struct {
+	Index          int     `json:"index" url:"index"`
+	Permalink      *string `json:"permalink,omitempty" url:"permalink,omitempty"`
+	PlatformPostID *string `json:"platformPostId,omitempty" url:"platformPostId,omitempty"`
+	PublishedAt    string  `json:"publishedAt" url:"publishedAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LivePart) GetIndex() int {
+	if l == nil {
+		return 0
+	}
+	return l.Index
+}
+
+func (l *LivePart) GetPermalink() *string {
+	if l == nil {
+		return nil
+	}
+	return l.Permalink
+}
+
+func (l *LivePart) GetPlatformPostID() *string {
+	if l == nil {
+		return nil
+	}
+	return l.PlatformPostID
+}
+
+func (l *LivePart) GetPublishedAt() string {
+	if l == nil {
+		return ""
+	}
+	return l.PublishedAt
+}
+
+func (l *LivePart) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LivePart) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetIndex sets the Index field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePart) SetIndex(index int) {
+	l.Index = index
+	l.require(livePartFieldIndex)
+}
+
+// SetPermalink sets the Permalink field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePart) SetPermalink(permalink *string) {
+	l.Permalink = permalink
+	l.require(livePartFieldPermalink)
+}
+
+// SetPlatformPostID sets the PlatformPostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePart) SetPlatformPostID(platformPostID *string) {
+	l.PlatformPostID = platformPostID
+	l.require(livePartFieldPlatformPostID)
+}
+
+// SetPublishedAt sets the PublishedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePart) SetPublishedAt(publishedAt string) {
+	l.PublishedAt = publishedAt
+	l.require(livePartFieldPublishedAt)
+}
+
+func (l *LivePart) UnmarshalJSON(data []byte) error {
+	type unmarshaler LivePart
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LivePart(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, livePartNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		l.require(presentFields)
+	}
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LivePart) MarshalJSON() ([]byte, error) {
+	type embed LivePart
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LivePart) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
 }
 
 var (
@@ -1239,12 +1389,14 @@ func (p *Post) String() string {
 }
 
 var (
-	postContentFieldMedia     = big.NewInt(1 << 0)
-	postContentFieldOverrides = big.NewInt(1 << 1)
-	postContentFieldText      = big.NewInt(1 << 2)
+	postContentFieldFollowUps = big.NewInt(1 << 0)
+	postContentFieldMedia     = big.NewInt(1 << 1)
+	postContentFieldOverrides = big.NewInt(1 << 2)
+	postContentFieldText      = big.NewInt(1 << 3)
 )
 
 type PostContent struct {
+	FollowUps []*PostPart        `json:"followUps,omitempty" url:"followUps,omitempty"`
 	Media     []*MediaAttachment `json:"media" url:"media"`
 	Overrides []*TextOverride    `json:"overrides" url:"overrides"`
 	Text      string             `json:"text" url:"text"`
@@ -1254,6 +1406,13 @@ type PostContent struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (p *PostContent) GetFollowUps() []*PostPart {
+	if p == nil {
+		return nil
+	}
+	return p.FollowUps
 }
 
 func (p *PostContent) GetMedia() []*MediaAttachment {
@@ -1291,6 +1450,13 @@ func (p *PostContent) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	p.explicitFields = next
+}
+
+// SetFollowUps sets the FollowUps field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostContent) SetFollowUps(followUps []*PostPart) {
+	p.FollowUps = followUps
+	p.require(postContentFieldFollowUps)
 }
 
 // SetMedia sets the Media field and marks it as non-optional;
@@ -1661,6 +1827,140 @@ func (p PostOutcome) Ptr() *PostOutcome {
 	return &p
 }
 
+var (
+	postPartFieldDelaySeconds = big.NewInt(1 << 0)
+	postPartFieldMedia        = big.NewInt(1 << 1)
+	postPartFieldOverrides    = big.NewInt(1 << 2)
+	postPartFieldText         = big.NewInt(1 << 3)
+)
+
+type PostPart struct {
+	DelaySeconds int                `json:"delaySeconds" url:"delaySeconds"`
+	Media        []*MediaAttachment `json:"media" url:"media"`
+	Overrides    []*TextOverride    `json:"overrides" url:"overrides"`
+	Text         string             `json:"text" url:"text"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostPart) GetDelaySeconds() int {
+	if p == nil {
+		return 0
+	}
+	return p.DelaySeconds
+}
+
+func (p *PostPart) GetMedia() []*MediaAttachment {
+	if p == nil {
+		return nil
+	}
+	return p.Media
+}
+
+func (p *PostPart) GetOverrides() []*TextOverride {
+	if p == nil {
+		return nil
+	}
+	return p.Overrides
+}
+
+func (p *PostPart) GetText() string {
+	if p == nil {
+		return ""
+	}
+	return p.Text
+}
+
+func (p *PostPart) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostPart) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetDelaySeconds sets the DelaySeconds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostPart) SetDelaySeconds(delaySeconds int) {
+	p.DelaySeconds = delaySeconds
+	p.require(postPartFieldDelaySeconds)
+}
+
+// SetMedia sets the Media field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostPart) SetMedia(media []*MediaAttachment) {
+	p.Media = media
+	p.require(postPartFieldMedia)
+}
+
+// SetOverrides sets the Overrides field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostPart) SetOverrides(overrides []*TextOverride) {
+	p.Overrides = overrides
+	p.require(postPartFieldOverrides)
+}
+
+// SetText sets the Text field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostPart) SetText(text string) {
+	p.Text = text
+	p.require(postPartFieldText)
+}
+
+func (p *PostPart) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostPart
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostPart(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostPart) MarshalJSON() ([]byte, error) {
+	type embed PostPart
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostPart) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
 type PostStatus string
 
 const (
@@ -1701,11 +2001,12 @@ var (
 	postTargetFieldID                = big.NewInt(1 << 2)
 	postTargetFieldKeptPrivate       = big.NewInt(1 << 3)
 	postTargetFieldOptions           = big.NewInt(1 << 4)
-	postTargetFieldPermalink         = big.NewInt(1 << 5)
-	postTargetFieldPublishedAt       = big.NewInt(1 << 6)
-	postTargetFieldRound             = big.NewInt(1 << 7)
-	postTargetFieldStatus            = big.NewInt(1 << 8)
-	postTargetFieldUnconfirmedReason = big.NewInt(1 << 9)
+	postTargetFieldParts             = big.NewInt(1 << 5)
+	postTargetFieldPermalink         = big.NewInt(1 << 6)
+	postTargetFieldPublishedAt       = big.NewInt(1 << 7)
+	postTargetFieldRound             = big.NewInt(1 << 8)
+	postTargetFieldStatus            = big.NewInt(1 << 9)
+	postTargetFieldUnconfirmedReason = big.NewInt(1 << 10)
 )
 
 // postTargetNullableFields maps the wire names of PostTarget's nullable fields (required or optional) to their field bits.
@@ -1723,6 +2024,7 @@ type PostTarget struct {
 	ID                string             `json:"id" url:"id"`
 	KeptPrivate       *bool              `json:"keptPrivate,omitempty" url:"keptPrivate,omitempty"`
 	Options           *TargetOptions     `json:"options,omitempty" url:"options,omitempty"`
+	Parts             *TargetParts       `json:"parts" url:"parts"`
 	Permalink         *string            `json:"permalink,omitempty" url:"permalink,omitempty"`
 	PublishedAt       *string            `json:"publishedAt,omitempty" url:"publishedAt,omitempty"`
 	Round             int                `json:"round" url:"round"`
@@ -1769,6 +2071,13 @@ func (p *PostTarget) GetOptions() *TargetOptions {
 		return nil
 	}
 	return p.Options
+}
+
+func (p *PostTarget) GetParts() *TargetParts {
+	if p == nil {
+		return nil
+	}
+	return p.Parts
 }
 
 func (p *PostTarget) GetPermalink() *string {
@@ -1855,6 +2164,13 @@ func (p *PostTarget) SetKeptPrivate(keptPrivate *bool) {
 func (p *PostTarget) SetOptions(options *TargetOptions) {
 	p.Options = options
 	p.require(postTargetFieldOptions)
+}
+
+// SetParts sets the Parts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTarget) SetParts(parts *TargetParts) {
+	p.Parts = parts
+	p.require(postTargetFieldParts)
 }
 
 // SetPermalink sets the Permalink field and marks it as non-optional;
@@ -2292,11 +2608,12 @@ func (p *PostTimingNow) String() string {
 var (
 	publicationAttemptFieldAttempt    = big.NewInt(1 << 0)
 	publicationAttemptFieldFinishedAt = big.NewInt(1 << 1)
-	publicationAttemptFieldResult     = big.NewInt(1 << 2)
-	publicationAttemptFieldRetryAt    = big.NewInt(1 << 3)
-	publicationAttemptFieldRound      = big.NewInt(1 << 4)
-	publicationAttemptFieldStartedAt  = big.NewInt(1 << 5)
-	publicationAttemptFieldTargetID   = big.NewInt(1 << 6)
+	publicationAttemptFieldPart       = big.NewInt(1 << 2)
+	publicationAttemptFieldResult     = big.NewInt(1 << 3)
+	publicationAttemptFieldRetryAt    = big.NewInt(1 << 4)
+	publicationAttemptFieldRound      = big.NewInt(1 << 5)
+	publicationAttemptFieldStartedAt  = big.NewInt(1 << 6)
+	publicationAttemptFieldTargetID   = big.NewInt(1 << 7)
 )
 
 // publicationAttemptNullableFields maps the wire names of PublicationAttempt's nullable fields (required or optional) to their field bits.
@@ -2307,6 +2624,7 @@ var publicationAttemptNullableFields = map[string]*big.Int{
 type PublicationAttempt struct {
 	Attempt    int           `json:"attempt" url:"attempt"`
 	FinishedAt string        `json:"finishedAt" url:"finishedAt"`
+	Part       int           `json:"part" url:"part"`
 	Result     AttemptResult `json:"result" url:"result"`
 	RetryAt    *string       `json:"retryAt,omitempty" url:"retryAt,omitempty"`
 	Round      int           `json:"round" url:"round"`
@@ -2332,6 +2650,13 @@ func (p *PublicationAttempt) GetFinishedAt() string {
 		return ""
 	}
 	return p.FinishedAt
+}
+
+func (p *PublicationAttempt) GetPart() int {
+	if p == nil {
+		return 0
+	}
+	return p.Part
 }
 
 func (p *PublicationAttempt) GetResult() AttemptResult {
@@ -2397,6 +2722,13 @@ func (p *PublicationAttempt) SetAttempt(attempt int) {
 func (p *PublicationAttempt) SetFinishedAt(finishedAt string) {
 	p.FinishedAt = finishedAt
 	p.require(publicationAttemptFieldFinishedAt)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PublicationAttempt) SetPart(part int) {
+	p.Part = part
+	p.require(publicationAttemptFieldPart)
 }
 
 // SetResult sets the Result field and marks it as non-optional;
@@ -2760,6 +3092,108 @@ func (t *TargetConfirmationPublished) MarshalJSON() ([]byte, error) {
 }
 
 func (t *TargetConfirmationPublished) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+var (
+	targetPartsFieldCount = big.NewInt(1 << 0)
+	targetPartsFieldLive  = big.NewInt(1 << 1)
+)
+
+type TargetParts struct {
+	Count int         `json:"count" url:"count"`
+	Live  []*LivePart `json:"live" url:"live"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TargetParts) GetCount() int {
+	if t == nil {
+		return 0
+	}
+	return t.Count
+}
+
+func (t *TargetParts) GetLive() []*LivePart {
+	if t == nil {
+		return nil
+	}
+	return t.Live
+}
+
+func (t *TargetParts) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TargetParts) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetCount sets the Count field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TargetParts) SetCount(count int) {
+	t.Count = count
+	t.require(targetPartsFieldCount)
+}
+
+// SetLive sets the Live field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TargetParts) SetLive(live []*LivePart) {
+	t.Live = live
+	t.require(targetPartsFieldLive)
+}
+
+func (t *TargetParts) UnmarshalJSON(data []byte) error {
+	type unmarshaler TargetParts
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TargetParts(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TargetParts) MarshalJSON() ([]byte, error) {
+	type embed TargetParts
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TargetParts) String() string {
 	if t == nil {
 		return "<nil>"
 	}

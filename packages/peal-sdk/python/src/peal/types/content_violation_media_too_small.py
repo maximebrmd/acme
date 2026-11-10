@@ -11,6 +11,7 @@ from .platform import Platform
 
 class ContentViolationMediaTooSmall(UniversalBaseModel):
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     byte_size: typing_extensions.Annotated[int, FieldMetadata(alias="byteSize"), pydantic.Field(alias="byteSize")]

@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -20,6 +22,8 @@ import social.peal.core.ObjectMappers;
 @JsonDeserialize(builder = ContentViolationMediaTypeUnsupported.Builder.class)
 public final class ContentViolationMediaTypeUnsupported {
     private final String channelId;
+
+    private final Optional<Integer> part;
 
     private final Platform platform;
 
@@ -31,11 +35,13 @@ public final class ContentViolationMediaTypeUnsupported {
 
     private ContentViolationMediaTypeUnsupported(
             String channelId,
+            Optional<Integer> part,
             Platform platform,
             String mediaId,
             MediaContentType contentType,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.part = part;
         this.platform = platform;
         this.mediaId = mediaId;
         this.contentType = contentType;
@@ -45,6 +51,11 @@ public final class ContentViolationMediaTypeUnsupported {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("part")
+    public Optional<Integer> getPart() {
+        return part;
     }
 
     @JsonProperty("platform")
@@ -76,6 +87,7 @@ public final class ContentViolationMediaTypeUnsupported {
 
     private boolean equalTo(ContentViolationMediaTypeUnsupported other) {
         return channelId.equals(other.channelId)
+                && part.equals(other.part)
                 && platform.equals(other.platform)
                 && mediaId.equals(other.mediaId)
                 && contentType.equals(other.contentType);
@@ -83,7 +95,7 @@ public final class ContentViolationMediaTypeUnsupported {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelId, this.platform, this.mediaId, this.contentType);
+        return Objects.hash(this.channelId, this.part, this.platform, this.mediaId, this.contentType);
     }
 
     @java.lang.Override
@@ -119,6 +131,10 @@ public final class ContentViolationMediaTypeUnsupported {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage part(Optional<Integer> part);
+
+        _FinalStage part(Integer part);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -132,6 +148,8 @@ public final class ContentViolationMediaTypeUnsupported {
 
         private MediaContentType contentType;
 
+        private Optional<Integer> part = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -139,6 +157,7 @@ public final class ContentViolationMediaTypeUnsupported {
         @java.lang.Override
         public Builder from(ContentViolationMediaTypeUnsupported other) {
             channelId(other.getChannelId());
+            part(other.getPart());
             platform(other.getPlatform());
             mediaId(other.getMediaId());
             contentType(other.getContentType());
@@ -174,14 +193,28 @@ public final class ContentViolationMediaTypeUnsupported {
         }
 
         @java.lang.Override
+        public _FinalStage part(Integer part) {
+            this.part = Optional.ofNullable(part);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "part", nulls = Nulls.SKIP)
+        public _FinalStage part(Optional<Integer> part) {
+            this.part = part;
+            return this;
+        }
+
+        @java.lang.Override
         public ContentViolationMediaTypeUnsupported build() {
             return new ContentViolationMediaTypeUnsupported(
-                    channelId, platform, mediaId, contentType, additionalProperties);
+                    channelId, part, platform, mediaId, contentType, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
+                    || key.equalsIgnoreCase("part")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("mediaId")
                     || key.equalsIgnoreCase("contentType")) {

@@ -7,6 +7,8 @@ module Peal
     class ReviewedChannel < Internal::Types::Model
       field :channel_id, -> { String }, optional: false, nullable: false, api_name: "channelId"
 
+      field :follow_ups, -> { Internal::Types::Array[Peal::Types::ReviewedPart] }, optional: false, nullable: false, api_name: "followUps"
+
       field :handle, -> { String }, optional: false, nullable: true
 
       field :options, -> { Peal::Types::TargetOptions }, optional: false, nullable: true

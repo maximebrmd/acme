@@ -67,6 +67,7 @@ class ContentViolation_OptionsForOtherPlatform(UniversalBaseModel):
         typing.Literal["optionsForOtherPlatform"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "optionsForOtherPlatform"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     options_platform: typing_extensions.Annotated[
         Platform, FieldMetadata(alias="optionsPlatform"), pydantic.Field(alias="optionsPlatform")
@@ -87,6 +88,7 @@ class ContentViolation_OptionMissing(UniversalBaseModel):
         typing.Literal["optionMissing"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "optionMissing"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     field: str
 
@@ -105,6 +107,7 @@ class ContentViolation_OptionTooLong(UniversalBaseModel):
         typing.Literal["optionTooLong"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "optionTooLong"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     field: str
     length: int
@@ -125,6 +128,7 @@ class ContentViolation_OptionInvalid(UniversalBaseModel):
         typing.Literal["optionInvalid"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "optionInvalid"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     field: str
 
@@ -143,6 +147,7 @@ class ContentViolation_Empty(UniversalBaseModel):
         typing.Literal["empty"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "empty"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
 
     if IS_PYDANTIC_V2:
@@ -160,6 +165,7 @@ class ContentViolation_TextTooLong(UniversalBaseModel):
         typing.Literal["textTooLong"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "textTooLong"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     length: int
     maximum: int
@@ -180,6 +186,7 @@ class ContentViolation_ForbiddenCharacters(UniversalBaseModel):
         typing.Literal["forbiddenCharacters"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "forbiddenCharacters"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     characters: typing.List[str]
 
@@ -198,6 +205,27 @@ class ContentViolation_TooManyMedia(UniversalBaseModel):
         typing.Literal["tooManyMedia"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "tooManyMedia"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
+    platform: Platform
+    count: int
+    maximum: int
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class ContentViolation_TooManyParts(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["tooManyParts"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "tooManyParts"
+    channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     count: int
     maximum: int
@@ -217,6 +245,7 @@ class ContentViolation_MediaRequired(UniversalBaseModel):
         typing.Literal["mediaRequired"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "mediaRequired"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
 
     if IS_PYDANTIC_V2:
@@ -234,6 +263,7 @@ class ContentViolation_TooManyHashtags(UniversalBaseModel):
         typing.Literal["tooManyHashtags"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "tooManyHashtags"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     count: int
     maximum: int
@@ -253,6 +283,7 @@ class ContentViolation_TooManyMentions(UniversalBaseModel):
         typing.Literal["tooManyMentions"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "tooManyMentions"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     count: int
     maximum: int
@@ -272,6 +303,7 @@ class ContentViolation_TooManyLinks(UniversalBaseModel):
         typing.Literal["tooManyLinks"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "tooManyLinks"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     count: int
     maximum: int
@@ -291,6 +323,7 @@ class ContentViolation_TooManyVideos(UniversalBaseModel):
         typing.Literal["tooManyVideos"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "tooManyVideos"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     count: int
     maximum: int
@@ -310,6 +343,7 @@ class ContentViolation_MixedMedia(UniversalBaseModel):
         typing.Literal["mixedMedia"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "mixedMedia"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
 
     if IS_PYDANTIC_V2:
@@ -327,6 +361,7 @@ class ContentViolation_MediaTypeUnsupported(UniversalBaseModel):
         typing.Literal["mediaTypeUnsupported"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "mediaTypeUnsupported"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     content_type: typing_extensions.Annotated[
@@ -348,6 +383,7 @@ class ContentViolation_MediaTooLarge(UniversalBaseModel):
         typing.Literal["mediaTooLarge"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "mediaTooLarge"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     byte_size: typing_extensions.Annotated[int, FieldMetadata(alias="byteSize"), pydantic.Field(alias="byteSize")]
@@ -368,6 +404,7 @@ class ContentViolation_MediaTooSmall(UniversalBaseModel):
         typing.Literal["mediaTooSmall"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "mediaTooSmall"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     byte_size: typing_extensions.Annotated[int, FieldMetadata(alias="byteSize"), pydantic.Field(alias="byteSize")]
@@ -388,6 +425,7 @@ class ContentViolation_VideoTooLong(UniversalBaseModel):
         typing.Literal["videoTooLong"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "videoTooLong"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     duration_ms: typing_extensions.Annotated[int, FieldMetadata(alias="durationMs"), pydantic.Field(alias="durationMs")]
@@ -408,6 +446,7 @@ class ContentViolation_VideoTooShort(UniversalBaseModel):
         typing.Literal["videoTooShort"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "videoTooShort"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     duration_ms: typing_extensions.Annotated[int, FieldMetadata(alias="durationMs"), pydantic.Field(alias="durationMs")]
@@ -428,6 +467,7 @@ class ContentViolation_TooManyPixels(UniversalBaseModel):
         typing.Literal["tooManyPixels"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "tooManyPixels"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     height: int
@@ -449,6 +489,7 @@ class ContentViolation_SideOutOfRange(UniversalBaseModel):
         typing.Literal["sideOutOfRange"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "sideOutOfRange"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     height: int
@@ -471,6 +512,7 @@ class ContentViolation_AspectRatioUnsupported(UniversalBaseModel):
         typing.Literal["aspectRatioUnsupported"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "aspectRatioUnsupported"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     height: int
@@ -493,6 +535,7 @@ class ContentViolation_AltTextTooLong(UniversalBaseModel):
         typing.Literal["altTextTooLong"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "altTextTooLong"
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     length: int
@@ -521,6 +564,7 @@ ContentViolation = typing_extensions.Annotated[
         ContentViolation_TextTooLong,
         ContentViolation_ForbiddenCharacters,
         ContentViolation_TooManyMedia,
+        ContentViolation_TooManyParts,
         ContentViolation_MediaRequired,
         ContentViolation_TooManyHashtags,
         ContentViolation_TooManyMentions,

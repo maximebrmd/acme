@@ -12,6 +12,7 @@ from .text_unit import TextUnit
 
 class ContentViolationTextTooLong(UniversalBaseModel):
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     length: int
     maximum: int

@@ -8,6 +8,7 @@ export interface PostTarget {
     id: string;
     keptPrivate?: boolean | undefined;
     options: Peal.TargetOptions | null;
+    parts: Peal.TargetParts;
     permalink: string | null;
     publishedAt: string | null;
     round: number;

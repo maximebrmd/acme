@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -20,6 +22,8 @@ import social.peal.core.ObjectMappers;
 @JsonDeserialize(builder = ContentViolationSideOutOfRange.Builder.class)
 public final class ContentViolationSideOutOfRange {
     private final String channelId;
+
+    private final Optional<Integer> part;
 
     private final Platform platform;
 
@@ -37,6 +41,7 @@ public final class ContentViolationSideOutOfRange {
 
     private ContentViolationSideOutOfRange(
             String channelId,
+            Optional<Integer> part,
             Platform platform,
             String mediaId,
             int height,
@@ -45,6 +50,7 @@ public final class ContentViolationSideOutOfRange {
             int minimum,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.part = part;
         this.platform = platform;
         this.mediaId = mediaId;
         this.height = height;
@@ -57,6 +63,11 @@ public final class ContentViolationSideOutOfRange {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("part")
+    public Optional<Integer> getPart() {
+        return part;
     }
 
     @JsonProperty("platform")
@@ -102,6 +113,7 @@ public final class ContentViolationSideOutOfRange {
 
     private boolean equalTo(ContentViolationSideOutOfRange other) {
         return channelId.equals(other.channelId)
+                && part.equals(other.part)
                 && platform.equals(other.platform)
                 && mediaId.equals(other.mediaId)
                 && height == other.height
@@ -113,7 +125,14 @@ public final class ContentViolationSideOutOfRange {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.channelId, this.platform, this.mediaId, this.height, this.width, this.maximum, this.minimum);
+                this.channelId,
+                this.part,
+                this.platform,
+                this.mediaId,
+                this.height,
+                this.width,
+                this.maximum,
+                this.minimum);
     }
 
     @java.lang.Override
@@ -161,6 +180,10 @@ public final class ContentViolationSideOutOfRange {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage part(Optional<Integer> part);
+
+        _FinalStage part(Integer part);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -187,6 +210,8 @@ public final class ContentViolationSideOutOfRange {
 
         private int minimum;
 
+        private Optional<Integer> part = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -194,6 +219,7 @@ public final class ContentViolationSideOutOfRange {
         @java.lang.Override
         public Builder from(ContentViolationSideOutOfRange other) {
             channelId(other.getChannelId());
+            part(other.getPart());
             platform(other.getPlatform());
             mediaId(other.getMediaId());
             height(other.getHeight());
@@ -253,14 +279,28 @@ public final class ContentViolationSideOutOfRange {
         }
 
         @java.lang.Override
+        public _FinalStage part(Integer part) {
+            this.part = Optional.ofNullable(part);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "part", nulls = Nulls.SKIP)
+        public _FinalStage part(Optional<Integer> part) {
+            this.part = part;
+            return this;
+        }
+
+        @java.lang.Override
         public ContentViolationSideOutOfRange build() {
             return new ContentViolationSideOutOfRange(
-                    channelId, platform, mediaId, height, width, maximum, minimum, additionalProperties);
+                    channelId, part, platform, mediaId, height, width, maximum, minimum, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
+                    || key.equalsIgnoreCase("part")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("mediaId")
                     || key.equalsIgnoreCase("height")

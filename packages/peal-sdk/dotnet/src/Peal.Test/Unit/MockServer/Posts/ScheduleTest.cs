@@ -27,6 +27,56 @@ public class ScheduleTest : BaseMockServerTest
             {
               "authorId": "authorId",
               "content": {
+                "followUps": [
+                  {
+                    "delaySeconds": 86400,
+                    "media": [
+                      {
+                        "altText": "altText",
+                        "mediaId": "mediaId"
+                      },
+                      {
+                        "altText": "altText",
+                        "mediaId": "mediaId"
+                      }
+                    ],
+                    "overrides": [
+                      {
+                        "channelId": "channelId",
+                        "text": "x"
+                      },
+                      {
+                        "channelId": "channelId",
+                        "text": "x"
+                      }
+                    ],
+                    "text": "text"
+                  },
+                  {
+                    "delaySeconds": 86400,
+                    "media": [
+                      {
+                        "altText": "altText",
+                        "mediaId": "mediaId"
+                      },
+                      {
+                        "altText": "altText",
+                        "mediaId": "mediaId"
+                      }
+                    ],
+                    "overrides": [
+                      {
+                        "channelId": "channelId",
+                        "text": "x"
+                      },
+                      {
+                        "channelId": "channelId",
+                        "text": "x"
+                      }
+                    ],
+                    "text": "text"
+                  }
+                ],
                 "media": [
                   {
                     "altText": "altText",
@@ -86,6 +136,23 @@ public class ScheduleTest : BaseMockServerTest
                     ],
                     "title": "title"
                   },
+                  "parts": {
+                    "count": 1,
+                    "live": [
+                      {
+                        "index": 1,
+                        "permalink": "permalink",
+                        "platformPostId": "platformPostId",
+                        "publishedAt": "publishedAt"
+                      },
+                      {
+                        "index": 1,
+                        "permalink": "permalink",
+                        "platformPostId": "platformPostId",
+                        "publishedAt": "publishedAt"
+                      }
+                    ]
+                  },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
                   "round": 1,
@@ -109,6 +176,23 @@ public class ScheduleTest : BaseMockServerTest
                       "tags"
                     ],
                     "title": "title"
+                  },
+                  "parts": {
+                    "count": 1,
+                    "live": [
+                      {
+                        "index": 1,
+                        "permalink": "permalink",
+                        "platformPostId": "platformPostId",
+                        "publishedAt": "publishedAt"
+                      },
+                      {
+                        "index": 1,
+                        "permalink": "permalink",
+                        "platformPostId": "platformPostId",
+                        "publishedAt": "publishedAt"
+                      }
+                    ]
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",
@@ -166,6 +250,24 @@ public class ScheduleTest : BaseMockServerTest
             {
               "authorId": "authorId",
               "content": {
+                "followUps": [
+                  {
+                    "delaySeconds": 1,
+                    "media": [
+                      {
+                        "altText": "altText",
+                        "mediaId": "mediaId"
+                      }
+                    ],
+                    "overrides": [
+                      {
+                        "channelId": "channelId",
+                        "text": "text"
+                      }
+                    ],
+                    "text": "text"
+                  }
+                ],
                 "media": [
                   {
                     "altText": "altText",
@@ -206,6 +308,15 @@ public class ScheduleTest : BaseMockServerTest
                   "keptPrivate": true,
                   "options": {
                     "platform": "youtube"
+                  },
+                  "parts": {
+                    "count": 1,
+                    "live": [
+                      {
+                        "index": 1,
+                        "publishedAt": "publishedAt"
+                      }
+                    ]
                   },
                   "permalink": "permalink",
                   "publishedAt": "publishedAt",

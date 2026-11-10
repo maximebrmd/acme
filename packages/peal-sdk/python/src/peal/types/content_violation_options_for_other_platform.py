@@ -11,6 +11,7 @@ from .platform import Platform
 
 class ContentViolationOptionsForOtherPlatform(UniversalBaseModel):
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     options_platform: typing_extensions.Annotated[
         Platform, FieldMetadata(alias="optionsPlatform"), pydantic.Field(alias="optionsPlatform")

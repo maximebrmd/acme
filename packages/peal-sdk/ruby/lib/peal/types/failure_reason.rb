@@ -21,6 +21,7 @@ module Peal
       QUOTA_EXCEEDED = "quotaExceeded"
       APP_BILLING_LIMIT = "appBillingLimit"
       PLAN_LIMIT = "planLimit"
+      PARTS_NOT_SENT = "partsNotSent"
     end
   end
 end

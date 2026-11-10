@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -21,6 +23,8 @@ import social.peal.core.ObjectMappers;
 public final class ContentViolationOptionMissing {
     private final String channelId;
 
+    private final Optional<Integer> part;
+
     private final Platform platform;
 
     private final String field;
@@ -28,8 +32,13 @@ public final class ContentViolationOptionMissing {
     private final Map<String, Object> additionalProperties;
 
     private ContentViolationOptionMissing(
-            String channelId, Platform platform, String field, Map<String, Object> additionalProperties) {
+            String channelId,
+            Optional<Integer> part,
+            Platform platform,
+            String field,
+            Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.part = part;
         this.platform = platform;
         this.field = field;
         this.additionalProperties = additionalProperties;
@@ -38,6 +47,11 @@ public final class ContentViolationOptionMissing {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("part")
+    public Optional<Integer> getPart() {
+        return part;
     }
 
     @JsonProperty("platform")
@@ -62,12 +76,15 @@ public final class ContentViolationOptionMissing {
     }
 
     private boolean equalTo(ContentViolationOptionMissing other) {
-        return channelId.equals(other.channelId) && platform.equals(other.platform) && field.equals(other.field);
+        return channelId.equals(other.channelId)
+                && part.equals(other.part)
+                && platform.equals(other.platform)
+                && field.equals(other.field);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelId, this.platform, this.field);
+        return Objects.hash(this.channelId, this.part, this.platform, this.field);
     }
 
     @java.lang.Override
@@ -99,6 +116,10 @@ public final class ContentViolationOptionMissing {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage part(Optional<Integer> part);
+
+        _FinalStage part(Integer part);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -109,6 +130,8 @@ public final class ContentViolationOptionMissing {
 
         private String field;
 
+        private Optional<Integer> part = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -116,6 +139,7 @@ public final class ContentViolationOptionMissing {
         @java.lang.Override
         public Builder from(ContentViolationOptionMissing other) {
             channelId(other.getChannelId());
+            part(other.getPart());
             platform(other.getPlatform());
             field(other.getField());
             return this;
@@ -143,13 +167,27 @@ public final class ContentViolationOptionMissing {
         }
 
         @java.lang.Override
+        public _FinalStage part(Integer part) {
+            this.part = Optional.ofNullable(part);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "part", nulls = Nulls.SKIP)
+        public _FinalStage part(Optional<Integer> part) {
+            this.part = part;
+            return this;
+        }
+
+        @java.lang.Override
         public ContentViolationOptionMissing build() {
-            return new ContentViolationOptionMissing(channelId, platform, field, additionalProperties);
+            return new ContentViolationOptionMissing(channelId, part, platform, field, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
+                    || key.equalsIgnoreCase("part")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("field")) {
                 return;

@@ -14,6 +14,9 @@ public record PlatformCapabilities : IJsonOnDeserialized
     [JsonPropertyName("analytics")]
     public required PlatformCapabilitiesAnalytics Analytics { get; set; }
 
+    [JsonPropertyName("followUps")]
+    public FollowUpCapabilities? FollowUps { get; set; }
+
     [JsonPropertyName("lookups")]
     public IEnumerable<LookupDescription> Lookups { get; set; } = new List<LookupDescription>();
 

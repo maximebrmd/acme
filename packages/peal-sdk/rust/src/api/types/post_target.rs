@@ -15,6 +15,8 @@ pub struct PostTarget {
     pub kept_private: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub options: Option<TargetOptions>,
+    #[serde(default)]
+    pub parts: TargetParts,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub permalink: Option<String>,
     #[serde(rename = "publishedAt")]
@@ -42,6 +44,7 @@ pub struct PostTargetBuilder {
     id: Option<String>,
     kept_private: Option<bool>,
     options: Option<TargetOptions>,
+    parts: Option<TargetParts>,
     permalink: Option<String>,
     published_at: Option<String>,
     round: Option<i64>,
@@ -75,6 +78,11 @@ impl PostTargetBuilder {
         self
     }
 
+    pub fn parts(mut self, value: TargetParts) -> Self {
+        self.parts = Some(value);
+        self
+    }
+
     pub fn permalink(mut self, value: impl Into<String>) -> Self {
         self.permalink = Some(value.into());
         self
@@ -104,6 +112,7 @@ impl PostTargetBuilder {
     /// This method will fail if any of the following fields are not set:
     /// - [`channel_id`](PostTargetBuilder::channel_id)
     /// - [`id`](PostTargetBuilder::id)
+    /// - [`parts`](PostTargetBuilder::parts)
     /// - [`round`](PostTargetBuilder::round)
     /// - [`status`](PostTargetBuilder::status)
     pub fn build(self) -> Result<PostTarget, BuildError> {
@@ -115,6 +124,9 @@ impl PostTargetBuilder {
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             kept_private: self.kept_private,
             options: self.options,
+            parts: self
+                .parts
+                .ok_or_else(|| BuildError::missing_field("parts"))?,
             permalink: self.permalink,
             published_at: self.published_at,
             round: self

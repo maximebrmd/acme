@@ -18,6 +18,10 @@ public class PlatformsTest : BaseMockServerTest
                 "analytics": {
                   "perPost": true
                 },
+                "followUps": {
+                  "kind": "thread",
+                  "maxCount": 1
+                },
                 "lookups": [
                   {
                     "fills": [
@@ -243,6 +247,10 @@ public class PlatformsTest : BaseMockServerTest
               {
                 "analytics": {
                   "perPost": true
+                },
+                "followUps": {
+                  "kind": "thread",
+                  "maxCount": 1
                 },
                 "lookups": [
                   {
@@ -497,6 +505,10 @@ public class PlatformsTest : BaseMockServerTest
               {
                 "analytics": {
                   "perPost": true
+                },
+                "followUps": {
+                  "kind": "thread",
+                  "maxCount": 1
                 },
                 "lookups": [
                   {

@@ -20,6 +20,12 @@ class PublicationAttempt extends JsonSerializableType
     public string $finishedAt;
 
     /**
+     * @var int $part
+     */
+    #[JsonProperty('part')]
+    public int $part;
+
+    /**
      * @var value-of<AttemptResult> $result
      */
     #[JsonProperty('result')]
@@ -53,6 +59,7 @@ class PublicationAttempt extends JsonSerializableType
      * @param array{
      *   attempt: int,
      *   finishedAt: string,
+     *   part: int,
      *   result: value-of<AttemptResult>,
      *   round: int,
      *   startedAt: string,
@@ -65,6 +72,7 @@ class PublicationAttempt extends JsonSerializableType
     ) {
         $this->attempt = $values['attempt'];
         $this->finishedAt = $values['finishedAt'];
+        $this->part = $values['part'];
         $this->result = $values['result'];
         $this->retryAt = $values['retryAt'] ?? null;
         $this->round = $values['round'];

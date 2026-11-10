@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface ContentViolationForbiddenCharacters {
     channelId: string;
+    part?: number | undefined;
     platform: Peal.Platform;
     characters: string[];
 }

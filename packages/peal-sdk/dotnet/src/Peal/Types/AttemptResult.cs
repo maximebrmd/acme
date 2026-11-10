@@ -36,6 +36,8 @@ public readonly record struct AttemptResult : IStringEnum
 
     public static readonly AttemptResult PlanLimit = new(Values.PlanLimit);
 
+    public static readonly AttemptResult PartsNotSent = new(Values.PartsNotSent);
+
     public AttemptResult(string value)
     {
         Value = value;
@@ -159,5 +161,7 @@ public readonly record struct AttemptResult : IStringEnum
         public const string AppBillingLimit = "appBillingLimit";
 
         public const string PlanLimit = "planLimit";
+
+        public const string PartsNotSent = "partsNotSent";
     }
 }

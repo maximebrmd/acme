@@ -118,6 +118,15 @@ public record ContentViolation
     }
 
     /// <summary>
+    /// Create an instance of ContentViolation with <see cref="ContentViolation.TooManyParts"/>.
+    /// </summary>
+    public ContentViolation(ContentViolation.TooManyParts value)
+    {
+        Type = "tooManyParts";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of ContentViolation with <see cref="ContentViolation.MediaRequired"/>.
     /// </summary>
     public ContentViolation(ContentViolation.MediaRequired value)
@@ -319,6 +328,11 @@ public record ContentViolation
     public bool IsTooManyMedia => Type == "tooManyMedia";
 
     /// <summary>
+    /// Returns true if <see cref="Type"/> is "tooManyParts"
+    /// </summary>
+    public bool IsTooManyParts => Type == "tooManyParts";
+
+    /// <summary>
     /// Returns true if <see cref="Type"/> is "mediaRequired"
     /// </summary>
     public bool IsMediaRequired => Type == "mediaRequired";
@@ -501,6 +515,15 @@ public record ContentViolation
             : throw new global::System.Exception("ContentViolation.Type is not 'tooManyMedia'");
 
     /// <summary>
+    /// Returns the value as a <see cref="Peal.ContentViolationTooManyParts"/> if <see cref="Type"/> is 'tooManyParts', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'tooManyParts'.</exception>
+    public Peal.ContentViolationTooManyParts AsTooManyParts() =>
+        IsTooManyParts
+            ? (Peal.ContentViolationTooManyParts)Value!
+            : throw new global::System.Exception("ContentViolation.Type is not 'tooManyParts'");
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.ContentViolationMediaRequired"/> if <see cref="Type"/> is 'mediaRequired', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'mediaRequired'.</exception>
@@ -651,6 +674,7 @@ public record ContentViolation
         Func<Peal.ContentViolationTextTooLong, T> onTextTooLong,
         Func<Peal.ContentViolationForbiddenCharacters, T> onForbiddenCharacters,
         Func<Peal.ContentViolationTooManyMedia, T> onTooManyMedia,
+        Func<Peal.ContentViolationTooManyParts, T> onTooManyParts,
         Func<Peal.ContentViolationMediaRequired, T> onMediaRequired,
         Func<Peal.ContentViolationTooManyHashtags, T> onTooManyHashtags,
         Func<Peal.ContentViolationTooManyMentions, T> onTooManyMentions,
@@ -682,6 +706,7 @@ public record ContentViolation
             "textTooLong" => onTextTooLong(AsTextTooLong()),
             "forbiddenCharacters" => onForbiddenCharacters(AsForbiddenCharacters()),
             "tooManyMedia" => onTooManyMedia(AsTooManyMedia()),
+            "tooManyParts" => onTooManyParts(AsTooManyParts()),
             "mediaRequired" => onMediaRequired(AsMediaRequired()),
             "tooManyHashtags" => onTooManyHashtags(AsTooManyHashtags()),
             "tooManyMentions" => onTooManyMentions(AsTooManyMentions()),
@@ -713,6 +738,7 @@ public record ContentViolation
         Action<Peal.ContentViolationTextTooLong> onTextTooLong,
         Action<Peal.ContentViolationForbiddenCharacters> onForbiddenCharacters,
         Action<Peal.ContentViolationTooManyMedia> onTooManyMedia,
+        Action<Peal.ContentViolationTooManyParts> onTooManyParts,
         Action<Peal.ContentViolationMediaRequired> onMediaRequired,
         Action<Peal.ContentViolationTooManyHashtags> onTooManyHashtags,
         Action<Peal.ContentViolationTooManyMentions> onTooManyMentions,
@@ -765,6 +791,9 @@ public record ContentViolation
                 break;
             case "tooManyMedia":
                 onTooManyMedia(AsTooManyMedia());
+                break;
+            case "tooManyParts":
+                onTooManyParts(AsTooManyParts());
                 break;
             case "mediaRequired":
                 onMediaRequired(AsMediaRequired());
@@ -967,6 +996,20 @@ public record ContentViolation
         if (Type == "tooManyMedia")
         {
             value = (Peal.ContentViolationTooManyMedia)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.ContentViolationTooManyParts"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsTooManyParts(out Peal.ContentViolationTooManyParts? value)
+    {
+        if (Type == "tooManyParts")
+        {
+            value = (Peal.ContentViolationTooManyParts)Value!;
             return true;
         }
         value = null;
@@ -1220,6 +1263,9 @@ public record ContentViolation
     public static implicit operator ContentViolation(ContentViolation.TooManyMedia value) =>
         new(value);
 
+    public static implicit operator ContentViolation(ContentViolation.TooManyParts value) =>
+        new(value);
+
     public static implicit operator ContentViolation(ContentViolation.MediaRequired value) =>
         new(value);
 
@@ -1376,6 +1422,13 @@ public record ContentViolation
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.ContentViolationTooManyMedia"
                         ),
+                "tooManyParts" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationTooManyParts?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.ContentViolationTooManyParts"
+                        ),
                 "mediaRequired" =>
                     jsonWithoutDiscriminator.Deserialize<Peal.ContentViolationMediaRequired?>(
                         options
@@ -1510,6 +1563,7 @@ public record ContentViolation
                     "textTooLong" => JsonSerializer.SerializeToNode(value.Value, options),
                     "forbiddenCharacters" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tooManyMedia" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "tooManyParts" => JsonSerializer.SerializeToNode(value.Value, options),
                     "mediaRequired" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tooManyHashtags" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tooManyMentions" => JsonSerializer.SerializeToNode(value.Value, options),
@@ -1772,6 +1826,26 @@ public record ContentViolation
 
         public static implicit operator ContentViolation.TooManyMedia(
             Peal.ContentViolationTooManyMedia value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for tooManyParts
+    /// </summary>
+    [Serializable]
+    public struct TooManyParts
+    {
+        public TooManyParts(Peal.ContentViolationTooManyParts value)
+        {
+            Value = value;
+        }
+
+        internal Peal.ContentViolationTooManyParts Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator ContentViolation.TooManyParts(
+            Peal.ContentViolationTooManyParts value
         ) => new(value);
     }
 

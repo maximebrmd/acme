@@ -70,6 +70,10 @@ public final class ContentViolation {
         return new ContentViolation(new TooManyMediaValue(value));
     }
 
+    public static ContentViolation tooManyParts(ContentViolationTooManyParts value) {
+        return new ContentViolation(new TooManyPartsValue(value));
+    }
+
     public static ContentViolation mediaRequired(ContentViolationMediaRequired value) {
         return new ContentViolation(new MediaRequiredValue(value));
     }
@@ -172,6 +176,10 @@ public final class ContentViolation {
 
     public boolean isTooManyMedia() {
         return value instanceof TooManyMediaValue;
+    }
+
+    public boolean isTooManyParts() {
+        return value instanceof TooManyPartsValue;
     }
 
     public boolean isMediaRequired() {
@@ -311,6 +319,13 @@ public final class ContentViolation {
     public Optional<ContentViolationTooManyMedia> getTooManyMedia() {
         if (isTooManyMedia()) {
             return Optional.of(((TooManyMediaValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<ContentViolationTooManyParts> getTooManyParts() {
+        if (isTooManyParts()) {
+            return Optional.of(((TooManyPartsValue) value).value);
         }
         return Optional.empty();
     }
@@ -471,6 +486,8 @@ public final class ContentViolation {
 
         T visitTooManyMedia(ContentViolationTooManyMedia tooManyMedia);
 
+        T visitTooManyParts(ContentViolationTooManyParts tooManyParts);
+
         T visitMediaRequired(ContentViolationMediaRequired mediaRequired);
 
         T visitTooManyHashtags(ContentViolationTooManyHashtags tooManyHashtags);
@@ -517,6 +534,7 @@ public final class ContentViolation {
         @JsonSubTypes.Type(TextTooLongValue.class),
         @JsonSubTypes.Type(ForbiddenCharactersValue.class),
         @JsonSubTypes.Type(TooManyMediaValue.class),
+        @JsonSubTypes.Type(TooManyPartsValue.class),
         @JsonSubTypes.Type(MediaRequiredValue.class),
         @JsonSubTypes.Type(TooManyHashtagsValue.class),
         @JsonSubTypes.Type(TooManyMentionsValue.class),
@@ -964,6 +982,46 @@ public final class ContentViolation {
         }
 
         private boolean equalTo(TooManyMediaValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "ContentViolation{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("tooManyParts")
+    @JsonIgnoreProperties("_tag")
+    private static final class TooManyPartsValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private ContentViolationTooManyParts value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private TooManyPartsValue() {}
+
+        private TooManyPartsValue(ContentViolationTooManyParts value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitTooManyParts(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof TooManyPartsValue && equalTo((TooManyPartsValue) other);
+        }
+
+        private boolean equalTo(TooManyPartsValue other) {
             return value.equals(other.value);
         }
 

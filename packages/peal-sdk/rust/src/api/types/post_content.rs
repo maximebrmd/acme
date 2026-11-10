@@ -2,6 +2,9 @@ pub use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct PostContent {
+    #[serde(rename = "followUps")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub follow_ups: Option<Vec<PostPart>>,
     #[serde(default)]
     pub media: Vec<MediaAttachment>,
     #[serde(default)]
@@ -19,12 +22,18 @@ impl PostContent {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct PostContentBuilder {
+    follow_ups: Option<Vec<PostPart>>,
     media: Option<Vec<MediaAttachment>>,
     overrides: Option<Vec<TextOverride>>,
     text: Option<String>,
 }
 
 impl PostContentBuilder {
+    pub fn follow_ups(mut self, value: Vec<PostPart>) -> Self {
+        self.follow_ups = Some(value);
+        self
+    }
+
     pub fn media(mut self, value: Vec<MediaAttachment>) -> Self {
         self.media = Some(value);
         self
@@ -47,6 +56,7 @@ impl PostContentBuilder {
     /// - [`text`](PostContentBuilder::text)
     pub fn build(self) -> Result<PostContent, BuildError> {
         Ok(PostContent {
+            follow_ups: self.follow_ups,
             media: self
                 .media
                 .ok_or_else(|| BuildError::missing_field("media"))?,

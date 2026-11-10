@@ -14,6 +14,12 @@ class ContentViolationVideoTooLong extends JsonSerializableType
     public string $channelId;
 
     /**
+     * @var ?int $part
+     */
+    #[JsonProperty('part')]
+    public ?int $part;
+
+    /**
      * @var value-of<Platform> $platform
      */
     #[JsonProperty('platform')]
@@ -44,12 +50,14 @@ class ContentViolationVideoTooLong extends JsonSerializableType
      *   mediaId: string,
      *   durationMs: int,
      *   maximumMs: int,
+     *   part?: ?int,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->channelId = $values['channelId'];
+        $this->part = $values['part'] ?? null;
         $this->platform = $values['platform'];
         $this->mediaId = $values['mediaId'];
         $this->durationMs = $values['durationMs'];

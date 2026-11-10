@@ -3,12 +3,18 @@
 import typing
 
 import pydantic
+import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
+from ..core.serialization import FieldMetadata
 from .media_attachment import MediaAttachment
+from .post_part import PostPart
 from .text_override import TextOverride
 
 
 class PostContent(UniversalBaseModel):
+    follow_ups: typing_extensions.Annotated[
+        typing.Optional[typing.List[PostPart]], FieldMetadata(alias="followUps"), pydantic.Field(alias="followUps")
+    ] = None
     media: typing.List[MediaAttachment]
     overrides: typing.List[TextOverride]
     text: str
