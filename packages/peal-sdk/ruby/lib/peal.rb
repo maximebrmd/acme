@@ -96,6 +96,18 @@ require_relative "peal/analytics/types/summary_analytics_request"
 require_relative "peal/analytics/types/post_analytics_request"
 require_relative "peal/tiktok/client"
 require_relative "peal/tiktok/types/creator_tiktok_request"
+require_relative "peal/review/client"
+require_relative "peal/review/types/settings_review_request"
+require_relative "peal/review/types/update_settings_review_request"
+require_relative "peal/review/types/pending_review_request"
+require_relative "peal/review/types/thread_review_request"
+require_relative "peal/review/types/new_comment"
+require_relative "peal/review/types/resolve_review_request"
+require_relative "peal/review/types/approve_review_request"
+require_relative "peal/review/types/changes_request"
+require_relative "peal/review/types/links_review_request"
+require_relative "peal/review/types/new_review_link"
+require_relative "peal/review/types/revoke_link_review_request"
 require_relative "peal/environment"
 
 module Peal
@@ -105,8 +117,15 @@ module Peal
     end
   end
 
+  module Review
+    module Types
+      autoload :NewCommentAnchorSelection, ::File.join(__dir__, "peal/review/types/new_comment_anchor_selection")
+      autoload :NewCommentAnchor, ::File.join(__dir__, "peal/review/types/new_comment_anchor")
+    end
+  end
+
   module Types
-    autoload :ChannelNotFoundEncoded, ::File.join(__dir__, "peal/types/channel_not_found_encoded")
+    autoload :ReviewLinkNotFoundEncoded, ::File.join(__dir__, "peal/types/review_link_not_found_encoded")
     autoload :WorkspaceNotFoundEncodedTag, ::File.join(__dir__, "peal/types/workspace_not_found_encoded_tag")
     autoload :WorkspaceNotFoundEncoded, ::File.join(__dir__, "peal/types/workspace_not_found_encoded")
     autoload :NotFoundErrorBody, ::File.join(__dir__, "peal/types/not_found_error_body")
@@ -116,9 +135,11 @@ module Peal
     autoload :MediaTooLargeEncoded, ::File.join(__dir__, "peal/types/media_too_large_encoded")
     autoload :UnsupportedMediaTypeEncoded, ::File.join(__dir__, "peal/types/unsupported_media_type_encoded")
     autoload :UnprocessableEntityErrorBody, ::File.join(__dir__, "peal/types/unprocessable_entity_error_body")
-    autoload :AlreadyMemberEncoded, ::File.join(__dir__, "peal/types/already_member_encoded")
-    autoload :TooManyInvitationsEncoded, ::File.join(__dir__, "peal/types/too_many_invitations_encoded")
+    autoload :PostNotReviewableEncodedStatus, ::File.join(__dir__, "peal/types/post_not_reviewable_encoded_status")
+    autoload :PostNotReviewableEncoded, ::File.join(__dir__, "peal/types/post_not_reviewable_encoded")
+    autoload :TooManyReviewLinksEncoded, ::File.join(__dir__, "peal/types/too_many_review_links_encoded")
     autoload :ConflictErrorBody, ::File.join(__dir__, "peal/types/conflict_error_body")
+    autoload :AlreadyMemberEncoded, ::File.join(__dir__, "peal/types/already_member_encoded")
     autoload :CalendarDay, ::File.join(__dir__, "peal/types/calendar_day")
     autoload :ChannelMetrics, ::File.join(__dir__, "peal/types/channel_metrics")
     autoload :EngagementDay, ::File.join(__dir__, "peal/types/engagement_day")
@@ -129,6 +150,17 @@ module Peal
     autoload :Permission, ::File.join(__dir__, "peal/types/permission")
     autoload :APIKey, ::File.join(__dir__, "peal/types/api_key")
     autoload :APIKeyNotFoundEncoded, ::File.join(__dir__, "peal/types/api_key_not_found_encoded")
+    autoload :ApprovalNotPendingEncodedTag, ::File.join(__dir__, "peal/types/approval_not_pending_encoded_tag")
+    autoload :ApprovalNotPendingEncoded, ::File.join(__dir__, "peal/types/approval_not_pending_encoded")
+    autoload :ApprovalOrigin, ::File.join(__dir__, "peal/types/approval_origin")
+    autoload :ReviewerKind, ::File.join(__dir__, "peal/types/reviewer_kind")
+    autoload :Reviewer, ::File.join(__dir__, "peal/types/reviewer")
+    autoload :ApprovalRequestDecision, ::File.join(__dir__, "peal/types/approval_request_decision")
+    autoload :ApprovalStatus, ::File.join(__dir__, "peal/types/approval_status")
+    autoload :PostSchedule, ::File.join(__dir__, "peal/types/post_schedule")
+    autoload :ApprovalRequest, ::File.join(__dir__, "peal/types/approval_request")
+    autoload :ApprovalOutcome, ::File.join(__dir__, "peal/types/approval_outcome")
+    autoload :ApprovalPolicy, ::File.join(__dir__, "peal/types/approval_policy")
     autoload :AssistantActionHashtags, ::File.join(__dir__, "peal/types/assistant_action_hashtags")
     autoload :AssistantTone, ::File.join(__dir__, "peal/types/assistant_tone")
     autoload :AssistantActionRewrite, ::File.join(__dir__, "peal/types/assistant_action_rewrite")
@@ -162,6 +194,12 @@ module Peal
     autoload :TrialOffer, ::File.join(__dir__, "peal/types/trial_offer")
     autoload :Usage, ::File.join(__dir__, "peal/types/usage")
     autoload :Billing, ::File.join(__dir__, "peal/types/billing")
+    autoload :CommentSelectionLocated, ::File.join(__dir__, "peal/types/comment_selection_located")
+    autoload :CommentSelection, ::File.join(__dir__, "peal/types/comment_selection")
+    autoload :CommentAnchor, ::File.join(__dir__, "peal/types/comment_anchor")
+    autoload :ReviewCommentResolved, ::File.join(__dir__, "peal/types/review_comment_resolved")
+    autoload :ReviewComment, ::File.join(__dir__, "peal/types/review_comment")
+    autoload :ChangesOutcome, ::File.join(__dir__, "peal/types/changes_outcome")
     autoload :ChannelStatusActive, ::File.join(__dir__, "peal/types/channel_status_active")
     autoload :ChannelStatusDisabled, ::File.join(__dir__, "peal/types/channel_status_disabled")
     autoload :ChannelStatusRefreshNeeded, ::File.join(__dir__, "peal/types/channel_status_refresh_needed")
@@ -171,6 +209,7 @@ module Peal
     autoload :ChannelCannotPostEncodedTag, ::File.join(__dir__, "peal/types/channel_cannot_post_encoded_tag")
     autoload :ChannelCannotPostEncodedReason, ::File.join(__dir__, "peal/types/channel_cannot_post_encoded_reason")
     autoload :ChannelCannotPostEncoded, ::File.join(__dir__, "peal/types/channel_cannot_post_encoded")
+    autoload :ChannelNotFoundEncoded, ::File.join(__dir__, "peal/types/channel_not_found_encoded")
     autoload :TikTokPrivacyLevel, ::File.join(__dir__, "peal/types/tik_tok_privacy_level")
     autoload :TikTokOptions, ::File.join(__dir__, "peal/types/tik_tok_options")
     autoload :YouTubePrivacy, ::File.join(__dir__, "peal/types/you_tube_privacy")
@@ -178,6 +217,10 @@ module Peal
     autoload :TargetOptions, ::File.join(__dir__, "peal/types/target_options")
     autoload :ChannelOptions, ::File.join(__dir__, "peal/types/channel_options")
     autoload :ChoosableAccount, ::File.join(__dir__, "peal/types/choosable_account")
+    autoload :CommentInvalidEncodedTag, ::File.join(__dir__, "peal/types/comment_invalid_encoded_tag")
+    autoload :CommentProblem, ::File.join(__dir__, "peal/types/comment_problem")
+    autoload :CommentInvalidEncoded, ::File.join(__dir__, "peal/types/comment_invalid_encoded")
+    autoload :CommentNotFoundEncoded, ::File.join(__dir__, "peal/types/comment_not_found_encoded")
     autoload :ConnectFailedEncodedTag, ::File.join(__dir__, "peal/types/connect_failed_encoded_tag")
     autoload :ConnectFailureReason, ::File.join(__dir__, "peal/types/connect_failure_reason")
     autoload :ConnectFailedEncoded, ::File.join(__dir__, "peal/types/connect_failed_encoded")
@@ -218,6 +261,10 @@ module Peal
     autoload :ContentViolationVideoTooShort, ::File.join(__dir__, "peal/types/content_violation_video_too_short")
     autoload :ContentViolation, ::File.join(__dir__, "peal/types/content_violation")
     autoload :CreatedAPIKey, ::File.join(__dir__, "peal/types/created_api_key")
+    autoload :ReviewLinkAccess, ::File.join(__dir__, "peal/types/review_link_access")
+    autoload :ReviewLinkStatus, ::File.join(__dir__, "peal/types/review_link_status")
+    autoload :ReviewLink, ::File.join(__dir__, "peal/types/review_link")
+    autoload :CreatedReviewLink, ::File.join(__dir__, "peal/types/created_review_link")
     autoload :DatabaseUnavailableEncodedTag, ::File.join(__dir__, "peal/types/database_unavailable_encoded_tag")
     autoload :DatabaseUnavailableEncoded, ::File.join(__dir__, "peal/types/database_unavailable_encoded")
     autoload :FailureReason, ::File.join(__dir__, "peal/types/failure_reason")
@@ -225,7 +272,6 @@ module Peal
     autoload :TextOverride, ::File.join(__dir__, "peal/types/text_override")
     autoload :PostContent, ::File.join(__dir__, "peal/types/post_content")
     autoload :PostOutcome, ::File.join(__dir__, "peal/types/post_outcome")
-    autoload :PostSchedule, ::File.join(__dir__, "peal/types/post_schedule")
     autoload :PostStatus, ::File.join(__dir__, "peal/types/post_status")
     autoload :PostTargetStatus, ::File.join(__dir__, "peal/types/post_target_status")
     autoload :UnconfirmedReason, ::File.join(__dir__, "peal/types/unconfirmed_reason")
@@ -268,6 +314,11 @@ module Peal
     autoload :NoticeChannel, ::File.join(__dir__, "peal/types/notice_channel")
     autoload :NoticeEventChannelReconnectRequired, ::File.join(__dir__, "peal/types/notice_event_channel_reconnect_required")
     autoload :NoticeEventChannelReconnectSoon, ::File.join(__dir__, "peal/types/notice_event_channel_reconnect_soon")
+    autoload :NoticeEventPostApprovalRequested, ::File.join(__dir__, "peal/types/notice_event_post_approval_requested")
+    autoload :ReviewParty, ::File.join(__dir__, "peal/types/review_party")
+    autoload :NoticeEventPostApproved, ::File.join(__dir__, "peal/types/notice_event_post_approved")
+    autoload :NoticeEventPostChangesRequested, ::File.join(__dir__, "peal/types/notice_event_post_changes_requested")
+    autoload :NoticeEventPostCommented, ::File.join(__dir__, "peal/types/notice_event_post_commented")
     autoload :NoticeEventPostFailed, ::File.join(__dir__, "peal/types/notice_event_post_failed")
     autoload :NoticeEventPostPublished, ::File.join(__dir__, "peal/types/notice_event_post_published")
     autoload :NoticeEventPostUnconfirmed, ::File.join(__dir__, "peal/types/notice_event_post_unconfirmed")
@@ -291,6 +342,7 @@ module Peal
     autoload :PostContentInvalidEncoded, ::File.join(__dir__, "peal/types/post_content_invalid_encoded")
     autoload :PostDraft, ::File.join(__dir__, "peal/types/post_draft")
     autoload :PostNotFoundEncoded, ::File.join(__dir__, "peal/types/post_not_found_encoded")
+    autoload :PostReview, ::File.join(__dir__, "peal/types/post_review")
     autoload :PostStatusConflictEncodedTag, ::File.join(__dir__, "peal/types/post_status_conflict_encoded_tag")
     autoload :PostStatusConflictEncoded, ::File.join(__dir__, "peal/types/post_status_conflict_encoded")
     autoload :SignedRequestMethod, ::File.join(__dir__, "peal/types/signed_request_method")
@@ -301,6 +353,7 @@ module Peal
     autoload :UploadTarget, ::File.join(__dir__, "peal/types/upload_target")
     autoload :PreparedUpload, ::File.join(__dir__, "peal/types/prepared_upload")
     autoload :PublicationAttempt, ::File.join(__dir__, "peal/types/publication_attempt")
+    autoload :ReviewSettings, ::File.join(__dir__, "peal/types/review_settings")
     autoload :Role, ::File.join(__dir__, "peal/types/role")
     autoload :ScheduleInPastEncoded, ::File.join(__dir__, "peal/types/schedule_in_past_encoded")
     autoload :SuggestionHashtags, ::File.join(__dir__, "peal/types/suggestion_hashtags")
@@ -316,6 +369,7 @@ module Peal
     autoload :TikTokAccountPostingReady, ::File.join(__dir__, "peal/types/tik_tok_account_posting_ready")
     autoload :TikTokAccountPosting, ::File.join(__dir__, "peal/types/tik_tok_account_posting")
     autoload :TikTokAccount, ::File.join(__dir__, "peal/types/tik_tok_account")
+    autoload :TooManyInvitationsEncoded, ::File.join(__dir__, "peal/types/too_many_invitations_encoded")
     autoload :UnauthenticatedEncodedTag, ::File.join(__dir__, "peal/types/unauthenticated_encoded_tag")
     autoload :UnauthenticatedEncoded, ::File.join(__dir__, "peal/types/unauthenticated_encoded")
     autoload :UnknownChannelsEncoded, ::File.join(__dir__, "peal/types/unknown_channels_encoded")

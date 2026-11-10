@@ -47,6 +47,7 @@ public partial class PealClient : IPealClient
         Billing = new BillingClient(_client);
         Analytics = new AnalyticsClient(_client);
         Tiktok = new TiktokClient(_client);
+        Review = new ReviewClient(_client);
     }
 
     public ISystemClient System { get; }
@@ -76,4 +77,6 @@ public partial class PealClient : IPealClient
     public IAnalyticsClient Analytics { get; }
 
     public ITiktokClient Tiktok { get; }
+
+    public IReviewClient Review { get; }
 }

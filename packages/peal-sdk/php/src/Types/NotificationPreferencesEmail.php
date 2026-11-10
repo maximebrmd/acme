@@ -26,6 +26,12 @@ class NotificationPreferencesEmail extends JsonSerializableType
     public bool $postPublished;
 
     /**
+     * @var bool $postReview
+     */
+    #[JsonProperty('postReview')]
+    public bool $postReview;
+
+    /**
      * @var bool $postUnconfirmed
      */
     #[JsonProperty('postUnconfirmed')]
@@ -36,6 +42,7 @@ class NotificationPreferencesEmail extends JsonSerializableType
      *   channelReconnect: bool,
      *   postFailed: bool,
      *   postPublished: bool,
+     *   postReview: bool,
      *   postUnconfirmed: bool,
      * } $values
      */
@@ -45,6 +52,7 @@ class NotificationPreferencesEmail extends JsonSerializableType
         $this->channelReconnect = $values['channelReconnect'];
         $this->postFailed = $values['postFailed'];
         $this->postPublished = $values['postPublished'];
+        $this->postReview = $values['postReview'];
         $this->postUnconfirmed = $values['postUnconfirmed'];
     }
 

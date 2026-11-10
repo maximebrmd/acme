@@ -17,6 +17,7 @@ import (
 	notificationpreferences "github.com/peal-social/peal/packages/peal-sdk/go/notificationpreferences"
 	option "github.com/peal-social/peal/packages/peal-sdk/go/option"
 	posts "github.com/peal-social/peal/packages/peal-sdk/go/posts"
+	review "github.com/peal-social/peal/packages/peal-sdk/go/review"
 	session "github.com/peal-social/peal/packages/peal-sdk/go/session"
 	system "github.com/peal-social/peal/packages/peal-sdk/go/system"
 	tiktok "github.com/peal-social/peal/packages/peal-sdk/go/tiktok"
@@ -37,6 +38,7 @@ type Client struct {
 	Billing                 *billing.Client
 	Analytics               *analytics.Client
 	Tiktok                  *tiktok.Client
+	Review                  *review.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -60,6 +62,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Billing:                 billing.NewClient(options),
 		Analytics:               analytics.NewClient(options),
 		Tiktok:                  tiktok.NewClient(options),
+		Review:                  review.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,
 		caller: internal.NewCaller(

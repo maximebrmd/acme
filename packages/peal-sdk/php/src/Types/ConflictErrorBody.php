@@ -9,8 +9,8 @@ class ConflictErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'AlreadyMember'
-     *   |'TooManyInvitations'
+     *    'PostNotReviewable'
+     *   |'TooManyReviewLinks'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +18,8 @@ class ConflictErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    AlreadyMemberEncoded
-     *   |TooManyInvitationsEncoded
+     *    PostNotReviewableEncoded
+     *   |TooManyReviewLinksEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +28,13 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'AlreadyMember'
-     *   |'TooManyInvitations'
+     *    'PostNotReviewable'
+     *   |'TooManyReviewLinks'
      *   |'_unknown'
      * ),
      *   value: (
-     *    AlreadyMemberEncoded
-     *   |TooManyInvitationsEncoded
+     *    PostNotReviewableEncoded
+     *   |TooManyReviewLinksEncoded
      *   |mixed
      * ),
      * } $values
@@ -47,45 +47,45 @@ class ConflictErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param AlreadyMemberEncoded $alreadyMember
+     * @param PostNotReviewableEncoded $postNotReviewable
      * @return ConflictErrorBody
      */
-    public static function alreadyMember(AlreadyMemberEncoded $alreadyMember): ConflictErrorBody
+    public static function postNotReviewable(PostNotReviewableEncoded $postNotReviewable): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'AlreadyMember',
-            'value' => $alreadyMember,
+            'type' => 'PostNotReviewable',
+            'value' => $postNotReviewable,
         ]);
     }
 
     /**
-     * @param TooManyInvitationsEncoded $tooManyInvitations
+     * @param TooManyReviewLinksEncoded $tooManyReviewLinks
      * @return ConflictErrorBody
      */
-    public static function tooManyInvitations(TooManyInvitationsEncoded $tooManyInvitations): ConflictErrorBody
+    public static function tooManyReviewLinks(TooManyReviewLinksEncoded $tooManyReviewLinks): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'TooManyInvitations',
-            'value' => $tooManyInvitations,
+            'type' => 'TooManyReviewLinks',
+            'value' => $tooManyReviewLinks,
         ]);
     }
 
     /**
      * @return bool
      */
-    public function isAlreadyMember(): bool
+    public function isPostNotReviewable(): bool
     {
-        return $this->value instanceof AlreadyMemberEncoded && $this->type === 'AlreadyMember';
+        return $this->value instanceof PostNotReviewableEncoded && $this->type === 'PostNotReviewable';
     }
 
     /**
-     * @return AlreadyMemberEncoded
+     * @return PostNotReviewableEncoded
      */
-    public function asAlreadyMember(): AlreadyMemberEncoded
+    public function asPostNotReviewable(): PostNotReviewableEncoded
     {
-        if (!($this->value instanceof AlreadyMemberEncoded && $this->type === 'AlreadyMember')) {
+        if (!($this->value instanceof PostNotReviewableEncoded && $this->type === 'PostNotReviewable')) {
             throw new Exception(
-                "Expected AlreadyMember; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected PostNotReviewable; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -95,19 +95,19 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isTooManyInvitations(): bool
+    public function isTooManyReviewLinks(): bool
     {
-        return $this->value instanceof TooManyInvitationsEncoded && $this->type === 'TooManyInvitations';
+        return $this->value instanceof TooManyReviewLinksEncoded && $this->type === 'TooManyReviewLinks';
     }
 
     /**
-     * @return TooManyInvitationsEncoded
+     * @return TooManyReviewLinksEncoded
      */
-    public function asTooManyInvitations(): TooManyInvitationsEncoded
+    public function asTooManyReviewLinks(): TooManyReviewLinksEncoded
     {
-        if (!($this->value instanceof TooManyInvitationsEncoded && $this->type === 'TooManyInvitations')) {
+        if (!($this->value instanceof TooManyReviewLinksEncoded && $this->type === 'TooManyReviewLinks')) {
             throw new Exception(
-                "Expected TooManyInvitations; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected TooManyReviewLinks; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +134,12 @@ class ConflictErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'AlreadyMember':
-                $value = $this->asAlreadyMember()->jsonSerialize();
+            case 'PostNotReviewable':
+                $value = $this->asPostNotReviewable()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'TooManyInvitations':
-                $value = $this->asTooManyInvitations()->jsonSerialize();
+            case 'TooManyReviewLinks':
+                $value = $this->asTooManyReviewLinks()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +178,11 @@ class ConflictErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'AlreadyMember':
-                $args['value'] = AlreadyMemberEncoded::jsonDeserialize($data);
+            case 'PostNotReviewable':
+                $args['value'] = PostNotReviewableEncoded::jsonDeserialize($data);
                 break;
-            case 'TooManyInvitations':
-                $args['value'] = TooManyInvitationsEncoded::jsonDeserialize($data);
+            case 'TooManyReviewLinks':
+                $args['value'] = TooManyReviewLinksEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

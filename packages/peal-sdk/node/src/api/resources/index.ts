@@ -20,6 +20,8 @@ export * as notificationPreferences from "./notificationPreferences/index.js";
 export * from "./notificationPreferences/client/requests/index.js";
 export * as posts from "./posts/index.js";
 export * from "./posts/client/requests/index.js";
+export * as review from "./review/index.js";
+export * from "./review/client/requests/index.js";
 export * as session from "./session/index.js";
 export * as system from "./system/index.js";
 export * as tiktok from "./tiktok/index.js";

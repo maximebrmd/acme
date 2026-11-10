@@ -5,10 +5,15 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum ConflictErrorBody {
     #[non_exhaustive]
-    AlreadyMember {},
+    PostNotReviewable {
+        status: PostNotReviewableEncodedStatus,
+    },
 
     #[non_exhaustive]
-    TooManyInvitations {},
+    TooManyReviewLinks {
+        #[serde(default)]
+        limit: i64,
+    },
 
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
@@ -18,12 +23,12 @@ pub enum ConflictErrorBody {
 }
 
 impl ConflictErrorBody {
-    pub fn already_member() -> Self {
-        Self::AlreadyMember {}
+    pub fn post_not_reviewable(status: PostNotReviewableEncodedStatus) -> Self {
+        Self::PostNotReviewable { status }
     }
 
-    pub fn too_many_invitations() -> Self {
-        Self::TooManyInvitations {}
+    pub fn too_many_review_links(limit: i64) -> Self {
+        Self::TooManyReviewLinks { limit }
     }
 
     pub fn unknown(value: serde_json::Value) -> Self {

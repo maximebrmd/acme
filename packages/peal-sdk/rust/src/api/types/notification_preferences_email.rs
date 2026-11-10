@@ -11,6 +11,9 @@ pub struct NotificationPreferencesEmail {
     #[serde(rename = "postPublished")]
     #[serde(default)]
     pub post_published: bool,
+    #[serde(rename = "postReview")]
+    #[serde(default)]
+    pub post_review: bool,
     #[serde(rename = "postUnconfirmed")]
     #[serde(default)]
     pub post_unconfirmed: bool,
@@ -28,6 +31,7 @@ pub struct NotificationPreferencesEmailBuilder {
     channel_reconnect: Option<bool>,
     post_failed: Option<bool>,
     post_published: Option<bool>,
+    post_review: Option<bool>,
     post_unconfirmed: Option<bool>,
 }
 
@@ -47,6 +51,11 @@ impl NotificationPreferencesEmailBuilder {
         self
     }
 
+    pub fn post_review(mut self, value: bool) -> Self {
+        self.post_review = Some(value);
+        self
+    }
+
     pub fn post_unconfirmed(mut self, value: bool) -> Self {
         self.post_unconfirmed = Some(value);
         self
@@ -57,6 +66,7 @@ impl NotificationPreferencesEmailBuilder {
     /// - [`channel_reconnect`](NotificationPreferencesEmailBuilder::channel_reconnect)
     /// - [`post_failed`](NotificationPreferencesEmailBuilder::post_failed)
     /// - [`post_published`](NotificationPreferencesEmailBuilder::post_published)
+    /// - [`post_review`](NotificationPreferencesEmailBuilder::post_review)
     /// - [`post_unconfirmed`](NotificationPreferencesEmailBuilder::post_unconfirmed)
     pub fn build(self) -> Result<NotificationPreferencesEmail, BuildError> {
         Ok(NotificationPreferencesEmail {
@@ -69,6 +79,9 @@ impl NotificationPreferencesEmailBuilder {
             post_published: self
                 .post_published
                 .ok_or_else(|| BuildError::missing_field("post_published"))?,
+            post_review: self
+                .post_review
+                .ok_or_else(|| BuildError::missing_field("post_review"))?,
             post_unconfirmed: self
                 .post_unconfirmed
                 .ok_or_else(|| BuildError::missing_field("post_unconfirmed"))?,

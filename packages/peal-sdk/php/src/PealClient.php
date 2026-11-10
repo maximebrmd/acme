@@ -16,6 +16,7 @@ use Peal\Invitations\InvitationsClient;
 use Peal\Billing\BillingClient;
 use Peal\Analytics\AnalyticsClient;
 use Peal\Tiktok\TiktokClient;
+use Peal\Review\ReviewClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
 
@@ -92,6 +93,11 @@ class PealClient
     public TiktokClient $tiktok;
 
     /**
+     * @var ReviewClient $review
+     */
+    public ReviewClient $review;
+
+    /**
      * @var array{
      *   baseUrl?: string,
      *   client?: ClientInterface,
@@ -156,5 +162,6 @@ class PealClient
         $this->billing = new BillingClient($this->client, $this->options);
         $this->analytics = new AnalyticsClient($this->client, $this->options);
         $this->tiktok = new TiktokClient($this->client, $this->options);
+        $this->review = new ReviewClient($this->client, $this->options);
     }
 }

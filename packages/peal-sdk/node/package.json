@@ -172,6 +172,17 @@
       },
       "default": "./dist/cjs/api/resources/tiktok/exports.js"
     },
+    "./review": {
+      "import": {
+        "types": "./dist/esm/api/resources/review/exports.d.mts",
+        "default": "./dist/esm/api/resources/review/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/review/exports.d.ts",
+        "default": "./dist/cjs/api/resources/review/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/review/exports.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

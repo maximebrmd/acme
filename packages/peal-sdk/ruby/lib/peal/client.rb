@@ -89,5 +89,10 @@ module Peal
     def tiktok
       @tiktok ||= Peal::Tiktok::Client.new(client: @raw_client)
     end
+
+    # @return [Peal::Review::Client]
+    def review
+      @review ||= Peal::Review::Client.new(client: @raw_client)
+    end
   end
 end

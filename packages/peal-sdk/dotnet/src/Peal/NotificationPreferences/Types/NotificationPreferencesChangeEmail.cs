@@ -20,6 +20,9 @@ public record NotificationPreferencesChangeEmail : IJsonOnDeserialized
     [JsonPropertyName("postPublished")]
     public bool? PostPublished { get; set; }
 
+    [JsonPropertyName("postReview")]
+    public bool? PostReview { get; set; }
+
     [JsonPropertyName("postUnconfirmed")]
     public bool? PostUnconfirmed { get; set; }
 

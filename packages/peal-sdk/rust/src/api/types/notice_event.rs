@@ -35,6 +35,42 @@ pub enum NoticeEvent {
     },
 
     #[non_exhaustive]
+    PostApprovalRequested {
+        #[serde(rename = "postId")]
+        #[serde(default)]
+        post_id: String,
+        #[serde(rename = "scheduledAt")]
+        #[serde(default)]
+        scheduled_at: String,
+    },
+
+    #[non_exhaustive]
+    PostApproved {
+        by: ReviewParty,
+        #[serde(default)]
+        late: bool,
+        #[serde(rename = "postId")]
+        #[serde(default)]
+        post_id: String,
+    },
+
+    #[non_exhaustive]
+    PostChangesRequested {
+        by: ReviewParty,
+        #[serde(rename = "postId")]
+        #[serde(default)]
+        post_id: String,
+    },
+
+    #[non_exhaustive]
+    PostCommented {
+        by: ReviewParty,
+        #[serde(rename = "postId")]
+        #[serde(default)]
+        post_id: String,
+    },
+
+    #[non_exhaustive]
     ChannelReconnectRequired { channel: NoticeChannel },
 
     #[non_exhaustive]
@@ -124,6 +160,25 @@ impl NoticeEvent {
             channel: None,
             post_id,
         }
+    }
+
+    pub fn post_approval_requested(post_id: String, scheduled_at: String) -> Self {
+        Self::PostApprovalRequested {
+            post_id,
+            scheduled_at,
+        }
+    }
+
+    pub fn post_approved(by: ReviewParty, late: bool, post_id: String) -> Self {
+        Self::PostApproved { by, late, post_id }
+    }
+
+    pub fn post_changes_requested(by: ReviewParty, post_id: String) -> Self {
+        Self::PostChangesRequested { by, post_id }
+    }
+
+    pub fn post_commented(by: ReviewParty, post_id: String) -> Self {
+        Self::PostCommented { by, post_id }
     }
 
     pub fn channel_reconnect_required(channel: NoticeChannel) -> Self {

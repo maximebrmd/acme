@@ -12,6 +12,14 @@ if typing.TYPE_CHECKING:
     from .analytics_summary import AnalyticsSummary
     from .api_key import ApiKey
     from .api_key_not_found_encoded import ApiKeyNotFoundEncoded
+    from .approval_not_pending_encoded import ApprovalNotPendingEncoded
+    from .approval_not_pending_encoded_tag import ApprovalNotPendingEncodedTag
+    from .approval_origin import ApprovalOrigin
+    from .approval_outcome import ApprovalOutcome
+    from .approval_policy import ApprovalPolicy
+    from .approval_request import ApprovalRequest
+    from .approval_request_decision import ApprovalRequestDecision
+    from .approval_status import ApprovalStatus
     from .assistant_action import (
         AssistantAction,
         AssistantAction_Hashtags,
@@ -41,6 +49,7 @@ if typing.TYPE_CHECKING:
     from .billing_interval import BillingInterval
     from .billing_subscription import BillingSubscription
     from .calendar_day import CalendarDay
+    from .changes_outcome import ChangesOutcome
     from .channel import Channel
     from .channel_cannot_post_encoded import ChannelCannotPostEncoded
     from .channel_cannot_post_encoded_reason import ChannelCannotPostEncodedReason
@@ -53,10 +62,17 @@ if typing.TYPE_CHECKING:
     from .channel_status_disabled import ChannelStatusDisabled
     from .channel_status_refresh_needed import ChannelStatusRefreshNeeded
     from .choosable_account import ChoosableAccount
+    from .comment_anchor import CommentAnchor
+    from .comment_invalid_encoded import CommentInvalidEncoded
+    from .comment_invalid_encoded_tag import CommentInvalidEncodedTag
+    from .comment_not_found_encoded import CommentNotFoundEncoded
+    from .comment_problem import CommentProblem
+    from .comment_selection import CommentSelection
+    from .comment_selection_located import CommentSelectionLocated
     from .conflict_error_body import (
         ConflictErrorBody,
-        ConflictErrorBody_AlreadyMember,
-        ConflictErrorBody_TooManyInvitations,
+        ConflictErrorBody_PostNotReviewable,
+        ConflictErrorBody_TooManyReviewLinks,
     )
     from .connect_failed_encoded import ConnectFailedEncoded
     from .connect_failed_encoded_tag import ConnectFailedEncodedTag
@@ -123,6 +139,7 @@ if typing.TYPE_CHECKING:
     from .content_violation_video_too_long import ContentViolationVideoTooLong
     from .content_violation_video_too_short import ContentViolationVideoTooShort
     from .created_api_key import CreatedApiKey
+    from .created_review_link import CreatedReviewLink
     from .database_unavailable_encoded import DatabaseUnavailableEncoded
     from .database_unavailable_encoded_tag import DatabaseUnavailableEncodedTag
     from .draft_page import DraftPage
@@ -176,7 +193,7 @@ if typing.TYPE_CHECKING:
     from .non_finite_number import NonFiniteNumber
     from .not_found_error_body import (
         NotFoundErrorBody,
-        NotFoundErrorBody_ChannelNotFound,
+        NotFoundErrorBody_ReviewLinkNotFound,
         NotFoundErrorBody_WorkspaceNotFound,
     )
     from .notice import Notice
@@ -185,6 +202,10 @@ if typing.TYPE_CHECKING:
         NoticeEvent,
         NoticeEvent_ChannelReconnectRequired,
         NoticeEvent_ChannelReconnectSoon,
+        NoticeEvent_PostApprovalRequested,
+        NoticeEvent_PostApproved,
+        NoticeEvent_PostChangesRequested,
+        NoticeEvent_PostCommented,
         NoticeEvent_PostFailed,
         NoticeEvent_PostPublished,
         NoticeEvent_PostUnconfirmed,
@@ -196,6 +217,10 @@ if typing.TYPE_CHECKING:
     )
     from .notice_event_channel_reconnect_required import NoticeEventChannelReconnectRequired
     from .notice_event_channel_reconnect_soon import NoticeEventChannelReconnectSoon
+    from .notice_event_post_approval_requested import NoticeEventPostApprovalRequested
+    from .notice_event_post_approved import NoticeEventPostApproved
+    from .notice_event_post_changes_requested import NoticeEventPostChangesRequested
+    from .notice_event_post_commented import NoticeEventPostCommented
     from .notice_event_post_failed import NoticeEventPostFailed
     from .notice_event_post_published import NoticeEventPostPublished
     from .notice_event_post_unconfirmed import NoticeEventPostUnconfirmed
@@ -227,7 +252,10 @@ if typing.TYPE_CHECKING:
     from .post_draft import PostDraft
     from .post_metrics import PostMetrics
     from .post_not_found_encoded import PostNotFoundEncoded
+    from .post_not_reviewable_encoded import PostNotReviewableEncoded
+    from .post_not_reviewable_encoded_status import PostNotReviewableEncodedStatus
     from .post_outcome import PostOutcome
+    from .post_review import PostReview
     from .post_schedule import PostSchedule
     from .post_status import PostStatus
     from .post_status_conflict_encoded import PostStatusConflictEncoded
@@ -238,6 +266,16 @@ if typing.TYPE_CHECKING:
     from .probe_state import ProbeState
     from .publication_attempt import PublicationAttempt
     from .rejection_reason import RejectionReason
+    from .review_comment import ReviewComment
+    from .review_comment_resolved import ReviewCommentResolved
+    from .review_link import ReviewLink
+    from .review_link_access import ReviewLinkAccess
+    from .review_link_not_found_encoded import ReviewLinkNotFoundEncoded
+    from .review_link_status import ReviewLinkStatus
+    from .review_party import ReviewParty
+    from .review_settings import ReviewSettings
+    from .reviewer import Reviewer
+    from .reviewer_kind import ReviewerKind
     from .role import Role
     from .schedule_in_past_encoded import ScheduleInPastEncoded
     from .signed_request import SignedRequest
@@ -263,6 +301,7 @@ if typing.TYPE_CHECKING:
     from .tik_tok_options import TikTokOptions
     from .tik_tok_privacy_level import TikTokPrivacyLevel
     from .too_many_invitations_encoded import TooManyInvitationsEncoded
+    from .too_many_review_links_encoded import TooManyReviewLinksEncoded
     from .top_post import TopPost
     from .translation_language import TranslationLanguage
     from .trial_offer import TrialOffer
@@ -300,6 +339,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AnalyticsSummary": ".analytics_summary",
     "ApiKey": ".api_key",
     "ApiKeyNotFoundEncoded": ".api_key_not_found_encoded",
+    "ApprovalNotPendingEncoded": ".approval_not_pending_encoded",
+    "ApprovalNotPendingEncodedTag": ".approval_not_pending_encoded_tag",
+    "ApprovalOrigin": ".approval_origin",
+    "ApprovalOutcome": ".approval_outcome",
+    "ApprovalPolicy": ".approval_policy",
+    "ApprovalRequest": ".approval_request",
+    "ApprovalRequestDecision": ".approval_request_decision",
+    "ApprovalStatus": ".approval_status",
     "AssistantAction": ".assistant_action",
     "AssistantActionHashtags": ".assistant_action_hashtags",
     "AssistantActionRewrite": ".assistant_action_rewrite",
@@ -327,6 +374,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "BillingInterval": ".billing_interval",
     "BillingSubscription": ".billing_subscription",
     "CalendarDay": ".calendar_day",
+    "ChangesOutcome": ".changes_outcome",
     "Channel": ".channel",
     "ChannelCannotPostEncoded": ".channel_cannot_post_encoded",
     "ChannelCannotPostEncodedReason": ".channel_cannot_post_encoded_reason",
@@ -342,9 +390,16 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ChannelStatus_Disabled": ".channel_status",
     "ChannelStatus_RefreshNeeded": ".channel_status",
     "ChoosableAccount": ".choosable_account",
+    "CommentAnchor": ".comment_anchor",
+    "CommentInvalidEncoded": ".comment_invalid_encoded",
+    "CommentInvalidEncodedTag": ".comment_invalid_encoded_tag",
+    "CommentNotFoundEncoded": ".comment_not_found_encoded",
+    "CommentProblem": ".comment_problem",
+    "CommentSelection": ".comment_selection",
+    "CommentSelectionLocated": ".comment_selection_located",
     "ConflictErrorBody": ".conflict_error_body",
-    "ConflictErrorBody_AlreadyMember": ".conflict_error_body",
-    "ConflictErrorBody_TooManyInvitations": ".conflict_error_body",
+    "ConflictErrorBody_PostNotReviewable": ".conflict_error_body",
+    "ConflictErrorBody_TooManyReviewLinks": ".conflict_error_body",
     "ConnectFailedEncoded": ".connect_failed_encoded",
     "ConnectFailedEncodedTag": ".connect_failed_encoded_tag",
     "ConnectFailureReason": ".connect_failure_reason",
@@ -410,6 +465,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ContentViolation_VideoTooLong": ".content_violation",
     "ContentViolation_VideoTooShort": ".content_violation",
     "CreatedApiKey": ".created_api_key",
+    "CreatedReviewLink": ".created_review_link",
     "DatabaseUnavailableEncoded": ".database_unavailable_encoded",
     "DatabaseUnavailableEncodedTag": ".database_unavailable_encoded_tag",
     "DraftPage": ".draft_page",
@@ -460,13 +516,17 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Money": ".money",
     "NonFiniteNumber": ".non_finite_number",
     "NotFoundErrorBody": ".not_found_error_body",
-    "NotFoundErrorBody_ChannelNotFound": ".not_found_error_body",
+    "NotFoundErrorBody_ReviewLinkNotFound": ".not_found_error_body",
     "NotFoundErrorBody_WorkspaceNotFound": ".not_found_error_body",
     "Notice": ".notice",
     "NoticeChannel": ".notice_channel",
     "NoticeEvent": ".notice_event",
     "NoticeEventChannelReconnectRequired": ".notice_event_channel_reconnect_required",
     "NoticeEventChannelReconnectSoon": ".notice_event_channel_reconnect_soon",
+    "NoticeEventPostApprovalRequested": ".notice_event_post_approval_requested",
+    "NoticeEventPostApproved": ".notice_event_post_approved",
+    "NoticeEventPostChangesRequested": ".notice_event_post_changes_requested",
+    "NoticeEventPostCommented": ".notice_event_post_commented",
     "NoticeEventPostFailed": ".notice_event_post_failed",
     "NoticeEventPostPublished": ".notice_event_post_published",
     "NoticeEventPostUnconfirmed": ".notice_event_post_unconfirmed",
@@ -477,6 +537,10 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventTrialEnding": ".notice_event_trial_ending",
     "NoticeEvent_ChannelReconnectRequired": ".notice_event",
     "NoticeEvent_ChannelReconnectSoon": ".notice_event",
+    "NoticeEvent_PostApprovalRequested": ".notice_event",
+    "NoticeEvent_PostApproved": ".notice_event",
+    "NoticeEvent_PostChangesRequested": ".notice_event",
+    "NoticeEvent_PostCommented": ".notice_event",
     "NoticeEvent_PostFailed": ".notice_event",
     "NoticeEvent_PostPublished": ".notice_event",
     "NoticeEvent_PostUnconfirmed": ".notice_event",
@@ -508,7 +572,10 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostDraft": ".post_draft",
     "PostMetrics": ".post_metrics",
     "PostNotFoundEncoded": ".post_not_found_encoded",
+    "PostNotReviewableEncoded": ".post_not_reviewable_encoded",
+    "PostNotReviewableEncodedStatus": ".post_not_reviewable_encoded_status",
     "PostOutcome": ".post_outcome",
+    "PostReview": ".post_review",
     "PostSchedule": ".post_schedule",
     "PostStatus": ".post_status",
     "PostStatusConflictEncoded": ".post_status_conflict_encoded",
@@ -519,6 +586,16 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ProbeState": ".probe_state",
     "PublicationAttempt": ".publication_attempt",
     "RejectionReason": ".rejection_reason",
+    "ReviewComment": ".review_comment",
+    "ReviewCommentResolved": ".review_comment_resolved",
+    "ReviewLink": ".review_link",
+    "ReviewLinkAccess": ".review_link_access",
+    "ReviewLinkNotFoundEncoded": ".review_link_not_found_encoded",
+    "ReviewLinkStatus": ".review_link_status",
+    "ReviewParty": ".review_party",
+    "ReviewSettings": ".review_settings",
+    "Reviewer": ".reviewer",
+    "ReviewerKind": ".reviewer_kind",
     "Role": ".role",
     "ScheduleInPastEncoded": ".schedule_in_past_encoded",
     "SignedRequest": ".signed_request",
@@ -552,6 +629,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TikTokOptions": ".tik_tok_options",
     "TikTokPrivacyLevel": ".tik_tok_privacy_level",
     "TooManyInvitationsEncoded": ".too_many_invitations_encoded",
+    "TooManyReviewLinksEncoded": ".too_many_review_links_encoded",
     "TopPost": ".top_post",
     "TranslationLanguage": ".translation_language",
     "TrialOffer": ".trial_offer",
@@ -613,6 +691,14 @@ __all__ = [
     "AnalyticsSummary",
     "ApiKey",
     "ApiKeyNotFoundEncoded",
+    "ApprovalNotPendingEncoded",
+    "ApprovalNotPendingEncodedTag",
+    "ApprovalOrigin",
+    "ApprovalOutcome",
+    "ApprovalPolicy",
+    "ApprovalRequest",
+    "ApprovalRequestDecision",
+    "ApprovalStatus",
     "AssistantAction",
     "AssistantActionHashtags",
     "AssistantActionRewrite",
@@ -640,6 +726,7 @@ __all__ = [
     "BillingInterval",
     "BillingSubscription",
     "CalendarDay",
+    "ChangesOutcome",
     "Channel",
     "ChannelCannotPostEncoded",
     "ChannelCannotPostEncodedReason",
@@ -655,9 +742,16 @@ __all__ = [
     "ChannelStatus_Disabled",
     "ChannelStatus_RefreshNeeded",
     "ChoosableAccount",
+    "CommentAnchor",
+    "CommentInvalidEncoded",
+    "CommentInvalidEncodedTag",
+    "CommentNotFoundEncoded",
+    "CommentProblem",
+    "CommentSelection",
+    "CommentSelectionLocated",
     "ConflictErrorBody",
-    "ConflictErrorBody_AlreadyMember",
-    "ConflictErrorBody_TooManyInvitations",
+    "ConflictErrorBody_PostNotReviewable",
+    "ConflictErrorBody_TooManyReviewLinks",
     "ConnectFailedEncoded",
     "ConnectFailedEncodedTag",
     "ConnectFailureReason",
@@ -723,6 +817,7 @@ __all__ = [
     "ContentViolation_VideoTooLong",
     "ContentViolation_VideoTooShort",
     "CreatedApiKey",
+    "CreatedReviewLink",
     "DatabaseUnavailableEncoded",
     "DatabaseUnavailableEncodedTag",
     "DraftPage",
@@ -773,13 +868,17 @@ __all__ = [
     "Money",
     "NonFiniteNumber",
     "NotFoundErrorBody",
-    "NotFoundErrorBody_ChannelNotFound",
+    "NotFoundErrorBody_ReviewLinkNotFound",
     "NotFoundErrorBody_WorkspaceNotFound",
     "Notice",
     "NoticeChannel",
     "NoticeEvent",
     "NoticeEventChannelReconnectRequired",
     "NoticeEventChannelReconnectSoon",
+    "NoticeEventPostApprovalRequested",
+    "NoticeEventPostApproved",
+    "NoticeEventPostChangesRequested",
+    "NoticeEventPostCommented",
     "NoticeEventPostFailed",
     "NoticeEventPostPublished",
     "NoticeEventPostUnconfirmed",
@@ -790,6 +889,10 @@ __all__ = [
     "NoticeEventTrialEnding",
     "NoticeEvent_ChannelReconnectRequired",
     "NoticeEvent_ChannelReconnectSoon",
+    "NoticeEvent_PostApprovalRequested",
+    "NoticeEvent_PostApproved",
+    "NoticeEvent_PostChangesRequested",
+    "NoticeEvent_PostCommented",
     "NoticeEvent_PostFailed",
     "NoticeEvent_PostPublished",
     "NoticeEvent_PostUnconfirmed",
@@ -821,7 +924,10 @@ __all__ = [
     "PostDraft",
     "PostMetrics",
     "PostNotFoundEncoded",
+    "PostNotReviewableEncoded",
+    "PostNotReviewableEncodedStatus",
     "PostOutcome",
+    "PostReview",
     "PostSchedule",
     "PostStatus",
     "PostStatusConflictEncoded",
@@ -832,6 +938,16 @@ __all__ = [
     "ProbeState",
     "PublicationAttempt",
     "RejectionReason",
+    "ReviewComment",
+    "ReviewCommentResolved",
+    "ReviewLink",
+    "ReviewLinkAccess",
+    "ReviewLinkNotFoundEncoded",
+    "ReviewLinkStatus",
+    "ReviewParty",
+    "ReviewSettings",
+    "Reviewer",
+    "ReviewerKind",
     "Role",
     "ScheduleInPastEncoded",
     "SignedRequest",
@@ -865,6 +981,7 @@ __all__ = [
     "TikTokOptions",
     "TikTokPrivacyLevel",
     "TooManyInvitationsEncoded",
+    "TooManyReviewLinksEncoded",
     "TopPost",
     "TranslationLanguage",
     "TrialOffer",
