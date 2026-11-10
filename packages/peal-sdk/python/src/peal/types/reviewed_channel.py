@@ -7,11 +7,15 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .platform import Platform
+from .reviewed_part import ReviewedPart
 from .target_options import TargetOptions
 
 
 class ReviewedChannel(UniversalBaseModel):
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    follow_ups: typing_extensions.Annotated[
+        typing.List[ReviewedPart], FieldMetadata(alias="followUps"), pydantic.Field(alias="followUps")
+    ]
     handle: typing.Optional[str] = None
     options: typing.Optional[TargetOptions] = None
     platform: typing.Optional[Platform] = None

@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface PlatformCapabilities {
     analytics: PlatformCapabilities.Analytics;
+    followUps: Peal.FollowUpCapabilities | null;
     lookups: Peal.LookupDescription[];
     media: Peal.MediaCapabilities;
     options: PlatformCapabilities.Options;

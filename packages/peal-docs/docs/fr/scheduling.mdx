@@ -49,6 +49,28 @@ Sous **Longueur sur chaque canal**, chaque canal où part la publication montre 
 
 Bluesky compte ce qu’un lecteur voit comme un seul caractère : un emoji fait de plusieurs points de code compte une fois. YouTube compte des octets : une lettre accentuée en compte deux. TikTok accepte 2 200 pour la légende d’une vidéo et 4 000 pour la description d’une publication de photos : Peal limite les deux à 2 200. La limite de Facebook est le chiffre couramment rapporté, Meta n’en nommant aucune ; il en va de même des 1 500 caractères de Google Business Profile, et des 58 du titre d’un événement ou d’une offre, la référence et les pages d’aide de Google n’en nommant aucune. Peal vérifie les limites quand vous programmez une publication, pas pendant que vous rédigez un brouillon.
 
+## Fils [#threads]
+
+Une publication peut avoir des parties à sa suite. Sous **Fil**, choisissez **Ajouter une partie** : chaque partie a son texte, ses images et vidéos, un compteur pour chaque canal et, si vous le souhaitez, une attente après la partie précédente, d’une minute à un jour. Montez ou descendez une partie, ou retirez-la, avec ses boutons. Une publication a au plus 24 parties après la première.
+
+Sur les plateformes qui ont des fils, chaque partie part en réponse à la précédente :
+
+| Plateforme | Ce que deviennent les parties                                             |
+| ---------- | ------------------------------------------------------------------------- |
+| X          | Un fil : chaque partie répond à la précédente                             |
+| Bluesky    | Un fil : chaque partie nomme la première publication du fil et son parent |
+| Mastodon   | Un fil : chaque partie répond à la précédente                             |
+
+Chaque partie suit les règles d’une publication sur sa plateforme : sa longueur, comptée comme la plateforme la compte, et ses images et vidéos. Les autres plateformes prennent une publication seule : une publication avec des parties y est refusée quand vous la programmez, et l’éditeur le dit dès que vous cochez un tel canal. Les commentaires sous une publication, sur les plateformes qui en prennent, ne sont pas encore envoyés.
+
+Les parties partent dans l’ordre, chacune par sa propre requête à la plateforme :
+
+- rien n’est envoyé après une partie qui a **échoué**. Le canal indique **Échec**, sa page liste les parties en ligne, avec leurs adresses, et **Republier** envoie la partie qui a échoué et les suivantes, jamais une partie en ligne ;
+- rien n’est envoyé après une partie que Peal **ne peut pas confirmer**. Le canal indique **À vérifier** : regardez sur la plateforme, puis dites ce que vous avez trouvé. Quand cette partie est en ligne et qu’il en restait, le canal indique **Échec** avec la raison **Suite non envoyée**, et **Republier** envoie la suite. Une partie retrouvée à la main n’a pas d’adresse connue de Peal, et la suivante ne peut donc pas lui répondre : publiez la suite vous-même sur la plateforme ;
+- **Annuler** arrête les parties qui ne sont pas encore parties. Une partie qui attend n’est pas envoyée à la fin de son attente, et les parties déjà parties restent en ligne.
+
+L’adresse de la publication est celle de sa première partie, et les [statistiques](/analytics) lisent les compteurs de la première partie.
+
 ## Options des plateformes [#options]
 
 Certaines plateformes demandent à chaque publication plus que son texte et ses médias. Quand la publication part sur un canal de l’une d’elles, **Options des plateformes** montre les champs de ce canal. Un brouillon les garde tels quels, inachevés ; la programmer exige ceux marqués obligatoires, et montre sous chaque champ ce que sa plateforme refuserait.

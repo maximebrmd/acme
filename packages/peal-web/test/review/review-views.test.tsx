@@ -154,6 +154,21 @@ const previews = (
     channels={[
       {
         channelId,
+        followUps: [
+          {
+            delaySeconds: 0,
+            media: [
+              {
+                altText: "A synthetic chart",
+                kind: "image",
+                mediaId: "m4",
+                url: "https://media.example.test/m4",
+              },
+            ],
+            text: "And <more> on Friday.",
+          },
+          { delaySeconds: 300, media: [], text: "See you there." },
+        ],
         handle: "@studio@social.example.test",
         options: null,
         platform: "mastodon",
@@ -161,6 +176,7 @@ const previews = (
       },
       {
         channelId: "0190f3a0-0000-7000-8000-00000000c002",
+        followUps: [],
         handle: null,
         options: null,
         platform: null,
@@ -193,6 +209,23 @@ describe(ChannelPreviewsView, () => {
     expect(html).toContain("Mastodon");
     expect(html).toContain("Launch &lt;day&gt;\nJoin us.");
     expect(html).toContain(`data-review-channel="${channelId}"`);
+  });
+
+  it("shows the parts that follow the post on a channel, in order", async () => {
+    const html = await render("en", previews);
+
+    expect(html).toContain("Part 2");
+    expect(html).toContain("And &lt;more&gt; on Friday.");
+    expect(html).toContain("A synthetic chart");
+    expect(html).toContain("5 minutes after the part before it");
+    expect(html.indexOf("Part 2")).toBeLessThan(html.indexOf("Part 3"));
+  });
+
+  it("names the parts in the reader's language", async () => {
+    const french = await render("fr", previews);
+
+    expect(french).toContain("Partie 2");
+    expect(french).toContain("5 minutes après la partie précédente");
   });
 
   it("says when a channel is gone or has no text", async () => {
@@ -233,6 +266,7 @@ describe(ChannelPreviewsView, () => {
         channels={[
           {
             channelId,
+            followUps: [],
             handle: "synthetic-pins",
             options: {
               boardId: "549755885175",
@@ -245,6 +279,7 @@ describe(ChannelPreviewsView, () => {
           },
           {
             channelId: "0190f3a0-0000-7000-8000-00000000c002",
+            followUps: [],
             handle: "synthetic-videos",
             options: {
               madeForKids: false,
@@ -276,6 +311,7 @@ describe(ChannelPreviewsView, () => {
       <ChannelPreviewsView
         channels={PlatformSchema.literals.map((platform, index) => ({
           channelId: `0190f3a0-0000-7000-8000-00000000c1${String(index).padStart(2, "0")}`,
+          followUps: [],
           handle: `synthetic-${platform}`,
           options: null,
           platform,

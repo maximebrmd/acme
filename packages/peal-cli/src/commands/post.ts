@@ -20,8 +20,11 @@ import type { MediaDestination } from "#media-files.ts";
 import {
   channelIdsOf,
   channelsFlag,
+  followUpsOf,
   optionsFlag,
   optionsOf,
+  thenDelayFlag,
+  thenFlag,
 } from "#post-flags.ts";
 import { channelsOf, namesFor, printPost, timeOf } from "#post-result.ts";
 import { Refused } from "#refused.ts";
@@ -191,6 +194,10 @@ export const post = Command.make(
     options: optionsFlag(
       'What the post sets on a channel whose platform asks for more, as peal drafts save takes it: JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels.'
     ),
+    parts: thenFlag(
+      "A part that follows the post, text alone: a reply in a thread where the platform has threads (peal channels capabilities says where). Repeat it for several, in order. A platform that takes a post alone refuses the post."
+    ),
+    partsDelay: thenDelayFlag,
     text: Argument.String("text").pipe(
       Argument.withDescription("What the post says.")
     ),
@@ -199,11 +206,12 @@ export const post = Command.make(
   },
   Effect.fn("post")(function* sendPost(input) {
     const { channelIds, options, when } = yield* planned(input);
+    const followUps = yield* followUpsOf(input.parts, input.partsDelay);
 
     const withMedia = (media: readonly MediaAttachment[]) =>
       checkPost({
         channelIds,
-        content: { media, overrides: [], text: input.text },
+        content: { followUps, media, overrides: [], text: input.text },
         options,
         when,
       });

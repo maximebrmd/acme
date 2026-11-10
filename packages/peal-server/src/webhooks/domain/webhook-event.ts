@@ -48,9 +48,14 @@ const post = { ...workspace, postId: PostIdSchema };
 
 // One post on one channel, in the round it was sent: 1, and one more for
 // each repost.
+// `parts` says how many parts the post has there and how many are live;
+// events stored before posts had parts have none.
 const postOnChannel = {
   ...post,
   ...EventTargetSchema.fields,
+  parts: Schema.optionalKey(
+    Schema.Struct({ count: Schema.Int, live: Schema.Int })
+  ),
   round: Schema.Int,
 };
 

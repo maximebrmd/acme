@@ -27,15 +27,42 @@ const decodeStanding = Schema.decodeUnknownEffect(
 );
 
 // What the content columns hold, as the post repository writes them.
-const decodeMedia = Schema.decodeUnknownEffect(
+const MediaSchema = Schema.Array(
+  Schema.Struct({ altText: Schema.String, mediaId: Schema.String })
+);
+
+const decodeMedia = Schema.decodeUnknownEffect(MediaSchema);
+
+const OverridesSchema = Schema.Array(
+  Schema.Struct({ channelId: Schema.String, text: Schema.String })
+);
+
+const decodeOverrides = Schema.decodeUnknownEffect(OverridesSchema);
+
+// The parts after the first, as the post repository writes them.
+const decodeFollowUps = Schema.decodeUnknownEffect(
   Schema.Array(
-    Schema.Struct({ altText: Schema.String, mediaId: Schema.String })
+    Schema.Struct({
+      delaySeconds: Schema.Int,
+      media: MediaSchema,
+      overrides: OverridesSchema,
+      text: Schema.String,
+    })
   )
 );
 
-const decodeOverrides = Schema.decodeUnknownEffect(
-  Schema.Array(Schema.Struct({ channelId: Schema.String, text: Schema.String }))
+// The parts live on a target, as the post repository writes them: only
+// how many there are is exported.
+const decodeLiveParts = Schema.decodeUnknownEffect(
+  Schema.Array(Schema.Unknown)
 );
+
+// Media as an export holds it: no alt text is null.
+const exportedMedia = (media: typeof MediaSchema.Type) =>
+  media.map(({ altText, mediaId }) => ({
+    altText: altText === "" ? null : altText,
+    mediaId,
+  }));
 
 // How a post was created or scheduled, as the post repository writes it.
 const decodeOrigin = Schema.decodeUnknownEffect(
@@ -74,30 +101,47 @@ const recordOf = Effect.fnUntraced(function* recordOf(
     Effect.orDie
   );
 
+  const followUps = yield* decodeFollowUps(row.followUps).pipe(Effect.orDie);
+
+  const targets = yield* Effect.all(
+    targetRows.flatMap((target) =>
+      target.postId === row.id
+        ? [
+            decodeLiveParts(target.liveParts).pipe(
+              Effect.orDie,
+              Effect.map((live) => ({
+                channelId: target.channelId,
+                finishedAt: utcOrNull(target.finishedAt),
+                keptPrivate: target.keptPrivate,
+                options: target.options,
+                // A target published before parts were kept has its one part.
+                partsLive:
+                  live.length === 0 && target.status === "published"
+                    ? 1
+                    : live.length,
+                permalink: target.permalink,
+                status: target.status,
+              }))
+            ),
+          ]
+        : []
+    )
+  );
+
   const record: PostRecord = {
     createdVia: yield* originRecord(row, "createdVia"),
-    id: row.id,
-    media: media.map(({ altText, mediaId }) => ({
-      altText: altText === "" ? null : altText,
-      mediaId,
+    followUps: followUps.map((part) => ({
+      delaySeconds: part.delaySeconds,
+      media: exportedMedia(part.media),
+      text: part.text,
+      textOverrides: part.overrides,
     })),
+    id: row.id,
+    media: exportedMedia(media),
     scheduledAt: utcOrNull(row.scheduledAt),
     scheduledVia: yield* originRecord(row, "scheduledVia"),
     status: row.status,
-    targets: targetRows.flatMap((target) =>
-      target.postId === row.id
-        ? [
-            {
-              channelId: target.channelId,
-              finishedAt: utcOrNull(target.finishedAt),
-              keptPrivate: target.keptPrivate,
-              options: target.options,
-              permalink: target.permalink,
-              status: target.status,
-            },
-          ]
-        : []
-    ),
+    targets,
     text: row.text,
     textOverrides: overrides,
     timeZone: row.scheduleZone,

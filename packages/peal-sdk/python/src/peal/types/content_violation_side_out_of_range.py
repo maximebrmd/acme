@@ -11,6 +11,7 @@ from .platform import Platform
 
 class ContentViolationSideOutOfRange(UniversalBaseModel):
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
     media_id: typing_extensions.Annotated[str, FieldMetadata(alias="mediaId"), pydantic.Field(alias="mediaId")]
     height: int

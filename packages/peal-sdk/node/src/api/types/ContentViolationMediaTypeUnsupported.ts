@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface ContentViolationMediaTypeUnsupported {
     channelId: string;
+    part?: number | undefined;
     platform: Peal.Platform;
     mediaId: string;
     contentType: Peal.MediaContentType;

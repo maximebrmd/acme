@@ -14,6 +14,12 @@ class ContentViolationSideOutOfRange extends JsonSerializableType
     public string $channelId;
 
     /**
+     * @var ?int $part
+     */
+    #[JsonProperty('part')]
+    public ?int $part;
+
+    /**
      * @var value-of<Platform> $platform
      */
     #[JsonProperty('platform')]
@@ -58,12 +64,14 @@ class ContentViolationSideOutOfRange extends JsonSerializableType
      *   width: int,
      *   maximum: int,
      *   minimum: int,
+     *   part?: ?int,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->channelId = $values['channelId'];
+        $this->part = $values['part'] ?? null;
         $this->platform = $values['platform'];
         $this->mediaId = $values['mediaId'];
         $this->height = $values['height'];

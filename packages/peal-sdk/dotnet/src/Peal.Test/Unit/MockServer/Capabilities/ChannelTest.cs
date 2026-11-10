@@ -21,6 +21,10 @@ public class ChannelTest : BaseMockServerTest
                 "analytics": {
                   "perPost": true
                 },
+                "followUps": {
+                  "kind": "thread",
+                  "maxCount": 1
+                },
                 "lookups": [
                   {
                     "fills": [
@@ -278,6 +282,10 @@ public class ChannelTest : BaseMockServerTest
               "capabilities": {
                 "analytics": {
                   "perPost": true
+                },
+                "followUps": {
+                  "kind": "thread",
+                  "maxCount": 1
                 },
                 "lookups": [
                   {

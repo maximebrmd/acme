@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface ContentViolationMediaTooLarge {
     channelId: string;
+    part?: number | undefined;
     platform: Peal.Platform;
     mediaId: string;
     byteSize: number;

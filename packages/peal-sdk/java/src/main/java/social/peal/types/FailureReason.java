@@ -19,6 +19,8 @@ public final class FailureReason {
 
     public static final FailureReason MEDIA_REJECTED = new FailureReason(Value.MEDIA_REJECTED, "mediaRejected");
 
+    public static final FailureReason PARTS_NOT_SENT = new FailureReason(Value.PARTS_NOT_SENT, "partsNotSent");
+
     public static final FailureReason TOKEN_EXPIRED = new FailureReason(Value.TOKEN_EXPIRED, "tokenExpired");
 
     public static final FailureReason APP_NOT_AUDITED = new FailureReason(Value.APP_NOT_AUDITED, "appNotAudited");
@@ -80,6 +82,8 @@ public final class FailureReason {
                 return visitor.visitMissed();
             case MEDIA_REJECTED:
                 return visitor.visitMediaRejected();
+            case PARTS_NOT_SENT:
+                return visitor.visitPartsNotSent();
             case TOKEN_EXPIRED:
                 return visitor.visitTokenExpired();
             case APP_NOT_AUDITED:
@@ -117,6 +121,8 @@ public final class FailureReason {
                 return MISSED;
             case "mediaRejected":
                 return MEDIA_REJECTED;
+            case "partsNotSent":
+                return PARTS_NOT_SENT;
             case "tokenExpired":
                 return TOKEN_EXPIRED;
             case "appNotAudited":
@@ -167,6 +173,8 @@ public final class FailureReason {
 
         PLAN_LIMIT,
 
+        PARTS_NOT_SENT,
+
         UNKNOWN
     }
 
@@ -198,6 +206,8 @@ public final class FailureReason {
         T visitAppBillingLimit();
 
         T visitPlanLimit();
+
+        T visitPartsNotSent();
 
         T visitUnknown(String unknownType);
     }

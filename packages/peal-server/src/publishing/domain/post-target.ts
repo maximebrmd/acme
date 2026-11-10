@@ -7,6 +7,8 @@ import type { PlatformPostId } from "#shared/domain/publish-result.ts";
 
 import { InvalidTargetTransition } from "./invalid-target-transition.ts";
 import type { TargetAction } from "./invalid-target-transition.ts";
+import { LivePartSchema } from "./live-part.ts";
+import type { LivePart } from "./live-part.ts";
 import { PostTargetIdSchema } from "./post-target-id.ts";
 import type { PostTargetId } from "./post-target-id.ts";
 import { PostTargetStatusSchema } from "./post-target-status.ts";
@@ -35,12 +37,20 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * `options` are what the post says on the channel that only its platform
  * knows (`./target-options.ts`), none on most platforms. Like the post's
  * content, they change only while it is a draft.
+ *
+ * `liveParts` are the parts of the post that went live there, in order,
+ * from the first (`./live-part.ts`): every part of a published target, and
+ * those that went out before a part failed, was unconfirmed or was
+ * cancelled. They are kept from round to round, so a repost sends the part
+ * after the last of them, never one that is live. Targets published before
+ * parts were kept list none (`livePartsOf`).
  */
 export class PostTarget extends Schema.Class<PostTarget>(
   "peal-server/publishing/domain/PostTarget"
 )({
   channelId: ChannelIdSchema,
   id: PostTargetIdSchema,
+  liveParts: Schema.Array(LivePartSchema),
   options: Schema.Option(TargetOptionsSchema),
   postId: PostIdSchema,
   round: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
@@ -53,6 +63,7 @@ const withStatus = (target: PostTarget, status: PostTargetStatus): PostTarget =>
   new PostTarget({
     channelId: target.channelId,
     id: target.id,
+    liveParts: target.liveParts,
     options: target.options,
     postId: target.postId,
     round: target.round,
@@ -81,6 +92,7 @@ export const createTarget = (
   new PostTarget({
     channelId,
     id,
+    liveParts: [],
     options,
     postId,
     round: 1,
@@ -98,6 +110,7 @@ export const withOptions = (
   new PostTarget({
     channelId: target.channelId,
     id: target.id,
+    liveParts: target.liveParts,
     options,
     postId: target.postId,
     round: target.round,
@@ -107,6 +120,64 @@ export const withOptions = (
 /** Whether the target's publication is over, one way or another. */
 export const isSettled = (target: PostTarget): boolean =>
   target.status._tag !== "pending" && target.status._tag !== "publishing";
+
+/**
+ * The parts of the post live on the channel, in order. A target published
+ * before parts were kept has its one part, as its status tells it.
+ */
+export const livePartsOf = (target: PostTarget): readonly LivePart[] => {
+  const { liveParts, status } = target;
+
+  return liveParts.length === 0 && status._tag === "published"
+    ? [
+        {
+          index: 0,
+          permalink: status.permalink,
+          platformPostId: status.platformPostId,
+          publishedAt: status.publishedAt,
+          round: target.round,
+        },
+      ]
+    : liveParts;
+};
+
+/**
+ * The place of the part to send next: the one after the last that went
+ * live, as parts go out in order.
+ */
+export const nextPartOf = (target: PostTarget): number =>
+  target.liveParts.length;
+
+/**
+ * Records that the part at `index` went live while the target is sending.
+ * Recording it again changes nothing, so a step run twice keeps one entry.
+ */
+export const recordLivePart = (
+  target: PostTarget,
+  part: LivePart
+): Transition => {
+  if (target.status._tag !== "publishing") {
+    return rejected(target, "recordPart");
+  }
+
+  if (part.index < target.liveParts.length) {
+    return Result.succeed(target);
+  }
+
+  return part.index === target.liveParts.length
+    ? Result.succeed(
+        new PostTarget({
+          channelId: target.channelId,
+          id: target.id,
+          liveParts: [...target.liveParts, part],
+          options: target.options,
+          postId: target.postId,
+          round: target.round,
+          status: target.status,
+        })
+      )
+    : rejected(target, "recordPart");
+};
 
 /** Starts sending a pending target. */
 export const startTarget = (
@@ -123,7 +194,12 @@ export const startTarget = (
       )
     : rejected(target, "start");
 
-/** Records how the attempts on the platform ended. */
+/**
+ * Records how the attempts on the platform ended. A target whose parts all
+ * went live is published as its first part: that part's id and address are
+ * the post's. One that failed, was unconfirmed or was cancelled after some
+ * parts keeps them in `liveParts`.
+ */
 export const settleTarget = (
   target: PostTarget,
   settlement: TargetSettlement,
@@ -151,10 +227,12 @@ export const settleTarget = (
       permalink,
       platformPostId,
     }): PostTargetStatus => {
+      const [first] = target.liveParts;
+
       const live: PostTargetStatus = {
         _tag: "published",
-        permalink: Option.fromUndefinedOr(permalink),
-        platformPostId: Option.some(platformPostId),
+        permalink: first?.permalink ?? Option.fromUndefinedOr(permalink),
+        platformPostId: first?.platformPostId ?? Option.some(platformPostId),
         publishedAt: now,
       };
 
@@ -214,15 +292,25 @@ export const cancelTarget = (
 };
 
 /**
- * The user found an unconfirmed post on the platform. It went live during the
- * attempt, so it counts as published when the attempt was made, not when the
- * user checked. The platform's id for it is unknown unless the user gives it,
- * and its address unless they give that.
+ * The user found an unconfirmed part on the platform. It went live during
+ * the attempt, so it counts as live when the attempt was made, not when the
+ * user checked. The platform's id for it is unknown unless the user gives
+ * it, and its address unless they give that.
+ *
+ * When it was the last of the post's `parts`, the target is published, as
+ * its first part. Otherwise the parts after it were never sent, and nothing
+ * sends them now: the target fails as `partsNotSent` at `now`, and a repost
+ * sends the rest.
  */
 export const confirmPublished = (
   target: PostTarget,
-  platformPostId: Option.Option<PlatformPostId>,
-  permalink: Option.Option<string> = Option.none()
+  found: {
+    readonly now: DateTime.Utc;
+    /** How many parts the post has on the channel. */
+    readonly parts: number;
+    readonly permalink: Option.Option<string>;
+    readonly platformPostId: Option.Option<PlatformPostId>;
+  }
 ): Transition => {
   const { status } = target;
 
@@ -230,12 +318,43 @@ export const confirmPublished = (
     return rejected(target, "confirmPublished");
   }
 
-  return Result.succeed(
-    withStatus(target, {
-      _tag: "published",
-      permalink,
-      platformPostId,
+  const liveParts: readonly LivePart[] = [
+    ...target.liveParts,
+    {
+      index: target.liveParts.length,
+      permalink: found.permalink,
+      platformPostId: found.platformPostId,
       publishedAt: status.attemptedAt,
+      round: target.round,
+    },
+  ];
+
+  const [first] = liveParts;
+
+  const next: PostTargetStatus =
+    liveParts.length >= found.parts
+      ? {
+          _tag: "published",
+          permalink: first?.permalink ?? found.permalink,
+          platformPostId: first?.platformPostId ?? found.platformPostId,
+          publishedAt: status.attemptedAt,
+        }
+      : {
+          _tag: "failed",
+          code: Option.none(),
+          failedAt: found.now,
+          reason: "partsNotSent",
+        };
+
+  return Result.succeed(
+    new PostTarget({
+      channelId: target.channelId,
+      id: target.id,
+      liveParts,
+      options: target.options,
+      postId: target.postId,
+      round: target.round,
+      status: next,
     })
   );
 };
@@ -247,7 +366,8 @@ export const isRepostable = (target: PostTarget): boolean =>
 /**
  * Sends a failed or unconfirmed target again: it waits, pending, in the next
  * round, which a new job sends. An unconfirmed one may be live already: the
- * member chose to send it again anyway, as after checking the platform.
+ * member chose to send it again anyway, as after checking the platform. The
+ * parts that went live stay live: the round sends the part after them.
  */
 export const repostTarget = (target: PostTarget): Transition =>
   isRepostable(target)
@@ -255,6 +375,7 @@ export const repostTarget = (target: PostTarget): Transition =>
         new PostTarget({
           channelId: target.channelId,
           id: target.id,
+          liveParts: target.liveParts,
           options: target.options,
           postId: target.postId,
           round: target.round + 1,

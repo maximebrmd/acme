@@ -15,6 +15,12 @@ class PlatformCapabilities extends JsonSerializableType
     public PlatformCapabilitiesAnalytics $analytics;
 
     /**
+     * @var ?FollowUpCapabilities $followUps
+     */
+    #[JsonProperty('followUps')]
+    public ?FollowUpCapabilities $followUps;
+
+    /**
      * @var array<LookupDescription> $lookups
      */
     #[JsonProperty('lookups'), ArrayType([LookupDescription::class])]
@@ -59,12 +65,14 @@ class PlatformCapabilities extends JsonSerializableType
      *   platform: value-of<Platform>,
      *   text: TextCapabilities,
      *   version: int,
+     *   followUps?: ?FollowUpCapabilities,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->analytics = $values['analytics'];
+        $this->followUps = $values['followUps'] ?? null;
         $this->lookups = $values['lookups'];
         $this->media = $values['media'];
         $this->options = $values['options'];

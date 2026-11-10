@@ -9,6 +9,7 @@ from ..core.serialization import FieldMetadata
 from .failure_reason import FailureReason
 from .post_target_status import PostTargetStatus
 from .target_options import TargetOptions
+from .target_parts import TargetParts
 from .unconfirmed_reason import UnconfirmedReason
 
 
@@ -22,6 +23,7 @@ class PostTarget(UniversalBaseModel):
         typing.Optional[bool], FieldMetadata(alias="keptPrivate"), pydantic.Field(alias="keptPrivate")
     ] = None
     options: typing.Optional[TargetOptions] = None
+    parts: TargetParts
     permalink: typing.Optional[str] = None
     published_at: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="publishedAt"), pydantic.Field(alias="publishedAt")

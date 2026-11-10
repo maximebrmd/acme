@@ -4,6 +4,9 @@ pub use crate::prelude::*;
 pub struct PlatformCapabilities {
     #[serde(default)]
     pub analytics: PlatformCapabilitiesAnalytics,
+    #[serde(rename = "followUps")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub follow_ups: Option<FollowUpCapabilities>,
     #[serde(default)]
     pub lookups: Vec<LookupDescription>,
     #[serde(default)]
@@ -27,6 +30,7 @@ impl PlatformCapabilities {
 #[non_exhaustive]
 pub struct PlatformCapabilitiesBuilder {
     analytics: Option<PlatformCapabilitiesAnalytics>,
+    follow_ups: Option<FollowUpCapabilities>,
     lookups: Option<Vec<LookupDescription>>,
     media: Option<MediaCapabilities>,
     options: Option<PlatformCapabilitiesOptions>,
@@ -38,6 +42,11 @@ pub struct PlatformCapabilitiesBuilder {
 impl PlatformCapabilitiesBuilder {
     pub fn analytics(mut self, value: PlatformCapabilitiesAnalytics) -> Self {
         self.analytics = Some(value);
+        self
+    }
+
+    pub fn follow_ups(mut self, value: FollowUpCapabilities) -> Self {
+        self.follow_ups = Some(value);
         self
     }
 
@@ -85,6 +94,7 @@ impl PlatformCapabilitiesBuilder {
             analytics: self
                 .analytics
                 .ok_or_else(|| BuildError::missing_field("analytics"))?,
+            follow_ups: self.follow_ups,
             lookups: self
                 .lookups
                 .ok_or_else(|| BuildError::missing_field("lookups"))?,

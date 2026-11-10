@@ -101,12 +101,13 @@ Les types d’événements et leurs champs sont un contrat public. Peal ajoute d
 
 Une publication part sur chacun de ses canaux séparément : `post.published`, `post.failed` et `post.unconfirmed` nomment donc un canal chacun, et une publication sur trois canaux amène trois événements. Ces champs disent lequel :
 
-| Champ       | Type           | Ce qu’il contient                                                                                    |
-| ----------- | -------------- | ---------------------------------------------------------------------------------------------------- |
-| `targetId`  | chaîne         | La publication sur ce canal : l’identifiant de la cible, comme les listent les `targets` de l’API    |
-| `channelId` | chaîne         | Le canal                                                                                             |
-| `platform`  | chaîne ou null | La plateforme du canal, comme `mastodon` ; null une fois le canal déconnecté                         |
-| `round`     | entier         | Combien de fois la publication y a été envoyée : 1, et un de plus chaque fois qu’elle a été renvoyée |
+| Champ       | Type           | Ce qu’il contient                                                                                                                                                                                                                                                                                                                  |
+| ----------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `targetId`  | chaîne         | La publication sur ce canal : l’identifiant de la cible, comme les listent les `targets` de l’API                                                                                                                                                                                                                                  |
+| `channelId` | chaîne         | Le canal                                                                                                                                                                                                                                                                                                                           |
+| `platform`  | chaîne ou null | La plateforme du canal, comme `mastodon` ; null une fois le canal déconnecté                                                                                                                                                                                                                                                       |
+| `round`     | entier         | Combien de fois la publication y a été envoyée : 1, et un de plus chaque fois qu’elle a été renvoyée                                                                                                                                                                                                                               |
+| `parts`     | objet          | Pour une publication en plusieurs parties, un [fil](/scheduling#threads) : `count`, le nombre de parties qu’elle y a (1 pour une publication seule), et `live`, combien sont en ligne. Les parties partent dans l’ordre : une publication qui a échoué ou reste à vérifier s’est arrêtée à la partie qui suit la dernière en ligne |
 
 Le `data` de chaque événement contient `workspaceId`, l’espace de travail où il s’est produit.
 
@@ -236,6 +237,7 @@ La publication n’est pas partie sur le canal.
 | `quotaExceeded`       | Une allocation quotidienne de mises en ligne sur la plateforme est restée épuisée jusqu’à ce que l’envoi abandonne.                                                   |
 | `appBillingLimit`     | La plateforme a refusé l’application du serveur tant que son opérateur ne l’a pas réglée. Rien n’a été envoyé.                                                        |
 | `planLimit`           | L’abonnement de l’espace de travail n’avait pas de place pour la publication à son heure : trop de canaux, ou les publications du mois épuisées. Rien n’a été envoyé. |
+| `partsNotSent`        | Des parties de la publication sont en ligne, et les suivantes n’ont pas été envoyées. Une nouvelle publication envoie la suite.                                       |
 
 [Notifications](/notifications#events) dit que faire dans chaque cas.
 

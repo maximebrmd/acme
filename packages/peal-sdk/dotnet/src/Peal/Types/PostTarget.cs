@@ -26,6 +26,9 @@ public record PostTarget : IJsonOnDeserialized
     [JsonPropertyName("options")]
     public TargetOptions? Options { get; set; }
 
+    [JsonPropertyName("parts")]
+    public required TargetParts Parts { get; set; }
+
     [JsonPropertyName("permalink")]
     public string? Permalink { get; set; }
 

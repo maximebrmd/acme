@@ -11,6 +11,7 @@ from .platform import Platform
 
 class ContentViolationEmpty(UniversalBaseModel):
     channel_id: typing_extensions.Annotated[str, FieldMetadata(alias="channelId"), pydantic.Field(alias="channelId")]
+    part: typing.Optional[int] = None
     platform: Platform
 
     if IS_PYDANTIC_V2:

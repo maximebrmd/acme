@@ -1,0 +1,23 @@
+[
+  [],
+  [{ "delaySeconds": 0, "media": [], "overrides": [], "text": "And a second part" }],
+  [
+    {
+      "delaySeconds": 300,
+      "media": [
+        {
+          "altText": "A synthetic chart",
+          "mediaId": "0190f3a0-0000-7000-8000-0000000000c2"
+        }
+      ],
+      "overrides": [
+        {
+          "channelId": "0190f3a0-0000-7000-8000-0000000000d1",
+          "text": "A second part, shorter here"
+        }
+      ],
+      "text": "A second part, five minutes later"
+    },
+    { "delaySeconds": 86400, "media": [], "overrides": [], "text": "A third, the next day" }
+  ]
+]

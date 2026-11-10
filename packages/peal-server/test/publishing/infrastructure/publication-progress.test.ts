@@ -46,6 +46,7 @@ const begunCall = Effect.fn("begunCall")(function* begunCall() {
   yield* journal.begin({
     attempt: 1,
     idempotencyKey,
+    part: 0,
     round: 1,
     startedAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),
     targetId,

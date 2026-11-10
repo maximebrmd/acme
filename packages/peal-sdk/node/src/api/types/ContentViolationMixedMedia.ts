@@ -4,5 +4,6 @@ import * as Peal from "../index.js";
 
 export interface ContentViolationMixedMedia {
     channelId: string;
+    part?: number | undefined;
     platform: Peal.Platform;
 }

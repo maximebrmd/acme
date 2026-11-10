@@ -11,6 +11,9 @@ public record PostContent : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("followUps")]
+    public IEnumerable<PostPart>? FollowUps { get; set; }
+
     [JsonPropertyName("media")]
     public IEnumerable<MediaAttachment> Media { get; set; } = new List<MediaAttachment>();
 

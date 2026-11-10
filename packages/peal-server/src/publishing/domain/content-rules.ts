@@ -10,10 +10,15 @@ import type { ContentViolation } from "./content-violation.ts";
 import { LinkedInOptions, pageProblems } from "./linkedin-options.ts";
 import type { Dimensions, MediaFile } from "./media-file.ts";
 import type { OptionProblem } from "./option-problem.ts";
-import { platformRules } from "./platform-rules.ts";
+import { followUpsOn, platformRules } from "./platform-rules.ts";
 import type { FormatLimits, MediaRules } from "./platform-rules.ts";
 import { PostContentRejected } from "./post-content-rejected.ts";
-import { textOn } from "./post-content.ts";
+import {
+  overriddenChannels,
+  partAlone,
+  partCount,
+  textOn,
+} from "./post-content.ts";
 import type { PostContent } from "./post-content.ts";
 import { optionProblemsOn } from "./target-options.ts";
 import type { TargetOptions } from "./target-options.ts";
@@ -62,9 +67,9 @@ const overridesWithoutChannel = (
   content: PostContent,
   channelIds: readonly ChannelId[]
 ): readonly ContentViolation[] =>
-  content.overrides
-    .filter((override) => !channelIds.includes(override.channelId))
-    .map(({ channelId }) => ({ _tag: "overrideWithoutChannel", channelId }));
+  overriddenChannels(content)
+    .filter((channelId) => !channelIds.includes(channelId))
+    .map((channelId) => ({ _tag: "overrideWithoutChannel", channelId }));
 
 const optionsWithoutChannel = (
   options: readonly ChannelOptions[],
@@ -397,6 +402,15 @@ const fileViolations = (
   ];
 };
 
+// The files of the media the first part of `content` shows, in its order.
+const filesOf = (
+  content: PostContent,
+  files: readonly MediaFile[]
+): readonly MediaFile[] =>
+  content.media.flatMap(({ mediaId }) =>
+    files.filter((file) => file.mediaId === mediaId)
+  );
+
 /**
  * What the channel's platform would refuse in the post's images and videos,
  * whose files are `files`, in the post's order: each file's type, size,
@@ -468,12 +482,62 @@ export const mediaViolationsOn = (
   ];
 };
 
+// The violations of one part, with its place: none for the first.
+const inPart = (
+  violations: readonly ContentViolation[],
+  part: number
+): readonly ContentViolation[] =>
+  violations.map((violation) =>
+    "platform" in violation ? { ...violation, part } : violation
+  );
+
+/**
+ * What the channel's platform would refuse in the parts after the post's
+ * first: more parts than it takes, where it takes any, then in each part
+ * what it refuses in a post, as every part goes out as one there, named
+ * with the part's place. `files` are those of every part.
+ */
+export const partViolationsOn = (
+  content: PostContent,
+  channel: ChannelOnPlatform,
+  files: readonly MediaFile[]
+): readonly ContentViolation[] => {
+  if (content.followUps.length === 0) {
+    return [];
+  }
+
+  const taken = followUpsOn(channel.platform)?.maximum ?? 0;
+
+  if (content.followUps.length > taken) {
+    return [
+      {
+        _tag: "tooManyParts",
+        ...channel,
+        count: partCount(content),
+        maximum: taken + 1,
+      },
+    ];
+  }
+
+  return content.followUps.flatMap((_part, position) => {
+    const alone = partAlone(content, position + 1);
+
+    return inPart(
+      [
+        ...violationsOn(alone, channel),
+        ...mediaViolationsOn(alone, channel, filesOf(alone, files)),
+      ],
+      position + 1
+    );
+  });
+};
+
 /**
  * Whether the post can be scheduled on these channels: for one channel at
  * least, with text overrides and options for them only, within each
- * platform's rules on the text it has there and on its media, whose files
- * are `files`, and with the options each platform needs, as `options` gives
- * them.
+ * platform's rules on the text it has there and on its media, in every
+ * part, whose files are `files`, and with the options each platform needs,
+ * as `options` gives them.
  */
 export const checkPublishable = (
   content: PostContent,
@@ -493,7 +557,8 @@ export const checkPublishable = (
 
       return [
         ...violationsOn(content, channel),
-        ...mediaViolationsOn(content, channel, files),
+        ...mediaViolationsOn(content, channel, filesOf(content, files)),
+        ...partViolationsOn(content, channel, files),
         ...optionViolationsOn(channel, chosen),
         ...connectionViolationsOn(connected, chosen),
       ];

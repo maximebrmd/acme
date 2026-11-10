@@ -17,6 +17,9 @@ public record PublicationAttempt : IJsonOnDeserialized
     [JsonPropertyName("finishedAt")]
     public required string FinishedAt { get; set; }
 
+    [JsonPropertyName("part")]
+    public required int Part { get; set; }
+
     [JsonPropertyName("result")]
     public required AttemptResult Result { get; set; }
 

@@ -351,6 +351,7 @@ CREATE TABLE "publishing"."post_targets" (
 	"finished_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY,
 	"kept_private" boolean DEFAULT false NOT NULL,
+	"live_parts" jsonb DEFAULT '[]' NOT NULL,
 	"options" jsonb,
 	"permalink" text,
 	"platform_post_id" text,
@@ -368,6 +369,7 @@ CREATE TABLE "publishing"."posts" (
 	"created_via" jsonb,
 	"execution_id" text,
 	"finished_at" timestamp with time zone,
+	"follow_ups" jsonb DEFAULT '[]' NOT NULL,
 	"id" uuid PRIMARY KEY,
 	"media" jsonb DEFAULT '[]' NOT NULL,
 	"outcome" text,
@@ -389,11 +391,12 @@ CREATE TABLE "publishing"."publication_attempts" (
 	"detail" jsonb NOT NULL,
 	"finished_at" timestamp with time zone NOT NULL,
 	"outcome" text NOT NULL,
+	"part" integer DEFAULT 0,
 	"retry_delay_millis" integer,
 	"round" integer,
 	"started_at" timestamp with time zone NOT NULL,
 	"target_id" uuid,
-	CONSTRAINT "publication_attempts_pkey" PRIMARY KEY("target_id","round","attempt")
+	CONSTRAINT "publication_attempts_pkey" PRIMARY KEY("target_id","round","part","attempt")
 );
 --> statement-breakpoint
 CREATE TABLE "publishing"."publication_calls" (
@@ -402,11 +405,12 @@ CREATE TABLE "publishing"."publication_calls" (
 	"idempotency_key" text PRIMARY KEY,
 	"operation" text NOT NULL,
 	"outcome" jsonb,
+	"part" integer DEFAULT 0 NOT NULL,
 	"progress" jsonb,
 	"round" integer NOT NULL,
 	"started_at" timestamp with time zone NOT NULL,
 	"target_id" uuid NOT NULL,
-	CONSTRAINT "publication_calls_target_round_attempt" UNIQUE("target_id","round","attempt")
+	CONSTRAINT "publication_calls_target_round_part_attempt" UNIQUE("target_id","round","part","attempt")
 );
 --> statement-breakpoint
 CREATE TABLE "publishing"."quota_usage" (

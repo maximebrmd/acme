@@ -2453,10 +2453,11 @@ func (r *ReviewSettings) String() string {
 
 var (
 	reviewedChannelFieldChannelID = big.NewInt(1 << 0)
-	reviewedChannelFieldHandle    = big.NewInt(1 << 1)
-	reviewedChannelFieldOptions   = big.NewInt(1 << 2)
-	reviewedChannelFieldPlatform  = big.NewInt(1 << 3)
-	reviewedChannelFieldText      = big.NewInt(1 << 4)
+	reviewedChannelFieldFollowUps = big.NewInt(1 << 1)
+	reviewedChannelFieldHandle    = big.NewInt(1 << 2)
+	reviewedChannelFieldOptions   = big.NewInt(1 << 3)
+	reviewedChannelFieldPlatform  = big.NewInt(1 << 4)
+	reviewedChannelFieldText      = big.NewInt(1 << 5)
 )
 
 // reviewedChannelNullableFields maps the wire names of ReviewedChannel's nullable fields (required or optional) to their field bits.
@@ -2467,11 +2468,12 @@ var reviewedChannelNullableFields = map[string]*big.Int{
 }
 
 type ReviewedChannel struct {
-	ChannelID string         `json:"channelId" url:"channelId"`
-	Handle    *string        `json:"handle,omitempty" url:"handle,omitempty"`
-	Options   *TargetOptions `json:"options,omitempty" url:"options,omitempty"`
-	Platform  *Platform      `json:"platform,omitempty" url:"platform,omitempty"`
-	Text      string         `json:"text" url:"text"`
+	ChannelID string          `json:"channelId" url:"channelId"`
+	FollowUps []*ReviewedPart `json:"followUps" url:"followUps"`
+	Handle    *string         `json:"handle,omitempty" url:"handle,omitempty"`
+	Options   *TargetOptions  `json:"options,omitempty" url:"options,omitempty"`
+	Platform  *Platform       `json:"platform,omitempty" url:"platform,omitempty"`
+	Text      string          `json:"text" url:"text"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2485,6 +2487,13 @@ func (r *ReviewedChannel) GetChannelID() string {
 		return ""
 	}
 	return r.ChannelID
+}
+
+func (r *ReviewedChannel) GetFollowUps() []*ReviewedPart {
+	if r == nil {
+		return nil
+	}
+	return r.FollowUps
 }
 
 func (r *ReviewedChannel) GetHandle() *string {
@@ -2536,6 +2545,13 @@ func (r *ReviewedChannel) require(field *big.Int) {
 func (r *ReviewedChannel) SetChannelID(channelID string) {
 	r.ChannelID = channelID
 	r.require(reviewedChannelFieldChannelID)
+}
+
+// SetFollowUps sets the FollowUps field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedChannel) SetFollowUps(followUps []*ReviewedPart) {
+	r.FollowUps = followUps
+	r.require(reviewedChannelFieldFollowUps)
 }
 
 // SetHandle sets the Handle field and marks it as non-optional;
@@ -2748,6 +2764,124 @@ func (r *ReviewedMedia) MarshalJSON() ([]byte, error) {
 }
 
 func (r *ReviewedMedia) String() string {
+	if r == nil {
+		return "<nil>"
+	}
+	if len(r.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(r.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(r); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", r)
+}
+
+var (
+	reviewedPartFieldDelaySeconds = big.NewInt(1 << 0)
+	reviewedPartFieldMedia        = big.NewInt(1 << 1)
+	reviewedPartFieldText         = big.NewInt(1 << 2)
+)
+
+type ReviewedPart struct {
+	DelaySeconds int              `json:"delaySeconds" url:"delaySeconds"`
+	Media        []*ReviewedMedia `json:"media" url:"media"`
+	Text         string           `json:"text" url:"text"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (r *ReviewedPart) GetDelaySeconds() int {
+	if r == nil {
+		return 0
+	}
+	return r.DelaySeconds
+}
+
+func (r *ReviewedPart) GetMedia() []*ReviewedMedia {
+	if r == nil {
+		return nil
+	}
+	return r.Media
+}
+
+func (r *ReviewedPart) GetText() string {
+	if r == nil {
+		return ""
+	}
+	return r.Text
+}
+
+func (r *ReviewedPart) GetExtraProperties() map[string]interface{} {
+	if r == nil {
+		return nil
+	}
+	return r.extraProperties
+}
+
+func (r *ReviewedPart) require(field *big.Int) {
+	next := new(big.Int)
+	if r.explicitFields != nil {
+		next.Set(r.explicitFields)
+	}
+	next.Or(next, field)
+	r.explicitFields = next
+}
+
+// SetDelaySeconds sets the DelaySeconds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedPart) SetDelaySeconds(delaySeconds int) {
+	r.DelaySeconds = delaySeconds
+	r.require(reviewedPartFieldDelaySeconds)
+}
+
+// SetMedia sets the Media field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedPart) SetMedia(media []*ReviewedMedia) {
+	r.Media = media
+	r.require(reviewedPartFieldMedia)
+}
+
+// SetText sets the Text field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (r *ReviewedPart) SetText(text string) {
+	r.Text = text
+	r.require(reviewedPartFieldText)
+}
+
+func (r *ReviewedPart) UnmarshalJSON(data []byte) error {
+	type unmarshaler ReviewedPart
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = ReviewedPart(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *r)
+	if err != nil {
+		return err
+	}
+	r.extraProperties = extraProperties
+	r.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (r *ReviewedPart) MarshalJSON() ([]byte, error) {
+	type embed ReviewedPart
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*r),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, r.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (r *ReviewedPart) String() string {
 	if r == nil {
 		return "<nil>"
 	}

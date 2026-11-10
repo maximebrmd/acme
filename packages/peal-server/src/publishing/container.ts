@@ -60,6 +60,7 @@ import {
   WebhookPostEvents,
 } from "#publishing/infrastructure/webhook-post-events.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
+import { PublishTargetV2Live } from "#publishing/infrastructure/workflows/publish-parts.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
@@ -261,7 +262,11 @@ export const publishingWorkers = <E, R, E2 = never, R2 = never>(
   platforms: Layer.Layer<PlatformPublisher, E, R>,
   readers: GateReaders<E2, R2> = UnreadMetrics
 ) =>
-  Layer.mergeAll(PublishPostV1Live, PublishTargetV1Live).pipe(
+  Layer.mergeAll(
+    PublishPostV1Live,
+    PublishTargetV1Live,
+    PublishTargetV2Live
+  ).pipe(
     Layer.provide(GatedPlatformPublisher),
     Layer.merge(
       ChannelGateLive.pipe(Layer.provide(Layer.merge(platforms, readers)))

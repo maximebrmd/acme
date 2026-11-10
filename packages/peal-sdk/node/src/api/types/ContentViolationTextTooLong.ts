@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface ContentViolationTextTooLong {
     channelId: string;
+    part?: number | undefined;
     platform: Peal.Platform;
     length: number;
     maximum: number;

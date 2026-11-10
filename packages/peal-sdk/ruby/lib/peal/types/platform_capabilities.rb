@@ -7,6 +7,8 @@ module Peal
     class PlatformCapabilities < Internal::Types::Model
       field :analytics, -> { Peal::Types::PlatformCapabilitiesAnalytics }, optional: false, nullable: false
 
+      field :follow_ups, -> { Peal::Types::FollowUpCapabilities }, optional: false, nullable: true, api_name: "followUps"
+
       field :lookups, -> { Internal::Types::Array[Peal::Types::LookupDescription] }, optional: false, nullable: false
 
       field :media, -> { Peal::Types::MediaCapabilities }, optional: false, nullable: false

@@ -234,21 +234,6 @@ export const ApprovalRequestSchema = Schema.Struct({
 
 export type ApprovalRequest = typeof ApprovalRequestSchema.Type;
 
-/** A post on one of its channels, as the channel will receive it. */
-export const ReviewedChannelSchema = Schema.Struct({
-  channelId: Schema.String,
-  // The account's name on its platform; null once it was disconnected.
-  handle: Schema.NullOr(Schema.String),
-  // What the post has there that only the platform knows (a Pin's link and
-  // board, a video's title and privacy): an approval covers them. Null
-  // where the platform takes none.
-  options: Schema.NullOr(TargetOptionsSchema),
-  platform: Schema.NullOr(PlatformSchema),
-  text: Schema.String,
-}).annotate({ identifier: "ReviewedChannel" });
-
-export type ReviewedChannel = typeof ReviewedChannelSchema.Type;
-
 /**
  * An image, a video or a document (a PDF, on LinkedIn) a post shows. `url`
  * reads the file from the media store for two hours; it is null, with
@@ -262,6 +247,32 @@ export const ReviewedMediaSchema = Schema.Struct({
 }).annotate({ identifier: "ReviewedMedia" });
 
 export type ReviewedMedia = typeof ReviewedMediaSchema.Type;
+
+/** A post on one of its channels, as the channel will receive it. */
+export const ReviewedChannelSchema = Schema.Struct({
+  channelId: Schema.String,
+  // The parts that follow the post there, in order, as the channel will
+  // receive them (a thread, or comments, depending on the platform), each
+  // with the seconds it waits after the part before it. An approval covers
+  // them. Empty for a post of one part.
+  followUps: Schema.Array(
+    Schema.Struct({
+      delaySeconds: Schema.Int,
+      media: Schema.Array(ReviewedMediaSchema),
+      text: Schema.String,
+    }).annotate({ identifier: "ReviewedPart" })
+  ),
+  // The account's name on its platform; null once it was disconnected.
+  handle: Schema.NullOr(Schema.String),
+  // What the post has there that only the platform knows (a Pin's link and
+  // board, a video's title and privacy): an approval covers them. Null
+  // where the platform takes none.
+  options: Schema.NullOr(TargetOptionsSchema),
+  platform: Schema.NullOr(PlatformSchema),
+  text: Schema.String,
+}).annotate({ identifier: "ReviewedChannel" });
+
+export type ReviewedChannel = typeof ReviewedChannelSchema.Type;
 
 /**
  * A post's review: its comments, oldest first, its approvals, newest first,

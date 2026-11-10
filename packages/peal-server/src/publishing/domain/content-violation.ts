@@ -6,7 +6,14 @@ import { PlatformSchema } from "#shared/domain/platform.ts";
 import { MediaContentTypeSchema } from "./media-file.ts";
 import { TextUnitSchema } from "./text-length.ts";
 
-const onChannel = { channelId: ChannelIdSchema, platform: PlatformSchema };
+// On one channel, and in one part of the post: `part` is the part's place,
+// from 1, and is left out for the first part, and for what is said of the
+// whole post there, as before posts had parts.
+const onChannel = {
+  channelId: ChannelIdSchema,
+  part: Schema.optionalKey(Schema.Int.check(Schema.isGreaterThanOrEqualTo(1))),
+  platform: PlatformSchema,
+};
 
 // One of the options the post has on the channel, by name.
 const onOption = { ...onChannel, field: Schema.String };
@@ -68,6 +75,9 @@ export const ContentViolationSchema = Schema.Union([
     characters: Schema.Array(Schema.String),
   }),
   Schema.TaggedStruct("tooManyMedia", tooMany),
+  // The post has more parts than the platform takes: `maximum` is 1 where
+  // it takes a post alone, with no thread and no comment after it.
+  Schema.TaggedStruct("tooManyParts", tooMany),
   // The platform publishes nothing without an image or a video.
   Schema.TaggedStruct("mediaRequired", onChannel),
   Schema.TaggedStruct("tooManyHashtags", tooMany),

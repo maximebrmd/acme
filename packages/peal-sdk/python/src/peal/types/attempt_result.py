@@ -18,6 +18,7 @@ AttemptResult = typing.Union[
         "quotaExceeded",
         "appBillingLimit",
         "planLimit",
+        "partsNotSent",
     ],
     typing.Any,
 ]

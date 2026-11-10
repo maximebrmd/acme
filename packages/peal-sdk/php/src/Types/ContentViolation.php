@@ -20,6 +20,7 @@ class ContentViolation extends JsonSerializableType
      *   |'textTooLong'
      *   |'forbiddenCharacters'
      *   |'tooManyMedia'
+     *   |'tooManyParts'
      *   |'mediaRequired'
      *   |'tooManyHashtags'
      *   |'tooManyMentions'
@@ -53,6 +54,7 @@ class ContentViolation extends JsonSerializableType
      *   |ContentViolationTextTooLong
      *   |ContentViolationForbiddenCharacters
      *   |ContentViolationTooManyMedia
+     *   |ContentViolationTooManyParts
      *   |ContentViolationMediaRequired
      *   |ContentViolationTooManyHashtags
      *   |ContentViolationTooManyMentions
@@ -87,6 +89,7 @@ class ContentViolation extends JsonSerializableType
      *   |'textTooLong'
      *   |'forbiddenCharacters'
      *   |'tooManyMedia'
+     *   |'tooManyParts'
      *   |'mediaRequired'
      *   |'tooManyHashtags'
      *   |'tooManyMentions'
@@ -116,6 +119,7 @@ class ContentViolation extends JsonSerializableType
      *   |ContentViolationTextTooLong
      *   |ContentViolationForbiddenCharacters
      *   |ContentViolationTooManyMedia
+     *   |ContentViolationTooManyParts
      *   |ContentViolationMediaRequired
      *   |ContentViolationTooManyHashtags
      *   |ContentViolationTooManyMentions
@@ -271,6 +275,18 @@ class ContentViolation extends JsonSerializableType
         return new ContentViolation([
             'type' => 'tooManyMedia',
             'value' => $tooManyMedia,
+        ]);
+    }
+
+    /**
+     * @param ContentViolationTooManyParts $tooManyParts
+     * @return ContentViolation
+     */
+    public static function tooManyParts(ContentViolationTooManyParts $tooManyParts): ContentViolation
+    {
+        return new ContentViolation([
+            'type' => 'tooManyParts',
+            'value' => $tooManyParts,
         ]);
     }
 
@@ -699,6 +715,28 @@ class ContentViolation extends JsonSerializableType
     /**
      * @return bool
      */
+    public function isTooManyParts(): bool
+    {
+        return $this->value instanceof ContentViolationTooManyParts && $this->type === 'tooManyParts';
+    }
+
+    /**
+     * @return ContentViolationTooManyParts
+     */
+    public function asTooManyParts(): ContentViolationTooManyParts
+    {
+        if (!($this->value instanceof ContentViolationTooManyParts && $this->type === 'tooManyParts')) {
+            throw new Exception(
+                "Expected tooManyParts; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
     public function isMediaRequired(): bool
     {
         return $this->value instanceof ContentViolationMediaRequired && $this->type === 'mediaRequired';
@@ -1090,6 +1128,10 @@ class ContentViolation extends JsonSerializableType
                 $value = $this->asTooManyMedia()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'tooManyParts':
+                $value = $this->asTooManyParts()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'mediaRequired':
                 $value = $this->asMediaRequired()->jsonSerialize();
                 $result = array_merge($value, $result);
@@ -1218,6 +1260,9 @@ class ContentViolation extends JsonSerializableType
                 break;
             case 'tooManyMedia':
                 $args['value'] = ContentViolationTooManyMedia::jsonDeserialize($data);
+                break;
+            case 'tooManyParts':
+                $args['value'] = ContentViolationTooManyParts::jsonDeserialize($data);
                 break;
             case 'mediaRequired':
                 $args['value'] = ContentViolationMediaRequired::jsonDeserialize($data);

@@ -128,6 +128,7 @@ if typing.TYPE_CHECKING:
         ContentViolation_TooManyLinks,
         ContentViolation_TooManyMedia,
         ContentViolation_TooManyMentions,
+        ContentViolation_TooManyParts,
         ContentViolation_TooManyPixels,
         ContentViolation_TooManyVideos,
         ContentViolation_VideoTooLong,
@@ -157,6 +158,7 @@ if typing.TYPE_CHECKING:
     from .content_violation_too_many_links import ContentViolationTooManyLinks
     from .content_violation_too_many_media import ContentViolationTooManyMedia
     from .content_violation_too_many_mentions import ContentViolationTooManyMentions
+    from .content_violation_too_many_parts import ContentViolationTooManyParts
     from .content_violation_too_many_pixels import ContentViolationTooManyPixels
     from .content_violation_too_many_videos import ContentViolationTooManyVideos
     from .content_violation_video_too_long import ContentViolationVideoTooLong
@@ -174,6 +176,8 @@ if typing.TYPE_CHECKING:
     from .field_default import FieldDefault
     from .field_description import FieldDescription
     from .field_type import FieldType
+    from .follow_up_capabilities import FollowUpCapabilities
+    from .follow_up_capabilities_kind import FollowUpCapabilitiesKind
     from .forbidden_encoded import ForbiddenEncoded
     from .forbidden_encoded_tag import ForbiddenEncodedTag
     from .google_business_call_to_action import GoogleBusinessCallToAction
@@ -196,6 +200,7 @@ if typing.TYPE_CHECKING:
     from .linked_in_options import LinkedInOptions
     from .linked_in_organization import LinkedInOrganization
     from .linked_in_visibility import LinkedInVisibility
+    from .live_part import LivePart
     from .lookup_description import LookupDescription
     from .lookup_input_invalid_encoded import LookupInputInvalidEncoded
     from .lookup_input_invalid_encoded_tag import LookupInputInvalidEncodedTag
@@ -344,6 +349,7 @@ if typing.TYPE_CHECKING:
     from .post_origin import PostOrigin
     from .post_origin_via import PostOriginVia
     from .post_outcome import PostOutcome
+    from .post_part import PostPart
     from .post_review import PostReview
     from .post_schedule import PostSchedule
     from .post_status import PostStatus
@@ -368,6 +374,7 @@ if typing.TYPE_CHECKING:
     from .review_settings import ReviewSettings
     from .reviewed_channel import ReviewedChannel
     from .reviewed_media import ReviewedMedia
+    from .reviewed_part import ReviewedPart
     from .reviewer import Reviewer
     from .reviewer_kind import ReviewerKind
     from .role import Role
@@ -392,6 +399,7 @@ if typing.TYPE_CHECKING:
         TargetOptions_Tiktok,
         TargetOptions_Youtube,
     )
+    from .target_parts import TargetParts
     from .target_status_conflict_encoded import TargetStatusConflictEncoded
     from .text_capabilities import TextCapabilities
     from .text_limit import TextLimit
@@ -586,6 +594,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ContentViolationTooManyLinks": ".content_violation_too_many_links",
     "ContentViolationTooManyMedia": ".content_violation_too_many_media",
     "ContentViolationTooManyMentions": ".content_violation_too_many_mentions",
+    "ContentViolationTooManyParts": ".content_violation_too_many_parts",
     "ContentViolationTooManyPixels": ".content_violation_too_many_pixels",
     "ContentViolationTooManyVideos": ".content_violation_too_many_videos",
     "ContentViolationVideoTooLong": ".content_violation_video_too_long",
@@ -612,6 +621,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ContentViolation_TooManyLinks": ".content_violation",
     "ContentViolation_TooManyMedia": ".content_violation",
     "ContentViolation_TooManyMentions": ".content_violation",
+    "ContentViolation_TooManyParts": ".content_violation",
     "ContentViolation_TooManyPixels": ".content_violation",
     "ContentViolation_TooManyVideos": ".content_violation",
     "ContentViolation_VideoTooLong": ".content_violation",
@@ -629,6 +639,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "FieldDefault": ".field_default",
     "FieldDescription": ".field_description",
     "FieldType": ".field_type",
+    "FollowUpCapabilities": ".follow_up_capabilities",
+    "FollowUpCapabilitiesKind": ".follow_up_capabilities_kind",
     "ForbiddenEncoded": ".forbidden_encoded",
     "ForbiddenEncodedTag": ".forbidden_encoded_tag",
     "GoogleBusinessCallToAction": ".google_business_call_to_action",
@@ -651,6 +663,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "LinkedInOptions": ".linked_in_options",
     "LinkedInOrganization": ".linked_in_organization",
     "LinkedInVisibility": ".linked_in_visibility",
+    "LivePart": ".live_part",
     "LookupDescription": ".lookup_description",
     "LookupInputInvalidEncoded": ".lookup_input_invalid_encoded",
     "LookupInputInvalidEncodedTag": ".lookup_input_invalid_encoded_tag",
@@ -789,6 +802,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostOrigin": ".post_origin",
     "PostOriginVia": ".post_origin_via",
     "PostOutcome": ".post_outcome",
+    "PostPart": ".post_part",
     "PostReview": ".post_review",
     "PostSchedule": ".post_schedule",
     "PostStatus": ".post_status",
@@ -815,6 +829,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ReviewSettings": ".review_settings",
     "ReviewedChannel": ".reviewed_channel",
     "ReviewedMedia": ".reviewed_media",
+    "ReviewedPart": ".reviewed_part",
     "Reviewer": ".reviewer",
     "ReviewerKind": ".reviewer_kind",
     "Role": ".role",
@@ -841,6 +856,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TargetOptions_Pinterest": ".target_options",
     "TargetOptions_Tiktok": ".target_options",
     "TargetOptions_Youtube": ".target_options",
+    "TargetParts": ".target_parts",
     "TargetStatusConflictEncoded": ".target_status_conflict_encoded",
     "TextCapabilities": ".text_capabilities",
     "TextLimit": ".text_limit",
@@ -1061,6 +1077,7 @@ __all__ = [
     "ContentViolationTooManyLinks",
     "ContentViolationTooManyMedia",
     "ContentViolationTooManyMentions",
+    "ContentViolationTooManyParts",
     "ContentViolationTooManyPixels",
     "ContentViolationTooManyVideos",
     "ContentViolationVideoTooLong",
@@ -1087,6 +1104,7 @@ __all__ = [
     "ContentViolation_TooManyLinks",
     "ContentViolation_TooManyMedia",
     "ContentViolation_TooManyMentions",
+    "ContentViolation_TooManyParts",
     "ContentViolation_TooManyPixels",
     "ContentViolation_TooManyVideos",
     "ContentViolation_VideoTooLong",
@@ -1104,6 +1122,8 @@ __all__ = [
     "FieldDefault",
     "FieldDescription",
     "FieldType",
+    "FollowUpCapabilities",
+    "FollowUpCapabilitiesKind",
     "ForbiddenEncoded",
     "ForbiddenEncodedTag",
     "GoogleBusinessCallToAction",
@@ -1126,6 +1146,7 @@ __all__ = [
     "LinkedInOptions",
     "LinkedInOrganization",
     "LinkedInVisibility",
+    "LivePart",
     "LookupDescription",
     "LookupInputInvalidEncoded",
     "LookupInputInvalidEncodedTag",
@@ -1264,6 +1285,7 @@ __all__ = [
     "PostOrigin",
     "PostOriginVia",
     "PostOutcome",
+    "PostPart",
     "PostReview",
     "PostSchedule",
     "PostStatus",
@@ -1290,6 +1312,7 @@ __all__ = [
     "ReviewSettings",
     "ReviewedChannel",
     "ReviewedMedia",
+    "ReviewedPart",
     "Reviewer",
     "ReviewerKind",
     "Role",
@@ -1316,6 +1339,7 @@ __all__ = [
     "TargetOptions_Pinterest",
     "TargetOptions_Tiktok",
     "TargetOptions_Youtube",
+    "TargetParts",
     "TargetStatusConflictEncoded",
     "TextCapabilities",
     "TextLimit",

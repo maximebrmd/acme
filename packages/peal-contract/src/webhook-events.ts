@@ -98,9 +98,18 @@ const post = { ...workspace, postId: Schema.String };
 
 // One post on one channel, in the round it was sent: 1, and one more for
 // each repost.
+// `parts` says how many parts the post has on the channel (1 for a post
+// alone) and how many of them are live, as a post of several parts stops
+// at the first that fails or has no confirmed outcome; left out of events
+// from before posts had parts.
 const postOnChannel = {
   ...post,
   ...WebhookTargetSchema.fields,
+  parts: Schema.optionalKey(
+    Schema.Struct({ count: Schema.Int, live: Schema.Int }).annotate({
+      identifier: "WebhookTargetParts",
+    })
+  ),
   round: Schema.Int,
 };
 

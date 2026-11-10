@@ -4,6 +4,8 @@ import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
+import { partCount } from "#publishing/domain/post-content.ts";
+import { livePartsOf } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -66,6 +68,10 @@ const makeTelling = Effect.gen(function* makeTelling() {
   ) {
     const on = {
       ...(yield* refOf(target)),
+      parts: {
+        count: partCount(post.content),
+        live: livePartsOf(target).length,
+      },
       postId: post.id,
       round: target.round,
       workspaceId: post.workspaceId,

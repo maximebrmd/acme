@@ -107,6 +107,8 @@ export const french: EmailCatalog = {
       "Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.",
     notPublished:
       "quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.",
+    partsNotSent:
+      "ses premières parties sont en ligne, et les suivantes n’ont pas été envoyées : le résultat de celle qui les précède n’était pas confirmé, ou Peal ne connaît pas la publication à laquelle répondre. Ouvrez la publication et renvoyez la suite, ou publiez-la à la main.",
     planLimit:
       "l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.",
     quotaExceeded:

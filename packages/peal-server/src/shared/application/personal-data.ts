@@ -36,6 +36,23 @@ export interface PostOriginRecord {
 export interface PostRecord {
   /** How it was created; null on a post from before this was kept. */
   readonly createdVia: PostOriginRecord | null;
+  /**
+   * The parts that follow its first, in order: a thread, or comments,
+   * depending on the platform. None on a post of one part.
+   */
+  readonly followUps: readonly {
+    /** The seconds it waits after the part before it went out. */
+    readonly delaySeconds: number;
+    readonly media: readonly {
+      readonly altText: string | null;
+      readonly mediaId: string;
+    }[];
+    readonly text: string;
+    readonly textOverrides: readonly {
+      readonly channelId: string;
+      readonly text: string;
+    }[];
+  }[];
   readonly id: string;
   readonly media: readonly {
     readonly altText: string | null;
@@ -52,6 +69,8 @@ export interface PostRecord {
     readonly keptPrivate: boolean;
     /** What the post set on that channel's platform, as stored: plain JSON. */
     readonly options: unknown;
+    /** How many of the post's parts are live there. */
+    readonly partsLive: number;
     readonly permalink: string | null;
     readonly status: string;
   }[];

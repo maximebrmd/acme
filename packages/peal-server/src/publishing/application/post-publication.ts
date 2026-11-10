@@ -298,12 +298,15 @@ export const claimTargetRun = Effect.fn("Publishing.claimTarget")(
   }
 );
 
-/** One attempt at publishing a claimed target. */
+/** One attempt at publishing a part of a claimed target. */
 export interface PublishAttempt {
   readonly attempt: number;
   readonly channelId: ChannelId;
   // Unique to this attempt of this job, and the same for every run of it.
   readonly idempotencyKey: string;
+  // The place of the part to send: 0 for the post itself, and for every
+  // post of one part.
+  readonly part: number;
   readonly postId: PostId;
   readonly round: number;
   readonly scheduledAt: DateTime.Utc;
@@ -337,6 +340,7 @@ const writeOutcome = (
         Effect.annotateLogs({
           attempt: attempt.attempt,
           outcome,
+          part: attempt.part,
           round: attempt.round,
           targetId: attempt.targetId,
         })
@@ -368,6 +372,7 @@ const callPlatform = Effect.fn("Publishing.callPlatform")(
     const start = yield* journal.begin({
       attempt: attempt.attempt,
       idempotencyKey: attempt.idempotencyKey,
+      part: attempt.part,
       round: attempt.round,
       startedAt: now,
       targetId: attempt.targetId,
@@ -383,6 +388,7 @@ const callPlatform = Effect.fn("Publishing.callPlatform")(
     const request = {
       channelId: attempt.channelId,
       idempotencyKey: attempt.idempotencyKey,
+      part: attempt.part,
       postId: attempt.postId,
       startedAt,
       targetId: attempt.targetId,
@@ -420,9 +426,10 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
       "The target"
     );
 
-    // Cancelled since the last attempt: nothing more is sent. A run of this
-    // attempt that began its call before the cancel still counts, in flight
-    // or answered, so only an attempt the journal has never seen is cancelled.
+    // Cancelled since the last attempt, or the last part: nothing more is
+    // sent. A run of this attempt that began its call before the cancel
+    // still counts, in flight or answered, so only an attempt the journal
+    // has never seen is cancelled.
     if (
       isCancelRequested(target) &&
       Option.isNone(yield* journal.find(attempt))
@@ -466,6 +473,7 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
       decision,
       finishedAt,
       outcome,
+      part: attempt.part,
       round: attempt.round,
       startedAt,
       targetId: attempt.targetId,

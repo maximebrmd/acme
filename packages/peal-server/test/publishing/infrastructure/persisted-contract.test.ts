@@ -10,6 +10,8 @@ import { Activity, WorkflowEngine } from "effect/workflow";
 import { PublicationJournal } from "#publishing/application/publication-journal.ts";
 import { PostOutcomeSchema } from "#publishing/domain/post-status.ts";
 import {
+  PartRecordSchema,
+  PartsClaimSchema,
   PostClaimSchema,
   PostRunOutcomeSchema,
   TargetClaimSchema,
@@ -17,8 +19,10 @@ import {
 } from "#publishing/domain/publication-claims.ts";
 import { PublicationDecisionSchema } from "#publishing/domain/publication-policy.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
+import { PublishTargetV2 } from "#publishing/infrastructure/workflows/publish-parts.ts";
 import {
   persistedWorkflowTags,
+  postJobVersion,
   PublishPostV1,
 } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1 } from "#publishing/infrastructure/workflows/publish-target.ts";
@@ -44,8 +48,8 @@ import {
 
 // Every workflow history ever stored must still decode with the current
 // code: a payload or an activity result that does not ends its execution.
-// The fixtures are what PublishPostV1 and PublishTargetV1 store; keep them
-// when the schemas change, and add new ones beside them.
+// The fixtures are what PublishPostV1, PublishTargetV1 and PublishTargetV2
+// store; keep them when the schemas change, and add new ones beside them.
 
 const fixtures = path.join(import.meta.dirname, "fixtures", "persisted");
 
@@ -65,15 +69,17 @@ const fixture = <S extends Schema.Top>(
     )
   );
 
-const workflows = [PublishPostV1, PublishTargetV1];
+const workflows = [PublishPostV1, PublishTargetV1, PublishTargetV2];
 
-// The result schema of each activity, by name (`publish/<n>` for attempts).
+// The result schema of each activity a job started now runs, by name
+// (`publish/<part>/<n>` for attempts, `record-part/<part>` for parts).
 const activityResults = {
   "claim-post": PostClaimSchema,
-  "claim-target": TargetClaimSchema,
+  "claim-target": PartsClaimSchema,
   "complete-post": PostOutcomeSchema,
   publish: PublicationDecisionSchema,
   "record-outcome": TargetOutcomeSchema,
+  "record-part": PartRecordSchema,
 };
 
 const ActivityNameSchema = Schema.Literals([
@@ -82,6 +88,7 @@ const ActivityNameSchema = Schema.Literals([
   "complete-post",
   "publish",
   "record-outcome",
+  "record-part",
 ]);
 
 const ActivityPayloadSchema = Schema.Struct({ name: Schema.String });
@@ -97,6 +104,12 @@ const PostKeysSchema = Schema.Struct({ executionId: Schema.String });
 const TargetKeysSchema = Schema.Struct({
   executionId: Schema.String,
   "publish/1": Schema.String,
+});
+
+const PartKeysSchema = Schema.Struct({
+  executionId: Schema.String,
+  "publish/0/1": Schema.String,
+  "publish/1/1": Schema.String,
 });
 
 const StoredSuccessSchema = Schema.Struct({
@@ -193,6 +206,65 @@ describe("the persisted contract", () => {
     })
   );
 
+  it.effect("derives the same ids and part keys from a V2 payload", () =>
+    Effect.gen(function* derivesPartKeys() {
+      const target = yield* fixture(
+        "PublishTargetV2",
+        "payload.json",
+        PublishTargetV2.payloadSchema
+      );
+
+      const keys = yield* fixture(
+        "PublishTargetV2",
+        "keys.json",
+        PartKeysSchema
+      );
+
+      const executionId = yield* PublishTargetV2.executionId(target);
+
+      // As the `publish/<part>/<n>` activities compute them.
+      const keyOf = (name: string) =>
+        Activity.idempotencyKey(name).pipe(
+          Effect.provideService(
+            WorkflowEngine.WorkflowInstance,
+            WorkflowEngine.WorkflowInstance.initial(
+              PublishTargetV2,
+              executionId
+            )
+          )
+        );
+
+      assert.deepStrictEqual(
+        {
+          executionId,
+          "publish/0/1": yield* keyOf("publish/0/1"),
+          "publish/1/1": yield* keyOf("publish/1/1"),
+        },
+        { ...keys }
+      );
+    })
+  );
+
+  it.effect("runs the target job a post's job was started for", () =>
+    Effect.gen(function* keepsVersions() {
+      const first = yield* fixture(
+        "PublishPostV1",
+        "payload.json",
+        PublishPostV1.payloadSchema
+      );
+
+      const second = yield* fixture(
+        "PublishPostV1",
+        "payload-code-version-2.json",
+        PublishPostV1.payloadSchema
+      );
+
+      // Jobs stored at version 1 keep their PublishTargetV1 children.
+      assert.isBelow(first.codeVersion, postJobVersion);
+      assert.strictEqual(second.codeVersion, postJobVersion);
+    })
+  );
+
   it.effect("decodes PublishTargetV1 payloads, with their parent", () =>
     Effect.gen(function* decodesTargetPayloads() {
       const payload = yield* fixture(
@@ -241,6 +313,31 @@ describe("the persisted contract", () => {
       file: "result.json",
       schema: TargetOutcomeSchema,
       workflow: "PublishTargetV1",
+    },
+    {
+      file: "claim-target.json",
+      schema: PartsClaimSchema,
+      workflow: "PublishTargetV2",
+    },
+    {
+      file: "publish.json",
+      schema: PublicationDecisionSchema,
+      workflow: "PublishTargetV2",
+    },
+    {
+      file: "record-part.json",
+      schema: PartRecordSchema,
+      workflow: "PublishTargetV2",
+    },
+    {
+      file: "record-outcome.json",
+      schema: TargetOutcomeSchema,
+      workflow: "PublishTargetV2",
+    },
+    {
+      file: "result.json",
+      schema: TargetOutcomeSchema,
+      workflow: "PublishTargetV2",
     },
   ])("decodes every stored $workflow $file", ({ file, schema, workflow }) =>
     Effect.gen(function* decodesResults() {
@@ -348,11 +445,12 @@ describe("the persisted contract", () => {
             "PublishPostV1 payload",
             "PublishPostV1 clock publish-at",
             "claim-post",
-            "PublishTargetV1 payload",
+            "PublishTargetV2 payload",
             "claim-target",
-            "publish/1",
-            "PublishTargetV1 clock retry/1",
-            "publish/2",
+            "publish/0/1",
+            "PublishTargetV2 clock retry/0/1",
+            "publish/0/2",
+            "record-part/0",
             "record-outcome",
             "complete-post",
           ]);
@@ -379,7 +477,14 @@ describe("the persisted contract", () => {
           assert(target !== undefined);
 
           const startedAt = utc("2026-06-15T08:00:00Z");
-          const call = { attempt: 1, round: 1, startedAt, targetId: target.id };
+
+          const call = {
+            attempt: 1,
+            part: 0,
+            round: 1,
+            startedAt,
+            targetId: target.id,
+          };
 
           // As if the key had changed between two deploys.
           const keyed = (key: string) => ({

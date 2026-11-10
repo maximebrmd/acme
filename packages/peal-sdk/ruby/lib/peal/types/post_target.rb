@@ -15,6 +15,8 @@ module Peal
 
       field :options, -> { Peal::Types::TargetOptions }, optional: false, nullable: true
 
+      field :parts, -> { Peal::Types::TargetParts }, optional: false, nullable: false
+
       field :permalink, -> { String }, optional: false, nullable: true
 
       field :published_at, -> { String }, optional: false, nullable: true, api_name: "publishedAt"

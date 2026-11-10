@@ -479,11 +479,13 @@
         "content": "À corriger avant de programmer :"
       },
       "violation": {
+        "inPart": "Partie {part} : {text}",
         "noChannels": "Choisissez au moins un canal.",
         "overrideWithoutChannel": "Un canal avec son propre texte n’est plus sélectionné.",
         "empty": "{channel} : il n’y a rien à publier.",
         "textTooLong": "{channel} : {length} sur {maximum} {unit, select, utf8Bytes {octets} other {caractères}}.",
         "tooManyMedia": "{channel} : {count} images ou vidéos, {maximum} au plus.",
+        "tooManyParts": "{channel} :{maximum, plural, =1 {cette plateforme prend une publication seule, sans rien à sa suite. Retirez les autres parties, ou publiez-les ailleurs} other {{count} parties, {maximum} au plus}}.",
         "mediaRequired": "{channel} : une image ou une vidéo est nécessaire.",
         "tooManyHashtags": "{channel} : {count} hashtags, {maximum} au plus.",
         "tooManyMentions": "{channel} : {count} mentions, {maximum} au plus.",
@@ -496,6 +498,23 @@
         "forbiddenCharacters": "{channel} : le texte ne peut pas contenir {characters}."
       },
       "channelDetail": "{handle} sur {platform}"
+    },
+    "Parts": {
+      "legend": "Fil",
+      "hint": "Ajoutez les parties qui suivent la publication. Sur les plateformes qui ont des fils, chacune part en réponse à la précédente, dans l’ordre, et rien n’est envoyé après une partie qui a échoué.",
+      "partTitle": "Partie {position}",
+      "textPlaceholder": "Ce que dit cette partie",
+      "textHint": "Le texte de la partie {position}, pour tous les canaux.",
+      "add": "Ajouter une partie",
+      "remove": "Retirer la partie {position}",
+      "moveEarlier": "Monter la partie {position}",
+      "moveLater": "Descendre la partie {position}",
+      "delayLabel": "Attente après la partie précédente",
+      "delay": "{seconds, select, 0 {Aucune : juste après} 60 {1 minute} 300 {5 minutes} 900 {15 minutes} 1800 {30 minutes} 3600 {1 heure} 7200 {2 heures} 21600 {6 heures} 43200 {12 heures} 86400 {1 jour} other {{seconds} secondes}}",
+      "mediaLegend": "Images et vidéos de la partie {position}",
+      "alone": "{channel} : cette plateforme prend une publication seule, sans rien à sa suite. Retirez les parties, ou laissez ce canal de côté : la publication y serait refusée.",
+      "tooMany": "{channel} : {maximum} parties au plus après la première.",
+      "full": "Une publication a au plus {maximum} parties après la première."
     },
     "Options": {
       "section": "Options des plateformes",
@@ -676,6 +695,15 @@
     "newPost": "Nouvelle publication"
   },
   "PostDetail": {
+    "partsTitle": "Parties",
+    "partsLive": "{live} parties en ligne sur {count}.",
+    "partLive": "Partie {position} : en ligne",
+    "partLink": "Partie {position} : la voir sur {platform}",
+    "partNotSent": "Partie {position} : non envoyée",
+    "partsRest": "La renvoyer envoie les parties qui ne sont pas parties, jamais une partie en ligne.",
+    "partsCounts": "Ses compteurs sont lus pour la première partie.",
+    "partText": "Partie {position}",
+    "attemptPart": "Partie {position}. ",
     "title": "{status, select, publishing {Publication en cours d’envoi} cancelled {Publication annulée} other {Publication}}",
     "description": "Comment la publication s’est passée sur chacun de ses canaux, tentative par tentative.",
     "scheduledFor": "Programmée le {at, date, medium} à {at, time, short}",
@@ -695,7 +723,7 @@
     "rounds": "Envoyée {count, plural, one {une fois} other {# fois}}",
     "attemptsTitle": "Tentatives",
     "attempt": "{round, plural, =1 {Tentative {attempt}} other {Envoi {round}, tentative {attempt}}}, le {at, date, medium} à {at, time, short} : {result}",
-    "result": "{result, select, published {publiée} unconfirmed {pas de réponse, elle est peut-être partie} contentRejected {la plateforme a refusé son texte ou son format} channelDisconnected {le canal a été déconnecté} channelDisabled {le canal a été désactivé} mediaRemoved {une image ou vidéo a été supprimée} mediaRejected {la plateforme a refusé une image ou vidéo} rateLimited {la plateforme a demandé à Peal d’attendre} tokenExpired {l’autorisation du compte ne fonctionne plus} unavailable {la plateforme était injoignable} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme était épuisée} appBillingLimit {la plateforme refuse l’application de ce serveur tant que son opérateur ne l’a pas réglée} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle} other {{result}}}",
+    "result": "{result, select, published {publiée} unconfirmed {pas de réponse, elle est peut-être partie} contentRejected {la plateforme a refusé son texte ou son format} channelDisconnected {le canal a été déconnecté} channelDisabled {le canal a été désactivé} mediaRemoved {une image ou vidéo a été supprimée} mediaRejected {la plateforme a refusé une image ou vidéo} rateLimited {la plateforme a demandé à Peal d’attendre} tokenExpired {l’autorisation du compte ne fonctionne plus} unavailable {la plateforme était injoignable} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme était épuisée} appBillingLimit {la plateforme refuse l’application de ce serveur tant que son opérateur ne l’a pas réglée} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle} partsNotSent {les parties suivantes n’ont pas été envoyées} other {{result}}}",
     "retryAt": "Nouvel essai à {at, time, short}.",
     "noAttempts": "Aucune tentative pour l’instant.",
     "repost": "Republier",
@@ -975,7 +1003,7 @@
       "WebhookEndpointDisabled": "{reason, select, gone {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : il a répondu 410 Gone, ce qui demande de ne plus rien lui livrer.} other {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : toutes les livraisons échouaient depuis {days, number} jours. Corrigez le destinataire, puis réactivez-le.}}",
       "TrialEndingOver": "L’essai {plan} de {workspace} prend fin le {endsAt, date, long}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement. Il dépasse ce que permet l’offre gratuite ({over}) : à partir de ce jour, rien n’est programmé ni publié tant qu’il n’y est pas revenu."
     },
-    "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} partsNotSent {ses premières parties sont en ligne, et les suivantes n’ont pas été envoyées : le résultat de celle qui les précède n’était pas confirmé, ou Peal ne connaît pas la publication à laquelle répondre. Renvoyez-la pour envoyer la suite, ou publiez-la à la main.} other {{reason}}}",
     "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} webhooks {Ouvrir les webhooks} other {Ouvrir les canaux}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # non lue} other {Notifications, # non lues}}",
@@ -1844,7 +1872,7 @@
       "disabledToReconnect": "Désactivé, à reconnecter"
     },
     "troubleStatus": "{status, select, failed {Échec} other {Non confirmé}}",
-    "reason": "{reason, select, contentRejected {Contenu refusé} channelDisconnected {Canal déconnecté} channelDisabled {Canal désactivé} mediaRemoved {Média supprimé} mediaRejected {Média refusé} missed {Manquée} notPublished {Introuvable après vérification} rateLimited {Limite de débit} tokenExpired {Autorisation expirée} unavailable {Plateforme injoignable} appNotAudited {Publications privées seulement, application non auditée} quotaExceeded {Allocation quotidienne de mises en ligne épuisée} appBillingLimit {Application du serveur non réglée} planLimit {Limite de l’abonnement atteinte} noResponse {Pas de réponse} unreadableResponse {Réponse illisible} interrupted {Interrompue} adapterFailure {Échec pendant l’appel} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {Contenu refusé} channelDisconnected {Canal déconnecté} channelDisabled {Canal désactivé} mediaRemoved {Média supprimé} mediaRejected {Média refusé} missed {Manquée} notPublished {Introuvable après vérification} rateLimited {Limite de débit} tokenExpired {Autorisation expirée} unavailable {Plateforme injoignable} appNotAudited {Publications privées seulement, application non auditée} quotaExceeded {Allocation quotidienne de mises en ligne épuisée} appBillingLimit {Application du serveur non réglée} planLimit {Limite de l’abonnement atteinte} partsNotSent {Suite non envoyée} noResponse {Pas de réponse} unreadableResponse {Réponse illisible} interrupted {Interrompue} adapterFailure {Échec pendant l’appel} other {{reason}}}",
     "requests": {
       "title": "Demandes sur les contrats",
       "description": "Les demandes de résiliation ou de rétractation que le formulaire n’a pas pu appliquer seul : aucun contrat trouvé, ou leur auteur n’a pas suivi le lien reçu par e-mail. N’en appliquez une à un espace de travail qu’une fois certain que son auteur est titulaire de ce contrat ; elle prend effet à la date de sa réception, et son auteur en est informé.",
@@ -2008,6 +2036,10 @@
       "wholePost": "Commenter plutôt toute la publication"
     },
     "preview": {
+      "partsLabel": "Les parties qui suivent, envoyées dans l’ordre, en fil :",
+      "part": "Partie {position}",
+      "partDelay": "{seconds, select, 60 {1 minute} 300 {5 minutes} 900 {15 minutes} 1800 {30 minutes} 3600 {1 heure} 7200 {2 heures} 21600 {6 heures} 43200 {12 heures} 86400 {1 jour} other {{seconds} secondes}} après la partie précédente",
+      "partMediaLabel": "Images, vidéos et documents de la partie {position}",
       "title": "La publication sur chaque canal",
       "hint": "Ce que chaque canal recevra. Ce n’est pas la mise en page de la plateforme.",
       "hintSelect": "Ce que chaque canal recevra. Ce n’est pas la mise en page de la plateforme. Sélectionnez des mots pour les commenter.",

@@ -15,6 +15,9 @@ export const ownRefusalCodes = {
   // A BadRequest: the workspace's plan has no room for the post when it is
   // due, as after a trial or on a smaller plan.
   planLimit: "planLimit",
+  // A BadRequest: a part after the first has no post to reply to, as Peal
+  // knows no id for the part before it, or for the first.
+  replyTargetUnknown: "replyTargetUnknown",
 } as const;
 
 /**

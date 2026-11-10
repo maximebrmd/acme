@@ -30,6 +30,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(rename = "optionsPlatform")]
         options_platform: Platform,
@@ -41,6 +43,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(default)]
         field: String,
@@ -52,6 +56,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(default)]
         field: String,
@@ -67,6 +73,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(default)]
         field: String,
@@ -78,6 +86,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
     },
 
@@ -87,6 +97,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(default)]
         length: i64,
@@ -101,6 +113,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(default)]
         characters: Vec<String>,
@@ -112,6 +126,23 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
+        platform: Platform,
+        #[serde(default)]
+        count: i64,
+        #[serde(default)]
+        maximum: i64,
+    },
+
+    #[serde(rename = "tooManyParts")]
+    #[non_exhaustive]
+    TooManyParts {
+        #[serde(rename = "channelId")]
+        #[serde(default)]
+        channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(default)]
         count: i64,
@@ -125,6 +156,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
     },
 
@@ -134,6 +167,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(default)]
         count: i64,
@@ -147,6 +182,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(default)]
         count: i64,
@@ -160,6 +197,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(default)]
         count: i64,
@@ -173,6 +212,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(default)]
         count: i64,
@@ -186,6 +227,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
     },
 
@@ -195,6 +238,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(rename = "mediaId")]
         #[serde(default)]
@@ -209,6 +254,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(rename = "mediaId")]
         #[serde(default)]
@@ -226,6 +273,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(rename = "mediaId")]
         #[serde(default)]
@@ -243,6 +292,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(rename = "mediaId")]
         #[serde(default)]
@@ -261,6 +312,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(rename = "mediaId")]
         #[serde(default)]
@@ -279,6 +332,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(rename = "mediaId")]
         #[serde(default)]
@@ -297,6 +352,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(rename = "mediaId")]
         #[serde(default)]
@@ -317,6 +374,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(rename = "mediaId")]
         #[serde(default)]
@@ -335,6 +394,8 @@ pub enum ContentViolation {
         #[serde(rename = "channelId")]
         #[serde(default)]
         channel_id: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        part: Option<i64>,
         platform: Platform,
         #[serde(rename = "mediaId")]
         #[serde(default)]
@@ -372,6 +433,7 @@ impl ContentViolation {
     ) -> Self {
         Self::OptionsForOtherPlatform {
             channel_id,
+            part: None,
             platform,
             options_platform,
         }
@@ -380,6 +442,7 @@ impl ContentViolation {
     pub fn option_missing(channel_id: String, platform: Platform, field: String) -> Self {
         Self::OptionMissing {
             channel_id,
+            part: None,
             platform,
             field,
         }
@@ -394,6 +457,7 @@ impl ContentViolation {
     ) -> Self {
         Self::OptionTooLong {
             channel_id,
+            part: None,
             platform,
             field,
             length,
@@ -404,6 +468,7 @@ impl ContentViolation {
     pub fn option_invalid(channel_id: String, platform: Platform, field: String) -> Self {
         Self::OptionInvalid {
             channel_id,
+            part: None,
             platform,
             field,
         }
@@ -412,6 +477,7 @@ impl ContentViolation {
     pub fn empty(channel_id: String, platform: Platform) -> Self {
         Self::Empty {
             channel_id,
+            part: None,
             platform,
         }
     }
@@ -425,6 +491,7 @@ impl ContentViolation {
     ) -> Self {
         Self::TextTooLong {
             channel_id,
+            part: None,
             platform,
             length,
             maximum,
@@ -439,6 +506,7 @@ impl ContentViolation {
     ) -> Self {
         Self::ForbiddenCharacters {
             channel_id,
+            part: None,
             platform,
             characters,
         }
@@ -452,6 +520,22 @@ impl ContentViolation {
     ) -> Self {
         Self::TooManyMedia {
             channel_id,
+            part: None,
+            platform,
+            count,
+            maximum,
+        }
+    }
+
+    pub fn too_many_parts(
+        channel_id: String,
+        platform: Platform,
+        count: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::TooManyParts {
+            channel_id,
+            part: None,
             platform,
             count,
             maximum,
@@ -461,6 +545,7 @@ impl ContentViolation {
     pub fn media_required(channel_id: String, platform: Platform) -> Self {
         Self::MediaRequired {
             channel_id,
+            part: None,
             platform,
         }
     }
@@ -473,6 +558,7 @@ impl ContentViolation {
     ) -> Self {
         Self::TooManyHashtags {
             channel_id,
+            part: None,
             platform,
             count,
             maximum,
@@ -487,6 +573,7 @@ impl ContentViolation {
     ) -> Self {
         Self::TooManyMentions {
             channel_id,
+            part: None,
             platform,
             count,
             maximum,
@@ -501,6 +588,7 @@ impl ContentViolation {
     ) -> Self {
         Self::TooManyLinks {
             channel_id,
+            part: None,
             platform,
             count,
             maximum,
@@ -515,6 +603,7 @@ impl ContentViolation {
     ) -> Self {
         Self::TooManyVideos {
             channel_id,
+            part: None,
             platform,
             count,
             maximum,
@@ -524,6 +613,7 @@ impl ContentViolation {
     pub fn mixed_media(channel_id: String, platform: Platform) -> Self {
         Self::MixedMedia {
             channel_id,
+            part: None,
             platform,
         }
     }
@@ -536,6 +626,7 @@ impl ContentViolation {
     ) -> Self {
         Self::MediaTypeUnsupported {
             channel_id,
+            part: None,
             platform,
             media_id,
             content_type,
@@ -551,6 +642,7 @@ impl ContentViolation {
     ) -> Self {
         Self::MediaTooLarge {
             channel_id,
+            part: None,
             platform,
             media_id,
             byte_size,
@@ -567,6 +659,7 @@ impl ContentViolation {
     ) -> Self {
         Self::MediaTooSmall {
             channel_id,
+            part: None,
             platform,
             media_id,
             byte_size,
@@ -583,6 +676,7 @@ impl ContentViolation {
     ) -> Self {
         Self::VideoTooLong {
             channel_id,
+            part: None,
             platform,
             media_id,
             duration_ms,
@@ -599,6 +693,7 @@ impl ContentViolation {
     ) -> Self {
         Self::VideoTooShort {
             channel_id,
+            part: None,
             platform,
             media_id,
             duration_ms,
@@ -616,6 +711,7 @@ impl ContentViolation {
     ) -> Self {
         Self::TooManyPixels {
             channel_id,
+            part: None,
             platform,
             media_id,
             height,
@@ -635,6 +731,7 @@ impl ContentViolation {
     ) -> Self {
         Self::SideOutOfRange {
             channel_id,
+            part: None,
             platform,
             media_id,
             height,
@@ -655,6 +752,7 @@ impl ContentViolation {
     ) -> Self {
         Self::AspectRatioUnsupported {
             channel_id,
+            part: None,
             platform,
             media_id,
             height,
@@ -673,6 +771,389 @@ impl ContentViolation {
     ) -> Self {
         Self::AltTextTooLong {
             channel_id,
+            part: None,
+            platform,
+            media_id,
+            length,
+            maximum,
+        }
+    }
+
+    pub fn options_for_other_platform_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        options_platform: Platform,
+    ) -> Self {
+        Self::OptionsForOtherPlatform {
+            channel_id,
+            part: Some(part),
+            platform,
+            options_platform,
+        }
+    }
+
+    pub fn option_missing_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        field: String,
+    ) -> Self {
+        Self::OptionMissing {
+            channel_id,
+            part: Some(part),
+            platform,
+            field,
+        }
+    }
+
+    pub fn option_too_long_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        field: String,
+        length: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::OptionTooLong {
+            channel_id,
+            part: Some(part),
+            platform,
+            field,
+            length,
+            maximum,
+        }
+    }
+
+    pub fn option_invalid_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        field: String,
+    ) -> Self {
+        Self::OptionInvalid {
+            channel_id,
+            part: Some(part),
+            platform,
+            field,
+        }
+    }
+
+    pub fn empty_with_part(channel_id: String, part: i64, platform: Platform) -> Self {
+        Self::Empty {
+            channel_id,
+            part: Some(part),
+            platform,
+        }
+    }
+
+    pub fn text_too_long_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        length: i64,
+        maximum: i64,
+        unit: TextUnit,
+    ) -> Self {
+        Self::TextTooLong {
+            channel_id,
+            part: Some(part),
+            platform,
+            length,
+            maximum,
+            unit,
+        }
+    }
+
+    pub fn forbidden_characters_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        characters: Vec<String>,
+    ) -> Self {
+        Self::ForbiddenCharacters {
+            channel_id,
+            part: Some(part),
+            platform,
+            characters,
+        }
+    }
+
+    pub fn too_many_media_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        count: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::TooManyMedia {
+            channel_id,
+            part: Some(part),
+            platform,
+            count,
+            maximum,
+        }
+    }
+
+    pub fn too_many_parts_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        count: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::TooManyParts {
+            channel_id,
+            part: Some(part),
+            platform,
+            count,
+            maximum,
+        }
+    }
+
+    pub fn media_required_with_part(channel_id: String, part: i64, platform: Platform) -> Self {
+        Self::MediaRequired {
+            channel_id,
+            part: Some(part),
+            platform,
+        }
+    }
+
+    pub fn too_many_hashtags_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        count: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::TooManyHashtags {
+            channel_id,
+            part: Some(part),
+            platform,
+            count,
+            maximum,
+        }
+    }
+
+    pub fn too_many_mentions_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        count: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::TooManyMentions {
+            channel_id,
+            part: Some(part),
+            platform,
+            count,
+            maximum,
+        }
+    }
+
+    pub fn too_many_links_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        count: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::TooManyLinks {
+            channel_id,
+            part: Some(part),
+            platform,
+            count,
+            maximum,
+        }
+    }
+
+    pub fn too_many_videos_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        count: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::TooManyVideos {
+            channel_id,
+            part: Some(part),
+            platform,
+            count,
+            maximum,
+        }
+    }
+
+    pub fn mixed_media_with_part(channel_id: String, part: i64, platform: Platform) -> Self {
+        Self::MixedMedia {
+            channel_id,
+            part: Some(part),
+            platform,
+        }
+    }
+
+    pub fn media_type_unsupported_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        media_id: String,
+        content_type: MediaContentType,
+    ) -> Self {
+        Self::MediaTypeUnsupported {
+            channel_id,
+            part: Some(part),
+            platform,
+            media_id,
+            content_type,
+        }
+    }
+
+    pub fn media_too_large_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        media_id: String,
+        byte_size: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::MediaTooLarge {
+            channel_id,
+            part: Some(part),
+            platform,
+            media_id,
+            byte_size,
+            maximum,
+        }
+    }
+
+    pub fn media_too_small_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        media_id: String,
+        byte_size: i64,
+        minimum: i64,
+    ) -> Self {
+        Self::MediaTooSmall {
+            channel_id,
+            part: Some(part),
+            platform,
+            media_id,
+            byte_size,
+            minimum,
+        }
+    }
+
+    pub fn video_too_long_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        media_id: String,
+        duration_ms: i64,
+        maximum_ms: i64,
+    ) -> Self {
+        Self::VideoTooLong {
+            channel_id,
+            part: Some(part),
+            platform,
+            media_id,
+            duration_ms,
+            maximum_ms,
+        }
+    }
+
+    pub fn video_too_short_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        media_id: String,
+        duration_ms: i64,
+        minimum_ms: i64,
+    ) -> Self {
+        Self::VideoTooShort {
+            channel_id,
+            part: Some(part),
+            platform,
+            media_id,
+            duration_ms,
+            minimum_ms,
+        }
+    }
+
+    pub fn too_many_pixels_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        media_id: String,
+        height: i64,
+        width: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::TooManyPixels {
+            channel_id,
+            part: Some(part),
+            platform,
+            media_id,
+            height,
+            width,
+            maximum,
+        }
+    }
+
+    pub fn side_out_of_range_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        media_id: String,
+        height: i64,
+        width: i64,
+        maximum: i64,
+        minimum: i64,
+    ) -> Self {
+        Self::SideOutOfRange {
+            channel_id,
+            part: Some(part),
+            platform,
+            media_id,
+            height,
+            width,
+            maximum,
+            minimum,
+        }
+    }
+
+    pub fn aspect_ratio_unsupported_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        media_id: String,
+        height: i64,
+        width: i64,
+        maximum: ContentViolationAspectRatioUnsupportedMaximum,
+        minimum: ContentViolationAspectRatioUnsupportedMinimum,
+    ) -> Self {
+        Self::AspectRatioUnsupported {
+            channel_id,
+            part: Some(part),
+            platform,
+            media_id,
+            height,
+            width,
+            maximum,
+            minimum,
+        }
+    }
+
+    pub fn alt_text_too_long_with_part(
+        channel_id: String,
+        part: i64,
+        platform: Platform,
+        media_id: String,
+        length: i64,
+        maximum: i64,
+    ) -> Self {
+        Self::AltTextTooLong {
+            channel_id,
+            part: Some(part),
             platform,
             media_id,
             length,

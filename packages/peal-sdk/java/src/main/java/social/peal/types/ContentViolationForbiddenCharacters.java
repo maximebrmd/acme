@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -24,6 +25,8 @@ import social.peal.core.ObjectMappers;
 public final class ContentViolationForbiddenCharacters {
     private final String channelId;
 
+    private final Optional<Integer> part;
+
     private final Platform platform;
 
     private final List<String> characters;
@@ -31,8 +34,13 @@ public final class ContentViolationForbiddenCharacters {
     private final Map<String, Object> additionalProperties;
 
     private ContentViolationForbiddenCharacters(
-            String channelId, Platform platform, List<String> characters, Map<String, Object> additionalProperties) {
+            String channelId,
+            Optional<Integer> part,
+            Platform platform,
+            List<String> characters,
+            Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.part = part;
         this.platform = platform;
         this.characters = characters;
         this.additionalProperties = additionalProperties;
@@ -41,6 +49,11 @@ public final class ContentViolationForbiddenCharacters {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("part")
+    public Optional<Integer> getPart() {
+        return part;
     }
 
     @JsonProperty("platform")
@@ -67,13 +80,14 @@ public final class ContentViolationForbiddenCharacters {
 
     private boolean equalTo(ContentViolationForbiddenCharacters other) {
         return channelId.equals(other.channelId)
+                && part.equals(other.part)
                 && platform.equals(other.platform)
                 && characters.equals(other.characters);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelId, this.platform, this.characters);
+        return Objects.hash(this.channelId, this.part, this.platform, this.characters);
     }
 
     @java.lang.Override
@@ -102,6 +116,10 @@ public final class ContentViolationForbiddenCharacters {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage part(Optional<Integer> part);
+
+        _FinalStage part(Integer part);
+
         _FinalStage characters(List<String> characters);
 
         _FinalStage addCharacters(String characters);
@@ -117,6 +135,8 @@ public final class ContentViolationForbiddenCharacters {
 
         private List<String> characters = new ArrayList<>();
 
+        private Optional<Integer> part = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -124,6 +144,7 @@ public final class ContentViolationForbiddenCharacters {
         @java.lang.Override
         public Builder from(ContentViolationForbiddenCharacters other) {
             channelId(other.getChannelId());
+            part(other.getPart());
             platform(other.getPlatform());
             characters(other.getCharacters());
             return this;
@@ -168,13 +189,27 @@ public final class ContentViolationForbiddenCharacters {
         }
 
         @java.lang.Override
+        public _FinalStage part(Integer part) {
+            this.part = Optional.ofNullable(part);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "part", nulls = Nulls.SKIP)
+        public _FinalStage part(Optional<Integer> part) {
+            this.part = part;
+            return this;
+        }
+
+        @java.lang.Override
         public ContentViolationForbiddenCharacters build() {
-            return new ContentViolationForbiddenCharacters(channelId, platform, characters, additionalProperties);
+            return new ContentViolationForbiddenCharacters(channelId, part, platform, characters, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
+                    || key.equalsIgnoreCase("part")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("characters")) {
                 return;

@@ -204,6 +204,7 @@ const PortsLive = Layer.mergeAll(
             Effect.as(
               workspaceIds.map((workspaceId) => ({
                 createdVia: { name: null, via: "web" },
+                followUps: [],
                 id: "019a6f10-0000-7000-8000-000000000001",
                 media: [],
                 scheduledAt: null,

@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class PostContent extends JsonSerializableType
 {
     /**
+     * @var ?array<PostPart> $followUps
+     */
+    #[JsonProperty('followUps'), ArrayType([PostPart::class])]
+    public ?array $followUps;
+
+    /**
      * @var array<MediaAttachment> $media
      */
     #[JsonProperty('media'), ArrayType([MediaAttachment::class])]
@@ -31,11 +37,13 @@ class PostContent extends JsonSerializableType
      *   media: array<MediaAttachment>,
      *   overrides: array<TextOverride>,
      *   text: string,
+     *   followUps?: ?array<PostPart>,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->followUps = $values['followUps'] ?? null;
         $this->media = $values['media'];
         $this->overrides = $values['overrides'];
         $this->text = $values['text'];

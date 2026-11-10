@@ -1189,6 +1189,130 @@ func (c *ChannelCapabilities) String() string {
 }
 
 var (
+	followUpCapabilitiesFieldKind     = big.NewInt(1 << 0)
+	followUpCapabilitiesFieldMaxCount = big.NewInt(1 << 1)
+)
+
+type FollowUpCapabilities struct {
+	Kind     FollowUpCapabilitiesKind `json:"kind" url:"kind"`
+	MaxCount int                      `json:"maxCount" url:"maxCount"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (f *FollowUpCapabilities) GetKind() FollowUpCapabilitiesKind {
+	if f == nil {
+		return ""
+	}
+	return f.Kind
+}
+
+func (f *FollowUpCapabilities) GetMaxCount() int {
+	if f == nil {
+		return 0
+	}
+	return f.MaxCount
+}
+
+func (f *FollowUpCapabilities) GetExtraProperties() map[string]interface{} {
+	if f == nil {
+		return nil
+	}
+	return f.extraProperties
+}
+
+func (f *FollowUpCapabilities) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetKind sets the Kind field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpCapabilities) SetKind(kind FollowUpCapabilitiesKind) {
+	f.Kind = kind
+	f.require(followUpCapabilitiesFieldKind)
+}
+
+// SetMaxCount sets the MaxCount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FollowUpCapabilities) SetMaxCount(maxCount int) {
+	f.MaxCount = maxCount
+	f.require(followUpCapabilitiesFieldMaxCount)
+}
+
+func (f *FollowUpCapabilities) UnmarshalJSON(data []byte) error {
+	type unmarshaler FollowUpCapabilities
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*f = FollowUpCapabilities(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *f)
+	if err != nil {
+		return err
+	}
+	f.extraProperties = extraProperties
+	f.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (f *FollowUpCapabilities) MarshalJSON() ([]byte, error) {
+	type embed FollowUpCapabilities
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*f),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, f.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (f *FollowUpCapabilities) String() string {
+	if f == nil {
+		return "<nil>"
+	}
+	if len(f.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(f.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(f); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", f)
+}
+
+type FollowUpCapabilitiesKind string
+
+const (
+	FollowUpCapabilitiesKindThread  FollowUpCapabilitiesKind = "thread"
+	FollowUpCapabilitiesKindComment FollowUpCapabilitiesKind = "comment"
+)
+
+func NewFollowUpCapabilitiesKindFromString(s string) (FollowUpCapabilitiesKind, error) {
+	switch s {
+	case "thread":
+		return FollowUpCapabilitiesKindThread, nil
+	case "comment":
+		return FollowUpCapabilitiesKindComment, nil
+	}
+	var t FollowUpCapabilitiesKind
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (f FollowUpCapabilitiesKind) Ptr() *FollowUpCapabilitiesKind {
+	return &f
+}
+
+var (
 	mediaCapabilitiesFieldAltText    = big.NewInt(1 << 0)
 	mediaCapabilitiesFieldFormats    = big.NewInt(1 << 1)
 	mediaCapabilitiesFieldMaxCount   = big.NewInt(1 << 2)
@@ -2397,16 +2521,23 @@ func (o *OptionConstraintOnlyWith) String() string {
 
 var (
 	platformCapabilitiesFieldAnalytics = big.NewInt(1 << 0)
-	platformCapabilitiesFieldLookups   = big.NewInt(1 << 1)
-	platformCapabilitiesFieldMedia     = big.NewInt(1 << 2)
-	platformCapabilitiesFieldOptions   = big.NewInt(1 << 3)
-	platformCapabilitiesFieldPlatform  = big.NewInt(1 << 4)
-	platformCapabilitiesFieldText      = big.NewInt(1 << 5)
-	platformCapabilitiesFieldVersion   = big.NewInt(1 << 6)
+	platformCapabilitiesFieldFollowUps = big.NewInt(1 << 1)
+	platformCapabilitiesFieldLookups   = big.NewInt(1 << 2)
+	platformCapabilitiesFieldMedia     = big.NewInt(1 << 3)
+	platformCapabilitiesFieldOptions   = big.NewInt(1 << 4)
+	platformCapabilitiesFieldPlatform  = big.NewInt(1 << 5)
+	platformCapabilitiesFieldText      = big.NewInt(1 << 6)
+	platformCapabilitiesFieldVersion   = big.NewInt(1 << 7)
 )
+
+// platformCapabilitiesNullableFields maps the wire names of PlatformCapabilities's nullable fields (required or optional) to their field bits.
+var platformCapabilitiesNullableFields = map[string]*big.Int{
+	"followUps": platformCapabilitiesFieldFollowUps,
+}
 
 type PlatformCapabilities struct {
 	Analytics *PlatformCapabilitiesAnalytics `json:"analytics" url:"analytics"`
+	FollowUps *FollowUpCapabilities          `json:"followUps,omitempty" url:"followUps,omitempty"`
 	Lookups   []*LookupDescription           `json:"lookups" url:"lookups"`
 	Media     *MediaCapabilities             `json:"media" url:"media"`
 	Options   *PlatformCapabilitiesOptions   `json:"options" url:"options"`
@@ -2426,6 +2557,13 @@ func (p *PlatformCapabilities) GetAnalytics() *PlatformCapabilitiesAnalytics {
 		return nil
 	}
 	return p.Analytics
+}
+
+func (p *PlatformCapabilities) GetFollowUps() *FollowUpCapabilities {
+	if p == nil {
+		return nil
+	}
+	return p.FollowUps
 }
 
 func (p *PlatformCapabilities) GetLookups() []*LookupDescription {
@@ -2493,6 +2631,13 @@ func (p *PlatformCapabilities) SetAnalytics(analytics *PlatformCapabilitiesAnaly
 	p.require(platformCapabilitiesFieldAnalytics)
 }
 
+// SetFollowUps sets the FollowUps field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlatformCapabilities) SetFollowUps(followUps *FollowUpCapabilities) {
+	p.FollowUps = followUps
+	p.require(platformCapabilitiesFieldFollowUps)
+}
+
 // SetLookups sets the Lookups field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (p *PlatformCapabilities) SetLookups(lookups []*LookupDescription) {
@@ -2547,6 +2692,13 @@ func (p *PlatformCapabilities) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, platformCapabilitiesNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
 	p.rawJSON = json.RawMessage(data)
 	return nil
 }

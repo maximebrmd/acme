@@ -10,7 +10,12 @@ import type { ChannelOptions, Post, PostDraft } from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
-import { optionsOf } from "#post-flags.ts";
+import {
+  followUpsOf,
+  optionsOf,
+  thenDelayFlag,
+  thenFlag,
+} from "#post-flags.ts";
 import { columns, excerpt } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
@@ -138,6 +143,10 @@ const save = Command.make(
       ),
       Flag.atLeast(0)
     ),
+    parts: thenFlag(
+      "A part that follows the post, text alone: a reply in a thread where the platform has threads. Repeat it for several, in order. A draft you change keeps its parts without it, and takes these instead with it."
+    ),
+    partsDelay: thenDelayFlag,
     postId: Flag.String("post").pipe(
       Flag.withMetavar("<post-id>"),
       Flag.withDescription("The draft to change. Without it, a new draft."),
@@ -155,12 +164,14 @@ const save = Command.make(
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
     const params = { workspaceId: workspace.id };
     const given = yield* Effect.all(input.options.map(optionsOf));
+    const followUps = yield* followUpsOf(input.parts, input.partsDelay);
 
     const saved: Post = yield* Option.match(input.postId, {
       onNone: () =>
         checkDraft({
           channelIds: input.channels,
           content: {
+            followUps,
             media: [],
             overrides: [],
             text: Option.getOrElse(input.text, () => ""),
@@ -174,8 +185,8 @@ const save = Command.make(
           )
         ),
       // What the flags leave out stays as the draft has it: its media,
-      // its text on some channels, and its options on the channels it
-      // keeps.
+      // its text on some channels, its parts, and its options on the
+      // channels it keeps.
       onSome: (postId) =>
         client.posts.get({ params: { ...params, postId } }).pipe(
           Effect.mapError(explain(url)),
@@ -193,6 +204,10 @@ const save = Command.make(
               channelIds,
               content: {
                 ...draft.content,
+                followUps:
+                  followUps.length > 0
+                    ? followUps
+                    : (draft.content.followUps ?? []),
                 text: Option.getOrElse(input.text, () => draft.content.text),
               },
               options: withOptions(channelIds, given, kept),

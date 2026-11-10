@@ -34,6 +34,8 @@ public final class PostTarget {
 
     private final Optional<TargetOptions> options;
 
+    private final TargetParts parts;
+
     private final Optional<String> permalink;
 
     private final Optional<String> publishedAt;
@@ -52,6 +54,7 @@ public final class PostTarget {
             String id,
             Optional<Boolean> keptPrivate,
             Optional<TargetOptions> options,
+            TargetParts parts,
             Optional<String> permalink,
             Optional<String> publishedAt,
             int round,
@@ -63,6 +66,7 @@ public final class PostTarget {
         this.id = id;
         this.keptPrivate = keptPrivate;
         this.options = options;
+        this.parts = parts;
         this.permalink = permalink;
         this.publishedAt = publishedAt;
         this.round = round;
@@ -100,6 +104,11 @@ public final class PostTarget {
             return Optional.empty();
         }
         return options;
+    }
+
+    @JsonProperty("parts")
+    public TargetParts getParts() {
+        return parts;
     }
 
     @JsonIgnore
@@ -183,6 +192,7 @@ public final class PostTarget {
                 && id.equals(other.id)
                 && keptPrivate.equals(other.keptPrivate)
                 && options.equals(other.options)
+                && parts.equals(other.parts)
                 && permalink.equals(other.permalink)
                 && publishedAt.equals(other.publishedAt)
                 && round == other.round
@@ -198,6 +208,7 @@ public final class PostTarget {
                 this.id,
                 this.keptPrivate,
                 this.options,
+                this.parts,
                 this.permalink,
                 this.publishedAt,
                 this.round,
@@ -221,7 +232,11 @@ public final class PostTarget {
     }
 
     public interface IdStage {
-        RoundStage id(@NotNull String id);
+        PartsStage id(@NotNull String id);
+    }
+
+    public interface PartsStage {
+        RoundStage parts(@NotNull TargetParts parts);
     }
 
     public interface RoundStage {
@@ -275,10 +290,13 @@ public final class PostTarget {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements ChannelIdStage, IdStage, RoundStage, StatusStage, _FinalStage {
+    public static final class Builder
+            implements ChannelIdStage, IdStage, PartsStage, RoundStage, StatusStage, _FinalStage {
         private String channelId;
 
         private String id;
+
+        private TargetParts parts;
 
         private int round;
 
@@ -307,6 +325,7 @@ public final class PostTarget {
             id(other.getId());
             keptPrivate(other.getKeptPrivate());
             options(other.getOptions());
+            parts(other.getParts());
             permalink(other.getPermalink());
             publishedAt(other.getPublishedAt());
             round(other.getRound());
@@ -324,8 +343,15 @@ public final class PostTarget {
 
         @java.lang.Override
         @JsonSetter("id")
-        public RoundStage id(@NotNull String id) {
+        public PartsStage id(@NotNull String id) {
             this.id = Objects.requireNonNull(id, "id must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("parts")
+        public RoundStage parts(@NotNull TargetParts parts) {
+            this.parts = Objects.requireNonNull(parts, "parts must not be null");
             return this;
         }
 
@@ -489,6 +515,7 @@ public final class PostTarget {
                     id,
                     keptPrivate,
                     options,
+                    parts,
                     permalink,
                     publishedAt,
                     round,
@@ -504,6 +531,7 @@ public final class PostTarget {
                     || key.equalsIgnoreCase("id")
                     || key.equalsIgnoreCase("keptPrivate")
                     || key.equalsIgnoreCase("options")
+                    || key.equalsIgnoreCase("parts")
                     || key.equalsIgnoreCase("permalink")
                     || key.equalsIgnoreCase("publishedAt")
                     || key.equalsIgnoreCase("round")

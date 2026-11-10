@@ -49,6 +49,28 @@ Under **Length on each channel**, each channel the post goes to shows how much r
 
 Bluesky counts what a reader sees as one character, so an emoji made of several code points counts once. YouTube counts bytes, so an accented letter counts two. TikTok takes 2,200 for a video's caption and 4,000 for a photo post's description: Peal holds both to 2,200. Facebook's limit is the figure commonly reported, as Meta names none; so are Google Business Profile's 1,500 characters, and the 58 of an event's or an offer's title, as Google's reference and help pages name none. Peal checks the limits when you schedule a post, not while you write a draft.
 
+## Threads [#threads]
+
+A post can have parts that follow it. Under **Thread**, choose **Add a part**: each part has its own text, its own images and videos, a counter for every channel, and, if you like, a wait after the part before it, from a minute to a day. Move a part up or down, or remove it, with its buttons. A post has 24 parts after its first at most.
+
+On the platforms with threads, each part goes out as a reply to the part before it:
+
+| Platform | A post's parts become                                                |
+| -------- | -------------------------------------------------------------------- |
+| X        | A thread: each part replies to the one before it                     |
+| Bluesky  | A thread: each part names the thread's first post and its own parent |
+| Mastodon | A thread: each part replies to the one before it                     |
+
+Each part follows the rules of a post on its platform: its length, counted as the platform counts it, and its images and videos. The other platforms take a post alone: a post with parts is refused there when you schedule it, and the composer says so as soon as you tick such a channel. Comments under a post, on the platforms that take them, are not sent yet.
+
+Parts go out in order, each as its own request to the platform:
+
+- nothing is sent after a part that **failed**. The channel reads **Failed**, its page lists the parts that are live, with their addresses, and **Post again** sends the part that failed and those after it, never a part that is live;
+- nothing is sent after a part Peal **cannot confirm**. The channel reads **To check**: look on the platform, then say what you found. When that part is live and others were left, the channel reads **Failed** with the reason **Later parts not sent**, and **Post again** sends the rest. A part you found by hand has no address Peal knows, so the next part cannot reply to it: post the rest on the platform yourself;
+- **Cancel** stops the parts not yet sent. A part that waits is not sent once its wait ends, and the parts that went out stay out.
+
+The post's address is its first part's, and [analytics](/analytics) reads the counts of the first part.
+
 ## Platform options [#options]
 
 Some platforms ask each post for more than its text and media. When the post goes to a channel on one of them, **Platform options** shows that channel's fields. A draft keeps them as they are, unfinished; scheduling needs those marked required, and shows under each field what its platform would refuse.

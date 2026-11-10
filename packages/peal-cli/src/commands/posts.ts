@@ -54,6 +54,8 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   mediaRemoved: "one of its images or videos was deleted before it went out",
   missed: "Peal was down at its time, and it came too late to send",
   notPublished: "someone checked the platform and did not find it",
+  partsNotSent:
+    "its first parts are live and the parts after them were not sent: post it again to send the rest",
   planLimit:
     "the workspace's plan had no room for it when it was due: disconnect channels or move to a larger plan, then post it again",
   quotaExceeded:
@@ -63,13 +65,20 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   unavailable: "the platform could not be reached",
 };
 
+// How many of a post's parts are live on the channel, for a post of
+// several: a repost sends from the part after them.
+const partsDetail = ({ parts }: PostTarget): string =>
+  parts.count > 1
+    ? `; ${String(parts.live.length)} of ${String(parts.count)} parts live`
+    : "";
+
 const targetDetail = (target: PostTarget): string => {
   if (target.status === "failed" && target.failureReason !== null) {
-    return `failed: ${target.failureReason} (${failureReasons[target.failureReason]})`;
+    return `failed: ${target.failureReason} (${failureReasons[target.failureReason]})${partsDetail(target)}`;
   }
 
   if (target.status === "unconfirmed" && target.unconfirmedReason !== null) {
-    return `unconfirmed: ${target.unconfirmedReason}`;
+    return `unconfirmed: ${target.unconfirmedReason}${partsDetail(target)}`;
   }
 
   if (target.status === "published") {
@@ -79,11 +88,11 @@ const targetDetail = (target: PostTarget): string => {
         : "published";
 
     return target.permalink === null
-      ? published
-      : `${published} at ${target.permalink}`;
+      ? `${published}${partsDetail(target)}`
+      : `${published} at ${target.permalink}${partsDetail(target)}`;
   }
 
-  return target.status;
+  return `${target.status}${partsDetail(target)}`;
 };
 
 const targetOf = (post: Post, targetId: string) =>

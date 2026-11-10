@@ -1288,6 +1288,139 @@ func TestSettersMarkExplicitChannelCapabilities(t *testing.T) {
 
 }
 
+func TestSettersFollowUpCapabilities(t *testing.T) {
+	t.Run("SetKind", func(t *testing.T) {
+		obj := &FollowUpCapabilities{}
+		var fernTestValueKind FollowUpCapabilitiesKind
+		obj.SetKind(fernTestValueKind)
+		assert.Equal(t, fernTestValueKind, obj.Kind)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetMaxCount", func(t *testing.T) {
+		obj := &FollowUpCapabilities{}
+		var fernTestValueMaxCount int
+		obj.SetMaxCount(fernTestValueMaxCount)
+		assert.Equal(t, fernTestValueMaxCount, obj.MaxCount)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersFollowUpCapabilities(t *testing.T) {
+	t.Run("GetKind", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowUpCapabilities{}
+		var expected FollowUpCapabilitiesKind
+		obj.Kind = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetKind(), "getter should return the property value")
+	})
+
+	t.Run("GetKind_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FollowUpCapabilities
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetKind() // Should return zero value
+	})
+
+	t.Run("GetMaxCount", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowUpCapabilities{}
+		var expected int
+		obj.MaxCount = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetMaxCount(), "getter should return the property value")
+	})
+
+	t.Run("GetMaxCount_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FollowUpCapabilities
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetMaxCount() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitFollowUpCapabilities(t *testing.T) {
+	t.Run("SetKind_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowUpCapabilities{}
+		var fernTestValueKind FollowUpCapabilitiesKind
+
+		// Act
+		obj.SetKind(fernTestValueKind)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetMaxCount_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowUpCapabilities{}
+		var fernTestValueMaxCount int
+
+		// Act
+		obj.SetMaxCount(fernTestValueMaxCount)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
 func TestSettersMediaCapabilities(t *testing.T) {
 	t.Run("SetAltText", func(t *testing.T) {
 		obj := &MediaCapabilities{}
@@ -3620,6 +3753,14 @@ func TestSettersPlatformCapabilities(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetFollowUps", func(t *testing.T) {
+		obj := &PlatformCapabilities{}
+		var fernTestValueFollowUps *FollowUpCapabilities
+		obj.SetFollowUps(fernTestValueFollowUps)
+		assert.Equal(t, fernTestValueFollowUps, obj.FollowUps)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetLookups", func(t *testing.T) {
 		obj := &PlatformCapabilities{}
 		var fernTestValueLookups []*LookupDescription
@@ -3702,6 +3843,39 @@ func TestGettersPlatformCapabilities(t *testing.T) {
 			}
 		}()
 		_ = obj.GetAnalytics() // Should return zero value
+	})
+
+	t.Run("GetFollowUps", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilities{}
+		var expected *FollowUpCapabilities
+		obj.FollowUps = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetFollowUps(), "getter should return the property value")
+	})
+
+	t.Run("GetFollowUps_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilities{}
+		obj.FollowUps = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetFollowUps(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetFollowUps_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PlatformCapabilities
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetFollowUps() // Should return zero value
 	})
 
 	t.Run("GetLookups", func(t *testing.T) {
@@ -3893,6 +4067,37 @@ func TestSettersMarkExplicitPlatformCapabilities(t *testing.T) {
 
 		// Act
 		obj.SetAnalytics(fernTestValueAnalytics)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetFollowUps_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PlatformCapabilities{}
+		var fernTestValueFollowUps *FollowUpCapabilities
+
+		// Act
+		obj.SetFollowUps(fernTestValueFollowUps)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -5094,6 +5299,39 @@ func TestJSONMarshalingChannelCapabilities(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingFollowUpCapabilities(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &FollowUpCapabilities{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled FollowUpCapabilities
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj FollowUpCapabilities
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj FollowUpCapabilities
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingMediaCapabilities(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -5673,6 +5911,49 @@ func TestRequiredNullableRoundTripMediaFormat(t *testing.T) {
 	})
 }
 
+func TestRequiredNullableRoundTripPlatformCapabilities(t *testing.T) {
+	requiredNullableKeys := []string{
+		"followUps",
+	}
+	marshalToMap := func(t *testing.T, obj *PlatformCapabilities) map[string]json.RawMessage {
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		var result map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal(data, &result), "marshaled data should be a JSON object")
+		return result
+	}
+
+	t.Run("NullPreserved", func(t *testing.T) {
+		t.Parallel()
+		var obj PlatformCapabilities
+		require.NoError(t, json.Unmarshal([]byte(`{"followUps":null}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			value, ok := result[key]
+			require.True(t, ok, "required nullable field %q received as null should be present in the output", key)
+			assert.Equal(t, "null", string(value), "required nullable field %q received as null should be null in the output", key)
+		}
+	})
+
+	t.Run("AbsentStaysAbsent", func(t *testing.T) {
+		t.Parallel()
+		var obj PlatformCapabilities
+		require.NoError(t, json.Unmarshal([]byte(`{}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q absent from the input should be absent from the output", key)
+		}
+	})
+
+	t.Run("FreshValueOmits", func(t *testing.T) {
+		t.Parallel()
+		result := marshalToMap(t, &PlatformCapabilities{})
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q should be omitted from a freshly constructed value", key)
+		}
+	})
+}
+
 func TestRequiredNullableRoundTripTextCapabilities(t *testing.T) {
 	requiredNullableKeys := []string{
 		"maxHashtags",
@@ -5841,6 +6122,22 @@ func TestStringChannelCapabilities(t *testing.T) {
 	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *ChannelCapabilities
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringFollowUpCapabilities(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &FollowUpCapabilities{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FollowUpCapabilities
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
 	})
@@ -6088,6 +6385,35 @@ func TestEnumAccountUnreadReason(t *testing.T) {
 	})
 }
 
+func TestEnumFollowUpCapabilitiesKind(t *testing.T) {
+	t.Run("NewFromString_thread", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFollowUpCapabilitiesKindFromString("thread")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FollowUpCapabilitiesKind("thread"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_comment", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFollowUpCapabilitiesKindFromString("comment")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FollowUpCapabilitiesKind("comment"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewFollowUpCapabilitiesKindFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewFollowUpCapabilitiesKindFromString("thread")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
 func TestEnumTextUnit(t *testing.T) {
 	t.Run("NewFromString_graphemes", func(t *testing.T) {
 		t.Parallel()
@@ -6324,6 +6650,29 @@ func TestExtraPropertiesChannelCapabilities(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *ChannelCapabilities
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesFollowUpCapabilities(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &FollowUpCapabilities{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *FollowUpCapabilities
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -20,6 +22,8 @@ import social.peal.core.ObjectMappers;
 @JsonDeserialize(builder = ContentViolationTooManyVideos.Builder.class)
 public final class ContentViolationTooManyVideos {
     private final String channelId;
+
+    private final Optional<Integer> part;
 
     private final Platform platform;
 
@@ -30,8 +34,14 @@ public final class ContentViolationTooManyVideos {
     private final Map<String, Object> additionalProperties;
 
     private ContentViolationTooManyVideos(
-            String channelId, Platform platform, int count, int maximum, Map<String, Object> additionalProperties) {
+            String channelId,
+            Optional<Integer> part,
+            Platform platform,
+            int count,
+            int maximum,
+            Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.part = part;
         this.platform = platform;
         this.count = count;
         this.maximum = maximum;
@@ -41,6 +51,11 @@ public final class ContentViolationTooManyVideos {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("part")
+    public Optional<Integer> getPart() {
+        return part;
     }
 
     @JsonProperty("platform")
@@ -71,6 +86,7 @@ public final class ContentViolationTooManyVideos {
 
     private boolean equalTo(ContentViolationTooManyVideos other) {
         return channelId.equals(other.channelId)
+                && part.equals(other.part)
                 && platform.equals(other.platform)
                 && count == other.count
                 && maximum == other.maximum;
@@ -78,7 +94,7 @@ public final class ContentViolationTooManyVideos {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelId, this.platform, this.count, this.maximum);
+        return Objects.hash(this.channelId, this.part, this.platform, this.count, this.maximum);
     }
 
     @java.lang.Override
@@ -114,6 +130,10 @@ public final class ContentViolationTooManyVideos {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage part(Optional<Integer> part);
+
+        _FinalStage part(Integer part);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -126,6 +146,8 @@ public final class ContentViolationTooManyVideos {
 
         private int maximum;
 
+        private Optional<Integer> part = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -133,6 +155,7 @@ public final class ContentViolationTooManyVideos {
         @java.lang.Override
         public Builder from(ContentViolationTooManyVideos other) {
             channelId(other.getChannelId());
+            part(other.getPart());
             platform(other.getPlatform());
             count(other.getCount());
             maximum(other.getMaximum());
@@ -168,13 +191,27 @@ public final class ContentViolationTooManyVideos {
         }
 
         @java.lang.Override
+        public _FinalStage part(Integer part) {
+            this.part = Optional.ofNullable(part);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "part", nulls = Nulls.SKIP)
+        public _FinalStage part(Optional<Integer> part) {
+            this.part = part;
+            return this;
+        }
+
+        @java.lang.Override
         public ContentViolationTooManyVideos build() {
-            return new ContentViolationTooManyVideos(channelId, platform, count, maximum, additionalProperties);
+            return new ContentViolationTooManyVideos(channelId, part, platform, count, maximum, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
+                    || key.equalsIgnoreCase("part")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("count")
                     || key.equalsIgnoreCase("maximum")) {

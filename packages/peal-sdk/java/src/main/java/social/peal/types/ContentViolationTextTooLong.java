@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -20,6 +22,8 @@ import social.peal.core.ObjectMappers;
 @JsonDeserialize(builder = ContentViolationTextTooLong.Builder.class)
 public final class ContentViolationTextTooLong {
     private final String channelId;
+
+    private final Optional<Integer> part;
 
     private final Platform platform;
 
@@ -33,12 +37,14 @@ public final class ContentViolationTextTooLong {
 
     private ContentViolationTextTooLong(
             String channelId,
+            Optional<Integer> part,
             Platform platform,
             int length,
             int maximum,
             TextUnit unit,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.part = part;
         this.platform = platform;
         this.length = length;
         this.maximum = maximum;
@@ -49,6 +55,11 @@ public final class ContentViolationTextTooLong {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("part")
+    public Optional<Integer> getPart() {
+        return part;
     }
 
     @JsonProperty("platform")
@@ -84,6 +95,7 @@ public final class ContentViolationTextTooLong {
 
     private boolean equalTo(ContentViolationTextTooLong other) {
         return channelId.equals(other.channelId)
+                && part.equals(other.part)
                 && platform.equals(other.platform)
                 && length == other.length
                 && maximum == other.maximum
@@ -92,7 +104,7 @@ public final class ContentViolationTextTooLong {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelId, this.platform, this.length, this.maximum, this.unit);
+        return Objects.hash(this.channelId, this.part, this.platform, this.length, this.maximum, this.unit);
     }
 
     @java.lang.Override
@@ -132,6 +144,10 @@ public final class ContentViolationTextTooLong {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage part(Optional<Integer> part);
+
+        _FinalStage part(Integer part);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -147,6 +163,8 @@ public final class ContentViolationTextTooLong {
 
         private TextUnit unit;
 
+        private Optional<Integer> part = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -154,6 +172,7 @@ public final class ContentViolationTextTooLong {
         @java.lang.Override
         public Builder from(ContentViolationTextTooLong other) {
             channelId(other.getChannelId());
+            part(other.getPart());
             platform(other.getPlatform());
             length(other.getLength());
             maximum(other.getMaximum());
@@ -197,13 +216,28 @@ public final class ContentViolationTextTooLong {
         }
 
         @java.lang.Override
+        public _FinalStage part(Integer part) {
+            this.part = Optional.ofNullable(part);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "part", nulls = Nulls.SKIP)
+        public _FinalStage part(Optional<Integer> part) {
+            this.part = part;
+            return this;
+        }
+
+        @java.lang.Override
         public ContentViolationTextTooLong build() {
-            return new ContentViolationTextTooLong(channelId, platform, length, maximum, unit, additionalProperties);
+            return new ContentViolationTextTooLong(
+                    channelId, part, platform, length, maximum, unit, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
+                    || key.equalsIgnoreCase("part")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("length")
                     || key.equalsIgnoreCase("maximum")

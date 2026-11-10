@@ -1,6 +1,8 @@
 import { Context, Effect, Layer, Option } from "effect";
 
-import { PostContent } from "#publishing/domain/post-content.ts";
+import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { PostContent, shownMedia } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import type { PostStatusName } from "#publishing/domain/post-status.ts";
 import { editDraft } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
@@ -42,13 +44,24 @@ const scheduledStatuses: readonly PostStatusName[] = [
 const ids = (posts: readonly Post[]) => posts.map(({ id }) => id);
 
 const shows = (post: Post, mediaId: MediaAssetId) =>
-  post.content.media.some((attachment) => attachment.mediaId === mediaId);
+  shownMedia(post.content).some((attachment) => attachment.mediaId === mediaId);
 
+const remaining = (media: readonly MediaAttachment[], mediaId: MediaAssetId) =>
+  media.filter((attachment) => attachment.mediaId !== mediaId);
+
+// The content with the media taken off every part that shows it.
 const without = (post: Post, mediaId: MediaAssetId) =>
   new PostContent({
-    media: post.content.media.filter(
-      (attachment) => attachment.mediaId !== mediaId
+    followUps: post.content.followUps.map(
+      (part) =>
+        new PostPart({
+          delaySeconds: part.delaySeconds,
+          media: remaining(part.media, mediaId),
+          overrides: part.overrides,
+          text: part.text,
+        })
     ),
+    media: remaining(post.content.media, mediaId),
     overrides: post.content.overrides,
     text: post.content.text,
   });
