@@ -106,6 +106,20 @@ describe("the validate endpoint", () => {
             },
           });
 
+          // A channel that is none is said once, as unknown: not again
+          // as a post for no channel, when it was the only one named.
+          const none = yield* viewer.posts.validate({
+            params,
+            payload: {
+              channelIds: ["not-a-channel"],
+              content: { media: [], overrides: [], text: "Hello" },
+            },
+          });
+
+          assert.isFalse(none.valid);
+          assert.deepStrictEqual(none.unknownChannels, ["not-a-channel"]);
+          assert.deepStrictEqual(none.violations, []);
+
           assert.isFalse(wrong.valid);
           assert.strictEqual(wrong.schedule, "invalidTimeZone");
           assert.deepStrictEqual(wrong.unknownChannels, ["not-a-channel"]);

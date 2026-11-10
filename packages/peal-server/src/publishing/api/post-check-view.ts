@@ -68,7 +68,11 @@ const validationView = (
       read.zoneKnown &&
       read.malformedChannels.length === 0 &&
       read.malformedMedia.length === 0,
-    violations: [...check.violations],
+    // A channel whose id is none is said as unknown, and was left out
+    // of what was checked: not again as a post for no channel.
+    violations: check.violations.filter(
+      ({ _tag }) => _tag !== "noChannels" || read.malformedChannels.length === 0
+    ),
   };
 };
 
