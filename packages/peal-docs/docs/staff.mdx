@@ -21,14 +21,15 @@ Peal's own servers also put `/admin`, `/en/admin`, `/fr/admin` and `/api/admin` 
 
 ## What the console shows [#screens]
 
-| Page        | What it shows                                                                                                                                                                      |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| System      | Whether the database answers, the release the server runs (`OTEL_SERVICE_VERSION`), the posts due within the hour, those overdue, and the channels to reconnect in every workspace |
-| Accounts    | Accounts by email, name or id, newest first, 25 a page                                                                                                                             |
-| An account  | Its name and email, whether the address is confirmed, its language, when it was created and last signed in, its ban, its workspaces and roles, and how many sessions it has open   |
-| Workspaces  | Workspaces by name, slug or id, with their members                                                                                                                                 |
-| A workspace | Its members and roles, its plan and subscription, its channels and whether each works, how many posts it has in each status, and the latest posts that failed or went unconfirmed  |
-| Audit log   | What staff did, newest first                                                                                                                                                       |
+| Page              | What it shows                                                                                                                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| System            | Whether the database answers, the release the server runs (`OTEL_SERVICE_VERSION`), the posts due within the hour, those overdue, and the channels to reconnect in every workspace |
+| Accounts          | Accounts by email, name or id, newest first, 25 a page                                                                                                                             |
+| An account        | Its name and email, whether the address is confirmed, its language, when it was created and last signed in, its ban, its workspaces and roles, and how many sessions it has open   |
+| Workspaces        | Workspaces by name, slug or id, with their members                                                                                                                                 |
+| A workspace       | Its members and roles, its plan and subscription, its channels and whether each works, how many posts it has in each status, and the latest posts that failed or went unconfirmed  |
+| Contract requests | The requests to cancel a contract or withdraw from one that wait for staff, oldest first                                                                                           |
+| Audit log         | What staff did, newest first                                                                                                                                                       |
 
 Staff see who an account is, never what it wrote: no post's text, no image or video, no token. A failed post shows as its ids, its platform, why it failed and the platform's code. To see what a member sees, staff act as them (see below).
 
@@ -48,6 +49,15 @@ While acting as an account, staff see its posts and media, and can write and edi
 Staff never ban, sign out or act as themselves, and never act as other staff. No one deletes an account but its owner, from [their account settings](/settings#delete-account).
 
 Better Auth's own admin endpoints under `/api/auth/admin/` are off, so nothing staff do bypasses the audit log; only `POST /api/auth/admin/stop-impersonating` stays, which the banner calls.
+
+## Contract requests [#contract-requests]
+
+On a server that bills, anyone cancels a contract or withdraws from one without signing in ([Plans and billing](/billing#cancelling)). A request that gives its contract number, or whose sender follows the link emailed to an address that manages a contract, is applied without anyone's help. **Contract requests** lists the others: those no contract was found for, and those whose sender has not followed their link yet. Each shows what its sender wrote, and nothing else: their name, the address their acknowledgement went to, the contract as they named it, the day wanted, and the account that address signs in to, if any.
+
+- **Apply to this workspace** ties the request to a workspace's contract, by the workspace's id: do it only once you know the sender holds that contract, as by writing to the address the account has on file. It takes effect as of the date the request was received, whenever you apply it: a renewal charged since is refunded, and a withdrawal's 14 days and refund count from that date. The sender is emailed what became of it.
+- **Close without applying**, for a request sent twice or by someone who holds no contract. The sender is not written to: write to them yourself when they need an answer.
+
+Both ask why, and are in the audit log with the request's id and the workspace's, never the name or the address the request holds. Requests are kept 5 years, as the contract's orders are.
 
 ## The audit log [#audit-log]
 

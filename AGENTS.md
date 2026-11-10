@@ -1139,10 +1139,11 @@ and no socket, for tests.
   OAuth client or staff impersonating them (403; the use cases refuse an
   impersonated actor too, `PersonRequired`). The SDKs leave the group out
   (`ownSessionTags`).
-- Cancelling (`CancelSubscription`, French law's few clicks: the button,
-  then the confirmation) sets `cancel_at_period_end`, or ends a trial at
-  once. Withdrawing (`Withdraw`, CRD art. 11a: **Withdraw from contract
-  here**, then **Confirm withdrawal**) is open 14 days from the contract's
+- Cancelling (`CancelSubscription`) sets `cancel_at_period_end`, ends a
+  trial at once, or, for a day asked for after the period paid for
+  (D215-2, 4°), sets Stripe's `cancel_at`, which charges the last period
+  only up to that day (`cancellationEffect`). Withdrawing (`Withdraw`) is
+  open 14 days from the contract's
   start (`mayWithdraw`), cancelled or not, refused to a customer with a
   verified `eu_vat` id (`StripeContracts.isBusiness`), and refunds each
   paid invoice since the start for the part of its own period not
@@ -1151,14 +1152,81 @@ and no socket, for tests.
   the withdrawal is recorded first (`billing.withdrawals`), then credited,
   computed at the time recorded, and ended under idempotency keys, so
   trying again refunds the same amounts once.
+- The words of the two functions are the law's, in every catalogue,
+  email, doc and legal page: **Cancel your contract** / **Résilier votre
+  contrat**, then **Notify the cancellation** / **Notification de la
+  résiliation** (Code de la consommation D215-1, D215-3); **Withdraw from
+  contract here** / **Renoncer au contrat ici**, then **Confirm
+  withdrawal** / **Confirmer la rétractation**, alone on its button
+  (D221-5; Directive 2011/83/EU art. 11a). Never reword them, and change
+  the order box's words only with `consentVersion`.
+- Both functions are reached without signing in: `/cancel` and
+  `/withdraw` in the web app (`ContractFunctionPage`), linked at the foot
+  of every page (`ContractLinks` in `AppShell`, only on a server that
+  bills) and of the marketing site (`SITE_APP_URL`). They ask what
+  D215-2 and D221-5 list and nothing else (name, address for the
+  acknowledgement, the contract, the day wanted), show a summary, then
+  the one action. Never add a field, an offer or a reason to them. A
+  member who manages billing, signed in, picks their contract there and
+  is applied at once through `billingActions`; the billing page keeps
+  the same two steps for its own workspace.
+- A request is a `ContractRequest` (`billing.contract_requests`), recorded
+  with `receivedAt` before anything else: the moment that counts whenever
+  it is applied. `CancelSubscription.received` and `Withdraw.received`
+  apply one as of that moment (a renewal charged since goes back and the
+  plan ends, `cancelledLate`; a withdrawal's 14 days and refund are
+  computed at it); the member's own `cancel` and `confirm` record theirs
+  as received and applied at once (`channel` `session`).
+- Who may end a contract through the form (`ReceiveContractRequest`,
+  `POST /api/contract-requests`, group `contractRequests`, no
+  credentials): one that gives the contract's number is applied at once,
+  whatever its address; one whose address manages a subscribed
+  workspace's billing (`ContractHolders`, the workspace context's
+  `AccountLookup`) waits for the link in its acknowledgement
+  (`ConfirmContractRequest`: the token kept as its SHA-256, 30 days,
+  once; `/contract-request?token=`, sent in a body, applied on a click);
+  any other waits for staff. Never apply on an email address alone: a
+  stranger who knows it would end the contract. The answer is the same
+  whatever was found (`receivedAt` only), and the request is looked at
+  on a fiber after it (`process`), so neither its content nor its time
+  tells whether an address has an account.
+- The contract's number (`ContractReferences`, `referenceFrom`: 60 bits
+  of an HMAC of the subscription's id under `BETTER_AUTH_SECRET`, kept in
+  `billing.contract_references`) is "une référence préalablement
+  communiquée" (D215-2, 3°): the confirmation and the renewal reminder
+  give it (`reference` on those notices, an optional key older notices
+  lack), to the members who manage billing only. Never show it to anyone
+  else, nor in a view of the API.
+- Each form request is acknowledged by email to the address it gave
+  (`RequestMail`, the `ContractRequestAcknowledged` account email): when
+  it came, to the minute, what it said, and what became of it. Its name
+  and contract take letters, digits, spaces and `' , & ( ) -` only
+  (`RequestTextSchema`), as the email quotes them to an address nobody
+  checked. `ContractRequestIntake` (`src/app/contract-requests/`) takes 5
+  requests an hour per client address and a Turnstile token when the
+  server has Turnstile (`CaptchaChallenge.passes`, which lets through
+  what Cloudflare cannot answer: the functions stay reachable); an
+  address is written to 5 times a day (`acknowledgementsPerDay`), the
+  rest left to staff. The `billing.contract-requests` cron
+  (`catchUp`, every five minutes) takes up what the mail or Stripe could
+  not take.
+- Staff handle what the form could not apply (`ContractRequestDesk`,
+  group `contractRequestsDesk` under `/api/admin`, the console's
+  `admin/contract-requests`): apply one to a workspace's contract, as of
+  its receipt, or close it, each recorded first through
+  `ContractRequestAudit` (`applyContractRequest`, `closeContractRequest`:
+  the request's id and the workspace's, never its name or address).
 - Billing tells the members with billing:manage through `BillingNotices`
   (`Notify`), in the app and by email whatever their email choices
   (`emailKindOf` is none for these): `SubscriptionStarted`, the contract's
   confirmation; `SubscriptionCancelled`; `SubscriptionWithdrawn`, with its
   date and time; and, from the hourly `billing.reminders` cron
   (`SendBillingReminders`), `TrialEnding` three days before and
-  `SubscriptionRenewing` 45 days before a yearly plan renews (Code de la
-  consommation L215-1). Each once, by key. A confirmation and a renewal
+  `SubscriptionRenewing` 45 days before a yearly plan renews, and never
+  later than 32 days before (`renewalWindow`: "one month" before a 31st
+  is 31 days), in an email of its own with the last day to refuse in a
+  box (`renewalDeadline`), as Code de la consommation L215-1 asks; the
+  terms reproduce L215-1 to L215-3 and L241-3 (L215-4). Each once, by key. A confirmation and a renewal
   quote what Stripe charges, VAT included (the first paid invoice, the
   next invoice's preview, `StripeContracts.upcomingTotal`), never the
   catalogue: one Stripe cannot price yet waits for the next run.
@@ -1174,12 +1242,16 @@ and no socket, for tests.
   Accounts and access); it also expires its open checkouts. Better Auth's
   `/organization/delete` is disabled, so its hook refuses nothing. Erasing
   a workspace deletes the orders no contract followed; those of a
-  workspace that had a subscription, and its withdrawals, stay without
+  workspace that had a subscription, its withdrawals and its requests to
+  cancel or withdraw, stay without
   it, by their Stripe customer and subscription (`erased_at`), for
   `contractRetention` (5 years, Code civil art. 2224), then the daily
   `billing.contract-retention` cron (`PurgeContractRecords`) deletes them,
-  and the trial pseudonyms past `trialMemory`. A user's orders and
-  withdrawals are in their export (`contracts`, `ContractRecords`).
+  with the requests no contract was found for, 5 years after their
+  receipt, and the trial pseudonyms past `trialMemory`. A user's orders,
+  withdrawals and requests are in their export (`contracts`,
+  `ContractRecords`, `ContractRequests.ofUser`); closing the account
+  leaves its requests without the user, the name and the address.
   Erasing leaves the trial to the account; closing an account leaves
   orders, trials and withdrawals without the user
   (`Subscriptions.forgetUser`).
@@ -1360,6 +1432,9 @@ self-hoster needs only Postgres and an S3-compatible store:
   operating system (`prefers-color-scheme`).
 - Pages live under `src/app/[locale]/`: the auth pages (`sign-up`, `sign-in`,
   `verify-email`, `forgot-password`, `reset-password`, `invitations/[id]`),
+  the contract functions anyone reaches (`cancel`, `withdraw`, and
+  `contract-request`, the page of the link emailed to a request's
+  address),
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
   platforms' redirect URI `connect/[platform]/callback` (which shows the
   account picker when a sign-in reached several accounts), Meta's data
@@ -1372,7 +1447,8 @@ self-hoster needs only Postgres and an S3-compatible store:
   repost and confirm, and its analytics), `…/settings` (with `members`,
   `invitations` and `api-keys`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
-  `admin/workspaces`, `admin/workspaces/[workspaceId]` and `admin/audit`:
+  `admin/workspaces`, `admin/workspaces/[workspaceId]`,
+  `admin/contract-requests` (through `deskRead`) and `admin/audit`:
   its layout and pages read the staff endpoints with the visitor's cookies
   through `staffRead` (`#staff/server.ts`), which shows the not-found page
   for any 404, and its actions are mutations from `#staff/atoms.ts`.
@@ -1681,7 +1757,8 @@ self-hoster needs only Postgres and an S3-compatible store:
 - `nx run peal-docs:build` and `nx run peal-site:build` write each package's
   `dist/`, cached. Their settings are optional, and unset or empty turns the
   feature off: docs `DOCS_SITE_URL`, `DOCS_PLAUSIBLE_DOMAIN`,
-  `DOCS_PLAUSIBLE_HOST`; site `SITE_URL`, `SITE_DOCS_URL`,
+  `DOCS_PLAUSIBLE_HOST`; site `SITE_URL`, `SITE_DOCS_URL`, `SITE_APP_URL`
+  (the footer's links to the app's contract functions),
   `SITE_PLAUSIBLE_DOMAIN`, `SITE_PLAUSIBLE_HOST`. Nx hashes them from the
   process environment only, not `.env` files: export them, or build with
   `--skip-nx-cache`.
