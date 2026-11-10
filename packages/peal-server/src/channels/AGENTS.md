@@ -200,7 +200,10 @@
   (`channels.disable`, `channels.enable`, the domain's `disable` and
   `enable`), and reconnecting leaves a channel turned off as it is: notices,
   emails and docs tell members to turn it back on. A channel that is off
-  still counts in its plan.
+  still counts in its plan. Off is not disconnected: nothing calls
+  `ChannelEvents.disconnected`, so analytics and the inbox keep what they
+  read, and pass it over while `ChannelAccess` answers `disabled`
+  (`paused`) until it is back on.
 - Any request to a host a user chose (a Mastodon instance, the servers a
   Bluesky DID names) goes through `publicHttpClient` or `publicFetch` from
   `#shared/infrastructure/platforms`: HTTPS on the default port only,
