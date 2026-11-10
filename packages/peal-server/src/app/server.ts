@@ -21,6 +21,7 @@ import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
   BillingApiLive,
+  StripePricesCheckedLive,
   BillingActionsApiLive,
   BillingLive,
   BillingOverviewLive,
@@ -282,6 +283,9 @@ export const ServerLive = Layer.mergeAll(
   WorkersLive
 ).pipe(
   Layer.provide(ContextsLive),
+  // Before anything listens: a server that bills starts only with
+  // Stripe's prices as it publishes them.
+  Layer.provide(StripePricesCheckedLive),
   Layer.provide(ClusterLive),
   Layer.provide(MigrationsLive),
   Layer.provide(DatabaseLive),

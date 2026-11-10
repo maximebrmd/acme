@@ -118,3 +118,6 @@ export const BillingCronsLive = Layer.mergeAll(
 export { BillingHandlers as BillingApiLive } from "#billing/api/billing.ts";
 
 export { BillingActionsHandlers as BillingActionsApiLive } from "#billing/api/billing-actions.ts";
+
+// The check of Stripe's prices a server that bills makes when it starts.
+export { StripePricesCheckedLive } from "#billing/infrastructure/stripe-prices-checked.ts";
