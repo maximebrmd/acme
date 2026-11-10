@@ -16,7 +16,7 @@ import pytest
 
 from conftest import INFRA, command_of, stdin_of, task
 
-DOCKERFILE = INFRA.parent / "peal-docker" / "postgres.Dockerfile"
+DOCKERFILE = INFRA.parent.parent / "peal-docker" / "postgres.Dockerfile"
 
 IMAGE = next(
     line.split()[1] for line in DOCKERFILE.read_text().splitlines() if line.startswith("FROM ")

@@ -1,6 +1,6 @@
 {
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "peal-infra",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "peal-infra-ansible",
   "projectType": "application",
   "targets": {
     "collections": {

@@ -10,7 +10,7 @@ each server's `hosting_provider` and `hosting_location`), and every playbook
 refuses to run until they are replaced.
 
 Self-hosters do not need this folder: Caddy and Compose are enough (the docs'
-self-hosting page, and [`peal-docker`](../peal-docker)).
+self-hosting page, and [`peal-docker`](../../peal-docker)).
 
 ## How it fits together
 
@@ -19,7 +19,7 @@ self-hosting page, and [`peal-docker`](../peal-docker)).
 | Server    | Ubuntu LTS at a European provider ([which one](#choosing-a-provider-and-a-size)), security updates daily, the `ops` account with an SSH key |
 | Edge      | `cloudflared` on the host dials out to Cloudflare; no inbound port is open, SSH included                                                    |
 | Access    | Cloudflare Zero Trust Access guards Grafana, SSH, the admin and the whole sandbox                                                           |
-| Stack     | [`compose.production.yaml`](../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1                  |
+| Stack     | [`compose.production.yaml`](../../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1               |
 | Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                                              |
 | Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                                              |
 | Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                                              |
@@ -248,7 +248,7 @@ that needs what an earlier one would make, such as Docker's configuration
 before Docker is installed, skips when that one reports a change, and the
 next run shows it. It reads the server's package lists, which refresh daily.
 
-`bun nx run peal-infra:test` runs ansible-lint with the production profile,
+`bun nx run peal-infra-ansible:test` runs ansible-lint with the production profile,
 `ansible-playbook --syntax-check` on every playbook, and the tests in
 [`tests/`](tests) (`uv run pytest`), which read what Ansible renders for each
 server:

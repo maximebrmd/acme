@@ -1,7 +1,7 @@
 # Infrastructure
 
 How servers are changed, where secrets stay and what needs the owner's
-approval are in the root [`AGENTS.md`](../../AGENTS.md), under Infrastructure.
+approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure.
 
 - Production runs on a server at a European provider, managed with Ansible
   from `peal-infra`, reachable only through a Cloudflare Tunnel: no inbound
