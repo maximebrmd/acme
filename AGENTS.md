@@ -894,6 +894,13 @@ and no socket, for tests.
   The runner's name comes from `HOSTNAME`, never `HOST` or `PORT`; shards are
   held with session advisory locks, storage is polled every 2 seconds, and
   shutdown waits up to 60 seconds for platform calls in flight.
+- The crons that call platforms through the gates (post counts at minute
+  7, accounts at 37, comments every ten minutes from 2, the token sweep
+  every ten from 0) never start on the same minute, and a collection
+  starts on a minute no other cron does: `test/app/cron-schedules.test.ts`
+  reads every `ClusterCron.make` in `src/` and fails otherwise. A gate
+  runs calls in the order they came, so a publish waits for one read of
+  each collection at most (`test/publishing/infrastructure/channel-gate.test.ts`).
 - Register crons in `src/app/crons.ts`. Workflow tags, payloads, idempotency
   keys, activity and clock names, result schemas and cron names are persisted
   contract: add a payload field with a decoding default or a union member,
@@ -2179,7 +2186,7 @@ and no socket, for tests.
   (`EngagementRecords.forgetUser`), and its export lists the replies it
   sent, never the comments.
 - `CollectComments` runs on the `engagement.collect-comments` cron, every
-  ten minutes: it follows publishing's `PublishedTargets` (`FollowedPosts`)
+  ten minutes from minute 2: it follows publishing's `PublishedTargets` (`FollowedPosts`)
   as analytics does, then reads the threads due, the channels that waited
   longest first, 10 threads a call (`CommentSource`, through the channel's
   gate: `ReadComments`), 30 threads a channel a run, 8 channels at once

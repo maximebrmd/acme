@@ -60,12 +60,18 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
  * confirmation. `Resume` checks a call an earlier run left in flight.
  * `ReadMetrics` reads the counts of some of the channel's posts for
  * analytics, so reads take turns with publishing and share its rate limits;
- * each is bounded in time, and holds a publish back by one read at most.
+ * each is bounded in time.
  * `ReadAccount` reads the account's own numbers the same way, once a day.
  * `ReadComments` reads the comments under some of its posts the same way,
  * and `SendReply`, `ResumeReply`, `WithdrawReply` and `ModerateComment` act
  * on them as the account, for engagement: their payloads are ids, and the
  * text of a reply stays in engagement's tables.
+ *
+ * Calls run in the order they came, whichever context sent them. Each
+ * collection (post counts, the account, comments) has one call a channel
+ * outstanding at most, so a publish waits for the reads that came before
+ * it: one of each at most, each bounded, never for those after. Their
+ * crons start on minutes of their own (`test/app/cron-schedules.test.ts`).
  */
 export const ChannelGate = Entity.make("ChannelGate", [
   Rpc.make("Publish", {
