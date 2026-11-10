@@ -3,6 +3,7 @@ import { Tool, Toolkit } from "effect/ai";
 import { ChannelSchema, CurrentMember, PermissionSchema } from "peal-contract";
 
 import { reading } from "#app/mcp/annotations.ts";
+import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
@@ -98,5 +99,6 @@ export const PealTools = Toolkit.merge(
   BasicTools,
   PostTools,
   ReportTools,
-  PeopleTools
+  PeopleTools,
+  CapabilityTools
 );

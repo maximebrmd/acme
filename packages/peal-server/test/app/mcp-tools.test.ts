@@ -3,7 +3,11 @@ import { Context, Effect, Layer, Option, Schema } from "effect";
 import { McpClient } from "effect/ai";
 import type { McpSchema } from "effect/ai";
 import { SqlClient } from "effect/sql";
-import { InvitationSchema, PostSchema } from "peal-contract";
+import {
+  ChannelCapabilitiesSchema,
+  InvitationSchema,
+  PostSchema,
+} from "peal-contract";
 import type { TargetOptions } from "peal-contract";
 
 import { ListedMemberSchema } from "#app/mcp/people-tools.ts";
@@ -211,6 +215,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           create_draft: [false, false, false, false],
           discard_draft: [false, true, true, false],
           get_billing: [true, false, true, false],
+          get_channel_capabilities: [true, false, true, true],
           get_post: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
           invite_member: [false, true, false, true],
@@ -222,6 +227,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           post_analytics: [true, false, true, false],
           repost_target: [false, false, false, true],
           revoke_invitation: [false, true, true, false],
+          run_channel_lookup: [true, false, true, true],
           server_health: [true, false, true, false],
           unschedule_post: [false, true, true, false],
           update_draft: [false, true, true, false],
@@ -232,6 +238,58 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.isNotEmpty(tool.description ?? "", tool.name);
         }
       })
+    );
+
+    it.effect(
+      "tell a connection that reads only what a channel takes, and its lookups",
+      () =>
+        Effect.gen(function* capabilities() {
+          const fixture = yield* ToolsFixture;
+
+          const reader = yield* connected(fixture.reading);
+
+          const described = yield* reader.call(
+            "get_channel_capabilities",
+            ChannelCapabilitiesSchema,
+            { channelId: fixture.youtubeId }
+          );
+
+          assert.strictEqual(described.channelId, fixture.youtubeId);
+          assert.deepStrictEqual(described.account, { _tag: "unrestricted" });
+          assert.deepStrictEqual(
+            described.capabilities.options.fields.flatMap((field) =>
+              field.required ? [field.name] : []
+            ),
+            ["madeForKids", "title"]
+          );
+          assert.deepStrictEqual(
+            described.capabilities.lookups.map(({ name }) => name),
+            ["youtubeVideoCategories", "youtubePlaylists"]
+          );
+
+          // Refused before the platform is asked anything.
+          assert.include(
+            yield* reader.refused("run_channel_lookup", {
+              channelId: fixture.youtubeId,
+              name: "boards",
+            }),
+            "has no lookup named boards"
+          );
+          assert.include(
+            yield* reader.refused("run_channel_lookup", {
+              channelId: fixture.youtubeId,
+              input: { regionCode: "FR" },
+              name: "youtubePlaylists",
+            }),
+            "does not take this input"
+          );
+          assert.include(
+            yield* reader.refused("get_channel_capabilities", {
+              channelId: "not-a-channel",
+            }),
+            "This is not one of the workspace's channels"
+          );
+        })
     );
 
     it.effect(
