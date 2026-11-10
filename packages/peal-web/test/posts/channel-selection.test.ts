@@ -9,6 +9,7 @@ const channel = (id: string): Channel => ({
   displayName: null,
   handle: `@peal_${id}`,
   id,
+  label: null,
   platform: "mastodon",
   status: { _tag: "active" },
   tokenExpiresAt: null,

@@ -60,7 +60,7 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   appNotAudited:
     "the platform takes only private posts from this server's app until it audits it: make the account private and the post visible to its owner only",
   channelDisabled:
-    "the channel was turned off: disconnect it and connect the account again, then schedule the post anew",
+    "the channel was turned off: turn it back on (peal channels enable <channel-id>), then schedule the post anew",
   channelDisconnected: "the channel was disconnected before it went out",
   contentRejected: "the platform refused its text or its format",
   mediaRejected: "the platform refused one of its images or videos",
@@ -642,6 +642,84 @@ const cancel = Command.make(
   )
 );
 
+// How many of a post's parts its copy was made without, in words.
+const leftOut = (
+  missing: number,
+  one: string,
+  several: string
+): readonly string[] => {
+  if (missing <= 0) {
+    return [];
+  }
+
+  return [missing === 1 ? `1 ${one}` : `${String(missing)} ${several}`];
+};
+
+const duplicate = Command.make(
+  "duplicate",
+  { json: jsonFlag, postId: postArgument, workspace: workspaceFlag },
+  Effect.fn("posts.duplicate")(function* duplicate({
+    json,
+    postId,
+    workspace: choice,
+  }) {
+    const { client, url, workspace } = yield* inWorkspace(choice);
+    const params = { postId, workspaceId: workspace.id };
+
+    // Read first, only to say what the copy was made without.
+    const original = json
+      ? Option.none()
+      : yield* client.posts.get({ params }).pipe(Effect.option);
+
+    const copy = yield* client.posts
+      .duplicate({ params })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(PostSchema, copy);
+
+      return;
+    }
+
+    const names = yield* channelNames(client, workspace.id);
+
+    yield* Console.log(
+      `Duplicated post ${postId} as draft ${copy.id} in ${workspace.name}, for ${channelsOf(copy, names)}: its text, media, channels with their options, and tags. It has no time: peal posts schedule ${copy.id} gives it one.`
+    );
+
+    const missing = Option.match(original, {
+      onNone: () => [],
+      onSome: (post) => [
+        ...leftOut(
+          post.targets.length - copy.targets.length,
+          "channel no longer connected",
+          "channels no longer connected"
+        ),
+        ...leftOut(
+          post.content.media.length - copy.content.media.length,
+          "media deleted since",
+          "media deleted since"
+        ),
+        ...leftOut(
+          post.tagIds.length - copy.tagIds.length,
+          "tag deleted since",
+          "tags deleted since"
+        ),
+      ],
+    });
+
+    if (missing.length > 0) {
+      yield* Console.log(
+        `Left out, as the workspace no longer has them: ${missing.join(", ")}.`
+      );
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "Make a new draft that says what a post says, whatever the post's status: its text, its media, its channels with their text and options, and its tags. What the workspace no longer has (a channel disconnected, media or a tag deleted) is left out, and said. The copy has no time, and the post itself is not changed."
+  )
+);
+
 const tag = Command.make(
   "tag",
   {
@@ -704,6 +782,7 @@ export const posts = Command.make("posts").pipe(
     repost,
     confirm,
     tag,
+    duplicate,
     importPosts,
   ])
 );

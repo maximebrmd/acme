@@ -86,6 +86,16 @@
   each in prose after the rest (`warningLines`); `--json` prints the answer
   as it came. The MCP toolkit `saved-tools.ts` has the same, by id, and
   its posts name sets by id or name.
+- `peal channels rename`, `disable` and `enable`
+  (`commands/channel-settings.ts`) name a channel and turn it off or back
+  on, and `peal posts duplicate` makes a draft of a post, reading it first
+  only to say what the copy left out. `peal channels list` reads
+  `channels.list`, and `channels.search` once a filter or a page is asked
+  (`--platform`, `--status`, `--search`, `--limit`, `--cursor`): `--json`
+  then prints the page, and the bare list keeps the array it always printed.
+  A channel is shown with its label first and its handle always
+  (`channelName`). The MCP tools are `rename_channel`, `disable_channel`,
+  `enable_channel` and `duplicate_post`.
 - The command line has `peal links` (create, list, show, revoke) and
   `peal partner` (show, keys, workspaces), which read; the MCP toolkit
   `connect-tools.ts` has the same, `create_connect_link` and

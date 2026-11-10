@@ -16,6 +16,7 @@ import {
   ChannelsHandlers,
 } from "#channels/api/channels.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { ChannelSettings } from "#channels/application/channel-settings.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
@@ -41,6 +42,7 @@ import { permissionsFor } from "#workspace/domain/roles.ts";
 
 const UseCasesTest = Layer.mergeAll(
   ListChannels.layer,
+  ChannelSettings.layer,
   DisconnectChannel.layer
 ).pipe(Layer.provideMerge(MastodonConnectTest));
 
@@ -108,6 +110,7 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
           displayName: "Peal Example",
           handle: "@peal_example",
           id: expiring.id,
+          label: null,
           platform: "mastodon",
           status: { _tag: "active" },
           tokenExpiresAt: DateTime.makeUnsafe("2026-08-14T07:00:00.123Z"),
@@ -118,6 +121,7 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
           displayName: "Peal Example",
           handle: "@peal_example",
           id: renewing.id,
+          label: null,
           platform: "mastodon",
           status: { _tag: "active" },
           tokenExpiresAt: null,
@@ -521,6 +525,134 @@ layer(HttpServer.layerServices)("the OAuth client documents", (it) => {
         metadata
       );
       assert.deepStrictEqual(yield* client.channelOAuth.blueskyJwks(), jwks);
+    })
+  );
+});
+
+layer(UseCasesTest)("a channel's name and switch", (it) => {
+  it.effect("names a channel, turns it off and back on", () =>
+    Effect.gen(function* manages() {
+      const workspaceId = yield* freshWorkspace;
+      const channel = yield* connected(workspaceId);
+      const client = yield* clientAs(owner(workspaceId));
+      const params = { channelId: channel.id, workspaceId };
+
+      const named = yield* client.channels.update({
+        params,
+        payload: { label: "Client A" },
+      });
+
+      assert.strictEqual(named.label, "Client A");
+      // The platform's own handle and name stay.
+      assert.strictEqual(named.handle, "@peal_example");
+      assert.strictEqual(named.displayName, "Peal Example");
+
+      const off = yield* client.channels.disable({ params });
+
+      assert.deepStrictEqual(off.status, {
+        _tag: "disabled",
+        refreshNeeded: false,
+      });
+      assert.strictEqual(off.label, "Client A");
+
+      const on = yield* client.channels.enable({ params });
+
+      assert.deepStrictEqual(on.status, { _tag: "active" });
+
+      const unnamed = yield* client.channels.update({
+        params,
+        payload: { label: null },
+      });
+
+      assert.isNull(unnamed.label);
+    })
+  );
+
+  it.effect("is for members who manage channels", () =>
+    Effect.gen(function* refuses() {
+      const workspaceId = yield* freshWorkspace;
+      const channel = yield* connected(workspaceId);
+      const client = yield* clientAs(viewer(workspaceId));
+      const params = { channelId: channel.id, workspaceId };
+
+      const renamed = yield* client.channels
+        .update({ params, payload: { label: "Mine" } })
+        .pipe(Effect.flip);
+
+      assert.instanceOf(renamed, Forbidden);
+
+      const off = yield* client.channels.disable({ params }).pipe(Effect.flip);
+
+      assert.instanceOf(off, Forbidden);
+
+      const missing = yield* (yield* clientAs(owner(workspaceId))).channels
+        .enable({ params: { channelId: "not-an-id", workspaceId } })
+        .pipe(Effect.flip);
+
+      assert.instanceOf(missing, ChannelNotFound);
+    })
+  );
+});
+
+layer(UseCasesTest)("the channel search", (it) => {
+  it.effect("pages, filters and counts by status", () =>
+    Effect.gen(function* searches() {
+      const workspaceId = yield* freshWorkspace;
+      const first = yield* connected(workspaceId);
+      const second = yield* connected(workspaceId);
+      const third = yield* connected(workspaceId);
+      const client = yield* clientAs(owner(workspaceId));
+      const params = { workspaceId };
+
+      yield* client.channels.update({
+        params: { ...params, channelId: second.id },
+        payload: { label: "Client A" },
+      });
+      yield* client.channels.disable({
+        params: { ...params, channelId: third.id },
+      });
+
+      const one = yield* client.channels.search({
+        params,
+        query: { limit: 2 },
+      });
+
+      assert.deepStrictEqual(
+        one.items.map(({ id }) => id),
+        [first.id, second.id]
+      );
+      assert.deepStrictEqual(one.counts, {
+        active: 2,
+        disabled: 1,
+        refreshNeeded: 0,
+      });
+
+      const two = yield* client.channels.search({
+        params,
+        query: { cursor: one.nextCursor ?? "", limit: 2 },
+      });
+
+      assert.deepStrictEqual(
+        two.items.map(({ id }) => id),
+        [third.id]
+      );
+      assert.isNull(two.nextCursor);
+
+      const named = yield* client.channels.search({
+        params,
+        query: { q: "client a", status: "active" },
+      });
+
+      assert.deepStrictEqual(
+        named.items.map(({ id, label }) => [id, label]),
+        [[second.id, "Client A"]]
+      );
+
+      const badCursor = yield* client.channels
+        .search({ params, query: { cursor: "not-a-cursor" } })
+        .pipe(Effect.flip);
+
+      assert.strictEqual(badCursor._tag, "BadRequest");
     })
   );
 });

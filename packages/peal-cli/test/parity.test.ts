@@ -60,14 +60,18 @@ const coverage = {
   "channels.chooseAccounts": exempt(connecting),
   "channels.completeConnect": exempt(connecting),
   "channels.connect": exempt(connecting),
+  "channels.disable": by("channels disable"),
   "channels.disconnect": exempt(
     "Disconnecting deletes a channel and fails its scheduled posts: a person does it, in the web app."
   ),
+  "channels.enable": by("channels enable"),
   "channels.list": by("channels list"),
   "channels.platforms": exempt(
     "Only the web app's connect forms read which platforms the server connects."
   ),
   "channels.reconnect": exempt(connecting),
+  "channels.search": by("channels list"),
+  "channels.update": by("channels rename"),
   "connectLinks.create": by("links create"),
   "connectLinks.get": by("links show"),
   "connectLinks.list": by("links list"),
@@ -121,6 +125,7 @@ const coverage = {
   "posts.create": by("drafts save"),
   "posts.discard": by("drafts discard"),
   "posts.drafts": by("drafts list"),
+  "posts.duplicate": by("posts duplicate"),
   "posts.get": by("posts show"),
   "posts.import": by("posts import"),
   "posts.list": exempt(

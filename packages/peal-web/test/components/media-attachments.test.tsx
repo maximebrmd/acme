@@ -65,6 +65,7 @@ const channel = (platform: Platform): Channel => ({
   displayName: null,
   handle: `@peal_${platform}`,
   id: `channel-${platform}`,
+  label: null,
   platform,
   status: { _tag: "active" },
   tokenExpiresAt: null,

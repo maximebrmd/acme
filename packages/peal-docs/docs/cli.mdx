@@ -166,13 +166,20 @@ Each command does what your role allows there, as the web app does: a viewer rea
 
 ```sh
 peal channels list
+peal channels list --platform youtube --status disabled --search "client a"
+peal channels rename <channel-id> "Client A"
+peal channels rename <channel-id> --clear
+peal channels disable <channel-id>
+peal channels enable <channel-id>
 peal channels capabilities [<channel-id>] [--json]
 peal channels lookup <channel-id> [<lookup>] [--region <country>] [--language <tag>] [--vanity-name <name>] [--limit <n>] [--cursor <cursor>] [--json]
 peal channels tiktok <channel-id>
 peal channels defaults show <channel-id>
 ```
 
-`peal channels list` lists the workspace's channels with their ids, which drafts and posts take, and whether each one posts or must be reconnected. Connecting a channel is for the web app.
+`peal channels list` lists the workspace's channels with their ids, which drafts and posts take, the [name the workspace gave each](/channels#name) before its handle, and whether each one posts, is turned off or must be reconnected; a closing line counts them by status. `--platform`, `--status` (`active`, `disabled` or `refreshNeeded`) and `--search`, text the channel's handle or one of its names holds, narrow the list, every filter holding, a page at a time (`--limit`, then the `--cursor` the page before printed); the counts then tell of every status, whatever `--status` asked for. With one of those flags, `--json` prints the page (`items`, `nextCursor`, `counts`); without any, it prints the list of channels, as it always did. Connecting a channel is for the web app.
+
+`peal channels rename` gives a channel the name your workspace calls it by, 60 characters at most, shown in Peal beside the handle its platform gives the account and sent to no platform; without a name, or with `--clear`, it takes that name back. `peal channels disable` [turns a channel off](/channels#turn-off): nothing goes out on it, and a post that reaches its time meanwhile fails on that channel, goes out on its others, and is not sent later. The channel keeps its connection, its history and its place in your plan. `peal channels enable` turns it back on: it posts again, or says it must be reconnected when its platform stopped accepting Peal's access meanwhile. All three need the right to connect channels.
 
 `peal channels capabilities` shows [what a channel takes](/api-overview#capabilities): how its text is counted and limited, the media it takes with each file type's limits, its platform's options (which `peal drafts save --options` sets) and what the account itself restricts, read from the platform at that moment. Without a channel, it sums up every platform on a line each.
 
@@ -251,6 +258,7 @@ peal posts repost <post-id> <target-id>
 peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
 peal posts confirm <post-id> <target-id> not-published
 peal posts tag <post-id> --tag "Spring campaign" --tag Evergreen
+peal posts duplicate <post-id>
 ```
 
 - `peal posts list` lists the workspace's posts, whatever their state, a page at a time, with how each went ([List posts](/posting-api#search)). `--tag` keeps the posts filed under a [tag](#tags).
@@ -265,6 +273,7 @@ peal posts tag <post-id> --tag "Spring campaign" --tag Evergreen
 - `peal posts cancel` cancels a draft or a scheduled post for good: it goes out on no channel. A post already publishing finishes with what its channels did, and those not yet sent are cancelled. To change a scheduled post and keep it, unschedule it instead.
 - `peal posts repost` sends the post again, now, on one channel where it failed or is unconfirmed. When it is unconfirmed, check the platform first: it may be live already.
 - `peal posts confirm` records what you found on the platform for a post Peal could not confirm: `published`, with its address if you have it, or `not-published`, which fails it there so `peal posts repost` can send it again. See [Scheduling](/scheduling) for how posts end.
+- `peal posts duplicate` makes a new draft that says what a post says ([Duplicate a post](/organise#duplicate)), whatever the post's status: its text, its media, its channels with their text and options, and its tags. What the workspace no longer has (a channel disconnected, media or a tag deleted) is left out, and `peal` says so. The draft has no time, and the post itself does not change.
 
 ## Tags [#tags]
 

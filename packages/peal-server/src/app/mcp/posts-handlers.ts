@@ -410,6 +410,21 @@ export const PostToolsLive = PostTools.toLayer(
 
           return { discarded: postId };
         }).pipe(Effect.catchTags(malformedPost)),
+      duplicate_post: ({ postId }) =>
+        Effect.gen(function* duplicate() {
+          const copy = yield* drafts
+            .duplicate(yield* actor, yield* postIdFrom(postId))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("duplicate posts"),
+                PostContentRejected: contentRejected,
+                PostNotFound: notFound,
+              })
+            );
+
+          return postView(copy);
+        }).pipe(Effect.catchTags(malformedPost)),
       get_post: ({ postId }) =>
         Effect.gen(function* get() {
           const found = yield* queries
@@ -432,7 +447,7 @@ export const PostToolsLive = PostTools.toLayer(
             BadRequest: ({ code }) =>
               code === ownRefusalCodes.channelDisabled
                 ? refuse(
-                    "This channel is turned off: the user disconnects it and connects the account again to post to it."
+                    "This channel is turned off: enable_channel turns it back on, to post to it."
                   )
                 : notTikTok(),
             DatabaseError: Effect.die,

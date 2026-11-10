@@ -16,6 +16,8 @@ An AI agent can post through Peal the way a member does: it reads the workspace'
 | List the channels a post can go to, the media it can show, drafts and posts             | `list_channels`, `list_media`, `list_drafts`, `list_posts`                                    |
 | Bring an image or a video in from a public address                                      | `import_media`                                                                                |
 | Write a draft, change it or discard it                                                  | `create_draft`, `update_draft`, `discard_draft`                                               |
+| Write a new draft from a post the workspace has                                         | `duplicate_post`                                                                              |
+| Give a channel the workspace's own name, turn it off or back on                         | `rename_channel`, `disable_channel`, `enable_channel`                                         |
 | File posts under the workspace's tags, and list a tag's posts                           | `list_tags`, `create_tag`, `tag_post`, `list_posts`                                           |
 | Post to a saved set of channels, with a saved signature and a channel's default options | `list_channel_sets`, `list_signatures`, `get_channel_defaults`, `create_draft`, `create_post` |
 | Schedule a draft, publish a post now, or create and send one in a single call           | `schedule_post`, `publish_post`, `create_post`                                                |
@@ -217,8 +219,11 @@ Have the agent run `peal doctor --json` first: it checks the server, the credent
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | `whoami`                                       | `peal whoami`                                                                                                 |
 | `list_channels`                                | `peal channels list`                                                                                          |
+| `rename_channel`                               | `peal channels rename <channel-id> "…"`                                                                       |
+| `disable_channel`, `enable_channel`            | `peal channels disable <channel-id>`, `peal channels enable <channel-id>`                                     |
 | `list_media`, `import_media`                   | `peal media list`, `peal media import <url> --alt "…"`; `peal media upload <file>` sends a file from the disk |
 | `list_drafts`, `create_draft`                  | `peal drafts list`, `peal drafts save --text "…" --channel <channel-id>`                                      |
+| `duplicate_post`                               | `peal posts duplicate <post-id>`                                                                              |
 | `create_post`                                  | `peal post "…" --channel <channel-id> --at <instant>`, or `--now`                                             |
 | `validate_post`                                | `peal post "…" --channel <channel-id> --at <instant> --dry-run`                                               |
 | `schedule_post`                                | `peal posts schedule <post-id> --at <instant>`                                                                |
@@ -259,10 +264,13 @@ Your own agent or script can call the endpoints the tools are built on, under `/
 
 | Tool                                           | Endpoint                                                                                   |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `list_channels`                                | `GET …/channels`                                                                           |
+| `list_channels`                                | `GET …/channels`, `GET …/channels/search`                                                  |
+| `rename_channel`                               | `PATCH …/channels/{channelId}`                                                             |
+| `disable_channel`, `enable_channel`            | `POST …/channels/{channelId}/disable`, `…/enable`                                          |
 | `list_media`, `import_media`                   | `GET …/media`, `POST …/media/import`                                                       |
 | `list_drafts`, `list_posts`                    | `GET …/posts/drafts`, `GET …/posts/search`                                                 |
 | `create_draft`, `update_draft`                 | `POST …/posts`, `PUT …/posts/{postId}`                                                     |
+| `duplicate_post`                               | `POST …/posts/{postId}/duplicate`                                                          |
 | `create_post`                                  | `POST …/posts/send`                                                                        |
 | `create_posts`                                 | `POST …/posts/bulk`                                                                        |
 | `validate_post`                                | `POST …/posts/validate`                                                                    |

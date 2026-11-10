@@ -210,7 +210,7 @@ const reasonOf =
       ChannelCannotPost: ({ reason }) =>
         refused(
           reason === "disabled"
-            ? "The channel is turned off: disconnect it and connect the account again, in the web app, to post to it."
+            ? "The channel is turned off: turn it back on with peal channels enable, or in the web app, to post to it."
             : "The channel must be reconnected, in the web app, before it can post."
         ),
       ChannelNotFound: () =>

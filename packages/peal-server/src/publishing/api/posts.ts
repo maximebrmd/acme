@@ -309,6 +309,22 @@ export const PostsHandlers = HttpApiBuilder.group(
             nextCursor: Option.getOrNull(page.next),
           };
         }),
+      duplicate: ({ params }) =>
+        Effect.gen(function* duplicatePost() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+
+          const copy = yield* drafts.duplicate(actor, postId).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+              PostContentRejected: contentInvalid,
+              PostNotFound: notFound,
+            })
+          );
+
+          return postView(copy);
+        }),
       get: ({ params }) =>
         Effect.gen(function* get() {
           const actor = actorOf(yield* CurrentMember);

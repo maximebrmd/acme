@@ -62,6 +62,18 @@
   schedule|publish|reschedule|cancel`, `peal post`), for a sign-in that
   holds `workspace:publish`: `peal post` takes `--at` or `--now`, never a
   default.
+- `rename_channel`, `disable_channel` and `enable_channel` sit with
+  `list_channels` in `BasicTools` (the `account` area), through
+  `ChannelSettings`: turning a channel off deletes nothing, so it is not
+  destructive, and its description says the posts that reach their time on
+  the channel fail there until it is back on. `list_channels` takes
+  `platform`, `status` and `search`, reads every page of
+  `ListChannels.search` once one is given, and answers `counts` then;
+  without any, its answer is the list it always was. `duplicate_post`
+  (`PostTools`) makes a draft of a post, a new one each call. Wherever a
+  tool says a channel is turned off, it names `enable_channel`, never
+  disconnecting. The CLI's are `peal channels rename|disable|enable` and
+  `peal posts duplicate`.
 - `saved-tools.ts` keeps what a workspace saves to write its posts with:
   signatures, channel sets and a channel's default options (`list_`,
   `create_`, `update_`, `delete_signature` and `_channel_set`; `get_`,

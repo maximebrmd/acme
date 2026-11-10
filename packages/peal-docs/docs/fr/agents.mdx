@@ -16,6 +16,8 @@ Un agent IA peut publier par Peal comme le fait un membre : il lit les canaux de
 | Lister les canaux où une publication peut partir, les médias qu’elle peut montrer, les brouillons et les publications | `list_channels`, `list_media`, `list_drafts`, `list_posts`                                    |
 | Faire entrer une image ou une vidéo depuis une adresse publique                                                       | `import_media`                                                                                |
 | Rédiger un brouillon, le modifier ou le supprimer                                                                     | `create_draft`, `update_draft`, `discard_draft`                                               |
+| Rédiger un nouveau brouillon à partir d’une publication de l’espace de travail                                        | `duplicate_post`                                                                              |
+| Donner à un canal un nom propre à l’espace de travail, le désactiver ou le réactiver                                  | `rename_channel`, `disable_channel`, `enable_channel`                                         |
 | Ranger des publications sous les étiquettes de l’espace de travail, et lister celles d’une étiquette                  | `list_tags`, `create_tag`, `tag_post`, `list_posts`                                           |
 | Publier sur un groupe de canaux enregistré, avec une signature enregistrée et les options par défaut d’un canal       | `list_channel_sets`, `list_signatures`, `get_channel_defaults`, `create_draft`, `create_post` |
 | Programmer un brouillon, publier maintenant, ou créer et envoyer une publication en un seul appel                     | `schedule_post`, `publish_post`, `create_post`                                                |
@@ -217,8 +219,11 @@ Faites d’abord lancer `peal doctor --json` à l’agent : il vérifie le serve
 | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `whoami`                                       | `peal whoami`                                                                                                          |
 | `list_channels`                                | `peal channels list`                                                                                                   |
+| `rename_channel`                               | `peal channels rename <channel-id> "…"`                                                                                |
+| `disable_channel`, `enable_channel`            | `peal channels disable <channel-id>`, `peal channels enable <channel-id>`                                              |
 | `list_media`, `import_media`                   | `peal media list`, `peal media import <url> --alt "…"` ; `peal media upload <file>` envoie un fichier depuis le disque |
 | `list_drafts`, `create_draft`                  | `peal drafts list`, `peal drafts save --text "…" --channel <channel-id>`                                               |
+| `duplicate_post`                               | `peal posts duplicate <post-id>`                                                                                       |
 | `create_post`                                  | `peal post "…" --channel <channel-id> --at <instant>`, ou `--now`                                                      |
 | `validate_post`                                | `peal post "…" --channel <channel-id> --at <instant> --dry-run`                                                        |
 | `schedule_post`                                | `peal posts schedule <post-id> --at <instant>`                                                                         |
@@ -259,10 +264,13 @@ Votre propre agent ou script peut appeler les points d’accès sur lesquels rep
 
 | Outil                                          | Point d’accès                                                                              |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `list_channels`                                | `GET …/channels`                                                                           |
+| `list_channels`                                | `GET …/channels`, `GET …/channels/search`                                                  |
+| `rename_channel`                               | `PATCH …/channels/{channelId}`                                                             |
+| `disable_channel`, `enable_channel`            | `POST …/channels/{channelId}/disable`, `…/enable`                                          |
 | `list_media`, `import_media`                   | `GET …/media`, `POST …/media/import`                                                       |
 | `list_drafts`, `list_posts`                    | `GET …/posts/drafts`, `GET …/posts/search`                                                 |
 | `create_draft`, `update_draft`                 | `POST …/posts`, `PUT …/posts/{postId}`                                                     |
+| `duplicate_post`                               | `POST …/posts/{postId}/duplicate`                                                          |
 | `create_post`                                  | `POST …/posts/send`                                                                        |
 | `create_posts`                                 | `POST …/posts/bulk`                                                                        |
 | `validate_post`                                | `POST …/posts/validate`                                                                    |

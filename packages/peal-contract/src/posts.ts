@@ -919,6 +919,17 @@ export class PostsApi extends HttpApiGroup.make("posts")
         summary: "Set a post's tags",
       })
     ),
+    HttpApiEndpoint.post("duplicate", "/:postId/duplicate", {
+      error: [Forbidden, PostNotFound, PostContentInvalid],
+      params: post,
+      success: PostSchema.pipe(HttpApiSchema.status(201)),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Makes a new draft that says what the post says, whatever the post's status: its text, its media, its channels with their text and options, and its tags. What the workspace no longer has is left out rather than refused: a channel disconnected since, with the text the post had there, media deleted since, a tag deleted since. The copy has no time, and its author is whoever asked; the post itself is not changed. Needs post:read and post:create, and channel:read.",
+        summary: "Duplicate a post",
+      })
+    ),
     HttpApiEndpoint.post("schedule", "/:postId/schedule", {
       error: scheduling,
       params: post,

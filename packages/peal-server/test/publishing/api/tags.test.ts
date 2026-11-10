@@ -429,6 +429,63 @@ describe("a post's tags", () => {
   );
 
   it.effect(
+    "go with a post that is duplicated, as a new draft",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* duplicates() {
+          const { editor, mastodon, params, viewer } = yield* studio;
+
+          const launch = yield* editor.tags.create({
+            params,
+            payload: { colour: "blue", name: "Launch" },
+          });
+
+          const sent = yield* editor.posts.send({
+            headers: {},
+            params,
+            payload: {
+              channelIds: [mastodon],
+              content: text("Sent"),
+              tagIds: [launch.id],
+              when: {
+                _tag: "at",
+                at: utc("2026-06-16T08:00:00Z"),
+                timeZone: "Europe/Paris",
+              },
+            },
+            query: {},
+          });
+
+          const copy = yield* editor.posts.duplicate({
+            params: { ...params, postId: sent.id },
+          });
+
+          assert.notStrictEqual(copy.id, sent.id);
+          assert.strictEqual(copy.status, "draft");
+          assert.isNull(copy.schedule);
+          assert.deepStrictEqual(copy.content, sent.content);
+          assert.deepStrictEqual(copy.tagIds, [launch.id]);
+          assert.deepStrictEqual(
+            copy.targets.map(({ channelId }) => channelId),
+            [mastodon]
+          );
+
+          const byViewer = yield* viewer.posts
+            .duplicate({ params: { ...params, postId: sent.id } })
+            .pipe(Effect.flip);
+
+          assert.instanceOf(byViewer, Forbidden);
+
+          yield* editor.posts.cancel({
+            params: { ...params, postId: sent.id },
+          });
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "find the posts filed under one",
     () =>
       onPostsServerAt(

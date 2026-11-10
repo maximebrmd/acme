@@ -219,6 +219,7 @@ const channels: readonly Channel[] = [
     displayName: "Studio",
     handle: "@studio@social.example.test",
     id: mastodonId,
+    label: null,
     platform: "mastodon",
     status: { _tag: "active" },
     tokenExpiresAt: null,
@@ -229,6 +230,7 @@ const channels: readonly Channel[] = [
     displayName: null,
     handle: "studio.example.test",
     id: blueskyId,
+    label: null,
     platform: "bluesky",
     status: { _tag: "refreshNeeded" },
     tokenExpiresAt: null,
@@ -239,6 +241,7 @@ const channels: readonly Channel[] = [
     displayName: "Studio",
     handle: "@studio_example",
     id: tiktokId,
+    label: null,
     platform: "tiktok",
     status: { _tag: "active" },
     tokenExpiresAt: null,
@@ -249,6 +252,7 @@ const channels: readonly Channel[] = [
     displayName: "Studio videos",
     handle: "Studio videos",
     id: youtubeId,
+    label: null,
     platform: "youtube",
     status: { _tag: "active" },
     tokenExpiresAt: null,
@@ -259,6 +263,7 @@ const channels: readonly Channel[] = [
     displayName: "Studio",
     handle: "@studio_example",
     id: instagramId,
+    label: null,
     platform: "instagram",
     status: { _tag: "active" },
     tokenExpiresAt: null,
@@ -269,6 +274,7 @@ const channels: readonly Channel[] = [
     displayName: "Studio",
     handle: "@studioexample",
     id: pinterestId,
+    label: null,
     platform: "pinterest",
     status: { _tag: "active" },
     tokenExpiresAt: null,
@@ -932,6 +938,8 @@ const customers: readonly CustomerWorkspace[] = [
 export interface StudioState {
   readonly approvals: readonly ApprovalRequest[];
   readonly changes: readonly string[];
+  /** The studio's channels as they are now: named, turned off or on. */
+  readonly channels: readonly Channel[];
   /** The workspace's channel sets, oldest first. */
   readonly channelSets: readonly StudioSet[];
   readonly comments: readonly ReviewComment[];
@@ -1027,6 +1035,7 @@ export const makeStudio = (
       approvals: [approval],
       changes: [],
       channelSets,
+      channels,
       comments: [comment],
       connectLinks: [usedLink],
       defaults: {},
@@ -1075,6 +1084,50 @@ const channelIn = (params: {
     }
   );
 
+// The workspace's channels as they are now, oldest first.
+const channelsNow = (studio: Studio, workspaceId: string) =>
+  Ref.get(studio.state).pipe(
+    Effect.map(({ channels: all }) => (workspaceId === studioId ? all : []))
+  );
+
+// How many of these channels are in each status.
+const countsOf = (found: readonly Channel[]) => ({
+  active: found.filter(({ status }) => status._tag === "active").length,
+  disabled: found.filter(({ status }) => status._tag === "disabled").length,
+  refreshNeeded: found.filter(({ status }) => status._tag === "refreshNeeded")
+    .length,
+});
+
+// Whether a channel's handle or one of its names holds the text, whatever
+// its case.
+const holds = (channel: Channel, text: string): boolean =>
+  [channel.handle, channel.displayName ?? "", channel.label ?? ""].some(
+    (written) => written.toLowerCase().includes(text.toLowerCase())
+  );
+
+// A channel turned off keeps whether it must be reconnected, and has it
+// again once turned back on.
+const turnedOff = (channel: Channel): Channel =>
+  channel.status._tag === "disabled"
+    ? channel
+    : {
+        ...channel,
+        status: {
+          _tag: "disabled",
+          refreshNeeded: channel.status._tag === "refreshNeeded",
+        },
+      };
+
+const turnedOn = (channel: Channel): Channel =>
+  channel.status._tag === "disabled"
+    ? {
+        ...channel,
+        status: {
+          _tag: channel.status.refreshNeeded ? "refreshNeeded" : "active",
+        },
+      }
+    : channel;
+
 // The member a request acts as, if they may do this. A key is told what
 // it lacks, in the server's words.
 const allowed = (permission: Permission) =>
@@ -1091,6 +1144,43 @@ const allowed = (permission: Permission) =>
       );
     })
   );
+
+// Names a channel, or turns it off or on, for a member who may connect
+// channels; one already as asked is answered as it is, and nothing is
+// recorded.
+const changingChannel = (
+  studio: Studio,
+  params: { readonly channelId: string; readonly workspaceId: string },
+  change: (channel: Channel) => Channel,
+  what: string
+) =>
+  Effect.gen(function* changing() {
+    yield* allowed("channel:connect");
+
+    const found = (yield* channelsNow(studio, params.workspaceId)).find(
+      ({ id }) => id === params.channelId
+    );
+
+    if (found === undefined) {
+      return yield* new ChannelNotFound();
+    }
+
+    const next = change(found);
+
+    if (next === found) {
+      return found;
+    }
+
+    yield* Ref.update(studio.state, (current) => ({
+      ...current,
+      channels: current.channels.map((channel) =>
+        channel.id === next.id ? next : channel
+      ),
+    }));
+    yield* record(studio, `channel:${what}:${next.id}`);
+
+    return next;
+  });
 
 const inStudio = (workspaceId: string) =>
   workspaceId === studioId ? Effect.void : Effect.fail(new PostNotFound());
@@ -2411,13 +2501,70 @@ export const studioGroupsLive = (studio: Studio) =>
         chooseAccounts: () => refusing,
         completeConnect: () => refusing,
         connect: () => refusing,
+        disable: ({ params }) =>
+          changingChannel(studio, params, turnedOff, "disable"),
         disconnect: () => refusing,
+        enable: ({ params }) =>
+          changingChannel(studio, params, turnedOn, "enable"),
         list: ({ params }) =>
           allowed("channel:read").pipe(
-            Effect.as(params.workspaceId === studioId ? channels : [])
+            Effect.andThen(channelsNow(studio, params.workspaceId))
           ),
         platforms: () => refusing,
         reconnect: () => refusing,
+        search: ({ params, query }) =>
+          Effect.gen(function* search() {
+            yield* allowed("channel:read");
+
+            // The platform and the text narrow the counts; the status
+            // narrows the list alone.
+            const matching = (yield* channelsNow(
+              studio,
+              params.workspaceId
+            )).filter(
+              (channel) =>
+                (query.platform === undefined ||
+                  channel.platform === query.platform) &&
+                (query.q === undefined || holds(channel, query.q))
+            );
+
+            const listed = matching.filter(
+              ({ status }) =>
+                query.status === undefined || status._tag === query.status
+            );
+
+            // A cursor is the id of the last channel of the page before.
+            const start =
+              query.cursor === undefined
+                ? 0
+                : listed.findIndex(({ id }) => id === query.cursor) + 1;
+
+            if (query.cursor !== undefined && start === 0) {
+              return yield* new HttpApiError.BadRequest();
+            }
+
+            const items = listed.slice(start, start + (query.limit ?? 50));
+            const last = items.at(-1);
+
+            return {
+              counts: countsOf(matching),
+              items,
+              nextCursor:
+                last !== undefined && start + items.length < listed.length
+                  ? last.id
+                  : null,
+            };
+          }),
+        update: ({ params, payload }) =>
+          changingChannel(
+            studio,
+            params,
+            (channel) =>
+              channel.label === payload.label
+                ? channel
+                : { ...channel, label: payload.label },
+            "rename"
+          ),
       })
     ),
     HttpApiBuilder.group(Api, "posts", (handlers) =>
@@ -2603,6 +2750,55 @@ export const studioGroupsLive = (studio: Studio) =>
                   ? last.id
                   : null,
             };
+          }),
+        duplicate: ({ params }) =>
+          Effect.gen(function* duplicate() {
+            yield* allowed("post:read");
+            yield* allowed("post:create");
+            yield* allowed("channel:read");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const current = yield* Ref.get(studio.state);
+            const id = `0190f3a0-0000-7000-8000-${String(current.posts.length + 1).padStart(12, "0")}`;
+
+            // What the workspace no longer has is left out.
+            const kept = post.targets.filter(({ channelId }) =>
+              current.channels.some((channel) => channel.id === channelId)
+            );
+
+            yield* record(studio, `duplicate:${post.id}:${id}`);
+
+            return yield* savePost(studio, {
+              authorId: userId,
+              content: {
+                media: post.content.media.filter(({ mediaId }) =>
+                  current.media.some((media) => media.id === mediaId)
+                ),
+                overrides: post.content.overrides.filter(({ channelId }) =>
+                  kept.some((target) => target.channelId === channelId)
+                ),
+                text: post.content.text,
+              },
+              createdVia: null,
+              id,
+              outcome: null,
+              schedule: null,
+              scheduledBy: null,
+              scheduledVia: null,
+              status: "draft",
+              tagIds: post.tagIds.filter((tagId) =>
+                current.tags.some((tag) => tag.id === tagId)
+              ),
+              targets: kept.map((target, index) => ({
+                ...pendingOn(`${id}-${String(index)}`, target.channelId),
+                options: target.options,
+              })),
+            });
           }),
         get: ({ params }) =>
           allowed("post:read").pipe(

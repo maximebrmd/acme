@@ -166,13 +166,20 @@ Chaque commande fait ce que votre rôle y permet, comme l’application web : un
 
 ```sh
 peal channels list
+peal channels list --platform youtube --status disabled --search "client a"
+peal channels rename <channel-id> "Client A"
+peal channels rename <channel-id> --clear
+peal channels disable <channel-id>
+peal channels enable <channel-id>
 peal channels capabilities [<channel-id>] [--json]
 peal channels lookup <channel-id> [<lookup>] [--region <country>] [--language <tag>] [--vanity-name <name>] [--limit <n>] [--cursor <cursor>] [--json]
 peal channels tiktok <channel-id>
 peal channels defaults show <channel-id>
 ```
 
-`peal channels list` liste les canaux de l’espace de travail avec leurs identifiants, que les brouillons et les publications prennent, et si chacun publie ou est à reconnecter. Connecter un canal se fait dans l’application web.
+`peal channels list` liste les canaux de l’espace de travail avec leurs identifiants, que les brouillons et les publications prennent, le [nom que l’espace de travail a donné à chacun](/channels#name) devant son identifiant sur la plateforme, et si chacun publie, est désactivé ou est à reconnecter ; une dernière ligne les compte par état. `--platform`, `--status` (`active`, `disabled` ou `refreshNeeded`) et `--search`, un texte que contient l’identifiant du canal ou l’un de ses noms, restreignent la liste, tous les filtres devant être vrais, une page à la fois (`--limit`, puis le `--cursor` qu’affiche la page précédente) ; les nombres portent alors sur tous les états, quel que soit celui que demande `--status`. Avec l’une de ces options, `--json` affiche la page (`items`, `nextCursor`, `counts`) ; sans aucune, il affiche la liste des canaux, comme toujours. Connecter un canal se fait dans l’application web.
+
+`peal channels rename` donne à un canal le nom par lequel votre espace de travail le désigne, de 60 caractères au plus, affiché dans Peal à côté de l’identifiant que la plateforme donne au compte et envoyé à aucune plateforme ; sans nom, ou avec `--clear`, il retire ce nom. `peal channels disable` [désactive un canal](/channels#turn-off) : rien ne part sur lui, et une publication dont l’heure arrive pendant ce temps échoue sur ce canal, part sur les autres, et n’est pas envoyée plus tard. Le canal garde sa connexion, son historique et sa place dans votre formule. `peal channels enable` le réactive : il publie de nouveau, ou indique qu’il est à reconnecter quand sa plateforme a cessé d’accepter l’accès de Peal entre-temps. Les trois demandent le droit de connecter des canaux.
 
 `peal channels capabilities` montre [ce qu’un canal accepte](/api-overview#capabilities) : comment son texte est compté et limité, les médias qu’il accepte avec les limites de chaque type de fichier, les options de sa plateforme (que règle `peal drafts save --options`) et ce que le compte lui-même restreint, lu sur la plateforme à ce moment-là. Sans canal, la commande résume chaque plateforme en une ligne.
 
@@ -251,6 +258,7 @@ peal posts repost <post-id> <target-id>
 peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
 peal posts confirm <post-id> <target-id> not-published
 peal posts tag <post-id> --tag "Campagne de printemps" --tag Intemporel
+peal posts duplicate <post-id>
 ```
 
 - `peal posts list` liste les publications de l’espace de travail, quel que soit leur état, une page à la fois, avec ce que chacune est devenue ([Lister les publications](/posting-api#search)). `--tag` garde les publications rangées sous une [étiquette](#tags).
@@ -265,6 +273,7 @@ peal posts tag <post-id> --tag "Campagne de printemps" --tag Intemporel
 - `peal posts cancel` annule pour de bon un brouillon ou une publication programmée : elle ne part sur aucun canal. Une publication déjà en cours de publication finit avec ce que ses canaux ont fait, et ceux qui n’ont pas encore reçu l’envoi sont annulés. Pour modifier une publication programmée et la garder, déprogrammez-la plutôt.
 - `peal posts repost` renvoie la publication, maintenant, sur un canal où elle a échoué ou n’est pas confirmée. Quand elle n’est pas confirmée, vérifiez d’abord sur la plateforme : elle est peut-être déjà en ligne.
 - `peal posts confirm` enregistre ce que vous avez trouvé sur la plateforme pour une publication que Peal n’a pas pu confirmer : `published`, avec son adresse si vous l’avez, ou `not-published`, qui la marque en échec sur ce canal pour que `peal posts repost` puisse la renvoyer. [Programmer des publications](/scheduling) explique comment finissent les publications.
+- `peal posts duplicate` crée un nouveau brouillon qui dit ce que dit une publication ([Dupliquer une publication](/organise#duplicate)), quel que soit son statut : son texte, ses médias, ses canaux avec leur texte et leurs options, et ses étiquettes. Ce que l’espace de travail n’a plus (un canal déconnecté, un média ou une étiquette supprimés) est laissé de côté, et `peal` le dit. Le brouillon n’a pas d’heure, et la publication elle-même ne change pas.
 
 ## Étiquettes [#tags]
 

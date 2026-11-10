@@ -14,6 +14,7 @@ const channel: Channel = {
   displayName: "Peal Example",
   handle: "@peal_example@social.example",
   id: "00000000-0000-7000-8000-000000000001",
+  label: null,
   platform: "mastodon",
   status: { _tag: "refreshNeeded" },
   tokenExpiresAt: null,

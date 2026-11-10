@@ -505,6 +505,13 @@ export type {
 export {
   AuthorizationSchema,
   ChannelSchema,
+  ChannelPageSchema,
+  ChannelStatusNameSchema,
+  ChannelUpdateSchema,
+  defaultChannelPageSize,
+  maxChannelLabelLength,
+  maxChannelPageSize,
+  maxChannelQueryLength,
   ChannelStatusSchema,
   ChoosableAccountSchema,
   ChooseAccountsSchema,
@@ -517,6 +524,9 @@ export {
 export type {
   Authorization,
   Channel,
+  ChannelPage,
+  ChannelStatusName,
+  ChannelUpdate,
   ChannelStatus,
   ChoosableAccount,
   ChooseAccounts,

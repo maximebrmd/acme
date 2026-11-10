@@ -109,7 +109,7 @@ export const ListDrafts = Tool.make("list_drafts", {
 export const GetPost = Tool.make("get_post", {
   dependencies: [CurrentMember],
   description:
-    "Answers with a post of the workspace: what it says, when it goes out, the tags it is filed under (`tagIds`, which list_tags names), and how it went on each channel (its `targets`, whose ids repost_target and confirm_target take, each with its platform `options`, and `keptPrivate` when YouTube kept the video private although it was asked otherwise). A failed target says why in `failureReason`: the platform refused its text or format (contentRejected) or a media (mediaRejected); its channel was disconnected (channelDisconnected) or turned off (channelDisabled), or a media deleted (mediaRemoved); Peal was down at its time (missed); the user found it missing (notPublished); the platform kept limiting Peal (rateLimited), its daily upload allowance stayed spent (quotaExceeded, YouTube's), it refused the account's token (tokenExpired) or could not be reached (unavailable); the platform takes only private posts from this server's app until it audits it (appNotAudited, TikTok's: the account must be private and the post visible to its owner only); or the platform refused this server's app until its operator pays for it (appBillingLimit, X's: credits used up or spending cap reached), which is not the post's fault; or the workspace's plan had no room for it when it was due (planLimit: more channels than the plan allows, or the month's posts used up), and nothing was sent.",
+    "Answers with a post of the workspace: what it says, when it goes out, the tags it is filed under (`tagIds`, which list_tags names), and how it went on each channel (its `targets`, whose ids repost_target and confirm_target take, each with its platform `options`, and `keptPrivate` when YouTube kept the video private although it was asked otherwise). A failed target says why in `failureReason`: the platform refused its text or format (contentRejected) or a media (mediaRejected); its channel was disconnected (channelDisconnected), or turned off (channelDisabled: enable_channel turns it back on, then the post is scheduled anew, as it is not sent later), or a media deleted (mediaRemoved); Peal was down at its time (missed); the user found it missing (notPublished); the platform kept limiting Peal (rateLimited), its daily upload allowance stayed spent (quotaExceeded, YouTube's), it refused the account's token (tokenExpired) or could not be reached (unavailable); the platform takes only private posts from this server's app until it audits it (appNotAudited, TikTok's: the account must be private and the post visible to its owner only); or the platform refused this server's app until its operator pays for it (appBillingLimit, X's: credits used up or spending cap reached), which is not the post's fault; or the workspace's plan had no room for it when it was due (planLimit: more channels than the plan allows, or the month's posts used up), and nothing was sent.",
   failure: ToolRefused,
   parameters: Schema.Struct({ postId }),
   success: PostSchema,
@@ -166,6 +166,19 @@ export const DiscardDraft = Tool.make("discard_draft", {
     changing({ destructive: true, idempotent: true, openWorld: false })
   )
   .annotate(Tool.Title, "Discard a draft");
+
+export const DuplicatePost = Tool.make("duplicate_post", {
+  dependencies: [CurrentMember],
+  description:
+    "Makes a new draft that says what a post of the workspace says, whatever the post's status: its text, its media, its channels with their text and options, and its tags. What the workspace no longer has is left out rather than refused: a channel disconnected since, with the text the post had there, media deleted since, a tag deleted since; compare the answer with the post to tell the user. The copy has no time and goes out nowhere until someone schedules it, its author is whoever this connection acts for, and the post itself is not changed. Each call makes another draft.",
+  failure: ToolRefused,
+  parameters: Schema.Struct({ postId }),
+  success: PostSchema,
+})
+  .annotateMerge(
+    changing({ destructive: false, idempotent: false, openWorld: false })
+  )
+  .annotate(Tool.Title, "Duplicate a post");
 
 export const UnschedulePost = Tool.make("unschedule_post", {
   dependencies: [CurrentMember],
@@ -475,6 +488,7 @@ export const PostTools = Toolkit.make(
   ListPostAttempts,
   CreateDraft,
   UpdateDraft,
+  DuplicatePost,
   GetTikTokCreator,
   DiscardDraft,
   SchedulePost,

@@ -127,11 +127,11 @@ Les membres qui peuvent connecter des canaux, et les clés d’API avec `channel
 
 Chaque canal affiche l’un de ces états :
 
-| État          | Ce qu’il signifie                                                                                                                                                              |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Connecté      | Peal peut publier sur le compte.                                                                                                                                               |
-| À reconnecter | La plateforme n’accepte plus l’accès de Peal. Rien ne part sur le canal tant que vous ne l’avez pas reconnecté.                                                                |
-| Désactivé     | Rien ne part sur le canal, et le reconnecter le laisse désactivé. Pour publier de nouveau sur le compte, [déconnectez](#disconnect) le canal et connectez à nouveau le compte. |
+| État          | Ce qu’il signifie                                                                                                                   |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Connecté      | Peal peut publier sur le compte.                                                                                                    |
+| À reconnecter | La plateforme n’accepte plus l’accès de Peal. Rien ne part sur le canal tant que vous ne l’avez pas reconnecté.                     |
+| Désactivé     | Rien ne part sur le canal, et le reconnecter le laisse désactivé. Pour publier de nouveau sur le compte, [réactivez-le](#turn-off). |
 
 Un canal dont l’accès ne peut pas être renouvelé affiche aussi la date avant laquelle le reconnecter, et les propriétaires et administrateurs de son espace de travail en sont prévenus avant cette date.
 
@@ -156,6 +156,20 @@ Quand une plateforme refuse l’accès de Peal pendant qu’il publie, Peal reno
 - **Google Business Profile** : Peal crée une publication sur l’établissement, avec le texte de la publication comme description et le type, les dates, le bouton et l’offre de ses [options](/scheduling#options). Google va chercher chaque photo dans le stockage des médias ; une publication n’y prend aucune vidéo. Google peut refuser une publication pour ses règles de contenu après l’avoir prise : elle échoue alors. Une fois la publication en ligne, sa page y renvoie sur Google.
 
 - **Pinterest** : Peal crée une épingle sur le tableau, et la section du tableau, des [options de la plateforme](/scheduling#options) de la publication, avec le texte de la publication pour description, le texte alternatif du premier fichier pour texte alternatif, et le titre et le lien que vous avez donnés. Une image donne une épingle image, deux à cinq un carrousel, que Pinterest va chercher dans le stockage des médias ; une vidéo part du stockage des médias en une seule requête, Pinterest la traite, et sa couverture est l’image à la seconde que vous avez choisie, la première sinon. Pinterest ne donne à Peal aucun moyen de distinguer une épingle déjà créée d’une épingle qui ne l’a pas été : quand sa réponse se perd, Peal cherche l’épingle sur le tableau, et ne l’envoie jamais deux fois.
+
+## Nommer un canal [#name]
+
+Deux comptes d’une même plateforme peuvent se ressembler dans une liste. Choisissez **Renommer** à côté d’un canal pour lui donner un nom à vous, de 60 caractères au plus, comme « Client A » ou « Support ». Ce nom est celui de Peal : il s’affiche à côté de l’identifiant et du nom que la plateforme donne au compte, qui restent, et il n’est envoyé à aucune plateforme. Videz-le pour le retirer.
+
+## Désactiver un canal [#turn-off]
+
+Choisissez **Désactiver** à côté d’un canal pour cesser de publier sur un compte sans le déconnecter. Le canal garde sa connexion, son historique et son nom, compte toujours dans votre formule, et ne reçoit aucun rappel de reconnexion pendant ce temps.
+
+Une publication dont l’heure arrive alors que l’un de ses canaux est désactivé échoue sur ce canal, avec le motif « Canal désactivé », et part sur les autres. Elle n’est pas envoyée plus tard : réactivez le canal, puis programmez-la dans une nouvelle publication.
+
+Choisissez **Activer** pour publier de nouveau sur le compte. Si la plateforme a cessé d’accepter l’accès de Peal pendant que le canal était désactivé, il affiche **À reconnecter** : [reconnectez-le](#reconnect).
+
+Nommer un canal, le désactiver ou le réactiver demandent le droit de connecter des canaux. Par l’API : `PATCH …/channels/{channelId}`, `POST …/channels/{channelId}/disable` et `…/enable`. `GET …/channels/search` liste les canaux d’un espace de travail page par page, par plateforme, par état ou par texte, avec leur nombre dans chaque état.
 
 ## Reconnecter [#reconnect]
 

@@ -1,10 +1,11 @@
-import { Effect, Match, Option } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
+import { Effect, Match, Option, Schema } from "effect";
+import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
   ChannelNotFound,
   ConnectFailed,
   CurrentMember,
+  defaultChannelPageSize,
   OAuthClientNotPublished,
   PlatformUnreachable,
 } from "peal-contract";
@@ -16,6 +17,7 @@ import type {
   Forbidden,
 } from "peal-contract";
 
+import { ChannelSettings } from "#channels/application/channel-settings.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type {
   ChooseFailure,
@@ -33,6 +35,8 @@ import { forbidden } from "#shared/api/forbidden.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 import type { LimitRefusal } from "#shared/api/limit-reached.ts";
 import { isConnectionOf } from "#shared/domain/channel-connection.ts";
+import { ChannelIdSchema } from "#shared/domain/ids.ts";
+import type { ChannelId } from "#shared/domain/ids.ts";
 
 import { toChannelView } from "./channel-view.ts";
 
@@ -166,12 +170,22 @@ const outcomeView = (outcome: ConnectOutcome): ConnectOutcomeView =>
         selection: outcome.selection,
       };
 
+const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
+
+// How naming a channel, or turning it off or on, fails.
+const settingFailures = {
+  ChannelNotFound: () => Effect.fail(new ChannelNotFound()),
+  DatabaseError: Effect.die,
+  MissingPermission: forbidden,
+} as const;
+
 export const ChannelsHandlers = HttpApiBuilder.group(
   Api,
   "channels",
   Effect.fn(function* channelsHandlers(handlers) {
     const listChannels = yield* ListChannels;
     const disconnectChannel = yield* DisconnectChannel;
+    const settings = yield* ChannelSettings;
     const connectChannel = yield* ConnectChannel;
     const startFailure = startFailureWith(yield* limitRefusal);
     const completeFailure = completeFailureWith(startFailure);
@@ -217,6 +231,14 @@ export const ChannelsHandlers = HttpApiBuilder.group(
 
           return { authorizationUrl };
         }),
+      disable: ({ params }) =>
+        Effect.gen(function* disable() {
+          const actor = actorOf(yield* CurrentMember);
+
+          return yield* settings
+            .turnOff(actor, params.channelId)
+            .pipe(Effect.map(toChannelView), Effect.catchTags(settingFailures));
+        }),
       disconnect: ({ params }) =>
         Effect.gen(function* disconnect() {
           const actor = actorOf(yield* CurrentMember);
@@ -228,6 +250,14 @@ export const ChannelsHandlers = HttpApiBuilder.group(
               MissingPermission: forbidden,
             })
           );
+        }),
+      enable: ({ params }) =>
+        Effect.gen(function* enable() {
+          const actor = actorOf(yield* CurrentMember);
+
+          return yield* settings
+            .turnOn(actor, params.channelId)
+            .pipe(Effect.map(toChannelView), Effect.catchTags(settingFailures));
         }),
       list: () =>
         Effect.gen(function* list() {
@@ -265,6 +295,53 @@ export const ChannelsHandlers = HttpApiBuilder.group(
             .pipe(Effect.catch(reconnectFailure));
 
           return { authorizationUrl };
+        }),
+      search: ({ query }) =>
+        Effect.gen(function* search() {
+          const actor = actorOf(yield* CurrentMember);
+
+          // A cursor is the id of the page's last channel: one that is no
+          // channel id is none a page gave.
+          const after = yield* Option.match(
+            Option.fromUndefinedOr(query.cursor),
+            {
+              onNone: () => Effect.succeed(Option.none<ChannelId>()),
+              onSome: (cursor) =>
+                Option.match(decodeChannelId(cursor), {
+                  onNone: () => Effect.fail(new HttpApiError.BadRequest()),
+                  onSome: (id) => Effect.succeed(Option.some(id)),
+                }),
+            }
+          );
+
+          const page = yield* listChannels
+            .search(actor, {
+              after,
+              limit: query.limit ?? defaultChannelPageSize,
+              platform: Option.fromUndefinedOr(query.platform),
+              query: Option.fromUndefinedOr(query.q),
+              status: Option.fromUndefinedOr(query.status),
+            })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+              })
+            );
+
+          return {
+            counts: page.counts,
+            items: page.items.map(toChannelView),
+            nextCursor: Option.getOrNull(page.next),
+          };
+        }),
+      update: ({ params, payload }) =>
+        Effect.gen(function* update() {
+          const actor = actorOf(yield* CurrentMember);
+
+          return yield* settings
+            .rename(actor, params.channelId, Option.fromNullOr(payload.label))
+            .pipe(Effect.map(toChannelView), Effect.catchTags(settingFailures));
         }),
     });
   })

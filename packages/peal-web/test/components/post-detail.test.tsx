@@ -20,6 +20,7 @@ const channel = (id: string, handle: string): Channel => ({
   displayName: null,
   handle,
   id,
+  label: null,
   platform: "mastodon",
   status: { _tag: "active" },
   tokenExpiresAt: null,
