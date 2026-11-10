@@ -855,8 +855,14 @@ export const checkMemberRoom = async (
 ): Promise<void> => {
   const id = decodeWorkspaceId(workspaceId);
 
+  // An id in another form than Peal issues names no workspace here, and
+  // could name one to Postgres, which reads a UUID in any case: refused,
+  // never let past the plan.
   if (Option.isNone(id)) {
-    return;
+    throw APIError.from("BAD_REQUEST", {
+      code: "INVALID_ID",
+      message: "The workspace's id is a lower-case UUID, as Peal issues it",
+    });
   }
 
   const allowance = await hooks.memberAllowance(id.value);

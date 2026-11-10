@@ -911,6 +911,58 @@ layer(BillingIntegration, {
     })
   );
   it.effect(
+    "counts an invitation or a member whatever the case its ids are written in",
+    () =>
+      Effect.gen(function* written() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const owner = yield* signedUp("shouting");
+        const guest = yield* signedUp("shouting-guest");
+        const workspaceId = yield* workspaceOf(owner, "Shouting");
+
+        const invite = (email: string, organizationId: string) =>
+          app.request("/api/auth/organization/invite-member", {
+            body: { email, organizationId, role: "editor" },
+            headers: { cookie: owner.cookies },
+          });
+
+        // Postgres reads a UUID in any case: an id written in capitals
+        // names the same workspace, and takes no way around its plan.
+        const shouted = yield* Effect.forEach([1, 2, 3], (index) =>
+          invite(newEmail(`shouted-${String(index)}`), workspaceId.toUpperCase())
+        );
+
+        assert.deepStrictEqual(
+          shouted.map(({ status }) => status),
+          [400, 400, 400]
+        );
+
+        const invited = yield* invite(guest.email, workspaceId);
+
+        assert.strictEqual(invited.status, 200);
+
+        const { id } = yield* bodyOf(
+          Schema.Struct({ id: Schema.String }),
+          invited
+        );
+
+        const accept = (invitationId: string) =>
+          app.request("/api/auth/organization/accept-invitation", {
+            body: { invitationId },
+            headers: { cookie: guest.cookies },
+          });
+
+        assert.strictEqual((yield* accept(id.toUpperCase())).status, 400);
+        assert.strictEqual((yield* accept(id)).status, 200);
+
+        const held =
+          yield* sql`SELECT ((SELECT count(*) FROM auth.member WHERE organization_id = ${workspaceId}) + (SELECT count(*) FROM auth.invitation WHERE organization_id = ${workspaceId} AND status = 'pending'))::int AS count`;
+
+        assert.deepStrictEqual(held, [{ count: 2 }]);
+      })
+  );
+
+  it.effect(
     "takes an order only from a member who manages billing, in person, who asked to start now",
     () =>
       Effect.gen(function* orders() {

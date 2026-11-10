@@ -34,13 +34,44 @@ const counted: ReadonlySet<string> = new Set([
 ]);
 
 // Ids as Better Auth issues them, an invitation's as a workspace's:
-// anything else names nothing, and Postgres would refuse to compare it.
+// lower-case UUIDs.
 const BodySchema = Schema.Struct({
   invitationId: Schema.optionalKey(WorkspaceIdSchema),
   organizationId: Schema.optionalKey(WorkspaceIdSchema),
 });
 
 const decodeBody = Schema.decodeUnknownOption(BodySchema);
+
+// The ids a body names, whatever they are.
+const decodeNamed = Schema.decodeUnknownOption(
+  Schema.Struct({
+    invitationId: Schema.optionalKey(Schema.Unknown),
+    organizationId: Schema.optionalKey(Schema.Unknown),
+  })
+);
+
+// A counted route's body that names an id in another form than Better
+// Auth issues it: Postgres reads a UUID in any case, so capitals would
+// name the same workspace or invitation, while the turn and the plan's
+// check, which read the id as issued, would take it for none and let the
+// request past both. It is refused before Better Auth sees it.
+const namesAnotherForm = (json: unknown): boolean =>
+  Option.isNone(decodeBody(json)) &&
+  decodeNamed(json).pipe(
+    Option.exists(
+      ({ invitationId, organizationId }) =>
+        invitationId !== undefined || organizationId !== undefined
+    )
+  );
+
+const malformedId = HttpServerResponse.jsonUnsafe(
+  {
+    code: "INVALID_ID",
+    message:
+      "organizationId and invitationId are lower-case UUIDs, as Peal issues them",
+  },
+  { status: 400 }
+);
 
 const decodeInvitation = Schema.decodeUnknownOption(
   Schema.Struct({ organizationId: Schema.String })
@@ -84,22 +115,29 @@ export const AuthRoutesLive = Layer.unwrap(
 
     // What a request must take its turn on, if it adds a member, an
     // invitation or a workspace: the workspace it names, or the session's;
-    // the invitation's workspace; the account creating.
+    // the invitation's workspace; the account creating. "refused" for a
+    // body that names an id in a form the turn cannot be taken on.
     const turnOf = async (
       request: Request
-    ): Promise<Option.Option<readonly [TurnKind, string]>> => {
+    ): Promise<Option.Option<readonly [TurnKind, string]> | "refused"> => {
       const route = new URL(request.url).pathname.slice(authBasePath.length);
 
       if (request.method !== "POST" || !counted.has(route)) {
         return Option.none();
       }
 
-      const body = decodeBody(
-        await request
-          .clone()
-          .json()
-          .catch(() => null)
-      ).pipe(Option.getOrElse((): typeof BodySchema.Type => ({})));
+      const json: unknown = await request
+        .clone()
+        .json()
+        .catch(() => null);
+
+      if (namesAnotherForm(json)) {
+        return "refused";
+      }
+
+      const body = decodeBody(json).pipe(
+        Option.getOrElse((): typeof BodySchema.Type => ({}))
+      );
 
       if (route === acceptRoute) {
         const found: unknown =
@@ -136,6 +174,10 @@ export const AuthRoutesLive = Layer.unwrap(
 
     const handle = HttpEffect.fromWebHandler(async (request) => {
       const turn = await turnOf(request);
+
+      if (turn === "refused") {
+        return HttpServerResponse.toWeb(malformedId);
+      }
 
       return Option.isNone(turn)
         ? await auth.handler(request)
