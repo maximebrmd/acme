@@ -244,6 +244,7 @@ export const post = Command.make(
         }),
         params: { workspaceId: workspace.id },
         payload: yield* withMedia(media),
+        query: {},
       })
       .pipe(explainingPublishing(url));
 

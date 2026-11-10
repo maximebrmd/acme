@@ -12,6 +12,7 @@ import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostOrigins } from "#publishing/application/post-origins.ts";
+import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
@@ -57,7 +58,7 @@ import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publis
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 /**
- * The publishing context's use cases (`PostChecks`, `PostDrafts`, `PostQueries`,
+ * The publishing context's use cases (`PostChecks`, `PostDrafts`, `PostOutcomes`, `PostQueries`,
  * `PostScheduling`, `PostFollowUp`, for the handlers; `PostRecords`, for the
  * workspace context's exports and erasures; `PostUsage`, for billing;
  * `PublishedTargets`, which analytics follows; `PostOversight`, for the
@@ -90,6 +91,7 @@ export const publishingWith = <
   Layer.mergeAll(
     PostChecks.layer,
     PostDrafts.layer,
+    PostOutcomes.layer,
     PostQueries.layer,
     PostRecords.layer,
     PostScheduling.layer,

@@ -1170,6 +1170,8 @@ export const studioGroupsLive = (studio: Studio) =>
             Effect.andThen(findPost(studio, params.workspaceId, params.postId))
           ),
         list: () => refusing,
+        // No command waits for an outcome yet.
+        outcome: () => Effect.fail(new Forbidden()),
         repost: ({ params }) =>
           publishing.pipe(
             Effect.andThen(

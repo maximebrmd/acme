@@ -1,4 +1,4 @@
-import { Effect, Option } from "effect";
+import { Duration, Effect, Option } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
@@ -21,6 +21,7 @@ import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import type { Confirmation } from "#publishing/application/post-follow-up.ts";
+import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
@@ -96,6 +97,7 @@ export const PostsHandlers = HttpApiBuilder.group(
     const checks = yield* PostChecks;
     const drafts = yield* PostDrafts;
     const followUp = yield* PostFollowUp;
+    const outcomes = yield* PostOutcomes;
     const queries = yield* PostQueries;
     const scheduling = yield* PostScheduling;
     const limitReached = yield* limitRefusal;
@@ -262,6 +264,23 @@ export const PostsHandlers = HttpApiBuilder.group(
 
           return listed.map(postView);
         }),
+      outcome: ({ params, query }) =>
+        Effect.gen(function* outcome() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+
+          const awaited = yield* outcomes
+            .await(actor, postId, Duration.seconds(query.wait ?? 0))
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+                PostNotFound: notFound,
+              })
+            );
+
+          return postView(awaited);
+        }),
       repost: ({ params }) =>
         Effect.gen(function* repost() {
           const actor = actorOf(yield* CurrentMember);
@@ -321,7 +340,7 @@ export const PostsHandlers = HttpApiBuilder.group(
 
           return postView(scheduled);
         }),
-      send: ({ headers, payload }) =>
+      send: ({ headers, payload, query }) =>
         Effect.gen(function* send() {
           const actor = actorOf(yield* CurrentMember);
 
@@ -346,7 +365,22 @@ export const PostsHandlers = HttpApiBuilder.group(
             })
           );
 
-          return postView(sent);
+          // Asked to wait, it answers once the post went out, or with what
+          // it has when the time runs out.
+          const awaited =
+            query.wait === undefined || query.wait === 0
+              ? sent
+              : yield* outcomes
+                  .await(actor, sent.post.id, Duration.seconds(query.wait))
+                  .pipe(
+                    Effect.catchTags({
+                      DatabaseError: Effect.die,
+                      MissingPermission: forbidden,
+                      PostNotFound: notFound,
+                    })
+                  );
+
+          return postView(awaited);
         }),
       unschedule: ({ params }) =>
         Effect.gen(function* unschedule() {

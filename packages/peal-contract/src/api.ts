@@ -566,6 +566,7 @@ export {
   idempotencyKeyLifetimeHours,
   maxDraftPageSize,
   maxIdempotencyKeyLength,
+  maxOutcomeWaitSeconds,
   MediaAttachmentSchema,
   NewPostSchema,
   PostContentSchema,

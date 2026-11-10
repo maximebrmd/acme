@@ -342,6 +342,16 @@ export const maxIdempotencyKeyLength = 255;
 /** How long Peal remembers an `Idempotency-Key`, in hours. */
 export const idempotencyKeyLifetimeHours = 24;
 
+/** The longest `wait` takes, in seconds. */
+export const maxOutcomeWaitSeconds = 60;
+
+// How long the request waits for the post to go out, in seconds.
+const wait = Schema.optionalKey(
+  Schema.Int.check(
+    Schema.isBetween({ maximum: maxOutcomeWaitSeconds, minimum: 0 })
+  )
+);
+
 /** A page of drafts, newest first. */
 export const DraftPageSchema = Schema.Struct({
   items: Schema.Array(PostSchema),
@@ -518,10 +528,11 @@ export class PostsApi extends HttpApiGroup.make("posts")
       },
       params: workspace,
       payload: NewPostSchema,
+      query: { wait },
       success: PostSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Creates a post and sends it to some of the workspace's channels in one call: \`when\` is \`now\`, which publishes at once, or \`at\` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an \`Idempotency-Key\` header (any text of your choosing, at most ${maxIdempotencyKeyLength} characters, such as a UUID) to make a request safe to send again: within ${idempotencyKeyLifetimeHours} hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than ${duplicateWindowHours} hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says \`allowDuplicate: true\`; scheduling a draft is not checked. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.`,
+        description: `Creates a post and sends it to some of the workspace's channels in one call: \`when\` is \`now\`, which publishes at once, or \`at\` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an \`Idempotency-Key\` header (any text of your choosing, at most ${maxIdempotencyKeyLength} characters, such as a UUID) to make a request safe to send again: within ${idempotencyKeyLifetimeHours} hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Apart from keys, a post whose content already goes to one of its channels less than ${duplicateWindowHours} hours from its time is refused (DuplicatePost), as a request made twice by mistake would be, unless it says \`allowDuplicate: true\`; scheduling a draft is not checked. It answers as soon as the post is made, while it publishes, unless \`wait\` says to wait for the outcome: up to that many seconds (${maxOutcomeWaitSeconds} at most) for a post that goes out now, the answer is then the post once every channel has its result (\`status\` \`finished\`, with its \`outcome\`, each target \`published\` with its \`permalink\` or \`failed\` with its \`failureReason\`), or the post as it stands when the time runs out, some targets still \`pending\` or \`publishing\`: it goes on publishing, and \`GET …/posts/{postId}/outcome\` waits for the rest. The answer is 201 either way: the post was made. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.`,
         summary: "Create and send a post",
       })
     ),
@@ -545,6 +556,17 @@ export class PostsApi extends HttpApiGroup.make("posts")
       OpenApi.annotations({
         description: "Answers with a post of the workspace. Needs post:read.",
         summary: "Get a post",
+      })
+    ),
+    HttpApiEndpoint.get("outcome", "/:postId/outcome", {
+      error: [Forbidden, PostNotFound],
+      params: post,
+      query: { wait },
+      success: PostSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Answers with a post once it has gone out: it waits up to \`wait\` seconds (${maxOutcomeWaitSeconds} at most; none unless given) until every channel has its result, and answers the post then (\`status\` \`finished\`), or as it stands when the time runs out, which a client asks again. A draft, a cancelled post and a post scheduled for later than the wait are answered at once. Waiting changes nothing and holds nothing: the post publishes in its own job either way. Needs post:read.`,
+        summary: "Wait for a post's outcome",
       })
     ),
     HttpApiEndpoint.get("attempts", "/:postId/attempts", {

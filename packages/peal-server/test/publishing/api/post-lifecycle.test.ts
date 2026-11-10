@@ -1,12 +1,14 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Layer } from "effect";
+import { Duration, Effect, Fiber, Layer, Schema } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
+import { TestClock } from "effect/testing";
 import {
   Api,
   DuplicatePost,
   Forbidden,
   PostNotFound,
+  PostSchema,
   PostStatusConflict,
   TargetStatusConflict,
 } from "peal-contract";
@@ -19,10 +21,12 @@ import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PostIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
+  callsOn,
   eventually,
   isFinished,
   isSuspended,
   setTime,
+  settle,
   utc,
 } from "#test/publishing/infrastructure/harness.ts";
 import { connect, onPostsServerAt } from "#test/publishing/posts-server.ts";
@@ -422,6 +426,125 @@ describe("the outcome endpoints", () => {
   );
 });
 
+describe("waiting for a post's outcome", () => {
+  it.effect(
+    "answers the post once it went out, when send is asked to wait",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* waits() {
+          const workspaceId = yield* freshId;
+          const editor = yield* clientAs(yield* freshId, workspaceId, "editor");
+          const quick = yield* connect(workspaceId, "mastodon");
+          const slow = yield* connect(workspaceId, "mastodon");
+          const params = { workspaceId };
+
+          const sending = yield* editor.posts
+            .send({
+              headers: {},
+              params,
+              payload: {
+                channelIds: [quick],
+                content: text("A synthetic post, awaited."),
+                when: { _tag: "now" },
+              },
+              query: { wait: 30 },
+              responseMode: "response-only",
+            })
+            .pipe(Effect.forkChild);
+
+          yield* eventually(
+            "the post went out",
+            callsOn(quick).pipe(Effect.map((calls) => calls.length === 1))
+          );
+          yield* settle();
+          yield* TestClock.adjust(Duration.seconds(1));
+
+          const response = yield* Fiber.join(sending);
+
+          // Made, and out: one answer says both.
+          assert.strictEqual(response.status, 201);
+
+          const sent = yield* Schema.decodeUnknownEffect(
+            Schema.toCodecJson(PostSchema)
+          )(yield* response.json);
+
+          assert.strictEqual(sent.status, "finished");
+          assert.strictEqual(sent.outcome, "published");
+          assert.strictEqual(sent.targets[0]?.status, "published");
+
+          // A channel that does not answer in time: the post as it stands.
+          yield* FakePlatform.use((platform) =>
+            platform.script(slow, [{ _tag: "hang" }])
+          );
+
+          const hanging = yield* editor.posts
+            .send({
+              headers: {},
+              params,
+              payload: {
+                channelIds: [slow],
+                content: text("A synthetic post that takes its time."),
+                when: { _tag: "now" },
+              },
+              query: { wait: 5 },
+            })
+            .pipe(Effect.forkChild);
+
+          yield* eventually(
+            "the call is in flight",
+            callsOn(slow).pipe(Effect.map((calls) => calls.length === 1))
+          );
+          yield* TestClock.adjust(Duration.seconds(6));
+
+          const partial = yield* Fiber.join(hanging);
+
+          assert.strictEqual(partial.status, "publishing");
+          assert.isNull(partial.outcome);
+          assert.strictEqual(partial.targets[0]?.status, "publishing");
+
+          // The outcome endpoint waits for the rest.
+          const rest = yield* editor.posts
+            .outcome({
+              params: { ...params, postId: partial.id },
+              query: { wait: 30 },
+            })
+            .pipe(Effect.forkChild);
+
+          yield* FakePlatform.use((platform) => platform.release(slow));
+          yield* eventually(
+            "the post finished",
+            isFinished(PostIdSchema.make(partial.id))
+          );
+          yield* TestClock.adjust(Duration.seconds(1));
+
+          assert.strictEqual((yield* Fiber.join(rest)).outcome, "published");
+
+          // More than a minute is not a wait the contract takes.
+          const tooLong = yield* editor.posts
+            .outcome({
+              params: { ...params, postId: partial.id },
+              query: { wait: 61 },
+            })
+            .pipe(Effect.flip);
+
+          assert.strictEqual(tooLong._tag, "SchemaError");
+
+          const viewer = yield* clientAs(yield* freshId, workspaceId, "viewer");
+
+          assert.strictEqual(
+            (yield* viewer.posts.outcome({
+              params: { ...params, postId: partial.id },
+              query: {},
+            })).status,
+            "finished"
+          );
+        })
+      ),
+    timeout
+  );
+});
+
 describe("the send endpoint", () => {
   it.effect(
     "creates and sends a post in one call, once per idempotency key",
@@ -453,7 +576,12 @@ describe("the send endpoint", () => {
             },
           } as const;
 
-          const sent = yield* editor.posts.send({ headers, params, payload });
+          const sent = yield* editor.posts.send({
+            headers,
+            params,
+            payload,
+            query: {},
+          });
 
           assert.strictEqual(sent.status, "scheduled");
           assert.strictEqual(sent.authorId, editorId);
@@ -472,6 +600,7 @@ describe("the send endpoint", () => {
                 timeZone: "Europe/Paris",
               },
             },
+            query: {},
           });
 
           assert.strictEqual(again.id, sent.id);
@@ -481,6 +610,7 @@ describe("the send endpoint", () => {
               headers,
               params,
               payload: { ...payload, content: text("Something else.") },
+              query: {},
             })
             .pipe(Effect.flip);
 
@@ -496,6 +626,7 @@ describe("the send endpoint", () => {
                 content: text("a".repeat(600)),
                 when: { _tag: "now" },
               },
+              query: {},
             })
             .pipe(Effect.flip);
 
@@ -509,6 +640,7 @@ describe("the send endpoint", () => {
                 ...payload,
                 when: { _tag: "now", timeZone: "+01:00" },
               },
+              query: {},
             })
             .pipe(Effect.flip);
 
@@ -517,7 +649,7 @@ describe("the send endpoint", () => {
           // The same post under no key, as a client that kept none sends
           // it again: refused, naming the post that has its content.
           const twice = yield* editor.posts
-            .send({ headers: {}, params, payload })
+            .send({ headers: {}, params, payload, query: {} })
             .pipe(Effect.flip);
 
           assert.instanceOf(twice, DuplicatePost);
@@ -530,6 +662,7 @@ describe("the send endpoint", () => {
             headers: {},
             params,
             payload: { ...payload, allowDuplicate: true },
+            query: {},
           });
 
           assert.notStrictEqual(meant.id, sent.id);
@@ -539,7 +672,7 @@ describe("the send endpoint", () => {
           });
 
           const denied = yield* contributor.posts
-            .send({ headers: {}, params, payload })
+            .send({ headers: {}, params, payload, query: {} })
             .pipe(Effect.flip);
 
           assert.strictEqual(denied._tag, "Forbidden");
