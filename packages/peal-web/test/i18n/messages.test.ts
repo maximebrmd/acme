@@ -40,8 +40,10 @@ describe("message catalogues", () => {
     async (locale) => {
       // example.com, .org, .net and the .example and .test names belong
       // to nobody (RFC 2606): any other domain is someone's.
+      // A Mastodon handle is shown on Mastodon's own first instance,
+      // which is where people know the form from: not an email address.
       const reserved =
-        /@(?:[\w-]+\.)*(?:example\.(?:com|org|net)|example|test)$/u;
+        /@(?:(?:[\w-]+\.)*(?:example\.(?:com|org|net)|example|test)|mastodon\.social)$/u;
 
       const elsewhere = entries(await loadMessages(locale)).flatMap(
         ([key, text]) =>
