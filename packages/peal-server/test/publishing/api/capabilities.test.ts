@@ -22,8 +22,8 @@ import { CapabilitiesHandlers } from "#publishing/api/capabilities.ts";
 import { AccountStandings } from "#publishing/application/account-standings.ts";
 import { ChannelConnections } from "#publishing/application/channel-connections.ts";
 import { CountedPlatforms } from "#publishing/application/counted-platforms.ts";
+import { PlatformLookups } from "#publishing/application/platform-lookups.ts";
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
-import { TikTokCreators } from "#publishing/application/tiktok-creators.ts";
 import type { CreatorFailure } from "#publishing/application/tiktok-creators.ts";
 import { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
@@ -122,10 +122,16 @@ const clientWith = (
                   AccountStandings.layer.pipe(
                     Layer.provide(
                       Layer.succeed(
-                        TikTokCreators,
-                        TikTokCreators.of({
-                          read: () => read,
-                          takesPhotos: false,
+                        PlatformLookups,
+                        PlatformLookups.of({
+                          run: () =>
+                            read.pipe(
+                              Effect.map((posting) => ({
+                                _tag: "tiktokCreator" as const,
+                                items: [{ posting, takesPhotos: false }],
+                                nextCursor: Option.none(),
+                              }))
+                            ),
                         })
                       )
                     )

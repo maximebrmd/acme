@@ -11,7 +11,7 @@ import {
   photosRefused,
 } from "#publishing/domain/tiktok-creator.ts";
 
-import { TikTokCreators } from "./tiktok-creators.ts";
+import { PlatformLookups } from "./platform-lookups.ts";
 
 const unread = (reason: AccountUnreadReason): AccountStanding => ({
   _tag: "unread",
@@ -41,30 +41,41 @@ export class AccountStandings extends Context.Service<
     AccountStandings.of({ read: () => Effect.succeed(unrestricted) })
   );
 
-  /** TikTok creators' settings, read through TikTokCreators. */
+  /**
+   * TikTok creators' settings, read as the `tiktokCreator` lookup, through
+   * the lookups as the server paces them (`pacedLookups`): describing a
+   * channel again within a minute asks TikTok nothing, and past its pace
+   * the standing is `unread`, never another request.
+   */
   static readonly layer = Layer.effect(
     AccountStandings,
     Effect.gen(function* AccountStandingsLive() {
-      const creators = yield* TikTokCreators;
+      const lookups = yield* PlatformLookups;
 
       const tiktok = (channel: ChannelOnPlatform) =>
-        creators.read(channel.channelId).pipe(
-          Effect.map((posting): AccountStanding =>
-            posting._tag === "blocked"
+        lookups.run(channel.channelId, { _tag: "tiktokCreator" }).pipe(
+          Effect.map((answer): AccountStanding => {
+            const [item] = answer._tag === "tiktokCreator" ? answer.items : [];
+
+            if (item === undefined) {
+              return unread("platformUnreachable");
+            }
+
+            return item.posting._tag === "blocked"
               ? {
                   _tag: "read",
-                  blocked: posting.reason,
-                  restrictions: photosRefused(creators.takesPhotos),
+                  blocked: item.posting.reason,
+                  restrictions: photosRefused(item.takesPhotos),
                 }
               : {
                   _tag: "read",
                   blocked: undefined,
                   restrictions: creatorRestrictions(
-                    posting.creator,
-                    creators.takesPhotos
+                    item.posting.creator,
+                    item.takesPhotos
                   ),
-                }
-          ),
+                };
+          }),
           Effect.catchTags({
             BadRequest: ({ code }) =>
               Effect.succeed(
@@ -74,6 +85,8 @@ export class AccountStandings extends Context.Service<
                     : "disconnected"
                 )
               ),
+            LookupInputRejected: () =>
+              Effect.succeed(unread("platformUnreachable")),
             PlatformUnavailable: () =>
               Effect.succeed(unread("platformUnreachable")),
             RateLimited: () => Effect.succeed(unread("rateLimited")),

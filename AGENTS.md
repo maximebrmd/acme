@@ -1236,7 +1236,10 @@ and no socket, for tests.
   platform gives every channel alike (`shared` in `lookups`: YouTube's
   categories) is kept for all of them for `sharedAnswerLifetime` (a day).
   An adapter added to `PlatformLookupsLive` is paced with the rest; give
-  its platform its `lookupDailyRuns`.
+  its platform its `lookupDailyRuns`. Whatever else reads a platform
+  for a member's GET goes through the same paced lookups, as a channel's
+  standing does (`AccountStandings` runs the `tiktokCreator` lookup):
+  never a platform call per request.
 - Nothing in a description is written twice. A field's type and values come
   from its schema (`describeFields`), `required` from what `problems()`
   misses in options with nothing chosen, and the rest (`maxLength`,

@@ -177,6 +177,13 @@ export const publishingBehind = <G, E3, R3, E, R, H, R4>(
  * (WebhookEvents). Which posts wait for an approval is the ApprovalGate's
  * say, which the composition root provides from the review context.
  */
+// The platforms' lookups as the server paces them, one pace and one memory
+// of answers for all who ask: the lookups members run, and the standing a
+// channel's description reads.
+const PacedLookupsLive = pacedLookups(
+  PlatformLookupsLive.pipe(Layer.provide(ChannelAccessCredentials))
+).pipe(Layer.provide(DrizzlePlatformQuota));
+
 export const PublishingLive = publishingOver(
   Layer.mergeAll(
     ListedWorkspaceChannels,
@@ -194,16 +201,13 @@ export const PublishingLive = publishingOver(
     Layer.mergeAll(
       PostingCapabilities.layer.pipe(
         Layer.provide(
-          Layer.mergeAll(AccountStandings.layer, AnalyticsCountedPlatforms)
+          Layer.mergeAll(
+            AccountStandings.layer.pipe(Layer.provide(PacedLookupsLive)),
+            AnalyticsCountedPlatforms
+          )
         )
       ),
-      ChannelLookups.layer.pipe(
-        Layer.provide(
-          pacedLookups(
-            PlatformLookupsLive.pipe(Layer.provide(ChannelAccessCredentials))
-          ).pipe(Layer.provide(DrizzlePlatformQuota))
-        )
-      )
+      ChannelLookups.layer.pipe(Layer.provide(PacedLookupsLive))
     ).pipe(
       Layer.provide(
         Layer.merge(ListedWorkspaceChannels, ListedChannelConnections)
