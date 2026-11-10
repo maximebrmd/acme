@@ -692,11 +692,33 @@ describe("comments", () => {
             permissionsFor("viewer")
           );
 
-          yield* review.comment(editor, postId, say("A note."));
+          const note = yield* review.comment(editor, postId, say("A note."));
 
           assert.lengthOf((yield* review.thread(viewer, postId)).comments, 1);
           assert.deepStrictEqual(
             yield* Effect.flip(review.comment(viewer, postId, say("Mine."))),
+            new MissingPermission({ permission: "post:create" })
+          );
+
+          // Staff acting as a member read, and write nothing under the
+          // member's name: a comment is shown to people outside the
+          // workspace, and stays once the staff member is gone.
+          const staff = impersonating(
+            yield* freshUser,
+            yield* freshUser,
+            workspaceId
+          );
+
+          const [root] = (yield* review.thread(staff, postId)).comments;
+
+          assert.deepStrictEqual(
+            yield* Effect.flip(review.comment(staff, postId, say("Not mine."))),
+            new MissingPermission({ permission: "post:create" })
+          );
+          assert.deepStrictEqual(
+            yield* Effect.flip(
+              review.resolve(staff, postId, root?.id ?? note.id, true)
+            ),
             new MissingPermission({ permission: "post:create" })
           );
 

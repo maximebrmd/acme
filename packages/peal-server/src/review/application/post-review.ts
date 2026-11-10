@@ -88,8 +88,11 @@ export const membersIn = (
   ];
 };
 
+// Never staff acting as a member: a comment is shown under the member's
+// name, to people outside the workspace too, and stays once staff are gone.
 const mayComment = (actor: Actor) =>
-  can(actor, "post:create") || can(actor, "post:approve")
+  !isImpersonated(actor) &&
+  (can(actor, "post:create") || can(actor, "post:approve"))
     ? Effect.succeed(actor)
     : Effect.fail(new MissingPermission({ permission: "post:create" }));
 
@@ -105,7 +108,8 @@ const mayDecide = (actor: Actor) =>
  * - reading it, and the requests that wait, needs post:read;
  * - commenting, answering and resolving a thread need post:create or
  *   post:approve (owners, admins, editors and contributors; not viewers,
- *   nor applications let to read only);
+ *   nor applications let to read only, nor staff acting as a member, who
+ *   read only);
  * - approving and asking for changes need post:approve, in person or
  *   through an application, never as staff acting as a member: an approved
  *   post goes out once they are gone. An application approves only what a

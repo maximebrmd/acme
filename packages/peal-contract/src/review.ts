@@ -446,7 +446,7 @@ export class ReviewApi extends HttpApiGroup.make("review")
       success: ReviewCommentSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, ${maxCommentLength} characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve.`,
+        description: `Comments on a post, starts a thread about one of its channels or some words of its text there, or answers a thread. The text is kept as plain text, ${maxCommentLength} characters at most, without control characters. Those who follow the post are told. Needs post:create or post:approve, and is refused to staff acting as a member.`,
         summary: "Comment on a post",
       })
     ),
@@ -458,7 +458,7 @@ export class ReviewApi extends HttpApiGroup.make("review")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve.",
+          "Resolves the thread a comment started, or reopens it. An answer is not resolved: its thread is (CommentInvalid, `parent`). Needs post:create or post:approve, and is refused to staff acting as a member.",
         summary: "Resolve a thread",
       })
     ),

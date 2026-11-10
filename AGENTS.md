@@ -1966,7 +1966,9 @@ and no socket, for tests.
   an OAuth client (`Actor.subject.clientId`). Where posts wait, whoever has
   post:create may ask (`maySubmit`), and acts on drafts and waiting posts
   only (`mayChange`); staff acting as a member neither ask nor approve
-  (`post:approve` is withheld).
+  (`post:approve` is withheld), and read a post's review without
+  commenting or resolving: a comment shows under the member's name to
+  people outside the workspace.
 - An approval covers a subject, publishing's `approvalSubject`: the text,
   the media in order with their alt text, the per-channel texts, the
   channels and their options. Never the time. The review context keeps its
