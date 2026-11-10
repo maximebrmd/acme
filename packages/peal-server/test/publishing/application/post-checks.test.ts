@@ -5,6 +5,7 @@ import { SqlClient } from "effect/sql";
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { isSendable, PostChecks } from "#publishing/application/post-checks.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PinterestOptions } from "#publishing/domain/pinterest-options.ts";
 import { newId } from "#shared/application/ids.ts";
 import {
   ChannelIdSchema,
@@ -160,6 +161,28 @@ describe("PostChecks.check", () => {
             (onYouTube?.violations ?? []).map(({ _tag }) => _tag),
             ["mediaTypeUnsupported", "optionMissing"]
           );
+
+          // A platform that came since is checked as scheduling checks it:
+          // a Pin needs an image or a video, and the board it is saved to.
+          const pinterest = yield* connect(workspaceId, "pinterest");
+
+          const pin = yield* checks.check(actorIn(workspaceId), {
+            channelIds: [pinterest],
+            content: contentOf("A synthetic Pin."),
+            options: [
+              {
+                channelId: pinterest,
+                options: new PinterestOptions({ platform: "pinterest" }),
+              },
+            ],
+            when: Option.none(),
+          });
+
+          assert.includeMembers(
+            (pin.channels[0]?.violations ?? []).map(({ _tag }) => _tag),
+            ["optionMissing"]
+          );
+          assert.strictEqual(pin.channels[0]?.media.maximum, 5);
 
           // No channel at all, and a text for a channel it is not for.
           const empty = yield* checks.check(actorIn(workspaceId), {
