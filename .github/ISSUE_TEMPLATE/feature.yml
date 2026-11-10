@@ -1,0 +1,47 @@
+name: ✨ Feature request
+description: An idea for Peal, or a platform or capability it lacks.
+type: Feature
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tell us about the problem first: the best solution is often not the first one.
+        Please describe behaviour rather than name other products.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you are trying to do, and what gets in the way today.
+      placeholder: "When I schedule the same campaign every week, I have to…"
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: What you would like
+      description: How you picture Peal solving it, in the app, the API, the command line or an SDK.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you do today
+      description: Workarounds you use, and other ways you considered.
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who is it for?
+      multiple: true
+      options:
+        - People writing and scheduling posts
+        - Teams reviewing and approving
+        - Developers on the API, SDKs or webhooks
+        - AI agents (MCP, agent skill)
+        - People running a self-hosted instance
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contributing
+      options:
+        - label: I would like to work on this myself.

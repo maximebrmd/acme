@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Peal">
+  <path d="M32 8L52.78 20L32 32Z" fill="#ffca00" />
+  <path d="M32 8L32 32L11.22 20Z" fill="#ffca00" fill-opacity="0.85" />
+  <path d="M52.78 20L52.78 44L32 32Z" fill="#b9a6ff" fill-opacity="0.85" />
+  <path d="M52.78 44L32 56L32 32Z" fill="#b9a6ff" />
+  <path d="M32 32L32 56L11.22 44Z" fill="#415eee" />
+  <path d="M32 32L11.22 44L11.22 20Z" fill="#415eee" fill-opacity="0.85" />
+</svg>
