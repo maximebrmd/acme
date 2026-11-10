@@ -112,7 +112,7 @@ export type PostPart = typeof PostPartSchema.Type;
  * the media it shows, in order; and the text it has instead on some of its
  * channels. That is its first part, and all of most posts. `followUps` are
  * the parts after it, in order, a thread or comments depending on the
- * platform, ${String(maxFollowUps)} at most: left out, there are none, and
+ * platform, `maxFollowUps` at most: left out, there are none, and
  * Peal always answers it. A post with parts is refused when it is
  * scheduled on a platform that takes a post alone (`tooManyParts`).
  */
