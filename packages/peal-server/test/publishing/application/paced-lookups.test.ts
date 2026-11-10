@@ -5,9 +5,12 @@ import { TestClock } from "effect/testing";
 import { pacedLookups } from "#publishing/application/paced-lookups.ts";
 import { PlatformLookups } from "#publishing/application/platform-lookups.ts";
 import type { LookupFailure } from "#publishing/application/platform-lookups.ts";
+import { PlatformQuota } from "#publishing/application/platform-quota.ts";
 import {
   lookupAnswerLifetime,
+  lookupDailyRuns,
   lookupRunsPerMinute,
+  sharedAnswerLifetime,
 } from "#publishing/domain/lookup.ts";
 import type { LookupQuery } from "#publishing/domain/lookup.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
@@ -23,10 +26,34 @@ const boards = (cursor?: string): LookupQuery => ({
   limit: 25,
 });
 
+const categories = (regionCode: string): LookupQuery => ({
+  _tag: "youtubeVideoCategories",
+  language: Option.none(),
+  regionCode,
+});
+
 // The paced lookups over a platform that counts what reaches it, and
 // answers each query with its number, or fails with `failure`.
 const paced = Effect.fn("test.paced")(function* paced(failure?: LookupFailure) {
   const reached = yield* Ref.make(0);
+  const spent = yield* Ref.make<ReadonlyMap<string, number>>(new Map());
+
+  // The server's ledger, in memory: units by bucket and day.
+  const ledger = Layer.succeed(
+    PlatformQuota,
+    PlatformQuota.of({
+      exhaust: () => Effect.void,
+      spend: ({ allowance, bucket, day, units }) =>
+        Ref.modify(spent, (before) => {
+          const key = `${bucket}:${String(day.year)}-${String(day.month)}-${String(day.day)}`;
+          const used = before.get(key) ?? 0;
+
+          return used + units > allowance
+            ? [false, before]
+            : [true, new Map([...before, [key, used + units]])];
+        }),
+    })
+  );
 
   const lookups = yield* PlatformLookups.pipe(
     Effect.provide(
@@ -54,11 +81,11 @@ const paced = Effect.fn("test.paced")(function* paced(failure?: LookupFailure) {
               ),
           })
         )
-      )
+      ).pipe(Layer.provide(ledger))
     )
   );
 
-  return { lookups, reached: Ref.get(reached) };
+  return { lookups, reached: Ref.get(reached), spent: Ref.get(spent) };
 });
 
 describe("a channel's lookups, paced", () => {
@@ -138,5 +165,84 @@ describe("a channel's lookups, paced", () => {
 
       assert.strictEqual(yield* reached, 2);
     })
+  );
+
+  it.effect(
+    "give every channel the answer that is the same for all of them, for a day",
+    () =>
+      Effect.gen(function* shared() {
+        const { lookups, reached } = yield* paced();
+
+        const asked = yield* lookups.run(first, categories("FR"));
+
+        yield* TestClock.adjust(Duration.hours(23));
+
+        // Another channel, hours later: the platform says the same.
+        assert.deepStrictEqual(
+          yield* lookups.run(second, categories("FR")),
+          asked
+        );
+        assert.strictEqual(yield* reached, 1);
+
+        yield* lookups.run(second, categories("DE"));
+        yield* TestClock.adjust(sharedAnswerLifetime);
+        yield* lookups.run(first, categories("FR"));
+
+        assert.strictEqual(yield* reached, 3);
+      })
+  );
+
+  it.effect(
+    "spend the server's lookups of a platform for the day, whatever the channel and the query",
+    () =>
+      Effect.gen(function* budget() {
+        const { lookups, reached, spent } = yield* paced();
+        const allowed = lookupDailyRuns.youtube;
+
+        yield* TestClock.setTime(Date.parse("2026-11-10T22:00:00Z"));
+
+        // Each query differs, so none is answered from memory, and each
+        // comes from another channel, so none is paced.
+        const ask = (number: number) =>
+          lookups.run(
+            ChannelIdSchema.make(
+              `01900000-0000-7000-8000-${String(number).padStart(12, "0")}`
+            ),
+            {
+              _tag: "youtubeVideoCategories",
+              language: Option.some(`x-${String(number)}`),
+              regionCode: "FR",
+            }
+          );
+
+        yield* Effect.forEach(
+          Array.from({ length: allowed }, (_, index) => index),
+          ask,
+          { discard: true }
+        );
+
+        // The day's lookups are spent: nothing more reaches the platform
+        // until the next day, in UTC.
+        assert.deepStrictEqual(
+          yield* Effect.flip(ask(allowed)),
+          new RateLimited({
+            code: "lookupBudget",
+            retryAfter: Duration.hours(2),
+          })
+        );
+        assert.strictEqual(yield* reached, allowed);
+        assert.deepStrictEqual(
+          [...(yield* spent)],
+          [["lookups:youtube:2026-11-10", allowed]]
+        );
+
+        // Another platform's lookups are another budget.
+        yield* lookups.run(first, boards());
+
+        yield* TestClock.adjust(Duration.hours(2));
+        yield* ask(allowed);
+
+        assert.strictEqual(yield* reached, allowed + 2);
+      })
   );
 });

@@ -201,7 +201,7 @@ export const PublishingLive = publishingOver(
         Layer.provide(
           pacedLookups(
             PlatformLookupsLive.pipe(Layer.provide(ChannelAccessCredentials))
-          )
+          ).pipe(Layer.provide(DrizzlePlatformQuota))
         )
       )
     ).pipe(

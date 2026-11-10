@@ -1229,7 +1229,14 @@ and no socket, for tests.
   `RateLimited` (`lookupPace`, 429 with `retryAfterSeconds`), and answers
   the same query on the same channel from its last answer for
   `lookupAnswerLifetime` (a minute), in this process; a failure is never
-  kept. An adapter added to `PlatformLookupsLive` is paced with the rest.
+  kept. Every run also takes one of the platform's `lookupDailyRuns`, for
+  the whole server (`PlatformQuota`, bucket `lookups:<platform>`, by UTC
+  day; past them `RateLimited` `lookupBudget`), since a channel's pace
+  bounds neither all channels together nor ever new inputs; an answer the
+  platform gives every channel alike (`shared` in `lookups`: YouTube's
+  categories) is kept for all of them for `sharedAnswerLifetime` (a day).
+  An adapter added to `PlatformLookupsLive` is paced with the rest; give
+  its platform its `lookupDailyRuns`.
 - Nothing in a description is written twice. A field's type and values come
   from its schema (`describeFields`), `required` from what `problems()`
   misses in options with nothing chosen, and the rest (`maxLength`,

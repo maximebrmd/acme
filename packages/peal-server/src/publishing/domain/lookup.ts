@@ -235,6 +235,8 @@ interface LookupDefinition<Name extends LookupName> {
   /** Its answer comes in pages, each naming the next one's cursor. */
   readonly paged: boolean;
   readonly platform: Platform;
+  /** Its answer is the same whichever channel of the platform asks. */
+  readonly shared: boolean;
   /** The input's fields the lookup cannot run without; none when left out. */
   readonly required?: readonly string[];
   /** The query for an input that decoded; none for one that did not. */
@@ -299,6 +301,7 @@ export const lookups = {
         }))
       ),
     required: ["vanityName"],
+    shared: false,
   },
   pinterestBoardSections: {
     input: PinterestBoardSectionsInputSchema,
@@ -322,6 +325,7 @@ export const lookups = {
         )
       ),
     required: ["boardId"],
+    shared: false,
   },
   pinterestBoards: {
     input: PinterestBoardsInputSchema,
@@ -336,6 +340,7 @@ export const lookups = {
           limit: limit ?? defaultLookupPageSize,
         }))
       ),
+    shared: false,
   },
   tiktokCreator: {
     input: TikTokCreatorInputSchema,
@@ -346,6 +351,7 @@ export const lookups = {
       decodeCreator(input).pipe(
         Option.map(() => ({ _tag: "tiktokCreator" as const }))
       ),
+    shared: false,
   },
   youtubePlaylists: {
     input: YouTubePlaylistsInputSchema,
@@ -360,6 +366,7 @@ export const lookups = {
           limit: limit ?? defaultLookupPageSize,
         }))
       ),
+    shared: false,
   },
   youtubeVideoCategories: {
     input: YouTubeVideoCategoriesInputSchema,
@@ -380,6 +387,7 @@ export const lookups = {
           regionCode: region ?? defaultCategoryRegion,
         }))
       ),
+    shared: true,
   },
 } satisfies { readonly [Name in LookupName]: LookupDefinition<Name> };
 
@@ -404,6 +412,42 @@ export const lookupRunsPerMinute = 30;
  * that asks again, costs one run.
  */
 export const lookupAnswerLifetime = Duration.minutes(1);
+
+/**
+ * How long an answer that is the same for every channel is given again,
+ * to all of them, without asking the platform: a platform's video
+ * categories for a region and a language change in years, not days.
+ */
+export const sharedAnswerLifetime = Duration.hours(24);
+
+/**
+ * How many times a day (UTC) this server's lookups reach each platform,
+ * for all its channels and workspaces together. A platform counts lookups
+ * against what it allows the server's app, which publishing and analytics
+ * need too: YouTube takes each read from its project's daily units, which
+ * every workspace's calls share. Without this, one member reading lists
+ * with ever new inputs spends what all the others publish with.
+ */
+export const lookupDailyRuns = {
+  linkedin: 5000,
+  pinterest: 5000,
+  tiktok: 5000,
+  youtube: 2000,
+} as const satisfies Partial<Record<Platform, number>>;
+
+/** The platforms that have lookups. */
+export type LookupPlatform = keyof typeof lookupDailyRuns;
+
+/** The platform a query's lookup reads. */
+export const platformOf = ({ _tag }: LookupQuery): LookupPlatform =>
+  lookups[_tag].platform;
+
+/**
+ * Whether the query's answer is the same whichever channel asks: what the
+ * platform says of itself, not of an account.
+ */
+export const isSharedAnswer = ({ _tag }: LookupQuery): boolean =>
+  lookups[_tag].shared;
 
 /** The names of every lookup, in their order. */
 export const lookupNames: readonly LookupName[] = LookupNameSchema.literals;

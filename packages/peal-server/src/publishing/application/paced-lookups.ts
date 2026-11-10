@@ -1,18 +1,24 @@
 import { DateTime, Duration, Effect, Layer, Ref } from "effect";
 
 import {
+  isSharedAnswer,
   lookupAnswerLifetime,
+  lookupDailyRuns,
   lookupRunsPerMinute,
+  platformOf,
+  sharedAnswerLifetime,
 } from "#publishing/domain/lookup.ts";
 import type { LookupQuery, LookupResult } from "#publishing/domain/lookup.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 
 import { PlatformLookups } from "./platform-lookups.ts";
+import { PlatformQuota } from "./platform-quota.ts";
 
 interface Answer {
-  readonly at: DateTime.Utc;
   readonly result: LookupResult;
+  /** Until when it is given again without asking. */
+  readonly until: DateTime.Utc;
 }
 
 interface Pace {
@@ -34,9 +40,26 @@ const minute = Duration.minutes(1);
 // How many answers one process keeps at most: past it, the oldest go.
 const mostAnswers = 1000;
 
-// A query written the same whenever it is the same.
+// A query written the same whenever it is the same, for its channel, or
+// for every channel when the platform answers them all the same.
 const keyOf = (channelId: ChannelId, query: LookupQuery) =>
-  `${channelId}:${JSON.stringify(query)}`;
+  `${isSharedAnswer(query) ? "every channel" : channelId}:${JSON.stringify(query)}`;
+
+const lifetimeOf = (query: LookupQuery) =>
+  isSharedAnswer(query) ? sharedAnswerLifetime : lookupAnswerLifetime;
+
+// The day a platform's lookups are counted in, and when the next starts.
+const dayOf = (now: DateTime.Utc) => {
+  const { day, month, year } = DateTime.toParts(now);
+
+  return {
+    day: { day, month, year },
+    untilNext: DateTime.distance(
+      now,
+      DateTime.add(DateTime.startOf(now, "day"), { days: 1 })
+    ),
+  };
+};
 
 const since = (now: DateTime.Utc, age: Duration.Duration) =>
   DateTime.subtractDuration(now, age);
@@ -44,8 +67,8 @@ const since = (now: DateTime.Utc, age: Duration.Duration) =>
 // What is still worth keeping at `now`.
 const current = (pace: Pace, now: DateTime.Utc): Pace => ({
   answers: new Map(
-    [...pace.answers].filter(([, { at }]) =>
-      DateTime.isGreaterThan(at, since(now, lookupAnswerLifetime))
+    [...pace.answers].filter(([, { until }]) =>
+      DateTime.isGreaterThan(until, now)
     )
   ),
   runs: new Map(
@@ -67,6 +90,14 @@ const current = (pace: Pace, now: DateTime.Utc): Pace => ({
  * pace, a lookup fails as `RateLimited` with when to ask again, as when the
  * platform itself asks to slow down. Only answers are kept, never a
  * failure, in this process: a server beside it paces its own.
+ *
+ * A channel's pace does not bound what all channels spend together, nor
+ * what one spends with ever new inputs: every run also takes one of the
+ * platform's `lookupDailyRuns`, counted for the whole server in
+ * `PlatformQuota` (bucket `lookups:<platform>`, by UTC day), and past
+ * them fails as `RateLimited` `lookupBudget` until the next day. An answer
+ * that is the same for every channel (`isSharedAnswer`) is kept for all
+ * of them, for `sharedAnswerLifetime`.
  */
 export const pacedLookups = <E, R>(
   lookups: Layer.Layer<PlatformLookups, E, R>
@@ -75,6 +106,7 @@ export const pacedLookups = <E, R>(
     PlatformLookups,
     Effect.gen(function* PacedLookups() {
       const platforms = yield* PlatformLookups;
+      const quota = yield* PlatformQuota;
 
       const state = yield* Ref.make<Pace>({
         answers: new Map(),
@@ -117,9 +149,9 @@ export const pacedLookups = <E, R>(
           ];
         });
 
-      const keep = (key: string, result: LookupResult, at: DateTime.Utc) =>
+      const keep = (key: string, result: LookupResult, until: DateTime.Utc) =>
         Ref.update(state, (pace) => {
-          const answers = [...pace.answers, [key, { at, result }] as const];
+          const answers = [...pace.answers, [key, { result, until }] as const];
 
           return {
             answers: new Map(answers.slice(-mostAnswers)),
@@ -146,9 +178,29 @@ export const pacedLookups = <E, R>(
           });
         }
 
+        // The server's own ledger failing is the server's failure.
+        const platform = platformOf(query);
+        const { day, untilNext } = dayOf(now);
+
+        const within = yield* quota
+          .spend({
+            allowance: lookupDailyRuns[platform],
+            bucket: `lookups:${platform}`,
+            day,
+            units: 1,
+          })
+          .pipe(Effect.orDie);
+
+        if (!within) {
+          return yield* new RateLimited({
+            code: "lookupBudget",
+            retryAfter: untilNext,
+          });
+        }
+
         const result = yield* platforms.run(channelId, query);
 
-        yield* keep(key, result, now);
+        yield* keep(key, result, DateTime.addDuration(now, lifetimeOf(query)));
 
         return result;
       });
