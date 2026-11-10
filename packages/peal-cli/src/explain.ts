@@ -11,7 +11,10 @@ import type {
   InvalidDateRange,
   InvalidTimeZone,
   InvitationNotFound,
+  LookupInputInvalid,
+  LookupNotFound,
   PlanLimitReached,
+  PlatformRateLimited,
   PlatformUnreachable,
   PostContentInvalid,
   PostNotFound,
@@ -40,7 +43,10 @@ export type ApiFailure =
   | InvalidDateRange
   | InvalidTimeZone
   | InvitationNotFound
+  | LookupInputInvalid
+  | LookupNotFound
   | PlanLimitReached
+  | PlatformRateLimited
   | PlatformUnreachable
   | PostContentInvalid
   | PostNotFound
@@ -109,9 +115,23 @@ export const explain =
         refused(
           "The workspace has no pending invitation with that id: it was accepted, declined or revoked."
         ),
+      LookupInputInvalid: () =>
+        refused(
+          "The lookup refused its input: peal channels lookup <channel-id> lists what each lookup takes, and a cursor must be one a page before named."
+        ),
+      LookupNotFound: () =>
+        refused(
+          "This channel's platform has no such lookup: peal channels lookup <channel-id> lists those it has."
+        ),
       PlanLimitReached: ({ allowed, limit }) =>
         refused(
           `The workspace's plan allows ${String(allowed)} ${limits[limit]}, and has them all. A larger plan makes room: see peal billing.`
+        ),
+      PlatformRateLimited: ({ retryAfterSeconds }) =>
+        refused(
+          retryAfterSeconds === null
+            ? "The platform asked to slow down, or its allowance for today is spent: try again later."
+            : `The platform asked to slow down: try again in ${String(retryAfterSeconds)} seconds.`
         ),
       PlatformUnreachable: () =>
         refused(

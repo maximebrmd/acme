@@ -7,6 +7,7 @@ import type {
   TikTokAccount,
 } from "peal-contract";
 
+import { capabilities, lookupWith } from "#commands/channel-capabilities.ts";
 import { explain } from "#explain.ts";
 import { columns, instant } from "#print.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
@@ -149,5 +150,10 @@ const tiktok = Command.make(
 
 export const channels = Command.make("channels").pipe(
   Command.withDescription("The social accounts connected to a workspace."),
-  Command.withSubcommands([list, tiktok])
+  Command.withSubcommands([
+    list,
+    capabilities,
+    lookupWith(creatorLines),
+    tiktok,
+  ])
 );
