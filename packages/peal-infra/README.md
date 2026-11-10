@@ -342,8 +342,8 @@ the owner's approval.
 
 5. **Telegram** ([Telegram](#telegram)): three bots from @BotFather, one for
    each server that alerts, and two private channels.
-6. **Email**: a Resend key for the verified sending domain `mail.peal.social`,
-   which sends as `notifications@mail.peal.social` (`peal_mail_from`).
+6. **Email**: a Resend key for the verified sending domain `peal.social`,
+   which sends as `notifications@peal.social` (`peal_mail_from`).
 7. **The platforms' apps**, a set of its own for each environment
    ([The platforms' apps](#the-platforms-apps)).
 
@@ -426,6 +426,12 @@ Two bots are the least: one for both Grafanas and one for the uptime
 server. The sandbox then holds the token production's alerts depend on, so
 prefer three. `site.yml` requires both names on production and on the
 sandbox, and `uptime.yml` on the uptime server.
+
+Peal's own bots write to the owner directly instead: each bot's chat with
+you, named after its environment ("Peal - Sandbox", "Peal - Production"),
+in a Telegram folder "Peal". Press Start in the bot's chat, so it may write
+to you; the chat id is then your own user id (Telegram Web keeps it in
+local storage, `user_auth`), and steps 1, 4 and 5 do not apply.
 
 1. Create two private channels, where only admins post. A channel's id does
    not change; a group's does when Telegram upgrades it.

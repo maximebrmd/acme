@@ -20,19 +20,19 @@ peal_hostnames:
   grafana: sandbox-grafana.peal.social
   ssh: sandbox-ssh.peal.social
 
-cloudflare_access_team: example-team
+cloudflare_access_team: winter-resonance-b4ec
 cloudflare_access_aud:
   # One application covers the sandbox's app, site and docs.
-  sandbox: REPLACE-WITH-THE-SANDBOX-APPLICATION-AUD
-  grafana: REPLACE-WITH-THE-SANDBOX-GRAFANA-APPLICATION-AUD
-  ssh: REPLACE-WITH-THE-SANDBOX-SSH-APPLICATION-AUD
+  sandbox: 3823cf7d18f15fc04895ec62c1ebf12aae817877bfa133535a051451507430f6
+  grafana: 061dcc5b23aa4a756b31697aa95ee39677939c09e16852145f00dfd84906c8e1
+  ssh: 115b57932dbf918138cca334366d4f6dea680cbbafbdc19b63e0875d4fa1aef9
 peal_access_everything: true
 
-peal_mail_from: Peal Sandbox <notifications@mail.peal.social>
+peal_mail_from: Peal Sandbox <notifications@peal.social>
 
-peal_media_endpoint: https://0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com
+peal_media_endpoint: https://6fdd7e600b33c2c948da88b6cf8b5f26.eu.r2.cloudflarestorage.com
 peal_media_bucket: peal-sandbox-media
-peal_backup_endpoint: 0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com
+peal_backup_endpoint: 6fdd7e600b33c2c948da88b6cf8b5f26.eu.r2.cloudflarestorage.com
 peal_backup_bucket: peal-sandbox-backups
 peal_backup_path: /sandbox
 
