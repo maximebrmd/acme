@@ -80,7 +80,9 @@ export class LegalRecords extends Context.Service<
      * transaction, for 5 years, and how they signed in and paid for 1.
      */
     readonly hold: (
-      account: IdentificationRecord
+      account: IdentificationRecord,
+      /** When it closed, if not now: an erasure applied again after a restore. */
+      closedAt?: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
     /** Records a connection that made content, now, for 1 year. */
     readonly connected: (
@@ -111,11 +113,12 @@ export class LegalRecords extends Context.Service<
       const store = yield* LegalStore;
 
       const hold = Effect.fn("LegalRecords.hold")(function* hold(
-        account: IdentificationRecord
+        account: IdentificationRecord,
+        closedAt?: DateTime.Utc
       ) {
         yield* store.hold({
           ...account,
-          closedAt: yield* DateTime.now,
+          closedAt: closedAt ?? (yield* DateTime.now),
           id: yield* newId(LegalRecordIdSchema),
         });
       }, Effect.provideContext(ports));

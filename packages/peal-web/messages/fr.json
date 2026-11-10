@@ -1035,7 +1035,8 @@
       "subscribed": "Un espace de travail que cette action supprimerait a un abonnement. Acceptez sa résiliation pour continuer.",
       "tooManyRequests": "Trop de tentatives. Patientez une minute, puis réessayez.",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "billingUnavailable": "Stripe n’a pas pu être joint pour clore les paiements encore ouverts d’un espace de travail que ceci supprimerait, donc rien n’a été supprimé. Réessayez dans quelques minutes."
+      "billingUnavailable": "Stripe n’a pas pu être joint pour clore les paiements encore ouverts d’un espace de travail que ceci supprimerait, donc rien n’a été supprimé. Réessayez dans quelques minutes.",
+      "storeUnavailable": "La suppression n’a pas pu être consignée là où les sauvegardes ne peuvent pas la défaire, donc rien n’a été supprimé. Réessayez dans quelques minutes."
     },
     "cancellation": {
       "title": "{count, plural, one {La suppression résilie un abonnement} other {La suppression résilie # abonnements}}",

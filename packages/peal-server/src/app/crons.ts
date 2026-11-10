@@ -6,6 +6,7 @@ import { ChannelsCronsLive } from "#channels/container.ts";
 import { LegalCronsLive } from "#legal/container.ts";
 import { ClusterRetentionCron } from "#shared/infrastructure/cluster-retention.ts";
 import { StaffCronsLive } from "#staff/container.ts";
+import { WorkspaceCronsLive } from "#workspace/container.ts";
 
 /**
  * Every ClusterCron the server runs. Each cron's name is part of the stored
@@ -19,5 +20,6 @@ export const CronsLive = Layer.mergeAll(
   AnalyticsCronsLive,
   StaffCronsLive,
   BillingCronsLive,
-  LegalCronsLive
+  LegalCronsLive,
+  WorkspaceCronsLive
 );

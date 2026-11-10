@@ -13,6 +13,7 @@ import { ConnectedAppSchema } from "./connected-apps.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { LastOwner } from "./last-owner.ts";
+import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { NoticeEventSchema } from "./notices.ts";
 import { NotificationPreferencesSchema } from "./notification-preferences.ts";
 import { StaffActionSchema, StaffObjectIdsSchema } from "./staff.ts";
@@ -461,13 +462,14 @@ export class AccountApi extends HttpApiGroup.make("account")
         WorkspaceBusy,
         WorkspaceSubscribed,
         BillingUnavailable,
+        MediaStoreUnavailable,
       ],
       payload: DeleteAccountSchema,
       success: HttpApiSchema.NoContent,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Deletes the account for good, once `password` confirms it is the user asking: the workspaces where they are the only member, with everything in them, their memberships of the others, where the posts they wrote stay without an author, their sessions, notices, preferences, invitations and connected applications. Refused (409) while they are the only owner of a workspace that has other members (`LastOwner`), while a post of a workspace it would delete is being published (`WorkspaceBusy`), and while one of those workspaces has a subscription Stripe may still bill (`WorkspaceSubscribed`, with its plan and the end of the period paid for) unless `cancelSubscriptions` is `true`, which cancels those subscriptions at Stripe at once, without a refund of the period paid for, except where the law gives one, or any further charge; (503) when Stripe cannot be reached (`BillingUnavailable`), and nothing is deleted; and (429) for a few seconds after three passwords tried within 10 seconds, as signing in is. A confirmation is emailed to the address the account had.",
+          "Deletes the account for good, once `password` confirms it is the user asking: the workspaces where they are the only member, with everything in them, their memberships of the others, where the posts they wrote stay without an author, their sessions, notices, preferences, invitations and connected applications. Refused (409) while they are the only owner of a workspace that has other members (`LastOwner`), while a post of a workspace it would delete is being published (`WorkspaceBusy`), and while one of those workspaces has a subscription Stripe may still bill (`WorkspaceSubscribed`, with its plan and the end of the period paid for) unless `cancelSubscriptions` is `true`, which cancels those subscriptions at Stripe at once, without a refund of the period paid for, except where the law gives one, or any further charge; (503) when Stripe cannot be reached (`BillingUnavailable`), or the object store, where the deletion is recorded by id before it is done so that a restored backup deletes the account again (`MediaStoreUnavailable`), and nothing is deleted; and (429) for a few seconds after three passwords tried within 10 seconds, as signing in is. A confirmation is emailed to the address the account had.",
         summary: "Delete my account",
       })
     )

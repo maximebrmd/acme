@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { Effect } from "effect";
+import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
@@ -144,7 +144,9 @@ export class ContextRecords extends Context.Service<
       userId: UserId
     ) => Effect.Effect<LegalRemainsRecord | null, DatabaseError>;
     readonly holdIdentification: (
-      record: IdentificationRecord
+      record: IdentificationRecord,
+      /** When the account closed, if not now. */
+      closedAt?: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
     readonly removeWorkspaceFiles: (
       workspaceId: WorkspaceId

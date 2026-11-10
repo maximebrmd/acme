@@ -2,6 +2,7 @@ import { Context, Effect, Layer, Option } from "effect";
 import type { Redacted } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { planClosure } from "#workspace/domain/account-closure.ts";
 import type { LastOwner } from "#workspace/domain/last-owner.ts";
@@ -15,13 +16,19 @@ import type { AuthUnavailable } from "./auth-unavailable.ts";
 import type { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContextRecords } from "./context-records.ts";
 import type { WorkspaceErasureOptions } from "./context-records.ts";
+import type { ErasureLedgerUnavailable } from "./erasure-ledger-unavailable.ts";
+import type { ErasureLedger } from "./erasure-ledger.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
 import { PasswordCheck } from "./password-check.ts";
 import type { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import {
+  confirmErasure,
+  discardOnFailure,
   eraseWorkspace,
+  erasureOf,
+  recordErasure,
   removeWorkspaceFiles,
   reportCancelledFirst,
 } from "./workspace-erasure.ts";
@@ -59,6 +66,7 @@ export class CloseAccount extends Context.Service<
       | AuthUnavailable
       | BillingUnavailable
       | DatabaseError
+      | ErasureLedgerUnavailable
       | IncorrectPassword
       | LastOwner
       | NotSignedIn
@@ -73,7 +81,7 @@ export class CloseAccount extends Context.Service<
     CloseAccount,
     Effect.gen(function* CloseAccountLive() {
       const ports = yield* Effect.context<
-        AccountStore | ContextRecords | TransactionRunner
+        AccountStore | ContextRecords | ErasureLedger | Ids | TransactionRunner
       >();
 
       const store = yield* AccountStore;
@@ -116,7 +124,11 @@ export class CloseAccount extends Context.Service<
         // What the confirmation says stays, read while the account is there.
         const legalHold = yield* records.legalRemains(userId);
 
-        const deleted = yield* transaction(
+        // The ledger's entry, completed with the workspaces deleted once
+        // the transaction knows them.
+        const closing = yield* erasureOf(userId, []);
+
+        const erasure = yield* transaction(
           Effect.gen(function* closeInTransaction() {
             // Again, under the workspaces' locks: a workspace someone
             // joined meanwhile is left rather than deleted.
@@ -141,17 +153,31 @@ export class CloseAccount extends Context.Service<
 
             yield* Effect.forEach(
               Option.toArray(identification),
-              records.holdIdentification,
+              // As closed at the instant the ledger gives, so applying the
+              // closure again after a restore holds the same record.
+              (held) => records.holdIdentification(held, closing.at),
               { discard: true }
             );
 
-            return plan.deleted;
+            // Last: nothing is committed that the ledger does not hold.
+            const entry = { ...closing, workspaceIds: plan.deleted };
+
+            yield* recordErasure(entry);
+
+            return entry;
           })
-        ).pipe(reportCancelledFirst(subscriptionsCancelled));
+        ).pipe(
+          discardOnFailure(closing),
+          reportCancelledFirst(subscriptionsCancelled)
+        );
+
+        yield* confirmErasure(erasure);
+
+        const deleted = erasure.workspaceIds;
 
         yield* Effect.forEach(deleted, removeWorkspaceFiles, { discard: true });
 
-        // Ids only: what a restore of the database must delete again.
+        // Ids only, as the ledger holds them.
         yield* Effect.logInfo("Closed an account").pipe(
           Effect.annotateLogs({
             "event.name": "peal.erasure",

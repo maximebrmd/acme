@@ -65,6 +65,7 @@ import {
 } from "#staff/container.ts";
 import {
   AuthRoutesLive,
+  ErasureReplayLive,
   StripeCheckoutsLive,
   WorkspaceApiLive,
   WorkspaceLive,
@@ -163,6 +164,16 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
   )
 );
 
+// What an erasure reaches in every context, as the settings do.
+const ErasedContextsLive = Layer.mergeAll(
+  ChannelsWithNoticesLive,
+  PublishingContextLive,
+  MediaContextLive,
+  AssistantContextLive,
+  AnalyticsLive,
+  StaffRecordsLive
+);
+
 // The staff console, which reads accounts and workspaces from the workspace
 // context, and each workspace's plan, channels and posts from billing, the
 // channels context and publishing.
@@ -224,6 +235,21 @@ const ServicesLive = Layer.mergeAll(
   StaffContextLive,
   LegalRequestsContextLive
 ).pipe(
+  Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
+  Layer.provideMerge(MigrationsLive),
+  Layer.provideMerge(DatabaseLive)
+);
+
+/**
+ * Applying the erasure ledger again after the database was restored
+ * (`src/replay-erasures.ts`): the contexts an erasure reaches, on the
+ * migrated database, with no HTTP server, worker or cron, so nothing is
+ * published or answered meanwhile. The jobs of the posts it erases stay in
+ * the cluster's tables: each wakes to a post that is gone, and is
+ * superseded.
+ */
+export const ErasureReplayServicesLive = ErasureReplayLive.pipe(
+  Layer.provide(ErasedContextsLive),
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
   Layer.provideMerge(DatabaseLive)

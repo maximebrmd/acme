@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { DateTime, Schema } from "effect";
 
 import {
   UserIdSchema,
@@ -12,6 +12,10 @@ import {
  * restore can bring back is still listed.
  */
 export const erasureLedgerRetention = { days: 42 } as const;
+
+/** The instant before which the ledger's entries have expired at `now`. */
+export const erasureLedgerCutoff = (now: DateTime.Utc): DateTime.Utc =>
+  DateTime.subtract(now, erasureLedgerRetention);
 
 /** An entry of the ledger: a UUIDv7, so entries sort by when they were made. */
 export const ErasureEntryIdSchema = Uuid7Schema.pipe(

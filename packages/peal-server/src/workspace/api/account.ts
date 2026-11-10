@@ -6,6 +6,7 @@ import {
   Forbidden,
   IncorrectPassword,
   LastOwner,
+  MediaStoreUnavailable,
   NoticeEventSchema,
   StaffActionSchema,
   TargetOptionsSchema,
@@ -168,6 +169,13 @@ export const AccountHandlers = HttpApiBuilder.group(
                     )
                   ),
                 DatabaseError: Effect.die,
+                ErasureLedgerUnavailable: ({ cause }) =>
+                  Effect.logWarning(
+                    "The erasure ledger could not be written, so nothing was deleted",
+                    cause
+                  ).pipe(
+                    Effect.andThen(Effect.fail(new MediaStoreUnavailable()))
+                  ),
                 IncorrectPassword: () => Effect.fail(new IncorrectPassword()),
                 LastOwner: ({ workspaces }) =>
                   Effect.fail(new LastOwner({ workspaces })),

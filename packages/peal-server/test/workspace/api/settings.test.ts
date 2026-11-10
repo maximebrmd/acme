@@ -13,6 +13,7 @@ import { HttpApiTest } from "effect/http-api";
 import { Api } from "peal-contract";
 import type { Member, Principal } from "peal-contract";
 
+import { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -34,6 +35,7 @@ import { ConnectedAppStore } from "#workspace/application/connected-app-store.ts
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { ContextRecords } from "#workspace/application/context-records.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
+import { ErasureLedger } from "#workspace/application/erasure-ledger.ts";
 import { PasswordCheck } from "#workspace/application/password-check.ts";
 import { PrivacyDeclaration } from "#workspace/application/privacy-declaration.ts";
 import { TooManyPasswordAttempts } from "#workspace/application/too-many-password-attempts.ts";
@@ -372,6 +374,24 @@ const PortsLive = Layer.mergeAll(
     TransactionRunner,
     TransactionRunner.of({ transaction: (effect) => effect })
   ),
+  // The ledger of erasures, which records what it is told.
+  Layer.effect(
+    ErasureLedger,
+    Effect.gen(function* ErasureLedgerTest() {
+      const provide = Effect.provideService(Fakes, yield* Fakes);
+
+      return ErasureLedger.of({
+        discard: () => record("ledger:discard").pipe(provide),
+        entries: Effect.succeed([]),
+        expire: () => Effect.succeed(0),
+        record: ({ confirmed, userId: closed, workspaceIds }) =>
+          record(
+            `ledger:${closed ?? "workspace"}:${workspaceIds.join(",")}:${confirmed ? "confirmed" : "pending"}`
+          ).pipe(provide),
+      });
+    })
+  ),
+  Ids.layerTest,
   // A server that bills, whose operator declared who it is.
   Layer.succeed(
     PrivacyDeclaration,
@@ -513,6 +533,18 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             "mail:workspaceDeleted:ana@example.test:fr:Harbour:0",
           ]
         );
+
+        // The erasure is in the ledger before it commits, by id only, and
+        // confirmed once it has: a restore of the database knows to
+        // delete the workspace again.
+        const pending = done.indexOf(`ledger:workspace:${harbour}:pending`);
+
+        assert.isAbove(pending, done.indexOf(`deleteWorkspace:${harbour}`));
+        assert.isAbove(
+          done.indexOf(`ledger:workspace:${harbour}:confirmed`),
+          pending
+        );
+        assert.notInclude(done, "ledger:discard");
       })
   );
 
@@ -628,6 +660,11 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           "BillingUnavailable"
         );
         assert.notInclude(yield* calls, `deleteWorkspace:${unreachable}`);
+        // Nothing was erased, so the ledger says nothing was.
+        assert.notInclude(
+          yield* calls,
+          `ledger:workspace:${unreachable}:confirmed`
+        );
       })
   );
 
@@ -848,6 +885,9 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             `deleteUser:${userId}`,
             `removeFiles:${harbour}`,
             "mail:ana@example.test:fr:0:5",
+            // The closure, with the workspace it deleted, by id only.
+            `ledger:${userId}:${harbour}:pending`,
+            `ledger:${userId}:${harbour}:confirmed`,
           ]
         );
 
