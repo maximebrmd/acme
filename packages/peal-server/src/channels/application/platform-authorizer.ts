@@ -156,6 +156,12 @@ export interface PlatformAuthorizer {
   readonly complete: (request: {
     readonly attempt: ConnectAttempt;
     readonly callback: AuthorizationCallback;
+    /**
+     * The account of the channel the sign-in reconnects, if it reconnects
+     * one: an authorizer that offers only some of the accounts a sign-in
+     * reaches offers that one among them, when the sign-in reaches it.
+     */
+    readonly reconnecting: Option.Option<string>;
     readonly secret: Redacted.Redacted;
   }) => Effect.Effect<Authorized, CompleteFailure>;
   /**

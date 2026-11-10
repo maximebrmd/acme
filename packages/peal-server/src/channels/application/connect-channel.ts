@@ -717,9 +717,20 @@ export class ConnectChannel extends Context.Service<
           )
           .pipe(Effect.orDie);
 
+        // The channel a reconnection is for, whose account the sign-in
+        // must reach again.
+        const reconnected = yield* Effect.transposeOption(
+          attempt.channelId.pipe(
+            Option.map((channelId) => findChannel(actor, channelId))
+          )
+        );
+
         const authorized = yield* authorizer.complete({
           attempt,
           callback: returned,
+          reconnecting: reconnected.pipe(
+            Option.map(({ accountId }) => accountId)
+          ),
           secret,
         });
 
@@ -727,9 +738,9 @@ export class ConnectChannel extends Context.Service<
           "_tag" in authorized ? authorized.accounts : [authorized];
 
         // Reconnecting takes the channel's own account among those reached.
-        if (Option.isSome(attempt.channelId)) {
-          const channelId = attempt.channelId.value;
-          const channel = yield* findChannel(actor, channelId);
+        if (Option.isSome(reconnected)) {
+          const channel = reconnected.value;
+          const channelId = channel.id;
 
           const account = reached.find(
             ({ accountId }) => accountId === channel.accountId

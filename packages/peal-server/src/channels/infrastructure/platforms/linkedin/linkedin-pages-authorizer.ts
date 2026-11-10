@@ -264,7 +264,10 @@ export const linkedinPagesAuthorizer = Effect.fn(
     }
   );
 
-  const complete: PlatformAuthorizer["complete"] = ({ callback }) =>
+  const complete: PlatformAuthorizer["complete"] = ({
+    callback,
+    reconnecting,
+  }) =>
     Effect.gen(function* completing() {
       if (Option.isNone(callback.code)) {
         return yield* new AuthorizationFailed({
@@ -304,7 +307,7 @@ export const linkedinPagesAuthorizer = Effect.fn(
         scopes,
       };
 
-      const ids = [
+      const administered = [
         ...new Set(
           roles
             .filter(
@@ -321,7 +324,20 @@ export const linkedinPagesAuthorizer = Effect.fn(
               )
             )
         ),
-      ].slice(0, offeredPages);
+      ];
+
+      // The page a reconnection is for comes first, so it is offered
+      // however many pages the member has.
+      const own = reconnecting.pipe(
+        Option.flatMap((urn) => idOf(organizationUrn, urn)),
+        Option.filter((id) => administered.includes(id)),
+        Option.toArray
+      );
+
+      const ids = [...new Set([...own, ...administered])].slice(
+        0,
+        offeredPages
+      );
 
       const accounts = yield* Effect.forEach(
         ids,

@@ -314,6 +314,38 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
     }).pipe(Effect.scoped)
   );
 
+  it.effect(
+    "reconnects a page of a member who administers more pages than a sign-in offers",
+    () =>
+      Effect.gen(function* reconnectsAmongMany() {
+        const on = yield* onLinkedIn();
+        const workspaceId = yield* freshWorkspace;
+        const channel = yield* connectedPage(on, workspaceId);
+
+        // Forty pages, the channel's own listed last by LinkedIn.
+        on.linkedin.grantRoles(linkedinMember.sub, [
+          ...Array.from({ length: 39 }, (_, index) =>
+            administrator({ id: 9_100_000_000 + index })
+          ),
+          administrator(linkedinPage),
+        ]);
+
+        const url = yield* on.connect.reconnect(
+          manager(workspaceId),
+          channel.id
+        );
+
+        const again = yield* on.connect.complete(
+          manager(workspaceId),
+          "linkedin",
+          callbackOf(on.linkedin.approve(url))
+        );
+
+        assert(again._tag === "connected");
+        assert.strictEqual(again.channel.id, channel.id);
+      }).pipe(Effect.scoped)
+  );
+
   it.effect("reconnects a page through the pages app, for that page", () =>
     Effect.gen(function* reconnects() {
       const on = yield* onLinkedIn();
