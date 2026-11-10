@@ -1,0 +1,39 @@
+# End-to-end tests
+
+- Run them with the development stack up and a database of their own:
+  `DATABASE_URL=postgres://peal:peal@127.0.0.1:15432/peal_e2e bun nx run peal-e2e:e2e`.
+  The target builds the web app first and is never cached. Like the
+  server's tests, a run writes to the database `DATABASE_URL` names; Mailpit,
+  SMTP and SeaweedFS (under `e2e/`) default to the stack, and `MAILPIT_URL`,
+  `SMTP_URL` and `PEAL_S3_*` override them.
+- `scripts/serve.ts` starts the server and `next start` on free ports, with
+  the synthetic secrets in `e2e.config.ts`, and stops both when either exits.
+  It passes `next start` no `--hostname`: bound to 127.0.0.1, every page
+  redirects to itself.
+- Install Chromium with `e2e-web install chromium`, from
+  `packages/peal-e2e/node_modules/.bin`; CI adds `--with-deps` for the
+  system libraries it needs.
+- Write steps with exact locators (`screen`, `expect`) only, so tests need no
+  model and run in CI. Find elements by role and label, and scope to `main`,
+  `banner` or a named `navigation` when a name repeats.
+- Sign up a new synthetic user each run (`member+<uuid>@example.test`, from
+  `credentials.member`), and read its emails through Mailpit's API
+  (`tests/support/mailpit.ts`). Accounts a test acts on rather than as sign
+  up through the API with `confirmedAccount`, and `makeStaff`
+  (`tests/support/accounts.ts`) gives one the staff role in the database, as
+  self-hosters do; it signs in again afterwards.
+- The run's server bills, against a stand-in for Stripe that lists Peal's
+  prices (`scripts/stripe.ts`): a new workspace is on the free plan, so a
+  journey stays within three channels, two members and one workspace per
+  account, or tests the refusal (`upgrade-prompt.e2e.ts`). No test pays.
+  So the functions to cancel and withdraw are on
+  (`contract-functions.e2e.ts`): a journey there sends requests no
+  contract answers, and reads their acknowledgement in Mailpit.
+- No platform can be connected in a run, so a test that needs a channel
+  inserts a synthetic one with `seedChannel` (`tests/support/channels.ts`).
+  Update it when `channels.channels` changes. Publish nothing, and cancel any
+  post a test schedules, through the UI.
+- CI's `e2e` job runs after `verify`, with its own Postgres and Mailpit and
+  SeaweedFS from `compose.yaml`. After a failure, read the report, traces and
+  screenshots under `packages/peal-e2e/.e2e/` (CI uploads it for 7 days), and
+  the server's and the web app's output in `.e2e/logs/app.log`.
