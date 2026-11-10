@@ -17,6 +17,12 @@ export interface UploadPolicy extends UploadSizing {
    * before it are sent, so this covers the whole upload on a slow line.
    */
   readonly partUploadExpiry: Duration.Duration;
+  /**
+   * How long importing a file from an address may take, from the request
+   * to the stored file: less than anything between a client and the server
+   * waits for an answer (the web app's proxy: 120 seconds).
+   */
+  readonly importTimeout: Duration.Duration;
   /** How long a probe may read the file. */
   readonly probeExpiry: Duration.Duration;
   /** How long the URL a client shows a stored file from works. */
@@ -30,9 +36,11 @@ export interface UploadPolicy extends UploadSizing {
  * hours, enough for 1 GiB at about 0.4 Mbit/s. A single upload URL lasts ten
  * minutes: the store only checks that a request starts in time, so a slow
  * line still finishes its 16 MiB. A URL to show a stored file lasts an
- * hour: a page that lists media is read again well before then.
+ * hour: a page that lists media is read again well before then. An import
+ * has 90 seconds: a file that takes longer is uploaded instead.
  */
 export const defaultUploadPolicy: UploadPolicy = {
+  importTimeout: Duration.seconds(90),
   multipartThreshold: 16 * mebibyte,
   partSize: 8 * mebibyte,
   partUploadExpiry: Duration.hours(6),

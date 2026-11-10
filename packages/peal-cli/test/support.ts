@@ -167,6 +167,7 @@ const signedInGroupsLive = (
         delete: () => refusing,
         describe: () => refusing,
         get: () => refusing,
+        importFromUrl: () => refusing,
         list: () => refusing,
         usage: () => refusing,
       })

@@ -32,6 +32,13 @@ export interface UploadToSign {
   readonly key: StorageKey;
 }
 
+/** A file the server sends to the store itself, as its bytes arrive. */
+export interface FileToStore<E> {
+  readonly bytes: Stream.Stream<Uint8Array, E>;
+  readonly contentType: MediaContentType;
+  readonly key: StorageKey;
+}
+
 /** A multipart upload the store has started. */
 export interface MultipartUpload {
   readonly key: StorageKey;
@@ -89,6 +96,14 @@ export class MediaStorage extends Context.Service<
     readonly abortMultipartUpload: (
       upload: MultipartUpload
     ) => Effect.Effect<void, MediaStorageFailed>;
+    /**
+     * Stores a file from its bytes as they arrive, in parts, holding one
+     * part at most in memory, and answers how many bytes it stored. When
+     * the bytes fail, or anything else does, nothing stays in the store.
+     */
+    readonly store: <E>(
+      file: FileToStore<E>
+    ) => Effect.Effect<number, E | MediaStorageFailed>;
     /** The stored file's size and content type, if it exists. */
     readonly head: (
       key: StorageKey

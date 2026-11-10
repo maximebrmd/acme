@@ -199,6 +199,29 @@ export const uploadSessions = publishing.table("upload_sessions", {
 });
 
 /**
+ * The idempotency keys of the requests that made posts in one call
+ * (`posts.send`), by workspace: the SHA-256 of the key its client chose and
+ * of the request it came with, never either, and the post it made. A key
+ * is free again 24 hours after `created_at`; the
+ * `publishing.idempotency-retention` cron deletes those past it. Rows go
+ * with their workspace, and name nobody.
+ */
+export const idempotencyKeys = publishing.table(
+  "idempotency_keys",
+  {
+    createdAt: instant("created_at").notNull(),
+    keyDigest: text("key_digest").notNull(),
+    postId: uuid("post_id").notNull(),
+    requestDigest: text("request_digest").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.keyDigest] }),
+    index("idempotency_keys_created_at").on(table.createdAt),
+  ]
+);
+
+/**
  * Units of a platform's daily quota this server spent, by bucket and day,
  * as the platform counts its days (YouTube: in Pacific Time). Counts only,
  * naming nobody.

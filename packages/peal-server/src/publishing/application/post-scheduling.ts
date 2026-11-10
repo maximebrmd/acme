@@ -11,6 +11,7 @@ import {
 import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { optionsOn } from "#publishing/domain/channel-options.ts";
 import { checkPublishable } from "#publishing/domain/content-rules.ts";
+import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
 import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
@@ -28,7 +29,7 @@ import {
 import type { Post } from "#publishing/domain/post.ts";
 import { postingMonthOf, sameMonth } from "#publishing/domain/posting-month.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
-import type { Schedule } from "#publishing/domain/schedule.ts";
+import { Schedule } from "#publishing/domain/schedule.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
@@ -40,9 +41,13 @@ import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
+import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 
 import { AccountRules } from "./account-rules.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
+import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
+import { IdempotencyKeys } from "./idempotency-keys.ts";
+import type { KeyedRequest, KeyUse } from "./idempotency-keys.ts";
 import { PostAllowance } from "./post-allowance.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { PostOrigins } from "./post-origins.ts";
@@ -54,6 +59,7 @@ import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
 import type { WorkspaceChannels } from "./workspace-channels.ts";
 import {
+  findInWorkspace,
   lockInWorkspace,
   optionsOfTargets,
   targetsOn,
@@ -79,6 +85,33 @@ export interface SchedulePostRequest {
   readonly schedule: Schedule;
 }
 
+/**
+ * A new post to send to some channels, now or at an instant, in one call:
+ * what `posts.send`, the MCP tool `create_post` and `peal post` ask for.
+ */
+export interface SendPostRequest {
+  /** When it goes out; none is now. */
+  readonly at: Option.Option<DateTime.Utc>;
+  // At least one; a channel listed twice gets one target.
+  readonly channelIds: readonly [ChannelId, ...ChannelId[]];
+  readonly content: PostContent;
+  /**
+   * The key the request names itself with, if it does: sent again with it
+   * within `idempotencyKeyLifetime`, it answers the post it made.
+   */
+  readonly idempotency: Option.Option<KeyedRequest>;
+  // The options it has on some channels, one at most per channel.
+  readonly options?: readonly ChannelOptions[];
+  /** The zone its time was chosen in, which calendars show it in. */
+  readonly timeZone: TimeZoneId;
+}
+
+/** The post a request made, or made when it was first sent. */
+export interface SentPost extends PostWithTargets {
+  /** Whether an earlier request with the same key made it. */
+  readonly replayed: boolean;
+}
+
 /** A draft to send to some channels, at a time, with its targets' options. */
 export interface ScheduleDraftRequest {
   // A channel listed twice gets one target.
@@ -99,6 +132,7 @@ type Unpublishable =
 type Ports =
   | AccountRules
   | AttachableMedia
+  | IdempotencyKeys
   | Ids
   | PostAllowance
   | PostOrigins
@@ -137,6 +171,34 @@ export class PostScheduling extends Context.Service<
       PostWithTargets,
       DatabaseError | MissingPermission | ScheduleInPast | Unpublishable
     >;
+    /**
+     * Creates a post and sends it to the given channels, now or at an
+     * instant, as `schedule` does: "now" is the current time, which goes
+     * through every rule a later time does. A request that names itself
+     * with an idempotency key makes one post however often it is sent
+     * within the key's lifetime: sent again, it answers that post as it now
+     * stands, before anything is checked again, so a retry that comes once
+     * the post went out is not told its time has passed. The same key with
+     * another request is IdempotencyKeyReused, and PostNotFound once the
+     * post it made was deleted.
+     */
+    readonly send: (
+      actor: Actor,
+      request: SendPostRequest
+    ) => Effect.Effect<
+      SentPost,
+      | DatabaseError
+      | IdempotencyKeyReused
+      | MissingPermission
+      | PostNotFound
+      | ScheduleInPast
+      | Unpublishable
+    >;
+    /**
+     * Deletes the idempotency keys past their lifetime, and says how many:
+     * the daily retention.
+     */
+    readonly forgetExpiredKeys: Effect.Effect<number, DatabaseError>;
     /**
      * Schedules a draft on the given channels, which become its targets.
      * Its content is checked against their platforms.
@@ -376,60 +438,175 @@ export class PostScheduling extends Context.Service<
       const lockPost = (actor: Actor, postId: PostId) =>
         lockInWorkspace(actor.workspaceId, postId).pipe(withPorts);
 
+      const keys = yield* IdempotencyKeys;
+
+      // A new post scheduled on the channels, saved with its job unless
+      // `claimed` finds, in the same transaction, that another request made
+      // it already.
+      const scheduleNew = Effect.fn("PostScheduling.scheduleNew")(
+        function* scheduleNew<E>(
+          actor: Actor,
+          {
+            channelIds,
+            content,
+            options = [],
+            schedule: at,
+          }: SchedulePostRequest,
+          claimed: (
+            post: Post
+          ) => Effect.Effect<Option.Option<KeyUse>, DatabaseError | E>
+        ) {
+          const channels = yield* publishableOn(
+            actor,
+            content,
+            channelIds,
+            options
+          );
+
+          const now = yield* DateTime.now;
+          const postId = yield* newId(PostIdSchema).pipe(withPorts);
+
+          const via = yield* originOf(actor);
+
+          // A new draft can always be scheduled.
+          const post = scheduledThrough(
+            yield* Effect.fromResult(
+              schedulePost(
+                createDraft(
+                  postId,
+                  actor.workspaceId,
+                  content,
+                  authorOf(actor),
+                  Option.some(via)
+                ),
+                at,
+                now
+              )
+            ).pipe(Effect.catchTag("InvalidPostTransition", Effect.die)),
+            via,
+            authorOf(actor)
+          );
+
+          const targets = yield* targetsOn(
+            postId,
+            channels,
+            [],
+            Option.some(options)
+          ).pipe(withPorts);
+
+          const used = yield* transaction(
+            Effect.gen(function* insertAndStart() {
+              const earlier = yield* claimed(post);
+
+              if (Option.isSome(earlier)) {
+                return earlier;
+              }
+
+              yield* roomInMonth(post);
+              yield* posts.insert(post, targets);
+              yield* startJob(post);
+
+              return earlier;
+            })
+          );
+
+          return { made: { post, targets }, used };
+        }
+      );
+
       const schedule = Effect.fn("PostScheduling.schedule")(function* schedule(
         actor: Actor,
-        { channelIds, content, options = [], schedule: at }: SchedulePostRequest
+        request: SchedulePostRequest
       ) {
         yield* mayPublish(actor);
 
-        const channels = yield* publishableOn(
-          actor,
-          content,
-          channelIds,
-          options
+        const { made } = yield* scheduleNew(actor, request, () =>
+          Effect.succeed(Option.none())
         );
+
+        return made;
+      });
+
+      // The post a key was first used for, as it now stands, if this is
+      // the request it was used with.
+      const replay = Effect.fn("PostScheduling.replay")(function* replay(
+        actor: Actor,
+        { postId, sameRequest }: KeyUse
+      ) {
+        if (!sameRequest) {
+          return yield* new IdempotencyKeyReused();
+        }
+
+        const { post } = yield* findInWorkspace(actor.workspaceId, postId).pipe(
+          withPorts
+        );
+
+        const sent: SentPost = {
+          post,
+          replayed: true,
+          targets: yield* posts.targets(postId),
+        };
+
+        return sent;
+      });
+
+      const send = Effect.fn("PostScheduling.send")(function* send(
+        actor: Actor,
+        { at, idempotency, timeZone, ...request }: SendPostRequest
+      ) {
+        yield* mayPublish(actor);
 
         const now = yield* DateTime.now;
-        const postId = yield* newId(PostIdSchema).pipe(withPorts);
+        const since = DateTime.subtractDuration(now, idempotencyKeyLifetime);
 
-        const via = yield* originOf(actor);
+        // Sent before: the post it made then, whatever happened since.
+        const before = yield* Option.match(idempotency, {
+          onNone: () => Effect.succeed(Option.none<KeyUse>()),
+          onSome: (keyed) => keys.find(actor.workspaceId, keyed, since),
+        });
 
-        // A new draft can always be scheduled.
-        const post = scheduledThrough(
-          yield* Effect.fromResult(
-            schedulePost(
-              createDraft(
-                postId,
-                actor.workspaceId,
-                content,
-                authorOf(actor),
-                Option.some(via)
-              ),
-              at,
-              now
-            )
-          ).pipe(Effect.catchTag("InvalidPostTransition", Effect.die)),
-          via,
-          authorOf(actor)
+        if (Option.isSome(before)) {
+          return yield* replay(actor, before.value);
+        }
+
+        const { made, used } = yield* scheduleNew(
+          actor,
+          {
+            ...request,
+            schedule: new Schedule({
+              at: Option.getOrElse(at, () => now),
+              timeZone,
+            }),
+          },
+          (post) =>
+            Option.match(idempotency, {
+              onNone: () => Effect.succeed(Option.none<KeyUse>()),
+              onSome: (keyed) =>
+                keys.claim(
+                  actor.workspaceId,
+                  keyed,
+                  { at: now, postId: post.id },
+                  since
+                ),
+            })
         );
 
-        const targets = yield* targetsOn(
-          postId,
-          channels,
-          [],
-          Option.some(options)
-        ).pipe(withPorts);
+        // Sent together with this one, the other request made the post.
+        if (Option.isSome(used)) {
+          return yield* replay(actor, used.value);
+        }
 
-        yield* transaction(
-          Effect.gen(function* insertAndStart() {
-            yield* roomInMonth(post);
-            yield* posts.insert(post, targets);
-            yield* startJob(post);
-          })
-        );
+        const sent: SentPost = { ...made, replayed: false };
 
-        return { post, targets };
+        return sent;
       });
+
+      const forgetExpiredKeys = DateTime.now.pipe(
+        Effect.flatMap((now) =>
+          keys.purge(DateTime.subtractDuration(now, idempotencyKeyLifetime))
+        ),
+        Effect.withSpan("PostScheduling.forgetExpiredKeys")
+      );
 
       const scheduleDraft = Effect.fn("PostScheduling.scheduleDraft")(
         function* scheduleDraft(
@@ -573,9 +750,11 @@ export class PostScheduling extends Context.Service<
 
       return PostScheduling.of({
         cancel,
+        forgetExpiredKeys,
         reschedule,
         schedule,
         scheduleDraft,
+        send,
         unschedule,
       });
     })

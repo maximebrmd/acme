@@ -22,6 +22,7 @@ import {
   Layer,
   Option,
   Redacted,
+  Ref,
   Schema,
   Stream,
 } from "effect";
@@ -31,21 +32,26 @@ import { MultipartUploadNotFound } from "#media/application/multipart-upload-not
 import { MediaFolders } from "#media/application/ports/media-folders.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import type {
+  FileToStore,
   MultipartUpload,
   PartToSign,
   SignedRequest,
   StoredPart,
   UploadToSign,
 } from "#media/application/ports/media-storage.ts";
+import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import type { MediaContentType } from "#media/domain/media-format.ts";
 import { MultipartUploadIdSchema } from "#media/domain/media-status.ts";
 import type { StorageKey } from "#media/domain/storage-key.ts";
 import { PartNumberSchema } from "#media/domain/upload-plan.ts";
+import type { PartNumber } from "#media/domain/upload-plan.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
   isProduction,
   requiredInProduction,
 } from "#shared/infrastructure/environment.ts";
+
+import { PartBuffer } from "./part-buffer.ts";
 
 // The media store, on any S3-compatible API: Cloudflare R2 in production,
 // SeaweedFS in development, or the store a self-hoster runs.
@@ -151,6 +157,10 @@ const StoredPartSchema = Schema.Struct({
 const decodeParts = Schema.decodeUnknownEffect(Schema.Array(StoredPartSchema));
 
 const decodeUploadId = Schema.decodeUnknownEffect(MultipartUploadIdSchema);
+
+const decodeEtag = Schema.decodeUnknownEffect(Schema.NonEmptyString);
+
+const decodePartNumber = Schema.decodeUnknownEffect(PartNumberSchema);
 
 const decodeContentLength = Schema.decodeUnknownEffect(Schema.Int);
 
@@ -510,6 +520,154 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
       );
     });
 
+    // Sends one part of a file the server stores itself.
+    const putPart = Effect.fn("S3MediaStorage.putPart")(function* putPart(
+      upload: MultipartUpload,
+      partNumber: PartNumber,
+      body: Uint8Array<ArrayBuffer>
+    ) {
+      const sent = yield* request(
+        "store a file part",
+        async (signal) =>
+          await client.send(
+            new UploadPartCommand({
+              Body: body,
+              Bucket: bucket,
+              ContentLength: body.byteLength,
+              Key: objectKey(upload.key),
+              PartNumber: partNumber,
+              UploadId: upload.uploadId,
+            }),
+            { abortSignal: signal }
+          )
+      );
+
+      const etag = yield* decodeEtag(sent.ETag).pipe(
+        Effect.mapError(
+          (cause) =>
+            new MediaStorageFailed({ cause, operation: "store a file part" })
+        )
+      );
+
+      const part: StoredPart = { byteSize: body.byteLength, etag, partNumber };
+
+      return part;
+    });
+
+    const store = <E>({ bytes, contentType, key }: FileToStore<E>) =>
+      Effect.gen(function* storing() {
+        const { partSize } = yield* CurrentUploadPolicy;
+        const buffer = new PartBuffer(partSize);
+        const upload = yield* Ref.make(Option.none<MultipartUpload>());
+        const parts = yield* Ref.make<readonly StoredPart[]>([]);
+
+        // The multipart upload, started with the first part to go.
+        const opened = Ref.get(upload).pipe(
+          Effect.flatMap(
+            Option.match({
+              onNone: () =>
+                startMultipartUpload(key, contentType).pipe(
+                  Effect.map((uploadId): MultipartUpload => ({
+                    key,
+                    uploadId,
+                  })),
+                  Effect.tap((started) => Ref.set(upload, Option.some(started)))
+                ),
+              onSome: (started) => Effect.succeed(started),
+            })
+          )
+        );
+
+        const sendPart = Effect.fn("S3MediaStorage.sendPart")(
+          function* sendPart(body: Uint8Array<ArrayBuffer>) {
+            const sent = (yield* Ref.get(parts)).length;
+
+            const partNumber = yield* decodePartNumber(sent + 1).pipe(
+              Effect.mapError(
+                (cause) =>
+                  new MediaStorageFailed({
+                    cause,
+                    operation: "store a file part",
+                  })
+              )
+            );
+
+            const part = yield* putPart(yield* opened, partNumber, body);
+
+            yield* Ref.update(parts, (all) => [...all, part]);
+          }
+        );
+
+        const stored = Effect.gen(function* sending() {
+          yield* Stream.runForEachArray(bytes, (chunks) =>
+            Effect.gen(function* buffering() {
+              for (const chunk of chunks) {
+                buffer.push(chunk);
+              }
+
+              while (buffer.hasPart) {
+                yield* sendPart(buffer.takePart());
+              }
+            })
+          );
+
+          const started = yield* Ref.get(upload);
+
+          // Smaller than a part: one request stores it.
+          if (Option.isNone(started)) {
+            const body = buffer.takeRest();
+
+            yield* request(
+              "store a file",
+              async (signal) =>
+                await client.send(
+                  new PutObjectCommand({
+                    Body: body,
+                    Bucket: bucket,
+                    ContentLength: body.byteLength,
+                    ContentType: contentType,
+                    Key: objectKey(key),
+                  }),
+                  { abortSignal: signal }
+                )
+            );
+
+            return body.byteLength;
+          }
+
+          if (buffer.size > 0) {
+            yield* sendPart(buffer.takeRest());
+          }
+
+          const sent = yield* Ref.get(parts);
+
+          yield* completeMultipartUpload(started.value, sent).pipe(
+            Effect.catchTag("MultipartUploadNotFound", (cause) =>
+              Effect.fail(
+                new MediaStorageFailed({ cause, operation: "store a file" })
+              )
+            )
+          );
+
+          return sent.reduce((total, part) => total + part.byteSize, 0);
+        });
+
+        // Nothing stays of a file that did not arrive whole: neither the
+        // parts sent so far, nor a file stored before something else failed.
+        const discard = Ref.get(upload).pipe(
+          Effect.flatMap(
+            Option.match({
+              onNone: () => Effect.void,
+              onSome: (started) => abortMultipartUpload(started),
+            })
+          ),
+          Effect.andThen(remove(key)),
+          Effect.ignore
+        );
+
+        return yield* stored.pipe(Effect.onError(() => discard));
+      }).pipe(Effect.withSpan("S3MediaStorage.store"));
+
     return MediaStorage.of({
       abortMultipartUpload,
       completeMultipartUpload,
@@ -522,6 +680,7 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
       signUpload,
       signUploadPart,
       startMultipartUpload,
+      store,
     });
   }
 );

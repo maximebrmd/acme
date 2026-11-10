@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "e89aa1e8-ae4e-4788-99ba-834356872937",
+  "id": "c6c79522-bd27-44f3-aefe-11ace7fd9e6b",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -547,6 +547,25 @@
       ],
       "reads": [
         "n|sch|notifications"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "idempotency_keys"
+      ],
+      "writes": [
+        "s|tbl|publishing.idempotency_keys",
+        "n|tbl|publishing.idempotency_keys",
+        "e|tbl|publishing.idempotency_keys",
+        "n|rel|publishing.idempotency_keys",
+        "n|type|publishing.idempotency_keys",
+        "n|rel|publishing.idempotency_keys_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
       ]
     },
     {
@@ -1659,6 +1678,26 @@
         "n|tbl|notifications.notices",
         "n|sch|notifications",
         "n|col|notifications.notices.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "idempotency_keys",
+        "idempotency_keys_created_at"
+      ],
+      "writes": [
+        "s|idx|publishing.idempotency_keys_created_at",
+        "n|idx|publishing.idempotency_keys_created_at",
+        "e|idx|publishing.idempotency_keys_created_at",
+        "n|rel|publishing.idempotency_keys_created_at"
+      ],
+      "reads": [
+        "n|tbl|publishing.idempotency_keys",
+        "n|sch|publishing",
+        "n|col|publishing.idempotency_keys.created_at"
       ]
     },
     {
@@ -3088,6 +3127,12 @@
     {
       "schema": "notifications",
       "name": "sent_notices",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "idempotency_keys",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -5670,6 +5715,71 @@
       "table": "sent_notices",
       "name": "sent_at",
       "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "idempotency_keys",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "idempotency_keys",
+      "name": "key_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "idempotency_keys",
+      "name": "post_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "idempotency_keys",
+      "name": "request_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "idempotency_keys",
+      "name": "workspace_id",
+      "type": "uuid",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -10201,6 +10311,27 @@
     },
     {
       "schema": "publishing",
+      "table": "idempotency_keys",
+      "name": "idempotency_keys_created_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
       "table": "post_targets",
       "name": "post_targets_published",
       "nameExplicit": true,
@@ -11436,6 +11567,17 @@
       "columns": [
         "instance",
         "redirect_uri"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "idempotency_keys",
+      "name": "idempotency_keys_pkey",
+      "columns": [
+        "workspace_id",
+        "key_digest"
       ],
       "nameExplicit": false,
       "entityType": "pks"

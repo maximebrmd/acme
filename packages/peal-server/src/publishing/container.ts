@@ -23,6 +23,7 @@ import {
   GatedPlatformPublisher,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
+import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
 import { DrizzlePostOversight } from "#publishing/infrastructure/drizzle-post-oversight.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
@@ -85,6 +86,7 @@ export const publishingWith = <
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzleIdempotencyKeys,
         DrizzlePostOversight,
         DrizzlePostRepository,
         DrizzlePublicationJournal,
@@ -211,3 +213,6 @@ export const publishingWorkersReading = <E, R>(readers: GateReaders<E, R>) =>
  * analytics' collection.
  */
 export { GatedMetricsReader } from "#publishing/infrastructure/channel-gate.ts";
+
+/** The idempotency keys' daily retention. Needs PostScheduling. */
+export { IdempotencyRetentionCron as PublishingCronsLive } from "#publishing/infrastructure/crons.ts";

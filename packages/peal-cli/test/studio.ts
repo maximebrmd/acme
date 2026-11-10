@@ -599,6 +599,7 @@ export const studioGroupsLive = (studio: Studio) =>
           ),
         reschedule: () => refusing,
         schedule: () => refusing,
+        send: () => refusing,
         unschedule: ({ params }) =>
           Effect.gen(function* unschedule() {
             yield* allowed("post:schedule");

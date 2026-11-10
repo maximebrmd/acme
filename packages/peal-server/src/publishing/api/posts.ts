@@ -5,6 +5,7 @@ import {
   CurrentMember,
   defaultDraftPageSize,
   Forbidden,
+  IdempotencyKeyReused,
   InvalidTimeRange,
   PlanLimitReached,
   PostContentInvalid,
@@ -33,6 +34,7 @@ import {
   postIdFrom,
   postIdOption,
   scheduleFrom,
+  sendRequestFrom,
   targetIdFrom,
 } from "./post-input.ts";
 import { attemptView, postView } from "./post-view.ts";
@@ -292,6 +294,32 @@ export const PostsHandlers = HttpApiBuilder.group(
             );
 
           return postView(scheduled);
+        }),
+      send: ({ headers, payload }) =>
+        Effect.gen(function* send() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const request = yield* sendRequestFrom(
+            payload,
+            headers["idempotency-key"]
+          );
+
+          const sent = yield* scheduling.send(actor, request).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              IdempotencyKeyReused: () =>
+                Effect.fail(new IdempotencyKeyReused()),
+              MissingPermission: forbidden,
+              PlanLimitReached: limitReached,
+              PostContentRejected: contentInvalid,
+              PostNotFound: notFound,
+              ScheduleInPast: inPast,
+              UnknownChannels: unknownChannels,
+              UnknownMedia: unknownMedia,
+            })
+          );
+
+          return postView(sent);
         }),
       unschedule: ({ params }) =>
         Effect.gen(function* unschedule() {
