@@ -106,8 +106,9 @@ When unsure, ask the user. Never pass it to get past the refusal.
 The quote answers, in minor units:
 
 - `commitment`: the most the boost can cost. A total budget commits its
-  amount. A daily budget commits its amount for each calendar day the run
-  touches (`days`), and 25% more, which the network may spend on any day.
+  amount. A daily budget commits 175% of its amount for each calendar day
+  the run touches (`days`), which the network may spend on any day, and
+  never more than 7 times its amount in a week, Sunday to Saturday.
 - `ceiling`, and `committed`: the monthly ceiling, and what the account's
   other boosts already commit.
 - `startsAt`, `endsAt`, `currency`, `minorUnitDigits`, and `capRoom`, what
