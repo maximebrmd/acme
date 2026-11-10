@@ -112,6 +112,7 @@ const ChannelJobsTest = Layer.mergeAll(
           deferred: 0,
           discovered: 0,
           ended: 0,
+          left: 0,
           read: 0,
           skipped: 0,
         }),

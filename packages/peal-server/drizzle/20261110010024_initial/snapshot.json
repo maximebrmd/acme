@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "a59e45b5-c1dd-4287-a95c-3085afd5f4ea",
+  "id": "3fb6df61-033f-4d22-ae9d-a416a5a2e66c",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -1071,6 +1071,28 @@
         "n|tbl|analytics.tracked_posts",
         "n|sch|analytics",
         "n|col|analytics.tracked_posts.next_collection_at",
+        "n|col|analytics.tracked_posts.channel_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "analytics",
+        "tracked_posts",
+        "tracked_posts_channel_due"
+      ],
+      "writes": [
+        "s|idx|analytics.tracked_posts_channel_due",
+        "n|idx|analytics.tracked_posts_channel_due",
+        "e|idx|analytics.tracked_posts_channel_due",
+        "n|rel|analytics.tracked_posts_channel_due"
+      ],
+      "reads": [
+        "n|tbl|analytics.tracked_posts",
+        "n|sch|analytics",
+        "n|col|analytics.tracked_posts.channel_id",
+        "n|col|analytics.tracked_posts.next_collection_at",
         "n|col|analytics.tracked_posts.target_id"
       ]
     },
@@ -1700,6 +1722,26 @@
         "n|tbl|publishing.posts",
         "n|sch|publishing",
         "n|col|publishing.posts.workspace_id",
+        "n|col|publishing.posts.scheduled_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "posts",
+        "posts_scheduled"
+      ],
+      "writes": [
+        "s|idx|publishing.posts_scheduled",
+        "n|idx|publishing.posts_scheduled",
+        "e|idx|publishing.posts_scheduled",
+        "n|rel|publishing.posts_scheduled"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
         "n|col|publishing.posts.scheduled_at"
       ]
     },
@@ -4030,6 +4072,19 @@
     {
       "schema": "billing",
       "table": "trials",
+      "name": "forgotten_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
       "name": "id",
       "type": "uuid",
       "typeSchema": null,
@@ -4070,19 +4125,6 @@
       "schema": "billing",
       "table": "trials",
       "name": "started_at",
-      "type": "timestamp with time zone",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "entityType": "columns"
-    },
-    {
-      "schema": "billing",
-      "table": "trials",
-      "name": "forgotten_at",
       "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": false,
@@ -9488,6 +9530,41 @@
           "opclass": null
         },
         {
+          "value": "channel_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"next_collection_at\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "tracked_posts_channel_due",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "channel_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "next_collection_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
           "value": "target_id",
           "isExpression": false,
           "asc": true,
@@ -10211,6 +10288,27 @@
       ],
       "isUnique": false,
       "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "posts_scheduled",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "scheduled_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"status\" = 'scheduled'",
       "with": "",
       "method": "btree",
       "concurrently": false,

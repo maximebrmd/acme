@@ -1281,10 +1281,18 @@ and no socket, for tests.
   channel's posts, and a post still unread a day past its window, end.
 - Each run follows the publications after the latest one it follows, then
   looks back 15 minutes for those that settled late, 20 pages of 500 each
-  at most, so it moves on however many went live together. It reads 5000
-  due posts at most, taking turns between channels (`TrackedPosts.due`
-  numbers each channel's with `row_number()`), so posts put off on a
-  platform that is down never crowd the other channels out.
+  at most, so it moves on however many went live together. It then reads
+  every post due, with no cap: a page of 500 channels at a time, those
+  whose post waited longest first and each channel once a run
+  (`TrackedPosts.dueChannels`, then `dueOn`: 1,000 posts a channel at
+  most), so a channel put off, or a platform that is down, never holds the
+  others back. `CollectionPaceRef` paces it: 16 channels at once
+  (`PEAL_ANALYTICS_CONCURRENCY`), each one call at a time through its
+  gate, and no read starts later than 50 minutes after the run's scheduled
+  time. What a read found is saved in one statement a table
+  (`saveReadings`, `saveSchedules`), never a transaction a post. A run
+  sets `peal.analytics.collection.duration` and `.left`, and one out of
+  time logs a warning and counts in `.unfinished`.
 - Summaries take the posts published over a range of days in an IANA zone:
   the domain computes each day's start with `fromWallClock`, and Postgres
   buckets snapshots with those instants (`width_bucket`), never its zones.
@@ -1292,6 +1300,9 @@ and no socket, for tests.
   (`test/analytics/fakes/memory-tracked-posts.ts`). Postgres tests write under
   a workspace of their own, at instants no other suite uses, and delete it
   after (`forgetWorkspace`): the collection reads every row that is due.
+  Run it on Postgres on the real clock, at an instant earlier than every
+  other suite's (`collection-scale.test.ts`): a virtual clock set decades
+  back replays every tick of the pool's timers and never returns.
 
 ### MCP endpoint
 

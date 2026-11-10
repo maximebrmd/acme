@@ -110,11 +110,11 @@ CREATE TABLE "billing"."subscriptions" (
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."trials" (
+	"forgotten_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	"plan" text,
 	"reserved_at" timestamp with time zone NOT NULL,
 	"started_at" timestamp with time zone,
-	"forgotten_at" timestamp with time zone,
 	"stripe_subscription_id" text,
 	"user_id" text,
 	"user_pseudonym" text,
@@ -665,7 +665,8 @@ CREATE TABLE "auth"."verification" (
 	"updated_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
-CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collection_at","target_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collection_at","channel_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "tracked_posts_channel_due" ON "analytics"."tracked_posts" ("channel_id","next_collection_at","target_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" ("workspace_id","published_at");--> statement-breakpoint
 CREATE INDEX "tracked_posts_post" ON "analytics"."tracked_posts" ("post_id");--> statement-breakpoint
 CREATE INDEX "tracked_posts_published" ON "analytics"."tracked_posts" ("published_at","target_id");--> statement-breakpoint
@@ -697,6 +698,7 @@ CREATE INDEX "notices_user" ON "notifications"."notices" ("user_id","id");--> st
 CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHERE "read_at" IS NULL;--> statement-breakpoint
 CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
+CREATE INDEX "posts_scheduled" ON "publishing"."posts" ("scheduled_at") WHERE "status" = 'scheduled';--> statement-breakpoint
 CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint
 CREATE INDEX "audit_events_pseudonym" ON "staff"."audit_events" ("target_pseudonym");--> statement-breakpoint
 CREATE INDEX "audit_events_at" ON "staff"."audit_events" ("at","id");--> statement-breakpoint

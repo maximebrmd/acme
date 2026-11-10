@@ -6,6 +6,7 @@ import { TestClock } from "effect/testing";
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { AnalyticsReports } from "#analytics/application/analytics-reports.ts";
 import { TrackedPosts } from "#analytics/application/tracked-posts.ts";
+import type { DueChannel } from "#analytics/application/tracked-posts.ts";
 import { dayStarts, reportRange } from "#analytics/domain/report-range.ts";
 import {
   endCollection,
@@ -57,7 +58,11 @@ layer(StoreTest)("the analytics store", (it) => {
         assert.strictEqual(yield* tracked.track([post]), 1);
         assert.strictEqual(yield* tracked.track([post]), 0);
 
-        const due = yield* tracked.due(utc("2041-03-02T11:07:00.000Z"), 10_000);
+        const due = yield* tracked.dueOn(
+          utc("2041-03-02T11:07:00.000Z"),
+          [publication.channelId],
+          1000
+        );
 
         assert.deepStrictEqual(
           due.filter(({ targetId }) => targetId === post.targetId),
@@ -74,14 +79,16 @@ layer(StoreTest)("the analytics store", (it) => {
         yield* tracked.saveReading(read);
 
         // Not due before its next turn, and due then, as read.
-        const before = yield* tracked.due(
+        const before = yield* tracked.dueOn(
           utc("2041-03-02T12:06:59.999Z"),
-          10_000
+          [publication.channelId],
+          1000
         );
 
-        const after = yield* tracked.due(
+        const after = yield* tracked.dueOn(
           utc("2041-03-02T12:07:00.000Z"),
-          10_000
+          [publication.channelId],
+          1000
         );
 
         assert.isFalse(
@@ -207,39 +214,80 @@ layer(StoreTest)("the analytics store", (it) => {
       })
   );
 
-  it.effect("hands out due posts taking turns between channels", () =>
-    Effect.gen(function* turns() {
-      const workspaceId = yield* freshWorkspace;
-      const tracked = yield* TrackedPosts;
-      const busy = yield* newChannelId;
-      const quiet = yield* newChannelId;
+  it.effect(
+    "hands out the channels with posts due, longest waiting first, each once",
+    () =>
+      Effect.gen(function* turns() {
+        const workspaceId = yield* freshWorkspace;
+        const tracked = yield* TrackedPosts;
+        const busy = yield* newChannelId;
+        const quiet = yield* newChannelId;
+        const late = yield* newChannelId;
 
-      yield* Effect.gen(function* checks() {
-        // Instants no other suite uses, so only these posts are due.
-        const posts = yield* Effect.forEach(
-          [
-            [busy, "1990-01-01T10:00:00.000Z"],
-            [busy, "1990-01-01T10:01:00.000Z"],
-            [busy, "1990-01-01T10:02:00.000Z"],
-            [quiet, "1990-01-01T10:03:00.000Z"],
-          ] as const,
-          ([channelId, publishedAt]) =>
-            publicationOf(workspaceId, channelId, publishedAt).pipe(
-              Effect.map(trackPublication)
-            ),
-          { concurrency: 1 }
-        );
+        yield* Effect.gen(function* checks() {
+          // Instants no other suite uses, so only these posts are due.
+          const posts = yield* Effect.forEach(
+            [
+              [busy, "1990-01-01T10:01:00.000Z"],
+              [busy, "1990-01-01T10:02:00.000Z"],
+              [busy, "1990-01-01T10:03:00.000Z"],
+              [quiet, "1990-01-01T10:00:00.000Z"],
+              [late, "1990-01-01T10:05:00.000Z"],
+            ] as const,
+            ([channelId, publishedAt]) =>
+              publicationOf(workspaceId, channelId, publishedAt).pipe(
+                Effect.map(trackPublication)
+              ),
+            { concurrency: 1 }
+          );
 
-        yield* tracked.track(posts);
+          yield* tracked.track(posts);
 
-        const due = yield* tracked.due(utc("1990-01-01T11:07:00.000Z"), 3);
+          const at = utc("1990-01-01T11:07:00.000Z");
 
-        assert.deepStrictEqual(
-          due.map(({ targetId }) => targetId),
-          [posts[0], posts[3], posts[1]].map((post) => post?.targetId)
-        );
-      }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
-    })
+          // Among whatever other suites left due, these three, in turn.
+          const own = (found: readonly DueChannel[]) =>
+            found.filter(({ channelId }) =>
+              [busy, quiet, late].includes(channelId)
+            );
+
+          const all = own(
+            yield* tracked.dueChannels(at, 100_000, Option.none())
+          );
+
+          const afterFirst = own(
+            yield* tracked.dueChannels(
+              at,
+              100_000,
+              Option.fromUndefinedOr(all[0])
+            )
+          );
+
+          assert.deepStrictEqual(
+            all.map(({ channelId }) => channelId),
+            [quiet, busy, late]
+          );
+          assert.deepStrictEqual(
+            afterFirst.map(({ channelId }) => channelId),
+            [busy, late]
+          );
+          assert.isAtLeast(yield* tracked.countDue(at), 5);
+
+          // A channel's posts in the order they came due, so many at most.
+          const due = yield* tracked.dueOn(at, [busy, quiet], 2);
+
+          assert.sameMembers(
+            due.map(({ targetId }) => targetId),
+            [posts[0], posts[1], posts[3]].map((post) => post?.targetId)
+          );
+          assert.deepStrictEqual(
+            due
+              .filter(({ channelId }) => channelId === busy)
+              .map(({ targetId }) => targetId),
+            [posts[0], posts[1]].map((post) => post?.targetId)
+          );
+        }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+      })
   );
 
   it.effect("reports totals by channel, gains by day and top posts", () =>

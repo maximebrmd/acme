@@ -5,6 +5,7 @@ import {
   Duration,
   Effect,
   Layer,
+  Metric,
   Option,
 } from "effect";
 
@@ -30,7 +31,7 @@ import type { MetricsBatch } from "./metrics-reader.ts";
 import { PublishedPosts } from "./published-posts.ts";
 import type { PublicationCursor } from "./published-posts.ts";
 import { TrackedPosts } from "./tracked-posts.ts";
-import type { LatestPublication } from "./tracked-posts.ts";
+import type { DueChannel, LatestPublication } from "./tracked-posts.ts";
 
 /** What a run of the collection did. */
 export interface CollectionReport {
@@ -44,7 +45,69 @@ export interface CollectionReport {
   readonly ended: number;
   /** Posts left due for the next run: the platform asked to slow down, or was down. */
   readonly deferred: number;
+  /**
+   * Posts still due when the run stopped at its budget, the deferred ones
+   * included, which the next run takes; none when it finished.
+   */
+  readonly left: number;
 }
+
+/** How a run of the collection is paced. */
+export interface CollectionPace {
+  /**
+   * How long after its scheduled time a run starts no more reads: it stops
+   * with time to spare before the next run, an hour after it.
+   */
+  readonly budget: Duration.Duration;
+  /**
+   * Channels read at the same time; each reads its posts one call at a
+   * time, through its gate, in turn with its publishing.
+   */
+  readonly channelConcurrency: number;
+  /** Channels with posts due taken from the store at a time. */
+  readonly channelsPerPage: number;
+}
+
+/**
+ * The pace of the collection: 16 channels at a time, pages of 500
+ * channels, for 50 minutes. The server sets the concurrency from
+ * `PEAL_ANALYTICS_CONCURRENCY`.
+ */
+export const CollectionPaceRef = Context.Reference<CollectionPace>(
+  "peal-server/analytics/application/CollectionPace",
+  {
+    defaultValue: () => ({
+      budget: Duration.minutes(50),
+      channelConcurrency: 16,
+      channelsPerPage: 500,
+    }),
+  }
+);
+
+/** How long the last collection run took, in seconds. */
+export const collectionDuration = Metric.gauge(
+  "peal.analytics.collection.duration",
+  { description: "How long the last metrics collection run took, in seconds" }
+);
+
+/**
+ * The posts the last collection run left due: 0 while runs finish and
+ * platforms answer. Above 0 run after run, counts are read later than
+ * their schedule says.
+ */
+export const collectionLeft = Metric.gauge("peal.analytics.collection.left", {
+  description: "Posts still due when the last metrics collection run ended",
+});
+
+/** Collection runs that stopped at their budget with posts still due. */
+export const collectionsUnfinished = Metric.counter(
+  "peal.analytics.collection.unfinished",
+  {
+    description:
+      "Metrics collection runs that could not finish in their budget",
+    incremental: true,
+  }
+);
 
 // A post publishing settles in a transaction that may commit a little
 // after the instant it records: each run looks again this far back, and
@@ -56,11 +119,8 @@ const discoveryOverlap = Duration.minutes(15);
 const discoveryPage = 500;
 
 // A run imports at most this many pages forward, and as many looking
-// back, and reads at most this many posts; whatever is left waits for the
-// next run.
+// back; whatever is left waits for the next run.
 const discoveryPages = 20;
-
-const maxDuePerRun = 5000;
 
 // How long past its last turn a post that could not be read waits.
 const overdue = Duration.days(1);
@@ -69,10 +129,11 @@ const overdue = Duration.days(1);
 // once, and a call keeps the channel's publishing waiting.
 const batchSize = 25;
 
-// Channels read at the same time; each reads its posts one call at a time.
-const channelConcurrency = 4;
+// The most posts of one channel a run reads, 40 calls: a channel with more
+// due keeps the rest for the next run, and holds no other channel back.
+const postsPerChannel = 1000;
 
-type Tally = Omit<CollectionReport, "discovered">;
+type Tally = Omit<CollectionReport, "discovered" | "left">;
 
 const emptyTally: Tally = { deferred: 0, ended: 0, read: 0, skipped: 0 };
 
@@ -114,6 +175,7 @@ export class CollectMetrics extends Context.Service<
       const published = yield* PublishedPosts;
       const tracked = yield* TrackedPosts;
       const reader = yield* MetricsReader;
+      const pace = yield* CollectionPaceRef;
 
       // Follows the posts published from `from` on, a page at a time, until
       // there are no more, the pages run out, or a page reaches `until`.
@@ -197,21 +259,18 @@ export class CollectMetrics extends Context.Service<
         reason: CollectionEnd,
         at: DateTime.Utc
       ) =>
-        Effect.forEach(
-          posts,
-          (post) => tracked.saveSchedule(endCollection(post, reason, at)),
-          { discard: true }
-        ).pipe(Effect.as<Tally>({ ...emptyTally, ended: posts.length }));
+        tracked
+          .saveSchedules(posts.map((post) => endCollection(post, reason, at)))
+          .pipe(Effect.as<Tally>({ ...emptyTally, ended: posts.length }));
 
       const skipping = (posts: readonly TrackedPost[], at: DateTime.Utc) =>
-        Effect.forEach(
-          posts,
-          (post) => tracked.saveSchedule(skipReading(post, at)),
-          { discard: true }
-        ).pipe(Effect.as<Tally>({ ...emptyTally, skipped: posts.length }));
+        tracked
+          .saveSchedules(posts.map((post) => skipReading(post, at)))
+          .pipe(Effect.as<Tally>({ ...emptyTally, skipped: posts.length }));
 
-      // Saves what a read found: a post missing, or whose read failed,
-      // waits for its next turn; the posts it says nothing of stay due.
+      // Saves what a read found, the readings in one statement and the
+      // schedules in another: a post missing, or whose read failed, waits
+      // for its next turn; the posts it says nothing of stay due.
       const recordBatch = Effect.fn("CollectMetrics.recordBatch")(
         function* recordBatch(
           posts: readonly TrackedPost[],
@@ -220,8 +279,8 @@ export class CollectMetrics extends Context.Service<
         ) {
           const collectedAt = yield* DateTime.now;
           const byTarget = new Map(posts.map((post) => [post.targetId, post]));
-          let read = 0;
-          let skipped = 0;
+          const read: TrackedPost[] = [];
+          const skipped: TrackedPost[] = [];
 
           for (const reading of batch.readings) {
             const post = byTarget.get(reading.targetId);
@@ -230,22 +289,23 @@ export class CollectMetrics extends Context.Service<
               byTarget.delete(reading.targetId);
 
               if (reading._tag === "counted") {
-                yield* tracked.saveReading(
+                read.push(
                   recordReading(post, reading.metrics, collectedAt, at)
                 );
-                read += 1;
               } else {
-                yield* tracked.saveSchedule(skipReading(post, at));
-                skipped += 1;
+                skipped.push(skipReading(post, at));
               }
             }
           }
 
+          yield* tracked.saveReadings(read);
+          yield* tracked.saveSchedules(skipped);
+
           const tally: Tally = {
             deferred: byTarget.size,
             ended: 0,
-            read,
-            skipped,
+            read: read.length,
+            skipped: skipped.length,
           };
 
           return tally;
@@ -253,17 +313,30 @@ export class CollectMetrics extends Context.Service<
       );
 
       // A channel's due posts, one call at a time, until the platform asks
-      // to slow down or the channel cannot be read.
+      // to slow down, the channel cannot be read, or the run is out of
+      // time: it then starts no more reads, and the rest stays due.
       const collectChannel = Effect.fn("CollectMetrics.channel")(
         function* collectChannel(
           posts: Arr.NonEmptyReadonlyArray<TrackedPost>,
-          at: DateTime.Utc
+          at: DateTime.Utc,
+          deadline: DateTime.Utc
         ) {
           const { channelId } = Arr.headNonEmpty(posts);
           let total = emptyTally;
           let left = [...posts];
 
+          const stalledWith = (rest: number): Tally => ({
+            ...total,
+            deferred: total.deferred + rest,
+          });
+
           while (left.length > 0) {
+            if (
+              DateTime.isGreaterThanOrEqualTo(yield* DateTime.now, deadline)
+            ) {
+              return stalledWith(left.length);
+            }
+
             const batch = left.slice(0, batchSize);
 
             left = left.slice(batchSize);
@@ -283,7 +356,7 @@ export class CollectMetrics extends Context.Service<
               const { failure } = outcome;
 
               if (failure._tag === "PlatformUnavailable") {
-                return { ...total, deferred: total.deferred + rest.length };
+                return stalledWith(rest.length);
               }
 
               const tally =
@@ -300,7 +373,7 @@ export class CollectMetrics extends Context.Service<
             );
 
             if (outcome.success.halted) {
-              return { ...total, deferred: total.deferred + left.length };
+              return stalledWith(left.length);
             }
           }
 
@@ -308,44 +381,94 @@ export class CollectMetrics extends Context.Service<
         }
       );
 
-      const run = Effect.fn("CollectMetrics.run")(function* run(
-        at: DateTime.Utc
+      // Reads the posts due, a page of channels at a time, the channels
+      // that waited longest first and each once, until none is left or
+      // the run is out of time.
+      const collectDue = Effect.fn("CollectMetrics.due")(function* collectDue(
+        at: DateTime.Utc,
+        deadline: DateTime.Utc
       ) {
-        const discovered = yield* discover(at);
-
         // A post whose reads kept being put off (its platform down, or
         // asking to slow down) is read no more once a day past its last
         // turn: its counts have long stopped moving.
-        const found = yield* tracked.due(at, maxDuePerRun);
-
         const isExpired = (post: TrackedPost) =>
           DateTime.isGreaterThanOrEqualTo(
             at,
             DateTime.addDuration(collectionEnd(post.publishedAt), overdue)
           );
 
-        const expired = found.filter((post) => isExpired(post));
-        const due = found.filter((post) => !isExpired(post));
+        let total = emptyTally;
+        let after = Option.none<DueChannel>();
 
-        const ended = yield* ending(expired, "window", at);
+        while (true) {
+          if (DateTime.isGreaterThanOrEqualTo(yield* DateTime.now, deadline)) {
+            return { total, unfinished: true };
+          }
 
-        const byChannel = Object.values(
-          Arr.groupBy(due, (post) => post.channelId)
-        );
+          const channels = yield* tracked.dueChannels(
+            at,
+            pace.channelsPerPage,
+            after
+          );
 
-        const tallies = yield* Effect.forEach(
-          byChannel,
-          (posts) => collectChannel(posts, at),
-          { concurrency: channelConcurrency }
-        );
+          const found = yield* tracked.dueOn(
+            at,
+            channels.map(({ channelId }) => channelId),
+            postsPerChannel
+          );
 
-        let total = ended;
+          const expired = found.filter((post) => isExpired(post));
+          const due = found.filter((post) => !isExpired(post));
 
-        for (const tally of tallies) {
-          total = addTallies(total, tally);
+          total = addTallies(total, yield* ending(expired, "window", at));
+
+          const tallies = yield* Effect.forEach(
+            Object.values(Arr.groupBy(due, (post) => post.channelId)),
+            (posts) => collectChannel(posts, at, deadline),
+            { concurrency: pace.channelConcurrency }
+          );
+
+          for (const tally of tallies) {
+            total = addTallies(total, tally);
+          }
+
+          after = Option.fromUndefinedOr(channels.at(-1));
+
+          if (channels.length < pace.channelsPerPage) {
+            return { total, unfinished: false };
+          }
         }
+      });
 
-        const report: CollectionReport = { discovered, ...total };
+      const run = Effect.fn("CollectMetrics.run")(function* run(
+        at: DateTime.Utc
+      ) {
+        const startedAt = yield* DateTime.now;
+        const deadline = DateTime.addDuration(at, pace.budget);
+        const discovered = yield* discover(at);
+        const { total, unfinished } = yield* collectDue(at, deadline);
+
+        // What is still due: the posts put off, those past a channel's
+        // share of a run, and those a run out of time never reached.
+        const left = yield* tracked.countDue(at);
+
+        const report: CollectionReport = { discovered, ...total, left };
+        const took = DateTime.distance(startedAt, yield* DateTime.now);
+
+        yield* Metric.update(collectionDuration, Duration.toSeconds(took));
+        yield* Metric.update(collectionLeft, left);
+
+        if (unfinished) {
+          yield* Metric.update(collectionsUnfinished, 1);
+          yield* Effect.logWarning(
+            "The metrics collection could not finish before the next run: the posts left are read by the runs that follow, later than their schedule says. Raise PEAL_ANALYTICS_CONCURRENCY if platforms answer"
+          ).pipe(
+            Effect.annotateLogs({
+              ...report,
+              seconds: Duration.toSeconds(took),
+            })
+          );
+        }
 
         return report;
       });

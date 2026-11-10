@@ -1,14 +1,22 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Duration, Effect, Layer, Option } from "effect";
+import { DateTime, Duration, Effect, Layer, Metric, Option, Ref } from "effect";
 import { TestClock } from "effect/testing";
 
 import { ChannelUnreadable } from "#analytics/application/channel-unreadable.ts";
-import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
+import {
+  collectionDuration,
+  collectionLeft,
+  CollectionPaceRef,
+  CollectMetrics,
+} from "#analytics/application/collect-metrics.ts";
+import type { CollectionPace } from "#analytics/application/collect-metrics.ts";
 import type {
   MetricsBatch,
   MetricsReadFailure,
   MetricsRequest,
 } from "#analytics/application/metrics-reader.ts";
+import { TrackedPosts } from "#analytics/application/tracked-posts.ts";
+import { trackPublication } from "#analytics/domain/tracked-post.ts";
 import type { Publication } from "#analytics/domain/tracked-post.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { PostTargetIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -59,8 +67,19 @@ const countingAll: Answer = (request) =>
 
 // The use case on the in-memory store, with publishing's posts and a
 // reader answering `answer`.
-const collectionWith = (answer: Answer = countingAll) =>
+const collectionWith = (
+  answer: Answer = countingAll,
+  pace: Partial<CollectionPace> = {}
+) =>
   CollectMetrics.layer.pipe(
+    Layer.provide(
+      Layer.succeed(CollectionPaceRef, {
+        budget: Duration.minutes(50),
+        channelConcurrency: 16,
+        channelsPerPage: 500,
+        ...pace,
+      })
+    ),
     Layer.provideMerge(
       Layer.mergeAll(
         MemoryTrackedPosts,
@@ -72,6 +91,14 @@ const collectionWith = (answer: Answer = countingAll) =>
   );
 
 const utc = (iso: string) => DateTime.makeUnsafe(iso);
+
+// How many reads run now, and the most that ever did.
+const readingNow = Ref.makeUnsafe(0);
+
+const mostAtOnce = Ref.makeUnsafe(0);
+
+// The channel whose platform is down, in the test that has one.
+const downChannel = Ref.makeUnsafe(Option.none<Publication["channelId"]>());
 
 // A run of the collection scheduled at `iso`, with the clock just after.
 const runAt = (iso: string) =>
@@ -124,6 +151,7 @@ describe("collecting post metrics", () => {
         deferred: 0,
         discovered: 2,
         ended: 0,
+        left: 0,
         read: 2,
         skipped: 0,
       });
@@ -681,6 +709,170 @@ describe("collecting post metrics", () => {
       }).pipe(
         Effect.provide(
           collectionWith(() => Effect.fail(new PlatformUnavailable()))
+        )
+      )
+  );
+});
+
+// Posts followed and due at the next run, `perChannel` on each of
+// `channels` new channels, put in the store as a first run would have.
+const followed = Effect.fn("followed")(function* followed(
+  channels: number,
+  perChannel: number
+) {
+  const posts: Publication[] = [];
+
+  for (let channel = 0; channel < channels; channel += 1) {
+    const channelId = yield* newChannelId;
+
+    for (let post = 0; post < perChannel; post += 1) {
+      posts.push(
+        yield* publicationOf(workspaceId, channelId, "2026-11-02T10:20:00.000Z")
+      );
+    }
+  }
+
+  yield* TrackedPosts.use((tracked) =>
+    tracked.track(posts.map(trackPublication))
+  );
+
+  return posts;
+});
+
+describe("collecting post metrics at scale", () => {
+  it.effect(
+    "reads 40,000 posts due on 8,000 channels in one run, within 30 seconds",
+    () =>
+      Effect.gen(function* tensOfThousands() {
+        yield* followed(8000, 5);
+
+        const startedAt = performance.now();
+        const report = yield* runAt("2026-11-02T11:07:00.000Z");
+        const seconds = (performance.now() - startedAt) / 1000;
+
+        // Every post, where a run used to stop at its first 5,000.
+        assert.deepStrictEqual(report, {
+          deferred: 0,
+          discovered: 0,
+          ended: 0,
+          left: 0,
+          read: 40_000,
+          skipped: 0,
+        });
+        assert.lengthOf(yield* requested, 8000);
+        assert.isBelow(seconds, 30);
+        assert.strictEqual((yield* Metric.value(collectionLeft)).value, 0);
+      }).pipe(Effect.provide(collectionWith())),
+    60_000
+  );
+
+  it.effect("reads so many channels at once, and no more", () =>
+    Effect.gen(function* bounded() {
+      yield* followed(200, 1);
+      yield* runAt("2026-11-02T11:07:00.000Z");
+
+      assert.strictEqual(yield* Ref.get(mostAtOnce), 16);
+    }).pipe(
+      Effect.provide(
+        collectionWith((request) =>
+          Ref.updateAndGet(readingNow, (count) => count + 1).pipe(
+            Effect.tap((count) =>
+              Ref.update(mostAtOnce, (most) => Math.max(most, count))
+            ),
+            Effect.andThen(Effect.yieldNow),
+            Effect.andThen(countingAll(request)),
+            Effect.ensuring(Ref.update(readingNow, (count) => count - 1))
+          )
+        )
+      )
+    )
+  );
+
+  it.effect(
+    "stops reading at its budget, leaves the rest due and says how much",
+    () =>
+      Effect.gen(function* deadline() {
+        const posts = yield* followed(12, 1);
+
+        // Each read takes ten minutes, one channel at a time: five fit
+        // before the 50th minute.
+        const report = yield* runAt("2026-11-02T11:07:00.000Z");
+
+        assert.deepStrictEqual(
+          { left: report.left, read: report.read },
+          { left: 7, read: 5 }
+        );
+        assert.strictEqual((yield* Metric.value(collectionLeft)).value, 7);
+        assert.isAtLeast(
+          (yield* Metric.value(collectionDuration)).value,
+          50 * 60
+        );
+
+        // Left as they were: the next run reads those that waited longest
+        // first, before it reads again the five it had.
+        const next = yield* runAt("2026-11-02T13:07:00.000Z");
+
+        const readSoFar = yield* Effect.forEach(
+          posts,
+          (post) => snapshotsOf(post),
+          { concurrency: 1 }
+        );
+
+        assert.strictEqual(next.read, 5);
+        assert.deepStrictEqual(
+          readSoFar
+            .map(({ length }) => length)
+            .toSorted((left, right) => left - right),
+          [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        );
+      }).pipe(
+        Effect.provide(
+          collectionWith(
+            (request) =>
+              TestClock.adjust(Duration.minutes(10)).pipe(
+                Effect.andThen(countingAll(request))
+              ),
+            { channelConcurrency: 1 }
+          )
+        )
+      )
+  );
+
+  it.effect(
+    "asks a channel that cannot be read once a run, and reads the others page after page",
+    () =>
+      Effect.gen(function* stalled() {
+        const [first] = yield* followed(1, 6);
+
+        assert(first !== undefined);
+        yield* Ref.set(downChannel, Option.some(first.channelId));
+        yield* followed(20, 1);
+
+        const report = yield* runAt("2026-11-02T11:07:00.000Z");
+
+        assert.deepStrictEqual(
+          { deferred: report.deferred, left: report.left, read: report.read },
+          { deferred: 6, left: 6, read: 20 }
+        );
+        assert.lengthOf(
+          (yield* requested).filter(
+            ({ channelId }) => channelId === first.channelId
+          ),
+          1
+        );
+      }).pipe(
+        Effect.provide(
+          collectionWith(
+            (request) =>
+              Ref.get(downChannel).pipe(
+                Effect.flatMap((down) =>
+                  Option.contains(down, request.channelId)
+                    ? Effect.fail(new PlatformUnavailable())
+                    : countingAll(request)
+                )
+              ),
+            { channelsPerPage: 4 }
+          )
         )
       )
   );
