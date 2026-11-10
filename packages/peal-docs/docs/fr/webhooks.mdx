@@ -1,0 +1,763 @@
+---
+title: Webhooks
+description: Faites prévenir votre propre serveur par Peal de ce qui se passe dans un espace de travail, sans l’interroger en boucle. Les points de terminaison et leur secret de signature, chaque événement avec son schéma et un exemple, comment les livraisons sont signées, retentées et journalisées, et comment les vérifier.
+sidebar:
+  order: 10.5
+---
+
+Un webhook est une requête que Peal envoie à une adresse à vous quand il se passe quelque chose dans un espace de travail : une publication est partie ou a échoué, un canal doit être reconnecté, un fichier est prêt. Un produit qui publie par l’[API](/api-overview), ou une automatisation, l’apprend aussitôt, sans redemander sans cesse.
+
+Peal signe chaque requête comme le dit la spécification [Standard Webhooks](https://www.standardwebhooks.com) ([son texte](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md)) : les bibliothèques écrites pour elle vérifient les livraisons de Peal telles quelles.
+
+## Qui les gère [#access]
+
+Les webhooks d’un espace de travail se trouvent sous **Paramètres**, puis **Webhooks**, dans l’application web, dans le groupe `webhooks` de l’[API](#api), sous `peal webhooks` en [ligne de commande](/cli), et dans les outils [MCP](/mcp) `list_webhooks` et `list_webhook_deliveries`, qui lisent, et `create_webhook`, qui ajoute un point de terminaison.
+
+| Permission       | Ce qu’elle permet                                                                                                 | Qui l’a                          |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `webhook:read`   | Lister les points de terminaison et lire leurs livraisons                                                         | Propriétaires et administrateurs |
+| `webhook:manage` | Ajouter, modifier, désactiver et supprimer des points de terminaison, renouveler les secrets, envoyer et renvoyer | Propriétaires et administrateurs |
+
+Une clé d’API fait ce que permettent les permissions qu’elle a reçues, et un client OAuth ce que vous lui avez permis : un client autorisé à lire seulement liste les points de terminaison et les livraisons, et ne change rien. L’équipe qui agit à la place d’un membre ne peut pas changer les webhooks d’un espace de travail.
+
+Tous les abonnements comprennent les webhooks, et une instance qui ne facture pas les a aussi.
+
+## Points de terminaison [#endpoints]
+
+Un point de terminaison, c’est une adresse, les événements qu’il veut recevoir, une description, et s’il est activé. Un espace de travail en a 10 au plus, quel que soit son abonnement.
+
+- **L’adresse** est une URL HTTPS sur le port par défaut (443), sur un hôte public, sans nom d’utilisateur ni mot de passe, de 2048 caractères au plus. Peal vérifie que l’hôte mène à des adresses publiques quand vous l’enregistrez, et de nouveau avant chaque requête : une adresse qui, plus tard, mène dans un réseau privé ne reçoit rien. Peal ne suit aucune redirection : une réponse 3xx est un échec, donnez l’adresse finale.
+- **Les événements** sont les [types d’événements](#events) auxquels le point de terminaison est abonné, un au moins. Il reçoit ceux-là, et rien d’autre.
+- **La description**, de 200 caractères au plus, dit à quoi sert le point de terminaison.
+- **Activé ou désactivé.** Tant qu’un point de terminaison est désactivé, Peal ne lui envoie rien, ses livraisons encore en attente échouent, et ce qui se passe entre-temps n’est pas gardé pour lui : le réactiver ne le rejoue pas.
+
+## Le secret de signature [#secret]
+
+Peal génère un secret pour chaque point de terminaison : `whsec_` suivi de 32 octets aléatoires en base64. Il s’affiche une seule fois, à la création du point de terminaison, et Peal le garde chiffré : copiez-le à ce moment-là, dans les secrets de votre serveur.
+
+Renouveler le secret en répond un nouveau, affiché une seule fois lui aussi. Pendant 24 heures, chaque livraison porte alors deux signatures, une par secret : vous changez le secret de votre serveur sans manquer de livraison. Passé ce délai, l’ancien secret ne signe plus rien.
+
+## Ce que Peal envoie [#request]
+
+Chaque livraison est un `POST` à l’adresse du point de terminaison, avec `content-type: application/json` et trois en-têtes :
+
+| En-tête             | Ce qu’il contient                                                                                                                                              |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `webhook-id`        | L’identifiant de l’événement. Il est le même à chaque tentative d’une livraison, et quand l’événement est renvoyé : [dédupliquez](#ordering) avec lui.         |
+| `webhook-timestamp` | Le moment de cette tentative, en secondes depuis l’époque Unix.                                                                                                |
+| `webhook-signature` | Une signature par secret valide, séparées par des espaces. Chacune est `v1,` suivi du base64 d’un HMAC-SHA256, comme le dit [Vérifier une livraison](#verify). |
+
+```http
+POST /peal HTTP/1.1
+Host: hooks.example.com
+Content-Type: application/json
+webhook-id: 019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e03
+webhook-timestamp: 1794301203
+webhook-signature: v1,Mfm1tWLUX4U95AK/DHjduW4e8bHrj/HztAOACn91BF4=
+```
+
+Le corps est un objet JSON :
+
+| Champ       | Type   | Ce qu’il contient                                                                               |
+| ----------- | ------ | ----------------------------------------------------------------------------------------------- |
+| `id`        | chaîne | L’identifiant de l’événement, comme dans `webhook-id`                                           |
+| `type`      | chaîne | Ce qui s’est passé, comme `post.published`. Il dit ce que contient `data`.                      |
+| `version`   | entier | La version de `data` : 1                                                                        |
+| `timestamp` | chaîne | Le moment où cela s’est passé, en instant ISO 8601 en UTC. Pas celui où la requête est envoyée. |
+| `data`      | objet  | Les champs propres à l’événement, [ci-dessous](#events)                                         |
+
+L’ordre des champs dans le corps ne fait pas partie du contrat.
+
+### Ce qu’un corps ne contient jamais [#thin]
+
+Les corps portent des identifiants, des états, des codes, des instants et des liens permanents. Ils ne portent jamais ce que dit une publication, ni ses images ou vidéos.
+
+Le point de terminaison est un tiers pour les personnes qui ont écrit la publication : une adresse que quelqu’un a choisie, et dont Peal ne peut rien vérifier d’autre que son caractère public. Garder les corps légers garde le contenu d’un espace de travail derrière des identifiants d’API et leurs permissions, où chaque lecture est vérifiée. Quand votre serveur a besoin de la publication, il la lit par l’API avec une clé à lui : `GET /api/workspaces/{workspaceId}/posts/{postId}`.
+
+### Versions [#versions]
+
+Les types d’événements et leurs champs sont un contrat public. Peal ajoute des types d’événements, et des champs à un événement, sans changer `version` : ignorez les champs et les types que vous ne connaissez pas. Rien n’est renommé ni supprimé. Un changement que votre code ne pourrait pas lire viendrait comme une nouvelle version, envoyée à côté de celle-ci.
+
+## Événements [#events]
+
+| Événement                                               | Quand                                                                                                      |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| [`post.scheduled`](#post-scheduled)                     | Une publication a été programmée, ou déplacée à une autre heure                                            |
+| [`post.unscheduled`](#post-unscheduled)                 | Une publication programmée est repassée en brouillon                                                       |
+| [`post.published`](#post-published)                     | Une publication est en ligne sur un canal                                                                  |
+| [`post.failed`](#post-failed)                           | Une publication n’est pas partie sur un canal                                                              |
+| [`post.unconfirmed`](#post-unconfirmed)                 | Peal ne peut pas savoir si une publication est en ligne sur un canal                                       |
+| [`post.cancelled`](#post-cancelled)                     | Une publication a été annulée                                                                              |
+| [`channel.connected`](#channel-connected)               | Un compte a été connecté, ou un canal de nouveau autorisé                                                  |
+| [`channel.disconnected`](#channel-disconnected)         | Un canal a été déconnecté                                                                                  |
+| [`channel.reconnect_needed`](#channel-reconnect-needed) | L’autorisation d’un canal ne fonctionne plus                                                               |
+| [`media.ready`](#media-ready)                           | Un fichier a été lu, et peut aller dans des publications                                                   |
+| [`media.failed`](#media-failed)                         | Un fichier a été refusé, ou n’a pas pu être lu                                                             |
+| [`webhook.test`](#webhook-test)                         | Quelqu’un a demandé un événement de test. Envoyé quels que soient les abonnements du point de terminaison. |
+
+Une publication part sur chacun de ses canaux séparément : `post.published`, `post.failed` et `post.unconfirmed` nomment donc un canal chacun, et une publication sur trois canaux amène trois événements. Ces champs disent lequel :
+
+| Champ       | Type           | Ce qu’il contient                                                                                    |
+| ----------- | -------------- | ---------------------------------------------------------------------------------------------------- |
+| `targetId`  | chaîne         | La publication sur ce canal : l’identifiant de la cible, comme les listent les `targets` de l’API    |
+| `channelId` | chaîne         | Le canal                                                                                             |
+| `platform`  | chaîne ou null | La plateforme du canal, comme `mastodon` ; null une fois le canal déconnecté                         |
+| `round`     | entier         | Combien de fois la publication y a été envoyée : 1, et un de plus chaque fois qu’elle a été renvoyée |
+
+Le `data` de chaque événement contient `workspaceId`, l’espace de travail où il s’est produit.
+
+### post.scheduled [#post-scheduled]
+
+Une publication a été programmée, ou déplacée à une autre heure.
+
+| Champ         | Type    | Ce qu’il contient                                                          |
+| ------------- | ------- | -------------------------------------------------------------------------- |
+| `workspaceId` | chaîne  | L’espace de travail                                                        |
+| `postId`      | chaîne  | La publication                                                             |
+| `scheduledAt` | chaîne  | Le moment où elle part, en instant UTC                                     |
+| `timeZone`    | chaîne  | Le fuseau horaire IANA où elle a été programmée, comme `Europe/Paris`      |
+| `targets`     | tableau | Les canaux où elle part, chacun avec `targetId`, `channelId` et `platform` |
+
+```json title="post.scheduled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e01",
+  "type": "post.scheduled",
+  "version": 1,
+  "timestamp": "2026-11-09T16:42:10.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "scheduledAt": "2026-11-10T09:00:00.000Z",
+    "timeZone": "Europe/Paris",
+    "targets": [
+      {
+        "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+        "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+        "platform": "mastodon"
+      },
+      {
+        "targetId": "019a6f3e-8c2b-7d03-b5c2-0f4e8a1d3c26",
+        "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+        "platform": "bluesky"
+      }
+    ]
+  }
+}
+```
+
+### post.unscheduled [#post-unscheduled]
+
+Une publication programmée est repassée en brouillon : elle ne part nulle part tant qu’elle n’est pas programmée de nouveau.
+
+| Champ         | Type   | Ce qu’il contient   |
+| ------------- | ------ | ------------------- |
+| `workspaceId` | chaîne | L’espace de travail |
+| `postId`      | chaîne | La publication      |
+
+```json title="post.unscheduled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e02",
+  "type": "post.unscheduled",
+  "version": 1,
+  "timestamp": "2026-11-09T17:05:44.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01"
+  }
+}
+```
+
+### post.published [#post-published]
+
+La publication est en ligne sur le canal.
+
+| Champ         | Type           | Ce qu’il contient                                                                                              |
+| ------------- | -------------- | -------------------------------------------------------------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                                                                            |
+| `postId`      | chaîne         | La publication                                                                                                 |
+| `targetId`    | chaîne         | La publication sur ce canal                                                                                    |
+| `channelId`   | chaîne         | Le canal                                                                                                       |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté                                                     |
+| `round`       | entier         | Combien de fois la publication y a été envoyée                                                                 |
+| `publishedAt` | chaîne         | Le moment où elle a été mise en ligne, en instant UTC                                                          |
+| `permalink`   | chaîne ou null | Son adresse sur la plateforme, quand la plateforme en a donné une, ou le membre qui l’a confirmée ; null sinon |
+
+```json title="post.published"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e03",
+  "type": "post.published",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:03.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "round": 1,
+    "publishedAt": "2026-11-10T09:00:02.000Z",
+    "permalink": "https://social.example/@peal_example/115512345678901234"
+  }
+}
+```
+
+### post.failed [#post-failed]
+
+La publication n’est pas partie sur le canal.
+
+| Champ         | Type           | Ce qu’il contient                                          |
+| ------------- | -------------- | ---------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                        |
+| `postId`      | chaîne         | La publication                                             |
+| `targetId`    | chaîne         | La publication sur ce canal                                |
+| `channelId`   | chaîne         | Le canal                                                   |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté |
+| `round`       | entier         | Combien de fois la publication y a été envoyée             |
+| `failedAt`    | chaîne         | Le moment où elle a échoué, en instant UTC                 |
+| `reason`      | chaîne         | Pourquoi, l’un des codes ci-dessous                        |
+
+| `reason`              | Ce qui s’est passé                                                                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contentRejected`     | La plateforme a refusé le texte ou le format de la publication.                                                                                                       |
+| `channelDisconnected` | Le canal a été déconnecté de l’espace de travail avant le départ de la publication. Rien n’a été envoyé.                                                              |
+| `channelDisabled`     | Le canal a été désactivé avant le départ de la publication. Rien n’a été envoyé.                                                                                      |
+| `mediaRemoved`        | L’une de ses images ou vidéos a été supprimée, ou n’était plus prête, avant le départ de la publication. Rien n’a été envoyé.                                         |
+| `mediaRejected`       | La plateforme a refusé l’une de ses images ou vidéos.                                                                                                                 |
+| `missed`              | Le serveur était arrêté à l’heure prévue, et la publication est arrivée trop tard pour partir à son retour.                                                           |
+| `notPublished`        | Un membre a vérifié une publication non confirmée sur la plateforme et ne l’a pas trouvée.                                                                            |
+| `rateLimited`         | La plateforme a limité Peal jusqu’à ce que l’envoi abandonne.                                                                                                         |
+| `tokenExpired`        | La plateforme a refusé l’autorisation du canal : le canal doit être reconnecté.                                                                                       |
+| `unavailable`         | La plateforme était injoignable. Rien n’a été envoyé.                                                                                                                 |
+| `appNotAudited`       | La plateforme n’accepte que certaines publications de l’application du serveur tant qu’elle ne l’a pas approuvée. Rien n’a été envoyé.                                |
+| `quotaExceeded`       | Une allocation quotidienne de mises en ligne sur la plateforme est restée épuisée jusqu’à ce que l’envoi abandonne.                                                   |
+| `appBillingLimit`     | La plateforme a refusé l’application du serveur tant que son opérateur ne l’a pas réglée. Rien n’a été envoyé.                                                        |
+| `planLimit`           | L’abonnement de l’espace de travail n’avait pas de place pour la publication à son heure : trop de canaux, ou les publications du mois épuisées. Rien n’a été envoyé. |
+
+[Notifications](/notifications#events) dit que faire dans chaque cas.
+
+```json title="post.failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e04",
+  "type": "post.failed",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:04.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d03-b5c2-0f4e8a1d3c26",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky",
+    "round": 1,
+    "failedAt": "2026-11-10T09:00:04.000Z",
+    "reason": "tokenExpired"
+  }
+}
+```
+
+### post.unconfirmed [#post-unconfirmed]
+
+Peal ne peut pas savoir si la publication est en ligne sur le canal, et ne la renvoie jamais de lui-même : quelqu’un vérifie sur la plateforme, puis [la confirme ou la republie](/scheduling#follow-up).
+
+| Champ         | Type           | Ce qu’il contient                                           |
+| ------------- | -------------- | ----------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                         |
+| `postId`      | chaîne         | La publication                                              |
+| `targetId`    | chaîne         | La publication sur ce canal                                 |
+| `channelId`   | chaîne         | Le canal                                                    |
+| `platform`    | chaîne ou null | La plateforme du canal ; null une fois le canal déconnecté  |
+| `round`       | entier         | Combien de fois la publication y a été envoyée              |
+| `attemptedAt` | chaîne         | Le moment de l’envoi, en instant UTC                        |
+| `reason`      | chaîne         | Pourquoi Peal ne peut pas savoir, l’un des codes ci-dessous |
+
+| `reason`             | Ce qui s’est passé                                                             |
+| -------------------- | ------------------------------------------------------------------------------ |
+| `noResponse`         | La requête a peut-être atteint la plateforme, et aucune réponse n’est revenue. |
+| `unreadableResponse` | Une réponse est revenue, que Peal n’a pas pu lire.                             |
+| `interrupted`        | Le serveur s’est arrêté pendant l’appel : on ne sait pas si elle est partie.   |
+| `adapterFailure`     | Le code de Peal a échoué pendant l’appel, après que la requête a pu partir.    |
+
+```json title="post.unconfirmed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e05",
+  "type": "post.unconfirmed",
+  "version": 1,
+  "timestamp": "2026-11-10T09:00:21.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "linkedin",
+    "round": 1,
+    "attemptedAt": "2026-11-10T09:00:01.000Z",
+    "reason": "noResponse"
+  }
+}
+```
+
+### post.cancelled [#post-cancelled]
+
+La publication a été annulée. `targets` liste les canaux où elle ne partira pas ; un canal qu’elle avait déjà atteint garde son propre événement.
+
+| Champ         | Type    | Ce qu’il contient                                                                    |
+| ------------- | ------- | ------------------------------------------------------------------------------------ |
+| `workspaceId` | chaîne  | L’espace de travail                                                                  |
+| `postId`      | chaîne  | La publication                                                                       |
+| `cancelledAt` | chaîne  | Le moment où elle a été annulée, en instant UTC                                      |
+| `targets`     | tableau | Les canaux où elle ne partira pas, chacun avec `targetId`, `channelId` et `platform` |
+
+```json title="post.cancelled"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e06",
+  "type": "post.cancelled",
+  "version": 1,
+  "timestamp": "2026-11-09T18:30:00.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "cancelledAt": "2026-11-09T18:30:00.000Z",
+    "targets": [
+      {
+        "targetId": "019a6f3e-8c2b-7d02-8a11-6e2f9b0c7d15",
+        "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+        "platform": "mastodon"
+      }
+    ]
+  }
+}
+```
+
+### channel.connected [#channel-connected]
+
+Un compte a été connecté à l’espace de travail, ou un canal que l’espace de travail avait a été de nouveau autorisé.
+
+| Champ         | Type    | Ce qu’il contient                                                                                  |
+| ------------- | ------- | -------------------------------------------------------------------------------------------------- |
+| `workspaceId` | chaîne  | L’espace de travail                                                                                |
+| `channelId`   | chaîne  | Le canal                                                                                           |
+| `platform`    | chaîne  | La plateforme du canal                                                                             |
+| `reconnected` | booléen | Vrai quand un canal que l’espace de travail avait a été de nouveau autorisé ; faux pour un nouveau |
+
+```json title="channel.connected"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e07",
+  "type": "channel.connected",
+  "version": 1,
+  "timestamp": "2026-11-08T10:15:30.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
+    "platform": "mastodon",
+    "reconnected": false
+  }
+}
+```
+
+### channel.disconnected [#channel-disconnected]
+
+Un canal a été déconnecté de l’espace de travail.
+
+| Champ         | Type   | Ce qu’il contient      |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | chaîne | L’espace de travail    |
+| `channelId`   | chaîne | Le canal               |
+| `platform`    | chaîne | La plateforme du canal |
+
+```json title="channel.disconnected"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e08",
+  "type": "channel.disconnected",
+  "version": 1,
+  "timestamp": "2026-11-12T14:02:09.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+### channel.reconnect_needed [#channel-reconnect-needed]
+
+L’autorisation du canal ne fonctionne plus : rien n’y est publié tant que personne ne l’a [reconnecté](/channels#reconnect).
+
+| Champ         | Type   | Ce qu’il contient      |
+| ------------- | ------ | ---------------------- |
+| `workspaceId` | chaîne | L’espace de travail    |
+| `channelId`   | chaîne | Le canal               |
+| `platform`    | chaîne | La plateforme du canal |
+
+```json title="channel.reconnect_needed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e09",
+  "type": "channel.reconnect_needed",
+  "version": 1,
+  "timestamp": "2026-11-11T06:00:12.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
+    "platform": "bluesky"
+  }
+}
+```
+
+### media.ready [#media-ready]
+
+Peal [a lu le fichier](/media#library) une fois stocké, et il peut aller dans des publications.
+
+| Champ         | Type   | Ce qu’il contient                                |
+| ------------- | ------ | ------------------------------------------------ |
+| `workspaceId` | chaîne | L’espace de travail                              |
+| `mediaId`     | chaîne | Le média                                         |
+| `contentType` | chaîne | Le type de contenu du fichier, comme `image/png` |
+
+```json title="media.ready"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0a",
+  "type": "media.ready",
+  "version": 1,
+  "timestamp": "2026-11-09T16:30:55.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
+    "contentType": "image/png"
+  }
+}
+```
+
+### media.failed [#media-failed]
+
+Le fichier a été refusé, ou Peal n’a pas pu le lire. Un fichier qui n’a pas pu être lu reste dans la médiathèque, et n’est pas prêt pour des publications.
+
+| Champ         | Type   | Ce qu’il contient                   |
+| ------------- | ------ | ----------------------------------- |
+| `workspaceId` | chaîne | L’espace de travail                 |
+| `mediaId`     | chaîne | Le média                            |
+| `reason`      | chaîne | Pourquoi, l’un des codes ci-dessous |
+
+| `reason`       | Ce qui s’est passé                                                                      |
+| -------------- | --------------------------------------------------------------------------------------- |
+| `sizeMismatch` | Le fichier stocké n’a pas la taille que l’import avait déclarée. Il a été refusé.       |
+| `typeMismatch` | Le fichier stocké n’est pas du type que l’import avait déclaré. Il a été refusé.        |
+| `unreadable`   | Le fichier est abîmé, ou dans un format que Peal ne lit pas.                            |
+| `timedOut`     | Lire le fichier a pris plus de temps que Peal n’en laisse.                              |
+| `tooLarge`     | Le stockage a servi plus d’octets que Peal n’en garde pour ce type de fichier.          |
+| `toolFailed`   | Le programme qui lit les fichiers n’a pas pu tourner, ou n’a rien affiché d’utilisable. |
+| `unavailable`  | L’instance n’a rien pour lire ce type de fichier.                                       |
+
+```json title="media.failed"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0b",
+  "type": "media.failed",
+  "version": 1,
+  "timestamp": "2026-11-09T16:31:20.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
+    "reason": "typeMismatch"
+  }
+}
+```
+
+### webhook.test [#webhook-test]
+
+Quelqu’un a demandé un événement de test sur le point de terminaison. Il est envoyé à ce point de terminaison seul, quels que soient ses abonnements, et aucun point de terminaison ne s’y abonne.
+
+| Champ         | Type   | Ce qu’il contient       |
+| ------------- | ------ | ----------------------- |
+| `workspaceId` | chaîne | L’espace de travail     |
+| `endpointId`  | chaîne | Le point de terminaison |
+
+```json title="webhook.test"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0c",
+  "type": "webhook.test",
+  "version": 1,
+  "timestamp": "2026-11-10T08:12:00.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "endpointId": "019a6e00-77aa-7f12-b0c4-1a2b3c4d5e6f"
+  }
+}
+```
+
+## Livraison et nouvelles tentatives [#delivery]
+
+Votre serveur a 15 secondes pour répondre. Toute réponse 2xx est un succès. Tout le reste est un échec : un autre code, les 3xx compris, pas de réponse à temps, ou une connexion impossible ou interrompue.
+
+Une livraison en échec est retentée, 8 tentatives en tout, sur environ une journée :
+
+| Tentative | Quand                                    |
+| --------- | ---------------------------------------- |
+| 1         | Aussitôt                                 |
+| 2         | 5 secondes après l’échec de la première  |
+| 3         | 5 minutes après l’échec de la deuxième   |
+| 4         | 30 minutes après l’échec de la troisième |
+| 5         | 2 heures après l’échec de la quatrième   |
+| 6         | 5 heures après l’échec de la cinquième   |
+| 7         | 8 heures après l’échec de la sixième     |
+| 8         | 8 heures après l’échec de la septième    |
+
+Après la huitième, la livraison a échoué pour de bon. Vous pouvez encore [la renvoyer](#log) à la main.
+
+Peal désactive de lui-même un point de terminaison dans deux cas, et prévient alors les membres qui gèrent les webhooks, par une notification et un e-mail :
+
+- **Il répond `410 Gone`.** La livraison échoue aussitôt, sans autre tentative, et le point de terminaison est désactivé : la réponse dit qu’il ne veut plus rien recevoir.
+- **Toutes les tentatives ont échoué pendant 5 jours.** Un seul succès entre-temps remet le compte à zéro.
+
+Réactivez le point de terminaison une fois qu’il répond : il retrouve ses 5 jours.
+
+## Ordre et doublons [#ordering]
+
+Les livraisons peuvent arriver dans le désordre, et plus d’une fois. Chaque événement est livré de son côté, avec ses propres tentatives : un événement dont la première tentative a échoué arrive après ceux qui l’ont suivi ; et une tentative à laquelle votre serveur a répondu trop tard, ou dont la réponse s’est perdue, est refaite.
+
+- **Dédupliquez sur `webhook-id`.** Gardez les identifiants déjà traités, et répondez un succès pour celui que vous avez déjà.
+- **Ne comptez pas sur l’ordre d’arrivée.** Servez-vous des instants de `data` (`publishedAt`, `failedAt`, `scheduledAt` et les autres) et du `timestamp` de l’événement, et lisez la publication ou le canal par l’API quand il vous faut son état actuel.
+
+## Le journal des livraisons [#log]
+
+Chaque point de terminaison a un journal de ses livraisons, les plus récentes d’abord, gardé 30 jours. Pour chacune, il montre :
+
+- le type et l’identifiant de l’événement ;
+- son état : en attente, réussie ou en échec, et pour un échec, pourquoi : toutes les tentatives ont échoué, le point de terminaison a répondu `410 Gone`, il a été désactivé avant qu’elle passe, ou l’instance ne peut plus lire son secret ;
+- le code que votre serveur a répondu à la dernière tentative, ou pourquoi aucune réponse n’est venue : aucune à temps, une connexion en échec, ou une adresse à laquelle Peal n’envoie plus ;
+- la durée de la dernière tentative, le nombre de tentatives faites, et le moment de la prochaine.
+
+Pour une réponse qui n’est pas un succès, le journal garde le début de ce que votre serveur a dit, pour vous aider à comprendre ce qui n’a pas marché : une ligne, 256 caractères au plus. Peal ne garde rien d’autre d’une réponse, et rien d’une réponse réussie.
+
+Deux actions aident pendant la mise au point :
+
+- **Envoyer un événement de test** envoie au point de terminaison un événement [`webhook.test`](#webhook-test).
+- **Renvoyer** envoie de nouveau l’événement d’une livraison au point de terminaison, comme une nouvelle livraison du même événement : même `webhook-id`, même corps, un nouvel horodatage et une nouvelle signature. Un serveur qui déduplique y verra un événement déjà traité.
+
+Les deux demandent que le point de terminaison soit activé.
+
+## Vérifier une livraison [#verify]
+
+Quiconque apprend l’adresse peut lui envoyer des requêtes : vérifiez chacune avant d’agir. La signature couvre l’identifiant de l’événement, l’horodatage de la tentative et le corps, joints par des points :
+
+```text
+<webhook-id>.<webhook-timestamp>.<body>
+```
+
+C’est un HMAC-SHA256 de ce texte, dont la clé est faite des octets que le secret contient en base64 après `whsec_`, écrit en base64 après `v1,`. Pendant un [renouvellement](#secret), l’en-tête en contient deux, séparées par une espace : acceptez la requête quand l’une des deux correspond.
+
+Vérifiez le corps tel qu’il est arrivé, octet pour octet. Un corps lu comme du JSON puis réécrit n’est plus le texte qui a été signé.
+
+Les bibliothèques Standard Webhooks font tout cela, vérification de l’horodatage comprise :
+
+<CodeGroup>
+
+```js JavaScript
+// npm install standardwebhooks
+import { Webhook } from "standardwebhooks";
+
+const webhook = new Webhook(process.env.PEAL_WEBHOOK_SECRET);
+
+// `rawBody` est le corps de la requête tel que reçu, une chaîne ou un Buffer.
+// Lève une erreur quand la signature ou l’horodatage est faux.
+const event = webhook.verify(rawBody, {
+  "webhook-id": request.headers["webhook-id"],
+  "webhook-timestamp": request.headers["webhook-timestamp"],
+  "webhook-signature": request.headers["webhook-signature"],
+});
+```
+
+```python Python
+# pip install standardwebhooks
+import os
+
+from standardwebhooks.webhooks import Webhook
+
+webhook = Webhook(os.environ["PEAL_WEBHOOK_SECRET"])
+
+# `raw_body` est le corps de la requête tel que reçu, en bytes.
+# Lève WebhookVerificationError quand la signature ou l’horodatage est faux.
+event = webhook.verify(
+    raw_body,
+    {
+        "webhook-id": request.headers["webhook-id"],
+        "webhook-timestamp": request.headers["webhook-timestamp"],
+        "webhook-signature": request.headers["webhook-signature"],
+    },
+)
+```
+
+```go Go
+// go get github.com/standard-webhooks/standard-webhooks/libraries
+import (
+	"io"
+	"net/http"
+	"os"
+
+	standardwebhooks "github.com/standard-webhooks/standard-webhooks/libraries/go"
+)
+
+func handle(w http.ResponseWriter, r *http.Request) {
+	webhook, err := standardwebhooks.NewWebhook(os.Getenv("PEAL_WEBHOOK_SECRET"))
+	if err != nil {
+		http.Error(w, "misconfigured", http.StatusInternalServerError)
+		return
+	}
+
+	// Le corps de la requête tel que reçu.
+	rawBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "unreadable", http.StatusBadRequest)
+		return
+	}
+
+	if err := webhook.Verify(rawBody, r.Header); err != nil {
+		http.Error(w, "invalid signature", http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+```
+
+```ruby Ruby
+# gem install standardwebhooks
+require "standardwebhooks"
+
+webhook = StandardWebhooks::Webhook.new(ENV.fetch("PEAL_WEBHOOK_SECRET"))
+
+# `raw_body` est le corps de la requête tel que reçu, en chaîne.
+# Lève StandardWebhooks::WebhookVerificationError quand la signature
+# ou l’horodatage est faux.
+event = webhook.verify(raw_body, {
+  "webhook-id" => request.env.fetch("HTTP_WEBHOOK_ID"),
+  "webhook-timestamp" => request.env.fetch("HTTP_WEBHOOK_TIMESTAMP"),
+  "webhook-signature" => request.env.fetch("HTTP_WEBHOOK_SIGNATURE"),
+})
+```
+
+```php PHP
+<?php
+// composer require standard-webhooks/standard-webhooks
+
+$webhook = new \StandardWebhooks\Webhook(getenv('PEAL_WEBHOOK_SECRET'));
+
+// Le corps de la requête tel que reçu.
+$rawBody = file_get_contents('php://input');
+
+// Lève \StandardWebhooks\Exception\WebhookVerificationException quand
+// la signature ou l’horodatage est faux.
+$event = $webhook->verify($rawBody, [
+    'webhook-id' => $_SERVER['HTTP_WEBHOOK_ID'],
+    'webhook-timestamp' => $_SERVER['HTTP_WEBHOOK_TIMESTAMP'],
+    'webhook-signature' => $_SERVER['HTTP_WEBHOOK_SIGNATURE'],
+]);
+```
+
+</CodeGroup>
+
+Sans bibliothèque, la vérification est courte. Celle-ci est écrite pour Node, avec une comparaison en temps constant et cinq minutes de tolérance sur l’horodatage :
+
+```js verify.mjs
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+const tolerance = 5 * 60;
+
+// `rawBody` est le corps de la requête tel que reçu, une chaîne ou un Buffer.
+export const verify = (secret, headers, rawBody) => {
+  const id = headers["webhook-id"];
+  const timestamp = headers["webhook-timestamp"];
+  const signatures = headers["webhook-signature"];
+
+  if (!id || !timestamp || !signatures) {
+    return false;
+  }
+
+  // Trop ancien ou trop en avance : une requête gardée pour être renvoyée.
+  const age = Math.abs(Date.now() / 1000 - Number(timestamp));
+
+  if (!(age <= tolerance)) {
+    return false;
+  }
+
+  const key = Buffer.from(secret.replace(/^whsec_/, ""), "base64");
+  const expected = createHmac("sha256", key)
+    .update(`${id}.${timestamp}.`)
+    .update(rawBody)
+    .digest();
+
+  // Une signature par secret valide : n’importe laquelle peut correspondre.
+  return signatures.split(" ").some((signature) => {
+    const [version, mac = ""] = signature.split(",");
+    const given = Buffer.from(mac, "base64");
+
+    return (
+      version === "v1" &&
+      given.length === expected.length &&
+      timingSafeEqual(given, expected)
+    );
+  });
+};
+```
+
+## Sécurité [#security]
+
+- **Vérifiez chaque requête avant d’agir**, sur les octets arrivés, et répondez une erreur à celle qui ne se vérifie pas.
+- **Refusez les horodatages anciens.** Un `webhook-timestamp` à plus de quelques minutes de votre horloge est une requête que quelqu’un a gardée pour la renvoyer. Les bibliothèques tolèrent cinq minutes.
+- **Dédupliquez sur `webhook-id`** : une livraison faite deux fois est traitée une fois.
+- **Répondez vite, travaillez ensuite.** Répondez un succès dès que la requête est vérifiée et enregistrée, et faites le travail après : une réponse qui met plus de 15 secondes compte comme un échec, et la livraison revient.
+- **Gardez le secret secret.** Rangez-le là où votre serveur garde ses autres secrets, jamais dans le code ni dans les journaux, et [renouvelez-le](#secret) s’il a pu fuiter.
+- **Évitez les secrets dans l’adresse.** Peal montre l’adresse d’un point de terminaison aux membres qui gèrent les webhooks. C’est la signature qui prouve qu’une requête vient de Peal.
+- **Ne filtrez pas sur l’adresse de Peal.** Les requêtes partent des adresses du serveur Peal. Sur votre propre instance, vous les connaissez ; Peal Cloud ne promet pas de garder les siennes fixes.
+- **Confirmez avant tout ce qui ne se défait pas.** Un corps dit ce qui s’est passé au moment de son envoi. Lisez la publication ou le canal par l’API avant d’agir pour de bon.
+
+## Par l’API [#api]
+
+| Point d’accès                                                                                | Ce qu’il fait                                                                     |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/webhooks`                                                 | Liste les points de terminaison, du plus ancien au plus récent                    |
+| `POST /api/workspaces/{workspaceId}/webhooks`                                                | Ajoute un point de terminaison, et répond son `secret` une seule fois             |
+| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                    | En montre un                                                                      |
+| `PATCH /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                  | Change son adresse, sa description ou ses événements, ou l’active ou le désactive |
+| `DELETE /api/workspaces/{workspaceId}/webhooks/{endpointId}`                                 | Le supprime, avec son secret et son journal                                       |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/secret`                            | Renouvelle son secret, et répond le nouveau une seule fois                        |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/test`                              | Lui envoie un événement de test                                                   |
+| `GET /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries`                         | Liste ses livraisons, les plus récentes d’abord, 30 par page                      |
+| `POST /api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries/{deliveryId}/redeliver` | Renvoie l’événement d’une livraison                                               |
+
+Les deux listes en `GET` et le point de terminaison lui-même demandent `webhook:read` ; tout le reste demande `webhook:manage`.
+
+```bash
+curl https://api.example.com/api/workspaces/$WORKSPACE_ID/webhooks \
+  -H "Authorization: Bearer $PEAL_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://hooks.example.com/peal",
+    "description": "Système de commandes",
+    "eventTypes": ["post.published", "post.failed", "post.unconfirmed"]
+  }'
+```
+
+La réponse contient l’`endpoint` et son `secret`. Les réponses suivantes ne contiennent plus jamais le secret.
+
+| Code | Erreur                    | Quand                                                                                             |
+| ---- | ------------------------- | ------------------------------------------------------------------------------------------------- |
+| 404  | `WebhookEndpointNotFound` | L’espace de travail n’a pas de point de terminaison de cet identifiant.                           |
+| 404  | `WebhookDeliveryNotFound` | Le point de terminaison n’a pas de livraison de cet identifiant, ou son journal ne la garde plus. |
+| 409  | `TooManyWebhookEndpoints` | L’espace de travail a déjà 10 points de terminaison.                                              |
+| 409  | `WebhookEndpointDisabled` | Un test ou un renvoi a été demandé à un point de terminaison désactivé.                           |
+| 422  | `WebhookUrlRefused`       | Peal ne livre pas à cette adresse. `reason` dit pourquoi, ci-dessous.                             |
+| 503  | `WebhooksNotConfigured`   | L’instance ne peut pas garder de secret de signature : voir [Auto-hébergement](#self-hosting).    |
+
+| `reason`      | L’adresse                                                             |
+| ------------- | --------------------------------------------------------------------- |
+| `malformed`   | n’est pas une URL.                                                    |
+| `notHttps`    | n’est pas en HTTPS, ou nomme un autre port que 443.                   |
+| `credentials` | porte un nom d’utilisateur ou un mot de passe.                        |
+| `tooLong`     | fait plus de 2048 caractères.                                         |
+| `notPublic`   | a un hôte qui est, ou qui mène à, une adresse qui n’est pas publique. |
+| `unknownHost` | a un nom d’hôte qui ne mène nulle part.                               |
+
+La [référence de l’API](/reference) liste les paramètres et les réponses de chaque point d’accès.
+
+## Auto-hébergement [#self-hosting]
+
+Les webhooks ne demandent aucun réglage propre. Les secrets de signature sont chiffrés avec les clés de [`PEAL_TOKEN_KEYS`](/environment-variables#channels), comme les jetons des canaux connectés. Sans elle, l’instance démarre, et ajouter un point de terminaison ou renouveler un secret répond 503 `WebhooksNotConfigured`.
+
+Les livraisons partent du serveur : il doit pouvoir joindre vos récepteurs en HTTPS. Elles ne vont qu’à des adresses publiques : un point de terminaison sur `localhost` ou dans votre réseau privé est refusé, sur votre propre instance aussi.

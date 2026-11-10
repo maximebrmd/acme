@@ -140,7 +140,7 @@ Les pages montrent les médias par des liens signés de courte durée. Si le buc
 
 ## Canaux [#channels]
 
-Le serveur chiffre les jetons des comptes connectés avec les clés de `PEAL_TOKEN_KEYS`. Sans elle, le serveur démarre, et la connexion d’un compte échoue. Créez une clé avec :
+Le serveur chiffre les jetons des comptes connectés, et les secrets de signature des [webhooks](/webhooks#self-hosting), avec les clés de `PEAL_TOKEN_KEYS`. Sans elle, le serveur démarre, et la connexion d’un compte ou l’ajout d’un point de terminaison de webhook échoue. Créez une clé avec :
 
 ```sh
 echo "k1:$(openssl rand -base64 32)"
