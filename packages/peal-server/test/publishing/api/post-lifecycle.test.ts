@@ -423,6 +423,115 @@ describe("the outcome endpoints", () => {
 
 describe("the send endpoint", () => {
   it.effect(
+    "takes a key once with a LinkedIn page's and a Google Business Profile location's options, and refuses it with another page mentioned",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* withOptions() {
+          const workspaceId = yield* freshId;
+          const editor = yield* clientAs(yield* freshId, workspaceId, "editor");
+          const page = yield* connect(workspaceId, "linkedin");
+          const location = yield* connect(workspaceId, "googleBusiness");
+          const params = { workspaceId };
+          const headers = { "idempotency-key": "synthetic-key-options" };
+
+          const bakery = {
+            name: "Example Bakery",
+            urn: "urn:li:organization:2414183",
+          };
+
+          const payload = {
+            channelIds: [page, location],
+            content: text("Open day with @Example Bakery."),
+            options: [
+              {
+                channelId: page,
+                options: {
+                  mentions: [bakery],
+                  platform: "linkedin",
+                  visibility: "loggedIn",
+                },
+              },
+              {
+                channelId: location,
+                options: {
+                  endsAt: "2026-06-20T18:00",
+                  platform: "googleBusiness",
+                  postType: "event",
+                  startsAt: "2026-06-20T09:00",
+                  title: "Synthetic open day",
+                },
+              },
+            ],
+            when: {
+              _tag: "at",
+              at: utc("2026-06-15T09:00:00Z"),
+              timeZone: "Europe/Paris",
+            },
+          } as const;
+
+          const sent = yield* editor.posts.send({ headers, params, payload });
+
+          assert.deepStrictEqual(
+            sent.targets
+              .map(({ options }) => options?.platform ?? "")
+              .toSorted((left, right) => left.localeCompare(right)),
+            ["googleBusiness", "linkedin"]
+          );
+
+          // Sent again with the same options: the same request, the same post.
+          const again = yield* editor.posts.send({
+            headers,
+            params,
+            payload: {
+              ...payload,
+              options: [
+                {
+                  channelId: page,
+                  options: {
+                    mentions: [{ name: bakery.name, urn: bakery.urn }],
+                    platform: "linkedin",
+                    visibility: "loggedIn",
+                  },
+                },
+                payload.options[1],
+              ],
+            },
+          });
+
+          assert.strictEqual(again.id, sent.id);
+
+          // Another page mentioned is another request.
+          const reused = yield* editor.posts
+            .send({
+              headers,
+              params,
+              payload: {
+                ...payload,
+                options: [
+                  {
+                    channelId: page,
+                    options: {
+                      mentions: [
+                        { ...bakery, urn: "urn:li:organization:2414184" },
+                      ],
+                      platform: "linkedin",
+                      visibility: "loggedIn",
+                    },
+                  },
+                  payload.options[1],
+                ],
+              },
+            })
+            .pipe(Effect.flip);
+
+          assert.strictEqual(reused._tag, "IdempotencyKeyReused");
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "creates and sends a post in one call, once per idempotency key",
     () =>
       onPostsServerAt(
