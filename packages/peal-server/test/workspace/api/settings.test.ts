@@ -591,13 +591,13 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
 
         yield* Ref.set(fakes.calls, []);
 
-        const reached = yield* Deferred.make<void>();
-        const released = yield* Deferred.make<void>();
+        const reached = yield* Deferred.make<true>();
+        const released = yield* Deferred.make<true>();
 
         // The store is slow to remove the files, and the client gives up.
         yield* Ref.set(
           fakes.whileRemovingFiles,
-          Deferred.succeed(reached, undefined).pipe(
+          Deferred.succeed(reached, true).pipe(
             Effect.andThen(Deferred.await(released))
           )
         );
@@ -623,7 +623,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
 
         // The interruption lands while the files are still being removed.
         yield* Effect.yieldNow.pipe(Effect.repeat({ times: 20 }));
-        yield* Deferred.succeed(released, undefined);
+        yield* Deferred.succeed(released, true);
         yield* Fiber.join(gone);
         yield* Ref.set(fakes.whileRemovingFiles, Effect.void);
 
