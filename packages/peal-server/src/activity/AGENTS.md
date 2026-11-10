@@ -26,7 +26,8 @@
   `updateWorkspace` are kept in that workspace's log by their handlers
   (`recordMade`), as its path is not under the workspace. Its refusals say
   why, like any other: `missingScope` with the partner scope a key lacks.
-- A check leaves no event: `posts.validate` and `lookups.run`, which read
+- A check leaves no event: `posts.validate`, `lookups.run` and
+  `ads.quoteBoost`, which read
   though they are sent as POST (`checksOnly` in
   `#workspace/api/security.ts`), and a request whose handler says first
   thing that it changes nothing (`changesNothing`, `#shared/api/change-mark.ts`:

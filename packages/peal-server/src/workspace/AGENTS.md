@@ -292,8 +292,9 @@ The staff context follows these rules too. What the law has a host keep is in
   (`PersonRequired` otherwise), shown once. It carries scopes
   (`workspaces:read`, `:write`, `:delete`) for `/api/partner`, and the
   permissions it holds in each workspace, out of `partnerKeyPermissions`
-  (`workspace/domain/partner-key.ts`): never members, invitations, API keys
-  or billing changes. `engagement:read` and `engagement:reply` are among
+  (`workspace/domain/partner-key.ts`): never members, invitations, API keys,
+  billing changes or any `ads:*` (a boost spends the customer's money on
+  an owner's decision in person). `engagement:read` and `engagement:reply` are among
   them, as publishing is: a product that posts for its customers reads
   and answers what is said under those posts, in a workspace that has no
   member to do it. `Authentication` answers it as a
