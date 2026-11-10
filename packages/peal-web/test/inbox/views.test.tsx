@@ -175,12 +175,12 @@ describe(InboxEmptyView, () => {
     await expect(
       render("en", <InboxEmptyView filtered={false} />)
     ).resolves.toContain(
-      "Peal reads comments on Mastodon and Bluesky, for 30 days after a post went live, and keeps them 30 days after that."
+      "Peal reads comments on Mastodon and Bluesky, for 30 days after a post went live unless whoever runs Peal set another window, and keeps them 30 days after that."
     );
     await expect(
       render("fr", <InboxEmptyView filtered={false} />)
     ).resolves.toContain(
-      "Peal lit les commentaires sur Mastodon et Bluesky, pendant 30 jours après la mise en ligne d’une publication, et les conserve 30 jours de plus."
+      "Peal lit les commentaires sur Mastodon et Bluesky, pendant 30 jours après la mise en ligne d’une publication sauf si la personne qui exploite Peal a fixé une autre fenêtre, et les conserve 30 jours de plus."
     );
   });
 
