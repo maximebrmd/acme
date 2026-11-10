@@ -35,6 +35,12 @@ import {
   syntheticBytes,
   TransactionsTest,
 } from "#test/media/support.ts";
+import { eventsSentTo } from "#test/webhooks/fakes/event-log.ts";
+import {
+  freshEndpoint,
+  freshOwner,
+  WebhooksTest,
+} from "#test/webhooks/support.ts";
 
 // Importing a file from an address: fetched by the server, stored in parts
 // and probed like an upload. A loopback server stands for the member's
@@ -350,6 +356,81 @@ layer(importing(UnmeteredTest), { timeout: "120 seconds" })(
 
         assert.strictEqual(denied._tag, "MissingPermission");
       })
+    );
+  }
+);
+
+// The same, with the workspace's webhooks listening, on the webhooks' own
+// stores: an import ends as an upload does, and says so.
+const importingHeard = Layer.mergeAll(
+  mediaWith(
+    HttpRemoteMedia.pipe(
+      Layer.provide(OpenOutboundGuard),
+      Layer.provide(FetchHttpClient.layer)
+    )
+  ).pipe(Layer.provide(Layer.mergeAll(MediaInPostsTest, UnmeteredTest))),
+  S3MediaStorageLive
+).pipe(Layer.provideMerge(WebhooksTest), Layer.provide(storageSettings));
+
+layer(importingHeard, { timeout: "120 seconds" })(
+  "importing media, to webhook endpoints",
+  (it) => {
+    it.effect(
+      "says once that an imported file is ready, and that a damaged one failed",
+      () =>
+        Effect.gen(function* heard() {
+          const owner = yield* freshOwner;
+          const png = yield* whitePng;
+
+          const { endpoint } = yield* freshEndpoint(owner, {
+            eventTypes: ["media.ready", "media.failed"],
+          });
+
+          const host = yield* hostServing({
+            "/damaged": whole(damagedPng(4096), "image/png"),
+            "/picture": whole(png, "image/png"),
+          });
+
+          const library = yield* MediaLibrary;
+
+          const imported = yield* library.importMedia(owner, {
+            altText: Option.none(),
+            url: `${host.url}/picture`,
+          });
+
+          // Stored, and not a picture a decoder reads: kept as uploaded.
+          const damaged = yield* library.importMedia(owner, {
+            altText: Option.none(),
+            url: `${host.url}/damaged`,
+          });
+
+          assert.strictEqual(damaged.asset.status._tag, "uploaded");
+
+          const sent = yield* eventsSentTo(owner, endpoint.id);
+
+          assert.deepStrictEqual(sent[0], {
+            data: {
+              contentType: "image/png",
+              mediaId: imported.asset.id,
+              workspaceId: owner.workspaceId,
+            },
+            type: "media.ready",
+          });
+          assert.deepStrictEqual(
+            sent.slice(1).map(({ data, type }) => [
+              type,
+              "mediaId" in data ? data.mediaId : null,
+            ]),
+            [["media.failed", damaged.asset.id]]
+          );
+
+          yield* MediaStorage.use((storage) =>
+            storage.remove(damaged.asset.storageKey)
+          );
+          yield* MediaStorage.use((storage) =>
+            storage.remove(imported.asset.storageKey)
+          );
+        })
     );
   }
 );
