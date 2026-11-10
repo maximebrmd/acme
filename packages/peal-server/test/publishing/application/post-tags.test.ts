@@ -20,8 +20,8 @@ const timeout = 60_000;
 const start = "2026-06-15T07:00:00Z";
 
 // A moment of the wall clock, whatever the test clock says.
-const aMoment = Effect.promise(async () =>{  await wait(300); });
-  });
+const aMoment = Effect.promise(async () => {
+  await wait(300);
 });
 
 // Whether `waiting` is still waiting a moment after it started, while the
