@@ -18,6 +18,7 @@ import type { Currency } from "#ads/domain/money.ts";
 import { SyncedAdSet } from "#ads/domain/synced-ad-set.ts";
 import { SyncedAd } from "#ads/domain/synced-ad.ts";
 import { SyncedCampaign } from "#ads/domain/synced-campaign.ts";
+import { storableLine } from "#shared/domain/platform-text.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { LocalDateSchema } from "#shared/domain/wall-clock.ts";
 
@@ -123,7 +124,8 @@ export const factsOf = (
       amountSpent: minorUnits(account.amount_spent, currency),
       currency,
       externalId,
-      name: (account.name ?? "").slice(0, 512),
+      // Written by whoever runs the account: kept storable, on one line.
+      name: storableLine(account.name ?? "", 512),
       // "A value of 0 means no spending-cap."
       spendCap: positive(minorUnits(account.spend_cap, currency)),
       status: accountStatuses.get(account.account_status ?? -1) ?? "unknown",
@@ -144,8 +146,9 @@ const stateOf = (object: {
   const raw = object.effective_status ?? object.status ?? "";
 
   return {
-    name: (object.name ?? "").slice(0, 1024),
-    rawStatus: raw.slice(0, 64),
+    // Written by whoever runs the account: kept storable, on one line.
+    name: storableLine(object.name ?? "", 1024),
+    rawStatus: storableLine(raw, 64),
     status: objectStatuses.get(raw) ?? ("unknown" as const),
   };
 };

@@ -310,7 +310,10 @@ and no socket, for tests.
   what a sign-in says of an account (`storableAuthorized`), what a
   platform answers a publishing call with (`storableResult`,
   `storableFailure`, in the routed publisher), a file's codec, a webhook
-  receiver's answer (`excerptOf`) and what visitors type on a review page
-  (`review/domain/plain-text.ts`). A new place a platform's string is
+  receiver's answer (`excerptOf`), what visitors type on a review page
+  (`review/domain/plain-text.ts`) and the names an ad network gives an ad
+  account, a campaign, an ad set or an ad (`ads/infrastructure/meta/
+  marketing-mapping.ts`); an ad network's refusal keeps its codes, never
+  its words. A new place a platform's string is
   kept goes through the helper, with a test that hands it a NUL and half
   a surrogate pair.
