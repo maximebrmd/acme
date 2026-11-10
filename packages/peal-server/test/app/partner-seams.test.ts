@@ -570,6 +570,25 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.strictEqual(draft.status, "draft");
 
+          // What the key may not do is refused in words about a partner
+          // key: there is no user whose role to change, nor a person who
+          // left the workspace.
+          for (const [tool, args] of [
+            ["list_members", {}],
+            ["list_invitations", {}],
+          ] as const) {
+            const refused = yield* client
+              .callTool({ arguments: args, tool: toolNamed(tools, tool) })
+              .pipe(Effect.provide(context));
+
+            const told = JSON.stringify(refused.content);
+
+            assert.isTrue(refused.isError, tool);
+            assert.include(told, "partner key", tool);
+            assert.notInclude(told, "role", tool);
+            assert.notInclude(told, "no longer belong", tool);
+          }
+
           // Kept in the workspace's log as the tool's call, by the key.
           const log = yield* app.request(
             `/api/workspaces/${customer.id}/activity?operation=mcp.create_draft`,

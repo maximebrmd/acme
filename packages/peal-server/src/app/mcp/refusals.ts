@@ -1,6 +1,6 @@
 import { Effect, Option } from "effect";
 import { CurrentMember } from "peal-contract";
-import type { Permission } from "peal-contract";
+import type { Member, Permission } from "peal-contract";
 
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
@@ -16,6 +16,18 @@ import { scopeGrants } from "#workspace/api/refusal.ts";
 export const refuse = (message: string) =>
   Effect.fail(new ToolRefused({ message }));
 
+// Whose permission is missing, and who can do something about it: a
+// partner's key, a workspace's key, or the user's role.
+const whoseOf = (member: Member, doing: string, permission: Permission) => {
+  if (member.principal._tag === "partnerKey") {
+    return `This connection may not ${doing} in this workspace: its partner key does not have the permission ${permission}. Someone who manages the partner account creates a key that has it, in the web app's partner settings; a partner key is never given members, invitations, API keys or billing changes.`;
+  }
+
+  return member.principal._tag === "apiKey"
+    ? `This connection may not ${doing} in this workspace: its API key does not have the permission ${permission}. An owner or admin of the workspace creates a key that has it, in the web app's settings.`
+    : `This connection may not ${doing} in this workspace: the user's role does not allow it (it takes the permission ${permission}). An owner or admin of the workspace can change their role, in the web app's settings.`;
+};
+
 /**
  * The connection may not do this, and why: the user did not give the client
  * the scope it takes, which they grant by connecting it again, or their
@@ -28,10 +40,7 @@ export const notAllowed =
       Effect.flatMap((member) =>
         refuse(
           Option.match(missingScope(member, permission), {
-            onNone: () =>
-              member.principal._tag === "apiKey"
-                ? `This connection may not ${doing} in this workspace: its API key does not have the permission ${permission}. An owner or admin of the workspace creates a key that has it, in the web app's settings.`
-                : `This connection may not ${doing} in this workspace: the user's role does not allow it (it takes the permission ${permission}). An owner or admin of the workspace can change their role, in the web app's settings.`,
+            onNone: () => whoseOf(member, doing, permission),
             onSome: (scope) =>
               `This connection may not ${doing} in this workspace: the user did not give this client the scope ${scope} (${scopeGrants[scope]}). To grant it, the user connects this client to Peal again and allows it there; a connection keeps the scopes it was given until then.`,
           })
