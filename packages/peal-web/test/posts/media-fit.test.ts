@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option } from "effect";
+import { PlatformSchema } from "peal-contract";
 import type { Media } from "peal-contract";
 
 import { mediaFitOn, mediaFits, showsAltText } from "#posts/media-fit.ts";
@@ -248,9 +249,15 @@ describe("a document attached to a post", () => {
     });
   });
 
-  it("fits no other platform, known or not", () => {
-    for (const platform of ["mastodon", "pinterest"] as const) {
-      expect(mediaFitOn(platform, [attachedPdf]).problems).toStrictEqual([
+  // Pinterest and Google Business Profile included, as on the server.
+  it.each(PlatformSchema.literals.filter((name) => name !== "linkedin"))(
+    "fits no other platform: %s",
+    (platform) => {
+      expect(
+        mediaFitOn(platform, [attachedPdf]).problems.filter(
+          ({ _tag }) => _tag === "mediaTypeUnsupported"
+        )
+      ).toStrictEqual([
         {
           _tag: "mediaTypeUnsupported",
           contentType: "application/pdf",
@@ -259,5 +266,5 @@ describe("a document attached to a post", () => {
         },
       ]);
     }
-  });
+  );
 });
