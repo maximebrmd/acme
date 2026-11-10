@@ -50,6 +50,7 @@ export type BillingAction =
 export type BillingError =
   | "forbidden"
   | "generic"
+  | "noInvoices"
   | "nothingToCancel"
   | "trialUsed"
   | "withdrawalBusiness"
@@ -325,6 +326,34 @@ const StepPanel = ({
   );
 };
 
+// A workspace whose plan ended keeps its invoices at Stripe: the way to
+// them stays.
+const PastInvoices = ({
+  busy,
+  onManage,
+  pending,
+}: Pick<BillingViewProps, "onManage" | "pending"> & {
+  readonly busy: boolean;
+}) => {
+  const t = useTranslations("Billing.current");
+
+  return (
+    <CardFooter>
+      <div className="flex flex-col items-start gap-3">
+        <Button
+          variant="ghost"
+          disabled={busy}
+          focusableWhenDisabled
+          onClick={onManage}
+        >
+          {pending?._tag === "portal" ? t("managing") : t("invoices")}
+        </Button>
+        <p className="text-muted-foreground text-xs">{t("invoicesHint")}</p>
+      </div>
+    </CardFooter>
+  );
+};
+
 const CurrentPlan = ({
   billing,
   canManage,
@@ -386,6 +415,9 @@ const CurrentPlan = ({
           ) : null}
         </div>
       </CardContent>
+      {canManage && subscription === null ? (
+        <PastInvoices busy={busy} pending={pending} onManage={onManage} />
+      ) : null}
       {canManage && subscription !== null ? (
         <CardFooter>
           <div className="flex flex-col items-start gap-3">

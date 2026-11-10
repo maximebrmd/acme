@@ -45,16 +45,20 @@ interface AuthResult {
   readonly error: { readonly status: number } | null;
 }
 
+// Why Stripe was not reached: the member may not, the workspace never had
+// a Stripe customer, so has no invoice, or anything else.
+const refusalOf = (status: number): BillingError => {
+  if (status === 401 || status === 403) {
+    return "forbidden";
+  }
+
+  return status === 404 ? "noInvoices" : "generic";
+};
+
 // Where to go next, or why not.
 const destinationOf = (result: AuthResult): Destination => {
   if (result.error !== null) {
-    return {
-      _tag: "failed",
-      error:
-        result.error.status === 401 || result.error.status === 403
-          ? "forbidden"
-          : "generic",
-    };
+    return { _tag: "failed", error: refusalOf(result.error.status) };
   }
 
   return Option.match(decodeRedirect(result.data), {

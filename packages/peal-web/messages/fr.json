@@ -926,8 +926,10 @@
       "ends": "Prend fin le {date}",
       "pastDue": "Le dernier paiement n’est pas passé. Mettez à jour le moyen de paiement dans l’espace de facturation pour garder l’abonnement.",
       "manage": "Gérer la facturation",
+      "invoices": "Factures et reçus",
+      "invoicesHint": "Les factures et les reçus des abonnements passés de l’espace de travail restent dans l’espace de facturation de Stripe.",
       "managing": "Ouverture de l’espace de facturation…",
-      "manageHint": "Changez de moyen de paiement, d’adresse de facturation ou de numéro de TVA, ou téléchargez les factures, dans l’espace de facturation de Stripe.",
+      "manageHint": "Changez de moyen de paiement, d’adresse de facturation ou de numéro de TVA, ou téléchargez les factures et les reçus, dans l’espace de facturation de Stripe.",
       "trialEnds": "L’essai prend fin le {date}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement.",
       "withdrawable": "Jusqu’au {date}, en tant que consommateur, vous pouvez vous rétracter du contrat, ici ou avec « Renoncer au contrat ici » au pied de chaque page : il prend fin immédiatement et la part non utilisée vous est remboursée.",
       "trialHint": "Un abonnement commandé pendant l’essai y met fin une fois payé ; rien n’est facturé pour l’essai."
@@ -960,6 +962,7 @@
     "errors": {
       "forbidden": "Seuls les propriétaires et les administrateurs de l’espace de travail, dans leur propre session, peuvent changer sa facturation.",
       "generic": "Stripe n’a pas pu être joint. Réessayez dans un instant.",
+      "noInvoices": "Cet espace de travail n’a aucune facture : il n’a jamais eu d’abonnement payant.",
       "nothingToCancel": "L’abonnement est déjà résilié.",
       "trialUsed": "Cet espace de travail ou votre compte a déjà eu son essai : commandez plutôt un abonnement.",
       "withdrawalBusiness": "Une entreprise avec un numéro de TVA vérifié n’a pas de droit de rétractation. Vous pouvez toujours résilier le contrat.",

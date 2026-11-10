@@ -926,8 +926,10 @@
       "ends": "Ends on {date}",
       "pastDue": "The last payment did not go through. Update the payment method in the billing portal to keep the plan.",
       "manage": "Manage billing",
+      "invoices": "Invoices and receipts",
+      "invoicesHint": "The invoices and receipts of the workspace’s past plans stay in Stripe’s billing portal.",
       "managing": "Opening the billing portal…",
-      "manageHint": "Change the payment method, the billing address or the VAT number, or download invoices, in Stripe’s billing portal.",
+      "manageHint": "Change the payment method, the billing address or the VAT number, or download invoices and receipts, in Stripe’s billing portal.",
       "trialEnds": "The trial ends on {date}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
       "withdrawable": "Until {date}, as a consumer you may withdraw from the contract, here or with “Withdraw from contract here” at the foot of every page: it ends at once and the unused part is refunded.",
       "trialHint": "A plan ordered during the trial ends it once it is paid for; nothing is charged for the trial."
@@ -960,6 +962,7 @@
     "errors": {
       "forbidden": "Only owners and admins of the workspace, in their own session, can change its billing.",
       "generic": "Stripe could not be reached. Try again in a moment.",
+      "noInvoices": "This workspace has no invoice: it never had a paid plan.",
       "nothingToCancel": "The subscription is already cancelled.",
       "trialUsed": "This workspace or your account already had its trial: order a plan instead.",
       "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the contract.",

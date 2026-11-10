@@ -295,4 +295,13 @@ describe(BillingView, () => {
     expect(html).toContain("The plan changes as soon as Stripe confirms");
     expect(html).toContain("already had its trial");
   });
+
+  it("keeps the invoices of past plans within reach once the plan has ended", async () => {
+    const html = await render("en", { billing: onFree });
+
+    expect(html).toContain(">Invoices and receipts</button>");
+    await expect(
+      render("en", { billing: onFree, canManage: false })
+    ).resolves.not.toContain("Invoices and receipts");
+  });
 });
