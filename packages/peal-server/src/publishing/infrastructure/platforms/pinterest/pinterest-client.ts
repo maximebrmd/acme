@@ -5,7 +5,7 @@ import type { HttpClient, HttpClientError } from "effect/http";
 
 import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
 import type { PublishableMedia } from "#publishing/application/media-for-publishing.ts";
-import type { OutcomeUnknown } from "#publishing/application/outcome-unknown.ts";
+import { OutcomeUnknown } from "#publishing/application/outcome-unknown.ts";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
 import {
@@ -212,6 +212,17 @@ const mediaTypeOf = (post: OutgoingPost, hasVideo: boolean) => {
 
   return post.media.length > 1 ? "multiple_images" : "image";
 };
+
+// A server's error, or a timeout a server on the way reports, on the
+// request that makes the Pin says nothing of whether it was made:
+// Pinterest takes no idempotency key, so it is looked for, never sent
+// again as if nothing happened.
+const createRefused = (
+  response: HttpClientResponse.HttpClientResponse
+): Effect.Effect<never, OutcomeUnknown | PinterestRefusal> =>
+  response.status >= 500 || response.status === 408
+    ? Effect.fail(new OutcomeUnknown({ reason: "noResponse" }))
+    : refused(response, "pin");
 
 /**
  * Publishes on Pinterest with API v5, as Pins. An image Pin is one request:
@@ -520,7 +531,7 @@ export const pinterestClient = Effect.fn("PinterestClient.make")(
                   ? HttpClientResponse.schemaBodyJson(CreatedSchema)(
                       response
                     ).pipe(Effect.map(({ id }) => publishedAs(id)))
-                  : refused(response, "pin")
+                  : createRefused(response)
             ),
             Effect.catchTags({
               HttpClientError: commitUnanswered,

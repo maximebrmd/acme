@@ -347,7 +347,6 @@ describe("publishing on Pinterest", () => {
       const { client, pinterest } = yield* onPinterest({ files: [image] });
 
       pinterest.script.push("POST /v5/pins", [
-        pinterest.refusal(503, 0, "Service unavailable."),
         // A proxy's page, not Pinterest's word on the token.
         json({ error: "Forbidden" }, 403),
         pinterest.refusal(403, 29, "You are not permitted to do that."),
@@ -355,19 +354,18 @@ describe("publishing on Pinterest", () => {
       ]);
 
       const failures = yield* Effect.forEach(
-        [1, 2, 3, 4, 5],
+        [1, 2, 3, 4],
         (attempt) =>
           post({
             media: [attached(image)],
             // The last one names a board that is not the account's.
             options:
-              attempt === 5 ? onBoard({ boardId: "549755885999" }) : onBoard(),
+              attempt === 4 ? onBoard({ boardId: "549755885999" }) : onBoard(),
           }).pipe(Effect.flatMap(client.publish), Effect.flip),
         { concurrency: 1 }
       );
 
       assert.deepStrictEqual(failures, [
-        new PlatformUnavailable(),
         new PlatformUnavailable(),
         new BadRequest({ code: "pinterest29" }),
         new BadRequest({ code: "pinterest1" }),
@@ -481,6 +479,52 @@ describe("a Pin whose answer was lost", () => {
       assert.lengthOf(pinterest.pins(), 1);
       assert.lengthOf(calls(pinterest, "POST", "/v5/pins"), 1);
     }).pipe(Effect.scoped)
+  );
+
+  // Pinterest takes no idempotency key: a server error on the request that
+  // makes the Pin says nothing of whether it was made.
+  it.live(
+    "looks for the Pin after a server error on its creation, and never makes it twice",
+    () =>
+      Effect.gen(function* serverError() {
+        const image = testFile("image", 512);
+        const { client, pinterest } = yield* onPinterest({ files: [image] });
+
+        // Made, then an edge answers for Pinterest.
+        pinterest.script.push("POST /v5/pins", [
+          { _tag: "createThenFail", status: 502 },
+        ]);
+
+        const made = yield* client.publish(
+          yield* post({ media: [attached(image)], text: "Ripe tomatoes." })
+        );
+
+        assert.strictEqual(made._tag, "published");
+        assert.lengthOf(pinterest.pins(), 1);
+        assert.lengthOf(calls(pinterest, "POST", "/v5/pins"), 1);
+
+        // Not made: nothing is found, and nothing is sent again.
+        for (const status of [500, 503, 504, 408]) {
+          pinterest.script.push("POST /v5/pins", [
+            pinterest.refusal(status, 0, "Synthetic outage."),
+          ]);
+
+          const lost = yield* client.publish(
+            yield* post({
+              media: [attached(image)],
+              text: `Lost to a ${String(status)}.`,
+            })
+          );
+
+          assert.deepStrictEqual(lost, {
+            _tag: "unconfirmed",
+            reason: "noResponse",
+          });
+        }
+
+        assert.lengthOf(pinterest.pins(), 1);
+        assert.lengthOf(calls(pinterest, "POST", "/v5/pins"), 5);
+      }).pipe(Effect.scoped)
   );
 
   it.live("is looked for in its section, when it has one", () =>

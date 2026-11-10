@@ -55,12 +55,14 @@ export interface FakeMedia {
 
 /**
  * What Pinterest does with the next request to a route instead of its own
- * behaviour: an answer, or `createThenDrop`, which makes the Pin and drops
- * the connection, so the answer is lost.
+ * behaviour: an answer, `createThenDrop`, which makes the Pin and drops
+ * the connection, so the answer is lost, or `createThenFail`, which makes
+ * it and answers a server's error.
  */
 export type PinterestScript =
   | PlatformAnswer
-  | { readonly _tag: "createThenDrop" };
+  | { readonly _tag: "createThenDrop" }
+  | { readonly _tag: "createThenFail"; readonly status: number };
 
 export interface FakePinterestOptions {
   readonly boards?: readonly FakeBoard[];
@@ -550,12 +552,18 @@ export const fakePinterestApi = Effect.fnUntraced(function* fakePinterestApi(
 
     // The upload goes to the object store, which knows no token.
     if (request.method === "POST" && uploaded !== undefined) {
-      return next === undefined || next._tag === "createThenDrop"
+      return next === undefined ||
+        next._tag === "createThenDrop" ||
+        next._tag === "createThenFail"
         ? upload(request, uploaded["id"] ?? "")
         : next;
     }
 
-    if (next !== undefined && next._tag !== "createThenDrop") {
+    if (
+      next !== undefined &&
+      next._tag !== "createThenDrop" &&
+      next._tag !== "createThenFail"
+    ) {
       return next;
     }
 
@@ -572,7 +580,9 @@ export const fakePinterestApi = Effect.fnUntraced(function* fakePinterestApi(
     if (next !== undefined) {
       create(request);
 
-      return dropped;
+      return next._tag === "createThenFail"
+        ? json({ message: "Bad gateway" }, next.status)
+        : dropped;
     }
 
     return route(request, origin);
