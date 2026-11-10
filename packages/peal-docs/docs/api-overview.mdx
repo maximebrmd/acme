@@ -36,7 +36,7 @@ With a session or an OAuth token, `GET /api/me` tells who you are, and lists you
 
 ## Workspaces [#workspaces]
 
-A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media`, `assistant`, `analytics`, `billing` and `api-keys`; `DELETE /api/workspaces/{workspaceId}` deletes the workspace itself, with everything in it ([Workspaces and your account](/settings#delete-workspace)). Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
+A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media`, `assistant`, `analytics`, `billing`, `webhooks` and `api-keys`; `DELETE /api/workspaces/{workspaceId}` deletes the workspace itself, with everything in it ([Workspaces and your account](/settings#delete-workspace)). Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
 
 | Status | Meaning                                                                        |
 | ------ | ------------------------------------------------------------------------------ |
@@ -47,6 +47,10 @@ A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`,
 `POST /api/workspaces/{workspaceId}/posts/send` creates a post and sends it in one request, now or at an instant; `POST /api/workspaces/{workspaceId}/media/import` has the server fetch an image or a video from a public HTTPS address into the workspace's media. Sent with an `Idempotency-Key` header, a `send` request is safe to send again: within 24 hours, the same key with the same body answers the post the first request made, and another body answers 409 `IdempotencyKeyReused`. [Posting from an AI agent](/agents#api) shows both.
 
 Errors answer with a JSON body whose `_tag` names the error, such as `PostContentInvalid` or `ConnectFailed`, with the details the reference lists. The writing assistant's endpoints also answer 429 once the workspace has used its requests for the day, 503 when the instance has no AI provider, and 502 when the provider gave no answer the assistant could use. On an instance that bills, connecting a channel, scheduling a post or starting an upload the workspace's plan has no room for answers 402 `PlanLimitReached`, which names the `limit` (`channels`, `members`, `scheduledPosts`, `assistantRequests` or `mediaStorage`, in bytes) and what the plan `allowed` ([Plans and billing](/billing#limits)); `GET /api/workspaces/:workspaceId/billing` shows the plan, its allowances and the workspace's usage.
+
+## Webhooks [#webhooks]
+
+Rather than asking the API again and again, have Peal call your server when something happens in a workspace: a post went out or failed, a channel must be reconnected, a file is ready. Members who may manage webhooks (owners and admins), and API keys given that permission, add endpoints under `/api/workspaces/{workspaceId}/webhooks`. [Webhooks](/webhooks) lists every event with its schema, and tells how deliveries are signed, retried and verified.
 
 ## Your account [#me]
 

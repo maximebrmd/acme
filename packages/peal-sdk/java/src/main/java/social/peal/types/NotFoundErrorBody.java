@@ -26,16 +26,24 @@ public final class NotFoundErrorBody {
         return value.visit(visitor);
     }
 
-    public static NotFoundErrorBody channelNotFound(ChannelNotFoundEncoded value) {
-        return new NotFoundErrorBody(new ChannelNotFoundValue(value));
+    public static NotFoundErrorBody webhookEndpointNotFound(WebhookEndpointNotFoundEncoded value) {
+        return new NotFoundErrorBody(new WebhookEndpointNotFoundValue(value));
+    }
+
+    public static NotFoundErrorBody webhookDeliveryNotFound(WebhookDeliveryNotFoundEncoded value) {
+        return new NotFoundErrorBody(new WebhookDeliveryNotFoundValue(value));
     }
 
     public static NotFoundErrorBody workspaceNotFound(WorkspaceNotFoundEncoded value) {
         return new NotFoundErrorBody(new WorkspaceNotFoundValue(value));
     }
 
-    public boolean isChannelNotFound() {
-        return value instanceof ChannelNotFoundValue;
+    public boolean isWebhookEndpointNotFound() {
+        return value instanceof WebhookEndpointNotFoundValue;
+    }
+
+    public boolean isWebhookDeliveryNotFound() {
+        return value instanceof WebhookDeliveryNotFoundValue;
     }
 
     public boolean isWorkspaceNotFound() {
@@ -46,9 +54,16 @@ public final class NotFoundErrorBody {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<ChannelNotFoundEncoded> getChannelNotFound() {
-        if (isChannelNotFound()) {
-            return Optional.of(((ChannelNotFoundValue) value).value);
+    public Optional<WebhookEndpointNotFoundEncoded> getWebhookEndpointNotFound() {
+        if (isWebhookEndpointNotFound()) {
+            return Optional.of(((WebhookEndpointNotFoundValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<WebhookDeliveryNotFoundEncoded> getWebhookDeliveryNotFound() {
+        if (isWebhookDeliveryNotFound()) {
+            return Optional.of(((WebhookDeliveryNotFoundValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,7 +104,9 @@ public final class NotFoundErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitChannelNotFound(ChannelNotFoundEncoded channelNotFound);
+        T visitWebhookEndpointNotFound(WebhookEndpointNotFoundEncoded webhookEndpointNotFound);
+
+        T visitWebhookDeliveryNotFound(WebhookDeliveryNotFoundEncoded webhookDeliveryNotFound);
 
         T visitWorkspaceNotFound(WorkspaceNotFoundEncoded workspaceNotFound);
 
@@ -97,38 +114,82 @@ public final class NotFoundErrorBody {
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(ChannelNotFoundValue.class), @JsonSubTypes.Type(WorkspaceNotFoundValue.class)})
+    @JsonSubTypes({
+        @JsonSubTypes.Type(WebhookEndpointNotFoundValue.class),
+        @JsonSubTypes.Type(WebhookDeliveryNotFoundValue.class),
+        @JsonSubTypes.Type(WorkspaceNotFoundValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("ChannelNotFound")
+    @JsonTypeName("WebhookEndpointNotFound")
     @JsonIgnoreProperties("_tag")
-    private static final class ChannelNotFoundValue implements Value {
+    private static final class WebhookEndpointNotFoundValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private ChannelNotFoundEncoded value;
+        private WebhookEndpointNotFoundEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private ChannelNotFoundValue() {}
+        private WebhookEndpointNotFoundValue() {}
 
-        private ChannelNotFoundValue(ChannelNotFoundEncoded value) {
+        private WebhookEndpointNotFoundValue(WebhookEndpointNotFoundEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitChannelNotFound(value);
+            return visitor.visitWebhookEndpointNotFound(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof ChannelNotFoundValue && equalTo((ChannelNotFoundValue) other);
+            return other instanceof WebhookEndpointNotFoundValue && equalTo((WebhookEndpointNotFoundValue) other);
         }
 
-        private boolean equalTo(ChannelNotFoundValue other) {
+        private boolean equalTo(WebhookEndpointNotFoundValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NotFoundErrorBody{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("WebhookDeliveryNotFound")
+    @JsonIgnoreProperties("_tag")
+    private static final class WebhookDeliveryNotFoundValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private WebhookDeliveryNotFoundEncoded value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private WebhookDeliveryNotFoundValue() {}
+
+        private WebhookDeliveryNotFoundValue(WebhookDeliveryNotFoundEncoded value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitWebhookDeliveryNotFound(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof WebhookDeliveryNotFoundValue && equalTo((WebhookDeliveryNotFoundValue) other);
+        }
+
+        private boolean equalTo(WebhookDeliveryNotFoundValue other) {
             return value.equals(other.value);
         }
 

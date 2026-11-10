@@ -25,6 +25,7 @@ import { TestClock } from "effect/testing";
 import { AccountRules } from "#publishing/application/account-rules.ts";
 import { ChannelHealth } from "#publishing/application/channel-health.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
+import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SchedulePostRequest } from "#publishing/application/post-scheduling.ts";
@@ -143,7 +144,8 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
         RecordingPublicationOutcomes,
         WorkflowPublicationScheduler,
         ReferencesTest,
-        AccountRules.none
+        AccountRules.none,
+        PostEvents.none
       )
     ),
     Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),

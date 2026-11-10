@@ -32,6 +32,8 @@ Permission = typing.Union[
         "post:schedule",
         "post:approve",
         "post:publish",
+        "webhook:read",
+        "webhook:manage",
     ],
     typing.Any,
 ]

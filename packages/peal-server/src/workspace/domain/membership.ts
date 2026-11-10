@@ -24,9 +24,9 @@ export type Membership = typeof MembershipSchema.Type;
 
 /**
  * What staff impersonating a member may not do in the member's name:
- * schedule or publish, connect accounts, change billing, handle API keys or
- * delete the workspace, which all outlive the impersonation or reach outside
- * Peal. They may write and edit drafts, each change recorded in the audit log
+ * schedule or publish, connect accounts, change billing, handle API keys,
+ * manage webhooks or delete the workspace, which all outlive the
+ * impersonation or reach outside Peal. They may write and edit drafts, each change recorded in the audit log
  * under their own name (the ImpersonationGuard), while the drafts carry the
  * member's.
  */
@@ -40,6 +40,7 @@ export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
   "organization:delete",
   "post:publish",
   "post:schedule",
+  "webhook:manage",
 ]);
 
 export type AccessDenied = BannedUser | NotAMember | WorkspaceMismatch;

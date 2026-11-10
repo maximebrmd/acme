@@ -14,6 +14,7 @@ import { FetchHttpClient } from "effect/http";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
+import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
@@ -94,6 +95,7 @@ const BlueskyTest = Layer.mergeAll(
   Layer.provideMerge(
     Layer.mergeAll(
       DrizzleChannelRepository,
+      ChannelEvents.none,
       DrizzleConnectAttempts,
       DrizzleConnectChoices,
       SqlChannelLocks,

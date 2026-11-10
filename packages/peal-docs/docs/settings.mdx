@@ -1,6 +1,6 @@
 ---
 title: Workspaces and your account
-description: Rename a workspace, manage its members, invitations and API keys, or delete it; change your name, language and password, see your sessions and connected applications, download your data or delete your account.
+description: Rename a workspace, manage its members, invitations, API keys and webhooks, or delete it; change your name, language and password, see your sessions and connected applications, download your data or delete your account.
 sidebar:
   order: 7
 ---
@@ -9,15 +9,15 @@ A workspace's settings belong to its members, as their roles allow. Your account
 
 ## Workspace settings [#workspace]
 
-Choose **Settings** on a workspace's card. Every member sees **General** and **Members**; members who may invite people see **Invitations**, and those who may handle keys see **API keys**.
+Choose **Settings** on a workspace's card. Every member sees **General** and **Members**; members who may invite people see **Invitations**, those who may handle keys see **API keys**, and those who may manage webhooks see **Webhooks**.
 
-| Role        | In the settings                                                                         |
-| ----------- | --------------------------------------------------------------------------------------- |
-| Owner       | Everything: rename, members, owners included, invitations, API keys, and deleting it    |
-| Admin       | Rename, members other than owners, invitations and API keys; never owners, nor deleting |
-| Editor      | Sees the members                                                                        |
-| Contributor | Sees the members                                                                        |
-| Viewer      | Sees the members                                                                        |
+| Role        | In the settings                                                                                   |
+| ----------- | ------------------------------------------------------------------------------------------------- |
+| Owner       | Everything: rename, members, owners included, invitations, API keys, webhooks, and deleting it    |
+| Admin       | Rename, members other than owners, invitations, API keys and webhooks; never owners, nor deleting |
+| Editor      | Sees the members                                                                                  |
+| Contributor | Sees the members                                                                                  |
+| Viewer      | Sees the members                                                                                  |
 
 ### Members [#members]
 
@@ -32,6 +32,10 @@ Under **Invitations**, enter an email address and a role, then **Send the invita
 Under **API keys**, give a new key a name, how long it works (30, 90 or 365 days, or until revoked) and what it may do, out of the permissions your role gives you. The key appears once, right after: copy it then, as Peal keeps only a hash of it. [The API overview](/api-overview#authentication) tells how to send it. **Revoke** stops a key at once. Staff acting as a member cannot see or handle keys.
 
 The list says of each key whether it **can schedule and publish posts**: it can when it holds `post:schedule`, `post:publish` or `post:approve`, and writes drafts at most without them. Give a key those permissions only when what uses it must publish: what it sends is public on the platforms ([Posting from an AI agent](/agents#api)). A post created or scheduled with a key says so on its page, with the key's name.
+
+### Webhooks [#webhooks]
+
+Under **Webhooks**, owners and admins add the addresses Peal calls when something happens in the workspace, 10 at most: each has the events it wants, a description, and a signing secret that appears once, right after it is created or rotated. Each endpoint keeps a log of its deliveries for 30 days, from which a delivery can be sent again, and takes a test event. [Webhooks](/webhooks) lists the events, and tells how to verify a delivery. Staff acting as a member cannot change webhooks.
 
 ### Delete a workspace [#delete-workspace]
 

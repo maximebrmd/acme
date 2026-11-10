@@ -30,8 +30,10 @@ import {
   MediaInPostsTest,
   MediaTestLive,
   memberIn,
+  NoWebhooks,
   storageSettings,
   syntheticBytes,
+  TransactionsTest,
 } from "#test/media/support.ts";
 
 // Importing a file from an address: fetched by the server, stored in parts
@@ -131,7 +133,16 @@ const importing = (entitlements: typeof UnmeteredTest) =>
         Layer.provide(OpenOutboundGuard),
         Layer.provide(FetchHttpClient.layer)
       )
-    ).pipe(Layer.provide(Layer.mergeAll(MediaInPostsTest, entitlements))),
+    ).pipe(
+      Layer.provide(
+        Layer.mergeAll(
+          MediaInPostsTest,
+          entitlements,
+          NoWebhooks,
+          TransactionsTest
+        )
+      )
+    ),
     S3MediaStorageLive,
     DrizzleMediaAssetsLive
   ).pipe(Layer.provideMerge(DatabaseTest), Layer.provide(storageSettings));

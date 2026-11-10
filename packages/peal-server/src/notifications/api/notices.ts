@@ -131,6 +131,16 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       over,
       plan,
     }),
+    WebhookEndpointDisabled: ({
+      endpointId,
+      host,
+      reason,
+    }): NoticeEventView => ({
+      _tag: "WebhookEndpointDisabled",
+      endpointId,
+      host,
+      reason,
+    }),
   });
 
 const noticeView = (notice: Notice): NoticeView => ({

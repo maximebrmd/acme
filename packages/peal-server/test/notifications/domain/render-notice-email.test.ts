@@ -141,6 +141,43 @@ describe(renderNoticeEmail, () => {
     );
   });
 
+  it("tells that a webhook endpoint was turned off, by its host and why", () => {
+    const failing = render(
+      {
+        _tag: "WebhookEndpointDisabled",
+        endpointId: "00000000-0000-7000-8000-000000000051",
+        host: "hooks.example.com",
+        reason: "failing",
+      },
+      "en"
+    );
+
+    expect(failing.subject).toBe(
+      "Webhook endpoint turned off: hooks.example.com"
+    );
+    expect(failing.text).toContain(
+      "Peal turned off the webhook endpoint at hooks.example.com in Studio Nord: every delivery to it failed for 5 days."
+    );
+    expect(failing.text).toContain(url);
+
+    const gone = render(
+      {
+        _tag: "WebhookEndpointDisabled",
+        endpointId: "00000000-0000-7000-8000-000000000051",
+        host: "hooks.example.com",
+        reason: "gone",
+      },
+      "fr"
+    );
+
+    expect(gone.subject).toBe(
+      "Point de terminaison de webhook désactivé : hooks.example.com"
+    );
+    expect(gone.text).toContain(
+      "Peal a désactivé le point de terminaison de webhook hooks.example.com dans Studio Nord : il a répondu 410 Gone, ce qui demande de ne plus rien lui envoyer."
+    );
+  });
+
   it("asks to reconnect a channel, in English", () => {
     const email = render(
       {

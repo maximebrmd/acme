@@ -22,6 +22,7 @@ import {
   freshWorkspace,
   syntheticKeyring,
 } from "#test/channels/support.ts";
+import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
 
 // What the context needs from the rest of the server: names to resolve,
 // notices to send, which nothing here sends, and plans, which limit nothing.
@@ -30,6 +31,10 @@ const Neighbours = Layer.mergeAll(
   Layer.succeed(
     Notify,
     Notify.of({ notify: () => Effect.void, resolve: () => Effect.void })
+  ),
+  Layer.succeed(
+    WebhookEvents,
+    WebhookEvents.of({ publish: () => Effect.void })
   ),
   UnmeteredTest
 );

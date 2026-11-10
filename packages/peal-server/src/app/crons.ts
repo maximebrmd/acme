@@ -7,6 +7,7 @@ import { LegalCronsLive } from "#legal/container.ts";
 import { PublishingCronsLive } from "#publishing/container.ts";
 import { ClusterRetentionCron } from "#shared/infrastructure/cluster-retention.ts";
 import { StaffCronsLive } from "#staff/container.ts";
+import { WebhooksCronsLive } from "#webhooks/container.ts";
 import { WorkspaceCronsLive } from "#workspace/container.ts";
 
 /**
@@ -23,5 +24,6 @@ export const CronsLive = Layer.mergeAll(
   StaffCronsLive,
   BillingCronsLive,
   LegalCronsLive,
+  WebhooksCronsLive,
   WorkspaceCronsLive
 );

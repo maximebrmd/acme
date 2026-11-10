@@ -44,6 +44,8 @@ public final class Permission {
 
     public static final Permission CHANNEL_READ = new Permission(Value.CHANNEL_READ, "channel:read");
 
+    public static final Permission WEBHOOK_READ = new Permission(Value.WEBHOOK_READ, "webhook:read");
+
     public static final Permission MEMBER_UPDATE = new Permission(Value.MEMBER_UPDATE, "member:update");
 
     public static final Permission POST_UPDATE = new Permission(Value.POST_UPDATE, "post:update");
@@ -57,6 +59,8 @@ public final class Permission {
     public static final Permission MEDIA_UPLOAD = new Permission(Value.MEDIA_UPLOAD, "media:upload");
 
     public static final Permission MEDIA_READ = new Permission(Value.MEDIA_READ, "media:read");
+
+    public static final Permission WEBHOOK_MANAGE = new Permission(Value.WEBHOOK_MANAGE, "webhook:manage");
 
     public static final Permission POST_DELETE = new Permission(Value.POST_DELETE, "post:delete");
 
@@ -132,6 +136,8 @@ public final class Permission {
                 return visitor.visitMemberDelete();
             case CHANNEL_READ:
                 return visitor.visitChannelRead();
+            case WEBHOOK_READ:
+                return visitor.visitWebhookRead();
             case MEMBER_UPDATE:
                 return visitor.visitMemberUpdate();
             case POST_UPDATE:
@@ -146,6 +152,8 @@ public final class Permission {
                 return visitor.visitMediaUpload();
             case MEDIA_READ:
                 return visitor.visitMediaRead();
+            case WEBHOOK_MANAGE:
+                return visitor.visitWebhookManage();
             case POST_DELETE:
                 return visitor.visitPostDelete();
             case ORGANIZATION_DELETE:
@@ -197,6 +205,8 @@ public final class Permission {
                 return MEMBER_DELETE;
             case "channel:read":
                 return CHANNEL_READ;
+            case "webhook:read":
+                return WEBHOOK_READ;
             case "member:update":
                 return MEMBER_UPDATE;
             case "post:update":
@@ -211,6 +221,8 @@ public final class Permission {
                 return MEDIA_UPLOAD;
             case "media:read":
                 return MEDIA_READ;
+            case "webhook:manage":
+                return WEBHOOK_MANAGE;
             case "post:delete":
                 return POST_DELETE;
             case "organization:delete":
@@ -279,6 +291,10 @@ public final class Permission {
 
         POST_PUBLISH,
 
+        WEBHOOK_READ,
+
+        WEBHOOK_MANAGE,
+
         UNKNOWN
     }
 
@@ -338,6 +354,10 @@ public final class Permission {
         T visitPostApprove();
 
         T visitPostPublish();
+
+        T visitWebhookRead();
+
+        T visitWebhookManage();
 
         T visitUnknown(String unknownType);
     }

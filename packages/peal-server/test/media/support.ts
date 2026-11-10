@@ -18,6 +18,7 @@ import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
+import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
 
 // The development stack's SeaweedFS (packages/peal-docker/compose.yaml),
 // which CI starts too. The environment wins over these defaults, so another
@@ -42,6 +43,19 @@ export const DatabaseTest = Layer.mergeAll(MigrationsLive, IdsLive).pipe(
   Layer.provideMerge(DatabaseLive)
 );
 
+/** Transactions as the server runs them, over an in-memory message store. */
+export const TransactionsTest = TransactionRunnerLive.pipe(
+  Layer.provide(
+    MessageStorage.layerMemory.pipe(Layer.provide(ShardingConfig.layer()))
+  )
+);
+
+/** Webhooks nobody listens on: for tests that need none. */
+export const NoWebhooks = Layer.succeed(
+  WebhookEvents,
+  WebhookEvents.of({ publish: () => Effect.void })
+);
+
 /**
  * Which posts show media, as the publishing context tells, on the database
  * the test gives, in transactions of its own: no job starts in them.
@@ -55,14 +69,20 @@ export const MediaInPostsTest = MediaInPostsLive.pipe(
 
 /**
  * The media context as the server builds it, with MediaInPostsTest, on a
- * server that does not bill, or with the entitlements given.
+ * server that does not bill, or with the entitlements given, telling
+ * `webhooks` how uploads end.
  */
-export const mediaTestWith = (entitlements: typeof UnmeteredTest) =>
+export const mediaTestWith = <E = never, R = never>(
+  entitlements: typeof UnmeteredTest,
+  webhooks: Layer.Layer<WebhookEvents, E, R> = NoWebhooks
+) =>
   MediaLive.pipe(
     Layer.provide(
       Layer.mergeAll(
         MediaInPostsTest,
         entitlements,
+        webhooks,
+        TransactionsTest,
         // No name resolves: the guard refuses every address a test could
         // name, loopback ones included. Tests that import files bring the
         // context a RemoteMedia of their own (`mediaWith`).

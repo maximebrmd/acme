@@ -14,6 +14,7 @@ import { FailureReasonSchema, UnconfirmedReasonSchema } from "./posts.ts";
 import { StaffAccess } from "./staff-access.ts";
 import { StaffActionRefused } from "./staff-action-refused.ts";
 import { UserNotFound } from "./user-not-found.ts";
+import { WebhookDisabledReasonSchema } from "./webhooks.ts";
 import { WorkspaceNotFound } from "./workspace-not-found.ts";
 
 /** How many rows a page of the staff console's lists holds. */
@@ -180,6 +181,23 @@ export const StaffChannelSchema = Schema.Struct({
 
 export type StaffChannel = typeof StaffChannelSchema.Type;
 
+/**
+ * A webhook endpoint as staff see it: the host its deliveries go to, never
+ * its whole address, its description or its secret.
+ */
+export const StaffWebhookSchema = Schema.Struct({
+  disabledReason: Schema.NullOr(WebhookDisabledReasonSchema),
+  enabled: Schema.Boolean,
+  // How many event types it subscribes to.
+  eventTypes: Schema.Int,
+  // Since when every attempt has failed; null once one succeeded.
+  failingSince: Schema.NullOr(Schema.DateTimeUtc),
+  host: Schema.String,
+  id: Schema.String,
+}).annotate({ identifier: "StaffWebhook" });
+
+export type StaffWebhook = typeof StaffWebhookSchema.Type;
+
 /** How many of a workspace's posts are where, drafts included. */
 export const StaffPostCountsSchema = Schema.Struct({
   cancelled: Schema.Int,
@@ -226,6 +244,7 @@ export const StaffWorkspaceSchema = Schema.Struct({
   name: Schema.String,
   posts: StaffPostCountsSchema,
   slug: Schema.String,
+  webhooks: Schema.Array(StaffWebhookSchema),
 }).annotate({ identifier: "StaffWorkspace" });
 
 export type StaffWorkspace = typeof StaffWorkspaceSchema.Type;

@@ -230,6 +230,24 @@ peal invitations revoke <invitation-id>
 - `peal invitations revoke` stops an invitation's link at once.
 - Changing a member's role, or removing someone, is for the workspace's **Settings**.
 
+## Webhooks [#webhooks]
+
+```sh
+peal webhooks list
+peal webhooks create --url https://hooks.example.com/peal --events post.published,post.failed
+peal webhooks update <endpoint-id> --events all --disable
+peal webhooks rotate-secret <endpoint-id>
+peal webhooks test <endpoint-id>
+peal webhooks deliveries <endpoint-id>
+peal webhooks redeliver <endpoint-id> <delivery-id>
+peal webhooks delete <endpoint-id>
+```
+
+- Owners and admins read and manage the workspace's [webhook](/webhooks) endpoints. `peal webhooks show <endpoint-id>` prints one.
+- `--events` takes event types separated by commas, or `all`. `create` also takes `--description` and `--disabled`; `update` sends only what you give it, with `--enable` or `--disable` to turn the endpoint on or off.
+- `create` and `rotate-secret` print the signing secret, once: save it then. After a rotation the old secret still signs for 24 hours, beside the new one.
+- `test` sends a `webhook.test` event; `deliveries` shows how each delivery ended, newest first, and `redeliver` sends one again.
+
 ## Your data [#account]
 
 ```sh

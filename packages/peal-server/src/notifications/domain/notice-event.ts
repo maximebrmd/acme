@@ -132,6 +132,16 @@ export const NoticeEventSchema = Schema.Union([
     refunded: NoticeMoneySchema,
     withdrawnAt: Schema.DateTimeUtc,
   }),
+  // Peal turned a webhook endpoint off, after days of failed deliveries
+  // (`failing`) or because its receiver answered 410 Gone (`gone`): nothing
+  // is sent to it until someone turns it back on. Named by its id and the
+  // host its deliveries went to, never its whole address, whose path may
+  // hold a secret.
+  Schema.TaggedStruct("WebhookEndpointDisabled", {
+    endpointId: Schema.NonEmptyString,
+    host: Schema.NonEmptyString,
+    reason: Schema.Literals(["failing", "gone"]),
+  }),
 ]);
 
 export type NoticeEvent = typeof NoticeEventSchema.Type;
@@ -146,7 +156,8 @@ export type EmailKind =
 /**
  * Which email preference covers the event: none for billing's reminders and
  * confirmations, always emailed, as consumer law asks them on a durable
- * medium.
+ * medium, and none for a webhook endpoint turned off, as the systems that
+ * listened on it hear nothing more until someone acts.
  */
 export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
   Match.valueTags(event, {
@@ -160,13 +171,15 @@ export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
     SubscriptionStarted: () => Option.none<EmailKind>(),
     SubscriptionWithdrawn: () => Option.none<EmailKind>(),
     TrialEnding: () => Option.none<EmailKind>(),
+    WebhookEndpointDisabled: () => Option.none<EmailKind>(),
   });
 
 /**
  * Who may act on the event: those who may schedule posts can repost one, or
  * confirm whether it went out; those who may connect channels can reconnect
- * one; those who manage billing can order, cancel or withdraw. Who hears
- * about it follows from it (`recipientsOf`).
+ * one; those who manage billing can order, cancel or withdraw; those who
+ * manage webhooks can turn an endpoint back on. Who hears about it follows
+ * from it (`recipientsOf`).
  */
 export const audienceOf = (event: NoticeEvent): Permission =>
   Match.valueTags(event, {
@@ -180,6 +193,7 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     SubscriptionStarted: (): Permission => "billing:manage",
     SubscriptionWithdrawn: (): Permission => "billing:manage",
     TrialEnding: (): Permission => "billing:manage",
+    WebhookEndpointDisabled: (): Permission => "webhook:manage",
   });
 
 /** Whether the event is about a post rather than a channel or billing. */
@@ -195,13 +209,14 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     SubscriptionStarted: () => false,
     SubscriptionWithdrawn: () => false,
     TrialEnding: () => false,
+    WebhookEndpointDisabled: () => false,
   });
 
 /**
  * What a reader must still be allowed when the notice's email goes out: to
  * read posts, for a post's notice, which went to its author whatever their
  * role; to act on the channel, for a channel's; to manage billing, for
- * billing's.
+ * billing's; to manage webhooks, for an endpoint's.
  */
 export const readerPermissionOf = (event: NoticeEvent): Permission =>
   isAboutPost(event) ? "post:read" : audienceOf(event);
@@ -265,4 +280,5 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     SubscriptionStarted: () => `/app/${workspaceId}/billing`,
     SubscriptionWithdrawn: () => `/app/${workspaceId}/billing`,
     TrialEnding: () => `/app/${workspaceId}/billing`,
+    WebhookEndpointDisabled: () => `/app/${workspaceId}/settings/webhooks`,
   });

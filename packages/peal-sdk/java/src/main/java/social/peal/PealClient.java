@@ -20,6 +20,7 @@ import social.peal.resources.posts.PostsClient;
 import social.peal.resources.session.SessionClient;
 import social.peal.resources.system.SystemClient;
 import social.peal.resources.tiktok.TiktokClient;
+import social.peal.resources.webhooks.WebhooksClient;
 
 public class PealClient implements AutoCloseable {
     protected final ClientOptions clientOptions;
@@ -52,6 +53,8 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<TiktokClient> tiktokClient;
 
+    protected final Supplier<WebhooksClient> webhooksClient;
+
     public PealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.systemClient = Suppliers.memoize(() -> new SystemClient(clientOptions));
@@ -68,6 +71,7 @@ public class PealClient implements AutoCloseable {
         this.billingClient = Suppliers.memoize(() -> new BillingClient(clientOptions));
         this.analyticsClient = Suppliers.memoize(() -> new AnalyticsClient(clientOptions));
         this.tiktokClient = Suppliers.memoize(() -> new TiktokClient(clientOptions));
+        this.webhooksClient = Suppliers.memoize(() -> new WebhooksClient(clientOptions));
     }
 
     public SystemClient system() {
@@ -124,6 +128,10 @@ public class PealClient implements AutoCloseable {
 
     public TiktokClient tiktok() {
         return this.tiktokClient.get();
+    }
+
+    public WebhooksClient webhooks() {
+        return this.webhooksClient.get();
     }
 
     /**

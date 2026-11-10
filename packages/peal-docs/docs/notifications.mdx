@@ -9,13 +9,14 @@ Peal tells the members it concerns when something happens to a post or a channel
 
 ## What you hear about [#events]
 
-| Notification                       | When                                                                                                       | Who hears it                                                |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| A post went out                    | The post is live on one of its channels.                                                                   | The post's author, and members who follow every post, below |
-| A post did not go out              | The post failed on one of its channels, for the reason below.                                              | The same                                                    |
-| A post may have gone out           | Peal could not tell whether a channel published it. Check the platform before you post it again.           | The same                                                    |
-| A channel must be reconnected      | The platform no longer accepts Peal's access: nothing goes out on the channel until someone reconnects it. | Members who may connect channels: owners and admins         |
-| A channel must be reconnected soon | The channel's access cannot be renewed, and ends on the date the notification gives.                       | The same                                                    |
+| Notification                       | When                                                                                                                                                                          | Who hears it                                                |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| A post went out                    | The post is live on one of its channels.                                                                                                                                      | The post's author, and members who follow every post, below |
+| A post did not go out              | The post failed on one of its channels, for the reason below.                                                                                                                 | The same                                                    |
+| A post may have gone out           | Peal could not tell whether a channel published it. Check the platform before you post it again.                                                                              | The same                                                    |
+| A channel must be reconnected      | The platform no longer accepts Peal's access: nothing goes out on the channel until someone reconnects it.                                                                    | Members who may connect channels: owners and admins         |
+| A channel must be reconnected soon | The channel's access cannot be renewed, and ends on the date the notification gives.                                                                                          | The same                                                    |
+| A webhook endpoint was turned off  | Every delivery to a [webhook](/webhooks#delivery) endpoint failed for 5 days, or its receiver answered `410 Gone`: Peal sends it nothing more until someone turns it back on. | Members who may manage webhooks: owners and admins          |
 
 A post's notifications go to its author, the member who created it, whatever their role, and to the members who may schedule posts (owners, admins and editors) and chose to hear about every post in their [preferences](#email). A post created with an API key has no author: its notifications go to every member who may schedule posts. A member who left the workspace hears nothing more about it, and their posts' notifications go to every member who may schedule posts, as for a post without an author.
 
@@ -57,6 +58,8 @@ From **Notifications**, choose **Email preferences** to pick which notifications
 | A post may have gone out, and needs checking on the platform | On                  |
 | A channel must be reconnected, now or soon                   | On                  |
 | A post went out                                              | Off                 |
+
+A webhook endpoint turned off is always emailed to the members who manage webhooks: the systems that listened on it hear nothing more until someone acts.
 
 Emails are written in your language. When the mail server turns an email away for now, Peal tries again for about five hours. An email waiting to go out is dropped if you leave the workspace, or turn that email off, in the meantime.
 

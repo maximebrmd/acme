@@ -11,6 +11,7 @@ import {
   IdempotencyKeyReused,
   InvalidTimeZone,
   InvitationNotFound,
+  maxWebhookEndpoints,
   MediaNotFound,
   MediaSourceNotPublic,
   MediaSourceUnreachable,
@@ -20,11 +21,17 @@ import {
   PostStatusConflict,
   ScheduleInPast,
   TargetStatusConflict,
+  TooManyWebhookEndpoints,
   Unauthenticated,
   UnknownChannels,
   UnknownMedia,
   UnsupportedMediaType,
   UploadIncomplete,
+  WebhookDeliveryNotFound,
+  WebhookEndpointDisabled,
+  WebhookEndpointNotFound,
+  WebhooksNotConfigured,
+  WebhookUrlRefused,
   WorkspaceAccess,
   WorkspaceNotFound,
 } from "peal-contract";
@@ -48,6 +55,10 @@ import type {
   SignedRequest,
   Standing,
   TikTokAccount,
+  WebhookDelivery,
+  WebhookEndpoint,
+  WebhookEventType,
+  WebhookUrlRefusal,
 } from "peal-contract";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
@@ -77,6 +88,8 @@ const everything: readonly Permission[] = [
   "post:update",
   "post:delete",
   "post:schedule",
+  "webhook:read",
+  "webhook:manage",
 ];
 
 const reading: readonly Permission[] = [
@@ -431,9 +444,133 @@ export interface StoredRequest {
   readonly part: string | null;
 }
 
+export const hookId = "0190f3a0-0000-7000-8000-00000000b001";
+
+export const failingHookId = "0190f3a0-0000-7000-8000-00000000b002";
+
+export const pendingDeliveryId = "0190f3a0-0000-7000-8000-00000000f003";
+
+export const deliveredId = "0190f3a0-0000-7000-8000-00000000f002";
+
+export const exhaustedDeliveryId = "0190f3a0-0000-7000-8000-00000000f001";
+
+/** Studio's endpoints: one that is on, one Peal turned off. */
+export const webhooks: readonly WebhookEndpoint[] = [
+  {
+    createdAt: at("2026-11-01T10:00:00Z"),
+    description: "Synthetic receiver",
+    disabledAt: null,
+    disabledReason: null,
+    enabled: true,
+    eventTypes: ["post.published", "post.failed"],
+    failingSince: at("2026-11-09T11:00:00Z"),
+    id: hookId,
+    previousSecretExpiresAt: null,
+    updatedAt: at("2026-11-01T10:00:00Z"),
+    url: "https://hooks.example.com/peal",
+  },
+  {
+    createdAt: at("2026-10-01T10:00:00Z"),
+    description: "",
+    disabledAt: at("2026-11-06T10:00:00Z"),
+    disabledReason: "failing",
+    enabled: false,
+    eventTypes: ["media.ready"],
+    failingSince: at("2026-11-01T10:00:00Z"),
+    id: failingHookId,
+    previousSecretExpiresAt: null,
+    updatedAt: at("2026-11-06T10:00:00Z"),
+    url: "https://hooks.example.com/old",
+  },
+];
+
+/** A delivery, and the endpoint whose log holds it. */
+export interface StudioDelivery {
+  readonly delivery: WebhookDelivery;
+  readonly endpointId: string;
+}
+
+const pendingDelivery = (
+  id: string,
+  eventId: string,
+  eventType: WebhookEventType
+): WebhookDelivery => ({
+  attempts: 0,
+  completedAt: null,
+  createdAt: at("2026-11-09T12:00:00Z"),
+  durationMs: null,
+  error: null,
+  eventId,
+  eventType,
+  failureReason: null,
+  id,
+  lastAttemptAt: null,
+  nextAttemptAt: null,
+  responseExcerpt: null,
+  responseStatus: null,
+  status: "pending",
+});
+
+// The first endpoint's log, newest first.
+const deliveries: readonly StudioDelivery[] = [
+  {
+    delivery: {
+      ...pendingDelivery(
+        pendingDeliveryId,
+        "0190f3a0-0000-7000-8000-00000000ee03",
+        "post.failed"
+      ),
+      attempts: 2,
+      createdAt: at("2026-11-09T11:00:00Z"),
+      durationMs: 187,
+      lastAttemptAt: at("2026-11-09T11:00:05Z"),
+      nextAttemptAt: at("2026-11-09T12:05:05Z"),
+      responseExcerpt: "Internal Server Error",
+      responseStatus: 500,
+    },
+    endpointId: hookId,
+  },
+  {
+    delivery: {
+      ...pendingDelivery(
+        deliveredId,
+        "0190f3a0-0000-7000-8000-00000000ee02",
+        "post.published"
+      ),
+      attempts: 1,
+      completedAt: at("2026-11-08T09:00:06Z"),
+      createdAt: at("2026-11-08T09:00:05Z"),
+      durationMs: 42,
+      lastAttemptAt: at("2026-11-08T09:00:06Z"),
+      responseStatus: 204,
+      status: "succeeded",
+    },
+    endpointId: hookId,
+  },
+  {
+    delivery: {
+      ...pendingDelivery(
+        exhaustedDeliveryId,
+        "0190f3a0-0000-7000-8000-00000000ee01",
+        "post.published"
+      ),
+      attempts: 8,
+      completedAt: at("2026-11-07T09:00:00Z"),
+      createdAt: at("2026-11-06T09:00:00Z"),
+      durationMs: 15_000,
+      error: "timeout",
+      failureReason: "exhausted",
+      lastAttemptAt: at("2026-11-07T09:00:00Z"),
+      status: "failed",
+    },
+    endpointId: hookId,
+  },
+];
+
 /** What the instance holds, and what the commands changed. */
 export interface StudioState {
   readonly changes: readonly string[];
+  readonly deliveries: readonly StudioDelivery[];
   /** Whether the studio holds more than its plan allows, as a test sets it. */
   readonly overPlan: boolean;
   readonly invitations: readonly Invitation[];
@@ -446,6 +583,9 @@ export interface StudioState {
   /** What the media store answers a signed request with. */
   readonly storeStatus: number;
   readonly stored: readonly StoredRequest[];
+  /** Whether the server has the keys that encrypt signing secrets. */
+  readonly signingKeys: boolean;
+  readonly webhooks: readonly WebhookEndpoint[];
 }
 
 export interface Studio {
@@ -459,6 +599,7 @@ export const makeStudio = (me: Me = studioMe) =>
   Effect.all({
     state: Ref.make<StudioState>({
       changes: [],
+      deliveries,
       invitations: [invitation],
       overPlan: false,
       media: [image(readyMediaId, { altText: "A synthetic catalogue cover" })],
@@ -466,6 +607,8 @@ export const makeStudio = (me: Me = studioMe) =>
       sent: {},
       storeStatus: 200,
       stored: [],
+      signingKeys: true,
+      webhooks,
     }),
     whileExporting: Ref.make<Effect.Effect<void>>(Effect.void),
   }).pipe(Effect.map((refs): Studio => ({ me, ...refs })));
@@ -767,6 +910,112 @@ const targetsOf = (postId: string, draft: PostDraft) =>
       draft.options?.find((chosen) => chosen.channelId === channelId)
         ?.options ?? null,
   }));
+
+// Why the studio refuses an address, as the server's rules would: HTTPS on
+// the default port, without credentials, on a host that is public. Its
+// stand-ins for what only a lookup tells are a loopback name and the
+// reserved `.invalid` names.
+const refusalOf = (address: string): Option.Option<WebhookUrlRefusal> => {
+  if (!URL.canParse(address)) {
+    return Option.some("malformed");
+  }
+
+  const url = new URL(address);
+
+  if (url.protocol !== "https:" || url.port !== "") {
+    return Option.some("notHttps");
+  }
+
+  if (url.username !== "" || url.password !== "") {
+    return Option.some("credentials");
+  }
+
+  if (url.hostname === "localhost") {
+    return Option.some("notPublic");
+  }
+
+  return url.hostname.endsWith(".invalid")
+    ? Option.some("unknownHost")
+    : Option.none();
+};
+
+const acceptedUrl = (address: string) =>
+  Option.match(refusalOf(address), {
+    onNone: () => Effect.void,
+    onSome: (reason) => Effect.fail(new WebhookUrlRefused({ reason })),
+  });
+
+// Each synthetic secret says which it is: the first issued, the second...
+const secrets = [
+  "whsec_c3ludGhldGljLXNlY3JldC0x",
+  "whsec_c3ludGhldGljLXNlY3JldC0y",
+  "whsec_c3ludGhldGljLXNlY3JldC0z",
+];
+
+// The secret for a change, by how many were made before it.
+const secretAfter = (changes: readonly string[]): string =>
+  secrets[
+    changes.filter((change) => change.startsWith("webhook:secret:")).length %
+      secrets.length
+  ] ?? "";
+
+const findEndpoint = (
+  studio: Studio,
+  workspaceId: string,
+  endpointId: string
+) =>
+  Ref.get(studio.state).pipe(
+    Effect.flatMap(({ webhooks: all }) =>
+      Option.match(
+        Option.fromUndefinedOr(
+          workspaceId === studioId
+            ? all.find(({ id }) => id === endpointId)
+            : undefined
+        ),
+        {
+          onNone: () => Effect.fail(new WebhookEndpointNotFound()),
+          onSome: Effect.succeed,
+        }
+      )
+    )
+  );
+
+const saveEndpoint = (studio: Studio, endpoint: WebhookEndpoint) =>
+  Ref.update(studio.state, (current) => ({
+    ...current,
+    webhooks: current.webhooks.some(({ id }) => id === endpoint.id)
+      ? current.webhooks.map((found) =>
+          found.id === endpoint.id ? endpoint : found
+        )
+      : [...current.webhooks, endpoint],
+  })).pipe(Effect.as(endpoint));
+
+// A new delivery of the event to the endpoint, at the top of its log.
+const deliverTo = (
+  studio: Studio,
+  endpoint: WebhookEndpoint,
+  event: { readonly id: string; readonly type: WebhookEventType }
+) =>
+  Effect.gen(function* delivering() {
+    if (!endpoint.enabled) {
+      return yield* new WebhookEndpointDisabled();
+    }
+
+    const { deliveries: all } = yield* Ref.get(studio.state);
+
+    const delivery = pendingDelivery(
+      `0190f3a0-0000-7000-8000-00000000f${String(all.length + 1).padStart(3, "0")}`,
+      event.id,
+      event.type
+    );
+
+    yield* Ref.update(studio.state, (current) => ({
+      ...current,
+      deliveries: [{ delivery, endpointId: endpoint.id }, ...all],
+    }));
+
+    return delivery;
+  });
 
 /** The workspace groups and the account's, answered from the studio. */
 export const studioGroupsLive = (studio: Studio) =>
@@ -1507,6 +1756,229 @@ export const studioGroupsLive = (studio: Studio) =>
       handlers.handleAll({
         list: () => Effect.succeed([cli]),
         revoke: () => refusing,
+      })
+    ),
+    HttpApiBuilder.group(Api, "webhooks", (handlers) =>
+      handlers.handleAll({
+        create: ({ params, payload }) =>
+          Effect.gen(function* create() {
+            yield* allowed("webhook:manage");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            const current = yield* Ref.get(studio.state);
+
+            if (current.webhooks.length >= maxWebhookEndpoints) {
+              return yield* new TooManyWebhookEndpoints({
+                allowed: maxWebhookEndpoints,
+              });
+            }
+
+            yield* acceptedUrl(payload.url);
+
+            if (!current.signingKeys) {
+              return yield* new WebhooksNotConfigured();
+            }
+
+            const enabled = payload.enabled ?? true;
+            const now = at("2026-11-09T12:00:00Z");
+
+            const endpoint = yield* saveEndpoint(studio, {
+              createdAt: now,
+              description: payload.description ?? "",
+              disabledAt: enabled ? null : now,
+              disabledReason: enabled ? null : "manual",
+              enabled,
+              eventTypes: payload.eventTypes,
+              failingSince: null,
+              id: `0190f3a0-0000-7000-8000-00000000b${String(current.webhooks.length + 1).padStart(3, "0")}`,
+              previousSecretExpiresAt: null,
+              updatedAt: now,
+              url: payload.url,
+            });
+
+            yield* record(studio, `webhook:create:${endpoint.url}`);
+            yield* record(studio, `webhook:secret:${endpoint.id}`);
+
+            return { endpoint, secret: secretAfter(current.changes) };
+          }),
+        delete: ({ params }) =>
+          Effect.gen(function* remove() {
+            yield* allowed("webhook:manage");
+
+            const endpoint = yield* findEndpoint(
+              studio,
+              params.workspaceId,
+              params.endpointId
+            );
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              deliveries: current.deliveries.filter(
+                ({ endpointId }) => endpointId !== endpoint.id
+              ),
+              webhooks: current.webhooks.filter(({ id }) => id !== endpoint.id),
+            }));
+            yield* record(studio, `webhook:delete:${endpoint.id}`);
+          }),
+        get: ({ params }) =>
+          allowed("webhook:read").pipe(
+            Effect.andThen(
+              findEndpoint(studio, params.workspaceId, params.endpointId)
+            )
+          ),
+        list: ({ params }) =>
+          allowed("webhook:read").pipe(
+            Effect.andThen(Ref.get(studio.state)),
+            Effect.map(({ webhooks: all }) =>
+              params.workspaceId === studioId ? all : []
+            )
+          ),
+        listDeliveries: ({ params, query }) =>
+          Effect.gen(function* listDeliveries() {
+            yield* allowed("webhook:read");
+
+            const endpoint = yield* findEndpoint(
+              studio,
+              params.workspaceId,
+              params.endpointId
+            );
+
+            const { deliveries: all } = yield* Ref.get(studio.state);
+
+            const listed = all
+              .filter(({ endpointId }) => endpointId === endpoint.id)
+              .map(({ delivery }) => delivery);
+
+            const start =
+              query.cursor === undefined
+                ? 0
+                : listed.findIndex(({ id }) => id === query.cursor) + 1;
+
+            const limit = query.limit ?? 30;
+            const items = listed.slice(start, start + limit);
+            const last = items.at(-1);
+
+            return {
+              items,
+              nextCursor:
+                last !== undefined && start + limit < listed.length
+                  ? last.id
+                  : null,
+            };
+          }),
+        redeliver: ({ params }) =>
+          Effect.gen(function* redeliver() {
+            yield* allowed("webhook:manage");
+
+            const endpoint = yield* findEndpoint(
+              studio,
+              params.workspaceId,
+              params.endpointId
+            );
+
+            const { deliveries: all } = yield* Ref.get(studio.state);
+
+            const past = all.find(
+              ({ delivery, endpointId }) =>
+                endpointId === endpoint.id && delivery.id === params.deliveryId
+            );
+
+            if (past === undefined) {
+              return yield* new WebhookDeliveryNotFound();
+            }
+
+            const again = yield* deliverTo(studio, endpoint, {
+              id: past.delivery.eventId,
+              type: past.delivery.eventType,
+            });
+
+            yield* record(studio, `webhook:redeliver:${past.delivery.id}`);
+
+            return again;
+          }),
+        rotateSecret: ({ params }) =>
+          Effect.gen(function* rotateSecret() {
+            yield* allowed("webhook:manage");
+
+            const found = yield* findEndpoint(
+              studio,
+              params.workspaceId,
+              params.endpointId
+            );
+
+            const current = yield* Ref.get(studio.state);
+
+            if (!current.signingKeys) {
+              return yield* new WebhooksNotConfigured();
+            }
+
+            const endpoint = yield* saveEndpoint(studio, {
+              ...found,
+              previousSecretExpiresAt: at("2026-11-10T12:00:00Z"),
+              updatedAt: at("2026-11-09T12:00:00Z"),
+            });
+
+            yield* record(studio, `webhook:secret:${endpoint.id}`);
+
+            return { endpoint, secret: secretAfter(current.changes) };
+          }),
+        sendTest: ({ params }) =>
+          Effect.gen(function* sendTest() {
+            yield* allowed("webhook:manage");
+
+            const endpoint = yield* findEndpoint(
+              studio,
+              params.workspaceId,
+              params.endpointId
+            );
+
+            const delivery = yield* deliverTo(studio, endpoint, {
+              id: "0190f3a0-0000-7000-8000-00000000ee99",
+              type: "webhook.test",
+            });
+
+            yield* record(studio, `webhook:test:${endpoint.id}`);
+
+            return delivery;
+          }),
+        update: ({ params, payload }) =>
+          Effect.gen(function* update() {
+            yield* allowed("webhook:manage");
+
+            const found = yield* findEndpoint(
+              studio,
+              params.workspaceId,
+              params.endpointId
+            );
+
+            if (payload.url !== undefined) {
+              yield* acceptedUrl(payload.url);
+            }
+
+            const enabled = payload.enabled ?? found.enabled;
+            const now = at("2026-11-09T12:00:00Z");
+
+            yield* record(
+              studio,
+              `webhook:update:${found.id}:${Object.keys(payload).toSorted().join(",")}`
+            );
+
+            return yield* saveEndpoint(studio, {
+              ...found,
+              ...payload,
+              disabledAt: enabled ? null : (found.disabledAt ?? now),
+              disabledReason: enabled
+                ? null
+                : (found.disabledReason ?? "manual"),
+              enabled,
+              failingSince:
+                enabled && !found.enabled ? null : found.failingSince,
+              updatedAt: now,
+            });
+          }),
       })
     ),
     HttpApiBuilder.group(Api, "tiktok", (handlers) =>

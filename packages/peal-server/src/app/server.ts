@@ -31,6 +31,7 @@ import {
   ChannelsApiLive,
   ChannelsLive,
   DataDeletionApiLive,
+  TokenCipherLive,
 } from "#channels/container.ts";
 import {
   LegalApiLive,
@@ -65,6 +66,11 @@ import {
   StaffRecordsLive,
 } from "#staff/container.ts";
 import {
+  WebhooksApiLive,
+  WebhooksLive,
+  WebhooksWorkersLive,
+} from "#webhooks/container.ts";
+import {
   AuthRoutesLive,
   ErasureReplayLive,
   StripeCheckoutsLive,
@@ -88,7 +94,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   AnalyticsApiLive,
   TikTokApiLive,
   StaffApiLive,
-  LegalApiLive
+  LegalApiLive,
+  WebhooksApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -115,12 +122,18 @@ const BillingContextsLive = BillingLive.pipe(
   Layer.provide(StripeCheckoutsLive)
 );
 
+// Webhooks, whose signing secrets the channels context's cipher encrypts.
+const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
+
 // The workspace context with the notifications it sends, the plans that
 // limit it, the audit log of staff's impersonations it records and the
 // legal records of the connections that change content, then the
-// notices, which read the workspace's members, then the channels context,
-// which sends them, as publishing does.
+// notices, which read the workspace's members, then the webhooks, which
+// tell a workspace through them that an endpoint was turned off, then the
+// channels context, which sends notices and webhook events, as publishing
+// does.
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
+  Layer.provideMerge(WebhooksContextLive),
   Layer.provideMerge(NoticesLive),
   Layer.provideMerge(
     WorkspaceLive.pipe(
@@ -133,9 +146,16 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
 );
 
 // The media context, which asks publishing which posts show an asset before
-// deleting it, and billing how much a workspace may store.
+// deleting it, and billing how much a workspace may store, and tells the
+// webhooks how uploads end.
 const MediaContextLive = MediaLive.pipe(
-  Layer.provide(Layer.mergeAll(MediaInPostsLive, BillingContextsLive))
+  Layer.provide(
+    Layer.mergeAll(
+      MediaInPostsLive,
+      BillingContextsLive,
+      ChannelsWithNoticesLive
+    )
+  )
 );
 
 // Publishing posts to the channels the channels context lists, with the
@@ -272,6 +292,7 @@ const HttpServerLive = Layer.unwrap(
 const WorkersLive = Layer.mergeAll(
   publishingWorkersReading(PlatformMetricsReaderLive),
   NotificationsWorkersLive,
+  WebhooksWorkersLive,
   CronsLive
 );
 

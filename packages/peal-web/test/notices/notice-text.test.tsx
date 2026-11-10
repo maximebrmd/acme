@@ -151,6 +151,27 @@ describe(useNoticeText, () => {
     );
   });
 
+  it("says why a webhook endpoint was turned off, and opens the webhooks", async () => {
+    const failing: NoticeEvent = {
+      _tag: "WebhookEndpointDisabled",
+      endpointId: "00000000-0000-7000-8000-000000000002",
+      host: "hooks.example.com",
+      reason: "failing",
+    };
+
+    await expect(render("en", failing)).resolves.toContain(
+      `The webhook endpoint at hooks.example.com in Studio Nord was turned off: every delivery had failed for 5 days. Fix the receiver, then turn it back on. | Open the webhooks | /app/${workspaceId}/settings/webhooks`
+    );
+    await expect(render("fr", failing)).resolves.toContain(
+      "Le point de terminaison de webhook de hooks.example.com dans Studio Nord a été désactivé : toutes les livraisons échouaient depuis 5 jours. Corrigez le destinataire, puis réactivez-le. | Ouvrir les webhooks"
+    );
+    await expect(
+      render("en", { ...failing, reason: "gone" })
+    ).resolves.toContain(
+      "was turned off: it answered 410 Gone, which asks for no more deliveries."
+    );
+  });
+
   it("asks to reconnect a channel, in a workspace the reader left", async () => {
     const html = await render(
       "fr",

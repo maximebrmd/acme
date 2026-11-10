@@ -57,6 +57,7 @@ import {
   ReferencesTest,
   syntheticContent,
 } from "#test/publishing/support.ts";
+import { PurgeDeliveries } from "#webhooks/application/purge-deliveries.ts";
 
 // The cluster as the server runs it: SingleRunner with SQL message and
 // runner storage, on the Postgres that DATABASE_URL names, with the real
@@ -103,6 +104,10 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     PurgeLegalRecords,
     PurgeLegalRecords.of({ purge: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    PurgeDeliveries,
+    PurgeDeliveries.of({ purge: Effect.succeed(0) })
   ),
   Layer.succeed(
     CollectMetrics,

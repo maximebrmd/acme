@@ -4,13 +4,19 @@ import { useTranslations } from "next-intl";
 
 import { Link, usePathname } from "#i18n/navigation.ts";
 
-export type SettingsSection = "apiKeys" | "general" | "invitations" | "members";
+export type SettingsSection =
+  | "apiKeys"
+  | "general"
+  | "invitations"
+  | "members"
+  | "webhooks";
 
 const paths: Readonly<Record<SettingsSection, string>> = {
   apiKeys: "/api-keys",
   general: "",
   invitations: "/invitations",
   members: "/members",
+  webhooks: "/webhooks",
 };
 
 // The workspace settings' pages, the one open marked as current.

@@ -35,6 +35,11 @@ It is not released yet. Today you can:
   suggest hashtags, when the server has an AI provider;
 - manage a workspace's members, invitations and API keys, rename it or
   delete it with everything in it;
+- tell another system what happens in a workspace with webhooks: posts
+  scheduled, published, failed or cancelled, channels connected or to
+  reconnect, files ready, sent to HTTPS endpoints, signed as the Standard
+  Webhooks specification says, retried for about a day, with a delivery
+  log;
 - choose your language, see your sessions and connected applications,
   download your data or delete your account;
 - bill workspaces through Stripe, with plans that limit channels, members,

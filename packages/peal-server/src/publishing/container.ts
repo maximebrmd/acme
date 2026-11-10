@@ -8,6 +8,7 @@ import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
+import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostOrigins } from "#publishing/application/post-origins.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
@@ -42,6 +43,10 @@ import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
+import {
+  webhookOutcomes,
+  WebhookPostEvents,
+} from "#publishing/infrastructure/webhook-post-events.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
@@ -67,6 +72,7 @@ export const publishingWith = <
   R2 = never,
   E3 = never,
   R3 = never,
+  R4 = never,
 >(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
@@ -74,7 +80,8 @@ export const publishingWith = <
     R
   >,
   accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none,
-  origins: Layer.Layer<PostOrigins, E3, R3> = PostOrigins.unnamed
+  origins: Layer.Layer<PostOrigins, E3, R3> = PostOrigins.unnamed,
+  events: Layer.Layer<PostEvents, never, R4> = PostEvents.none
 ) =>
   Layer.mergeAll(
     PostDrafts.layer,
@@ -96,7 +103,8 @@ export const publishingWith = <
         WorkflowPublicationScheduler,
         references,
         accounts,
-        origins
+        origins,
+        events
       )
     )
   );
@@ -110,7 +118,9 @@ export const publishingWith = <
  * (CredentialNames). How each target ends
  * is told through the notifications context (Notify), naming channels as
  * the channels context has them (ChannelRepository), once billing counted
- * the posts that went out on platforms that bill per post (MeteredPosts).
+ * the posts that went out on platforms that bill per post (MeteredPosts),
+ * and the workspace's webhook endpoints hear what happens to its posts
+ * (WebhookEvents).
  */
 export const PublishingLive = publishingWith(
   Layer.mergeAll(
@@ -119,7 +129,8 @@ export const PublishingLive = publishingWith(
     PlanPostAllowanceLive
   ),
   AccountRules.layer,
-  NamedPostOrigins
+  NamedPostOrigins,
+  WebhookPostEvents
 ).pipe(
   Layer.provideMerge(
     TikTokCreatorInfo.layer.pipe(Layer.provide(ListedWorkspaceChannels))
@@ -128,7 +139,7 @@ export const PublishingLive = publishingWith(
     TikTokCreatorsLive.pipe(Layer.provide(ChannelAccessCredentials))
   ),
   Layer.provideMerge(
-    meteredOutcomes(NotifiedPublicationOutcomes).pipe(
+    webhookOutcomes(meteredOutcomes(NotifiedPublicationOutcomes)).pipe(
       Layer.provide(DrizzlePostRepository)
     )
   )

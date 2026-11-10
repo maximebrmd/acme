@@ -1,5 +1,6 @@
 import { DateTime, Match } from "effect";
 import { useFormatter, useTranslations } from "next-intl";
+import { webhookFailingDays } from "peal-contract";
 import type { NoticeChannel, NoticeEvent } from "peal-contract";
 
 import { useSize } from "#billing/size.ts";
@@ -56,6 +57,12 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
     const billing = (text: string): NoticeText => ({
       href: `/app/${workspaceId}/billing`,
       open: t("open", { page: "billing" }),
+      text,
+    });
+
+    const webhooks = (text: string): NoticeText => ({
+      href: `/app/${workspaceId}/settings/webhooks`,
+      open: t("open", { page: "webhooks" }),
       text,
     });
 
@@ -156,6 +163,15 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
                 plan: plan(name),
                 workspace,
               })
+        ),
+      WebhookEndpointDisabled: ({ host, reason }) =>
+        webhooks(
+          t("event.WebhookEndpointDisabled", {
+            days: webhookFailingDays,
+            host,
+            reason,
+            workspace,
+          })
         ),
     });
   };

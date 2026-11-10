@@ -2,6 +2,7 @@ import { Context, Effect, Layer, Redacted } from "effect";
 import { Digest, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
+import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type { ConnectOutcome } from "#channels/application/connect-channel.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
@@ -88,6 +89,7 @@ export const connectChannelWith = <E, R>(
     Layer.provideMerge(
       Layer.mergeAll(
         DrizzleChannelRepository,
+        ChannelEvents.none,
         DrizzleConnectAttempts,
         DrizzleConnectChoices,
         SqlChannelLocks,
@@ -174,6 +176,7 @@ export const youtubeAuthorizerOn = (endpoints: YouTubeEndpoints) =>
  */
 export const ConnectAdaptersTest = Layer.mergeAll(
   DrizzleChannelRepository,
+  ChannelEvents.none,
   DrizzleConnectAttempts,
   DrizzleConnectChoices,
   SqlChannelLocks,

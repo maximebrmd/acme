@@ -140,7 +140,7 @@ Pages show media through short-lived signed links. If the bucket is also served 
 
 ## Channels [#channels]
 
-The server encrypts the tokens of connected accounts with the keys in `PEAL_TOKEN_KEYS`. Without it, the server starts, and connecting an account fails. Create a key with:
+The server encrypts the tokens of connected accounts, and the signing secrets of [webhooks](/webhooks#self-hosting), with the keys in `PEAL_TOKEN_KEYS`. Without it, the server starts, and connecting an account or adding a webhook endpoint fails. Create a key with:
 
 ```sh
 echo "k1:$(openssl rand -base64 32)"

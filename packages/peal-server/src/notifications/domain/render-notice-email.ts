@@ -206,6 +206,13 @@ const contentOf = (
         ["standing", standingIn(catalog, over, locale)],
       ],
     }),
+    WebhookEndpointDisabled: ({ host, reason }): Content => ({
+      messages: catalog.webhookEndpointDisabled,
+      values: [
+        ["host", host],
+        ["reason", catalog.webhookTurnOffReasons[reason]],
+      ],
+    }),
   });
 
 /** A notice, in its reader's language. */

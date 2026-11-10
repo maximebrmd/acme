@@ -15,6 +15,7 @@ import {
   S3MediaFoldersLive,
   S3MediaStorageLive,
 } from "#media/infrastructure/s3-media-storage.ts";
+import { webhookMediaAssets } from "#media/infrastructure/webhook-media-assets.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 export { MediaLibrary } from "#media/application/media-library.ts";
@@ -32,8 +33,10 @@ export { MediaHandlers as MediaApiLive } from "#media/api/media.ts";
  * (MediaStorageUsage), fetching the files members import from `remote`.
  * The composition root provides `Drizzle` and `Ids`, the publishing
  * context's MediaInPosts, which says where posts show media, the billing
- * context's WorkspaceEntitlements, whose plans limit storage, and the
- * environment the store's settings (see s3-media-storage.ts).
+ * context's WorkspaceEntitlements, whose plans limit storage, the webhooks
+ * context's WebhookEvents, which hear how uploads and imports end, a
+ * TransactionRunner, and the environment the store's settings (see
+ * s3-media-storage.ts).
  */
 export const mediaWith = <E, R>(remote: Layer.Layer<RemoteMedia, E, R>) =>
   Layer.mergeAll(
@@ -44,7 +47,7 @@ export const mediaWith = <E, R>(remote: Layer.Layer<RemoteMedia, E, R>) =>
   ).pipe(
     Layer.provide(
       Layer.mergeAll(
-        DrizzleMediaAssetsLive,
+        webhookMediaAssets(DrizzleMediaAssetsLive),
         MediaProbeLive,
         S3MediaStorageLive,
         PublishingMediaUsage,

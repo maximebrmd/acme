@@ -100,6 +100,12 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     over: [],
     plan: "pro",
   },
+  WebhookEndpointDisabled: {
+    _tag: "WebhookEndpointDisabled",
+    endpointId: "00000000-0000-7000-8000-000000000051",
+    host: "hooks.example.com",
+    reason: "failing",
+  },
 };
 
 describe("notice events", () => {
@@ -119,6 +125,26 @@ describe("notice events", () => {
       expect(audienceOf(billing)).toBe("billing:manage");
       expect(pageOf(billing, workspaceId)).toBe(`/app/${workspaceId}/billing`);
     }
+  });
+
+  it("tell those who manage webhooks that an endpoint was turned off, always by email", () => {
+    const nothing = changePreferences(defaultPreferences, {
+      email: {
+        channelReconnect: false,
+        postFailed: false,
+        postPublished: false,
+        postUnconfirmed: false,
+      },
+    });
+
+    expect(audienceOf(events.WebhookEndpointDisabled)).toBe("webhook:manage");
+    expect(readerPermissionOf(events.WebhookEndpointDisabled)).toBe(
+      "webhook:manage"
+    );
+    expect(pageOf(events.WebhookEndpointDisabled, workspaceId)).toBe(
+      `/app/${workspaceId}/settings/webhooks`
+    );
+    expect(wantsEmail(nothing, events.WebhookEndpointDisabled)).toBeTruthy();
   });
 
   it("email billing's always, whatever the reader chose", () => {
@@ -215,6 +241,8 @@ describe("notification preferences", () => {
       Option.some("channelReconnect"),
       Option.some("postFailed"),
       Option.some("postUnconfirmed"),
+      // Billing's five, then the webhook endpoint turned off.
+      Option.none(),
       Option.none(),
       Option.none(),
       Option.none(),

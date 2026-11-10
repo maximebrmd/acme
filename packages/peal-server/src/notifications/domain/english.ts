@@ -196,6 +196,17 @@ export const english: EmailCatalog = {
       "If you did not create a Peal account, ignore this email. The link expires in an hour.",
     subject: "Confirm your email for Peal",
   },
+  webhookEndpointDisabled: {
+    action: "Open webhooks",
+    body: "Peal turned off the webhook endpoint at {host} in {workspaceName}: {reason} Nothing is sent to it any more, and the events that happen meanwhile are not kept for it. Once its receiver works again, turn the endpoint back on in the workspace’s settings.",
+    ignore:
+      "You receive this email because you manage the webhooks of {workspaceName} on Peal. This email is always sent: the systems that listened on this endpoint hear nothing more until someone acts.",
+    subject: "Webhook endpoint turned off: {host}",
+  },
+  webhookTurnOffReasons: {
+    failing: "every delivery to it failed for 5 days.",
+    gone: "it answered 410 Gone, which asks for no more deliveries.",
+  },
   withinFreePlan:
     "It holds nothing beyond what the free plan allows, and keeps its content.",
   workspaceDeleted: {
