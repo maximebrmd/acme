@@ -438,6 +438,20 @@ const ExportedUserReviewSchema = Schema.Struct({
   ),
 });
 
+// A reply the user sent from Peal to a comment under a post: what they
+// wrote, when, and how sending ended. The comment is someone else's, and
+// is not part of the export.
+const ExportedReplySchema = Schema.Struct({
+  channelId: Schema.String,
+  createdAt: instant,
+  id: Schema.String,
+  permalink: nullable(Schema.String),
+  postId: Schema.String,
+  status: Schema.String,
+  text: Schema.String,
+  ...inWorkspace,
+});
+
 // A webhook endpoint: where the workspace is told what happens in it,
 // without the secret that signs what it is sent.
 const ExportedWebhookSchema = Schema.Struct({
@@ -498,6 +512,8 @@ export const AccountExportSchema = Schema.Struct({
   memberships: Schema.Array(ExportedMembershipSchema),
   notices: Schema.Array(ExportedNoticeSchema),
   notificationPreferences: NotificationPreferencesSchema,
+  // The replies the user sent to comments under posts, in any workspace.
+  replies: Schema.Array(ExportedReplySchema),
   // The comments the user wrote on posts, the approvals they asked for and
   // those they decided, in any workspace.
   review: ExportedUserReviewSchema,

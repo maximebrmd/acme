@@ -166,6 +166,7 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
                 permissions: [
                   "analytics:read",
                   "channel:read",
+                  "engagement:read",
                   "media:read",
                   "post:read",
                 ],

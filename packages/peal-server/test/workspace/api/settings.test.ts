@@ -239,6 +239,7 @@ const PortsLive = Layer.mergeAll(
               },
               everyPost: false,
             },
+            replies: [],
             review: { approvals: [], comments: [] },
             staffActions: [],
           }),

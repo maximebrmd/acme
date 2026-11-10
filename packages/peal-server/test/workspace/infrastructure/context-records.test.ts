@@ -10,6 +10,7 @@ import { UsageRecords } from "#assistant/application/ports/usage-records.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
 import { WorkspaceStillBilled } from "#billing/application/workspace-still-billed.ts";
 import { ChannelRecords } from "#channels/application/channel-records.ts";
+import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { LegalRecords } from "#legal/application/legal-records.ts";
 import { MediaRecords } from "#media/application/media-records.ts";
 import { NoticeRecords } from "#notifications/application/notice-records.ts";
@@ -76,6 +77,9 @@ const RecordsTest = Layer.unwrap(
                   ),
           }),
           Layer.mock(AnalyticsRecords, {
+            eraseWorkspace: () => Effect.void,
+          }),
+          Layer.mock(EngagementRecords, {
             eraseWorkspace: () => Effect.void,
           }),
           Layer.mock(ChannelRecords, { eraseWorkspace: () => Effect.void }),
