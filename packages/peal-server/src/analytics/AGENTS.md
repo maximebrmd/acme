@@ -166,6 +166,10 @@
   pages of 500; `HttpServerResponse.stream`), as RFC 4180 CSV whose cells
   never start a formula, or one JSON object a line. Account days are UTC
   days, written under the range's calendar day of the same name.
+  A comparison says whether its range before is still all kept
+  (`previousKept`, from `keptSince` with each platform's `retentionOf`):
+  the clients show no change where it is not, never one against figures
+  the retention job deleted.
 - Summaries take the posts published over a range of days in an IANA zone:
   the domain computes each day's start with `fromWallClock`, and Postgres
   buckets snapshots with those instants (`width_bucket`), never its zones.

@@ -1,4 +1,4 @@
-import { Duration } from "effect";
+import { DateTime, Duration } from "effect";
 
 import type { Platform } from "#shared/domain/platform.ts";
 
@@ -31,6 +31,22 @@ export const platformCaps: Partial<Record<Platform, Duration.Duration>> = {
 /** How long the numbers read on a platform are kept. */
 export const retentionOf = (platform: Platform): Duration.Duration =>
   platformCaps[platform] ?? keptFor;
+
+/**
+ * Whether what a platform's numbers were from `since` on is still all
+ * kept at `now`: false once `since` is further back than its retention,
+ * as for the range before a 90-day one on Pinterest. A comparison with
+ * such a range is unknown, never a growth from nothing.
+ */
+export const keptSince = (
+  platform: Platform,
+  since: DateTime.Utc,
+  now: DateTime.Utc
+): boolean =>
+  DateTime.isGreaterThanOrEqualTo(
+    since,
+    DateTime.subtractDuration(now, retentionOf(platform))
+  );
 
 /**
  * How long the numbers of a channel that left its workspace are kept after

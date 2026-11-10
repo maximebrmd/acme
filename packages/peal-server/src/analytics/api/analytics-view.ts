@@ -145,6 +145,7 @@ const dashboardTotalsView = (totals: DashboardTotals): DashboardTotalsView => ({
 const comparisonView = (comparison: Comparison) => ({
   followers: followersView(comparison.followers),
   previousFollowers: followersView(comparison.previousFollowers),
+  previousKept: comparison.previousKept,
   previousTotals: dashboardTotalsView(comparison.previousTotals),
   totals: dashboardTotalsView(comparison.totals),
 });

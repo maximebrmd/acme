@@ -316,38 +316,43 @@ const signed = (value: number | null): string =>
 
 const comparisonLines = (
   totals: DashboardTotals,
-  previous: DashboardTotals,
+  // None when the range before is not all kept: no change is shown.
+  previous: DashboardTotals | undefined,
   followers: FollowerChange
-): string[] =>
-  columns([
-    ["  Posts", String(totals.posts), change(totals.posts, previous.posts)],
-    ["  Likes", String(totals.likes), change(totals.likes, previous.likes)],
+): string[] => {
+  const was = (metric: keyof DashboardTotals) =>
+    previous === undefined ? null : previous[metric];
+
+  return columns([
+    ["  Posts", String(totals.posts), change(totals.posts, was("posts"))],
+    ["  Likes", String(totals.likes), change(totals.likes, was("likes"))],
     [
       "  Reposts",
       String(totals.reposts),
-      change(totals.reposts, previous.reposts),
+      change(totals.reposts, was("reposts")),
     ],
     [
       "  Replies",
       String(totals.replies),
-      change(totals.replies, previous.replies),
+      change(totals.replies, was("replies")),
     ],
-    ["  Quotes", count(totals.quotes), change(totals.quotes, previous.quotes)],
+    ["  Quotes", count(totals.quotes), change(totals.quotes, was("quotes"))],
     [
       "  Impressions",
       count(totals.impressions),
-      change(totals.impressions, previous.impressions),
+      change(totals.impressions, was("impressions")),
     ],
-    ["  Reach", count(totals.reach), change(totals.reach, previous.reach)],
-    ["  Clicks", count(totals.clicks), change(totals.clicks, previous.clicks)],
-    ["  Saves", count(totals.saves), change(totals.saves, previous.saves)],
+    ["  Reach", count(totals.reach), change(totals.reach, was("reach"))],
+    ["  Clicks", count(totals.clicks), change(totals.clicks, was("clicks"))],
+    ["  Saves", count(totals.saves), change(totals.saves, was("saves"))],
     [
       "  Engagement",
       String(totals.engagement),
-      change(totals.engagement, previous.engagement),
+      change(totals.engagement, was("engagement")),
     ],
     ["  Followers", count(followers.current), signed(followers.gained)],
   ]);
+};
 
 const dashboard = Command.make(
   "dashboard",
@@ -374,10 +379,16 @@ const dashboard = Command.make(
 
     for (const line of comparisonLines(
       found.totals,
-      found.previousTotals,
+      found.previousKept ? found.previousTotals : undefined,
       found.followers
     )) {
       yield* Console.log(line);
+    }
+
+    if (!found.previousKept) {
+      yield* Console.log(
+        "  No change is shown: a platform's terms keep its figures for less than the range before goes back."
+      );
     }
 
     if (found.channels.length > 0) {
@@ -387,7 +398,7 @@ const dashboard = Command.make(
         found.channels.map((channel) => [
           `  ${named(names, channel.channelId)}`,
           `${String(channel.totals.posts)} posts`,
-          `${String(channel.totals.engagement)} interactions (${change(channel.totals.engagement, channel.previousTotals.engagement)})`,
+          `${String(channel.totals.engagement)} interactions (${change(channel.totals.engagement, channel.previousKept ? channel.previousTotals.engagement : null)})`,
           `${count(channel.followers.current)} followers (${signed(channel.followers.gained)})`,
         ])
       )) {

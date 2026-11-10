@@ -424,6 +424,7 @@ const totalsOf = (likes: number): DashboardTotals => ({
 const numbers = {
   followers: { current: 1250, gained: 30 },
   previousFollowers: { current: 1220, gained: -4 },
+  previousKept: true,
   previousTotals: totalsOf(8),
   totals: totalsOf(12),
 };
@@ -469,12 +470,12 @@ const dashboard: AnalyticsDashboard = {
   topPosts: [],
 };
 
-const shown = async () => {
+const shown = async (shownDashboard: AnalyticsDashboard = dashboard) => {
   const html = await render(
     "en",
     <AccountNumbers
       channels={[channel]}
-      dashboard={dashboard}
+      dashboard={shownDashboard}
       exports={{
         accounts: "/export?kind=accounts",
         posts: "/export?kind=posts",
@@ -495,6 +496,16 @@ describe("the accounts' numbers", () => {
     // Unknown is written, never as zero.
     expect(html).toContain("Not given by the platform");
     expect(html).toContain('href="/export?kind=posts"');
+  });
+
+  it("shows no change against a range before that a platform no longer keeps", async () => {
+    const html = await shown({ ...dashboard, previousKept: false });
+
+    expect(html).toContain(
+      "No comparison: a platform’s terms keep its figures for less than the range before goes back"
+    );
+    expect(html).not.toContain("4 more (+40%)");
+    expect(html).not.toContain("over the range before");
   });
 
   it("shows followers with what they gained, in all and by channel", async () => {

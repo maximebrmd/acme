@@ -234,6 +234,15 @@ const comparison = {
   followers: FollowerChangeSchema,
   // The same change over the range before.
   previousFollowers: FollowerChangeSchema,
+  // Whether the range before is still all kept. False when a platform's
+  // terms for developers keep its numbers for less than the range before
+  // goes back (Pinterest's 90 days, LinkedIn pages' year): its figures
+  // are then missing what was deleted, and a change against them means
+  // nothing.
+  previousKept: Schema.Boolean.annotate({
+    description:
+      "Whether the range before is still all kept. False when a platform's terms keep its numbers for less than the range before goes back (Pinterest 90 days, LinkedIn pages a year): previousTotals and previousFollowers then miss what was deleted, and no change against them should be shown.",
+  }),
   // The posts published over the range before, of the same length.
   previousTotals: DashboardTotalsSchema,
   totals: DashboardTotalsSchema,

@@ -65,7 +65,8 @@
       "more": "{count} de plus{shared, select, yes { ({share})} other {}}",
       "fewer": "{count} de moins{shared, select, yes { ({share})} other {}}",
       "same": "Pas de changement",
-      "unknown": "Non fourni par la plateforme"
+      "unknown": "Non fourni par la plateforme",
+      "notKept": "Pas de comparaison : les conditions d’une plateforme gardent ses chiffres moins longtemps que ne remonte la période précédente"
     },
     "accounts": {
       "title": "Abonnés",

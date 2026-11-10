@@ -3,6 +3,7 @@ import { Context, DateTime, Effect, Layer, Option, Stream } from "effect";
 import { utcDayFrom } from "#analytics/domain/account-metrics.ts";
 import { followerChange } from "#analytics/domain/account-series.ts";
 import type { FollowersRead } from "#analytics/domain/account-series.ts";
+import { keptSince } from "#analytics/domain/analytics-retention.ts";
 import type { InvalidReportRange } from "#analytics/domain/invalid-report-range.ts";
 import {
   dayStarts,
@@ -278,6 +279,7 @@ export class AnalyticsQueries extends Context.Service<
           const previous = previousRange(range);
           const span = yield* spanOf(range);
           const before = yield* spanOf(previous);
+          const now = yield* DateTime.now;
           const { workspaceId } = actor;
           const channelId = Option.none<ChannelId>();
           const posts = { channelId, workspaceId };
@@ -305,6 +307,8 @@ export class AnalyticsQueries extends Context.Service<
               ])
             ),
             previous,
+            previousKeptOn: (platform) =>
+              keptSince(platform, before.start, now),
             previousSpan: {
               from: utcDayFrom(previous.from),
               to: utcDayFrom(previous.to),

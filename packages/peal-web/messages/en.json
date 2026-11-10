@@ -65,7 +65,8 @@
       "more": "{count} more{shared, select, yes { ({share})} other {}}",
       "fewer": "{count} fewer{shared, select, yes { ({share})} other {}}",
       "same": "No change",
-      "unknown": "Not given by the platform"
+      "unknown": "Not given by the platform",
+      "notKept": "No comparison: a platform’s terms keep its figures for less than the range before goes back"
     },
     "accounts": {
       "title": "Followers",

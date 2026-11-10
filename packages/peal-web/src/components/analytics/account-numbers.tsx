@@ -130,6 +130,11 @@ export const AccountNumbers = ({
     value === null ? t("totals.notGiven") : format.number(value);
 
   const trendText = (now: number | null, before: number | null) => {
+    // The range before is gone in part on some platform: no change to say.
+    if (!dashboard.previousKept) {
+      return t("trend.notKept");
+    }
+
     const trend = trendOf(now, before);
 
     if (trend === null) {
@@ -251,7 +256,12 @@ export const AccountNumbers = ({
                     {gainedText(dashboard.followers.gained, "current")}
                   </span>
                   <span className="text-muted-foreground text-sm">
-                    {gainedText(dashboard.previousFollowers.gained, "previous")}
+                    {dashboard.previousKept
+                      ? gainedText(
+                          dashboard.previousFollowers.gained,
+                          "previous"
+                        )
+                      : t("trend.notKept")}
                   </span>
                 </dd>
               </div>

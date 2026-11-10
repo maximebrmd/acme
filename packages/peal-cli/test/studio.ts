@@ -2746,6 +2746,9 @@ export const studioGroupsLive = (studio: Studio) =>
             const numbers = {
               followers: { current: 320, gained: 12 },
               previousFollowers: { current: 308, gained: -2 },
+              // As on a Pinterest channel: the 90 days before 90 days are
+              // gone in part.
+              previousKept: query.days !== 90,
               previousTotals: { ...dashboardTotals, engagement: 10, likes: 6 },
               totals: dashboardTotals,
             };

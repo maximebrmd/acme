@@ -809,6 +809,20 @@ describe("peal analytics dashboard, channel and export", () => {
           "dashboard:7:undefined:undefined:Europe/Paris",
         ]);
 
+        const longer = yield* session.printed([
+          "analytics",
+          "dashboard",
+          ...inStudio,
+          "--days",
+          "90",
+          "--time-zone",
+          "Europe/Paris",
+        ]);
+
+        // The range before is gone in part: no change is made up.
+        assert.match(longer, /Likes\s+12\s+–/u);
+        assert.include(longer, "No change is shown");
+
         yield* session.printed([
           "analytics",
           "dashboard",

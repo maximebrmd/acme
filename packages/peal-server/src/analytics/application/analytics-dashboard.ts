@@ -42,6 +42,12 @@ export interface DashboardTotals {
 /** A range's numbers beside those of the range before. */
 export interface Comparison {
   readonly followers: FollowerChange;
+  /**
+   * Whether the range before is still all kept: false when a platform's
+   * terms keep its numbers for less than the range before goes back, so
+   * the previous figures are missing what was deleted.
+   */
+  readonly previousKept: boolean;
   readonly previousFollowers: FollowerChange;
   readonly previousTotals: DashboardTotals;
   readonly totals: DashboardTotals;
@@ -177,6 +183,8 @@ export interface DashboardRows {
   }[];
   /** The previous range's first and last days. */
   readonly previousSpan: { readonly from: UtcDay; readonly to: UtcDay };
+  /** Whether a platform still keeps all of the range before. */
+  readonly previousKeptOn: (platform: Platform) => boolean;
   readonly topPosts: readonly TrackedPost[];
 }
 
@@ -227,6 +235,10 @@ export const dashboardOf = (rows: DashboardRows): Dashboard => {
       rows.previousSpan.from,
       rows.previousSpan.to
     ),
+    previousKept: Option.match(
+      Option.fromUndefinedOr(rows.platforms.get(channelId)),
+      { onNone: () => true, onSome: rows.previousKeptOn }
+    ),
     previousTotals: totalsOf(
       Option.toArray(Option.fromUndefinedOr(before.get(channelId)))
     ),
@@ -240,6 +252,7 @@ export const dashboardOf = (rows: DashboardRows): Dashboard => {
     previousFollowers: addFollowerChanges(
       members.map((member) => member.previousFollowers)
     ),
+    previousKept: members.every((member) => member.previousKept),
     previousTotals: totalsOf(
       rows.previousCounts.filter(({ channelId }) =>
         members.some((member) => member.channelId === channelId)
