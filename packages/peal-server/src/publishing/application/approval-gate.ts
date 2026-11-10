@@ -63,6 +63,14 @@ export class ApprovalGate extends Context.Service<
       workspaceId: WorkspaceId,
       postId: PostId
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * A draft was discarded: nothing said or decided about it is worth
+     * keeping.
+     */
+    readonly forgotten: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<void, DatabaseError>;
   }
 >()("peal-server/publishing/application/ApprovalGate") {
   /** No approvals: whoever may schedule does, and nobody else asks. */
@@ -71,6 +79,7 @@ export class ApprovalGate extends Context.Service<
     ApprovalGate.of({
       admit: () => Effect.succeed("admitted"),
       approved: () => Effect.succeed(false),
+      forgotten: () => Effect.void,
       maySubmit: (actor) => Effect.succeed(can(actor, "post:schedule")),
       withdrawn: () => Effect.void,
     })

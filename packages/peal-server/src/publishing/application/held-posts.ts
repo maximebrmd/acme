@@ -40,7 +40,7 @@ export class HeldPosts extends Context.Service<
   HeldPosts,
   {
     /** The workspace's post and its targets, as they are now. */
-    readonly find: (
+    readonly get: (
       workspaceId: WorkspaceId,
       postId: PostId
     ) => Effect.Effect<PostWithTargets, DatabaseError | PostNotFound>;
@@ -77,7 +77,7 @@ export class HeldPosts extends Context.Service<
 
       const withPorts = Effect.provideContext(ports);
 
-      const find = Effect.fn("HeldPosts.find")(function* find(
+      const get = Effect.fn("HeldPosts.get")(function* get(
         workspaceId: WorkspaceId,
         postId: PostId
       ) {
@@ -162,7 +162,7 @@ export class HeldPosts extends Context.Service<
         );
       });
 
-      return HeldPosts.of({ find, release, sendBack });
+      return HeldPosts.of({ get, release, sendBack });
     })
   );
 }

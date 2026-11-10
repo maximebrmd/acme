@@ -56,6 +56,7 @@ export const FakeApprovalGate = Layer.effectContext(
             return "held";
           }),
         approved: stands,
+        forgotten: () => Effect.void,
         maySubmit: (actor) => Effect.succeed(can(actor, "post:create")),
         withdrawn: (_workspaceId, postId) =>
           Ref.update(withdrawn, (posts) => [...posts, postId]),

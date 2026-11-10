@@ -107,6 +107,8 @@ export const WorkspaceLive = Layer.merge(
   CaptchaChallengeLive
 ).pipe(
   Layer.provide(AdaptersLive),
+  // The directory other contexts name members with (the review context).
+  Layer.provideMerge(MemberDirectoryLive),
   Layer.provideMerge(StaffToolsLive),
   Layer.provideMerge(BetterAuthLive),
   Layer.provideMerge(ImpersonationGuardLive),

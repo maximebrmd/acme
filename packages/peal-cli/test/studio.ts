@@ -319,6 +319,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     },
     everyPost: false,
   },
+  review: { approvals: [], comments: [] },
   sessions: [],
   signInMethods: [],
   staffActions: [],

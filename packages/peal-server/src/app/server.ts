@@ -44,7 +44,6 @@ import {
   NotificationsLive,
   NotificationsWorkersLive,
 } from "#notifications/container.ts";
-import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import {
   GatedMetricsReader,
   MediaInPostsLive,
@@ -53,6 +52,7 @@ import {
   TikTokApiLive,
   publishingWorkersReading,
 } from "#publishing/container.ts";
+import { ReviewGateLive, ReviewLive } from "#review/container.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
@@ -137,11 +137,36 @@ const MediaContextLive = MediaLive.pipe(
   Layer.provide(Layer.mergeAll(MediaInPostsLive, BillingContextsLive))
 );
 
+// What the review context decides before publishing schedules a post (its
+// approval gate), told through the notices, with its records and their
+// retention.
+const ReviewGateContextLive = ReviewGateLive.pipe(
+  Layer.provide(ChannelsWithNoticesLive)
+);
+
 // Publishing posts to the channels the channels context lists, with the
-// media the media context holds.
+// media the media context holds, once the review context's gate admits
+// them.
 const PublishingContextLive = PublishingLive.pipe(
-  Layer.provide(ApprovalGate.open),
-  Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, MediaContextLive))
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      MediaContextLive,
+      ReviewGateContextLive
+    )
+  )
+);
+
+// Reviews: links, comments and approvals of the posts publishing holds,
+// with their channels' names, their media and their members' names.
+const ReviewContextLive = ReviewLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      MediaContextLive,
+      PublishingContextLive
+    )
+  )
 );
 
 // The assistant, whose daily quota is the workspace plan's.
@@ -160,7 +185,8 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       MediaContextLive,
       AssistantContextLive,
       AnalyticsLive,
-      StaffRecordsLive
+      StaffRecordsLive,
+      ReviewGateContextLive
     )
   )
 );
@@ -224,7 +250,9 @@ const ServicesLive = Layer.mergeAll(
   BillingContextLive,
   AnalyticsLive,
   StaffContextLive,
-  LegalRequestsContextLive
+  LegalRequestsContextLive,
+  ReviewGateContextLive,
+  ReviewContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -267,7 +295,9 @@ const ContextsLive = Layer.mergeAll(
   BillingContextLive,
   AnalyticsContextLive,
   StaffContextLive,
-  LegalRequestsContextLive
+  LegalRequestsContextLive,
+  ReviewGateContextLive,
+  ReviewContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

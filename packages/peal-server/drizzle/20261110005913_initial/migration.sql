@@ -14,6 +14,8 @@ CREATE SCHEMA "notifications";
 --> statement-breakpoint
 CREATE SCHEMA "publishing";
 --> statement-breakpoint
+CREATE SCHEMA "review";
+--> statement-breakpoint
 CREATE SCHEMA "staff";
 --> statement-breakpoint
 CREATE SCHEMA "auth";
@@ -110,11 +112,11 @@ CREATE TABLE "billing"."subscriptions" (
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."trials" (
+	"forgotten_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	"plan" text,
 	"reserved_at" timestamp with time zone NOT NULL,
 	"started_at" timestamp with time zone,
-	"forgotten_at" timestamp with time zone,
 	"stripe_subscription_id" text,
 	"user_id" text,
 	"user_pseudonym" text,
@@ -279,6 +281,7 @@ CREATE TABLE "notifications"."notification_preferences" (
 	"email_channel_reconnect" boolean NOT NULL,
 	"email_post_failed" boolean NOT NULL,
 	"email_post_published" boolean NOT NULL,
+	"email_post_review" boolean DEFAULT true NOT NULL,
 	"email_post_unconfirmed" boolean NOT NULL,
 	"every_post" boolean DEFAULT false NOT NULL,
 	"updated_at" timestamp with time zone NOT NULL,
@@ -368,6 +371,64 @@ CREATE TABLE "publishing"."upload_sessions" (
 	"opened_at" timestamp with time zone NOT NULL,
 	"session_url" text,
 	"video_id" text
+);
+--> statement-breakpoint
+CREATE TABLE "review"."approval_requests" (
+	"decided_at" timestamp with time zone,
+	"decided_by_kind" text,
+	"decided_by_link_id" uuid,
+	"decided_by_name" text,
+	"decided_by_user_id" uuid,
+	"id" uuid PRIMARY KEY,
+	"post_id" uuid NOT NULL,
+	"requested_at" timestamp with time zone NOT NULL,
+	"requested_by" uuid,
+	"requested_via" text NOT NULL,
+	"schedule_zone" text NOT NULL,
+	"scheduled_at" timestamp with time zone NOT NULL,
+	"status" text NOT NULL,
+	"subject_hash" text NOT NULL,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "review"."comments" (
+	"anchor_channel_id" uuid,
+	"anchor_quote" text,
+	"anchor_start" integer,
+	"author_kind" text NOT NULL,
+	"author_link_id" uuid,
+	"author_user_id" uuid,
+	"body" text NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"parent_id" uuid,
+	"post_id" uuid NOT NULL,
+	"resolved_at" timestamp with time zone,
+	"resolved_by_kind" text,
+	"resolved_by_user_id" uuid,
+	"visitor_email" text,
+	"visitor_locale" text,
+	"visitor_name" text,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "review"."links" (
+	"access" text NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"created_by" uuid,
+	"expires_at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"post_id" uuid NOT NULL,
+	"revoked_at" timestamp with time zone,
+	"token_hash" text NOT NULL,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "review"."settings" (
+	"approval_policy" text NOT NULL,
+	"updated_at" timestamp with time zone NOT NULL,
+	"updated_by" uuid,
+	"workspace_id" uuid PRIMARY KEY
 );
 --> statement-breakpoint
 CREATE TABLE "staff"."audit_events" (
@@ -698,6 +759,16 @@ CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHER
 CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
 CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint
+CREATE UNIQUE INDEX "approval_requests_pending" ON "review"."approval_requests" ("post_id") WHERE "status" = 'pending';--> statement-breakpoint
+CREATE INDEX "approval_requests_post" ON "review"."approval_requests" ("post_id","id");--> statement-breakpoint
+CREATE INDEX "approval_requests_workspace" ON "review"."approval_requests" ("workspace_id","status","id");--> statement-breakpoint
+CREATE INDEX "comments_post" ON "review"."comments" ("post_id","id");--> statement-breakpoint
+CREATE INDEX "comments_workspace" ON "review"."comments" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "comments_author" ON "review"."comments" ("author_user_id");--> statement-breakpoint
+CREATE INDEX "comments_link" ON "review"."comments" ("author_link_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "links_token_hash" ON "review"."links" ("token_hash");--> statement-breakpoint
+CREATE INDEX "links_post" ON "review"."links" ("post_id");--> statement-breakpoint
+CREATE INDEX "links_workspace" ON "review"."links" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "audit_events_pseudonym" ON "staff"."audit_events" ("target_pseudonym");--> statement-breakpoint
 CREATE INDEX "audit_events_at" ON "staff"."audit_events" ("at","id");--> statement-breakpoint
 CREATE INDEX "audit_events_target" ON "staff"."audit_events" ("target_id","at");--> statement-breakpoint

@@ -90,6 +90,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
     memberships: account.memberships,
     notices,
     notificationPreferences: exported.preferences,
+    review: exported.review,
     sessions: account.sessions,
     signInMethods: account.signInMethods,
     staffActions,
@@ -112,6 +113,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
       media: workspace.media,
       name: workspace.name,
       posts: workspacePosts[index] ?? [],
+      review: workspace.review,
       slug: workspace.slug,
     })),
   };
