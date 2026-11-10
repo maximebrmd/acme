@@ -110,6 +110,14 @@ Better Auth lit aussi `BETTER_AUTH_TRUSTED_ORIGINS`, qui ajoute des origines com
 
 Un fournisseur nommé sans les réglages qu’il demande arrête le serveur au démarrage, et l’erreur nomme la variable manquante. [Assistant de rédaction](/self-hosting#ai) explique le reste.
 
+### Publicités [#ads]
+
+| Variable   | Par défaut | Rôle                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PEAL_ADS` | `off`      | Ce que le serveur propose des [publicités](/ads) : `off`, rien ; `read`, les espaces de travail connectent des comptes publicitaires Meta et lisent leurs campagnes et leurs chiffres, et rien ne dépense ; `spend`, ils mettent aussi en avant des publications parues, ce qui dépense leur argent chez Meta. Non définie ou vide vaut `off`. `read` et `spend` demandent `META_APP_ID` et `META_APP_SECRET`, sur une application à laquelle Meta a donné l’accès aux publicités, et `PEAL_TOKEN_KEYS` pour chiffrer les jetons des connexions. Toute autre valeur, ou `read` ou `spend` sans l’application de Meta, arrête le serveur au démarrage. |
+
+Les publicités sur Meta passent par l’application principale de Meta, celle qui connecte les Pages Facebook. [Ce que Meta demande à l’opérateur](/ads#operator) liste les autorisations et les examens nécessaires : restez sur `read` tant que Meta n’a pas accordé `ads_management` à l’application.
+
 ### Facturation [#billing]
 
 | Variable                   | Par défaut                       | Rôle                                                                                                                                                                                                                                                                                 |

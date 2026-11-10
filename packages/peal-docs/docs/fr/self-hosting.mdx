@@ -331,6 +331,10 @@ Chaque espace de travail peut envoyer à l’assistant `PEAL_AI_DAILY_REQUESTS` 
 
 Ce que les membres envoient, c’est le texte de la publication, jusqu’à 5 000 caractères, et les réponses sont limitées à 4 096 tokens. Le texte est envoyé comme une donnée, avec des consignes que le texte ne peut pas changer. Le serveur n’écrit jamais le texte ni la réponse dans ses journaux ou ses traces, n’enregistre ni l’un ni l’autre, et n’envoie au fournisseur aucun contexte de trace : ses journaux et ses traces ne nomment que le fournisseur, le modèle, le nombre de tokens et le type d’échec.
 
+## Publicités [#ads]
+
+Les publicités sont désactivées tant que vous n’avez pas défini `PEAL_ADS` : `read` permet aux espaces de travail de connecter des comptes publicitaires Meta et de lire leurs campagnes et leurs chiffres, et `spend` leur permet aussi de mettre en avant des publications parues, ce qui dépense leur argent chez Meta. Un serveur auto-hébergé apporte sa propre application Meta avec l’accès aux publicités : celle de `META_APP_ID` et `META_APP_SECRET`, qui connecte aussi les [Pages Facebook](#meta), à laquelle Meta a accordé les autorisations publicitaires, avec une adresse de redirection de plus que [la commande](#platform-addresses) affiche pour les publicités. [Publicités](/ads#operator) liste ce que Meta vous demande, et pourquoi rester sur `read` tant qu’il n’a pas accordé `ads_management`.
+
 ## Facturation [#billing]
 
 La facturation est désactivée tant que `STRIPE_SECRET_KEY` n’est pas définie : il n’y a pas d’abonnement, rien n’est limité, et la page de facturation des espaces de travail le dit. Avec une clé, chaque espace de travail commence avec l’offre gratuite, et un abonnement Stripe le fait passer à Starter, Pro, Business ou Agency, au mois ou à l’année. [Abonnements et facturation](/billing) les présente, avec ce que chacun limite, l’essai, la commande, la résiliation et la rétractation.

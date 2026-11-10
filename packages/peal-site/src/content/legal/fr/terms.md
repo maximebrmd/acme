@@ -30,6 +30,30 @@ Votre utilisation de chaque plateforme reste soumise à ses propres conditions. 
 
 [Responsabilités et limites applicables à la publication via des plateformes tierces.]
 
+## Publicités et dépenses par l’intermédiaire de Peal
+
+Lorsqu’une organisation connecte un compte publicitaire, Peal peut lire les campagnes et les chiffres de ce compte et, à la demande d’un membre, mettre en avant une publication que l’organisation a fait paraître avec Peal, sous la forme d’une publicité sur le réseau publicitaire. Cette section s’applique à cet usage. [À confirmer avec le conseil avant l’ouverture des publicités aux clients : cette section dans son ensemble, et si la dépense par l’intermédiaire de Peal demande une acceptation distincte de ces conditions.]
+
+**Qui vend les publicités.** Les publicités sont achetées auprès du réseau publicitaire (Meta, pour les publicités sur Facebook et Instagram), dans le cadre du contrat conclu entre ce réseau et le titulaire du compte publicitaire. Le réseau facture directement l’annonceur, sur le moyen de paiement du compte publicitaire. Nous ne sommes pas partie à cet achat : nous ne recevons, ne détenons ni ne transmettons jamais les sommes, nous n’émettons aucune facture à ce titre et ne percevons aucune commission. [À confirmer avec le conseil et l’expert-comptable qu’aucuns frais ni commission ne sont perçus sur les dépenses publicitaires, ou les décrire ici et sur la page des tarifs.]
+
+**Vous décidez de ce qui est dépensé.** Rien n’est dépensé tant qu’un propriétaire de l’organisation n’a pas activé les dépenses pour un compte publicitaire et fixé pour lui un plafond mensuel, dans la devise du compte. Peal n’active jamais les dépenses, ne relève jamais un plafond ni un budget de lui-même. Le plafond limite ce que les mises en avant créées avec Peal peuvent engager sur ce compte publicitaire au cours d’un mois civil, dans le fuseau horaire du compte. Ce n’est pas une limite du compte publicitaire lui-même : les publicités créées ailleurs, sur le réseau ou avec un autre outil, ne sont pas comptées et ne sont pas retenues par lui. Pour plafonner le compte dans son ensemble, fixez un plafond de dépenses sur le réseau.
+
+**Ce qu’un budget peut coûter.** Une mise en avant a un budget et une date de fin, tous deux obligatoires. Un budget total engage son montant. Un budget quotidien engage son montant pour chaque jour civil de diffusion, majoré de 25 %, car le réseau peut dépenser jusqu’à 25 % de plus qu’un budget quotidien sur une journée donnée. Avant que vous ne confirmiez une mise en avant, Peal affiche ce qu’elle peut coûter au plus et la marge restante sous le plafond.
+
+**Qui agit pour vous.** Les membres dont le rôle permet de dépenser, les clés d’API qui ont reçu cette permission et les applications qu’un membre a autorisées à dépenser agissent pour l’organisation : ce qu’ils demandent au réseau de diffuser est à votre charge envers le réseau, dans la limite du plafond. Choisissez avec soin qui tient ce rôle, et quelles clés et applications reçoivent cette permission.
+
+**Votre responsabilité quant aux publicités.** Vous êtes responsable du contenu des publicités, de l’audience que vous choisissez et des déclarations faites lors de la demande d’une mise en avant : que la publicité ne relève pas d’une catégorie spéciale que le réseau encadre (logement, emploi, produits et services financiers, enjeux sociaux, élections ou politique), que Peal ne met pas en avant, et, lorsque l’audience se trouve dans l’Union européenne, qui bénéficie de la publicité et qui la paie. Vous devez disposer des droits nécessaires pour faire de la publicité pour la Page ou le compte concerné, et respecter les conditions et les règles publicitaires du réseau, qui s’appliquent à vous directement.
+
+**Ce que décide le réseau.** Le réseau peut refuser, examiner, retarder, limiter ou arrêter une publicité, ou restreindre un compte publicitaire, selon ses propres règles ; nous n’y avons aucune part. Les chiffres d’une publicité (dépense, impressions, couverture, clics, résultats) sont ceux du réseau, tels qu’il les communique.
+
+**Les chiffres de Peal ne sont pas une facture.** Peal lit la dépense et les résultats sur le réseau à intervalles réguliers : ce qu’il affiche a donc du retard sur le réseau, qui peut le corriger par la suite. Seuls comptent les montants que le réseau facture : vérifiez-les dans le compte publicitaire.
+
+**Lorsque Peal ne peut pas confirmer.** Si Peal a demandé au réseau de diffuser une mise en avant et n’a pas pu confirmer qu’elle est diffusée, Peal le dit, marque la mise en avant comme non confirmée et prévient les propriétaires de l’organisation : elle dépense peut-être. Vérifiez-la et arrêtez-la, dans Peal ou sur le réseau, si elle ne doit pas être diffusée. Peal ne renvoie pas la demande de lui-même.
+
+**Mettre en pause et arrêter.** Une mise en avant peut être mise en pause ou arrêtée dans Peal à tout moment. Peal demande alors au réseau de mettre la campagne en pause : la pause prend effet lorsque le réseau l’applique, et ce que le réseau a dépensé jusque-là lui reste dû. Vous pouvez toujours mettre en pause ou supprimer la campagne sur le réseau lui-même. La suppression d’une organisation, ou la déconnexion d’un compte publicitaire, est refusée tant qu’une de ses mises en avant est diffusée ou peut l’être : arrêtez-la d’abord.
+
+**Responsabilité.** Notre responsabilité pour les sommes dépensées sur un réseau publicitaire par l’intermédiaire de Peal suit la section « Garanties et responsabilité » ci-dessous, qui s’applique à cette section comme au reste de ces conditions. [Au conseil de décider si les dépenses publicitaires demandent une règle propre dans cette section, par exemple pour une mise en avant diffusée contrairement à ce qui était demandé du fait d’une faute de notre part ; aucun montant ni plafond n’est indiqué ici.]
+
 ## Vos contenus
 
 [À qui appartiennent les contenus que vous ajoutez à Peal, la licence que vous nous accordez pour les stocker et les publier là où vous le demandez, et votre responsabilité quant à ce que vous publiez.]

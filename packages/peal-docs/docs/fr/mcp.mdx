@@ -99,7 +99,9 @@ Publier est une permission à part. La page de consentement la montre sur sa pro
 
 Un client connecté avant que publier ait sa propre permission n’a que celle d’écrire : il ne publie rien, et ne déprogramme, ne republie ni ne confirme plus rien, tant que vous ne l’avez pas connecté de nouveau en autorisant la publication. Une connexion garde jusque-là les permissions qu’elle a reçues.
 
-Un client qui n’a aucune des trois permissions sur l’espace de travail ne peut rien faire. Son accès dure 15 minutes à la fois, et le client le renouvelle de lui-même. Chaque requête vérifie que vous appartenez toujours à l’espace de travail et n’êtes pas banni.
+Un client peut aussi demander `workspace:ads`, pour les [publicités](/ads#access). Il n’ouvre rien seul : avec la permission d’écrire, le client déconnecte des comptes publicitaires et met en pause ou arrête des mises en avant ; avec la permission de publier, il met en avant des publications, ce qui dépense de l’argent sur un réseau publicitaire, dans la limite du plafond mensuel fixé par un propriétaire. Aucun client n’active les dépenses ni ne change un plafond.
+
+Un client qui n’a aucune des trois permissions ci-dessus sur l’espace de travail ne peut rien faire. Son accès dure 15 minutes à la fois, et le client le renouvelle de lui-même. Chaque requête vérifie que vous appartenez toujours à l’espace de travail et n’êtes pas banni.
 
 ## Outils [#tools]
 
