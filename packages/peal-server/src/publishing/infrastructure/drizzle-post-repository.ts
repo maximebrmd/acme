@@ -88,6 +88,7 @@ const toStored = (row: PostRow) =>
       },
       authorId: Option.fromNullOr(row.authorId),
       content: {
+        followUps: row.followUps,
         media: row.media,
         overrides: row.textOverrides,
         text: row.text,
@@ -138,6 +139,15 @@ const scheduleColumns = (schedule: Option.Option<Schedule>) =>
 
 // What the post says, as its columns hold it.
 const contentColumns = ({ content }: Post) => ({
+  followUps: content.followUps.map((part) => ({
+    delaySeconds: part.delaySeconds,
+    media: part.media.map(({ altText, mediaId }) => ({ altText, mediaId })),
+    overrides: part.overrides.map(({ channelId, text }) => ({
+      channelId,
+      text,
+    })),
+    text: part.text,
+  })),
   media: content.media.map(({ altText, mediaId }) => ({ altText, mediaId })),
   text: content.text,
   textOverrides: content.overrides.map(({ channelId, text }) => ({
@@ -295,10 +305,14 @@ const withTargets = (
 
 const statusName = (status: PostStatus | PostTargetStatus) => status._tag;
 
-// What a post's `media` column holds for one attachment, to find the posts
-// that show it.
+// What a post's `media` column holds for one attachment, and its
+// `follow_ups` for a part that shows it, to find the posts that show it in
+// any part.
 const showingMedia = (mediaId: MediaAssetId) =>
-  sql`${posts.media} @> ${JSON.stringify([{ mediaId }])}::jsonb`;
+  or(
+    sql`${posts.media} @> ${JSON.stringify([{ mediaId }])}::jsonb`,
+    sql`${posts.followUps} @> ${JSON.stringify([{ media: [{ mediaId }] }])}::jsonb`
+  );
 
 /** Posts and targets in the publishing schema, through Drizzle. */
 export const DrizzlePostRepository = Layer.effect(

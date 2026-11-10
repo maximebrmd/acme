@@ -13,7 +13,7 @@ import type { OptionProblem } from "./option-problem.ts";
 import { platformRules } from "./platform-rules.ts";
 import type { FormatLimits, MediaRules } from "./platform-rules.ts";
 import { PostContentRejected } from "./post-content-rejected.ts";
-import { textOn } from "./post-content.ts";
+import { overriddenChannels, textOn } from "./post-content.ts";
 import type { PostContent } from "./post-content.ts";
 import { optionProblemsOn } from "./target-options.ts";
 import type { TargetOptions } from "./target-options.ts";
@@ -62,9 +62,9 @@ const overridesWithoutChannel = (
   content: PostContent,
   channelIds: readonly ChannelId[]
 ): readonly ContentViolation[] =>
-  content.overrides
-    .filter((override) => !channelIds.includes(override.channelId))
-    .map(({ channelId }) => ({ _tag: "overrideWithoutChannel", channelId }));
+  overriddenChannels(content)
+    .filter((channelId) => !channelIds.includes(channelId))
+    .map((channelId) => ({ _tag: "overrideWithoutChannel", channelId }));
 
 const optionsWithoutChannel = (
   options: readonly ChannelOptions[],

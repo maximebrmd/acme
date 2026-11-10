@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "bec6f946-b52a-46ee-8490-39c9dce167e5",
+  "id": "2f1b825f-11d9-4e60-a6d6-b8e56d6a69ec",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -7301,6 +7301,19 @@
       "notNull": false,
       "dimensions": 0,
       "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "follow_ups",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
       "generated": null,
       "identity": null,
       "entityType": "columns"

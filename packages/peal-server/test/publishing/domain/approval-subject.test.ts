@@ -5,6 +5,8 @@ import { approvalSubject } from "#publishing/domain/approval-subject.ts";
 import { GoogleBusinessOptions } from "#publishing/domain/google-business-options.ts";
 import { LinkedInOptions } from "#publishing/domain/linkedin-options.ts";
 import { PinterestOptions } from "#publishing/domain/pinterest-options.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import { PostTarget } from "#publishing/domain/post-target.ts";
 import type { TargetOptions } from "#publishing/domain/target-options.ts";
 import { YouTubeOptions } from "#publishing/domain/youtube-options.ts";
@@ -121,6 +123,43 @@ describe("what an approval of a post covers", () => {
         })
       )
     );
+  });
+
+  it("covers every part that follows the first", () => {
+    const thread = (text: string, delaySeconds = 0) =>
+      approvalSubject(
+        new PostContent({
+          followUps: [
+            new PostPart({ delaySeconds, media: [], overrides: [], text }),
+          ],
+          media: content.media,
+          overrides: content.overrides,
+          text: content.text,
+        }),
+        [target("1", Option.none())]
+      );
+
+    const alone = approvalSubject(content, [target("1", Option.none())]);
+
+    expect(thread("And more tomorrow")).not.toBe(alone);
+    expect(thread("And more on Friday")).not.toBe(thread("And more tomorrow"));
+    expect(thread("And more tomorrow", 60)).not.toBe(
+      thread("And more tomorrow")
+    );
+    expect(thread("And more tomorrow")).toBe(thread("And more tomorrow"));
+  });
+
+  it("is written for a post of one part as before posts had parts", () => {
+    expect(
+      JSON.parse(approvalSubject(content, [target("1", Option.none())]))
+    ).toStrictEqual({
+      channels: [
+        { channelId: "00000000-0000-7000-8000-000000000001", options: null },
+      ],
+      media: [],
+      overrides: [],
+      text: "Launch day, with @Example Bakery",
+    });
   });
 
   it("covers no options where a channel has none", () => {

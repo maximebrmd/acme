@@ -32,6 +32,10 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  *
  * Its content: `text`, the `media` it shows in order (media ids with their
  * alt text) and `text_overrides`, the text it has instead on some channels.
+ * That is its first part; `follow_ups` holds the parts after it, in order,
+ * as the domain's `PostPart` encodes them (text, media, text overrides and
+ * the seconds each waits), empty on a post of one part, as every post from
+ * before parts is.
  * `author_id` is the member who created it (a Better Auth user id), null
  * when an API key did, or for posts from before authors were kept.
  *
@@ -50,6 +54,7 @@ export const posts = publishing.table(
     createdVia: jsonb("created_via"),
     executionId: text("execution_id"),
     finishedAt: instant("finished_at"),
+    followUps: jsonb("follow_ups").notNull().default([]),
     id: uuid("id").primaryKey(),
     media: jsonb("media").notNull().default([]),
     outcome: text("outcome"),

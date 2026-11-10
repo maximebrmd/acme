@@ -368,6 +368,7 @@ CREATE TABLE "publishing"."posts" (
 	"created_via" jsonb,
 	"execution_id" text,
 	"finished_at" timestamp with time zone,
+	"follow_ups" jsonb DEFAULT '[]' NOT NULL,
 	"id" uuid PRIMARY KEY,
 	"media" jsonb DEFAULT '[]' NOT NULL,
 	"outcome" text,
