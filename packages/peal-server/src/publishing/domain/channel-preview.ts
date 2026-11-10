@@ -1,5 +1,6 @@
 import type { ChannelOnPlatform } from "./content-rules.ts";
 import type { ContentViolation } from "./content-violation.ts";
+import { mediaLimitOf } from "./platform-capabilities.ts";
 import { platformRules } from "./platform-rules.ts";
 import { textOn } from "./post-content.ts";
 import type { PostContent } from "./post-content.ts";
@@ -58,7 +59,9 @@ export const previewOn = (
     channel,
     hashtags: { count: countHashtags(text), maximum: rules.maxHashtags },
     links: { count: countLinks(text), maximum: rules.maxLinks },
-    media: { count: content.media.length, maximum: rules.maxMedia },
+    // Peal's own limit where the platform takes more, or says nothing:
+    // the number its capabilities give.
+    media: { count: content.media.length, maximum: mediaLimitOf(rules) },
     mentions: { count: countMentions(text), maximum: rules.maxMentions },
     text,
     textCounts: rules.textLimits.map(({ maximum, unit }) => ({
