@@ -2,23 +2,34 @@ import { assert, describe, it } from "@effect/vitest";
 import { DateTime, Duration, Effect, Option } from "effect";
 import { TestClock } from "effect/testing";
 
+import { toThreadDetailView } from "#engagement/api/inbox-view.ts";
 import { ChannelUnreadable } from "#engagement/application/channel-unreadable.ts";
 import { CollectComments } from "#engagement/application/collect-comments.ts";
+import { EngagementInbox } from "#engagement/application/engagement-inbox.ts";
 import type {
   CommentsBatch,
   CommentsRequest,
 } from "#engagement/application/ports/comment-source.ts";
 import type { CommentReading } from "#engagement/domain/comment.ts";
 import { recordCollection } from "#engagement/domain/thread.ts";
+import { Actor } from "#shared/domain/access.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { makeWorld } from "#test/engagement/fakes/world.ts";
 import type { World } from "#test/engagement/fakes/world.ts";
 import {
   channelId,
   followedPost,
+  memberId,
   publishedAt,
   reading,
+  workspaceId,
 } from "#test/engagement/support.ts";
+
+const reader = new Actor({
+  permissions: ["engagement:read"],
+  subject: { _tag: "user", impersonatedBy: Option.none(), userId: memberId },
+  workspaceId,
+});
 
 const after = (duration: Duration.Input) =>
   DateTime.addDuration(publishedAt, duration);
@@ -52,6 +63,16 @@ const onlyThread = (world: World) => {
 
   return thread;
 };
+
+// A later part of a post, as its platform shows it under the first: the
+// account's own reply to the part before.
+const part = (id: string, parent: Option.Option<string>): CommentReading =>
+  reading(9, {
+    fromAccount: true,
+    parentPlatformId: parent,
+    platformCommentId: id,
+    text: `Part ${id}`,
+  });
 
 describe(CollectComments, () => {
   it.effect("follows the posts that went live and reads their comments", () => {
@@ -187,6 +208,65 @@ describe(CollectComments, () => {
           commentsOf(world).map(({ state }) => state),
           ["new", "new"]
         );
+      }).pipe(Effect.provide(world.layer));
+    }
+  );
+
+  it.effect(
+    "takes no part of a thread for a comment, and keeps the comments under every part",
+    () => {
+      const world = makeWorld();
+
+      // A post of three parts, as its platform shows it under its first.
+      world.state.posts.push(followedPost(1));
+      world.state.read = showing([
+        reading(1),
+        part("1002", Option.none()),
+        reading(2, { parentPlatformId: Option.some("1002") }),
+        part("1003", Option.some("1002")),
+        reading(3, { parentPlatformId: Option.some("1003") }),
+      ]);
+
+      return Effect.gen(function* collecting() {
+        const inbox = yield* EngagementInbox;
+
+        yield* runAt(after("10 minutes"));
+
+        // Three comments, none of them a part, and none answered by one.
+        assert.deepStrictEqual(
+          commentsOf(world).map(({ platformCommentId, state }) => [
+            platformCommentId,
+            state,
+          ]),
+          [
+            ["2001", "new"],
+            ["2002", "new"],
+            ["2003", "new"],
+          ]
+        );
+        assert.deepStrictEqual(
+          world.state.received.map(({ comments }) => comments.length),
+          [3]
+        );
+
+        // A comment under a later part answers the post, like one under
+        // the first: its parent is no comment.
+        const detail = yield* inbox.thread(reader, onlyThread(world).id);
+
+        assert.deepStrictEqual(
+          toThreadDetailView(detail).comments.map(({ parentId }) => parentId),
+          [null, null, null]
+        );
+        assert.strictEqual(detail.summary.unanswered, 3);
+
+        // Read again, nothing changes: no part answers anything later.
+        yield* runAt(after("20 minutes"));
+
+        assert.deepStrictEqual(
+          commentsOf(world).map(({ state }) => state),
+          ["new", "new", "new"]
+        );
+        assert.lengthOf(world.state.received, 1);
       }).pipe(Effect.provide(world.layer));
     }
   );

@@ -109,6 +109,10 @@ export const postTargets = publishing.table(
     finishedAt: instant("finished_at"),
     id: uuid("id").primaryKey(),
     keptPrivate: boolean("kept_private").notNull().default(false),
+    // When Peal knew the target live, for the contexts that follow
+    // publications in that order: when it went out, or, for one a member
+    // confirmed by hand, when they did. Null unless it is published.
+    listedAt: instant("listed_at"),
     liveParts: jsonb("live_parts").notNull().default([]),
     options: jsonb("options"),
     permalink: text("permalink"),
@@ -125,7 +129,7 @@ export const postTargets = publishing.table(
     unique("post_targets_post_channel").on(table.postId, table.channelId),
     // Targets in the order they went live, which analytics follows.
     index("post_targets_published")
-      .on(table.finishedAt, table.id)
+      .on(table.listedAt, table.id)
       .where(sql`${table.status} = 'published'`),
   ]
 );

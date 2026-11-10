@@ -183,6 +183,53 @@ describe("Mastodon's comments", () => {
   );
 
   it.effect(
+    "reads the comments under every part of a thread, and knows its parts as the account's",
+    () =>
+      Effect.gen(function* reads() {
+        const studio = { acct: "studio", display_name: "", id: "109372" };
+
+        // A post of three parts (1001, then 1002 and 1003, each a reply to
+        // the part before), with a comment under each.
+        const { account, platform } = yield* onServer(() =>
+          json({
+            ancestors: [],
+            descendants: [
+              status("2001"),
+              status("1002", { account: studio }),
+              status("2002", { in_reply_to_id: "1002" }),
+              status("1003", { account: studio, in_reply_to_id: "1002" }),
+              status("2003", { in_reply_to_id: "1003" }),
+            ],
+          })
+        );
+
+        const [reading] = (yield* platform.read(account, toRead)).readings;
+
+        assert.strictEqual(reading?._tag, "read");
+
+        if (reading?._tag !== "read") {
+          return;
+        }
+
+        assert.isTrue(reading.complete);
+        assert.deepStrictEqual(
+          reading.comments.map((comment) => [
+            comment.platformCommentId,
+            comment.fromAccount,
+            Option.getOrNull(comment.parentPlatformId),
+          ]),
+          [
+            ["2001", false, null],
+            ["1002", true, null],
+            ["2002", false, "1002"],
+            ["1003", true, "1002"],
+            ["2003", false, "1003"],
+          ]
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
     "reads without a token when the account did not allow reading",
     () =>
       Effect.gen(function* reads() {

@@ -41,8 +41,15 @@ const postCollection = "app.bsky.feed.post";
 const likeCollection = "app.bsky.feed.like";
 const gateCollection = "app.bsky.feed.threadgate";
 
-// How deep a thread is read: replies to replies, ten levels down.
-const depth = 10;
+/**
+ * How deep a thread is read. A post of several parts is a chain of the
+ * account's own replies, so the comments under its last part sit as deep
+ * as it has parts: 25 levels for the longest post (24 parts after the
+ * first, which a test keeps equal to the contract's), then replies to
+ * replies ten levels down, as under a post of one part. The lexicon takes
+ * up to 1000.
+ */
+export const threadDepth = 35;
 
 // What a thread gate's `hiddenReplies` holds at most (the lexicon's).
 const maxHiddenReplies = 300;
@@ -286,7 +293,7 @@ export const blueskyEngagement = Effect.fn("BlueskyEngagement.make")(
         const sent = yield* http
           .get(new URL("/xrpc/app.bsky.feed.getPostThread", appView), {
             urlParams: {
-              depth: String(depth),
+              depth: String(threadDepth),
               parentHeight: "0",
               uri: thread.platformPostId,
             },

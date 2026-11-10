@@ -946,7 +946,18 @@ and no socket, for tests.
   back from the PDS, and refuses a part whose parent is gone
   (`replyTargetGone`). Threads' `reply_to_id` needs
   `threads_manage_replies`, which Peal does not ask for: no parts there.
-  Analytics follows a target's first part.
+- `PublishedTargets` lists a target once it is published, a post of
+  several parts as its first part (id and permalink): one row a target,
+  whatever its parts, so analytics counts, and X bills, one post, and the
+  inbox has one thread, whose reader walks every part (the parts are the
+  account's own replies, never comments). A target stopped midway
+  (`liveParts` on a failed, unconfirmed or cancelled one) is not listed
+  until a repost or a member completes it. The listing is ordered by
+  `post_targets.listed_at`, which `listedFrom` sets: when the target went
+  live, or, for one a member confirmed by hand (published at its
+  `attemptedAt`, hours before), when they did, as followers read on from
+  the latest they know and never look back that far. The first part's
+  reply count includes the second part: say so where counts are explained.
 - A post whose outcome is unknown is marked unconfirmed, never retried blindly:
   the user checks the platform before reposting.
 - Erasing a workspace's posts (`PostRecords`) stops its scheduled jobs in the
@@ -2180,7 +2191,12 @@ and no socket, for tests.
   and `.left`, counts `.unfinished`, and Grafana alerts on it
   (`peal-comments-behind`). `reconcile` is the one place that decides what
   a read changes; a comment by the channel's own account is not kept, and
-  marks the comment it answers as answered.
+  marks the comment it answers as answered. A post of several parts has
+  one thread, under its first part: the readers walk the whole reply tree
+  (Mastodon's context; Bluesky's `getPostThread` to `threadDepth`, deep
+  enough for the longest post), so comments under every part are kept, a
+  part is the account's own reply and never a comment, and a comment
+  under a later part answers the post (`parentId` null).
 - A reply follows publishing's contract. `EngagementReplies.reply` checks
   the permission, the comment, the channel's ability and the platform's
   length (`ReplyLimits`, on publishing's `textOverflowOn`; on Mastodon

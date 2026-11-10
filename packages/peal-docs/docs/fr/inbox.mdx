@@ -22,6 +22,8 @@ Pour chaque publication mise en ligne sur un canal, Peal lit les réponses publi
 | Si l’espace de travail y a répondu, l’a masqué ou aimé                                     | Peal, et la plateforme pour ce qui y a été fait |
 | Les réponses envoyées depuis Peal, leur auteur et l’issue de l’envoi                       | Les membres de l’espace de travail              |
 
+Pour une publication en plusieurs parties, un [fil](/scheduling#threads), Peal lit les commentaires sous chaque partie et les réunit dans l’unique fil de la publication dans la boîte de réception. Les parties elles-mêmes, écrites par le compte, ne sont pas des commentaires. Les commentaires d’un fil sont lus une fois toutes ses parties en ligne : s’il s’est arrêté en chemin, à partir du moment où **Republier**, ou ce que vous avez constaté sur la plateforme, le complète.
+
 Peal ne lit rien d’autre des personnes qui commentent : ni photo, ni profil, ni nombre d’abonnés, ni autre publication, ni message privé. Une réponse que seuls les abonnés de son auteur ou les personnes mentionnées peuvent voir est un message privé, et n’est pas collectée.
 
 Les commentaires sont les mots d’autres personnes. Peal s’en sert pour les montrer aux membres de l’espace de travail et leur permettre d’y répondre, et pour rien d’autre : aucun profil de leurs auteurs, aucune automatisation, l’assistant de rédaction ne les lit pas, et ils ne servent jamais à entraîner quoi que ce soit. Les [webhooks](/webhooks#comment-received) et les notifications d’un espace de travail disent que des commentaires sont arrivés, avec des identifiants et des nombres, jamais leur texte ni leurs auteurs.

@@ -22,6 +22,8 @@ For each post that went live on a channel, Peal reads the public replies to it o
 | Whether the workspace answered it, hid it or liked it                     | Peal, and the platform for what was done there |
 | The replies members sent from Peal, who wrote each, and how sending ended | The members of the workspace                   |
 
+For a post of several parts, a [thread](/scheduling#threads), Peal reads the comments under every part and gathers them in the post's one thread in the inbox. The parts themselves, which the account wrote, are not comments. A thread's comments are read once all its parts are live: when it stopped midway, from the moment **Post again**, or what you found on the platform, completes it.
+
 Peal reads nothing else of the people who comment: no picture, no profile, no follower count, no other post of theirs, no private message. A reply only its author's followers or the people it mentions can see is a private message, and is not collected.
 
 Comments are other people's words. Peal uses them to show them to the workspace's members and let them answer, and for nothing else: no profile of their authors, no automation, no writing assistant reads them, and they are never used to train anything. A workspace's [webhooks](/webhooks#comment-received) and notices say that comments arrived, with ids and counts, never their text or their authors.

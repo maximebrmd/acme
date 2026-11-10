@@ -2,9 +2,13 @@ import { assert, describe, it } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { Digest, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
+import { maxFollowUps } from "peal-contract/post-text";
 
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
-import { blueskyEngagement } from "#engagement/infrastructure/platforms/bluesky/bluesky-engagement.ts";
+import {
+  blueskyEngagement,
+  threadDepth,
+} from "#engagement/infrastructure/platforms/bluesky/bluesky-engagement.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { recordKeyOf } from "#shared/infrastructure/platforms/bluesky/record-key.ts";
@@ -204,6 +208,69 @@ describe("Bluesky's comments", () => {
                 `https://bsky.app/profile/${did}/post/3lsecond`
               ),
             },
+          ]
+        );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "reads the comments under every part of a thread, however long, and knows its parts as the account's",
+    () =>
+      Effect.gen(function* reads() {
+        const part2 = `at://${did}/app.bsky.feed.post/3lpart2`;
+        const part3 = `at://${did}/app.bsky.feed.post/3lpart3`;
+        const under2 = `at://${reader}/app.bsky.feed.post/3lunder2`;
+        const under3 = `at://${reader}/app.bsky.feed.post/3lunder3`;
+
+        // A post of three parts, each a reply to the part before, with a
+        // comment under each.
+        const { account, platform, server } = yield* onNetwork(() =>
+          json({
+            thread: {
+              post: view(root, did, root, 2),
+              replies: [
+                { post: view(first, reader, root) },
+                {
+                  post: view(part2, did, root, 2),
+                  replies: [
+                    { post: view(under2, reader, part2) },
+                    {
+                      post: view(part3, did, part2, 1),
+                      replies: [{ post: view(under3, reader, part3) }],
+                    },
+                  ],
+                },
+              ],
+            },
+          })
+        );
+
+        const [reading] = (yield* platform.read(account, toRead)).readings;
+        const [request] = server.requests();
+
+        // Deep enough for the comments under the last part of the longest
+        // post, and the replies to them.
+        assert.strictEqual(threadDepth, maxFollowUps + 1 + 10);
+        assert.strictEqual(request?.query.get("depth"), String(threadDepth));
+        assert.strictEqual(reading?._tag, "read");
+
+        if (reading?._tag !== "read") {
+          return;
+        }
+
+        assert.isTrue(reading.complete);
+        assert.deepStrictEqual(
+          reading.comments.map((comment) => [
+            comment.platformCommentId,
+            comment.fromAccount,
+            Option.getOrNull(comment.parentPlatformId),
+          ]),
+          [
+            [first, false, null],
+            [part2, true, null],
+            [under2, false, part2],
+            [part3, true, part2],
+            [under3, false, part3],
           ]
         );
       }).pipe(Effect.scoped)

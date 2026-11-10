@@ -232,6 +232,7 @@ const targetColumns = (status: PostTargetStatus) => {
     failureReason: null,
     finishedAt: null,
     keptPrivate: false,
+    listedAt: null,
     permalink: null,
     platformPostId: null,
     startedAt: null,
@@ -255,6 +256,9 @@ const targetColumns = (status: PostTargetStatus) => {
       ...cleared,
       finishedAt: date(publishedAt),
       keptPrivate: keptPrivate === true,
+      // Listed for the contexts that follow publications from when it
+      // went live; `listedFrom` says when a member confirmed it instead.
+      listedAt: date(publishedAt),
       permalink: Option.getOrNull(permalink),
       platformPostId: Option.getOrNull(platformPostId),
     }),
@@ -269,6 +273,29 @@ const targetColumns = (status: PostTargetStatus) => {
       unconfirmedReason: reason,
     }),
   });
+};
+
+/**
+ * When a target that becomes `next` is listed among the publications from:
+ * when it went live, but for one a member confirmed by hand, which went
+ * live when it was attempted, hours or days before anyone knew. Those that
+ * follow publications (analytics, the inbox) read on from the latest they
+ * know, so such a target is listed from `now`, when Peal learnt of it.
+ */
+const listedFrom = (
+  next: PostTarget,
+  current: PostTarget,
+  now: DateTime.Utc
+): Date | null => {
+  if (next.status._tag !== "published") {
+    return null;
+  }
+
+  return date(
+    current.status._tag === "unconfirmed"
+      ? DateTime.max(next.status.publishedAt, now)
+      : next.status.publishedAt
+  );
 };
 
 const targetFrom = (rows: readonly TargetRow[]) => {
@@ -601,25 +628,30 @@ export const DrizzlePostRepository = Layer.effect(
             Effect.map((rows) => rows.length === 1)
           ),
       updateTarget: (next, current) =>
-        db
-          .update(postTargets)
-          .set({
-            ...targetColumns(next.status),
-            liveParts: encodeLiveParts(next.liveParts),
-            round: next.round,
-          })
-          .where(
-            and(
-              eq(postTargets.id, current.id),
-              eq(postTargets.round, current.round),
-              eq(postTargets.status, statusName(current.status))
-            )
+        DateTime.now.pipe(
+          Effect.flatMap((now) =>
+            db
+              .update(postTargets)
+              .set({
+                ...targetColumns(next.status),
+                listedAt: listedFrom(next, current, now),
+                liveParts: encodeLiveParts(next.liveParts),
+                round: next.round,
+              })
+              .where(
+                and(
+                  eq(postTargets.id, current.id),
+                  eq(postTargets.round, current.round),
+                  eq(postTargets.status, statusName(current.status))
+                )
+              )
+              .returning({ id: postTargets.id })
+              .pipe(
+                Effect.mapError(failed),
+                Effect.map((rows) => rows.length === 1)
+              )
           )
-          .returning({ id: postTargets.id })
-          .pipe(
-            Effect.mapError(failed),
-            Effect.map((rows) => rows.length === 1)
-          ),
+        ),
     });
   })
 );

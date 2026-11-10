@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "869c90ff-e929-4d46-845b-9b2f1f4eb285",
+  "id": "c2ccf09a-ad1d-4208-9abf-83f7d46658c8",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -2553,7 +2553,7 @@
       "reads": [
         "n|tbl|publishing.post_targets",
         "n|sch|publishing",
-        "n|col|publishing.post_targets.finished_at",
+        "n|col|publishing.post_targets.listed_at",
         "n|col|publishing.post_targets.id"
       ]
     },
@@ -8694,6 +8694,19 @@
       "notNull": true,
       "dimensions": 0,
       "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "listed_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
       "generated": null,
       "identity": null,
       "entityType": "columns"
@@ -14850,7 +14863,7 @@
       "nameExplicit": true,
       "columns": [
         {
-          "value": "finished_at",
+          "value": "listed_at",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,

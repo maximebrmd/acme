@@ -54,7 +54,7 @@ export const DrizzlePublishedTargets = Layer.effect(
           permalink: postTargets.permalink,
           platformPostId: postTargets.platformPostId,
           postId: postTargets.postId,
-          publishedAt: postTargets.finishedAt,
+          publishedAt: postTargets.listedAt,
           targetId: postTargets.id,
           workspaceId: posts.workspaceId,
         })
@@ -64,16 +64,17 @@ export const DrizzlePublishedTargets = Layer.effect(
           and(
             eq(postTargets.status, "published"),
             isNotNull(postTargets.platformPostId),
+            isNotNull(postTargets.listedAt),
             // After a target: compared as a row, which the index's order
             // starts from, where an OR of the two columns scans it all.
             Option.match(cursor.targetId, {
-              onNone: () => gte(postTargets.finishedAt, since),
+              onNone: () => gte(postTargets.listedAt, since),
               onSome: (targetId) =>
-                sql`(${postTargets.finishedAt}, ${postTargets.id}) > (${since.toISOString()}::timestamptz, ${targetId}::uuid)`,
+                sql`(${postTargets.listedAt}, ${postTargets.id}) > (${since.toISOString()}::timestamptz, ${targetId}::uuid)`,
             })
           )
         )
-        .orderBy(asc(postTargets.finishedAt), asc(postTargets.id))
+        .orderBy(asc(postTargets.listedAt), asc(postTargets.id))
         .limit(limit)
         .pipe(Effect.mapError(failed));
 

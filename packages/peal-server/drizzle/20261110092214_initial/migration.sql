@@ -455,6 +455,7 @@ CREATE TABLE "publishing"."post_targets" (
 	"finished_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY,
 	"kept_private" boolean DEFAULT false NOT NULL,
+	"listed_at" timestamp with time zone,
 	"live_parts" jsonb DEFAULT '[]' NOT NULL,
 	"options" jsonb,
 	"permalink" text,
@@ -989,7 +990,7 @@ CREATE INDEX "media_assets_workspace_id_id_index" ON "media"."media_assets" ("wo
 CREATE INDEX "notices_user" ON "notifications"."notices" ("user_id","id");--> statement-breakpoint
 CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHERE "read_at" IS NULL;--> statement-breakpoint
 CREATE INDEX "idempotency_keys_created_at" ON "publishing"."idempotency_keys" ("created_at");--> statement-breakpoint
-CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint
+CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("listed_at","id") WHERE "status" = 'published';--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
 CREATE INDEX "posts_scheduled" ON "publishing"."posts" ("scheduled_at") WHERE "status" = 'scheduled';--> statement-breakpoint
 CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint
