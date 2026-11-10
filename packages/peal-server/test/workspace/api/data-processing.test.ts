@@ -13,6 +13,10 @@ import { trialMemory } from "#billing/domain/trial-memory.ts";
 import { legalRetention } from "#legal/domain/legal-retention.ts";
 import { downloadLifetime } from "#media/infrastructure/drizzle-media-records.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
+import {
+  visitorEmailRetention,
+  visitorNameRetention,
+} from "#review/domain/review-retention.ts";
 import { auditRetention } from "#staff/domain/audit-retention.ts";
 import { deliveryRetention } from "#webhooks/domain/delivery-policy.ts";
 import { erasureLedgerRetention } from "#workspace/domain/erasure-ledger.ts";
@@ -61,6 +65,18 @@ describe("the data processing registry", () => {
     expect(Duration.days(retentionPeriods.exportLinks.days)).toStrictEqual(
       downloadLifetime
     );
+  });
+
+  it("keeps what people without an account leave on a review link as its purge does", () => {
+    expect(
+      Duration.days(retentionPeriods.reviewVisitorEmails.days)
+    ).toStrictEqual(visitorEmailRetention);
+    // Two years, in the days the purge counts.
+    expect(
+      Duration.days((retentionPeriods.reviewVisitorNames.months / 12) * 365)
+    ).toStrictEqual(visitorNameRetention);
+    expect(kept("review")).toContain("30 days after the link");
+    expect(kept("review")).toContain("24 months after each comment");
   });
 
   it("keeps a webhook delivery's log as long as its purge does", () => {

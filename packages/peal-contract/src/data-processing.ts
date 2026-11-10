@@ -33,6 +33,9 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  *   `trial-memory.ts`);
  * - `webhookDeliveries`: a webhook endpoint's delivery log
  *   (`webhooks/domain/delivery-policy.ts`);
+ * - `reviewVisitorEmails`, `reviewVisitorNames`: what people without an
+ *   account leave on a review link, and the link's own record, which goes
+ *   with the names (`review/domain/review-retention.ts`);
  * - `idempotencyKeys`: the keys of the requests that make a post in one
  *   call (`publishing/domain/idempotency.ts`);
  * - `erasureLedger`: the record of deletions kept outside the database
@@ -57,6 +60,8 @@ export const retentionPeriods = {
   legalDisclosures: { years: 5 },
   legalIdentity: { years: 5 },
   metrics: { days: 30 },
+  reviewVisitorEmails: { days: 30 },
+  reviewVisitorNames: { months: 24 },
   serverLogs: { days: 31 },
   traces: { days: 14 },
   trialMemory: { years: 2 },
@@ -330,6 +335,35 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
+      en: "What someone a member sends a review link to writes on its page, without an account: the name they choose, their comments, what they decide (an approval, a request for changes) and when, and, only if they ask to hear of replies, their email address and the language of the page. Members’ comments and decisions are kept with their account",
+      fr: "Ce qu’une personne à qui un membre envoie un lien de relecture écrit sur sa page, sans compte : le nom qu’elle choisit, ses commentaires, ce qu’elle décide (une approbation, une demande de modifications) et quand, et, seulement si elle demande à être prévenue des réponses, son adresse e-mail et la langue de la page. Les commentaires et décisions des membres sont conservés avec leur compte",
+    },
+    id: "review",
+    legalBasis: {
+      en: "Performance of the contract with the workspace that sends the link (GDPR Article 6(1)(b)), and its legitimate interests (point (f)) in showing who approved a post; a reviewer’s email address serves only to tell them of a reply, which they asked for",
+      fr: "Exécution du contrat avec l’espace de travail qui envoie le lien (RGPD, article 6, paragraphe 1, point b), et son intérêt légitime (point f) à montrer qui a approuvé une publication ; l’adresse e-mail d’une personne invitée ne sert qu’à la prévenir d’une réponse, ce qu’elle a demandé",
+    },
+    name: {
+      en: "Review data from people without an account",
+      fr: "Données de relecture des personnes sans compte",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Let people outside a workspace review a post before it is published, and keep who approved it",
+      fr: "Permettre à des personnes extérieures à un espace de travail de relire une publication avant sa parution, et garder qui l’a approuvée",
+    },
+    retention: {
+      en: `The email address a reviewer left: until ${p.reviewVisitorEmails.days} days after the link they used expires or is revoked. The name they gave, with their comments and decisions: ${p.reviewVisitorNames.months} months after each comment or decision, after which these stay without a name. All of it is deleted earlier with the post, or with its workspace. A link’s own record (never the link itself, of which only a hash is kept): ${p.reviewVisitorNames.months} months after it ends`,
+      fr: `L’adresse e-mail laissée par une personne invitée : jusqu’à ${p.reviewVisitorEmails.days} jours après l’expiration ou la révocation du lien utilisé. Le nom qu’elle a donné, avec ses commentaires et décisions : ${p.reviewVisitorNames.months} mois après chaque commentaire ou décision, après quoi ceux-ci restent sans nom. Le tout est supprimé plus tôt avec la publication, ou avec son espace de travail. La trace d’un lien (jamais le lien lui-même, dont seule une empreinte est conservée) : ${p.reviewVisitorNames.months} mois après sa fin`,
+    },
+    source: {
+      en: "The person who opens a review link a member sent them",
+      fr: "La personne qui ouvre un lien de relecture qu’un membre lui a envoyé",
+    },
+  },
+  {
+    applies: "always",
+    data: {
       en: "IP addresses, browser details and the logs, traces and metrics produced when you use the service",
       fr: "Adresses IP, informations sur le navigateur et les journaux, traces et métriques produits lorsque vous utilisez le service",
     },
@@ -557,6 +591,13 @@ export const recipientCategories: readonly RecipientCategory[] = [
     recipient: {
       en: "The platforms you publish to, which receive what you publish there and process it as controllers, under their own privacy policies",
       fr: "Les plateformes sur lesquelles vous publiez, qui reçoivent ce que vous y publiez et le traitent en tant que responsables de traitement, selon leurs propres politiques de confidentialité",
+    },
+  },
+  {
+    applies: "always",
+    recipient: {
+      en: "The people a member sends a review link to, who see without an account the post it shows, its images and videos, and, when the link lets them comment, the comments on it with the names of those who wrote them",
+      fr: "Les personnes à qui un membre envoie un lien de relecture, qui voient sans compte la publication qu’il montre, ses images et vidéos, et, quand le lien permet de commenter, ses commentaires avec le nom de leurs auteurs",
     },
   },
   {
