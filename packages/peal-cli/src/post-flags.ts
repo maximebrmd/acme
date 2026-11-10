@@ -102,6 +102,14 @@ export const followUpsOf = (texts: readonly string[], delaySeconds: number) =>
       });
     }
 
+    // A wait with no part to wait before would be dropped without a word.
+    if (texts.length === 0 && delaySeconds !== 0) {
+      return yield* new Refused({
+        reason:
+          "--then-delay sets the wait before each --then part, and there is none: give the parts with --then, or leave --then-delay out.",
+      });
+    }
+
     if (texts.length > maxFollowUps) {
       return yield* new Refused({
         reason: `A post has ${String(maxFollowUps)} parts after its first at most: there are ${String(texts.length)} --then.`,

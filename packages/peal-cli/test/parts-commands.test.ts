@@ -78,6 +78,26 @@ describe("peal post and peal drafts save, with parts", () => {
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect("refuse a --then-delay that has no --then to wait before", () =>
+    Effect.gen(function* refusesLoneDelay() {
+      const session = yield* signedIn();
+
+      assert.include(
+        yield* session.refused([
+          "post",
+          "A post alone",
+          "--then-delay",
+          "60",
+          "--channel",
+          mastodonId,
+          "--now",
+          ...inStudio,
+        ]),
+        "there is none"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect(
     "keep a draft's parts when it is changed without --then, and replace them with it",
     () =>
