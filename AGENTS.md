@@ -577,7 +577,10 @@ and no socket, for tests.
   `test/workspace/api/data-processing.test.ts` compares each period with
   the rule that enforces it. Change a period in its rule and the registry
   together, then the policy's table; a new kind of personal data gets a
-  category there. What only the operator knows (controller, policy URL,
+  category there, or joins one: webhook endpoints and their delivery log
+  have theirs (`webhooks`), how a post was created and scheduled and the
+  idempotency keys' digests are in `content`, and requests to cancel or
+  withdraw in `contracts`. What only the operator knows (controller, policy URL,
   sub-processors, supervisory authority, its own logs' and backups'
   retention) comes from the JSON file `PEAL_PRIVACY_DECLARATION_FILE`
   names (`PrivacyDeclaration`, `workspace/domain/operator-declaration.ts`),
@@ -1225,8 +1228,9 @@ and no socket, for tests.
   same plan fields (null on a server that does not bill), Better Auth's
   `MEMBER_LIMIT_REACHED` and `FREE_WORKSPACE_LIMIT_REACHED` bodies too
   (`memberUpgrade`, `freeWorkspace` hooks), MCP tools refuse with
-  `planRefusal` (`app/mcp/refusals.ts`) and the CLI explains with
-  `planLimitReason`. Change them together. `securityTest` provides
+  `planRefusal` (`app/mcp/refusals.ts`, after what the call left undone:
+  inviting, `import_media`, and every tool that schedules) and the CLI
+  explains with `planLimitReason`. Change them together. `securityTest` provides
   `UpgradePaths.layerTest`.
 - A plan can shrink under a workspace (a trial ends, a subscription is
   cancelled or unpaid): nothing is deleted, and `excessesOf`
