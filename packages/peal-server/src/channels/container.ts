@@ -61,7 +61,7 @@ const AdaptersLive = Layer.mergeAll(
   DrizzleChannelRepository,
   DrizzleConnectAttempts,
   DrizzleConnectChoices,
-  DrizzleDataDeletions,
+  DrizzleDataDeletions.pipe(Layer.provide(WebhookChannelEvents)),
   PublicDataDeletionLinks,
   SqlChannelLocks,
   webhookChannelNotices(NotifiedChannelNotices),

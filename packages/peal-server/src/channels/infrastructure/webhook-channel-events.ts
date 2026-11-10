@@ -1,14 +1,14 @@
 import { DateTime, Effect, Layer } from "effect";
 
 import { ChannelEvents } from "#channels/application/channel-events.ts";
+import type { DisconnectedChannel } from "#channels/application/channel-events.ts";
 import { ChannelNotices } from "#channels/application/channel-notices.ts";
-import type { Channel } from "#channels/domain/channel.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
 
 // What webhook endpoints hear of channels: ids and the platform, never the
 // account's name or its tokens.
-const dataOf = (channel: Channel) => ({
+const dataOf = (channel: DisconnectedChannel) => ({
   channelId: channel.id,
   platform: channel.platform,
   workspaceId: channel.workspaceId,

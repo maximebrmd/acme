@@ -1,13 +1,16 @@
 import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option } from "effect";
 
+import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ChannelNotices } from "#channels/application/channel-notices.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
+import { DataDeletions } from "#channels/application/data-deletions.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import { markRefreshNeeded } from "#channels/domain/channel.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
+import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-deletions.ts";
 import {
   WebhookChannelEvents,
   webhookChannelNotices,
@@ -37,6 +40,7 @@ const SilentNotices = Layer.succeed(
 
 const Test = Layer.mergeAll(
   DisconnectChannel.layer,
+  DrizzleDataDeletions,
   webhookChannelNotices(SilentNotices)
 ).pipe(
   Layer.provideMerge(
@@ -152,6 +156,62 @@ layer(Test)("channels, to webhook endpoints", (it) => {
           (yield* eventsSentTo(owner, endpointId)).map(({ type }) => type),
           ["channel.connected", "channel.reconnect_needed"]
         );
+      })
+  );
+
+  it.effect(
+    "say that a channel is disconnected when its platform asks for the user's data to be deleted, once",
+    () =>
+      Effect.gen(function* deleted() {
+        const owner = yield* freshOwner;
+        const channels = yield* ChannelRepository;
+        const deletions = yield* DataDeletions;
+        const now = yield* DateTime.now;
+
+        const { endpoint } = yield* freshEndpoint(owner, {
+          eventTypes: ["channel.disconnected"],
+        });
+
+        const userId = `1033${owner.workspaceId.replaceAll("-", "").slice(-12)}`;
+
+        const page = yield* freshChannel(owner.workspaceId, {
+          platform: "facebook",
+        });
+
+        const synthetic = syntheticCredentials(page);
+
+        yield* channels.insert(
+          page,
+          new ChannelCredentials({
+            accessToken: synthetic.accessToken,
+            grantedBy: userId,
+            refreshToken: synthetic.refreshToken,
+          })
+        );
+
+        const request = {
+          app: "facebook" as const,
+          code: owner.workspaceId.replaceAll("-", ""),
+          now,
+          signedRequest: `signed.${userId}`,
+          userId,
+        };
+
+        const first = yield* deletions.erase(request);
+        // Meta sends the same request again: nothing more is told.
+        yield* deletions.erase({ ...request, code: `${request.code}2` });
+
+        assert.strictEqual(first.channelsDeleted, 1);
+        assert.deepStrictEqual(yield* eventsSentTo(owner, endpoint.id), [
+          {
+            data: {
+              channelId: page.id,
+              platform: "facebook",
+              workspaceId: owner.workspaceId,
+            },
+            type: "channel.disconnected",
+          },
+        ]);
       })
   );
 });
