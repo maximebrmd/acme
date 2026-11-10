@@ -19,6 +19,9 @@ const faultOf = (file: string) => {
     : undefined;
 };
 
+const fileOf = (rows: number) =>
+  `text,channels,at\n${"a,b,now\n".repeat(rows)}`;
+
 describe(parseCsv, () => {
   it("reads quoted cells, doubled quotes and every line break", () => {
     expect(

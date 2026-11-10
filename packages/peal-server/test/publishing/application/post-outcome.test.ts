@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Duration, Effect, Fiber, Option } from "effect";
+import { DateTime, Duration, Effect, Fiber, Option } from "effect";
 import { TestClock } from "effect/testing";
 
 import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
@@ -9,7 +9,7 @@ import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher
 import { newId } from "#shared/application/ids.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { PostIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import type { ChannelId, PostId } from "#shared/domain/ids.ts";
+import type { ChannelId } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import {
   callsOn,
@@ -42,15 +42,22 @@ const now = (
   timeZone: TimeZoneIdSchema.make("Europe/Paris"),
 });
 
-const publishedOn = (channelId: ChannelId, postId: PostId) =>
-  targetsOf(postId).pipe(
-    Effect.map((all) =>
-      all.some(
-        (target) =>
-          target.channelId === channelId && target.status._tag === "published"
-      )
-    )
-  );
+// The answer a waiting request or use case comes to, with virtual time
+// moved a second at a time until it has one: it sleeps on the clock, and
+// may not have started when this does.
+const answerOf = <A, E>(waiting: Fiber.Fiber<A, E>) =>
+  Effect.gen(function* answering() {
+    for (let round = 0; round < 200; round += 1) {
+      if (waiting.pollUnsafe() !== undefined) {
+        break;
+      }
+
+      yield* TestClock.adjust(Duration.seconds(1));
+      yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+    }
+
+    return yield* Fiber.join(waiting);
+  });
 
 describe("PostOutcomes.await", () => {
   it.effect(
@@ -83,14 +90,19 @@ describe("PostOutcomes.await", () => {
             .pipe(Effect.forkChild);
 
           yield* eventually(
-            "the quick channel published",
-            publishedOn(quick, sent.post.id)
+            "the quick channel published, and the refusing one failed",
+            targetsOf(sent.post.id).pipe(
+              Effect.map(
+                (targets) =>
+                  targets.filter(({ status }) => status._tag !== "publishing")
+                    .length === 2 &&
+                  targets.every(({ status }) => status._tag !== "pending")
+              )
+            )
           );
 
           // The slow channel says nothing: the time runs out.
-          yield* TestClock.adjust(Duration.seconds(31));
-
-          const partial = yield* Fiber.join(waiting);
+          const partial = yield* answerOf(waiting);
 
           assert.isFalse(partial.settled);
           assert.strictEqual(partial.post.status._tag, "publishing");
@@ -113,9 +125,8 @@ describe("PostOutcomes.await", () => {
 
           yield* platform.release(slow);
           yield* eventually("the post finished", isFinished(sent.post.id));
-          yield* TestClock.adjust(Duration.seconds(1));
 
-          const whole = yield* Fiber.join(again);
+          const whole = yield* answerOf(again);
 
           assert.isTrue(whole.settled);
           assert.strictEqual(whole.post.status._tag, "finished");
@@ -201,9 +212,15 @@ describe("PostOutcomes.await", () => {
             .await(actor, hanging.post.id, Duration.hours(1))
             .pipe(Effect.forkChild);
 
-          yield* TestClock.adjust(Duration.seconds(61));
+          const before = yield* DateTime.now;
 
-          assert.isFalse((yield* Fiber.join(capped)).settled);
+          assert.isFalse((yield* answerOf(capped)).settled);
+
+          // A minute, give or take the second time moves by here.
+          assert.isAtMost(
+            Duration.toSeconds(DateTime.distance(before, yield* DateTime.now)),
+            62
+          );
 
           yield* platform.release(channel);
           yield* eventually("the post finished", isFinished(hanging.post.id));

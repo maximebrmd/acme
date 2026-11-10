@@ -26,7 +26,6 @@ import {
   isFinished,
   isSuspended,
   setTime,
-  settle,
   utc,
 } from "#test/publishing/infrastructure/harness.ts";
 import { connect, onPostsServerAt } from "#test/publishing/posts-server.ts";
@@ -426,6 +425,23 @@ describe("the outcome endpoints", () => {
   );
 });
 
+// The answer a waiting request or use case comes to, with virtual time
+// moved a second at a time until it has one: it sleeps on the clock, and
+// may not have started when this does.
+const answerOf = <A, E>(waiting: Fiber.Fiber<A, E>) =>
+  Effect.gen(function* answering() {
+    for (let round = 0; round < 200; round += 1) {
+      if (waiting.pollUnsafe() !== undefined) {
+        break;
+      }
+
+      yield* TestClock.adjust(Duration.seconds(1));
+      yield* TestClock.withLive(Effect.sleep(Duration.millis(10)));
+    }
+
+    return yield* Fiber.join(waiting);
+  });
+
 describe("waiting for a post's outcome", () => {
   it.effect(
     "answers the post once it went out, when send is asked to wait",
@@ -435,70 +451,49 @@ describe("waiting for a post's outcome", () => {
         Effect.gen(function* waits() {
           const workspaceId = yield* freshId;
           const editor = yield* clientAs(yield* freshId, workspaceId, "editor");
-          const quick = yield* connect(workspaceId, "mastodon");
           const slow = yield* connect(workspaceId, "mastodon");
           const params = { workspaceId };
 
-          const sending = yield* editor.posts
-            .send({
-              headers: {},
-              params,
-              payload: {
-                channelIds: [quick],
-                content: text("A synthetic post, awaited."),
-                when: { _tag: "now" },
-              },
-              query: { wait: 30 },
-              responseMode: "response-only",
-            })
-            .pipe(Effect.forkChild);
-
-          yield* eventually(
-            "the post went out",
-            callsOn(quick).pipe(Effect.map((calls) => calls.length === 1))
-          );
-          yield* settle();
-          yield* TestClock.adjust(Duration.seconds(1));
-
-          const response = yield* Fiber.join(sending);
-
-          // Made, and out: one answer says both.
-          assert.strictEqual(response.status, 201);
-
-          const sent = yield* Schema.decodeUnknownEffect(
-            Schema.toCodecJson(PostSchema)
-          )(yield* response.json);
-
-          assert.strictEqual(sent.status, "finished");
-          assert.strictEqual(sent.outcome, "published");
-          assert.strictEqual(sent.targets[0]?.status, "published");
-
-          // A channel that does not answer in time: the post as it stands.
           yield* FakePlatform.use((platform) =>
             platform.script(slow, [{ _tag: "hang" }])
           );
 
-          const hanging = yield* editor.posts
-            .send({
-              headers: {},
+          // The request, as a client sends it and, hearing nothing, sends
+          // it again under its key: the same post, awaited each time.
+          const request = (wait: number) =>
+            editor.posts.send({
+              headers: { "idempotency-key": "synthetic-awaited-key" },
               params,
               payload: {
                 channelIds: [slow],
                 content: text("A synthetic post that takes its time."),
                 when: { _tag: "now" },
               },
-              query: { wait: 5 },
-            })
-            .pipe(Effect.forkChild);
+              query: { wait },
+              responseMode: "response-only",
+            });
+
+          const decode = Schema.decodeUnknownEffect(
+            Schema.toCodecJson(PostSchema)
+          );
+
+          const made = yield* request(0);
+
+          assert.strictEqual(made.status, 201);
+
+          const sent = yield* decode(yield* made.json);
 
           yield* eventually(
             "the call is in flight",
             callsOn(slow).pipe(Effect.map((calls) => calls.length === 1))
           );
-          yield* TestClock.adjust(Duration.seconds(6));
 
-          const partial = yield* Fiber.join(hanging);
+          // The channel does not answer in time: the post as it stands.
+          const hanging = yield* request(5).pipe(Effect.forkChild);
 
+          const partial = yield* decode(yield* (yield* answerOf(hanging)).json);
+
+          assert.strictEqual(partial.id, sent.id);
           assert.strictEqual(partial.status, "publishing");
           assert.isNull(partial.outcome);
           assert.strictEqual(partial.targets[0]?.status, "publishing");
@@ -516,9 +511,19 @@ describe("waiting for a post's outcome", () => {
             "the post finished",
             isFinished(PostIdSchema.make(partial.id))
           );
-          yield* TestClock.adjust(Duration.seconds(1));
 
-          assert.strictEqual((yield* Fiber.join(rest)).outcome, "published");
+          assert.strictEqual((yield* answerOf(rest)).outcome, "published");
+
+          // Made, and out: one answer says both, at once now.
+          const done = yield* request(30);
+
+          assert.strictEqual(done.status, 201);
+
+          const finished = yield* decode(yield* done.json);
+
+          assert.strictEqual(finished.status, "finished");
+          assert.strictEqual(finished.outcome, "published");
+          assert.strictEqual(finished.targets[0]?.status, "published");
 
           // More than a minute is not a wait the contract takes.
           const tooLong = yield* editor.posts
@@ -532,13 +537,12 @@ describe("waiting for a post's outcome", () => {
 
           const viewer = yield* clientAs(yield* freshId, workspaceId, "viewer");
 
-          assert.strictEqual(
-            (yield* viewer.posts.outcome({
-              params: { ...params, postId: partial.id },
-              query: {},
-            })).status,
-            "finished"
-          );
+          const seen = yield* viewer.posts.outcome({
+            params: { ...params, postId: partial.id },
+            query: {},
+          });
+
+          assert.strictEqual(seen.status, "finished");
         })
       ),
     timeout
