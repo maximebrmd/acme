@@ -21,6 +21,7 @@ import type { PlatformHttp } from "#analytics/infrastructure/platforms/platform-
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { isJsonRefusal } from "#shared/infrastructure/platforms/json-refusal.ts";
 
 export interface XMetricsOptions {
   /** The API's origin: `https://api.x.com`. */
@@ -138,8 +139,12 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
 
     const response = sent.success;
 
+    // X's own refusal of the token; a 401 page from something on the way
+    // halts the read instead, and leaves the channel as it is.
     if (response.status === 401) {
-      return yield* new TokenRejected();
+      return (yield* isJsonRefusal(response))
+        ? yield* new TokenRejected()
+        : halt;
     }
 
     if ([402, 403, 429].includes(response.status)) {

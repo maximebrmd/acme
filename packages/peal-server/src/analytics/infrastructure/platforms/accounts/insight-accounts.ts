@@ -12,6 +12,7 @@ import type { PlatformHttp } from "#analytics/infrastructure/platforms/platform-
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { isJsonRefusal } from "#shared/infrastructure/platforms/json-refusal.ts";
 import { pinterestErrorCodeOf } from "#shared/infrastructure/platforms/pinterest-api.ts";
 
 import {
@@ -259,7 +260,9 @@ export const linkedinAccounts = Effect.fn("LinkedInAccounts.make")(
                 const { status } = answer.response;
 
                 if (status === 401) {
-                  return yield* new TokenRejected();
+                  return yield* (yield* isJsonRefusal(answer.response))
+                    ? new TokenRejected()
+                    : new PlatformUnavailable();
                 }
 
                 return yield* status === 403

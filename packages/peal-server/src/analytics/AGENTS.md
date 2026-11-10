@@ -99,6 +99,10 @@
   saves as reposts, reactions as likes and comments as replies, no quotes;
   a 404 is a missing Pin, a 429 halts, and only a 401 with Pinterest's own
   error refuses the token.
+- A 401 refuses a channel's token only with the platform's own JSON error
+  (`isJsonRefusal`, `#shared/infrastructure/platforms/json-refusal.ts`):
+  a page from something on the way halts the read, or is the platform
+  not answering, and never marks the channel to reconnect.
 - A halted read leaves the rest due for the next run; a missing post, one a
   read `failed` on (so one the server cannot show never stays first due),
   or a channel off or to reconnect, waits for its next turn; a disconnected

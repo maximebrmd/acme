@@ -9,6 +9,7 @@ import { ChannelAccess } from "#channels/application/channel-access.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { isJsonRefusal } from "#shared/infrastructure/platforms/json-refusal.ts";
 import {
   tiktokAnswer,
   tiktokErrorCodeOf,
@@ -79,7 +80,8 @@ export const youtubeAccounts = Effect.fn("YouTubeAccounts.make")(
           );
 
           if (answer._tag === "refused") {
-            return yield* answer.response.status === 401
+            return yield* answer.response.status === 401 &&
+            (yield* isJsonRefusal(answer.response))
               ? new TokenRejected()
               : new PlatformUnavailable();
           }
@@ -246,7 +248,8 @@ export const xAccounts = Effect.fn("XAccounts.make")(
               );
 
               if (answer._tag === "refused") {
-                return yield* answer.response.status === 401
+                return yield* answer.response.status === 401 &&
+                (yield* isJsonRefusal(answer.response))
                   ? new TokenRejected()
                   : new PlatformUnavailable();
               }

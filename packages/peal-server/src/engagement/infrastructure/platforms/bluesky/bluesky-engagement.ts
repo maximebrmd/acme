@@ -421,8 +421,13 @@ export const blueskyEngagement = Effect.fn("BlueskyEngagement.make")(
       function* refusalOn(response: HttpClientResponse.HttpClientResponse) {
         const { status } = response;
 
+        // The PDS's own refusal of the session, an XRPC error; a 401 or a
+        // 403 page from something on the way is a platform not answering,
+        // which never marks the channel to reconnect.
         if (status === 401 || status === 403) {
-          return yield* new TokenRejected();
+          return yield* Option.isSome(yield* errorNameOf(response))
+            ? new TokenRejected()
+            : Effect.succeed("platformUnavailable" as const);
         }
 
         if (status === 429) {

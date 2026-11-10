@@ -25,6 +25,7 @@ import {
   empty,
   json,
   jsonBodyOf,
+  rawJson,
   platformServer,
 } from "#test/publishing/fakes/platform-server.ts";
 import type {
@@ -560,6 +561,46 @@ describe("Bluesky's comments", () => {
         // No rule: anyone may still reply.
         assert.notProperty(write?.record, "allow");
         assert.isUndefined(write?.swapRecord);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "takes a 401 or 403 for a refused session only when the PDS says so",
+    () =>
+      Effect.gen(function* refusals() {
+        const target = {
+          action: "like" as const,
+          platformCommentId: first,
+          receivedAt: DateTime.makeUnsafe("2026-11-10T09:10:00.000Z"),
+          rootPlatformPostId: root,
+        };
+
+        const likedOn = (answer: PlatformAnswer) =>
+          onNetwork((request) =>
+            request.method === "GET" ? cids : answer
+          ).pipe(
+            Effect.flatMap(({ account, platform }) =>
+              platform.moderate(account, target)
+            )
+          );
+
+        // Something on the way refused: the channel is left as it is.
+        assert.deepStrictEqual(yield* likedOn(empty(401)), {
+          _tag: "failed",
+          reason: "platformUnavailable",
+        });
+        assert.deepStrictEqual(
+          yield* likedOn(rawJson("<html>Forbidden</html>", 403)),
+          { _tag: "failed", reason: "platformUnavailable" }
+        );
+
+        // The PDS refused the session itself: renewed, then reconnect.
+        assert.deepStrictEqual(
+          yield* likedOn(
+            json({ error: "InvalidToken", message: "Bad token" }, 401)
+          ),
+          { _tag: "failed", reason: "reconnectNeeded" }
+        );
       }).pipe(Effect.scoped)
   );
 

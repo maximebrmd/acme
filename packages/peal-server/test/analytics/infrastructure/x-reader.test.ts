@@ -18,6 +18,7 @@ import { readersWith } from "#test/analytics/support.ts";
 import {
   headerOf,
   json,
+  rawJson,
   platformServer,
 } from "#test/publishing/fakes/platform-server.ts";
 import type { PlatformAnswer } from "#test/publishing/fakes/platform-server.ts";
@@ -395,6 +396,27 @@ describe("reading counts on X", () => {
             ],
           }
         );
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "halts rather than refuse the token on a 401 that is not X's own",
+    () =>
+      Effect.gen(function* proxied() {
+        const server = yield* fakePosts(new Map([[idOf(0), 5]]));
+
+        server.script([rawJson("<html>Unauthorized</html>", 401)]);
+
+        const { batch, handed } = yield* reading(server.url, [
+          toRead(idOf(0), 0),
+        ]);
+
+        assert.deepStrictEqual(
+          batch._tag === "Success" ? batch.success : undefined,
+          { halted: true, readings: [] }
+        );
+        // The token was not renewed: nothing took it for refused.
+        assert.deepStrictEqual(handed, ["x-access-synthetic-1"]);
       }).pipe(Effect.scoped)
   );
 
