@@ -189,7 +189,17 @@ layer(StoreTest, { excludeTestServices: true })("the accounts' store", (it) => {
             ]
           );
 
-          yield* channels.forget([channelId]);
+          yield* channels.forget([channelId], utc("2042-02-03T10:37:00Z"));
+
+          // Gone: no longer due, whenever.
+          const afterwards = yield* channels.due(
+            utc("2042-03-01T10:37:00Z"),
+            5000
+          );
+
+          assert.isFalse(
+            afterwards.some((channel) => channel.channelId === channelId)
+          );
 
           assert.deepStrictEqual(yield* daysOf(channelId), []);
         }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));

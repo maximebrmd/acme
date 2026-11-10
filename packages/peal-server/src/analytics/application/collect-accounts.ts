@@ -263,7 +263,7 @@ export class CollectAccounts extends Context.Service<
 
           yield* tracked.saveReadings(reads);
           yield* tracked.saveSchedules(waiting.map(({ channel }) => channel));
-          yield* tracked.forget(ended);
+          yield* tracked.forget(ended, at);
 
           total = {
             deferred:

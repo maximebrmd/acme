@@ -4,10 +4,12 @@ import { AnalyticsQueries } from "#analytics/application/analytics-queries.ts";
 import { CollectAccounts } from "#analytics/application/collect-accounts.ts";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import type { MetricsReader } from "#analytics/application/metrics-reader.ts";
+import { PurgeAnalytics } from "#analytics/application/purge-analytics.ts";
 import { AccountPaceLive } from "#analytics/infrastructure/account-pace.ts";
 import { ChannelsConnectedChannels } from "#analytics/infrastructure/channels-connected-channels.ts";
 import { CollectionPaceLive } from "#analytics/infrastructure/collection-pace.ts";
 import {
+  AnalyticsRetentionCron,
   CollectAccountsCron,
   CollectMetricsCron,
 } from "#analytics/infrastructure/crons.ts";
@@ -16,18 +18,21 @@ import { DrizzleTrackedPosts } from "#analytics/infrastructure/drizzle-tracked-p
 import { PlatformMetricsReaderLive as PlatformReaders } from "#analytics/infrastructure/platforms/platform-metrics-reader.ts";
 import { PublishingPublishedPosts } from "#analytics/infrastructure/publishing-published-posts.ts";
 import { SqlAnalyticsReports } from "#analytics/infrastructure/sql-analytics-reports.ts";
+import { SqlExpiredAnalytics } from "#analytics/infrastructure/sql-expired-analytics.ts";
 import { SqlPaidReads } from "#analytics/infrastructure/sql-paid-reads.ts";
 import { SqlTrackedChannels } from "#analytics/infrastructure/sql-tracked-channels.ts";
 
 /**
- * Reading a workspace's analytics (AnalyticsQueries), for the handlers, and
+ * Reading a workspace's analytics (AnalyticsQueries), for the handlers,
  * its records as a whole (AnalyticsRecords), for the workspace context's
- * exports and erasures, from Postgres. The composition root provides
+ * exports and erasures, and the retention job (PurgeAnalytics), from
+ * Postgres. The composition root provides
  * `Drizzle` and `SqlClient`.
  */
-export const AnalyticsLive = Layer.merge(
+export const AnalyticsLive = Layer.mergeAll(
   AnalyticsQueries.layer.pipe(Layer.provide(SqlAnalyticsReports)),
-  DrizzleAnalyticsRecords
+  DrizzleAnalyticsRecords,
+  PurgeAnalytics.layer.pipe(Layer.provide(SqlExpiredAnalytics))
 );
 
 /**
@@ -63,12 +68,14 @@ export const analyticsCollection = <E, R>(
 export { AnalyticsHandlers as AnalyticsApiLive } from "#analytics/api/analytics.ts";
 
 /**
- * The hourly collections of posts' counts and of accounts' numbers. Need
- * CollectMetrics and CollectAccounts.
+ * The hourly collections of posts' counts and of accounts' numbers, and
+ * the daily retention job. Need CollectMetrics, CollectAccounts and
+ * PurgeAnalytics.
  */
-export const AnalyticsCronsLive = Layer.merge(
+export const AnalyticsCronsLive = Layer.mergeAll(
   CollectMetricsCron,
-  CollectAccountsCron
+  CollectAccountsCron,
+  AnalyticsRetentionCron
 );
 
 /**

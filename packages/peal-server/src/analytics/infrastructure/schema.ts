@@ -133,19 +133,24 @@ export const paidReads = analytics.table(
 /**
  * A connected channel whose account analytics reads once a day: when next
  * (`next_collection_at`), and when it was read last. The platform is kept
- * with it, as how long a platform's numbers may be kept depends on it.
+ * with it, as how long a platform's numbers may be kept depends on it. A
+ * channel that left its workspace is no longer read (`gone_at`) and keeps
+ * no day: the row stays until the retention job deletes its posts.
  */
 export const trackedChannels = analytics.table(
   "tracked_channels",
   {
     channelId: uuid("channel_id").primaryKey(),
+    goneAt: instant("gone_at"),
     lastCollectedAt: instant("last_collected_at"),
     nextCollectionAt: instant("next_collection_at").notNull(),
     platform: text("platform").notNull(),
     workspaceId: uuid("workspace_id").notNull(),
   },
   (table) => [
-    index("tracked_channels_due").on(table.nextCollectionAt, table.channelId),
+    index("tracked_channels_due")
+      .on(table.nextCollectionAt, table.channelId)
+      .where(sql`${table.goneAt} IS NULL`),
     index("tracked_channels_workspace").on(table.workspaceId),
   ]
 );

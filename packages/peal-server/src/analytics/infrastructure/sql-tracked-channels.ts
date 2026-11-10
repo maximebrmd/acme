@@ -173,6 +173,7 @@ export const SqlTrackedChannels = Layer.effect(
                last_collected_at AS "lastCollectedAt"
         FROM analytics.tracked_channels
         WHERE next_collection_at <= ${iso(at)}::timestamptz
+          AND gone_at IS NULL
         ORDER BY next_collection_at, channel_id
         LIMIT ${limit}
       `.pipe(Effect.mapError(failed));
@@ -188,6 +189,7 @@ export const SqlTrackedChannels = Layer.effect(
       const rows = yield* sql`
         SELECT count(*)::int AS count FROM analytics.tracked_channels
         WHERE next_collection_at <= ${iso(at)}::timestamptz
+          AND gone_at IS NULL
       `.pipe(Effect.mapError(failed));
 
       const [row] = yield* decodeCount(rows).pipe(Effect.orDie);
@@ -232,6 +234,7 @@ export const SqlTrackedChannels = Layer.effect(
             FROM jsonb_to_recordset(${channels}::jsonb)
               AS read(${sql.unsafe(channelColumns)})
             WHERE channel.channel_id = read.channel_id
+              AND channel.gone_at IS NULL
             RETURNING channel.channel_id
           )
           INSERT INTO analytics.account_snapshots AS snapshot
@@ -261,15 +264,23 @@ export const SqlTrackedChannels = Layer.effect(
     );
 
     const forget = Effect.fn("TrackedChannels.forget")(function* forget(
-      channelIds: readonly ChannelId[]
+      channelIds: readonly ChannelId[],
+      at: DateTime.Utc
     ) {
       if (channelIds.length === 0) {
         return;
       }
 
+      // One statement: the channels are marked gone, and their days go.
       yield* sql`
-        DELETE FROM analytics.tracked_channels
-        WHERE channel_id = ANY(string_to_array(${channelIds.join(",")}, ',')::uuid[])
+        WITH gone AS (
+          UPDATE analytics.tracked_channels
+          SET gone_at = ${iso(at)}::timestamptz
+          WHERE channel_id = ANY(string_to_array(${channelIds.join(",")}, ',')::uuid[])
+          RETURNING channel_id
+        )
+        DELETE FROM analytics.account_snapshots AS snapshot
+        USING gone WHERE snapshot.channel_id = gone.channel_id
       `.pipe(Effect.mapError(failed));
     });
 

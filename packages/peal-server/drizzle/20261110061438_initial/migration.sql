@@ -65,6 +65,7 @@ CREATE TABLE "analytics"."paid_reads" (
 --> statement-breakpoint
 CREATE TABLE "analytics"."tracked_channels" (
 	"channel_id" uuid PRIMARY KEY,
+	"gone_at" timestamp with time zone,
 	"last_collected_at" timestamp with time zone,
 	"next_collection_at" timestamp with time zone NOT NULL,
 	"platform" text NOT NULL,
@@ -862,7 +863,7 @@ CREATE TABLE "auth"."verification" (
 );
 --> statement-breakpoint
 CREATE INDEX "paid_reads_day" ON "analytics"."paid_reads" ("day");--> statement-breakpoint
-CREATE INDEX "tracked_channels_due" ON "analytics"."tracked_channels" ("next_collection_at","channel_id");--> statement-breakpoint
+CREATE INDEX "tracked_channels_due" ON "analytics"."tracked_channels" ("next_collection_at","channel_id") WHERE "gone_at" IS NULL;--> statement-breakpoint
 CREATE INDEX "tracked_channels_workspace" ON "analytics"."tracked_channels" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collection_at","channel_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "tracked_posts_channel_due" ON "analytics"."tracked_posts" ("channel_id","next_collection_at","target_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint

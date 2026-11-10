@@ -54,9 +54,14 @@ export class TrackedChannels extends Context.Service<
     readonly saveSchedules: (
       channels: readonly TrackedChannel[]
     ) => Effect.Effect<void, DatabaseError>;
-    /** Stops following these channels, and deletes what was read of them. */
+    /**
+     * Stops reading these channels, which left their workspace at `at`,
+     * and deletes their days. Their posts stay until the retention job
+     * deletes them.
+     */
     readonly forget: (
-      channelIds: readonly ChannelId[]
+      channelIds: readonly ChannelId[],
+      at: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
   }
 >()("peal-server/analytics/application/TrackedChannels") {}

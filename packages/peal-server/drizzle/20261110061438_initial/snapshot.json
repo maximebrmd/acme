@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "4df39fd4-cf6f-4081-9689-6a448ee7fbbd",
+  "id": "68565c1e-1974-4987-ac92-766b01239bb9",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -4585,6 +4585,19 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_channels",
+      "name": "gone_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -12421,7 +12434,7 @@
         }
       ],
       "isUnique": false,
-      "where": null,
+      "where": "\"gone_at\" IS NULL",
       "with": "",
       "method": "btree",
       "concurrently": false,

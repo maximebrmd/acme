@@ -103,7 +103,7 @@ export const MemoryTrackedChannels = Layer.effectContext(
 
           return added;
         }),
-      forget: (channelIds) =>
+      forget: (channelIds, _at) =>
         Effect.sync(() => {
           for (const channelId of channelIds) {
             tracked.delete(channelId);

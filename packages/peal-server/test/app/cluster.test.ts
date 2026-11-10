@@ -16,6 +16,7 @@ import { SqlClient } from "effect/sql";
 
 import { CollectAccounts } from "#analytics/application/collect-accounts.ts";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
+import { PurgeAnalytics } from "#analytics/application/purge-analytics.ts";
 import { clusterLayer } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
 import { PurgeContractRecords } from "#billing/application/purge-contract-records.ts";
@@ -123,6 +124,12 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     PurgeDeliveries,
     PurgeDeliveries.of({ purge: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    PurgeAnalytics,
+    PurgeAnalytics.of({
+      purge: () => Effect.succeed({ accountDays: 0, paidReads: 0, posts: 0 }),
+    })
   ),
   Layer.succeed(
     CollectAccounts,
