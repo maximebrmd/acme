@@ -9,6 +9,7 @@ import { UserIdSchema, WorkspaceIdSchema } from "./ids.ts";
  */
 export const statements = {
   activity: ["read"],
+  ads: ["read", "manage", "spend", "authorize"],
   analytics: ["read"],
   apiKey: ["create", "read", "update", "delete"],
   assistant: ["use"],
@@ -43,6 +44,10 @@ export type Grant = {
 /** One action on one resource, written `resource:action`. */
 export const PermissionSchema = Schema.Literals([
   "activity:read",
+  "ads:read",
+  "ads:manage",
+  "ads:spend",
+  "ads:authorize",
   "analytics:read",
   "apiKey:create",
   "apiKey:read",

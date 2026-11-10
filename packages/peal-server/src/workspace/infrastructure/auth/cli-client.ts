@@ -13,12 +13,14 @@ import { apiResourceOf, cliClientId } from "./oauth.ts";
 import { AuthSettings } from "./settings.ts";
 
 // What the command line may ask for: to renew its sign-in, and every
-// workspace scope, publishing included, which the user agrees to or not.
+// workspace scope, publishing and ads included, which the user agrees to
+// or not.
 const cliScopes = [
   "offline_access",
   "workspace:read",
   "workspace:write",
   "workspace:publish",
+  "workspace:ads",
 ];
 
 /**

@@ -7,6 +7,10 @@ import { Schema } from "effect";
  */
 export const PermissionSchema = Schema.Literals([
   "activity:read",
+  "ads:read",
+  "ads:manage",
+  "ads:spend",
+  "ads:authorize",
   "analytics:read",
   "apiKey:create",
   "apiKey:read",

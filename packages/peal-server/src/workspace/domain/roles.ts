@@ -10,14 +10,16 @@ import type { Grant, Permission } from "#shared/domain/access.ts";
 /**
  * A member's role in a workspace, from most to least trusted:
  *
- * - `owner`: everything, including deleting the workspace and reading its
- *   activity log (who changed what, through which application). Whoever
- *   creates a workspace owns it.
- * - `admin`: everything but deleting the workspace and reading its activity
- *   log. Owners and admins alone manage members, API keys, billing and
- *   webhooks.
+ * - `owner`: everything, including deleting the workspace, reading its
+ *   activity log (who changed what, through which application), and
+ *   turning ad spending on with its monthly ceiling. Whoever creates a
+ *   workspace owns it.
+ * - `admin`: everything but deleting the workspace, reading its activity
+ *   log and deciding what ads may spend. Owners and admins alone manage
+ *   members, API keys, billing, webhooks and ad accounts, and spend on ads
+ *   within the ceiling an owner set.
  * - `editor`: writes, schedules, approves and publishes posts, manages media,
- *   asks the writing assistant, and reads channels and analytics.
+ *   asks the writing assistant, and reads channels, analytics and ads.
  * - `contributor`: drafts posts, uploads media and asks the writing
  *   assistant, but publishes nothing.
  * - `viewer`: reads posts, media, channels and analytics.
@@ -32,12 +34,17 @@ export const RoleSchema = Schema.Literals([
 
 export type Role = typeof RoleSchema.Type;
 
-// What owners alone hold: the workspace itself, and the log of what its
-// members, keys and applications changed, which answers to them.
-const { activity, organization, ...shared } = statements;
+// What owners alone hold: the workspace itself, the log of what its
+// members, keys and applications changed, which answers to them, and the
+// decision that ads may spend, and how much.
+const { activity, ads, organization, ...shared } = statements;
 
 export const roleGrants: Readonly<Record<Role, Grant>> = {
-  admin: { ...shared, organization: ["update"] },
+  admin: {
+    ...shared,
+    ads: ["read", "manage", "spend"],
+    organization: ["update"],
+  },
   contributor: {
     analytics: ["read"],
     assistant: ["use"],
@@ -46,13 +53,14 @@ export const roleGrants: Readonly<Record<Role, Grant>> = {
     post: ["read", "create", "update"],
   },
   editor: {
+    ads: ["read"],
     analytics: ["read"],
     assistant: ["use"],
     channel: ["read"],
     media: ["read", "upload", "delete"],
     post: statements.post,
   },
-  owner: { ...shared, activity, organization },
+  owner: { ...shared, activity, ads, organization },
   viewer: {
     analytics: ["read"],
     channel: ["read"],

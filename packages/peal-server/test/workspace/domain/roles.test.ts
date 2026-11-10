@@ -8,11 +8,13 @@ describe(permissionsFor, () => {
     expect(permissionsFor("owner")).toStrictEqual(PermissionSchema.literals);
   });
 
-  it("gives an admin everything but deleting the workspace and reading its activity log", () => {
+  it("gives an admin everything but deleting the workspace, reading its activity log and deciding what ads may spend", () => {
     expect(permissionsFor("admin")).toStrictEqual(
       PermissionSchema.literals.filter(
         (permission) =>
-          permission !== "organization:delete" && permission !== "activity:read"
+          permission !== "organization:delete" &&
+          permission !== "activity:read" &&
+          permission !== "ads:authorize"
       )
     );
   });

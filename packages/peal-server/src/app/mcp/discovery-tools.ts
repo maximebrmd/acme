@@ -42,6 +42,7 @@ export const FoundToolSchema = Schema.Struct({
     "workspace:read",
     "workspace:write",
     "workspace:publish",
+    "workspace:ads",
   ]),
   // Whether this connection holds that scope: null for an API key, which
   // carries permissions, not scopes (whoami lists them).
