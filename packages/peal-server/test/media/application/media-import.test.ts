@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import type { ServerResponse } from "node:http";
 
 import { assert, layer } from "@effect/vitest";
-import { Effect, Fiber, Layer, Option, Schema } from "effect";
+import { Deferred, Effect, Fiber, Layer, Option, Schema } from "effect";
 import { FetchHttpClient } from "effect/http";
 import { TestClock } from "effect/testing";
 import sharp from "sharp";
@@ -210,6 +210,67 @@ layer(importing(UnmeteredTest), { timeout: "120 seconds" })(
           storage.remove(imported.asset.storageKey)
         );
       })
+    );
+
+    it.effect(
+      "runs two imports a workspace at once, and refuses a third until one ends",
+      () =>
+        Effect.gen(function* busy() {
+          const workspaceId = yield* freshWorkspace;
+          const elsewhere = yield* freshWorkspace;
+          const png = yield* whitePng;
+          const waiting: ServerResponse[] = [];
+          const both = yield* Deferred.make<true>();
+
+          // A host that takes its time: it answers when the test says.
+          const host = yield* hostServing({
+            "/picture": whole(png, "image/png"),
+            "/slow": (response) => {
+              waiting.push(response);
+
+              if (waiting.length === 2) {
+                Effect.runFork(Deferred.succeed(both, true));
+              }
+            },
+          });
+
+          // In this fiber, so the imports outlive the loop that starts them.
+          const slow = yield* Effect.forEach([1, 2], () =>
+            importFrom(workspaceId, `${host.url}/slow`).pipe(
+              Effect.result,
+              Effect.forkChild
+            )
+          );
+
+          yield* Deferred.await(both);
+
+          const third = yield* importFrom(
+            workspaceId,
+            `${host.url}/picture`
+          ).pipe(Effect.flip);
+
+          assert.strictEqual(third._tag, "MediaImportBusy");
+
+          // Another workspace is not held back by this one.
+          const theirs = yield* importFrom(elsewhere, `${host.url}/picture`);
+
+          for (const response of waiting) {
+            response.writeHead(404).end();
+          }
+
+          yield* Effect.forEach(slow, Fiber.join, { discard: true });
+
+          // Its imports over, the workspace imports again.
+          const after = yield* importFrom(workspaceId, `${host.url}/picture`);
+
+          yield* MediaStorage.use((storage) =>
+            Effect.forEach(
+              [theirs, after],
+              ({ asset }) => storage.remove(asset.storageKey),
+              { discard: true }
+            )
+          );
+        })
     );
 
     it.effect("stores a file of unknown size in parts, as it arrives", () =>

@@ -15,6 +15,7 @@ import type {
   InvitationNotFound,
   MediaNotFound,
   MediaSourceFailure,
+  MediaImportBusy,
   MediaSourceNotPublic,
   MediaSourceUnreachable,
   MediaStoreUnavailable,
@@ -66,6 +67,7 @@ export type ApiFailure =
   | InvalidTimeZone
   | InvitationNotFound
   | MediaNotFound
+  | MediaImportBusy
   | MediaSourceNotPublic
   | MediaSourceUnreachable
   | MediaStoreUnavailable
@@ -256,6 +258,10 @@ export const explain =
       InvitationNotFound: () =>
         refused(
           "The workspace has no pending invitation with that id: it was accepted, declined or revoked."
+        ),
+      MediaImportBusy: () =>
+        refused(
+          "The workspace already imports two files at once, or the server as many as it runs together: nothing was fetched. Try again in a moment."
         ),
       MediaNotFound: () => refused("The workspace has no such media."),
       MediaSourceNotPublic: () =>

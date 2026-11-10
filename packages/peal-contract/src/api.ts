@@ -492,6 +492,8 @@ export type {
 
 export { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 
+export { MediaImportBusy } from "./media-import-busy.ts";
+
 export { MediaSourceNotPublic } from "./media-source-not-public.ts";
 
 export {

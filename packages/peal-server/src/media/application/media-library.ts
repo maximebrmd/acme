@@ -2,11 +2,13 @@ import { Context, Effect, Layer } from "effect";
 import type { Option } from "effect";
 
 import type { MediaAssetNotFound } from "#media/application/media-asset-not-found.ts";
+import type { MediaImportBusy } from "#media/application/media-import-busy.ts";
 import type { MediaInUse } from "#media/application/media-in-use.ts";
 import type { MediaProbeFailed } from "#media/application/media-probe-failed.ts";
 import type { MediaSourceNotPublic } from "#media/application/media-source-not-public.ts";
 import type { MediaSourceUnreachable } from "#media/application/media-source-unreachable.ts";
 import type { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
+import type { ImportSlots } from "#media/application/ports/import-slots.ts";
 import type { MediaAssets } from "#media/application/ports/media-assets.ts";
 import { getAsset } from "#media/application/ports/media-assets.ts";
 import type { MediaProbe } from "#media/application/ports/media-probe.ts";
@@ -53,6 +55,7 @@ import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 type MediaPorts =
   | Ids
+  | ImportSlots
   | MediaAssets
   | MediaProbe
   | MediaStorage
@@ -125,6 +128,7 @@ export class MediaLibrary extends Context.Service<
     ) => Effect.Effect<
       MediaItem,
       | AltTextTooLong
+      | MediaImportBusy
       | MediaSourceNotPublic
       | MediaSourceUnreachable
       | MediaStorageFailed

@@ -27,6 +27,7 @@ A file that is already online can come into the library without passing through 
 - The address must be an `https://` URL on the default port, without a user name or password, whose host is public: not `localhost`, nor a private network. The server sends no credentials or cookies, and follows at most three redirects, each checked the same way.
 - The file's type is read from the file itself, whatever its name or what its host says: the formats and sizes above. A link to a page that shows a picture is not the picture.
 - The file must arrive within 90 seconds. Upload larger or slower files instead.
+- A workspace imports two files at once, and a server eight: one more is refused (`MediaImportBusy`, 429) until one has finished. Ask again a moment later.
 - Each import adds a new file, read as an upload is. On an instance that bills, it must fit the plan's media storage.
 
 ## Attach media to a post [#attach]

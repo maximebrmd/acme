@@ -27,6 +27,7 @@ Un fichier déjà en ligne peut rejoindre la médiathèque sans passer par votre
 - L’adresse doit être une URL `https://` sur le port par défaut, sans nom d’utilisateur ni mot de passe, dont l’hôte est public : ni `localhost`, ni un réseau privé. Le serveur n’envoie ni identifiants ni cookies, et suit trois redirections au plus, chacune vérifiée de la même façon.
 - Le type du fichier est lu dans le fichier lui-même, quels que soient son nom ou ce qu’en dit son hôte : les formats et tailles ci-dessus. Un lien vers une page qui montre une image n’est pas l’image.
 - Le fichier doit arriver en 90 secondes au plus. Les fichiers plus lourds ou plus lents s’importent depuis votre ordinateur.
+- Un espace de travail importe deux fichiers à la fois, et un serveur huit : un de plus est refusé (`MediaImportBusy`, 429) tant qu’aucun n’est terminé. Redemandez-le un instant plus tard.
 - Chaque récupération ajoute un nouveau fichier, lu comme l’est un fichier importé. Sur une instance qui facture, il doit tenir dans le stockage de médias de l’abonnement.
 
 ## Ajouter des médias à une publication [#attach]

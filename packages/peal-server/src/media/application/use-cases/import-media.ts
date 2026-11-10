@@ -1,6 +1,8 @@
 import { DateTime, Effect, Option, Ref, Stream } from "effect";
 
+import { MediaImportBusy } from "#media/application/media-import-busy.ts";
 import { MediaSourceUnreachable } from "#media/application/media-source-unreachable.ts";
+import { ImportSlots } from "#media/application/ports/import-slots.ts";
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import { RemoteMedia } from "#media/application/ports/remote-media.ts";
@@ -105,6 +107,12 @@ export const importMedia = Effect.fn("Media.importMedia")(
       altTextOf(Option.getOrElse(altText, () => ""))
     );
 
+    // One of the imports the workspace and the server run at once, for
+    // as long as this one lasts.
+    if (!(yield* ImportSlots.use((slots) => slots.take(workspaceId)))) {
+      return yield* new MediaImportBusy();
+    }
+
     const policy = yield* CurrentUploadPolicy;
     const storage = yield* MediaStorage;
     const assets = yield* MediaAssets;
@@ -188,5 +196,7 @@ export const importMedia = Effect.fn("Media.importMedia")(
       );
 
     return yield* finishUpload({ assetId: id, workspaceId });
-  }
+  },
+  // The import's slot goes back when it ends, however it ends.
+  Effect.scoped
 );

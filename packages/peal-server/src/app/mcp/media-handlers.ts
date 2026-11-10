@@ -59,6 +59,10 @@ export const MediaToolsLive = MediaTools.toLayer(
                   refuse(
                     `The altText is longer than the ${String(maxLength)} characters a description may have: shorten it.`
                   ),
+                MediaImportBusy: () =>
+                  refuse(
+                    "The workspace already imports two files at once, or the server as many as it runs together: nothing was fetched. Call again in a moment, once one has finished."
+                  ),
                 MediaSourceNotPublic: () =>
                   refuse(
                     "Peal does not fetch this address: it must be an https:// URL on the default port, without a user name or password, whose host is public (not localhost or a private network), and so must every redirect it answers. Ask the user for a public link to the file, or to upload it themselves."

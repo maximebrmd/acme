@@ -5,6 +5,7 @@ import { MediaForPlatforms } from "#media/application/media-for-platforms.ts";
 import { MediaLibrary } from "#media/application/media-library.ts";
 import { MediaStorageUsage } from "#media/application/media-storage-usage.ts";
 import type { RemoteMedia } from "#media/application/ports/remote-media.ts";
+import { CountedImportSlots } from "#media/infrastructure/counted-import-slots.ts";
 import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
 import { DrizzleMediaRecords } from "#media/infrastructure/drizzle-media-records.ts";
 import { HttpRemoteMedia } from "#media/infrastructure/http-remote-media.ts";
@@ -52,6 +53,7 @@ export const mediaWith = <E, R>(remote: Layer.Layer<RemoteMedia, E, R>) =>
         S3MediaStorageLive,
         PublishingMediaUsage,
         PlanStorageAllowanceLive,
+        CountedImportSlots,
         remote
       )
     )

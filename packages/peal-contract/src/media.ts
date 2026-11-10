@@ -10,6 +10,7 @@ import {
 import { AltTextTooLong } from "./alt-text-too-long.ts";
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
+import { MediaImportBusy } from "./media-import-busy.ts";
 import { MediaInUse } from "./media-in-use.ts";
 import { MediaNotFound } from "./media-not-found.ts";
 import { MediaSourceNotPublic } from "./media-source-not-public.ts";
@@ -239,13 +240,14 @@ export class MediaApi extends HttpApiGroup.make("media")
         MediaSourceNotPublic,
         MediaSourceUnreachable,
         UploadRejected,
+        MediaImportBusy,
       ],
       params: workspace,
       payload: MediaImportSchema,
       success: MediaSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within ${mediaImportSeconds} seconds (MediaSourceUnreachable \`tooSlow\`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached \`mediaStorage\`). Needs media:upload.`,
+        description: `Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within ${mediaImportSeconds} seconds (MediaSourceUnreachable \`tooSlow\`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached \`mediaStorage\`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.`,
         summary: "Import media from a URL",
       })
     ),

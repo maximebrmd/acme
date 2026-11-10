@@ -6,6 +6,7 @@ import {
   CurrentMember,
   defaultMediaPageSize,
   Forbidden,
+  MediaImportBusy,
   MediaInUse,
   MediaNotFound,
   MediaSourceNotPublic,
@@ -180,6 +181,7 @@ export const MediaHandlers = HttpApiBuilder.group(
               Effect.catchTags({
                 AltTextTooLong: ({ maxLength }) =>
                   Effect.fail(new AltTextTooLong({ maxLength })),
+                MediaImportBusy: () => Effect.fail(new MediaImportBusy()),
                 MediaSourceNotPublic: () =>
                   Effect.fail(new MediaSourceNotPublic()),
                 MediaSourceUnreachable: ({ reason, status }) =>
