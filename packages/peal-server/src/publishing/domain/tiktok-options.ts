@@ -1,5 +1,8 @@
 import { Schema } from "effect";
 
+import type { FieldNotes } from "./field-description.ts";
+import type { LookupName } from "./lookup.ts";
+import type { OptionConstraint } from "./option-constraint.ts";
 import { invalid, missing } from "./option-problem.ts";
 import type { OptionProblem } from "./option-problem.ts";
 
@@ -23,6 +26,9 @@ export const TikTokPrivacyLevelSchema = Schema.Literals([
 
 export type TikTokPrivacyLevel = typeof TikTokPrivacyLevelSchema.Type;
 
+// The audience that is the creator alone.
+const soloAudience: TikTokPrivacyLevel = "SELF_ONLY";
+
 // What TikTok would refuse in a target's options.
 const tikTokProblems = (
   options: TikTokOptions
@@ -35,7 +41,7 @@ const tikTokProblems = (
     ? [invalid("commercialContent")]
     : []),
   // TikTok shows a paid partnership to others, never to the creator alone.
-  ...(options.brandContent === true && options.privacyLevel === "SELF_ONLY"
+  ...(options.brandContent === true && options.privacyLevel === soloAudience
     ? [invalid("brandContent")]
     : []),
 ];
@@ -66,6 +72,37 @@ export class TikTokOptions extends Schema.Class<TikTokOptions>(
   platform: Schema.tag("tiktok"),
   privacyLevel: Schema.optionalKey(TikTokPrivacyLevelSchema),
 }) {
+  /**
+   * What the fields' schemas do not say, for the description clients read
+   * (`optionFieldsOn`): every field has an entry.
+   */
+  static readonly notes: Readonly<Record<TikTokField, FieldNotes<LookupName>>> =
+    {
+      aiGenerated: { ifLeftOut: false },
+      brandContent: { ifLeftOut: false },
+      brandOrganic: { ifLeftOut: false },
+      commercialContent: { ifLeftOut: false },
+      disableComment: { ifLeftOut: true },
+      disableDuet: { ifLeftOut: true },
+      disableStitch: { ifLeftOut: true },
+      privacyLevel: { lookup: "tiktokCreator" },
+    };
+
+  /** The rules between options that `problems` applies. */
+  static readonly constraints: readonly OptionConstraint<TikTokField>[] = [
+    {
+      _tag: "needsOneOf",
+      field: "commercialContent",
+      oneOf: ["brandOrganic", "brandContent"],
+    },
+    {
+      _tag: "notWith",
+      field: "brandContent",
+      other: "privacyLevel",
+      value: soloAudience,
+    },
+  ];
+
   /** What TikTok would refuse in them. */
   problems(): readonly OptionProblem<TikTokField>[] {
     return tikTokProblems(this);

@@ -3,6 +3,13 @@ import { Option, Schema } from "effect";
 import { platforms } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
+import { describeFields } from "./field-description.ts";
+import type {
+  FieldDescription,
+  UndescribedField,
+} from "./field-description.ts";
+import type { LookupName } from "./lookup.ts";
+import type { OptionConstraint } from "./option-constraint.ts";
 import type { OptionProblem } from "./option-problem.ts";
 import { TikTokOptions } from "./tiktok-options.ts";
 import { YouTubeOptions } from "./youtube-options.ts";
@@ -60,3 +67,35 @@ export const optionProblemsOn = (
       onSome: (chosen) => chosen.problems(),
     })
   );
+
+const classOn = (platform: Platform) =>
+  TargetOptionsSchema.members.find((member) =>
+    Option.isSome(Schema.decodeUnknownOption(member)({ platform }))
+  );
+
+/**
+ * The platform's options, field by field, as clients are told of them:
+ * each field's type and values from the class's schema, what scheduling
+ * needs from what `problems` misses in options with nothing chosen, and
+ * the rest from the class's `notes`. Empty for a platform without options.
+ */
+export const describeOptionsOn = (
+  platform: Platform
+): readonly (FieldDescription<LookupName> | UndescribedField)[] => {
+  const options = classOn(platform);
+
+  return options === undefined
+    ? []
+    : describeFields(options.fields, {
+        notes: options.notes,
+        required: optionProblemsOn(platform, Option.none()).flatMap((problem) =>
+          problem._tag === "missing" ? [problem.field] : []
+        ),
+        skip: ["platform"],
+      });
+};
+
+/** The rules between two of the platform's options. */
+export const optionConstraintsOn = (
+  platform: Platform
+): readonly OptionConstraint[] => classOn(platform)?.constraints ?? [];
