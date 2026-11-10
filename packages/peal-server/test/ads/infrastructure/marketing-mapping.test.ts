@@ -19,6 +19,17 @@ const eur = CurrencySchema.make("EUR");
 // follows, and half a surrogate pair.
 const unruly = "Autumn\u0000 sale\r\nnow ‮evil\uD800";
 
+const cleaned = "Autumn sale now evil�";
+
+// The name and the raw status an object keeps.
+const kept = (
+  object: Option.Option<{ readonly name: string; readonly rawStatus: string }>
+) =>
+  object.pipe(
+    Option.map(({ name, rawStatus }) => [name, rawStatus]),
+    Option.getOrNull
+  );
+
 describe("the names Meta gives", () => {
   it("are kept storable, on one line, for an account", () => {
     const facts = factsOf({
@@ -28,35 +39,39 @@ describe("the names Meta gives", () => {
     });
 
     assert.strictEqual(
-      Option.map(facts, ({ name }) => name).pipe(Option.getOrNull),
-      "Autumn sale now evil�"
+      facts.pipe(
+        Option.map(({ name }) => name),
+        Option.getOrNull
+      ),
+      cleaned
     );
   });
 
   it("are kept storable, on one line, for campaigns, ad sets and ads", () => {
-    const names = [
-      campaignOf({ id: "2001", name: unruly, status: "ACTIVE" }, eur),
-      adSetOf(
-        { campaign_id: "2001", id: "3001", name: unruly, status: "ACTIVE" },
-        eur
-      ),
-      adOf({
-        adset_id: "3001",
-        campaign_id: "2001",
-        id: "4001",
-        name: unruly,
-        status: "ACTIVE\u0000",
-      }),
-    ].map((object) =>
-      Option.map(object, ({ name, rawStatus }) => [name, rawStatus]).pipe(
-        Option.getOrNull
-      )
+    assert.deepStrictEqual(
+      [
+        kept(campaignOf({ id: "2001", name: unruly, status: "ACTIVE" }, eur)),
+        kept(
+          adSetOf(
+            { campaign_id: "2001", id: "3001", name: unruly, status: "ACTIVE" },
+            eur
+          )
+        ),
+        kept(
+          adOf({
+            adset_id: "3001",
+            campaign_id: "2001",
+            id: "4001",
+            name: unruly,
+            status: "ACTIVE\u0000",
+          })
+        ),
+      ],
+      [
+        [cleaned, "ACTIVE"],
+        [cleaned, "ACTIVE"],
+        [cleaned, "ACTIVE"],
+      ]
     );
-
-    assert.deepStrictEqual(names, [
-      ["Autumn sale now evil�", "ACTIVE"],
-      ["Autumn sale now evil�", "ACTIVE"],
-      ["Autumn sale now evil�", "ACTIVE"],
-    ]);
   });
 });
