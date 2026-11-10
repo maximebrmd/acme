@@ -10,7 +10,6 @@ import {
   maxQuoteLength,
   maxReviewLinkHours,
   maxReviewLinksPerPost,
-  maxVisitorEmailLength,
   maxVisitorNameLength,
   ReviewLinkAccessSchema,
   ReviewLinkClosureSchema,
@@ -58,12 +57,10 @@ describe("the review contract", () => {
     expect({
       maxCommentLength,
       maxQuoteLength,
-      maxVisitorEmailLength,
       maxVisitorNameLength,
     }).toStrictEqual({
       maxCommentLength: text.maxCommentLength,
       maxQuoteLength: text.maxQuoteLength,
-      maxVisitorEmailLength: text.maxVisitorEmailLength,
       maxVisitorNameLength: text.maxVisitorNameLength,
     });
   });

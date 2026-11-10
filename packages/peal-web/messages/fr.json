@@ -2068,7 +2068,7 @@
       "revokeFailed": "Le lien n’a pas pu être révoqué."
     },
     "errors": {
-      "comment": "{problem, select, text {Écrivez un commentaire de 2000 caractères au plus.} name {Donnez un nom de 80 caractères au plus.} email {Ce n’est pas une adresse e-mail.} parent {Ce fil n’accepte plus de réponses.} anchor {La publication ne va plus sur ce canal.} selection {Le texte a changé depuis que vous avez sélectionné ces mots. Sélectionnez-les de nouveau.} other {Le commentaire n’a pas pu être enregistré.}}",
+      "comment": "{problem, select, text {Écrivez un commentaire de 2000 caractères au plus.} name {Donnez un nom de 80 caractères au plus.} parent {Ce fil n’accepte plus de réponses.} anchor {La publication ne va plus sur ce canal.} selection {Le texte a changé depuis que vous avez sélectionné ces mots. Sélectionnez-les de nouveau.} other {Le commentaire n’a pas pu être enregistré.}}",
       "failure": "{failure, select, Forbidden {Votre rôle ne le permet pas, ou une application a demandé l’envoi de cette publication : une personne doit l’approuver.} PostNotFound {Cette publication n’existe plus.} CommentNotFound {Ce commentaire n’existe plus.} ApprovalNotPending {Cette publication n’attend plus d’approbation : elle a été décidée, reprise ou programmée entre-temps.} ApprovalChanged {La publication a changé depuis que vous l’avez ouverte. Rien n’a été décidé : relisez-la ci-dessous, puis décidez.} ReviewAccessDenied {Ce lien ne le permet pas.} ReviewCaptchaRequired {Complétez la vérification ci-dessous, puis envoyez de nouveau.} TooManyReviewRequests {Trop d’envois sont passés par ce lien récemment. Réessayez dans un moment.} ReviewRequestTooLarge {C’est trop long pour être envoyé.} other {Une erreur est survenue. Réessayez.}}"
     },
     "page": {
@@ -2097,8 +2097,6 @@
       "identityLegend": "Qui êtes-vous ?",
       "nameLabel": "Votre nom",
       "nameHint": "Affiché avec ce que vous écrivez et décidez.",
-      "emailLabel": "Votre adresse e-mail (facultatif)",
-      "emailHint": "Seulement pour vous prévenir d’une réponse. Elle n’est montrée à personne, et supprimée 30 jours après la fin de ce lien.",
       "privacy": "Votre nom est conservé avec vos commentaires et décisions pendant 24 mois, pour l’équipe qui vous a envoyé ce lien.",
       "decideTitle": "Votre décision",
       "decideIntro": "Approuvez la publication telle qu’elle est montrée ici, ou demandez des modifications. Votre décision est enregistrée avec votre nom.",

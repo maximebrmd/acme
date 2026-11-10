@@ -43,9 +43,6 @@ export const maxCommentLength = 2000;
 /** The longest name a visitor gives. */
 export const maxVisitorNameLength = 80;
 
-/** The longest email address a visitor gives. */
-export const maxVisitorEmailLength = 254;
-
 /** The longest selection a comment quotes. */
 export const maxQuoteLength = 500;
 
@@ -75,22 +72,6 @@ export const visitorName = (typed: string): Option.Option<string> => {
   return name === "" || name.length > maxVisitorNameLength
     ? Option.none()
     : Option.some(name);
-};
-
-// One address, with a domain that has a dot: enough to send to, and no
-// more than a mail server would check.
-const emailPattern = /^[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[^\s@<>(),;:".]+$/u;
-
-/**
- * A visitor's email address as it is kept, lowercased. None when it is not
- * one address, or more than `maxVisitorEmailLength`.
- */
-export const visitorEmail = (typed: string): Option.Option<string> => {
-  const email = withoutControls(typed, false).trim().toLowerCase();
-
-  return email.length <= maxVisitorEmailLength && emailPattern.test(email)
-    ? Option.some(email)
-    : Option.none();
 };
 
 /** A quoted selection as it is kept: without control characters. */

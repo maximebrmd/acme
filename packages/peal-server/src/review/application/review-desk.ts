@@ -35,11 +35,9 @@ import { CommentNotFound } from "./comment-not-found.ts";
 import { CommentRejected } from "./comment-rejected.ts";
 import { ApprovalStore } from "./ports/approval-store.ts";
 import { CommentStore } from "./ports/comment-store.ts";
-import type { VisitorContact } from "./ports/comment-store.ts";
 import { ReviewOutcomes } from "./ports/review-outcomes.ts";
 import { ReviewedPosts } from "./ports/reviewed-posts.ts";
 import type { ReviewedPost } from "./ports/reviewed-posts.ts";
-import { VisitorMail } from "./ports/visitor-mail.ts";
 
 /** A comment as it is sent, before it is checked. */
 export interface CommentDraft {
@@ -103,6 +101,22 @@ const anchorOn = (
   });
 
 /**
+ * The key of the notices that tell of a comment: a member's by itself; a
+ * visitor's with every other the same link wrote on the post that hour, so
+ * the workspace hears of a link's comments once an hour at most, however
+ * many its holders write. A key told before tells nobody again.
+ */
+export const commentKeyOf = ({
+  author,
+  createdAt,
+  id,
+  postId,
+}: ReviewComment): string =>
+  author._tag === "visitor"
+    ? `review-comments:${postId}:${author.linkId}:${DateTime.formatIso(createdAt).slice(0, 13)}`
+    : `review-comment:${id}`;
+
+/**
  * What reviewers do to a post, whoever they are: comment, resolve a thread,
  * approve, ask for changes. It checks what is said and that the post still
  * waits, never who says it: `PostReview` does for members, `VisitorReview`
@@ -115,8 +129,7 @@ export class ReviewDesk extends Context.Service<
     readonly comment: (
       by: Reviewer,
       post: ReviewedPost,
-      draft: CommentDraft,
-      contact: Option.Option<VisitorContact>
+      draft: CommentDraft
     ) => Effect.Effect<ReviewComment, CommentRejected | DatabaseError>;
     readonly resolve: (
       by: Reviewer,
@@ -159,7 +172,6 @@ export class ReviewDesk extends Context.Service<
     ReviewDesk,
     Effect.gen(function* ReviewDeskLive() {
       const comments = yield* CommentStore;
-      const mail = yield* VisitorMail;
       const outcomes = yield* ReviewOutcomes;
       const posts = yield* ReviewedPosts;
       const requests = yield* ApprovalStore;
@@ -171,7 +183,6 @@ export class ReviewDesk extends Context.Service<
         by: Reviewer,
         post: ReviewedPost,
         draft: CommentDraft,
-        contact: Option.Option<VisitorContact>,
         // Whether those who follow the post hear of the comment itself: not
         // when it says why changes are asked, which they hear of already.
         told: boolean
@@ -222,7 +233,7 @@ export class ReviewDesk extends Context.Service<
           post.postId
         );
 
-        yield* comments.insert(comment, contact);
+        yield* comments.insert(comment);
 
         if (!told) {
           return comment;
@@ -231,7 +242,7 @@ export class ReviewDesk extends Context.Service<
         yield* outcomes.commented({
           authorId: post.authorId,
           by,
-          key: `review-comment:${comment.id}`,
+          key: commentKeyOf(comment),
           participants,
           postId: post.postId,
           workspaceId: post.workspaceId,
@@ -240,36 +251,12 @@ export class ReviewDesk extends Context.Service<
         return comment;
       });
 
-      // The visitors of the thread who asked to hear of answers.
-      const tellListeners = (comment: ReviewComment) =>
-        Option.match(comment.parentId, {
-          onNone: () => Effect.void,
-          onSome: (threadId) =>
-            comments.listeners(threadId, comment.id).pipe(
-              Effect.flatMap(mail.replied),
-              // Telling them is not worth failing the answer for.
-              Effect.catchTag("DatabaseError", (failure) =>
-                Effect.logWarning(
-                  "Could not list a thread's listeners",
-                  failure
-                )
-              )
-            ),
-        });
-
       const comment = Effect.fn("ReviewDesk.comment")(function* comment(
         by: Reviewer,
         post: ReviewedPost,
-        draft: CommentDraft,
-        contact: Option.Option<VisitorContact>
+        draft: CommentDraft
       ) {
-        const written = yield* transaction(
-          write(by, post, draft, contact, true)
-        );
-
-        yield* tellListeners(written);
-
-        return written;
+        return yield* transaction(write(by, post, draft, true));
       });
 
       const resolve = Effect.fn("ReviewDesk.resolve")(function* resolve(
@@ -382,12 +369,7 @@ export class ReviewDesk extends Context.Service<
               const written = yield* write(
                 by,
                 post,
-                {
-                  anchor: Option.none(),
-                  parentId: Option.none(),
-                  text,
-                },
-                Option.none(),
+                { anchor: Option.none(), parentId: Option.none(), text },
                 false
               );
 

@@ -236,7 +236,6 @@ const sourceFailures: Readonly<Record<MediaSourceFailure, string>> = {
 const commentProblems: Readonly<Record<CommentInvalid["problem"], string>> = {
   anchor:
     "it is about a channel the post does not go to, or it is an answer, which is about what its thread is about",
-  email: "the email address is not one address",
   name: "the name is empty, or longer than 80 characters",
   parent:
     "it answers a comment that started no thread of this post: answer the first comment of a thread, which is also the one to resolve",

@@ -82,43 +82,11 @@ export const DrizzleReviewArchive = Layer.effect(
       cutoffs: ReviewCutoffs,
       limit: number
     ) {
-      const ended = date(cutoffs.emailsOfLinksEndedBefore);
       const old = date(cutoffs.namesBefore);
-
-      // The links that ended long enough ago: expired, or revoked.
-      const endedLinks = db
-        .select({ id: links.id })
-        .from(links)
-        .where(
-          or(
-            lt(links.expiresAt, ended),
-            and(isNotNull(links.revokedAt), lt(links.revokedAt, ended))
-          )
-        );
-
-      const emails = yield* db
-        .update(comments)
-        .set({ visitorEmail: null, visitorLocale: null })
-        .where(
-          inArray(
-            comments.id,
-            db
-              .select({ id: comments.id })
-              .from(comments)
-              .where(
-                and(
-                  isNotNull(comments.visitorEmail),
-                  inArray(comments.authorLinkId, endedLinks)
-                )
-              )
-              .limit(limit)
-          )
-        )
-        .returning({ id: comments.id });
 
       const commentNames = yield* db
         .update(comments)
-        .set({ visitorEmail: null, visitorLocale: null, visitorName: null })
+        .set({ visitorName: null })
         .where(
           inArray(
             comments.id,
@@ -175,7 +143,6 @@ export const DrizzleReviewArchive = Layer.effect(
       );
 
       return {
-        emails: emails.length,
         names: commentNames.length + decisionNames.length,
       };
     }, Effect.mapError(failed));

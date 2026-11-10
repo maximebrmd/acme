@@ -4,12 +4,10 @@ import type { Scope } from "effect";
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { ApprovalIntake } from "#review/application/approval-intake.ts";
 import { ApprovalStore } from "#review/application/ports/approval-store.ts";
-import type { VisitorContact } from "#review/application/ports/comment-store.ts";
 import { MediaPreviews } from "#review/application/ports/media-previews.ts";
 import { MemberNames } from "#review/application/ports/member-names.ts";
 import { ReviewOutcomes } from "#review/application/ports/review-outcomes.ts";
 import { VisitorGuard } from "#review/application/ports/visitor-guard.ts";
-import { VisitorMail } from "#review/application/ports/visitor-mail.ts";
 import { PostReview } from "#review/application/post-review.ts";
 import { PurgeReviewData } from "#review/application/purge-review-data.ts";
 import { ReviewDesk } from "#review/application/review-desk.ts";
@@ -60,11 +58,10 @@ export interface ToldOutcome {
     | "settled";
 }
 
-/** What the review told the rest of Peal, and the mail it sent. */
+/** What the review told the rest of Peal. */
 export class Told extends Context.Service<
   Told,
   {
-    readonly mailed: Effect.Effect<readonly VisitorContact[]>;
     readonly outcomes: Effect.Effect<readonly ToldOutcome[]>;
   }
 >()("test/review/Told") {}
@@ -72,7 +69,6 @@ export class Told extends Context.Service<
 const Recording = Layer.effectContext(
   Effect.gen(function* Recording() {
     const outcomes = yield* Ref.make<readonly ToldOutcome[]>([]);
-    const mailed = yield* Ref.make<readonly VisitorContact[]>([]);
 
     const tell =
       (kind: ToldOutcome["kind"]) =>
@@ -88,19 +84,7 @@ const Recording = Layer.effectContext(
         commented: tell("commented"),
         settled: (key) => tell("settled")({ key }),
       })
-    ).pipe(
-      Context.add(
-        VisitorMail,
-        VisitorMail.of({
-          replied: (contacts) =>
-            Ref.update(mailed, (sent) => [...sent, ...contacts]),
-        })
-      ),
-      Context.add(
-        Told,
-        Told.of({ mailed: Ref.get(mailed), outcomes: Ref.get(outcomes) })
-      )
-    );
+    ).pipe(Context.add(Told, Told.of({ outcomes: Ref.get(outcomes) })));
   })
 );
 
@@ -259,13 +243,8 @@ export const shown = ({
   );
 
 /** A visitor as the public endpoints see one. */
-export const visitor = (
-  name = "Ada Lovelace",
-  email: Option.Option<string> = Option.none()
-): VisitorIdentity => ({
+export const visitor = (name = "Ada Lovelace"): VisitorIdentity => ({
   address: "203.0.113.7",
   captchaToken: Option.none(),
-  email,
-  locale: "en",
   name,
 });

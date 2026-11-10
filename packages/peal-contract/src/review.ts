@@ -29,9 +29,6 @@ export const maxCommentLength = 2000;
 /** The longest name a visitor gives. */
 export const maxVisitorNameLength = 80;
 
-/** The longest email address a visitor gives. */
-export const maxVisitorEmailLength = 254;
-
 /** The longest selection a comment quotes. */
 export const maxQuoteLength = 500;
 

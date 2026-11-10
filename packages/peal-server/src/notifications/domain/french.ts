@@ -227,12 +227,6 @@ export const french: EmailCatalog = {
     member: "Un membre",
     visitor: "Une personne invitée à relire",
   },
-  reviewReply: {
-    body: "Quelqu’un a répondu à votre commentaire sur une publication que l’on vous a demandé de relire. Pour lire la réponse, ouvrez le lien de relecture que vous avez reçu.",
-    ignore:
-      "Vous recevez cet e-mail parce que vous avez laissé votre adresse avec un commentaire, pour être prévenu des réponses. Elle ne sert à rien d’autre, et est supprimée 30 jours après la fin du lien.",
-    subject: "Une réponse à votre commentaire",
-  },
   roles: {
     admin: "en tant qu’administrateur",
     contributor: "en tant que contributeur",

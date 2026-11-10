@@ -2068,7 +2068,7 @@
       "revokeFailed": "The link could not be revoked."
     },
     "errors": {
-      "comment": "{problem, select, text {Write a comment of 2000 characters at most.} name {Give a name of 80 characters at most.} email {This is not an email address.} parent {This thread no longer takes answers.} anchor {This channel is no longer one the post goes to.} selection {The text changed since you selected these words. Select them again.} other {The comment could not be kept.}}",
+      "comment": "{problem, select, text {Write a comment of 2000 characters at most.} name {Give a name of 80 characters at most.} parent {This thread no longer takes answers.} anchor {This channel is no longer one the post goes to.} selection {The text changed since you selected these words. Select them again.} other {The comment could not be kept.}}",
       "failure": "{failure, select, Forbidden {Your role does not allow this, or an application asked for this post to go out: a person must approve it.} PostNotFound {This post no longer exists.} CommentNotFound {This comment no longer exists.} ApprovalNotPending {This post no longer waits for an approval: it was decided, taken back or scheduled meanwhile.} ApprovalChanged {The post changed since you opened it. Nothing was decided: read it again below, then decide.} ReviewAccessDenied {This link does not allow this.} ReviewCaptchaRequired {Complete the check below, then send again.} TooManyReviewRequests {Too much was sent through this link lately. Try again in a while.} ReviewRequestTooLarge {This is too long to send.} other {Something went wrong. Try again.}}"
     },
     "page": {
@@ -2097,8 +2097,6 @@
       "identityLegend": "Who are you?",
       "nameLabel": "Your name",
       "nameHint": "Shown with what you write and decide.",
-      "emailLabel": "Your email address (optional)",
-      "emailHint": "Only to tell you when someone answers. It is shown to nobody, and deleted 30 days after this link ends.",
       "privacy": "Your name is kept with your comments and decisions for 24 months, for the team that sent you this link.",
       "decideTitle": "Your decision",
       "decideIntro": "Approve the post as it is shown here, or ask for changes. Your decision is recorded with your name.",

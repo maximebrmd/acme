@@ -2,8 +2,7 @@ import { Schema } from "effect";
 
 /**
  * Why a comment is not taken: its text is empty once cleaned, or too long
- * (`text`); so is the name given (`name`); the email address is not one
- * (`email`); it answers a comment that started no thread of the post
+ * (`text`); so is the name given (`name`); it answers a comment that started no thread of the post
  * (`parent`); it is about a channel the post does not go to, or it is an
  * answer, which has no anchor (`anchor`); or the words it quotes are not in
  * the text where it says (`selection`).
@@ -11,7 +10,6 @@ import { Schema } from "effect";
 export const CommentProblemSchema = Schema.Literals([
   "text",
   "name",
-  "email",
   "parent",
   "anchor",
   "selection",

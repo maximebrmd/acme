@@ -225,12 +225,6 @@ export const english: EmailCatalog = {
     member: "A member",
     visitor: "A reviewer",
   },
-  reviewReply: {
-    body: "Someone answered your comment on a post you were asked to review. To read the answer, open the review link you were sent.",
-    ignore:
-      "You receive this email because you left your address with a comment, to hear of answers. It is used for nothing else, and deleted 30 days after the link ends.",
-    subject: "An answer to your comment",
-  },
   roles: {
     admin: "as an admin",
     contributor: "as a contributor",

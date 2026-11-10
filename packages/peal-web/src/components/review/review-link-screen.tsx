@@ -3,13 +3,8 @@
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { DateTime, Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
-import {
-  useFormatter,
-  useLocale,
-  useTimeZone,
-  useTranslations,
-} from "next-intl";
-import { maxVisitorEmailLength, maxVisitorNameLength } from "peal-contract";
+import { useFormatter, useTimeZone, useTranslations } from "next-intl";
+import { maxVisitorNameLength } from "peal-contract";
 import type { NewComment, ReviewPage } from "peal-contract";
 import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
@@ -54,10 +49,6 @@ const unexpected: ReviewFailure = { _tag: "Unexpected" };
 
 const captchaSettings = PealApi.query("captcha", "get", {});
 
-// The language the page is read in, for the email that tells of answers.
-const localeOf = (locale: string): "en" | "fr" =>
-  locale === "fr" ? "fr" : "en";
-
 const Message = ({
   description,
   title,
@@ -82,7 +73,6 @@ interface OpenLinkProps {
 const OpenLink = ({ onChanged, page, token }: OpenLinkProps) => {
   const t = useTranslations("Review");
   const format = useFormatter();
-  const locale = useLocale();
   const timeZone = useTimeZone();
   const id = useId();
   const comment = useAtomSet(visitorComment, { mode: "promiseExit" });
@@ -90,7 +80,6 @@ const OpenLink = ({ onChanged, page, token }: OpenLinkProps) => {
   const sendBack = useAtomSet(visitorRequestChanges, { mode: "promiseExit" });
   const settings = useAtomValue(captchaSettings);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   // The check is loaded only once the reader starts to write: reading the
   // post asks nothing of anyone but Peal.
   const [writing, setWriting] = useState(false);
@@ -143,19 +132,14 @@ const OpenLink = ({ onChanged, page, token }: OpenLinkProps) => {
     setWriting(true);
   };
 
-  const onComment = async (draft: NewComment) => {
-    const said = { ...draft, locale: localeOf(locale), name };
-    const address = email.trim();
-
-    return settled(
+  const onComment = async (draft: NewComment) =>
+    settled(
       await comment({
         headers,
-        // The address goes only when the reader left one.
-        payload: address === "" ? said : { ...said, email: address },
+        payload: { ...draft, name },
         reactivityKeys: reloadKeys,
       })
     );
-  };
 
   const decide = () => {
     startTransition(async () => {
@@ -191,24 +175,6 @@ const OpenLink = ({ onChanged, page, token }: OpenLinkProps) => {
         />
         <p id={`${id}-name-hint`} className="text-muted-foreground text-xs">
           {t("page.nameHint")} {t("page.privacy")}
-        </p>
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={`${id}-email`}>{t("page.emailLabel")}</Label>
-        <Input
-          id={`${id}-email`}
-          type="email"
-          autoComplete="email"
-          maxLength={maxVisitorEmailLength}
-          value={email}
-          aria-describedby={`${id}-email-hint`}
-          onFocus={startWriting}
-          onChange={(event) => {
-            setEmail(event.target.value);
-          }}
-        />
-        <p id={`${id}-email-hint`} className="text-muted-foreground text-xs">
-          {t("page.emailHint")}
         </p>
       </div>
       {captcha.widget}

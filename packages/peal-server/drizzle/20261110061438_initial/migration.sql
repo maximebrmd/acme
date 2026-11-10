@@ -459,8 +459,6 @@ CREATE TABLE "review"."comments" (
 	"resolved_at" timestamp with time zone,
 	"resolved_by_kind" text,
 	"resolved_by_user_id" uuid,
-	"visitor_email" text,
-	"visitor_locale" text,
 	"visitor_name" text,
 	"workspace_id" uuid NOT NULL
 );

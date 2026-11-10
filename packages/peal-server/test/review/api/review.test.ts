@@ -205,7 +205,6 @@ describe("the review endpoints", () => {
                 channelId,
                 selection: { quote: "Friday", start: words.indexOf("Friday") },
               },
-              locale: "fr",
               name: "Ada Lovelace",
               text: "<i>Friday</i> works for us.",
             },
@@ -318,7 +317,7 @@ describe("the review endpoints", () => {
           });
 
           const headers = { "x-review-token": view.token };
-          const said = { locale: "en" as const, name: "Ada", text: "Hello." };
+          const said = { name: "Ada", text: "Hello." };
 
           assert.deepStrictEqual(
             yield* Effect.flip(

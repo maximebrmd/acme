@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "e3382335-f653-461e-9319-14ab70c1ea67",
+  "id": "bec6f946-b52a-46ee-8490-39c9dce167e5",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -8194,32 +8194,6 @@
       "table": "comments",
       "name": "resolved_by_user_id",
       "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "entityType": "columns"
-    },
-    {
-      "schema": "review",
-      "table": "comments",
-      "name": "visitor_email",
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "entityType": "columns"
-    },
-    {
-      "schema": "review",
-      "table": "comments",
-      "name": "visitor_locale",
-      "type": "text",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,

@@ -13,7 +13,7 @@ export const ReviewRetentionCron = ClusterCron.make({
   execute: PurgeReviewData.use((purging) => purging.purge).pipe(
     Effect.tap((purged) =>
       Effect.logInfo("Purged expired review data").pipe(
-        Effect.annotateLogs({ emails: purged.emails, names: purged.names })
+        Effect.annotateLogs({ names: purged.names })
       )
     ),
     Effect.catchCause((cause) =>

@@ -238,8 +238,7 @@ export class PostReview extends Context.Service<
         return yield* desk.comment(
           reviewerOf(actor),
           yield* postOf(actor, postId),
-          draft,
-          Option.none()
+          draft
         );
       });
 

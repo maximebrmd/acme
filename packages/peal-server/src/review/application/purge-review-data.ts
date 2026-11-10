@@ -32,19 +32,16 @@ export class PurgeReviewData extends Context.Service<
 
       const purge = Effect.gen(function* purgeAll() {
         const cutoffs = cutoffsAt(yield* DateTime.now);
-        let total: ReviewPurge = { emails: 0, names: 0 };
+        let total: ReviewPurge = { names: 0 };
 
         for (let batch = 0; batch < maxBatches; batch += 1) {
           const purged = yield* archive.purge(cutoffs, batchSize);
 
-          if (purged.emails === 0 && purged.names === 0) {
+          if (purged.names === 0) {
             break;
           }
 
-          total = {
-            emails: total.emails + purged.emails,
-            names: total.names + purged.names,
-          };
+          total = { names: total.names + purged.names };
         }
 
         return total;

@@ -352,8 +352,8 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO review.comments (id, workspace_id, post_id, author_kind, author_user_id, body, created_at, resolved_at, resolved_by_kind, resolved_by_user_id)
     VALUES (${uuid7()}, ${workspaceId}, ${postId}, 'member', ${person.id}, 'A synthetic comment.', now(), now(), 'member', ${person.id})`;
 
-  yield* sql`INSERT INTO review.comments (id, workspace_id, post_id, author_kind, author_link_id, visitor_name, visitor_email, visitor_locale, body, created_at)
-    VALUES (${uuid7()}, ${workspaceId}, ${postId}, 'visitor', ${linkId}, 'A synthetic reviewer', 'reviewer@example.test', 'en', 'A synthetic comment.', now())`;
+  yield* sql`INSERT INTO review.comments (id, workspace_id, post_id, author_kind, author_link_id, visitor_name, body, created_at)
+    VALUES (${uuid7()}, ${workspaceId}, ${postId}, 'visitor', ${linkId}, 'A synthetic reviewer', 'A synthetic comment.', now())`;
 
   yield* sql`INSERT INTO review.approval_requests (id, workspace_id, post_id, subject_hash, requested_by, requested_via, requested_at, scheduled_at, schedule_zone, status, decided_at, decided_by_kind, decided_by_user_id)
     VALUES (${uuid7()}, ${workspaceId}, ${postId}, 'synthetic', ${person.id}, 'member', now(), now(), 'Europe/Paris', 'approved', now(), 'member', ${person.id})`;

@@ -18,7 +18,6 @@ import { locate, quotes } from "#review/domain/comment-anchor.ts";
 import {
   commentText,
   maxCommentLength,
-  visitorEmail,
   visitorName,
 } from "#review/domain/plain-text.ts";
 import { ReviewComment, setResolved } from "#review/domain/review-comment.ts";
@@ -149,22 +148,6 @@ describe("what people type", () => {
     );
     expect(visitorName("​")).toStrictEqual(Option.none());
     expect(visitorName("a".repeat(81))).toStrictEqual(Option.none());
-  });
-
-  it("takes one email address, lowercased", () => {
-    expect(visitorEmail(" Ada@Example.TEST ")).toStrictEqual(
-      Option.some("ada@example.test")
-    );
-
-    for (const refused of [
-      "ada",
-      "ada@example",
-      "ada@example.test, eve@example.test",
-      "ada@example.test\nBcc: eve@example.test",
-      "<ada@example.test>",
-    ]) {
-      expect(visitorEmail(refused)).toStrictEqual(Option.none());
-    }
   });
 });
 
@@ -341,9 +324,8 @@ describe("a comment thread", () => {
 });
 
 describe("retention", () => {
-  it("drops emails 30 days after their link ended, names after 24 months", () => {
+  it("drops names after 24 months", () => {
     expect(cutoffsAt(now)).toStrictEqual({
-      emailsOfLinksEndedBefore: utc("2026-05-16T07:00:00Z"),
       namesBefore: utc("2024-06-15T07:00:00Z"),
     });
   });

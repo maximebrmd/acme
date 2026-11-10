@@ -135,11 +135,6 @@ export interface EmailCatalog {
   readonly postUnconfirmed: EmailMessages;
   readonly resetPassword: EmailMessages;
   /**
-   * Someone answered a visitor's comment on a post they were sent a review
-   * link to. It names nothing and links nowhere.
-   */
-  readonly reviewReply: LinklessMessages;
-  /**
    * The paid plans' names, as `{plan}` in billing's emails.
    */
   readonly plans: Readonly<Record<PaidPlan, string>>;
@@ -218,14 +213,6 @@ export interface EmailCatalog {
   readonly verifyEmail: EmailMessages;
   /** The workspace `{workspaceName}` was deleted by its owner. */
   readonly workspaceDeleted: EmailMessages;
-}
-
-/** The words of an email without a button. */
-export interface LinklessMessages {
-  readonly body: string;
-  /** Why the reader may ignore the email. */
-  readonly ignore: string;
-  readonly subject: string;
 }
 
 export interface EmailMessages {

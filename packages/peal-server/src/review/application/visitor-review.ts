@@ -6,14 +6,13 @@ import type {
   ApprovalRequest,
   ShownRequest,
 } from "#review/domain/approval-request.ts";
-import { visitorEmail, visitorName } from "#review/domain/plain-text.ts";
+import { visitorName } from "#review/domain/plain-text.ts";
 import type { ReviewComment } from "#review/domain/review-comment.ts";
 import { allows, standingOf } from "#review/domain/review-link.ts";
 import type { LinkAccess, ReviewLink } from "#review/domain/review-link.ts";
 import type { Reviewer } from "#review/domain/reviewer.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { UserId } from "#shared/domain/ids.ts";
-import type { Locale } from "#shared/domain/locale.ts";
 
 import { CommentRejected } from "./comment-rejected.ts";
 import { LinkAccessDenied } from "./link-access-denied.ts";
@@ -52,10 +51,6 @@ export interface LinkPage {
 export interface VisitorIdentity {
   readonly address: string;
   readonly captchaToken: Option.Option<string>;
-  /** Where they hear of answers, if they ask to. */
-  readonly email: Option.Option<string>;
-  /** The language they read the page in. */
-  readonly locale: Locale;
   readonly name: string;
 }
 
@@ -200,12 +195,6 @@ export class VisitorReview extends Context.Service<
           return yield* new CommentRejected({ problem: "name" });
         }
 
-        const email = visitor.email.pipe(Option.map(visitorEmail));
-
-        if (Option.isSome(email) && Option.isNone(email.value)) {
-          return yield* new CommentRejected({ problem: "email" });
-        }
-
         const refusal = yield* guard.admit({
           address: visitor.address,
           captchaToken: visitor.captchaToken,
@@ -220,12 +209,6 @@ export class VisitorReview extends Context.Service<
 
         return {
           by,
-          contact: Option.flatten(email).pipe(
-            Option.map((address) => ({
-              email: address,
-              locale: visitor.locale,
-            }))
-          ),
           link,
           post,
         };
@@ -236,13 +219,9 @@ export class VisitorReview extends Context.Service<
         visitor: VisitorIdentity,
         draft: CommentDraft
       ) {
-        const { by, contact, post } = yield* admitted(
-          token,
-          visitor,
-          "comment"
-        );
+        const { by, post } = yield* admitted(token, visitor, "comment");
 
-        return yield* desk.comment(by, post, draft, contact);
+        return yield* desk.comment(by, post, draft);
       });
 
       const approve = Effect.fn("VisitorReview.approve")(function* approve(

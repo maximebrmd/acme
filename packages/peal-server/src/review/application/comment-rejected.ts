@@ -2,7 +2,7 @@ import { Schema } from "effect";
 
 /**
  * Why a comment is not taken: its text is empty or too long (`text`); the
- * name given is (`name`); the email address is not one (`email`); it
+ * name given is (`name`); it
  * answers a comment that started no thread of the post (`parent`); it is
  * about a channel the post does not go to, or it is an answer, which has no
  * anchor (`anchor`); or the words it quotes are not in the text where it
@@ -11,7 +11,6 @@ import { Schema } from "effect";
 export const CommentProblemSchema = Schema.Literals([
   "text",
   "name",
-  "email",
   "parent",
   "anchor",
   "selection",

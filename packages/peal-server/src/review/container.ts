@@ -18,7 +18,6 @@ import { DrizzleReviewRecords } from "#review/infrastructure/drizzle-review-reco
 import { DrizzleReviewSettingsStore } from "#review/infrastructure/drizzle-review-settings-store.ts";
 import { LibraryMediaPreviews } from "#review/infrastructure/library-media-previews.ts";
 import { LimitedVisitorGuard } from "#review/infrastructure/limited-visitor-guard.ts";
-import { MailedVisitorReplies } from "#review/infrastructure/mailed-visitor-replies.ts";
 import { NotifiedReviewOutcomes } from "#review/infrastructure/notified-review-outcomes.ts";
 import { PublicLinkAddresses } from "#review/infrastructure/public-link-addresses.ts";
 import { PublishingReviewedPosts } from "#review/infrastructure/publishing-reviewed-posts.ts";
@@ -67,8 +66,7 @@ export const ReviewGateLive = Layer.mergeAll(
  * releases (HeldPosts). Needs the database (Drizzle), a TransactionRunner
  * and Ids, with the channels context's ChannelRepository, the media
  * context's MediaForPlatforms, the workspace context's MemberDirectory and
- * the notifications context's Notify and SendVisitorEmail, which the
- * composition root brings.
+ * the notifications context's Notify, which the composition root brings.
  */
 export const reviewWith = <E, R>(guard: Layer.Layer<VisitorGuard, E, R>) =>
   Layer.mergeAll(
@@ -83,7 +81,6 @@ export const reviewWith = <E, R>(guard: Layer.Layer<VisitorGuard, E, R>) =>
         StoresLive,
         DirectoryMemberNames,
         LibraryMediaPreviews,
-        MailedVisitorReplies,
         ToldReviewOutcomes,
         PublicLinkAddresses,
         PublishingReviewedPosts,

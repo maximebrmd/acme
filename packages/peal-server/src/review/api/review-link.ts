@@ -56,22 +56,13 @@ const writeFailures = {
 // Who a visitor says they are, with where their request comes from.
 const visitorOf = Effect.fn("ReviewLink.visitorOf")(function* visitorOf(
   headers: { readonly "x-captcha-response"?: string },
-  said: {
-    readonly email?: string;
-    readonly locale?: "en" | "fr";
-    readonly name: string;
-  }
+  said: { readonly name: string }
 ) {
   const { address } = yield* ReviewVisitorAddress;
 
   const identity: VisitorIdentity = {
     address,
     captchaToken: Option.fromUndefinedOr(headers["x-captcha-response"]),
-    // An address left empty is none left.
-    email: Option.fromUndefinedOr(said.email).pipe(
-      Option.filter((email) => email.trim() !== "")
-    ),
-    locale: said.locale ?? "en",
     name: said.name,
   };
 

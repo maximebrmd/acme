@@ -1,11 +1,9 @@
-import { and, asc, eq, isNotNull, ne, or } from "drizzle-orm";
+import { and, asc, eq, isNotNull } from "drizzle-orm";
 import { Effect, Layer, Option, Schema } from "effect";
 
 import { CommentStore } from "#review/application/ports/comment-store.ts";
-import type { VisitorContact } from "#review/application/ports/comment-store.ts";
 import { ReviewComment } from "#review/domain/review-comment.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
-import { defaultLocale, LocaleSchema } from "#shared/domain/locale.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import {
@@ -20,8 +18,6 @@ import { comments } from "./schema.ts";
 type CommentRow = typeof comments.$inferSelect;
 
 const decodeComment = Schema.decodeUnknownEffect(ReviewComment);
-
-const decodeLocale = Schema.decodeUnknownOption(LocaleSchema);
 
 const anchorOf = (row: CommentRow) =>
   Option.fromNullOr(row.anchorChannelId).pipe(
@@ -111,7 +107,7 @@ export const DrizzleCommentStore = Layer.effect(
                 : toComment(row).pipe(Effect.map(Option.some))
             )
           ),
-      insert: (comment, contact) => {
+      insert: (comment) => {
         const author = reviewerColumns(comment.author);
 
         const selection = comment.anchor.pipe(
@@ -142,53 +138,11 @@ export const DrizzleCommentStore = Layer.effect(
             id: comment.id,
             parentId: Option.getOrNull(comment.parentId),
             postId: comment.postId,
-            visitorEmail: contact.pipe(
-              Option.map(({ email }) => email),
-              Option.getOrNull
-            ),
-            visitorLocale: contact.pipe(
-              Option.map(({ locale }) => locale),
-              Option.getOrNull
-            ),
             visitorName: author.name,
             workspaceId: comment.workspaceId,
           })
           .pipe(Effect.mapError(failed), Effect.asVoid);
       },
-      listeners: (threadId, except) =>
-        db
-          .selectDistinct({
-            email: comments.visitorEmail,
-            locale: comments.visitorLocale,
-          })
-          .from(comments)
-          .where(
-            and(
-              or(eq(comments.id, threadId), eq(comments.parentId, threadId)),
-              ne(comments.id, except),
-              isNotNull(comments.visitorEmail)
-            )
-          )
-          .pipe(
-            Effect.mapError(failed),
-            Effect.map((rows) => {
-              const contacts = new Map<string, VisitorContact>();
-
-              for (const { email, locale } of rows) {
-                if (email !== null) {
-                  contacts.set(email, {
-                    email,
-                    locale: Option.getOrElse(
-                      decodeLocale(locale),
-                      () => defaultLocale
-                    ),
-                  });
-                }
-              }
-
-              return [...contacts.values()];
-            })
-          ),
       membersOn: (workspaceId, postId) =>
         db
           .selectDistinct({ userId: comments.authorUserId })

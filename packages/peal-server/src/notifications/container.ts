@@ -6,7 +6,6 @@ import { NoticeInbox } from "#notifications/application/notice-inbox.ts";
 import { NotificationSettings } from "#notifications/application/notification-settings.ts";
 import { Notify } from "#notifications/application/notify.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
-import { SendVisitorEmail } from "#notifications/application/send-visitor-email.ts";
 import { DrizzleNoticeLog } from "#notifications/infrastructure/drizzle-notice-log.ts";
 import { DrizzleNoticeRecords } from "#notifications/infrastructure/drizzle-notice-records.ts";
 import { DrizzleNoticeStore } from "#notifications/infrastructure/drizzle-notice-store.ts";
@@ -40,10 +39,10 @@ export const MailerLive = Layer.unwrap(
  * review links, sent through MailerLive, which it shares with the notices
  * below.
  */
-export const NotificationsLive = Layer.mergeAll(
-  SendAuthEmail.layer,
-  SendVisitorEmail.layer
-).pipe(Layer.provideMerge(MailerLive), Layer.provide(IdsLive));
+export const NotificationsLive = SendAuthEmail.layer.pipe(
+  Layer.provideMerge(MailerLive),
+  Layer.provide(IdsLive)
+);
 
 // The adapters behind the notices' ports.
 const NoticeAdaptersLive = Layer.mergeAll(

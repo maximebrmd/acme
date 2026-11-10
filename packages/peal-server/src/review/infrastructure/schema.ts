@@ -57,9 +57,8 @@ export const links = reviewSchema.table(
 /**
  * Comments on posts. `author_kind` is member, apiKey or visitor: a member
  * has `author_user_id` (null once they closed their account), a visitor the
- * link they came through, the name they gave (null once past its
- * retention), and the email they left to hear of replies, if any (emptied
- * 30 days after the link ended), with the language they read the page in.
+ * link they came through and the name they gave (null once past its
+ * retention): never an address, as Peal mails nobody without an account.
  * `parent_id` is the comment that started the thread; that comment alone
  * carries the anchor (`anchor_*`: the channel, the words quoted and where
  * they started) and the resolution. `body` is plain text.
@@ -81,8 +80,6 @@ export const comments = reviewSchema.table(
     resolvedAt: instant("resolved_at"),
     resolvedByKind: text("resolved_by_kind"),
     resolvedByUserId: uuid("resolved_by_user_id"),
-    visitorEmail: text("visitor_email"),
-    visitorLocale: text("visitor_locale"),
     visitorName: text("visitor_name"),
     workspaceId: uuid("workspace_id").notNull(),
   },

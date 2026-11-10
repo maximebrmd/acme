@@ -1995,10 +1995,12 @@ and no socket, for tests.
   transaction that did it. It is the seam for other listeners (outgoing
   webhooks): add them beside `NotifiedReviewOutcomes`, not in the use
   cases. Notices name who acted by kind (`ReviewParty`), never by name.
-- A visitor's name is kept 24 months, their email until 30 days after their
-  link ended (`review-retention.ts`, the `review.retention` cron): the
-  privacy policy and the docs' guide say so, change them together. The
-  email that tells a visitor of an answer holds no link, as none is kept.
+- A visitor's name is kept 24 months (`review-retention.ts`, the
+  `review.retention` cron): the privacy policy and the docs' guide say so,
+  change them together. Peal takes no address from a visitor and mails
+  nobody without an account: anyone could name anyone's address on a
+  link's page. The workspace hears of a link's comments once an hour at
+  most (`commentKeyOf`), so a link's holder cannot flood its members.
 - The contract copies the domain's lists and limits, kept equal by
   `test/review/api/contract.test.ts`. Test use cases on
   `test/review/support.ts` (the real gate and stores over

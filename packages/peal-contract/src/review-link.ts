@@ -20,7 +20,6 @@ import {
   ApprovalRequestSchema,
   CommentTextSchema,
   isWithoutNul,
-  maxVisitorEmailLength,
   maxVisitorNameLength,
   NewCommentSchema,
   ReviewCommentSchema,
@@ -55,15 +54,13 @@ const VisitorNameSchema = Schema.String.check(
   isWithoutNul
 );
 
-/** A visitor's comment: who they say they are, and what they say. */
+/**
+ * A visitor's comment: who they say they are, and what they say. A name
+ * only: Peal takes no address from someone without an account, and mails
+ * them nothing.
+ */
 export const VisitorCommentSchema = Schema.Struct({
   ...NewCommentSchema.fields,
-  // Where they hear of answers, if they ask to: used for nothing else.
-  email: Schema.optionalKey(
-    Schema.String.check(Schema.isMaxLength(maxVisitorEmailLength), isWithoutNul)
-  ),
-  // The language they read the page in, for that email.
-  locale: Schema.Literals(["en", "fr"]),
   name: VisitorNameSchema,
 }).annotate({ identifier: "VisitorComment" });
 

@@ -1004,7 +1004,6 @@ export {
   maxQuoteLength,
   maxReviewLinkHours,
   maxReviewLinksPerPost,
-  maxVisitorEmailLength,
   maxVisitorNameLength,
   NewCommentSchema,
   NewReviewLinkSchema,

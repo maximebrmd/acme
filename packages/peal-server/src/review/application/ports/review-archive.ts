@@ -7,7 +7,6 @@ import type { PostId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 /** How many rows a retention run changed. */
 export interface ReviewPurge {
-  readonly emails: number;
   readonly names: number;
 }
 

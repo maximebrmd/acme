@@ -514,13 +514,13 @@ describe("comments", () => {
           const drafts = yield* PostDrafts;
           const told = yield* Told;
           const { channelId, editor, postId } = yield* drafted;
-          const { token } = yield* linkTo(editor, postId, "comment");
+          const { link, token } = yield* linkTo(editor, postId, "comment");
 
           const received = `${text} #launch`;
 
           const first = yield* visitors.comment(
             token,
-            visitor("Ada Lovelace", Option.some("Ada@Example.test")),
+            visitor("Ada Lovelace"),
             say("Could this be <b>Thursday</b>?\u0007", {
               anchor: Option.some({
                 channelId,
@@ -542,9 +542,20 @@ describe("comments", () => {
           );
 
           assert.deepStrictEqual(answer.parentId, Option.some(first.id));
-          // The visitor asked to hear of answers.
-          assert.deepStrictEqual(yield* told.mailed, [
-            { email: "ada@example.test", locale: "en" },
+
+          // The workspace hears of a visitor's comments once an hour for a
+          // link, however many they write: a link's holder cannot flood
+          // its members' inboxes. A member's comment is told by itself.
+          yield* visitors.comment(token, visitor(), say("And one more."));
+
+          const keys = (yield* told.outcomes)
+            .filter(({ kind }) => kind === "commented")
+            .map(({ key }) => key);
+
+          assert.deepStrictEqual(keys, [
+            `review-comments:${postId}:${link.id}:2026-06-15T07`,
+            `review-comment:${answer.id}`,
+            `review-comments:${postId}:${link.id}:2026-06-15T07`,
           ]);
 
           // The text changes around the words: the anchor follows them.
@@ -583,7 +594,7 @@ describe("comments", () => {
           assert.isTrue(Option.isSome(resolved.resolution));
           assert.deepStrictEqual(
             (yield* told.outcomes).map(({ kind }) => kind),
-            ["commented", "commented"]
+            ["commented", "commented", "commented"]
           );
         })
       ),
@@ -614,11 +625,6 @@ describe("comments", () => {
             [
               visitors.comment(token, visitor(), say(" \n ")),
               visitors.comment(token, visitor("​"), say("Hello.")),
-              visitors.comment(
-                token,
-                visitor("Ada", Option.some("not an address")),
-                say("Hello.")
-              ),
               // An answer to an answer.
               visitors.comment(
                 token,
@@ -662,7 +668,6 @@ describe("comments", () => {
           assert.deepStrictEqual(problems, [
             "text",
             "name",
-            "email",
             "parent",
             "anchor",
             "selection",
@@ -709,55 +714,49 @@ describe("comments", () => {
 
 describe("what visitors gave", () => {
   it.effect(
-    "ends by itself: the address 30 days after the link, the name after 24 months",
+    "ends by itself: the name after 24 months, and never holds an address",
     () =>
       onReviewServerAt(
         start,
         Effect.gen(function* retention() {
           const visitors = yield* VisitorReview;
-          const links = yield* ReviewLinks;
           const purging = yield* PurgeReviewData;
           const sql = yield* SqlClient.SqlClient;
           const { editor, postId } = yield* drafted;
-          const { link, token } = yield* linkTo(editor, postId, "comment");
+          const { token } = yield* linkTo(editor, postId, "comment");
 
           const comment = yield* visitors.comment(
             token,
-            visitor("Ada Lovelace", Option.some("ada@example.test")),
+            visitor("Ada Lovelace"),
             say("A comment to keep a while.")
           );
 
           const kept = sql<{
-            readonly email: string | null;
             readonly name: string | null;
-          }>`SELECT visitor_email AS email, visitor_name AS name FROM review.comments WHERE id = ${comment.id}`.pipe(
+          }>`SELECT visitor_name AS name FROM review.comments WHERE id = ${comment.id}`.pipe(
             Effect.map(([row]) => row)
           );
 
-          // Revoked 29 days ago: the address is still kept.
-          yield* links.revoke(editor, link.id);
-          yield* sql`UPDATE review.links SET revoked_at = ${new Date("2026-05-17T07:00:00Z")} WHERE id = ${link.id}`;
           yield* purging.purge;
 
-          assert.deepStrictEqual(yield* kept, {
-            email: "ada@example.test",
-            name: "Ada Lovelace",
-          });
+          assert.deepStrictEqual(yield* kept, { name: "Ada Lovelace" });
 
-          // 31 days ago: it goes, and the name stays.
-          yield* sql`UPDATE review.links SET revoked_at = ${new Date("2026-05-15T07:00:00Z")} WHERE id = ${link.id}`;
+          // Peal mails nobody without an account, so it keeps no address
+          // of theirs: no column holds one.
+          const columns = yield* sql<{
+            readonly name: string;
+          }>`SELECT column_name AS name FROM information_schema.columns WHERE table_schema = 'review' AND table_name = 'comments' AND column_name LIKE 'visitor%'`;
 
-          assert.deepStrictEqual(yield* purging.purge, { emails: 1, names: 0 });
-          assert.deepStrictEqual(yield* kept, {
-            email: null,
-            name: "Ada Lovelace",
-          });
+          assert.deepStrictEqual(
+            columns.map(({ name }) => name),
+            ["visitor_name"]
+          );
 
           // A comment written more than 24 months ago loses its name.
           yield* sql`UPDATE review.comments SET created_at = ${new Date("2024-06-14T07:00:00Z")} WHERE id = ${comment.id}`;
 
-          assert.deepStrictEqual(yield* purging.purge, { emails: 0, names: 1 });
-          assert.deepStrictEqual(yield* kept, { email: null, name: null });
+          assert.deepStrictEqual(yield* purging.purge, { names: 1 });
+          assert.deepStrictEqual(yield* kept, { name: null });
         })
       ),
     timeout
