@@ -109,6 +109,8 @@ require_relative "peal/webhooks/types/rotate_secret_webhooks_request"
 require_relative "peal/webhooks/types/send_test_webhooks_request"
 require_relative "peal/webhooks/types/list_deliveries_webhooks_request"
 require_relative "peal/webhooks/types/redeliver_webhooks_request"
+require_relative "peal/activity/client"
+require_relative "peal/activity/types/list_activity_request"
 require_relative "peal/environment"
 
 module Peal
@@ -139,6 +141,17 @@ module Peal
     autoload :AlreadyMemberEncoded, ::File.join(__dir__, "peal/types/already_member_encoded")
     autoload :TooManyInvitationsEncoded, ::File.join(__dir__, "peal/types/too_many_invitations_encoded")
     autoload :ConflictErrorBody, ::File.join(__dir__, "peal/types/conflict_error_body")
+    autoload :TooManyRequestsEncodedTag, ::File.join(__dir__, "peal/types/too_many_requests_encoded_tag")
+    autoload :TooManyRequestsEncoded, ::File.join(__dir__, "peal/types/too_many_requests_encoded")
+    autoload :TooManyWebhookSendsEncoded, ::File.join(__dir__, "peal/types/too_many_webhook_sends_encoded")
+    autoload :TooManyRequestsErrorBody, ::File.join(__dir__, "peal/types/too_many_requests_error_body")
+    autoload :ActivityActorAPIKey, ::File.join(__dir__, "peal/types/activity_actor_api_key")
+    autoload :ActivityActorUser, ::File.join(__dir__, "peal/types/activity_actor_user")
+    autoload :ActivityActor, ::File.join(__dir__, "peal/types/activity_actor")
+    autoload :ActivityApplication, ::File.join(__dir__, "peal/types/activity_application")
+    autoload :ActivityVia, ::File.join(__dir__, "peal/types/activity_via")
+    autoload :ActivityEvent, ::File.join(__dir__, "peal/types/activity_event")
+    autoload :ActivityPage, ::File.join(__dir__, "peal/types/activity_page")
     autoload :CalendarDay, ::File.join(__dir__, "peal/types/calendar_day")
     autoload :ChannelMetrics, ::File.join(__dir__, "peal/types/channel_metrics")
     autoload :EngagementDay, ::File.join(__dir__, "peal/types/engagement_day")
@@ -146,6 +159,9 @@ module Peal
     autoload :PostMetrics, ::File.join(__dir__, "peal/types/post_metrics")
     autoload :TopPost, ::File.join(__dir__, "peal/types/top_post")
     autoload :AnalyticsSummary, ::File.join(__dir__, "peal/types/analytics_summary")
+    autoload :BreakingChange, ::File.join(__dir__, "peal/types/breaking_change")
+    autoload :APIChangelogEntry, ::File.join(__dir__, "peal/types/api_changelog_entry")
+    autoload :APIChangelog, ::File.join(__dir__, "peal/types/api_changelog")
     autoload :Permission, ::File.join(__dir__, "peal/types/permission")
     autoload :APIKey, ::File.join(__dir__, "peal/types/api_key")
     autoload :APIKeyNotFoundEncoded, ::File.join(__dir__, "peal/types/api_key_not_found_encoded")
@@ -163,7 +179,6 @@ module Peal
     autoload :AssistantInputRejectedEncodedTag, ::File.join(__dir__, "peal/types/assistant_input_rejected_encoded_tag")
     autoload :AssistantInputRejectedEncodedReason, ::File.join(__dir__, "peal/types/assistant_input_rejected_encoded_reason")
     autoload :AssistantInputRejectedEncoded, ::File.join(__dir__, "peal/types/assistant_input_rejected_encoded")
-    autoload :AssistantQuotaExceededEncodedTag, ::File.join(__dir__, "peal/types/assistant_quota_exceeded_encoded_tag")
     autoload :PaidPlan, ::File.join(__dir__, "peal/types/paid_plan")
     autoload :Plan, ::File.join(__dir__, "peal/types/plan")
     autoload :AssistantQuotaExceededEncoded, ::File.join(__dir__, "peal/types/assistant_quota_exceeded_encoded")
@@ -258,6 +273,7 @@ module Peal
     autoload :HeldLimit, ::File.join(__dir__, "peal/types/held_limit")
     autoload :Excess, ::File.join(__dir__, "peal/types/excess")
     autoload :ForbiddenEncodedTag, ::File.join(__dir__, "peal/types/forbidden_encoded_tag")
+    autoload :ForbiddenReason, ::File.join(__dir__, "peal/types/forbidden_reason")
     autoload :ForbiddenEncoded, ::File.join(__dir__, "peal/types/forbidden_encoded")
     autoload :IdempotencyKeyReusedEncodedTag, ::File.join(__dir__, "peal/types/idempotency_key_reused_encoded_tag")
     autoload :IdempotencyKeyReusedEncoded, ::File.join(__dir__, "peal/types/idempotency_key_reused_encoded")
@@ -282,7 +298,6 @@ module Peal
     autoload :MediaStatusUploaded, ::File.join(__dir__, "peal/types/media_status_uploaded")
     autoload :MediaStatus, ::File.join(__dir__, "peal/types/media_status")
     autoload :Media, ::File.join(__dir__, "peal/types/media")
-    autoload :MediaImportBusyEncodedTag, ::File.join(__dir__, "peal/types/media_import_busy_encoded_tag")
     autoload :MediaImportBusyEncoded, ::File.join(__dir__, "peal/types/media_import_busy_encoded")
     autoload :MediaInUseEncodedTag, ::File.join(__dir__, "peal/types/media_in_use_encoded_tag")
     autoload :MediaInUseEncoded, ::File.join(__dir__, "peal/types/media_in_use_encoded")
@@ -353,8 +368,6 @@ module Peal
     autoload :TikTokAccount, ::File.join(__dir__, "peal/types/tik_tok_account")
     autoload :TooManyWebhookEndpointsEncodedTag, ::File.join(__dir__, "peal/types/too_many_webhook_endpoints_encoded_tag")
     autoload :TooManyWebhookEndpointsEncoded, ::File.join(__dir__, "peal/types/too_many_webhook_endpoints_encoded")
-    autoload :TooManyWebhookSendsEncodedTag, ::File.join(__dir__, "peal/types/too_many_webhook_sends_encoded_tag")
-    autoload :TooManyWebhookSendsEncoded, ::File.join(__dir__, "peal/types/too_many_webhook_sends_encoded")
     autoload :UnauthenticatedEncodedTag, ::File.join(__dir__, "peal/types/unauthenticated_encoded_tag")
     autoload :UnauthenticatedEncoded, ::File.join(__dir__, "peal/types/unauthenticated_encoded")
     autoload :UnknownChannelsEncoded, ::File.join(__dir__, "peal/types/unknown_channels_encoded")

@@ -6,6 +6,12 @@ module Peal
   module Types
     class DatabaseUnavailableEncoded < Internal::Types::Model
       field :tag, -> { Peal::Types::DatabaseUnavailableEncodedTag }, optional: false, nullable: false, api_name: "_tag"
+
+      field :code, -> { String }, optional: true, nullable: false
+
+      field :message, -> { String }, optional: true, nullable: false
+
+      field :request_id, -> { String }, optional: true, nullable: false, api_name: "requestId"
     end
   end
 end

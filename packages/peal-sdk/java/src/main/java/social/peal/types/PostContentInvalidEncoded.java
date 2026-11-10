@@ -16,18 +16,48 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = PostContentInvalidEncoded.Builder.class)
 public final class PostContentInvalidEncoded {
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final List<ContentViolation> violations;
 
     private final Map<String, Object> additionalProperties;
 
-    private PostContentInvalidEncoded(List<ContentViolation> violations, Map<String, Object> additionalProperties) {
+    private PostContentInvalidEncoded(
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            List<ContentViolation> violations,
+            Map<String, Object> additionalProperties) {
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.violations = violations;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("violations")
@@ -47,12 +77,15 @@ public final class PostContentInvalidEncoded {
     }
 
     private boolean equalTo(PostContentInvalidEncoded other) {
-        return violations.equals(other.violations);
+        return code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && violations.equals(other.violations);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.violations);
+        return Objects.hash(this.code, this.message, this.requestId, this.violations);
     }
 
     @java.lang.Override
@@ -66,6 +99,12 @@ public final class PostContentInvalidEncoded {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<String> code = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> requestId = Optional.empty();
+
         private List<ContentViolation> violations = new ArrayList<>();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -73,7 +112,43 @@ public final class PostContentInvalidEncoded {
         private Builder() {}
 
         public Builder from(PostContentInvalidEncoded other) {
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             violations(other.getViolations());
+            return this;
+        }
+
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public Builder code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public Builder message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        public Builder message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public Builder requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        public Builder requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
             return this;
         }
 
@@ -99,12 +174,15 @@ public final class PostContentInvalidEncoded {
         }
 
         public PostContentInvalidEncoded build() {
-            return new PostContentInvalidEncoded(violations, additionalProperties);
+            return new PostContentInvalidEncoded(code, message, requestId, violations, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("violations")) {
+            if (key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("violations")) {
                 return;
             }
             this.additionalProperties.put(key, value);

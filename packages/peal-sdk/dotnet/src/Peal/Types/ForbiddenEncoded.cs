@@ -14,6 +14,24 @@ public record ForbiddenEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required ForbiddenEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
+    [JsonPropertyName("permission")]
+    public Permission? Permission { get; set; }
+
+    [JsonPropertyName("reason")]
+    public ForbiddenReason? Reason { get; set; }
+
+    [JsonPropertyName("scope")]
+    public string? Scope { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

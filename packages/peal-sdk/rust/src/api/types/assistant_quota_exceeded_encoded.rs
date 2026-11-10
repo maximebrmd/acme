@@ -1,9 +1,14 @@
 pub use crate::prelude::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub struct AssistantQuotaExceededEncoded {
-    #[serde(rename = "_tag")]
-    pub tag: AssistantQuotaExceededEncodedTag,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+    #[serde(rename = "requestId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub request_id: Option<String>,
     #[serde(rename = "billingUrl")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub billing_url: Option<String>,
@@ -29,7 +34,9 @@ impl AssistantQuotaExceededEncoded {
 #[derive(Clone, PartialEq, Default, Debug)]
 #[non_exhaustive]
 pub struct AssistantQuotaExceededEncodedBuilder {
-    tag: Option<AssistantQuotaExceededEncodedTag>,
+    code: Option<String>,
+    message: Option<String>,
+    request_id: Option<String>,
     billing_url: Option<String>,
     daily_limit: Option<i64>,
     plan: Option<Plan>,
@@ -38,8 +45,18 @@ pub struct AssistantQuotaExceededEncodedBuilder {
 }
 
 impl AssistantQuotaExceededEncodedBuilder {
-    pub fn tag(mut self, value: AssistantQuotaExceededEncodedTag) -> Self {
-        self.tag = Some(value);
+    pub fn code(mut self, value: impl Into<String>) -> Self {
+        self.code = Some(value.into());
+        self
+    }
+
+    pub fn message(mut self, value: impl Into<String>) -> Self {
+        self.message = Some(value.into());
+        self
+    }
+
+    pub fn request_id(mut self, value: impl Into<String>) -> Self {
+        self.request_id = Some(value.into());
         self
     }
 
@@ -70,12 +87,13 @@ impl AssistantQuotaExceededEncodedBuilder {
 
     /// Consumes the builder and constructs a [`AssistantQuotaExceededEncoded`].
     /// This method will fail if any of the following fields are not set:
-    /// - [`tag`](AssistantQuotaExceededEncodedBuilder::tag)
     /// - [`daily_limit`](AssistantQuotaExceededEncodedBuilder::daily_limit)
     /// - [`resets_at`](AssistantQuotaExceededEncodedBuilder::resets_at)
     pub fn build(self) -> Result<AssistantQuotaExceededEncoded, BuildError> {
         Ok(AssistantQuotaExceededEncoded {
-            tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
+            code: self.code,
+            message: self.message,
+            request_id: self.request_id,
             billing_url: self.billing_url,
             daily_limit: self
                 .daily_limit

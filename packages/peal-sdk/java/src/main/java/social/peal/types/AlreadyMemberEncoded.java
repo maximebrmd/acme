@@ -7,29 +7,71 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = AlreadyMemberEncoded.Builder.class)
 public final class AlreadyMemberEncoded {
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final Map<String, Object> additionalProperties;
 
-    private AlreadyMemberEncoded(Map<String, Object> additionalProperties) {
+    private AlreadyMemberEncoded(
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            Map<String, Object> additionalProperties) {
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
-        return other instanceof AlreadyMemberEncoded;
+        return other instanceof AlreadyMemberEncoded && equalTo((AlreadyMemberEncoded) other);
     }
 
     @JsonAnyGetter
     public Map<String, Object> getAdditionalProperties() {
         return this.additionalProperties;
+    }
+
+    private boolean equalTo(AlreadyMemberEncoded other) {
+        return code.equals(other.code) && message.equals(other.message) && requestId.equals(other.requestId);
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+        return Objects.hash(this.code, this.message, this.requestId);
     }
 
     @java.lang.Override
@@ -43,20 +85,65 @@ public final class AlreadyMemberEncoded {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<String> code = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> requestId = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         public Builder from(AlreadyMemberEncoded other) {
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
+            return this;
+        }
+
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public Builder code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public Builder message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        public Builder message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public Builder requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        public Builder requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
             return this;
         }
 
         public AlreadyMemberEncoded build() {
-            return new AlreadyMemberEncoded(additionalProperties);
+            return new AlreadyMemberEncoded(code, message, requestId, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
+            if (key.equalsIgnoreCase("code") || key.equalsIgnoreCase("message") || key.equalsIgnoreCase("requestId")) {
+                return;
+            }
             this.additionalProperties.put(key, value);
         }
 

@@ -2,6 +2,9 @@
 
 export interface InvalidTimeRangeEncoded {
     _tag: InvalidTimeRangeEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace InvalidTimeRangeEncoded {

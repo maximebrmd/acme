@@ -2,6 +2,9 @@
 
 export interface AssistantFailedEncoded {
     _tag: AssistantFailedEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     reason: AssistantFailedEncoded.Reason;
 }
 

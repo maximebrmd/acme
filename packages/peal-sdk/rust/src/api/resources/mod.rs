@@ -17,9 +17,11 @@
 //! - **analytics**
 //! - **tiktok**
 //! - **webhooks**
+//! - **activity**
 
 use crate::{ApiError, ClientConfig};
 
+pub mod activity;
 pub mod analytics;
 pub mod api_keys;
 pub mod assistant;
@@ -52,6 +54,7 @@ pub struct PealClient {
     pub analytics: AnalyticsClient,
     pub tiktok: TiktokClient,
     pub webhooks: WebhooksClient,
+    pub activity: ActivityClient,
 }
 
 impl PealClient {
@@ -73,10 +76,12 @@ impl PealClient {
             analytics: AnalyticsClient::new(config.clone())?,
             tiktok: TiktokClient::new(config.clone())?,
             webhooks: WebhooksClient::new(config.clone())?,
+            activity: ActivityClient::new(config.clone())?,
         })
     }
 }
 
+pub use activity::ActivityClient;
 pub use analytics::AnalyticsClient;
 pub use api_keys::ApiKeysClient;
 pub use assistant::AssistantClient;

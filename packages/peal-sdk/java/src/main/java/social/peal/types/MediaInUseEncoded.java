@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -24,13 +25,27 @@ import social.peal.core.ObjectMappers;
 public final class MediaInUseEncoded {
     private final MediaInUseEncodedTag tag;
 
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final List<String> postIds;
 
     private final Map<String, Object> additionalProperties;
 
     private MediaInUseEncoded(
-            MediaInUseEncodedTag tag, List<String> postIds, Map<String, Object> additionalProperties) {
+            MediaInUseEncodedTag tag,
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            List<String> postIds,
+            Map<String, Object> additionalProperties) {
         this.tag = tag;
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.postIds = postIds;
         this.additionalProperties = additionalProperties;
     }
@@ -38,6 +53,21 @@ public final class MediaInUseEncoded {
     @JsonProperty("_tag")
     public MediaInUseEncodedTag getTag() {
         return tag;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("postIds")
@@ -57,12 +87,16 @@ public final class MediaInUseEncoded {
     }
 
     private boolean equalTo(MediaInUseEncoded other) {
-        return tag.equals(other.tag) && postIds.equals(other.postIds);
+        return tag.equals(other.tag)
+                && code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && postIds.equals(other.postIds);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.postIds);
+        return Objects.hash(this.tag, this.code, this.message, this.requestId, this.postIds);
     }
 
     @java.lang.Override
@@ -87,6 +121,18 @@ public final class MediaInUseEncoded {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage code(Optional<String> code);
+
+        _FinalStage code(String code);
+
+        _FinalStage message(Optional<String> message);
+
+        _FinalStage message(String message);
+
+        _FinalStage requestId(Optional<String> requestId);
+
+        _FinalStage requestId(String requestId);
+
         _FinalStage postIds(List<String> postIds);
 
         _FinalStage addPostIds(String postIds);
@@ -100,6 +146,12 @@ public final class MediaInUseEncoded {
 
         private List<String> postIds = new ArrayList<>();
 
+        private Optional<String> requestId = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> code = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -107,6 +159,9 @@ public final class MediaInUseEncoded {
         @java.lang.Override
         public Builder from(MediaInUseEncoded other) {
             tag(other.getTag());
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             postIds(other.getPostIds());
             return this;
         }
@@ -143,13 +198,56 @@ public final class MediaInUseEncoded {
         }
 
         @java.lang.Override
+        public _FinalStage requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public _FinalStage requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public _FinalStage message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public _FinalStage code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        @java.lang.Override
         public MediaInUseEncoded build() {
-            return new MediaInUseEncoded(tag, postIds, additionalProperties);
+            return new MediaInUseEncoded(tag, code, message, requestId, postIds, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag") || key.equalsIgnoreCase("postIds")) {
+            if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("postIds")) {
                 return;
             }
             this.additionalProperties.put(key, value);

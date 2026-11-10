@@ -183,6 +183,17 @@
       },
       "default": "./dist/cjs/api/resources/webhooks/exports.js"
     },
+    "./activity": {
+      "import": {
+        "types": "./dist/esm/api/resources/activity/exports.d.mts",
+        "default": "./dist/esm/api/resources/activity/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/activity/exports.d.ts",
+        "default": "./dist/cjs/api/resources/activity/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/activity/exports.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

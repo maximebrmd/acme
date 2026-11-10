@@ -14,6 +14,24 @@ class ConnectFailedEncoded extends JsonSerializableType
     public string $tag;
 
     /**
+     * @var ?string $code
+     */
+    #[JsonProperty('code')]
+    public ?string $code;
+
+    /**
+     * @var ?string $message
+     */
+    #[JsonProperty('message')]
+    public ?string $message;
+
+    /**
+     * @var ?string $requestId
+     */
+    #[JsonProperty('requestId')]
+    public ?string $requestId;
+
+    /**
      * @var value-of<ConnectFailureReason> $reason
      */
     #[JsonProperty('reason')]
@@ -23,12 +41,18 @@ class ConnectFailedEncoded extends JsonSerializableType
      * @param array{
      *   tag: value-of<ConnectFailedEncodedTag>,
      *   reason: value-of<ConnectFailureReason>,
+     *   code?: ?string,
+     *   message?: ?string,
+     *   requestId?: ?string,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->tag = $values['tag'];
+        $this->code = $values['code'] ?? null;
+        $this->message = $values['message'] ?? null;
+        $this->requestId = $values['requestId'] ?? null;
         $this->reason = $values['reason'];
     }
 

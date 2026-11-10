@@ -3,6 +3,7 @@
 package client
 
 import (
+	activity "github.com/peal-social/peal/packages/peal-sdk/go/activity"
 	analytics "github.com/peal-social/peal/packages/peal-sdk/go/analytics"
 	apikeys "github.com/peal-social/peal/packages/peal-sdk/go/apikeys"
 	assistant "github.com/peal-social/peal/packages/peal-sdk/go/assistant"
@@ -39,6 +40,7 @@ type Client struct {
 	Analytics               *analytics.Client
 	Tiktok                  *tiktok.Client
 	Webhooks                *webhooks.Client
+	Activity                *activity.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -63,6 +65,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Analytics:               analytics.NewClient(options),
 		Tiktok:                  tiktok.NewClient(options),
 		Webhooks:                webhooks.NewClient(options),
+		Activity:                activity.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,
 		caller: internal.NewCaller(

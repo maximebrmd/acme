@@ -1,6 +1,6 @@
 # Reference
 ## system
-<details><summary><code>client.system.<a href="src/peal/system/client.py#L25-L48">health</a>()</code></summary>
+<details><summary><code>client.system.<a href="src/peal/system/client.py#L26-L49">health</a>()</code></summary>
 <dl>
 <dd>
 
@@ -63,7 +63,7 @@ client.system.health()
 </dl>
 </details>
 
-<details><summary><code>client.system.<a href="src/peal/system/client.py#L50-L73">ready</a>()</code></summary>
+<details><summary><code>client.system.<a href="src/peal/system/client.py#L51-L74">ready</a>()</code></summary>
 <dl>
 <dd>
 
@@ -99,6 +99,69 @@ client = Peal(
 )
 
 client.system.ready()
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.system.<a href="src/peal/system/client.py#L76-L100">changelog</a>() -> ApiChangelog</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.system.changelog()
 
 ```
 </dd>
@@ -303,7 +366,7 @@ client.api_keys.create(
     workspace_id="workspaceId",
     name="name",
     permissions=[
-        "analytics:read"
+        "activity:read"
     ],
 )
 
@@ -5225,6 +5288,112 @@ client.webhooks.redeliver(
 <dd>
 
 **delivery_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## activity
+<details><summary><code>client.activity.<a href="src/peal/activity/client.py#L26-L73">list</a>(...) -> ActivityPage</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the requests that asked to change something in the workspace, newest first, 30 a page unless `limit` (at most 100) says otherwise: who asked (a member or an API key), how they authenticated, the key or the application it came through, the operation, the ids its path named, the status answered and, when it was refused or failed, the error's code. Requests that only read are not kept, and neither is anything a request or its answer carried. `operation` keeps one operation (`posts.schedule`), `actor` what one member (a user id) or one API key (its id) asked for. Pass the page's `nextCursor` as `cursor` for the next one. An event is kept 90 days. Needs activity:read, which owners hold.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from peal import Peal
+from peal.environment import PealEnvironment
+
+client = Peal(
+    token="<token>",
+    environment=PealEnvironment.DEFAULT,
+)
+
+client.activity.list(
+    workspace_id="workspaceId",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `str` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**actor:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**operation:** `typing.Optional[str]` 
     
 </dd>
 </dl>

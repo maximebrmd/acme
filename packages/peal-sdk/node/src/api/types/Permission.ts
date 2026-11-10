@@ -2,6 +2,7 @@
 
 /** One action on one resource of a workspace. */
 export const Permission = {
+        ActivityRead: "activity:read",
         AnalyticsRead: "analytics:read",
         ApiKeyCreate: "apiKey:create",
         ApiKeyRead: "apiKey:read",

@@ -14,6 +14,15 @@ public record ChannelCannotPostEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required ChannelCannotPostEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("requestId")]
+    public string? RequestId { get; set; }
+
     [JsonPropertyName("reason")]
     public required ChannelCannotPostEncodedReason Reason { get; set; }
 

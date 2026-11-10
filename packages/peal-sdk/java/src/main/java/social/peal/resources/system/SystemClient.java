@@ -5,6 +5,7 @@ package social.peal.resources.system;
 
 import social.peal.core.ClientOptions;
 import social.peal.core.RequestOptions;
+import social.peal.types.ApiChangelog;
 
 public class SystemClient {
     protected final ClientOptions clientOptions;
@@ -49,5 +50,19 @@ public class SystemClient {
      */
     public void ready(RequestOptions requestOptions) {
         this.rawClient.ready(requestOptions).body();
+    }
+
+    /**
+     * Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+     */
+    public ApiChangelog changelog() {
+        return this.rawClient.changelog().body();
+    }
+
+    /**
+     * Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+     */
+    public ApiChangelog changelog(RequestOptions requestOptions) {
+        return this.rawClient.changelog(requestOptions).body();
     }
 }

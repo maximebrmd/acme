@@ -4,6 +4,9 @@ import * as Peal from "../index.js";
 
 export interface ConnectFailedEncoded {
     _tag: ConnectFailedEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
     reason: Peal.ConnectFailureReason;
 }
 

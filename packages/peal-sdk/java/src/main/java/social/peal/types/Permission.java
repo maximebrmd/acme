@@ -13,6 +13,8 @@ public final class Permission {
 
     public static final Permission POST_PUBLISH = new Permission(Value.POST_PUBLISH, "post:publish");
 
+    public static final Permission ACTIVITY_READ = new Permission(Value.ACTIVITY_READ, "activity:read");
+
     public static final Permission POST_CREATE = new Permission(Value.POST_CREATE, "post:create");
 
     public static final Permission API_KEY_DELETE = new Permission(Value.API_KEY_DELETE, "apiKey:delete");
@@ -106,6 +108,8 @@ public final class Permission {
                 return visitor.visitBillingRead();
             case POST_PUBLISH:
                 return visitor.visitPostPublish();
+            case ACTIVITY_READ:
+                return visitor.visitActivityRead();
             case POST_CREATE:
                 return visitor.visitPostCreate();
             case API_KEY_DELETE:
@@ -175,6 +179,8 @@ public final class Permission {
                 return BILLING_READ;
             case "post:publish":
                 return POST_PUBLISH;
+            case "activity:read":
+                return ACTIVITY_READ;
             case "post:create":
                 return POST_CREATE;
             case "apiKey:delete":
@@ -235,6 +241,8 @@ public final class Permission {
     }
 
     public enum Value {
+        ACTIVITY_READ,
+
         ANALYTICS_READ,
 
         API_KEY_CREATE,
@@ -299,6 +307,8 @@ public final class Permission {
     }
 
     public interface Visitor<T> {
+        T visitActivityRead();
+
         T visitAnalyticsRead();
 
         T visitApiKeyCreate();

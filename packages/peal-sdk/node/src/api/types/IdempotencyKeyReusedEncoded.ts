@@ -2,6 +2,9 @@
 
 export interface IdempotencyKeyReusedEncoded {
     _tag: IdempotencyKeyReusedEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace IdempotencyKeyReusedEncoded {

@@ -98,6 +98,55 @@ async fn main() {
 </dl>
 </details>
 
+<details><summary><code>client.system.<a href="/src/api/resources/system/client.rs">changelog</a>() -> Result&lt;ApiChangelog, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client.system.changelog(None).await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## session
 <details><summary><code>client.session.<a href="/src/api/resources/session/client.rs">me</a>() -> Result&lt;Me, ApiError&gt;</code></summary>
 <dl>
@@ -255,7 +304,7 @@ async fn main() {
             &"workspaceId".to_string(),
             &NewApiKey {
                 name: "name".to_string(),
-                permissions: vec![Permission::AnalyticsRead],
+                permissions: vec![Permission::ActivityRead],
                 expires_in_days: None,
             },
             None,
@@ -4889,6 +4938,112 @@ async fn main() {
 <dd>
 
 **delivery_id:** `String` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## activity
+<details><summary><code>client.activity.<a href="/src/api/resources/activity/client.rs">list</a>(workspace_id: String, actor: Option&lt;Option&lt;String&gt;&gt;, cursor: Option&lt;Option&lt;String&gt;&gt;, limit: Option&lt;Option&lt;String&gt;&gt;, operation: Option&lt;Option&lt;String&gt;&gt;) -> Result&lt;ActivityPage, ApiError&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the requests that asked to change something in the workspace, newest first, 30 a page unless `limit` (at most 100) says otherwise: who asked (a member or an API key), how they authenticated, the key or the application it came through, the operation, the ids its path named, the status answered and, when it was refused or failed, the error's code. Requests that only read are not kept, and neither is anything a request or its answer carried. `operation` keeps one operation (`posts.schedule`), `actor` what one member (a user id) or one API key (its id) asked for. Pass the page's `nextCursor` as `cursor` for the next one. An event is kept 90 days. Needs activity:read, which owners hold.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```rust
+use peal_sdk::prelude::*;
+
+#[tokio::main]
+async fn main() {
+    let config = ClientConfig {
+        token: Some("<token>".to_string()),
+        ..Default::default()
+    };
+    let client = PealClient::new(config).expect("Failed to build client");
+    client
+        .activity
+        .list(
+            &"workspaceId".to_string(),
+            &ActivityListQueryRequest {
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+}
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**workspace_id:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**actor:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cursor:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `Option<String>` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**operation:** `Option<String>` 
     
 </dd>
 </dl>

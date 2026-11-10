@@ -4345,6 +4345,14 @@ func TestSettersPublicationAttempt(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetRefusalCode", func(t *testing.T) {
+		obj := &PublicationAttempt{}
+		var fernTestValueRefusalCode *string
+		obj.SetRefusalCode(fernTestValueRefusalCode)
+		assert.Equal(t, fernTestValueRefusalCode, obj.RefusalCode)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetResult", func(t *testing.T) {
 		obj := &PublicationAttempt{}
 		var fernTestValueResult AttemptResult
@@ -4432,6 +4440,39 @@ func TestGettersPublicationAttempt(t *testing.T) {
 			}
 		}()
 		_ = obj.GetFinishedAt() // Should return zero value
+	})
+
+	t.Run("GetRefusalCode", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PublicationAttempt{}
+		var expected *string
+		obj.RefusalCode = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetRefusalCode(), "getter should return the property value")
+	})
+
+	t.Run("GetRefusalCode_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PublicationAttempt{}
+		obj.RefusalCode = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetRefusalCode(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetRefusalCode_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *PublicationAttempt
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetRefusalCode() // Should return zero value
 	})
 
 	t.Run("GetResult", func(t *testing.T) {
@@ -4601,6 +4642,37 @@ func TestSettersMarkExplicitPublicationAttempt(t *testing.T) {
 
 		// Act
 		obj.SetFinishedAt(fernTestValueFinishedAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetRefusalCode_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &PublicationAttempt{}
+		var fernTestValueRefusalCode *string
+
+		// Act
+		obj.SetRefusalCode(fernTestValueRefusalCode)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -7190,6 +7262,7 @@ func TestRequiredNullableRoundTripPostTarget(t *testing.T) {
 
 func TestRequiredNullableRoundTripPublicationAttempt(t *testing.T) {
 	requiredNullableKeys := []string{
+		"refusalCode",
 		"retryAt",
 	}
 	marshalToMap := func(t *testing.T, obj *PublicationAttempt) map[string]json.RawMessage {
@@ -7203,7 +7276,7 @@ func TestRequiredNullableRoundTripPublicationAttempt(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj PublicationAttempt
-		require.NoError(t, json.Unmarshal([]byte(`{"retryAt":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"refusalCode":null,"retryAt":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]

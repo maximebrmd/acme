@@ -2,6 +2,9 @@
 
 export interface UnauthenticatedEncoded {
     _tag: UnauthenticatedEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace UnauthenticatedEncoded {

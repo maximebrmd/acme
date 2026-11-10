@@ -69,7 +69,7 @@ func (c *Client) List(
 //	    WorkspaceID: "workspaceId",
 //	    Name: "name",
 //	    Permissions: []peal.Permission{
-//	        peal.PermissionAnalyticsRead,
+//	        peal.PermissionActivityRead,
 //	    },
 //	}
 //	_, err := client.APIKeys.Create(

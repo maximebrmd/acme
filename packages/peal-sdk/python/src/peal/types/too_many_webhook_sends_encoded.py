@@ -6,13 +6,14 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
-from .too_many_webhook_sends_encoded_tag import TooManyWebhookSendsEncodedTag
 
 
 class TooManyWebhookSendsEncoded(UniversalBaseModel):
-    tag: typing_extensions.Annotated[
-        TooManyWebhookSendsEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ]
+    code: typing.Optional[str] = None
+    message: typing.Optional[str] = None
+    request_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="requestId"), pydantic.Field(alias="requestId")
+    ] = None
     allowed: int
 
     if IS_PYDANTIC_V2:

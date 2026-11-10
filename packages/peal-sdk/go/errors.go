@@ -100,7 +100,7 @@ func (c *ConflictError) GetBody() any {
 	return c.Body
 }
 
-// The credentials are valid but do not allow this request.
+// The credentials are valid but do not allow this request. `reason` says why: the OAuth client was not given the scope the request takes (`missingScope`, with `scope` and `permission`: the user connects the client again and allows it), the member's role or the API key lacks a permission (`missingPermission`, with `permission`: an owner or an admin changes the role, or creates a key with it), only a person in their own session may do it (`personRequired`), the key or token belongs to another workspace (`wrongWorkspace`), the account is suspended (`suspended`), or a browser sent the cookie from another site (`untrustedOrigin`).
 type ForbiddenError struct {
 	*core.APIError
 	Body *ForbiddenEncoded
@@ -224,7 +224,7 @@ func (s *ServiceUnavailableError) GetBody() any {
 	return s.Body
 }
 
-// The workspace already imports two files at once, or the server as many as it runs together: nothing was fetched or stored. Ask again in a moment, once one has finished.
+// This credential sent more than `limit` requests in `windowSeconds` seconds: nothing was done. Wait `retryAfterSeconds` seconds, as the `Retry-After` header says, then send the request again. Every answer to a key or a token carries the `RateLimit-Policy` and `RateLimit` headers, which say how many requests are left.
 type TooManyRequestsError struct {
 	*core.APIError
 	Body any

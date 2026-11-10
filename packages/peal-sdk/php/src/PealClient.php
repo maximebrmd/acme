@@ -17,6 +17,7 @@ use Peal\Billing\BillingClient;
 use Peal\Analytics\AnalyticsClient;
 use Peal\Tiktok\TiktokClient;
 use Peal\Webhooks\WebhooksClient;
+use Peal\Activity\ActivityClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
 
@@ -98,6 +99,11 @@ class PealClient
     public WebhooksClient $webhooks;
 
     /**
+     * @var ActivityClient $activity
+     */
+    public ActivityClient $activity;
+
+    /**
      * @var array{
      *   baseUrl?: string,
      *   client?: ClientInterface,
@@ -163,5 +169,6 @@ class PealClient
         $this->analytics = new AnalyticsClient($this->client, $this->options);
         $this->tiktok = new TiktokClient($this->client, $this->options);
         $this->webhooks = new WebhooksClient($this->client, $this->options);
+        $this->activity = new ActivityClient($this->client, $this->options);
     }
 }

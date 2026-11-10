@@ -4,6 +4,13 @@ pub use crate::prelude::*;
 pub struct ConnectFailedEncoded {
     #[serde(rename = "_tag")]
     pub tag: ConnectFailedEncodedTag,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+    #[serde(rename = "requestId")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub request_id: Option<String>,
     pub reason: ConnectFailureReason,
 }
 
@@ -17,12 +24,30 @@ impl ConnectFailedEncoded {
 #[non_exhaustive]
 pub struct ConnectFailedEncodedBuilder {
     tag: Option<ConnectFailedEncodedTag>,
+    code: Option<String>,
+    message: Option<String>,
+    request_id: Option<String>,
     reason: Option<ConnectFailureReason>,
 }
 
 impl ConnectFailedEncodedBuilder {
     pub fn tag(mut self, value: ConnectFailedEncodedTag) -> Self {
         self.tag = Some(value);
+        self
+    }
+
+    pub fn code(mut self, value: impl Into<String>) -> Self {
+        self.code = Some(value.into());
+        self
+    }
+
+    pub fn message(mut self, value: impl Into<String>) -> Self {
+        self.message = Some(value.into());
+        self
+    }
+
+    pub fn request_id(mut self, value: impl Into<String>) -> Self {
+        self.request_id = Some(value.into());
         self
     }
 
@@ -38,6 +63,9 @@ impl ConnectFailedEncodedBuilder {
     pub fn build(self) -> Result<ConnectFailedEncoded, BuildError> {
         Ok(ConnectFailedEncoded {
             tag: self.tag.ok_or_else(|| BuildError::missing_field("tag"))?,
+            code: self.code,
+            message: self.message,
+            request_id: self.request_id,
             reason: self
                 .reason
                 .ok_or_else(|| BuildError::missing_field("reason"))?,

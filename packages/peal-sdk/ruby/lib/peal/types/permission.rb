@@ -7,6 +7,7 @@ module Peal
     module Permission
       extend Peal::Internal::Types::Enum
 
+      ACTIVITY_READ = "activity:read"
       ANALYTICS_READ = "analytics:read"
       API_KEY_CREATE = "apiKey:create"
       API_KEY_READ = "apiKey:read"

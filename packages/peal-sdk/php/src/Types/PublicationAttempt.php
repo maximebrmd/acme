@@ -20,6 +20,12 @@ class PublicationAttempt extends JsonSerializableType
     public string $finishedAt;
 
     /**
+     * @var ?string $refusalCode
+     */
+    #[JsonProperty('refusalCode')]
+    public ?string $refusalCode;
+
+    /**
      * @var value-of<AttemptResult> $result
      */
     #[JsonProperty('result')]
@@ -57,6 +63,7 @@ class PublicationAttempt extends JsonSerializableType
      *   round: int,
      *   startedAt: string,
      *   targetId: string,
+     *   refusalCode?: ?string,
      *   retryAt?: ?string,
      * } $values
      */
@@ -65,6 +72,7 @@ class PublicationAttempt extends JsonSerializableType
     ) {
         $this->attempt = $values['attempt'];
         $this->finishedAt = $values['finishedAt'];
+        $this->refusalCode = $values['refusalCode'] ?? null;
         $this->result = $values['result'];
         $this->retryAt = $values['retryAt'] ?? null;
         $this->round = $values['round'];

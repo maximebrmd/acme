@@ -2,6 +2,9 @@
 
 export interface UploadIncompleteEncoded {
     _tag: UploadIncompleteEncoded.Tag;
+    code?: string | undefined;
+    message?: string | undefined;
+    requestId?: string | undefined;
 }
 
 export namespace UploadIncompleteEncoded {

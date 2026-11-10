@@ -110,6 +110,61 @@ await client.system.ready();
 </dl>
 </details>
 
+<details><summary><code>client.system.<a href="/src/api/resources/system/client/Client.ts">changelog</a>() -> Peal.ApiChangelog</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the releases of the API, newest first: the operations each added and deprecated, how many additions it made in all, and any change that could break a client, which the versioning policy allows only with a reason. Needs no credentials.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```typescript
+await client.system.changelog();
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**requestOptions:** `SystemClient.RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## session
 <details><summary><code>client.session.<a href="/src/api/resources/session/client/Client.ts">me</a>() -> Peal.Me</code></summary>
 <dl>
@@ -262,7 +317,7 @@ Creates an API key for the workspace with some of the caller's permissions, and 
 await client.apiKeys.create({
     workspaceId: "workspaceId",
     name: "name",
-    permissions: ["analytics:read"]
+    permissions: ["activity:read"]
 });
 
 ```
@@ -4015,6 +4070,72 @@ await client.webhooks.redeliver({
 <dd>
 
 **requestOptions:** `WebhooksClient.RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## activity
+<details><summary><code>client.activity.<a href="/src/api/resources/activity/client/Client.ts">list</a>({ ...params }) -> Peal.ActivityPage</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lists the requests that asked to change something in the workspace, newest first, 30 a page unless `limit` (at most 100) says otherwise: who asked (a member or an API key), how they authenticated, the key or the application it came through, the operation, the ids its path named, the status answered and, when it was refused or failed, the error's code. Requests that only read are not kept, and neither is anything a request or its answer carried. `operation` keeps one operation (`posts.schedule`), `actor` what one member (a user id) or one API key (its id) asked for. Pass the page's `nextCursor` as `cursor` for the next one. An event is kept 90 days. Needs activity:read, which owners hold.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```typescript
+await client.activity.list({
+    workspaceId: "workspaceId"
+});
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `Peal.ListActivityRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**requestOptions:** `ActivityClient.RequestOptions` 
     
 </dd>
 </dl>

@@ -52,7 +52,7 @@ await client.ApiKeys.CreateAsync(
     {
         WorkspaceId = "workspaceId",
         Name = "name",
-        Permissions = new List<Permission>() { Permission.AnalyticsRead },
+        Permissions = new List<Permission>() { Permission.ActivityRead },
     }
 );
 ```
@@ -234,25 +234,25 @@ This SDK uses forward-compatible enums that can handle unknown values gracefully
 using Peal;
 
 // Using a built-in value
-var altTextTooLongEncodedTag = AltTextTooLongEncodedTag.AltTextTooLong;
+var activityVia = ActivityVia.Session;
 
 // Using a custom value
-var customAltTextTooLongEncodedTag = AltTextTooLongEncodedTag.FromCustom("custom-value");
+var customActivityVia = ActivityVia.FromCustom("custom-value");
 
 // Using in a switch statement
-switch (altTextTooLongEncodedTag.Value)
+switch (activityVia.Value)
 {
-    case AltTextTooLongEncodedTag.Values.AltTextTooLong:
-        Console.WriteLine("AltTextTooLong");
+    case ActivityVia.Values.Session:
+        Console.WriteLine("Session");
         break;
     default:
-        Console.WriteLine($"Unknown value: {altTextTooLongEncodedTag.Value}");
+        Console.WriteLine($"Unknown value: {activityVia.Value}");
         break;
 }
 
 // Explicit casting
-string altTextTooLongEncodedTagString = (string)AltTextTooLongEncodedTag.AltTextTooLong;
-AltTextTooLongEncodedTag altTextTooLongEncodedTagFromString = (AltTextTooLongEncodedTag)"AltTextTooLong";
+string activityViaString = (string)ActivityVia.Session;
+ActivityVia activityViaFromString = (ActivityVia)"session";
 ```
 
 ## Contributing

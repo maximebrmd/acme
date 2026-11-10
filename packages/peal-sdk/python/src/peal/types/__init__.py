@@ -6,10 +6,19 @@ import typing
 from importlib import import_module
 
 if typing.TYPE_CHECKING:
+    from .activity_actor import ActivityActor, ActivityActor_ApiKey, ActivityActor_User
+    from .activity_actor_api_key import ActivityActorApiKey
+    from .activity_actor_user import ActivityActorUser
+    from .activity_application import ActivityApplication
+    from .activity_event import ActivityEvent
+    from .activity_page import ActivityPage
+    from .activity_via import ActivityVia
     from .already_member_encoded import AlreadyMemberEncoded
     from .alt_text_too_long_encoded import AltTextTooLongEncoded
     from .alt_text_too_long_encoded_tag import AltTextTooLongEncodedTag
     from .analytics_summary import AnalyticsSummary
+    from .api_changelog import ApiChangelog
+    from .api_changelog_entry import ApiChangelogEntry
     from .api_key import ApiKey
     from .api_key_not_found_encoded import ApiKeyNotFoundEncoded
     from .assistant_action import (
@@ -30,7 +39,6 @@ if typing.TYPE_CHECKING:
     from .assistant_input_rejected_encoded_reason import AssistantInputRejectedEncodedReason
     from .assistant_input_rejected_encoded_tag import AssistantInputRejectedEncodedTag
     from .assistant_quota_exceeded_encoded import AssistantQuotaExceededEncoded
-    from .assistant_quota_exceeded_encoded_tag import AssistantQuotaExceededEncodedTag
     from .assistant_status import AssistantStatus
     from .assistant_tone import AssistantTone
     from .assistant_unavailable_encoded import AssistantUnavailableEncoded
@@ -40,6 +48,7 @@ if typing.TYPE_CHECKING:
     from .billing import Billing
     from .billing_interval import BillingInterval
     from .billing_subscription import BillingSubscription
+    from .breaking_change import BreakingChange
     from .calendar_day import CalendarDay
     from .channel import Channel
     from .channel_cannot_post_encoded import ChannelCannotPostEncoded
@@ -133,6 +142,7 @@ if typing.TYPE_CHECKING:
     from .failure_reason import FailureReason
     from .forbidden_encoded import ForbiddenEncoded
     from .forbidden_encoded_tag import ForbiddenEncodedTag
+    from .forbidden_reason import ForbiddenReason
     from .held_limit import HeldLimit
     from .idempotency_key_reused_encoded import IdempotencyKeyReusedEncoded
     from .idempotency_key_reused_encoded_tag import IdempotencyKeyReusedEncodedTag
@@ -153,7 +163,6 @@ if typing.TYPE_CHECKING:
     from .media_content_type import MediaContentType
     from .media_dimensions import MediaDimensions
     from .media_import_busy_encoded import MediaImportBusyEncoded
-    from .media_import_busy_encoded_tag import MediaImportBusyEncodedTag
     from .media_in_use_encoded import MediaInUseEncoded
     from .media_in_use_encoded_tag import MediaInUseEncodedTag
     from .media_kind import MediaKind
@@ -282,10 +291,16 @@ if typing.TYPE_CHECKING:
     from .tik_tok_options import TikTokOptions
     from .tik_tok_privacy_level import TikTokPrivacyLevel
     from .too_many_invitations_encoded import TooManyInvitationsEncoded
+    from .too_many_requests_encoded import TooManyRequestsEncoded
+    from .too_many_requests_encoded_tag import TooManyRequestsEncodedTag
+    from .too_many_requests_error_body import (
+        TooManyRequestsErrorBody,
+        TooManyRequestsErrorBody_TooManyRequests,
+        TooManyRequestsErrorBody_TooManyWebhookSends,
+    )
     from .too_many_webhook_endpoints_encoded import TooManyWebhookEndpointsEncoded
     from .too_many_webhook_endpoints_encoded_tag import TooManyWebhookEndpointsEncodedTag
     from .too_many_webhook_sends_encoded import TooManyWebhookSendsEncoded
-    from .too_many_webhook_sends_encoded_tag import TooManyWebhookSendsEncodedTag
     from .top_post import TopPost
     from .translation_language import TranslationLanguage
     from .trial_offer import TrialOffer
@@ -339,10 +354,21 @@ if typing.TYPE_CHECKING:
     from .you_tube_options import YouTubeOptions
     from .you_tube_privacy import YouTubePrivacy
 _dynamic_imports: typing.Dict[str, str] = {
+    "ActivityActor": ".activity_actor",
+    "ActivityActorApiKey": ".activity_actor_api_key",
+    "ActivityActorUser": ".activity_actor_user",
+    "ActivityActor_ApiKey": ".activity_actor",
+    "ActivityActor_User": ".activity_actor",
+    "ActivityApplication": ".activity_application",
+    "ActivityEvent": ".activity_event",
+    "ActivityPage": ".activity_page",
+    "ActivityVia": ".activity_via",
     "AlreadyMemberEncoded": ".already_member_encoded",
     "AltTextTooLongEncoded": ".alt_text_too_long_encoded",
     "AltTextTooLongEncodedTag": ".alt_text_too_long_encoded_tag",
     "AnalyticsSummary": ".analytics_summary",
+    "ApiChangelog": ".api_changelog",
+    "ApiChangelogEntry": ".api_changelog_entry",
     "ApiKey": ".api_key",
     "ApiKeyNotFoundEncoded": ".api_key_not_found_encoded",
     "AssistantAction": ".assistant_action",
@@ -361,7 +387,6 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AssistantInputRejectedEncodedReason": ".assistant_input_rejected_encoded_reason",
     "AssistantInputRejectedEncodedTag": ".assistant_input_rejected_encoded_tag",
     "AssistantQuotaExceededEncoded": ".assistant_quota_exceeded_encoded",
-    "AssistantQuotaExceededEncodedTag": ".assistant_quota_exceeded_encoded_tag",
     "AssistantStatus": ".assistant_status",
     "AssistantTone": ".assistant_tone",
     "AssistantUnavailableEncoded": ".assistant_unavailable_encoded",
@@ -371,6 +396,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Billing": ".billing",
     "BillingInterval": ".billing_interval",
     "BillingSubscription": ".billing_subscription",
+    "BreakingChange": ".breaking_change",
     "CalendarDay": ".calendar_day",
     "Channel": ".channel",
     "ChannelCannotPostEncoded": ".channel_cannot_post_encoded",
@@ -465,6 +491,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "FailureReason": ".failure_reason",
     "ForbiddenEncoded": ".forbidden_encoded",
     "ForbiddenEncodedTag": ".forbidden_encoded_tag",
+    "ForbiddenReason": ".forbidden_reason",
     "HeldLimit": ".held_limit",
     "IdempotencyKeyReusedEncoded": ".idempotency_key_reused_encoded",
     "IdempotencyKeyReusedEncodedTag": ".idempotency_key_reused_encoded_tag",
@@ -485,7 +512,6 @@ _dynamic_imports: typing.Dict[str, str] = {
     "MediaContentType": ".media_content_type",
     "MediaDimensions": ".media_dimensions",
     "MediaImportBusyEncoded": ".media_import_busy_encoded",
-    "MediaImportBusyEncodedTag": ".media_import_busy_encoded_tag",
     "MediaInUseEncoded": ".media_in_use_encoded",
     "MediaInUseEncodedTag": ".media_in_use_encoded_tag",
     "MediaKind": ".media_kind",
@@ -618,10 +644,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TikTokOptions": ".tik_tok_options",
     "TikTokPrivacyLevel": ".tik_tok_privacy_level",
     "TooManyInvitationsEncoded": ".too_many_invitations_encoded",
+    "TooManyRequestsEncoded": ".too_many_requests_encoded",
+    "TooManyRequestsEncodedTag": ".too_many_requests_encoded_tag",
+    "TooManyRequestsErrorBody": ".too_many_requests_error_body",
+    "TooManyRequestsErrorBody_TooManyRequests": ".too_many_requests_error_body",
+    "TooManyRequestsErrorBody_TooManyWebhookSends": ".too_many_requests_error_body",
     "TooManyWebhookEndpointsEncoded": ".too_many_webhook_endpoints_encoded",
     "TooManyWebhookEndpointsEncodedTag": ".too_many_webhook_endpoints_encoded_tag",
     "TooManyWebhookSendsEncoded": ".too_many_webhook_sends_encoded",
-    "TooManyWebhookSendsEncodedTag": ".too_many_webhook_sends_encoded_tag",
     "TopPost": ".top_post",
     "TranslationLanguage": ".translation_language",
     "TrialOffer": ".trial_offer",
@@ -699,10 +729,21 @@ def __dir__():
 
 
 __all__ = [
+    "ActivityActor",
+    "ActivityActorApiKey",
+    "ActivityActorUser",
+    "ActivityActor_ApiKey",
+    "ActivityActor_User",
+    "ActivityApplication",
+    "ActivityEvent",
+    "ActivityPage",
+    "ActivityVia",
     "AlreadyMemberEncoded",
     "AltTextTooLongEncoded",
     "AltTextTooLongEncodedTag",
     "AnalyticsSummary",
+    "ApiChangelog",
+    "ApiChangelogEntry",
     "ApiKey",
     "ApiKeyNotFoundEncoded",
     "AssistantAction",
@@ -721,7 +762,6 @@ __all__ = [
     "AssistantInputRejectedEncodedReason",
     "AssistantInputRejectedEncodedTag",
     "AssistantQuotaExceededEncoded",
-    "AssistantQuotaExceededEncodedTag",
     "AssistantStatus",
     "AssistantTone",
     "AssistantUnavailableEncoded",
@@ -731,6 +771,7 @@ __all__ = [
     "Billing",
     "BillingInterval",
     "BillingSubscription",
+    "BreakingChange",
     "CalendarDay",
     "Channel",
     "ChannelCannotPostEncoded",
@@ -825,6 +866,7 @@ __all__ = [
     "FailureReason",
     "ForbiddenEncoded",
     "ForbiddenEncodedTag",
+    "ForbiddenReason",
     "HeldLimit",
     "IdempotencyKeyReusedEncoded",
     "IdempotencyKeyReusedEncodedTag",
@@ -845,7 +887,6 @@ __all__ = [
     "MediaContentType",
     "MediaDimensions",
     "MediaImportBusyEncoded",
-    "MediaImportBusyEncodedTag",
     "MediaInUseEncoded",
     "MediaInUseEncodedTag",
     "MediaKind",
@@ -978,10 +1019,14 @@ __all__ = [
     "TikTokOptions",
     "TikTokPrivacyLevel",
     "TooManyInvitationsEncoded",
+    "TooManyRequestsEncoded",
+    "TooManyRequestsEncodedTag",
+    "TooManyRequestsErrorBody",
+    "TooManyRequestsErrorBody_TooManyRequests",
+    "TooManyRequestsErrorBody_TooManyWebhookSends",
     "TooManyWebhookEndpointsEncoded",
     "TooManyWebhookEndpointsEncodedTag",
     "TooManyWebhookSendsEncoded",
-    "TooManyWebhookSendsEncodedTag",
     "TopPost",
     "TranslationLanguage",
     "TrialOffer",

@@ -1,3 +1,5 @@
+export * as activity from "./activity/index.js";
+export * from "./activity/client/requests/index.js";
 export * as analytics from "./analytics/index.js";
 export * from "./analytics/client/requests/index.js";
 export * as apiKeys from "./apiKeys/index.js";

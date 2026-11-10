@@ -9,28 +9,49 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.jetbrains.annotations.NotNull;
+import java.util.Optional;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = MediaImportBusyEncoded.Builder.class)
 public final class MediaImportBusyEncoded {
-    private final MediaImportBusyEncodedTag tag;
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
 
     private final Map<String, Object> additionalProperties;
 
-    private MediaImportBusyEncoded(MediaImportBusyEncodedTag tag, Map<String, Object> additionalProperties) {
-        this.tag = tag;
+    private MediaImportBusyEncoded(
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            Map<String, Object> additionalProperties) {
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.additionalProperties = additionalProperties;
     }
 
-    @JsonProperty("_tag")
-    public MediaImportBusyEncodedTag getTag() {
-        return tag;
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @java.lang.Override
@@ -45,12 +66,12 @@ public final class MediaImportBusyEncoded {
     }
 
     private boolean equalTo(MediaImportBusyEncoded other) {
-        return tag.equals(other.tag);
+        return code.equals(other.code) && message.equals(other.message) && requestId.equals(other.requestId);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag);
+        return Objects.hash(this.code, this.message, this.requestId);
     }
 
     @java.lang.Override
@@ -58,65 +79,79 @@ public final class MediaImportBusyEncoded {
         return ObjectMappers.stringify(this);
     }
 
-    public static TagStage builder() {
+    public static Builder builder() {
         return new Builder();
     }
 
-    public interface TagStage {
-        _FinalStage tag(@NotNull MediaImportBusyEncodedTag tag);
-
-        Builder from(MediaImportBusyEncoded other);
-    }
-
-    public interface _FinalStage {
-        MediaImportBusyEncoded build();
-
-        _FinalStage additionalProperty(String key, Object value);
-
-        _FinalStage additionalProperties(Map<String, Object> additionalProperties);
-    }
-
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements TagStage, _FinalStage {
-        private MediaImportBusyEncodedTag tag;
+    public static final class Builder {
+        private Optional<String> code = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> requestId = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
-        @java.lang.Override
         public Builder from(MediaImportBusyEncoded other) {
-            tag(other.getTag());
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             return this;
         }
 
-        @java.lang.Override
-        @JsonSetter("_tag")
-        public _FinalStage tag(@NotNull MediaImportBusyEncodedTag tag) {
-            this.tag = Objects.requireNonNull(tag, "tag must not be null");
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public Builder code(Optional<String> code) {
+            this.code = code;
             return this;
         }
 
-        @java.lang.Override
+        public Builder code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public Builder message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        public Builder message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public Builder requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        public Builder requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
+            return this;
+        }
+
         public MediaImportBusyEncoded build() {
-            return new MediaImportBusyEncoded(tag, additionalProperties);
+            return new MediaImportBusyEncoded(code, message, requestId, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag")) {
+            if (key.equalsIgnoreCase("code") || key.equalsIgnoreCase("message") || key.equalsIgnoreCase("requestId")) {
                 return;
             }
             this.additionalProperties.put(key, value);
         }
 
-        @java.lang.Override
         public Builder additionalProperty(String key, Object value) {
             this.additionalProperties.put(key, value);
             return this;
         }
 
-        @java.lang.Override
         public Builder additionalProperties(Map<String, Object> additionalProperties) {
             this.additionalProperties.putAll(additionalProperties);
             return this;

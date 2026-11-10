@@ -16,18 +16,48 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = UnknownMediaEncoded.Builder.class)
 public final class UnknownMediaEncoded {
+    private final Optional<String> code;
+
+    private final Optional<String> message;
+
+    private final Optional<String> requestId;
+
     private final List<String> mediaIds;
 
     private final Map<String, Object> additionalProperties;
 
-    private UnknownMediaEncoded(List<String> mediaIds, Map<String, Object> additionalProperties) {
+    private UnknownMediaEncoded(
+            Optional<String> code,
+            Optional<String> message,
+            Optional<String> requestId,
+            List<String> mediaIds,
+            Map<String, Object> additionalProperties) {
+        this.code = code;
+        this.message = message;
+        this.requestId = requestId;
         this.mediaIds = mediaIds;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("code")
+    public Optional<String> getCode() {
+        return code;
+    }
+
+    @JsonProperty("message")
+    public Optional<String> getMessage() {
+        return message;
+    }
+
+    @JsonProperty("requestId")
+    public Optional<String> getRequestId() {
+        return requestId;
     }
 
     @JsonProperty("mediaIds")
@@ -47,12 +77,15 @@ public final class UnknownMediaEncoded {
     }
 
     private boolean equalTo(UnknownMediaEncoded other) {
-        return mediaIds.equals(other.mediaIds);
+        return code.equals(other.code)
+                && message.equals(other.message)
+                && requestId.equals(other.requestId)
+                && mediaIds.equals(other.mediaIds);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.mediaIds);
+        return Objects.hash(this.code, this.message, this.requestId, this.mediaIds);
     }
 
     @java.lang.Override
@@ -66,6 +99,12 @@ public final class UnknownMediaEncoded {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<String> code = Optional.empty();
+
+        private Optional<String> message = Optional.empty();
+
+        private Optional<String> requestId = Optional.empty();
+
         private List<String> mediaIds = new ArrayList<>();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -73,7 +112,43 @@ public final class UnknownMediaEncoded {
         private Builder() {}
 
         public Builder from(UnknownMediaEncoded other) {
+            code(other.getCode());
+            message(other.getMessage());
+            requestId(other.getRequestId());
             mediaIds(other.getMediaIds());
+            return this;
+        }
+
+        @JsonSetter(value = "code", nulls = Nulls.SKIP)
+        public Builder code(Optional<String> code) {
+            this.code = code;
+            return this;
+        }
+
+        public Builder code(String code) {
+            this.code = Optional.ofNullable(code);
+            return this;
+        }
+
+        @JsonSetter(value = "message", nulls = Nulls.SKIP)
+        public Builder message(Optional<String> message) {
+            this.message = message;
+            return this;
+        }
+
+        public Builder message(String message) {
+            this.message = Optional.ofNullable(message);
+            return this;
+        }
+
+        @JsonSetter(value = "requestId", nulls = Nulls.SKIP)
+        public Builder requestId(Optional<String> requestId) {
+            this.requestId = requestId;
+            return this;
+        }
+
+        public Builder requestId(String requestId) {
+            this.requestId = Optional.ofNullable(requestId);
             return this;
         }
 
@@ -99,12 +174,15 @@ public final class UnknownMediaEncoded {
         }
 
         public UnknownMediaEncoded build() {
-            return new UnknownMediaEncoded(mediaIds, additionalProperties);
+            return new UnknownMediaEncoded(code, message, requestId, mediaIds, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("mediaIds")) {
+            if (key.equalsIgnoreCase("code")
+                    || key.equalsIgnoreCase("message")
+                    || key.equalsIgnoreCase("requestId")
+                    || key.equalsIgnoreCase("mediaIds")) {
                 return;
             }
             this.additionalProperties.put(key, value);
