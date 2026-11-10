@@ -1,0 +1,36 @@
+name: ♿ Accessibility barrier
+description: Something in Peal is hard or impossible to use with a disability or assistive technology.
+type: Bug
+labels: [accessibility]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. Barriers are bugs, and we treat them as such.
+  - type: input
+    id: page
+    attributes:
+      label: Page or feature
+      placeholder: "The composer, the calendar, peal.social/pricing, …"
+    validations:
+      required: true
+  - type: textarea
+    id: barrier
+    attributes:
+      label: The barrier
+      description: What you tried to do, and what stopped you.
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: How you use Peal
+      description: Assistive technology and version, browser, operating system, zoom or contrast settings, keyboard only…
+      placeholder: "VoiceOver on macOS 26, Safari; or NVDA 2026.2 on Windows, Firefox"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What would work
+      description: What you expected to hear, see or reach, if you know.

@@ -1,0 +1,46 @@
+name: 🏠 Self-hosting help
+description: You run Peal yourself and are stuck setting it up or upgrading it.
+labels: [question]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [Self-hosting](https://docs.peal.social/self-hosting) and
+        [Environment variables](https://docs.peal.social/environment-variables) pages first.
+        Give setting **names**, never their values.
+  - type: dropdown
+    id: setup
+    attributes:
+      label: How you run it
+      options:
+        - compose.production.yaml with compose.self-host.yaml (Caddy)
+        - compose.production.yaml behind my own proxy
+        - The images on another platform (Kubernetes, a PaaS, …)
+        - Built from source without Docker
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit or image tag
+    validations:
+      required: true
+  - type: textarea
+    id: services
+    attributes:
+      label: Services
+      description: Postgres version, the S3 store, the mail provider, the proxy, and the optional features turned on.
+      placeholder: "Postgres 18, an S3-compatible store, SMTP, Caddy; billing off, AI on with an OpenAI-compatible server"
+  - type: textarea
+    id: problem
+    attributes:
+      label: What goes wrong?
+      description: What you did, what you expected, and what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The server's and the web app's output (`docker compose logs server web`), with secrets removed.
+      render: shell
