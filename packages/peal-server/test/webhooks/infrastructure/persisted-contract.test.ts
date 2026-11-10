@@ -41,7 +41,11 @@ const KeysSchema = Schema.Struct({ executionId: Schema.String });
 describe("the persisted contract of DeliverWebhookV1", () => {
   it("keeps its tag, and how its attempts end", () => {
     assert.strictEqual(DeliverWebhookV1._tag, "DeliverWebhookV1");
-    assert.deepStrictEqual(AttemptResultSchema.literals, ["retry", "settled"]);
+    assert.deepStrictEqual(AttemptResultSchema.literals, [
+      "retry",
+      "settled",
+      "unrecorded",
+    ]);
   });
 
   it.effect("decodes its payloads, and derives the same execution ids", () =>
