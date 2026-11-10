@@ -13,17 +13,22 @@ import { SignInExpired } from "#sign-in-expired.ts";
 /** Whether a failed OAuth request was refused, rather than unanswered. */
 export const isOAuthError = Schema.is(OAuthErrorSchema);
 
-/** The sign-in that tokens issued at `now` make. */
+/**
+ * The sign-in that tokens issued at `now` make. An answer that names no
+ * scope grants what was asked for (RFC 6749 §5.1): `asked`, the scopes of
+ * the request, or of the sign-in a refresh token renews.
+ */
 export const credentialsOf = (
   token: Token,
-  now: DateTime.Utc
+  now: DateTime.Utc,
+  asked: string
 ): Credentials => ({
   accessToken: Redacted.make(token.access_token),
   expiresAt: DateTime.add(now, { seconds: token.expires_in }),
   refreshToken: Option.fromUndefinedOr(token.refresh_token).pipe(
     Option.map(Redacted.make)
   ),
-  scope: token.scope ?? "",
+  scope: token.scope ?? asked,
 });
 
 // An access token about to run out is renewed before it is sent, so that it
@@ -78,7 +83,7 @@ export const accessToken = Effect.gen(function* accessToken() {
       )
     );
 
-  const next = credentialsOf(renewed, now);
+  const next = credentialsOf(renewed, now, credentials.scope);
 
   yield* store.write(baseUrl, next);
 

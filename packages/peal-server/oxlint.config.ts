@@ -22,6 +22,7 @@ const contexts = [
   "staff",
   "legal",
   "review",
+  "webhooks",
 ] as const;
 
 type Kernel = (typeof contexts)[number] | "shared";

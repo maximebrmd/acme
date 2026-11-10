@@ -10,8 +10,11 @@ import {
 import { AltTextTooLong } from "./alt-text-too-long.ts";
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
+import { MediaImportBusy } from "./media-import-busy.ts";
 import { MediaInUse } from "./media-in-use.ts";
 import { MediaNotFound } from "./media-not-found.ts";
+import { MediaSourceNotPublic } from "./media-source-not-public.ts";
+import { MediaSourceUnreachable } from "./media-source-unreachable.ts";
 import { MediaStatusSchema } from "./media-status.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { MediaTooLarge } from "./media-too-large.ts";
@@ -137,6 +140,23 @@ export const PreparedUploadSchema = Schema.Struct({
 
 export type PreparedUpload = typeof PreparedUploadSchema.Type;
 
+/** The longest address Peal imports a file from. */
+export const maxMediaUrlLength = 2048;
+
+/** How long an import may take, in seconds, from the request to the file. */
+export const mediaImportSeconds = 90;
+
+/** A file to fetch from a public address, and store as media. */
+export const MediaImportSchema = Schema.Struct({
+  // What it shows, for people who cannot see it. It can also be written
+  // later.
+  altText: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  // An HTTPS URL anyone can fetch, without credentials.
+  url: Schema.String.check(Schema.isBetweenLength(1, maxMediaUrlLength)),
+}).annotate({ identifier: "MediaImport" });
+
+export type MediaImport = typeof MediaImportSchema.Type;
+
 export const MediaDescriptionSchema = Schema.Struct({
   // Null, or only spaces, removes it.
   altText: Schema.NullOr(Schema.String),
@@ -217,6 +237,28 @@ export class MediaApi extends HttpApiGroup.make("media")
         summary: "Start an upload",
       })
     ),
+    HttpApiEndpoint.post("importFromUrl", "/import", {
+      error: [
+        Forbidden,
+        UnsupportedMediaType,
+        MediaTooLarge,
+        AltTextTooLong,
+        MediaStoreUnavailable,
+        PlanLimitReached,
+        MediaSourceNotPublic,
+        MediaSourceUnreachable,
+        UploadRejected,
+        MediaImportBusy,
+      ],
+      params: workspace,
+      payload: MediaImportSchema,
+      success: MediaSchema.pipe(HttpApiSchema.status(201)),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within ${mediaImportSeconds} seconds (MediaSourceUnreachable \`tooSlow\`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached \`mediaStorage\`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.`,
+        summary: "Import media from a URL",
+      })
+    ),
     HttpApiEndpoint.get("get", "/:mediaId", {
       error: [Forbidden, MediaNotFound, MediaStoreUnavailable],
       params: media,
@@ -234,13 +276,14 @@ export class MediaApi extends HttpApiGroup.make("media")
         UploadIncomplete,
         UploadRejected,
         MediaStoreUnavailable,
+        PlanLimitReached,
       ],
       params: media,
       success: MediaSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.",
+          "Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached `mediaStorage`). Needs media:upload.",
         summary: "Complete an upload",
       })
     ),

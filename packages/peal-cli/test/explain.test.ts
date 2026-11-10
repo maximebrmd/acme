@@ -1,0 +1,68 @@
+import { describe, expect, it } from "@effect/vitest";
+import { PlanLimitReached } from "peal-contract";
+
+import { explain } from "#explain.ts";
+
+const url = "http://localhost:3000";
+
+const billingUrl =
+  "https://peal.example/app/0f5b8c1e-2a3d-4e6f-8a9b-1c2d3e4f5a6b/billing";
+
+const reasonOf = (failure: PlanLimitReached): string => {
+  const explained = explain(url)(failure);
+
+  return explained._tag === "Refused" ? explained.reason : explained._tag;
+};
+
+describe("a plan's refusal, explained", () => {
+  it("names the plan, what the workspace holds, the plan with room and the billing page", () => {
+    expect(
+      reasonOf(
+        new PlanLimitReached({
+          allowed: 2,
+          billingUrl,
+          limit: "members",
+          plan: "free",
+          planWithRoom: "starter",
+          used: 2,
+        })
+      )
+    ).toBe(
+      `The workspace's Free plan allows 2 members, pending invitations included, and it has 2. The Starter plan has room: an owner or an admin orders it at ${billingUrl}`
+    );
+  });
+
+  it("writes media storage in the units the plans are sold in", () => {
+    expect(
+      reasonOf(
+        new PlanLimitReached({
+          allowed: 500_000_000,
+          billingUrl,
+          limit: "mediaStorage",
+          plan: "free",
+          planWithRoom: "starter",
+          used: 480_000_000,
+        })
+      )
+    ).toBe(
+      `The workspace's Free plan allows 500 MB of media stored, uploads in progress included, and it has 480 MB. The Starter plan has room: an owner or an admin orders it at ${billingUrl}`
+    );
+  });
+
+  it("says how to ask for more on the largest plan", () => {
+    expect(
+      reasonOf(
+        new PlanLimitReached({
+          allowed: 100,
+          billingUrl,
+          limit: "channels",
+          plan: "agency",
+          planWithRoom: null,
+          used: 100,
+        })
+      )
+    ).toBe(
+      "The workspace's Agency plan allows 100 channels, and it has 100. No plan is larger: write to the people who run this server to ask for more, or remove some."
+    );
+  });
+});

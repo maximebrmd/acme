@@ -8,6 +8,7 @@ import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import type { ChannelCredentials } from "./channel-credentials.ts";
+import { ChannelEvents } from "./channel-events.ts";
 import { ChannelNotFound } from "./channel-not-found.ts";
 import { ChannelRepository } from "./channel-repository.ts";
 import { decryptTokens } from "./channel-tokens.ts";
@@ -49,6 +50,21 @@ export class DisconnectChannel extends Context.Service<
       const channels = yield* ChannelRepository;
       const authorizers = yield* PlatformAuthorizers;
       const cipher = yield* TokenCipher;
+      const events = yield* ChannelEvents;
+
+      // Deletes the channel and tells of it in one transaction, the
+      // workspace's additions': both happen, or neither.
+      const remove = (channel: Channel) =>
+        channels.addingTo(
+          channel.workspaceId,
+          channels
+            .remove(channel.workspaceId, channel.id)
+            .pipe(
+              Effect.tap((removed) =>
+                removed ? events.disconnected(channel) : Effect.void
+              )
+            )
+        );
 
       // Revokes what the removed channel held, if its platform takes it and
       // no other channel shares the grant.
@@ -90,7 +106,7 @@ export class DisconnectChannel extends Context.Service<
             : Option.none<ChannelCredentials>();
 
           const removed = Option.isSome(channel)
-            ? yield* channels.remove(actor.workspaceId, channel.value.id)
+            ? yield* remove(channel.value)
             : false;
 
           if (!removed || Option.isNone(channel)) {

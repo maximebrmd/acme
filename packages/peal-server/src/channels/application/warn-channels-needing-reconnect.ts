@@ -10,13 +10,16 @@ import type { Channel } from "#channels/domain/channel.ts";
 
 import { ChannelLocks } from "./channel-locks.ts";
 import { ChannelNotices } from "./channel-notices.ts";
-import { ChannelRepository } from "./channel-repository.ts";
+import { ChannelRepository, reconnectCursorOf } from "./channel-repository.ts";
+import type { ReconnectCursor } from "./channel-repository.ts";
 
-// Channels handled at once, and at most per run: the next day's run takes
-// the rest, and each notice goes out once whatever the run.
+// Channels handled at once, and read from the database at a time. A run
+// takes page after page until none is left: with a cap, the channels it
+// stopped at would come back first the next day, already warned, and those
+// after them would expire unwarned.
 const concurrency = 4;
 
-const runLimit = 1000;
+const pageSize = 200;
 
 /** How many channels a run warned about, and how. */
 export interface WarningReport {
@@ -105,17 +108,12 @@ export class WarnChannelsNeedingReconnect extends Context.Service<
         }
       );
 
-      const run = Effect.gen(function* run() {
-        const now = yield* DateTime.now;
-
-        const found = yield* channels.needingReconnect({
-          leadTime: reconnectLeadTime,
-          limit: runLimit,
-          now,
-        });
-
-        const warned = yield* Effect.forEach(
-          found,
+      const warnPage = (
+        page: readonly Channel[],
+        now: DateTime.Utc
+      ): Effect.Effect<readonly Warned[]> =>
+        Effect.forEach(
+          page,
           (channel) =>
             warn(channel, now).pipe(
               Effect.catchCause((cause) =>
@@ -130,6 +128,40 @@ export class WarnChannelsNeedingReconnect extends Context.Service<
             ),
           { concurrency }
         );
+
+      const run = Effect.gen(function* run() {
+        const now = yield* DateTime.now;
+        const warned: Warned[] = [];
+
+        // A channel this run marks changes, and comes back among the
+        // marked ones further on: it was told already.
+        const handled = new Set<Channel["id"]>();
+        let after = Option.none<ReconnectCursor>();
+
+        while (true) {
+          const page = yield* channels.needingReconnect({
+            after,
+            leadTime: reconnectLeadTime,
+            limit: pageSize,
+            now,
+          });
+
+          const fresh = page.filter((channel) => !handled.has(channel.id));
+
+          for (const channel of fresh) {
+            handled.add(channel.id);
+          }
+
+          warned.push(...(yield* warnPage(fresh, now)));
+          after = Option.map(
+            Option.fromUndefinedOr(page.at(-1)),
+            reconnectCursorOf
+          );
+
+          if (page.length < pageSize) {
+            break;
+          }
+        }
 
         const count = (outcome: Warned) =>
           warned.filter((value) => value === outcome).length;

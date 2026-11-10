@@ -3,7 +3,7 @@ import type { EmailCatalog } from "./email-catalog.ts";
 export const english: EmailCatalog = {
   accountDeleted: {
     action: "Open Peal",
-    body: "Your Peal account was deleted, as you asked, with the data tied to it: your profile, your sessions, your memberships, your notifications, and the workspaces where you were the only member, with everything in them. As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for 5 years, and how you signed in and the connections that created content for 1 year, then deletes them.",
+    body: "Your Peal account was deleted, as you asked, with the data tied to it: your profile, your sessions, your memberships, your notifications, and the workspaces where you were the only member, with everything in them.",
     ignore:
       "If you did not ask for this, tell whoever runs this Peal server. Peal sends no more email to this address.",
     subject: "Your Peal account is deleted",
@@ -29,12 +29,61 @@ export const english: EmailCatalog = {
       "You receive this email because you manage the channels of {workspaceName} on Peal. Choose which notifications you receive by email in your notification preferences.",
     subject: "Reconnect {handle} on {platform} by {expiresAt}",
   },
+  contractNumber:
+    "Contract number: {reference}. Give it in Cancel your contract or Withdraw from contract here, at the foot of every page, and your request is applied at once, without signing in.",
+  contractRequest: {
+    actions: { confirm: "Apply my request", open: "Open Peal" },
+    content:
+      "It says: name, {name}; contract: {contract}; acknowledgement to be sent to {email}.",
+    contractNotGiven: "not given",
+    desired: "Day wanted for the contract to end: {desiredAt}.",
+    ignore:
+      "You receive this email because this address was given in the form to cancel a contract or withdraw from one on Peal. Keep it: it is your record of the date. If you did not send the request, ignore this email, and tell whoever runs this Peal server if it happens again.",
+    outcomes: {
+      business:
+        "It could not be applied: the contract was concluded by a business, with a verified VAT number, which has no right to withdraw. The contract can be cancelled instead, with Cancel your contract, at the foot of every page.",
+      cancelled:
+        "It is applied. The contract ends on {effectiveAt}. Until then the workspace keeps its plan; it then moves to the free plan, with its content, and nothing more is charged.",
+      cancelledLater:
+        "It is applied. The contract ends on {effectiveAt}, the day you asked for: it renews until then, and its last period is charged only up to that day. The workspace keeps its plan until then; it then moves to the free plan, with its content.",
+      confirm:
+        "This address manages a contract’s billing on Peal, but the request does not give the contract number, so we must make sure it comes from you: follow the link below, within 30 days, and choose the contract. The request is then applied as of {receivedAt}, the date that counts. Nothing changes until then.",
+      expired:
+        "It could not be applied: the 14 days to withdraw were over when your statement came. The contract can be cancelled instead, with Cancel your contract, at the foot of every page.",
+      notSubscribed:
+        "It could not be applied: the contract has no subscription to withdraw from.",
+      nothingToCancel:
+        "There was nothing to cancel: the contract’s subscription is already set to end, or has ended.",
+      review:
+        "We could not find the contract from what the request says, so a person will look at it and write to you at this address. If it is applied, it is as of {receivedAt}, the date that counts. To have it applied at once, send it again with the contract number, which is in the email that confirmed your subscription.",
+      withdrawn:
+        "It is applied. The contract ended on {effectiveAt}, and {refunded} is refunded to the payment method used, within 14 days of your statement.",
+      withdrawnUnpaid:
+        "It is applied. The contract ended on {effectiveAt}. Nothing had been charged for it, so there is nothing to refund.",
+    },
+    received: {
+      cancellation:
+        "We received the notification of your cancellation on {receivedAt}.",
+      withdrawal: "We received your withdrawal statement on {receivedAt}.",
+    },
+    renewalRefunded:
+      "The plan renewed after your notification came: {refunded} charged since is refunded to the payment method used.",
+    subjects: {
+      cancellation: "We received the notification of your cancellation",
+      withdrawal: "We received your withdrawal statement",
+    },
+  },
   dataExported: {
     action: "Open my account settings",
     body: "A copy of your Peal account’s data was just downloaded {via}. It holds your profile, your sessions with their addresses, and your workspaces’ content.",
     ignore:
       "If it was not you, change your password and sign out your other sessions from your account settings, then tell whoever runs this Peal server.",
     subject: "A copy of your Peal data was downloaded",
+  },
+  excess: {
+    channels: "{used} channels ({allowed} allowed)",
+    mediaStorage: "{used} of media ({allowed} allowed)",
+    members: "{used} members ({allowed} allowed)",
   },
   exportChannels: {
     commandLine: "from the command line",
@@ -79,6 +128,15 @@ export const english: EmailCatalog = {
     signature: "The Peal team",
     textLink: "{action}: {url}",
   },
+  legalHold: {
+    connections:
+      "This Peal server kept what French law requires of a host, and no longer does: the connections that created content, kept so far, stay {connections} from each, apart, for judicial authorities only, then are deleted.",
+    identification:
+      "As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for {identity}, and how you signed in and the connections that created content for {account}, then deletes them.",
+    years: { one: "{count} year", other: "{count} years" },
+  },
+  overFreePlan:
+    "Today it holds more than the free plan allows: {over}. From that day, nothing is scheduled or published until it is back within the free plan: posts already scheduled fail when due, and can be posted again afterwards. Order a plan, or choose which channels and members stay, on the billing page.",
   plans: {
     agency: "Agency",
     business: "Business",
@@ -154,6 +212,7 @@ export const english: EmailCatalog = {
       "You receive this email because you wrote this post in {workspaceName} on Peal, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
     subject: "Check {channel}: a post may have gone out",
   },
+  renewalDeadline: "Last day to refuse the renewal: {renewsAt}",
   resetPassword: {
     action: "Choose a new password",
     body: "Someone asked to reset the password of your Peal account. Choose a new one with the link below.",
@@ -188,14 +247,14 @@ export const english: EmailCatalog = {
   },
   subscriptionRenewing: {
     action: "Open billing",
-    body: "The yearly {plan} plan of {workspaceName} renews on {renewsAt} for {price}, VAT included. To stop it, cancel the subscription on the billing page before that date: it then ends on {renewsAt} and nothing more is charged.",
+    body: "The yearly {plan} plan of {workspaceName} renews on {renewsAt} for {price}, VAT included. You are free not to renew it: until the date below, cancel the contract on the billing page, or with Cancel your contract, at the foot of every page, without signing in. It then ends on {renewsAt} and nothing more is charged.",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your yearly {plan} plan renews on {renewsAt}",
   },
   subscriptionStarted: {
     action: "Open billing",
-    body: "Thank you: {workspaceName} is subscribed to {plan} since {startedAt}, for {price} a {interval}, VAT included, renewed until cancelled. You asked for it to start at once: as a consumer you may still withdraw within 14 days, from the billing page (Withdraw from contract here), and then pay only for the days used. You can cancel it there at any time; the terms of service apply.",
+    body: "Thank you: {workspaceName} is subscribed to {plan} since {startedAt}, for {price} a {interval}, VAT included, renewed until cancelled. You asked for it to start at once: as a consumer you may still withdraw within 14 days, with Withdraw from contract here, at the foot of every page and on the billing page, and then pay only for the days used. You can cancel at any time with Cancel your contract, in the same places. The terms of service apply; they hold the model withdrawal form.",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your {plan} subscription has started",
@@ -209,14 +268,14 @@ export const english: EmailCatalog = {
   },
   trialEnding: {
     action: "Choose a plan",
-    body: "The {plan} trial of {workspaceName} ends on {endsAt}. Nothing is charged: unless someone orders a plan before then, the workspace moves to the free plan. It keeps its content, but must disconnect the channels above the free plan's before it can schedule posts again.",
+    body: "The {plan} trial of {workspaceName} ends on {endsAt}. Nothing is charged: unless someone orders a plan before then, the workspace moves to the free plan. {standing}",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your {plan} trial ends on {endsAt}",
   },
   trialStarted: {
     action: "Open billing",
-    body: "{workspaceName} is trying {plan} since {startedAt}, until {endsAt}. Nothing is charged, and no payment method was asked for. Unless someone orders {plan} ({price} excluding VAT a month) before then, the workspace moves back to the free plan when the trial ends. You can end the trial at any time from the billing page.",
+    body: "{workspaceName} is trying {plan} since {startedAt}, until {endsAt}. Nothing is charged, and no payment method was asked for. Unless someone orders {plan} ({price} excluding VAT a month) before then, the workspace moves back to the free plan when the trial ends. You can end the trial at any time from the billing page, or with Cancel your contract, at the foot of every page.",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your {plan} trial has started: it ends on {endsAt}",
@@ -229,6 +288,19 @@ export const english: EmailCatalog = {
       "If you did not create a Peal account, ignore this email. The link expires in an hour.",
     subject: "Confirm your email for Peal",
   },
+  webhookEndpointDisabled: {
+    action: "Open webhooks",
+    body: "Peal turned off the webhook endpoint at {host} in {workspaceName}: {reason} Nothing is sent to it any more, and the events that happen meanwhile are not kept for it. Once its receiver works again, turn the endpoint back on in the workspace’s settings.",
+    ignore:
+      "You receive this email because you manage the webhooks of {workspaceName} on Peal. This email is always sent: the systems that listened on this endpoint hear nothing more until someone acts.",
+    subject: "Webhook endpoint turned off: {host}",
+  },
+  webhookTurnOffReasons: {
+    failing: "every delivery to it failed for 5 days.",
+    gone: "it answered 410 Gone, which asks for no more deliveries.",
+  },
+  withinFreePlan:
+    "It holds nothing beyond what the free plan allows, and keeps its content.",
   workspaceDeleted: {
     action: "Open my workspaces",
     body: "The workspace {workspaceName} was deleted, as you asked, with everything in it: its channels, posts, media, analytics, members and API keys.",

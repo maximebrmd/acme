@@ -2,12 +2,14 @@ import { DateTime, Match, Option, Schema } from "effect";
 import type {
   AttemptResult,
   Post as PostView,
+  PostOrigin as OriginView,
   PublicationAttempt as AttemptView,
   PostTarget as TargetView,
 } from "peal-contract";
 
 import type { PostWithTargets } from "#publishing/application/post-repository.ts";
 import type { RecordedAttempt } from "#publishing/application/publication-journal.ts";
+import type { PostOrigin } from "#publishing/domain/post-origin.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import { failureReasonOf } from "#publishing/domain/publication-policy.ts";
@@ -56,7 +58,29 @@ const targetView = ({
     : view;
 };
 
-/** What clients see of a post: what it says, when, and where it went. */
+// How a post was created or scheduled, as the contract describes it.
+const originView = (origin: PostOrigin): OriginView =>
+  Match.valueTags(origin, {
+    apiKey: ({ apiKeyId, name }) => ({
+      id: apiKeyId,
+      name: name ?? null,
+      via: "apiKey" as const,
+    }),
+    application: ({ clientId, name }) => ({
+      id: clientId,
+      name: name ?? null,
+      via: "application" as const,
+    }),
+    web: () => ({ id: null, name: null, via: "web" as const }),
+  });
+
+const originOrNull = (origin: Option.Option<PostOrigin>) =>
+  origin.pipe(Option.map(originView), Option.getOrNull);
+
+/**
+ * What clients see of a post: what it says, when, where it went, and how
+ * it was created and scheduled.
+ */
 export const postView = ({ post, targets }: PostWithTargets): PostView => ({
   authorId: Option.getOrNull(post.authorId),
   content: {
@@ -70,9 +94,12 @@ export const postView = ({ post, targets }: PostWithTargets): PostView => ({
     })),
     text: post.content.text,
   },
+  createdVia: originOrNull(post.attribution.createdVia),
   id: post.id,
   outcome: post.status._tag === "finished" ? post.status.outcome : null,
   schedule: scheduleOf(post.status),
+  scheduledBy: Option.getOrNull(post.attribution.scheduledBy),
+  scheduledVia: originOrNull(post.attribution.scheduledVia),
   status: post.status._tag,
   targets: targets.map(targetView),
 });

@@ -69,7 +69,7 @@ func (b *BadRequestError) GetBody() any {
 	return b.Body
 }
 
-// The post's status does not allow this. `status` is the status it has.
+// The `Idempotency-Key` was sent before, within the last 24 hours, with another request: nothing was made. Send a new request under a new key.
 type ConflictError struct {
 	*core.APIError
 	Body any
@@ -162,7 +162,7 @@ func (n *NotFoundError) GetBody() any {
 	return n.Body
 }
 
-// The workspace's plan allows no more of `limit`: it has `allowed` already. A larger plan, or removing some, makes room. Nothing was changed.
+// The workspace's plan (`plan`) allows `allowed` of `limit`, and the workspace holds `used`: nothing was changed. `planWithRoom` is the smallest plan with room for what was refused, which an owner or an admin orders on the billing page (`billingUrl`); it is null on the largest plan, where more is asked for by writing to Peal. Removing some makes room too. A workspace holding more than its plan allows, as after a trial, adds nothing until it is back within it.
 type PaymentRequiredError struct {
 	*core.APIError
 	Body *PlanLimitReachedEncoded
@@ -224,7 +224,7 @@ func (s *ServiceUnavailableError) GetBody() any {
 	return s.Body
 }
 
-// The workspace used every assistant request it has today. Try again after `resetsAt`.
+// The workspace already imports two files at once, or the server as many as it runs together: nothing was fetched or stored. Ask again in a moment, once one has finished.
 type TooManyRequestsError struct {
 	*core.APIError
 	Body any

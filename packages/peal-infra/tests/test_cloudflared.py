@@ -5,12 +5,14 @@ services call on the sandbox stays open."""
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
-from urllib.parse import unquote
+from urllib.parse import unquote, urlsplit
 
 import pytest
 import yaml
@@ -139,9 +141,14 @@ def test_team_hosts_need_access(rendered: Path, environment: str, surface: str, 
 
 SANDBOX_OPEN = [
     "/api/channels/oauth/bluesky/client-metadata.json",
+    "/api/channels/oauth/bluesky/jwks.json",
     "/api/auth/stripe/webhook",
     "/api/data-deletion/facebook",
+    "/api/data-deletion/facebook/deauthorize",
+    "/api/data-deletion/instagram",
+    "/api/data-deletion/instagram/deauthorize",
     "/api/data-deletion/threads",
+    "/api/data-deletion/threads/deauthorize",
 ]
 
 
@@ -155,6 +162,54 @@ def test_sandbox_lets_outside_services_call(rendered: Path, path: str) -> None:
     assert _audience(rule) == [], rule
 
 
+SERVER = INFRA.parent / "peal-server"
+BUN = shutil.which("bun")
+
+
+def _platform_addresses(public_url: str) -> list[dict[str, str]]:
+    """Every address the platforms are given or read for a server at this
+    origin, from the server's own command (peal-server:platform-addresses),
+    which builds them from its routes."""
+    assert BUN is not None
+    printed = subprocess.run(
+        [BUN, "scripts/platform-addresses.ts", "--json"],
+        cwd=SERVER,
+        env={**os.environ, "PUBLIC_URL": public_url, "NODE_ENV": "production"},
+        check=True,
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+    ).stdout
+    return [address for registration in json.loads(printed)["registrations"] for address in registration["addresses"]]
+
+
+@pytest.mark.skipif(
+    BUN is None or not (INFRA.parent.parent / "node_modules").is_dir(),
+    reason="Bun or the workspace's packages are not installed",
+)
+def test_sandbox_lets_through_every_address_the_platforms_call(rendered: Path) -> None:
+    """A platform that gains a route its servers call must reach the
+    sandbox, where its app is tried first: the list above is kept by hand,
+    this one is the server's."""
+    settings = _settings("peal-sandbox")
+    host = settings["peal_hostnames"]["app"]
+    rules = _rules(rendered, "peal-sandbox")
+    addresses = _platform_addresses(f"https://{host}")
+    called = [urlsplit(address["url"]).path for address in addresses if address["calledBy"] == "platform"]
+    opened = [urlsplit(address["url"]).path for address in addresses if address["calledBy"] == "browser"]
+
+    assert called
+    assert set(called) <= set(SANDBOX_OPEN)
+    for path in called:
+        rule = rules[_match(rules, host, path)]
+        assert rule["service"] == f"http://127.0.0.1:{settings['peal_ports']['server']}", path
+        assert _audience(rule) == [], path
+    # The pages members come back to stay behind Access, as they are.
+    assert opened
+    for path in opened:
+        assert _guarded(rules[_match(rules, host, path)], settings["cloudflare_access_aud"]["sandbox"]), path
+
+
 SANDBOX_GUARDED = [
     *[s for p in ADMIN_PATHS for s in _spellings(p)],
     "/",
@@ -163,6 +218,10 @@ SANDBOX_GUARDED = [
     "/api/auth/sign-in/email",
     "/api/auth/stripe/webhook/../../admin/list-users",
     "/api/data-deletion/../auth/admin/list-users",
+    "/api/data-deletion/requests/synthetic-code",
+    "/api/data-deletion/facebook/deauthorize/../../../auth/admin/list-users",
+    "/api/data-deletion/pinterest",
+    "/api/data-deletion/facebook/other",
     "/.well-known/oauth-authorization-server",
 ]
 

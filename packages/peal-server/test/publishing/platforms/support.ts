@@ -239,6 +239,8 @@ export const mediaOf = (files: readonly TestFile[]) => {
     MediaForPublishing.of({
       describe: (_workspace, mediaId) =>
         found(mediaId).pipe(Effect.map(({ media }) => media)),
+      held: (_workspace, mediaId) =>
+        found(mediaId).pipe(Effect.map(({ bytes }) => Stream.make(bytes))),
       open: (_workspace, mediaId) =>
         Stream.unwrap(
           found(mediaId).pipe(Effect.map(({ bytes }) => Stream.make(bytes)))

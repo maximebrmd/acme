@@ -45,8 +45,13 @@ export const trackedPosts = analytics.table(
     workspaceId: uuid("workspace_id").notNull(),
   },
   (table) => [
+    // The collection's two reads: the channels with posts due, from the
+    // first index alone, then those channels' due posts, from the second.
     index("tracked_posts_due")
-      .on(table.nextCollectionAt, table.targetId)
+      .on(table.nextCollectionAt, table.channelId)
+      .where(sql`${table.nextCollectionAt} IS NOT NULL`),
+    index("tracked_posts_channel_due")
+      .on(table.channelId, table.nextCollectionAt, table.targetId)
       .where(sql`${table.nextCollectionAt} IS NOT NULL`),
     index("tracked_posts_workspace_published").on(
       table.workspaceId,

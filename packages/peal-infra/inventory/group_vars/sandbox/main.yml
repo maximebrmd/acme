@@ -6,6 +6,11 @@
 server_hostname: peal-sandbox
 peal_environment: sandbox
 
+# Where it is hosted (group_vars/production says how to write them). The
+# sandbox may share production's provider and city: it does not watch it.
+hosting_provider: REPLACE-WITH-THE-PROVIDER-OF-THE-SANDBOX
+hosting_location: REPLACE-WITH-THE-CITY-OF-THE-SANDBOX
+
 # First-level subdomains only: Cloudflare's free certificate covers no
 # deeper name, such as app.sandbox.peal.social.
 peal_hostnames:
@@ -31,7 +36,12 @@ peal_backup_endpoint: 0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.c
 peal_backup_bucket: peal-sandbox-backups
 peal_backup_path: /sandbox
 
+# Few people use the sandbox: the server traces every request there.
+peal_settings:
+  OTEL_TRACES_SAMPLER: parentbased_always_on
+
 peal_static_build_args:
   SITE_URL: https://sandbox-site.peal.social
+  SITE_APP_URL: https://sandbox.peal.social
   SITE_DOCS_URL: https://sandbox-docs.peal.social
   DOCS_SITE_URL: https://sandbox-docs.peal.social

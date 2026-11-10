@@ -2,7 +2,7 @@
 title: Deployment
 description: How Peal's own servers run, production and the sandbox behind Cloudflare, their releases, backups and alerts, and the uptime server that watches them from outside.
 sidebar:
-  order: 13
+  order: 15
 ---
 
 Peal's own instance runs the stack a [self-hosted](/self-hosting) one runs, on servers that the Ansible in `packages/peal-infra` sets up and changes: nothing else does. Its README is the runbook, with every command.
@@ -21,7 +21,9 @@ Peal's own instance runs the stack a [self-hosted](/self-hosting) one runs, on s
 | Sandbox    | The same, before production, with its own database, buckets, Stripe account and platform apps                      |
 | Uptime     | [Gatus](#uptime), which checks the other two from outside, and Caddy, its one public entry                         |
 
-Each is a Hetzner Cloud server on Ubuntu LTS, with security updates every day, an admin account that signs in with a key, and a firewall that refuses every connection it does not need. Production and the sandbox are reached only through a Cloudflare Tunnel, which they dial out to, SSH included, and Cloudflare Access guards Grafana, SSH, the admin and the whole sandbox. The staff Access lets into Grafana are its admins, with full access. The uptime server has no tunnel, no private network and no secret of theirs.
+Each is a server at a European provider, on Ubuntu LTS, with security updates every day, an admin account that signs in with a key, and a firewall that refuses every connection it does not need. Production and the sandbox are reached only through a Cloudflare Tunnel, which they dial out to, SSH included, and Cloudflare Access guards Grafana, SSH, the admin and the whole sandbox. The staff Access lets into Grafana are its admins, with full access. The uptime server has no tunnel, no private network and no secret of theirs, and is at another provider and in another city than production, so an outage at one company, or in one data centre, never takes both.
+
+The platforms' apps, one set for production and one for the sandbox, are given the addresses each server prints for its own name, with [the command](/self-hosting#platform-addresses) that lists them from the server's routes, on the server itself: `sudo peal-compose exec server bun packages/peal-server/scripts/platform-addresses.ts`. None is written by hand. The sandbox, behind Access, lets through the ones that the platforms' servers call.
 
 Secrets are generated on the server that uses them and stay there. What outside services issue, such as storage keys or a Telegram bot's token, comes from an encrypted vault or is written on the server, and Ansible checks it by name only.
 
@@ -35,7 +37,7 @@ Postgres archives its write-ahead log to Cloudflare R2 with pgBackRest at least 
 
 ## Alerts [#alerts]
 
-The Grafana of production and of the sandbox sends its alerts to a Telegram chat: when the server answers no requests, fails them or logs errors, when no backup has finished for 30 hours, and when the disk is 85% full.
+The Grafana of production and of the sandbox sends its alerts to a Telegram chat: when the server answers no requests, fails them or logs errors, when a platform refuses the server's app until it is paid for, when no backup has finished for 30 hours, and when the disk is 85% full.
 
 ## Uptime [#uptime]
 

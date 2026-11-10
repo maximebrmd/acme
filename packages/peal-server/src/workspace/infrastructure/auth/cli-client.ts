@@ -12,6 +12,15 @@ import { BetterAuth } from "./better-auth.ts";
 import { apiResourceOf, cliClientId } from "./oauth.ts";
 import { AuthSettings } from "./settings.ts";
 
+// What the command line may ask for: to renew its sign-in, and every
+// workspace scope, publishing included, which the user agrees to or not.
+const cliScopes = [
+  "offline_access",
+  "workspace:read",
+  "workspace:write",
+  "workspace:publish",
+];
+
 /**
  * Registers the command line's OAuth client, `peal-cli`, when the server
  * starts. Better Auth issues client ids at random, so the client is written
@@ -19,7 +28,8 @@ import { AuthSettings } from "./settings.ts";
  * authorization grant and renewing its tokens, for the HTTP API only. It has
  * no owner, and Better Auth refuses to change it, as a trusted client.
  *
- * Servers starting together may both write it; the first one wins. When
+ * Servers starting together may both write it; the first one wins. One
+ * registered by an earlier release gets the scopes this one knows, and when
  * PUBLIC_URL changes, the client is linked to the new API resource as well.
  */
 export const CliClientLive = Layer.effectDiscard(
@@ -43,11 +53,15 @@ export const CliClientLive = Layer.effectDiscard(
         name: "Peal CLI",
         redirectUris: [],
         responseTypes: [],
-        scopes: ["offline_access", "workspace:read", "workspace:write"],
+        scopes: cliScopes,
         tokenEndpointAuthMethod: "none",
         updatedAt: now,
       })
-      .onConflictDoNothing({ target: oauthClient.clientId });
+      // A client registered before a scope existed may now ask for it.
+      .onConflictDoUpdate({
+        set: { scopes: cliScopes, updatedAt: now },
+        target: oauthClient.clientId,
+      });
 
     yield* db
       .insert(oauthClientResource)

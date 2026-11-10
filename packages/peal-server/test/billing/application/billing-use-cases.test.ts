@@ -19,8 +19,10 @@ import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import {
+  NoAddressesTest,
   NoContractsTest,
   NoTrialsTest,
+  PlainPseudonymsTest,
   StripeUncalledTest,
 } from "#test/billing/support.ts";
 
@@ -97,7 +99,13 @@ const billingWith = (enabled: boolean) =>
       Layer.mergeAll(WorkspaceEntitlements.layer, RecordSubscription.layer)
     ),
     Layer.provide(
-      Layer.mergeAll(SubscriptionsInMemory, NoTrialsTest, StripeUncalledTest)
+      Layer.mergeAll(
+        SubscriptionsInMemory,
+        NoTrialsTest,
+        StripeUncalledTest,
+        NoAddressesTest,
+        PlainPseudonymsTest
+      )
     ),
     Layer.provide(Layer.mergeAll(TransactionsTest, WorkspacesTest)),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))

@@ -8,6 +8,7 @@ import { Api } from "peal-contract";
 
 import { DataDeletionHandlers } from "#channels/api/data-deletion.ts";
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
+import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DataDeletionLinks } from "#channels/application/data-deletion-links.ts";
 import { DeauthorizePlatformUser } from "#channels/application/deauthorize-platform-user.ts";
@@ -69,7 +70,7 @@ const deletionsWith = (apps: { readonly threads: boolean }) =>
     Layer.provideMerge(
       Layer.mergeAll(
         MetaSignedRequestsLive,
-        DrizzleDataDeletions,
+        DrizzleDataDeletions.pipe(Layer.provide(ChannelEvents.none)),
         DrizzleChannelRepository,
         SqlChannelLocks,
         RecordedNotices.layer,

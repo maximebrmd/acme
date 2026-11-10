@@ -576,6 +576,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         // What staff did to Lee's account, and what they did to another.
         yield* sql`INSERT INTO staff.audit_events (id, action, at, reason, staff_id, target_id)
           VALUES (uuidv7(), 'resendVerification', '2026-11-08T10:00:00Z', 'Synthetic: asked for it again', ${kim.id}, ${lee.id}),
+            (uuidv7(), 'legalDisclosure', '2026-11-08T11:00:00Z', 'Synthetic public prosecutor: Synthetic requisition 2026-0042', ${kim.id}, ${lee.id}),
             (uuidv7(), 'ban', '2026-11-08T11:00:00Z', 'Synthetic reason about someone else', ${kim.id}, ${kim.id})`;
 
         yield* seedTrackedPost(atelier, channelId, atelierPost);
@@ -713,6 +714,9 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           ]
         );
         assert.notInclude(text, "Synthetic reason about someone else");
+        // Nor that an authority asked about Lee: telling the person a
+        // request concerns can be forbidden, so the export never does.
+        assert.notInclude(text, "Synthetic requisition");
         assert.deepStrictEqual(
           own?.media.map(({ contentType, downloadUrl, status }) => ({
             contentType,

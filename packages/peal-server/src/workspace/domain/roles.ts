@@ -12,7 +12,8 @@ import type { Grant, Permission } from "#shared/domain/access.ts";
  *
  * - `owner`: everything, including deleting the workspace. Whoever creates a
  *   workspace owns it.
- * - `admin`: everything but deleting the workspace.
+ * - `admin`: everything but deleting the workspace. Owners and admins alone
+ *   manage members, API keys, billing and webhooks.
  * - `editor`: writes, schedules, approves and publishes posts, manages media,
  *   asks the writing assistant, and reads channels and analytics.
  * - `contributor`: drafts posts, uploads media and asks the writing

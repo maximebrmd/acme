@@ -137,6 +137,54 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+//
+// Example:
+//
+//	request := &peal.NewPost{
+//	    WorkspaceID: "workspaceId",
+//	    ChannelIDs: []string{
+//	        "channelIds",
+//	    },
+//	    Content: &peal.PostContent{
+//	        Media: []*peal.MediaAttachment{
+//	            &peal.MediaAttachment{
+//	                AltText: "altText",
+//	                MediaID: "mediaId",
+//	            },
+//	        },
+//	        Overrides: []*peal.TextOverride{
+//	            &peal.TextOverride{
+//	                ChannelID: "channelId",
+//	                Text: "text",
+//	            },
+//	        },
+//	        Text: "text",
+//	    },
+//	    When: &peal.PostTiming{
+//	        Now: &peal.PostTimingNow{},
+//	    },
+//	}
+//	_, err := client.Posts.Send(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Send(
+	ctx context.Context,
+	request *peal.NewPost,
+	opts ...option.RequestOption,
+) (*peal.Post, error) {
+	response, err := c.WithRawResponse.Send(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
 // Answers with a post of the workspace. Needs post:read.
 //
 // Example:

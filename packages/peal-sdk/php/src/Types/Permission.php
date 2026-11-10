@@ -32,4 +32,6 @@ enum Permission: string
     case PostSchedule = "post:schedule";
     case PostApprove = "post:approve";
     case PostPublish = "post:publish";
+    case WebhookRead = "webhook:read";
+    case WebhookManage = "webhook:manage";
 }

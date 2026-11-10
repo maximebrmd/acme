@@ -33,6 +33,36 @@ const pending = (id: string, role: string) =>
     workspaceId,
   });
 
+const colleagueId = UserIdSchema.make("2d8a4b6c-5e3f-4a71-8cbd-3e4f5a6b7c8d");
+
+const guestId = UserIdSchema.make("3e9b5c7d-6f4a-4b82-9dce-4f5a6b7c8d9e");
+
+// The workspace's members: the user, who holds the role each test gives
+// them in the directory, and two others.
+const seated = [
+  {
+    email: "user@example.test",
+    joinedAt: at,
+    name: "User",
+    role: "owner",
+    userId,
+  },
+  {
+    email: "colleague@example.test",
+    joinedAt: at,
+    name: "Colleague",
+    role: "editor",
+    userId: colleagueId,
+  },
+  {
+    email: "guest@example.test",
+    joinedAt: at,
+    name: "Guest",
+    role: "viewer",
+    userId: guestId,
+  },
+];
+
 const actor = (role: string, subject: ActorSubject) =>
   new Actor({ permissions: permissionsFor(role), subject, workspaceId });
 
@@ -68,16 +98,24 @@ const run = <A, E>(
           Ref.update(asked, (all) => [...all, `invite:${request.role}`]).pipe(
             Effect.as(pending("sent", request.role))
           ),
-        members: () => Effect.succeed([]),
+        members: () => Effect.succeed(seated),
         pendingInvitations: () =>
           Effect.succeed([
             pending("crown", "owner"),
             pending("desk", "editor"),
           ]),
+        removeMembers: (_workspace, userIds) =>
+          Ref.update(asked, (all) => [
+            ...all,
+            ...userIds.map((id) => `remove:${id}`),
+          ]).pipe(Effect.as(userIds.length)),
+        reseating: (_workspace, change) => change,
         revoke: (_workspace, invitationId) =>
           Ref.update(asked, (all) => [...all, `revoke:${invitationId}`]).pipe(
             Effect.as(invitationId === "desk")
           ),
+        revokeAll: () =>
+          Ref.update(asked, (all) => [...all, "revokeAll"]).pipe(Effect.as(2)),
       })
     );
 
@@ -238,6 +276,53 @@ describe(WorkspaceMembers, () => {
       })
   );
 
+  it.effect(
+    "keeps only the members chosen, and revokes the pending invitations",
+    () =>
+      Effect.gen(function* keeps() {
+        const outcome = yield* run("owner", (asked) =>
+          WorkspaceMembers.use((members) =>
+            Effect.all({
+              byStaff: failure(
+                members.keepOnly(actor("owner", impersonated), [userId])
+              ),
+              byViewer: failure(
+                members.keepOnly(actor("viewer", inPerson), [userId])
+              ),
+              freed: members.keepOnly(actor("owner", inPerson), [
+                userId,
+                guestId,
+              ]),
+              unknown: failure(
+                members.keepOnly(actor("owner", inPerson), [
+                  userId,
+                  "not-an-id",
+                ])
+              ),
+              withoutSelf: failure(
+                members.keepOnly(actor("owner", inPerson), [guestId])
+              ),
+            }).pipe(
+              Effect.flatMap((done) =>
+                Ref.get(asked).pipe(
+                  Effect.map((all) => ({ ...done, asked: all }))
+                )
+              )
+            )
+          )
+        );
+
+        assert.deepStrictEqual(outcome, {
+          asked: [`remove:${colleagueId}`, "revokeAll"],
+          byStaff: "MissingPermission",
+          byViewer: "MissingPermission",
+          freed: { removed: 1, revoked: 2 },
+          unknown: "MembersNotRemovable",
+          withoutSelf: "MembersNotRemovable",
+        });
+      })
+  );
+
   it.effect("lists the members to people, and to no API key", () =>
     Effect.gen(function* lists() {
       const refused = yield* run("viewer", () =>
@@ -253,7 +338,7 @@ describe(WorkspaceMembers, () => {
       );
 
       assert.strictEqual(refused, "UserRequired");
-      assert.deepStrictEqual(listed, []);
+      assert.deepStrictEqual(listed, seated);
     })
   );
 });

@@ -17,6 +17,7 @@ use Peal\Posts\Requests\ListPostsRequest;
 use Peal\Types\Post;
 use Peal\Core\Json\JsonDecoder;
 use Peal\Posts\Requests\CreatePostsRequest;
+use Peal\Posts\Requests\NewPost;
 use Peal\Posts\Requests\UpdatePostsRequest;
 use Peal\Types\PublicationAttempt;
 use Peal\Posts\Requests\SchedulePost;
@@ -245,6 +246,90 @@ class PostsClient
                     path: "api/workspaces/{$workspaceId}/posts",
                     method: HttpMethod::POST,
                     body: $request->body,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return Post::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+     *
+     * Example:
+     * ```php
+     * $client->posts->send(
+     *     'workspaceId',
+     *     new NewPost([
+     *         'channelIds' => [
+     *             'channelIds',
+     *         ],
+     *         'content' => new PostContent([
+     *             'media' => [
+     *                 new MediaAttachment([
+     *                     'altText' => 'altText',
+     *                     'mediaId' => 'mediaId',
+     *                 ]),
+     *             ],
+     *             'overrides' => [
+     *                 new TextOverride([
+     *                     'channelId' => 'channelId',
+     *                     'text' => 'text',
+     *                 ]),
+     *             ],
+     *             'text' => 'text',
+     *         ]),
+     *         'when' => PostTiming::now(new PostTimingNow([])),
+     *     ]),
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param NewPost $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?Post
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function send(string $workspaceId, NewPost $request, ?array $options = null): ?Post
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        $headers = [];
+        if ($request->idempotencyKey != null) {
+            $headers['idempotency-key'] = $request->idempotencyKey;
+        }
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/posts/send",
+                    method: HttpMethod::POST,
+                    headers: $headers,
+                    body: $request,
                 ),
                 $options,
             );

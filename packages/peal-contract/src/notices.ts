@@ -12,9 +12,21 @@ import {
   MoneySchema,
   PaidPlanSchema,
 } from "./billing-plans.ts";
+import { ExcessSchema } from "./billing.ts";
 import { Forbidden } from "./forbidden.ts";
 import { PlatformSchema } from "./platform.ts";
 import { FailureReasonSchema } from "./posts.ts";
+
+/**
+ * Why Peal turned a webhook endpoint off: every attempt failed for days
+ * (`failing`), or the receiver answered 410 Gone (`gone`).
+ */
+export const WebhookTurnOffReasonSchema = Schema.Literals([
+  "failing",
+  "gone",
+]).annotate({ identifier: "WebhookTurnOffReason" });
+
+export type WebhookTurnOffReason = typeof WebhookTurnOffReasonSchema.Type;
 
 /** The account a notice is about, as it was when the notice was made. */
 export const NoticeChannelSchema = Schema.Struct({
@@ -103,9 +115,12 @@ export const NoticeEventSchema = Schema.Union([
     trialEnd: Schema.NullOr(Schema.DateTimeUtc),
   }),
   // The workspace's trial ends at `endsAt`: it then moves to the free plan
-  // unless someone orders a plan.
+  // unless someone orders a plan. `over` lists what it held beyond the
+  // free plan when it was told (empty when nothing): from that day it
+  // schedules and publishes nothing until it is back within the plan.
   Schema.TaggedStruct("TrialEnding", {
     endsAt: Schema.DateTimeUtc,
+    over: Schema.Array(ExcessSchema),
     plan: PaidPlanSchema,
   }),
   // A yearly plan renews at `renewsAt`, for `price`, what Stripe will
@@ -127,6 +142,13 @@ export const NoticeEventSchema = Schema.Union([
     plan: PaidPlanSchema,
     refunded: MoneySchema,
     withdrawnAt: Schema.DateTimeUtc,
+  }),
+  // Peal turned a webhook endpoint off: nothing is sent to it until
+  // someone turns it back on. `host` is where its deliveries went.
+  Schema.TaggedStruct("WebhookEndpointDisabled", {
+    endpointId: Schema.String,
+    host: Schema.String,
+    reason: WebhookTurnOffReasonSchema,
   }),
 ]).annotate({ identifier: "NoticeEvent" });
 

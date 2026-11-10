@@ -26,6 +26,7 @@ import { AccountRules } from "#publishing/application/account-rules.ts";
 import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import { ChannelHealth } from "#publishing/application/channel-health.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
+import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SchedulePostRequest } from "#publishing/application/post-scheduling.ts";
@@ -36,6 +37,7 @@ import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
+import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import {
@@ -53,6 +55,7 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
+import { RecordingOperatorAlerts } from "#test/publishing/infrastructure/recorded-app-refusals.ts";
 import { RecordingPublicationOutcomes } from "#test/publishing/infrastructure/recorded-outcomes.ts";
 import {
   actorIn,
@@ -136,14 +139,17 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
     Layer.provideMerge(PostScheduling.layer),
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzleIdempotencyKeys,
         DrizzlePostRepository,
         journal,
         RecordingChannelHealth,
+        RecordingOperatorAlerts,
         RecordingPublicationOutcomes,
         WorkflowPublicationScheduler,
         ReferencesTest,
         AccountRules.none,
-        ApprovalGate.open
+        ApprovalGate.open,
+        PostEvents.none
       )
     ),
     Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),

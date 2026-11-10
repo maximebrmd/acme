@@ -16,6 +16,8 @@ import type { Platform } from "#shared/domain/platform.ts";
 export interface StaffSubscription {
   readonly cancelAtPeriodEnd: boolean;
   readonly currentPeriodEnd: Option.Option<DateTime.Utc>;
+  /** When it ends, once it is set to end. */
+  readonly endsAt: Option.Option<DateTime.Utc>;
   readonly interval: "month" | "year";
   readonly plan: PaidPlan;
   readonly startedAt: Option.Option<DateTime.Utc>;
@@ -45,6 +47,20 @@ export interface ChannelHealth {
   readonly status: ChannelState;
   readonly tokenExpiresAt: Option.Option<DateTime.Utc>;
   readonly workspaceId: WorkspaceId;
+}
+
+/**
+ * A webhook endpoint and how it is doing: the host its deliveries go to,
+ * never its whole address or its secret.
+ */
+export interface WebhookHealth {
+  readonly disabledReason: Option.Option<"failing" | "gone" | "manual">;
+  readonly enabled: boolean;
+  /** How many event types it subscribes to. */
+  readonly eventTypes: number;
+  readonly failingSince: Option.Option<DateTime.Utc>;
+  readonly host: string;
+  readonly id: string;
 }
 
 /** How many of a workspace's posts are in each status. */
@@ -87,5 +103,8 @@ export class WorkspaceHealth extends Context.Service<
       workspaceId: WorkspaceId,
       limit: number
     ) => Effect.Effect<readonly PostTrouble[], DatabaseError>;
+    readonly webhooks: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly WebhookHealth[], DatabaseError>;
   }
 >()("peal-server/staff/application/WorkspaceHealth") {}

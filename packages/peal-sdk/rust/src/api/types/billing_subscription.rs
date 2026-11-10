@@ -8,6 +8,9 @@ pub struct BillingSubscription {
     #[serde(rename = "currentPeriodEnd")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub current_period_end: Option<String>,
+    #[serde(rename = "endsAt")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ends_at: Option<String>,
     pub interval: BillingInterval,
     pub plan: PaidPlan,
     #[serde(rename = "startedAt")]
@@ -30,6 +33,7 @@ impl BillingSubscription {
 pub struct BillingSubscriptionBuilder {
     cancel_at_period_end: Option<bool>,
     current_period_end: Option<String>,
+    ends_at: Option<String>,
     interval: Option<BillingInterval>,
     plan: Option<PaidPlan>,
     started_at: Option<String>,
@@ -45,6 +49,11 @@ impl BillingSubscriptionBuilder {
 
     pub fn current_period_end(mut self, value: impl Into<String>) -> Self {
         self.current_period_end = Some(value.into());
+        self
+    }
+
+    pub fn ends_at(mut self, value: impl Into<String>) -> Self {
+        self.ends_at = Some(value.into());
         self
     }
 
@@ -85,6 +94,7 @@ impl BillingSubscriptionBuilder {
                 .cancel_at_period_end
                 .ok_or_else(|| BuildError::missing_field("cancel_at_period_end"))?,
             current_period_end: self.current_period_end,
+            ends_at: self.ends_at,
             interval: self
                 .interval
                 .ok_or_else(|| BuildError::missing_field("interval"))?,

@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { Effect } from "effect";
+import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
@@ -10,6 +10,7 @@ import type {
   ContractsRecord,
   IdentificationRecord,
   LegalHoldRecord,
+  LegalRemainsRecord,
   MediaRecord,
   NoticeRecord,
   PostRecord,
@@ -18,6 +19,7 @@ import type {
   StaffActionRecord,
   UsageRecord,
   UserReviewRecord,
+  WebhookRecord,
 } from "#shared/application/personal-data.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
@@ -51,6 +53,7 @@ export interface WorkspaceContent {
   readonly posts: readonly PostRecord[];
   /** Its approval policy, review links, comments and approvals. */
   readonly review: ReviewRecord;
+  readonly webhooks: readonly WebhookRecord[];
 }
 
 /** What the other contexts keep about a user, wherever they are a member. */
@@ -74,7 +77,7 @@ export interface UserContent {
 /**
  * The data the other contexts keep about workspaces and users: channels,
  * posts and their authors, media, analytics, assistant usage, billing,
- * notices and preferences, the staff audit log, and what the law has Peal
+ * webhooks, notices and preferences, the staff audit log, and what the law has Peal
  * keep (`#legal`). Erasures run in the caller's transaction, except the media
  * files, which the store holds outside the database: remove them once the
  * rest is committed.
@@ -141,8 +144,17 @@ export class ContextRecords extends Context.Service<
      * signed in and the references of their payments. Runs in the
      * caller's transaction, so no account closes without it.
      */
+    /**
+     * What the law has the server keep of the user's account once it is
+     * closed, and for how long; null when nothing.
+     */
+    readonly legalRemains: (
+      userId: UserId
+    ) => Effect.Effect<LegalRemainsRecord | null, DatabaseError>;
     readonly holdIdentification: (
-      record: IdentificationRecord
+      record: IdentificationRecord,
+      /** When the account closed, if not now. */
+      closedAt?: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
     readonly removeWorkspaceFiles: (
       workspaceId: WorkspaceId

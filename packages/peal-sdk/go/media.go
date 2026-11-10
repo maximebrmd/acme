@@ -259,6 +259,72 @@ func (g *GetMediaRequest) SetMediaID(mediaID string) {
 }
 
 var (
+	mediaImportFieldWorkspaceID = big.NewInt(1 << 0)
+	mediaImportFieldAltText     = big.NewInt(1 << 1)
+	mediaImportFieldURL         = big.NewInt(1 << 2)
+)
+
+type MediaImport struct {
+	WorkspaceID string  `json:"-" url:"-"`
+	AltText     *string `json:"altText,omitempty" url:"-"`
+	URL         string  `json:"url" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (m *MediaImport) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaImport) SetWorkspaceID(workspaceID string) {
+	m.WorkspaceID = workspaceID
+	m.require(mediaImportFieldWorkspaceID)
+}
+
+// SetAltText sets the AltText field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaImport) SetAltText(altText *string) {
+	m.AltText = altText
+	m.require(mediaImportFieldAltText)
+}
+
+// SetURL sets the URL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaImport) SetURL(url string) {
+	m.URL = url
+	m.require(mediaImportFieldURL)
+}
+
+func (m *MediaImport) UnmarshalJSON(data []byte) error {
+	type unmarshaler MediaImport
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*m = MediaImport(body)
+	return nil
+}
+
+func (m *MediaImport) MarshalJSON() ([]byte, error) {
+	type embed MediaImport
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+var (
 	listMediaRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	listMediaRequestFieldCursor      = big.NewInt(1 << 1)
 	listMediaRequestFieldLimit       = big.NewInt(1 << 2)

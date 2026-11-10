@@ -1,0 +1,5 @@
+---
+# The accounts to remove once the admin user works: the one the server's
+# image came with, when bootstrap.yml logged in as it (bootstrap_user).
+# Never root, whose logins sshd refuses, nor the admin user.
+ssh_image_users: "{{ [bootstrap_user] | difference(['root', admin_user]) }}"

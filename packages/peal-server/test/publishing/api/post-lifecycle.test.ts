@@ -420,3 +420,113 @@ describe("the outcome endpoints", () => {
     timeout
   );
 });
+
+describe("the send endpoint", () => {
+  it.effect(
+    "creates and sends a post in one call, once per idempotency key",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* sends() {
+          const workspaceId = yield* freshId;
+          const editorId = yield* freshId;
+          const editor = yield* clientAs(editorId, workspaceId, "editor");
+
+          const contributor = yield* clientAs(
+            yield* freshId,
+            workspaceId,
+            "contributor"
+          );
+
+          const channelId = yield* connect(workspaceId, "mastodon");
+          const params = { workspaceId };
+          const headers = { "idempotency-key": "synthetic-key-api" };
+
+          const payload = {
+            channelIds: [channelId],
+            content: text("A synthetic post, sent in one call."),
+            when: {
+              _tag: "at",
+              at: utc("2026-06-15T09:00:00Z"),
+              timeZone: "Europe/Paris",
+            },
+          } as const;
+
+          const sent = yield* editor.posts.send({ headers, params, payload });
+
+          assert.strictEqual(sent.status, "scheduled");
+          assert.strictEqual(sent.authorId, editorId);
+          assert.strictEqual(sent.scheduledBy, editorId);
+          assert.deepStrictEqual(sent.createdVia, sent.scheduledVia);
+
+          // Sent again, written another way: the same request, the same post.
+          const again = yield* editor.posts.send({
+            headers,
+            params,
+            payload: {
+              ...payload,
+              when: {
+                _tag: "at",
+                at: utc("2026-06-15T09:00:00.000Z"),
+                timeZone: "Europe/Paris",
+              },
+            },
+          });
+
+          assert.strictEqual(again.id, sent.id);
+
+          const reused = yield* editor.posts
+            .send({
+              headers,
+              params,
+              payload: { ...payload, content: text("Something else.") },
+            })
+            .pipe(Effect.flip);
+
+          assert.strictEqual(reused._tag, "IdempotencyKeyReused");
+
+          // Every violation comes at once, and nothing is made.
+          const refused = yield* editor.posts
+            .send({
+              headers: {},
+              params,
+              payload: {
+                channelIds: [channelId],
+                content: text("a".repeat(600)),
+                when: { _tag: "now" },
+              },
+            })
+            .pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "PostContentInvalid");
+
+          const zone = yield* editor.posts
+            .send({
+              headers: {},
+              params,
+              payload: {
+                ...payload,
+                when: { _tag: "now", timeZone: "+01:00" },
+              },
+            })
+            .pipe(Effect.flip);
+
+          assert.strictEqual(zone._tag, "InvalidTimeZone");
+
+          const denied = yield* contributor.posts
+            .send({ headers: {}, params, payload })
+            .pipe(Effect.flip);
+
+          assert.strictEqual(denied._tag, "Forbidden");
+
+          // Nothing goes out from this test.
+          const cancelled = yield* editor.posts.cancel({
+            params: { ...params, postId: sent.id },
+          });
+
+          assert.strictEqual(cancelled.status, "cancelled");
+        })
+      ),
+    timeout
+  );
+});

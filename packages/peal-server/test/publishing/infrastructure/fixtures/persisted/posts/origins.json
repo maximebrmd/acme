@@ -1,0 +1,15 @@
+[
+  { "_tag": "web" },
+  { "_tag": "apiKey", "apiKeyId": "0190f3a0-0000-7000-8000-00000000a111" },
+  {
+    "_tag": "apiKey",
+    "apiKeyId": "0190f3a0-0000-7000-8000-00000000a111",
+    "name": "ci"
+  },
+  { "_tag": "application", "clientId": "peal-cli" },
+  {
+    "_tag": "application",
+    "clientId": "synthetic-client",
+    "name": "Synthetic agent"
+  }
+]

@@ -9,11 +9,17 @@ module Peal
 
       field :content, -> { Peal::Types::PostContent }, optional: false, nullable: false
 
+      field :created_via, -> { Peal::Types::PostOrigin }, optional: false, nullable: true, api_name: "createdVia"
+
       field :id, -> { String }, optional: false, nullable: false
 
       field :outcome, -> { Peal::Types::PostOutcome }, optional: false, nullable: true
 
       field :schedule, -> { Peal::Types::PostSchedule }, optional: false, nullable: true
+
+      field :scheduled_by, -> { String }, optional: false, nullable: true, api_name: "scheduledBy"
+
+      field :scheduled_via, -> { Peal::Types::PostOrigin }, optional: false, nullable: true, api_name: "scheduledVia"
 
       field :status, -> { Peal::Types::PostStatus }, optional: false, nullable: false
 

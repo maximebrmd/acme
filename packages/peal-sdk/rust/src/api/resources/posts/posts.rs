@@ -193,6 +193,82 @@ impl PostsClient {
             .await
     }
 
+    /// Creates a post and sends it to some of the workspace's channels in one call: `when` is `now`, which publishes at once, or `at` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an `Idempotency-Key` header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .posts
+    ///         .send(
+    ///             &"workspaceId".to_string(),
+    ///             &NewPost {
+    ///                 channel_ids: vec!["channelIds".to_string()],
+    ///                 content: PostContent {
+    ///                     media: vec![MediaAttachment {
+    ///                         alt_text: "altText".to_string(),
+    ///                         media_id: "mediaId".to_string(),
+    ///                         ..Default::default()
+    ///                     }],
+    ///                     overrides: vec![TextOverride {
+    ///                         channel_id: "channelId".to_string(),
+    ///                         text: "text".to_string(),
+    ///                         ..Default::default()
+    ///                     }],
+    ///                     text: "text".to_string(),
+    ///                     ..Default::default()
+    ///                 },
+    ///                 when: PostTiming::Now {
+    ///                     data: PostTimingNow {
+    ///                         ..Default::default()
+    ///                     },
+    ///                 },
+    ///                 options: None,
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn send(
+        &self,
+        workspace_id: &str,
+        request: &NewPost,
+        options: Option<RequestOptions>,
+    ) -> Result<Post, ApiError> {
+        let options = {
+            let mut o = options.unwrap_or_default();
+            o.max_retries = Some(0);
+            Some(o)
+        };
+        self.http_client
+            .execute_request(
+                Method::POST,
+                &format!("api/workspaces/{}/posts/send", workspace_id),
+                Some(serde_json::to_value(request).map_err(ApiError::Serialization)?),
+                None,
+                options,
+            )
+            .await
+    }
+
     /// Answers with a post of the workspace. Needs post:read.
     ///
     /// # Arguments

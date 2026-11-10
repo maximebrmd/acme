@@ -1,8 +1,16 @@
-import { Match } from "effect";
+import { DateTime, Match } from "effect";
 
 import type { AuthEmail } from "./auth-email.ts";
 import type { EmailCatalog, EmailMessages } from "./email-catalog.ts";
-import { catalogs, escapeHtml, fill, keep, layout } from "./email-layout.ts";
+import {
+  catalogs,
+  escapeHtml,
+  fill,
+  instantIn,
+  keep,
+  layout,
+  moneyIn,
+} from "./email-layout.ts";
 import type { RenderedEmail } from "./email-layout.ts";
 
 interface Content {
@@ -20,16 +28,140 @@ const withBilling = (
     ? { ...messages, body: `${messages.body} ${billingEnded}` }
     : messages;
 
+type LegalHold = Extract<AuthEmail, { _tag: "AccountDeleted" }>["legalHold"];
+
+// A number of years, in the catalog's words.
+const yearsIn = (catalog: EmailCatalog, count: number): string =>
+  fill(
+    count === 1 ? catalog.legalHold.years.one : catalog.legalHold.years.other,
+    new Map([["count", String(count)]]),
+    keep
+  );
+
+// What the law has the server keep of the account, if anything: who held
+// it and how they signed in, or, on a server that stopped keeping these,
+// only the connections it already holds.
+const legalHoldIn = (catalog: EmailCatalog, legalHold: LegalHold) => {
+  if (legalHold === null) {
+    return null;
+  }
+
+  const { accountYears, connectionYears, identityYears } = legalHold;
+
+  return accountYears === null || identityYears === null
+    ? fill(
+        catalog.legalHold.connections,
+        new Map([["connections", yearsIn(catalog, connectionYears)]]),
+        keep
+      )
+    : fill(
+        catalog.legalHold.identification,
+        new Map([
+          ["account", yearsIn(catalog, accountYears)],
+          ["identity", yearsIn(catalog, identityYears)],
+        ]),
+        keep
+      );
+};
+
+// An account deletion's body, with what the law has the server keep.
+const withLegalHold = (
+  messages: EmailMessages,
+  kept: string | null
+): EmailMessages =>
+  kept === null ? messages : { ...messages, body: `${messages.body} ${kept}` };
+
+type Acknowledged = Extract<
+  AuthEmail,
+  { readonly _tag: "ContractRequestAcknowledged" }
+>;
+
+// Which words say what became of it: a cancellation that ends on a later
+// day its sender asked for renews until then, and a withdrawal from a
+// contract that charged nothing refunds nothing.
+const outcomeWordsOf = (
+  email: Acknowledged
+): keyof EmailCatalog["contractRequest"]["outcomes"] => {
+  if (
+    email.outcome === "cancelled" &&
+    email.desiredAt !== null &&
+    email.effectiveAt !== null &&
+    DateTime.toEpochMillis(email.desiredAt) ===
+      DateTime.toEpochMillis(email.effectiveAt)
+  ) {
+    return "cancelledLater";
+  }
+
+  return email.outcome === "withdrawn" && email.refunded === null
+    ? "withdrawnUnpaid"
+    : email.outcome;
+};
+
+// A request's acknowledgement: when it came, what it said, what became of
+// it.
+const acknowledgementOf = (
+  email: Acknowledged,
+  { contractRequest: words }: EmailCatalog
+): Content => {
+  const { locale } = email;
+
+  const body = [
+    words.received[email.kind],
+    words.content,
+    ...(email.desiredAt === null ? [] : [words.desired]),
+    words.outcomes[outcomeWordsOf(email)],
+    // A cancellation that gives money back: its plan had renewed since.
+    ...(email.outcome === "cancelled" && email.refunded !== null
+      ? [words.renewalRefunded]
+      : []),
+  ].join(" ");
+
+  return {
+    messages: {
+      action:
+        email.outcome === "confirm"
+          ? words.actions.confirm
+          : words.actions.open,
+      body,
+      ignore: words.ignore,
+      subject: words.subjects[email.kind],
+    },
+    values: new Map([
+      [
+        "contract",
+        email.contract === "" ? words.contractNotGiven : email.contract,
+      ],
+      [
+        "desiredAt",
+        email.desiredAt === null ? "" : instantIn(email.desiredAt, locale),
+      ],
+      [
+        "effectiveAt",
+        email.effectiveAt === null ? "" : instantIn(email.effectiveAt, locale),
+      ],
+      ["email", email.to],
+      ["name", email.name],
+      ["receivedAt", instantIn(email.receivedAt, locale)],
+      [
+        "refunded",
+        email.refunded === null ? "" : moneyIn(email.refunded, locale),
+      ],
+    ]),
+  };
+};
+
 const contentOf = (email: AuthEmail, catalog: EmailCatalog): Content =>
   Match.valueTags(email, {
-    AccountDeleted: ({ subscriptionsCancelled }): Content => ({
+    AccountDeleted: ({ legalHold, subscriptionsCancelled }): Content => ({
       messages: withBilling(
-        catalog.accountDeleted,
+        withLegalHold(catalog.accountDeleted, legalHoldIn(catalog, legalHold)),
         subscriptionsCancelled,
         catalog.billingEnded.account
       ),
       values: new Map(),
     }),
+    ContractRequestAcknowledged: (acknowledged): Content =>
+      acknowledgementOf(acknowledged, catalog),
     DataExported: ({ via }): Content => ({
       messages: catalog.dataExported,
       values: new Map([["via", catalog.exportChannels[via]]]),

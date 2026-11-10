@@ -1,14 +1,22 @@
-import { DateTime, Match, Option } from "effect";
+import { Match, Option } from "effect";
 
 import type { Locale } from "#shared/domain/locale.ts";
 
 import type { EmailCatalog, EmailMessages } from "./email-catalog.ts";
-import { catalogs, escapeHtml, fill, keep, layout } from "./email-layout.ts";
+import {
+  catalogs,
+  escapeHtml,
+  fill,
+  instantIn,
+  keep,
+  layout,
+  moneyIn,
+} from "./email-layout.ts";
 import type { RenderedEmail } from "./email-layout.ts";
 import type {
   NoticeChannel,
   NoticeEvent,
-  NoticeMoney,
+  NoticeExcess,
 } from "./notice-event.ts";
 
 /** A notice for one reader, as an email. */
@@ -19,22 +27,6 @@ export interface NoticeEmail {
   readonly url: string;
   readonly workspaceName: string;
 }
-
-// Readers' time zones are not known: instants are written in UTC, and say so.
-const instantIn = (instant: DateTime.Utc, locale: Locale): string =>
-  `${DateTime.format(instant, {
-    dateStyle: "long",
-    locale,
-    timeStyle: "short",
-    timeZone: "UTC",
-  })} UTC`;
-
-// An amount in its currency, as the reader writes money.
-const moneyIn = ({ amount, currency }: NoticeMoney, locale: Locale): string =>
-  new Intl.NumberFormat(locale, {
-    currency: currency.toUpperCase(),
-    style: "currency",
-  }).format(amount / 100);
 
 const platformName = (catalog: EmailCatalog, channel: NoticeChannel) =>
   catalog.platforms[channel.platform] ?? channel.platform;
@@ -57,7 +49,68 @@ const channelPhrase = (
       ),
   });
 
+const gigabyte = 1_000_000_000;
+
+// Bytes in the decimal units the plans are sold in, as the reader writes
+// numbers.
+const sizeIn = (bytes: number, locale: Locale): string =>
+  bytes >= gigabyte
+    ? new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 1,
+        style: "unit",
+        unit: "gigabyte",
+      }).format(bytes / gigabyte)
+    : new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 0,
+        style: "unit",
+        unit: "megabyte",
+      }).format(bytes / 1_000_000);
+
+// What a workspace holds beyond the free plan, each against what the plan
+// allows, or that it holds nothing beyond it.
+const standingIn = (
+  catalog: EmailCatalog,
+  over: readonly NoticeExcess[],
+  locale: Locale
+): string => {
+  if (over.length === 0) {
+    return catalog.withinFreePlan;
+  }
+
+  const amount = (limit: NoticeExcess["limit"], count: number) =>
+    limit === "mediaStorage" ? sizeIn(count, locale) : String(count);
+
+  const listed = over.map(({ allowed, limit, used }) =>
+    fill(
+      catalog.excess[limit],
+      new Map([
+        ["allowed", amount(limit, allowed)],
+        ["used", amount(limit, used)],
+      ]),
+      keep
+    )
+  );
+
+  return fill(
+    catalog.overFreePlan,
+    new Map([["over", listed.join(", ")]]),
+    keep
+  );
+};
+
+// The body, with what the contract's number is for once it has one.
+const numbered = (
+  messages: EmailMessages,
+  catalog: EmailCatalog,
+  reference: string | undefined
+): EmailMessages =>
+  reference === undefined
+    ? messages
+    : { ...messages, body: `${messages.body} ${catalog.contractNumber}` };
+
 interface Content {
+  /** What the email sets apart in a box, if anything. */
+  readonly highlight?: string;
   readonly messages: EmailMessages;
   readonly values: readonly (readonly [string, string])[];
 }
@@ -121,11 +174,13 @@ const contentOf = (
         ["plan", catalog.plans[plan]],
       ],
     }),
-    SubscriptionRenewing: ({ plan, price, renewsAt }): Content => ({
-      messages: catalog.subscriptionRenewing,
+    SubscriptionRenewing: ({ plan, price, reference, renewsAt }): Content => ({
+      highlight: catalog.renewalDeadline,
+      messages: numbered(catalog.subscriptionRenewing, catalog, reference),
       values: [
         ["plan", catalog.plans[plan]],
         ["price", moneyIn(price, locale)],
+        ["reference", reference ?? ""],
         ["renewsAt", instantIn(renewsAt, locale)],
       ],
     }),
@@ -133,13 +188,15 @@ const contentOf = (
       interval,
       plan,
       price,
+      reference,
       startedAt,
       trialEnd,
     }): Content =>
       Option.match(trialEnd, {
         onNone: (): Content => ({
-          messages: catalog.subscriptionStarted,
+          messages: numbered(catalog.subscriptionStarted, catalog, reference),
           values: [
+            ["reference", reference ?? ""],
             ["interval", catalog.intervals[interval]],
             ["plan", catalog.plans[plan]],
             ["price", moneyIn(price, locale)],
@@ -147,8 +204,9 @@ const contentOf = (
           ],
         }),
         onSome: (endsAt): Content => ({
-          messages: catalog.trialStarted,
+          messages: numbered(catalog.trialStarted, catalog, reference),
           values: [
+            ["reference", reference ?? ""],
             ["endsAt", instantIn(endsAt, locale)],
             ["plan", catalog.plans[plan]],
             ["price", moneyIn(price, locale)],
@@ -164,11 +222,19 @@ const contentOf = (
         ["withdrawnAt", instantIn(withdrawnAt, locale)],
       ],
     }),
-    TrialEnding: ({ endsAt, plan }): Content => ({
+    TrialEnding: ({ endsAt, over, plan }): Content => ({
       messages: catalog.trialEnding,
       values: [
         ["endsAt", instantIn(endsAt, locale)],
         ["plan", catalog.plans[plan]],
+        ["standing", standingIn(catalog, over, locale)],
+      ],
+    }),
+    WebhookEndpointDisabled: ({ host, reason }): Content => ({
+      messages: catalog.webhookEndpointDisabled,
+      values: [
+        ["host", host],
+        ["reason", catalog.webhookTurnOffReasons[reason]],
       ],
     }),
   });
@@ -177,11 +243,11 @@ const contentOf = (
 export const renderNoticeEmail = (email: NoticeEmail): RenderedEmail => {
   const catalog = catalogs[email.locale];
 
-  const { messages, values: own } = contentOf(
-    email.event,
-    catalog,
-    email.locale
-  );
+  const {
+    highlight,
+    messages,
+    values: own,
+  } = contentOf(email.event, catalog, email.locale);
 
   const values: ReadonlyMap<string, string> = new Map([
     ...own,
@@ -191,19 +257,26 @@ export const renderNoticeEmail = (email: NoticeEmail): RenderedEmail => {
   const inHtml = (template: string) => fill(template, values, escapeHtml);
   const inText = (template: string) => fill(template, values, keep);
 
+  const parts = {
+    action: inHtml(messages.action),
+    body: inHtml(messages.body),
+    ignore: inHtml(messages.ignore),
+    linkFallback: escapeHtml(catalog.layout.linkFallback),
+    locale: email.locale,
+    signature: escapeHtml(catalog.layout.signature),
+    url: escapeHtml(email.url),
+  };
+
   return {
-    html: layout({
-      action: inHtml(messages.action),
-      body: inHtml(messages.body),
-      ignore: inHtml(messages.ignore),
-      linkFallback: escapeHtml(catalog.layout.linkFallback),
-      locale: email.locale,
-      signature: escapeHtml(catalog.layout.signature),
-      url: escapeHtml(email.url),
-    }),
+    html: layout(
+      highlight === undefined
+        ? parts
+        : { ...parts, highlight: inHtml(highlight) }
+    ),
     subject: inText(messages.subject),
     text: [
       inText(messages.body),
+      ...(highlight === undefined ? [] : [inText(highlight)]),
       fill(
         catalog.layout.textLink,
         new Map([

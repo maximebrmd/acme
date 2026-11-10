@@ -25,8 +25,11 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * | published           | settle: published                                  |
  * | unconfirmed         | settle: unconfirmed, never retried                 |
  * | PlatformUnavailable | retry after 1 min, 5 min, 15 min, 1 h, 1 h, then  |
- * |                     | give up: unavailable, or appBillingLimit when the  |
- * |                     | platform refused the server's app for its billing  |
+ * |                     | give up: unavailable                               |
+ * | PlatformUnavailable | the platform refuses the server's app until its    |
+ * | with an operator    | operator pays: retry every 30 min, and give up     |
+ * | code                | past 24 h after the scheduled time:                |
+ * |                     | appBillingLimit                                    |
  * | RateLimited         | retry after the platform's delay (1 min if none),  |
  * |                     | kept between 1 s and 6 h; give up after 8 attempts |
  * |                     | or past 24 h after the scheduled time: rateLimited |
@@ -41,7 +44,9 @@ import type { TargetSettlement } from "./target-settlement.ts";
  *
  * PlatformUnavailable and RateLimited each count only the attempts that
  * ended that way: a rate limit uses none of the unavailable retries, and the
- * other way round.
+ * other way round. An app refused for its billing counts for neither: the
+ * operator can pay at any time, so only the deadline ends the wait, and an
+ * outage after it still has its own retries.
  *
  * Every retry is a new attempt with a new idempotency key: the platform
  * refused the previous one, so nothing went live.
@@ -52,6 +57,16 @@ export interface PublicationPolicy {
    * scheduled time. Later than that, it is marked missed.
    */
   readonly latenessLimit: Duration.Duration;
+  /**
+   * While the platform refuses the server's app until its operator pays
+   * for it (`operatorRefusalCodes`).
+   */
+  readonly operatorRefusal: {
+    /** No retry starts later than this after the scheduled time. */
+    readonly deadline: Duration.Duration;
+    /** The wait before each retry: gentle, as only the operator ends it. */
+    readonly delay: Duration.Duration;
+  };
   readonly rateLimit: {
     /** No retry starts later than this after the scheduled time. */
     readonly deadline: Duration.Duration;
@@ -67,6 +82,10 @@ export interface PublicationPolicy {
 
 export const defaultPublicationPolicy: PublicationPolicy = {
   latenessLimit: Duration.hours(1),
+  operatorRefusal: {
+    deadline: Duration.hours(24),
+    delay: Duration.minutes(30),
+  },
   rateLimit: {
     deadline: Duration.hours(24),
     fallbackDelay: Duration.minutes(1),
@@ -112,12 +131,27 @@ export type AttemptOutcome = typeof AttemptOutcomeSchema.Type;
 
 /**
  * How many earlier attempts of a round ended in each refusal that is retried,
- * the attempt that just ended left out.
+ * the attempt that just ended left out. `unavailable` leaves out the
+ * attempts the platform refused for the app's billing.
  */
 export interface EarlierRefusals {
   readonly rateLimited: number;
   readonly unavailable: number;
 }
+
+/**
+ * Counts the refusals among a round's earlier attempts. An app refused for
+ * its billing is no outage: it uses none of the outage's retries.
+ */
+export const earlierRefusalsOf = (
+  outcomes: readonly AttemptOutcome[]
+): EarlierRefusals => ({
+  rateLimited: outcomes.filter(({ _tag }) => _tag === "RateLimited").length,
+  unavailable: outcomes.filter(
+    (outcome) =>
+      outcome._tag === "PlatformUnavailable" && !isOperatorRefusal(outcome.code)
+  ).length,
+});
 
 /** Where the attempt stands. */
 export interface AttemptContext {
@@ -148,16 +182,35 @@ const retry = (delay: Duration.Duration): PublicationDecision => ({
 const unavailableReason = (code: string | undefined): RefusalReason =>
   isOperatorRefusal(code) ? "appBillingLimit" : "unavailable";
 
+// The operator can pay at any moment, and the post is not at fault: it
+// keeps trying, however many times, until the deadline.
+const afterOperatorRefusal = (
+  code: string | undefined,
+  context: AttemptContext,
+  policy: PublicationPolicy
+): PublicationDecision => {
+  const { deadline, delay } = policy.operatorRefusal;
+
+  return Duration.isGreaterThan(
+    Duration.sum(context.sinceScheduled, delay),
+    deadline
+  )
+    ? giveUp("appBillingLimit", code)
+    : retry(delay);
+};
+
 const afterUnavailable = (
   { code }: PlatformUnavailable,
   context: AttemptContext,
   policy: PublicationPolicy
 ): PublicationDecision => {
+  if (isOperatorRefusal(code)) {
+    return afterOperatorRefusal(code, context, policy);
+  }
+
   const delay = policy.unavailableBackoff[context.earlier.unavailable];
 
-  return delay === undefined
-    ? giveUp(unavailableReason(code), code)
-    : retry(delay);
+  return delay === undefined ? giveUp("unavailable", code) : retry(delay);
 };
 
 const afterRateLimit = (

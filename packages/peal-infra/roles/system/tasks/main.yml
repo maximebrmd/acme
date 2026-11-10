@@ -5,9 +5,50 @@
 
 - name: Resolve the host name locally
   ansible.builtin.lineinfile:
-    path: /etc/hosts
+    path: "{{ system_hosts_file }}"
     regexp: '^127\.0\.1\.1\s'
     line: "127.0.1.1 {{ server_hostname }}"
+
+# Some providers' images have cloud-init manage the hosts file
+# (manage_etc_hosts): at every boot it writes the file again from its
+# template, with the name the provider gave the server, and the line above
+# would last until the next reboot. Two guards, as the setting comes from
+# the image's own files or from what the provider sends at boot, which
+# cloud-init reads after any file here:
+#
+# - a settings file read after the image's own turns it off, and tells
+#   cloud-init to leave the host name alone too;
+# - cloud-init's template holds the same line, so a boot that still writes
+#   the hosts file writes it there.
+#
+# An image without cloud-init has neither folder, and both are skipped.
+- name: Look for cloud-init
+  ansible.builtin.stat:
+    path: "{{ system_cloud_init_dir }}/cloud.cfg.d"
+  register: system_cloud_init
+
+- name: Keep cloud-init from rewriting the hosts file
+  ansible.builtin.copy:
+    dest: "{{ system_cloud_init_dir }}/cloud.cfg.d/zz-peal.cfg"
+    content: |
+      # Managed by Ansible (peal-infra). The hosts file and the host name
+      # are the system role's: cloud-init leaves them as they are at boot.
+      manage_etc_hosts: false
+      preserve_hostname: true
+    mode: "0644"
+  when: system_cloud_init.stat.exists
+
+- name: Look for cloud-init's hosts template
+  ansible.builtin.stat:
+    path: "{{ system_cloud_init_dir }}/templates/hosts.debian.tmpl"
+  register: system_hosts_template
+
+- name: Resolve the host name in cloud-init's hosts template
+  ansible.builtin.lineinfile:
+    path: "{{ system_cloud_init_dir }}/templates/hosts.debian.tmpl"
+    regexp: '^127\.0\.1\.1\s'
+    line: "127.0.1.1 {{ server_hostname }}"
+  when: system_hosts_template.stat.exists
 
 - name: Use UTC
   community.general.timezone:
@@ -43,8 +84,9 @@
       APT::Periodic::AutocleanInterval "7";
     mode: "0644"
 
-# Swap absorbs a memory spike, such as a large video read whole before it is
-# published, instead of the kernel killing a process. The file is made under
+# Swap absorbs a memory spike, such as many images probed at once, instead
+# of the kernel killing a process (videos are streamed to the platforms, a
+# few at a time: PEAL_MAX_CONCURRENT_UPLOADS). The file is made under
 # another name and renamed once it is a swap area, so a run cut short leaves
 # no /swapfile half made; `creates` skips it once /swapfile exists, and check
 # mode says it would run.

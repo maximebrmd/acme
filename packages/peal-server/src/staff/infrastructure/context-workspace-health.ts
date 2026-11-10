@@ -4,12 +4,15 @@ import { WorkspaceEntitlements } from "#billing/application/workspace-entitlemen
 import { ChannelOversight } from "#channels/application/channel-oversight.ts";
 import { PostOversight } from "#publishing/application/post-oversight.ts";
 import { WorkspaceHealth } from "#staff/application/ports/workspace-health.ts";
+import { WebhookOversight } from "#webhooks/application/webhook-oversight.ts";
 
 import { healthOf } from "./channel-health.ts";
+import { webhookHealthOf } from "./webhook-health.ts";
 
 /**
  * A workspace's health from the contexts that hold it: billing's plan,
- * the channels and publishing's counts and troubles.
+ * the channels, publishing's counts and troubles, and the webhook
+ * endpoints, by their host.
  */
 export const ContextWorkspaceHealth = Layer.effect(
   WorkspaceHealth,
@@ -17,6 +20,7 @@ export const ContextWorkspaceHealth = Layer.effect(
     const entitlements = yield* WorkspaceEntitlements;
     const channels = yield* ChannelOversight;
     const posts = yield* PostOversight;
+    const webhooks = yield* WebhookOversight;
 
     return WorkspaceHealth.of({
       billing: (workspaceId) =>
@@ -27,6 +31,7 @@ export const ContextWorkspaceHealth = Layer.effect(
               Option.map((bought) => ({
                 cancelAtPeriodEnd: bought.cancelAtPeriodEnd,
                 currentPeriodEnd: bought.currentPeriodEnd,
+                endsAt: bought.endsAt,
                 interval: bought.interval,
                 plan: bought.plan,
                 startedAt: bought.startedAt,
@@ -50,6 +55,10 @@ export const ContextWorkspaceHealth = Layer.effect(
             }))
           )
         ),
+      webhooks: (workspaceId) =>
+        webhooks
+          .ofWorkspace(workspaceId)
+          .pipe(Effect.map((found) => found.map(webhookHealthOf))),
     });
   })
 );

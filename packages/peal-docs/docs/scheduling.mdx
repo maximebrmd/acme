@@ -137,7 +137,7 @@ The post as a whole then reads **Published**, **Partly published**, **To check**
 
 ## Follow up on a post [#follow-up]
 
-Open a post that went out, from the calendar or a notification: its page shows its text, and for each channel its status, why it failed or is to check, the address of the post on the platform, and every attempt Peal made, with when it tried again. While the post is going out, the page updates on its own. Members who may schedule posts can then:
+Open a post that went out, from the calendar or a notification: its page shows its text, and for each channel its status, why it failed or is to check, the address of the post on the platform, and every attempt Peal made, with when it tried again. It also says how the post was created and how it was scheduled: in the web app, with an API key, or by an application such as the command line or an MCP client, by name. While the post is going out, the page updates on its own. Members who may schedule posts can then:
 
 - **Post again** on a channel where it failed or is to check: Peal sends it now, as a new send with its own attempts, and the post reads **Publishing** until it has gone. When the post is to check, look on the platform first, as it may be live already;
 - **Say what you found** on a channel to check: **It is live**, with the post's address if you have it, or **It is not there**, which fails it there so it can be posted again. Either answer clears it from the posts to check, and marks its notifications as read.
@@ -153,6 +153,12 @@ Peal waits rather than gives up when a platform is busy:
 A post that could not start within an hour of its time, for example because the server was down, is marked missed and does not go out.
 
 An image or video is sent as the platform needs it, and some platforms process videos first: Peal waits up to 15 minutes for them, then tries again later, as for a platform that does not answer.
+
+## From an agent, the command line or the API [#api]
+
+What the composer does, an [MCP client](/mcp#tools), the [command line](/cli#posts) and the [HTTP API](/api-overview) do too, through the same checks: writing a draft, scheduling it, publishing it now, moving it, taking it back to draft and cancelling it. `POST /api/workspaces/{workspaceId}/posts/send` creates a post and sends it in one request, now or at an instant, and refuses it whole, listing every violation at once, when it breaks a rule of one of its channels' platforms.
+
+An application you connected schedules and publishes only if you let it: publishing is a permission of its own, which you may leave out so that it writes drafts for you to review. An API key does only what the permissions it was given allow. [Posting from an AI agent](/agents) explains both, with an example.
 
 ## Media [#media]
 

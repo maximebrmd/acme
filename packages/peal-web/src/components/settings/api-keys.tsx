@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "peal-ui/components/alert-dialog";
+import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Input } from "peal-ui/components/input";
@@ -36,6 +37,7 @@ import { FormField } from "#components/auth/form-field.tsx";
 import { useHydrated } from "#components/media/use-hydrated.ts";
 import { InTimeZone } from "#components/notices/in-time-zone.tsx";
 import { browserTimeZone } from "#posts/zoned-time.ts";
+import { mayPublish } from "#settings/api-key-publishing.ts";
 import {
   apiKeysChanged,
   createApiKey,
@@ -281,6 +283,22 @@ const CreateKeyForm = ({
   );
 };
 
+/** Whether a key may send posts out, which its list of permissions hides. */
+export const KeyPublishing = ({
+  permissions,
+}: {
+  readonly permissions: readonly Permission[];
+}) => {
+  const t = useTranslations("WorkspaceSettings.apiKeys");
+  const allowed = mayPublish(permissions);
+
+  return (
+    <Badge variant={allowed ? "secondary" : "outline"}>
+      {t("publishing", { allowed: allowed ? "yes" : "no" })}
+    </Badge>
+  );
+};
+
 // One key: its name, how it starts, what it may do and until when, and
 // revoking it once confirmed.
 const KeyRow = ({
@@ -323,7 +341,10 @@ const KeyRow = ({
   return (
     <li className="flex flex-wrap items-start gap-4 py-4">
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="font-medium">{apiKey.name}</span>
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-medium">{apiKey.name}</span>
+          <KeyPublishing permissions={apiKey.permissions} />
+        </span>
         {apiKey.start === null ? null : (
           <span className="text-muted-foreground font-mono text-sm">
             {t("startsWith", { start: apiKey.start })}

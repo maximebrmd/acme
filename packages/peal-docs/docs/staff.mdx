@@ -2,7 +2,7 @@
 title: Staff console
 description: Give the people who run your server the staff role, then find accounts and workspaces, ban, sign out or act as an account, and read the audit log of every action and every change made as an account, from /admin.
 sidebar:
-  order: 14
+  order: 16
 ---
 
 The staff console is for the people who run a Peal server: it finds an account or a workspace, tells how the server is doing, and lets staff act on accounts. It lives at `/admin` on your Peal address (`/fr/admin` in French), and its API under `/api/admin`.
@@ -21,14 +21,15 @@ Peal's own servers also put `/admin`, `/en/admin`, `/fr/admin` and `/api/admin` 
 
 ## What the console shows [#screens]
 
-| Page        | What it shows                                                                                                                                                                      |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| System      | Whether the database answers, the release the server runs (`OTEL_SERVICE_VERSION`), the posts due within the hour, those overdue, and the channels to reconnect in every workspace |
-| Accounts    | Accounts by email, name or id, newest first, 25 a page                                                                                                                             |
-| An account  | Its name and email, whether the address is confirmed, its language, when it was created and last signed in, its ban, its workspaces and roles, and how many sessions it has open   |
-| Workspaces  | Workspaces by name, slug or id, with their members                                                                                                                                 |
-| A workspace | Its members and roles, its plan and subscription, its channels and whether each works, how many posts it has in each status, and the latest posts that failed or went unconfirmed  |
-| Audit log   | What staff did, newest first                                                                                                                                                       |
+| Page              | What it shows                                                                                                                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| System            | Whether the database answers, the release the server runs (`OTEL_SERVICE_VERSION`), the posts due within the hour, those overdue, and the channels to reconnect in every workspace |
+| Accounts          | Accounts by email, name or id, newest first, 25 a page                                                                                                                             |
+| An account        | Its name and email, whether the address is confirmed, its language, when it was created and last signed in, its ban, its workspaces and roles, and how many sessions it has open   |
+| Workspaces        | Workspaces by name, slug or id, with their members                                                                                                                                 |
+| A workspace       | Its members and roles, its plan and subscription, its channels and whether each works, how many posts it has in each status, and the latest posts that failed or went unconfirmed  |
+| Contract requests | The requests to cancel a contract or withdraw from one that wait for staff, oldest first                                                                                           |
+| Audit log         | What staff did, newest first                                                                                                                                                       |
 
 Staff see who an account is, never what it wrote: no post's text, no image or video, no token. A failed post shows as its ids, its platform, why it failed and the platform's code. To see what a member sees, staff act as them (see below).
 
@@ -48,6 +49,15 @@ While acting as an account, staff see its posts and media, and can write and edi
 Staff never ban, sign out or act as themselves, and never act as other staff. No one deletes an account but its owner, from [their account settings](/settings#delete-account).
 
 Better Auth's own admin endpoints under `/api/auth/admin/` are off, so nothing staff do bypasses the audit log; only `POST /api/auth/admin/stop-impersonating` stays, which the banner calls.
+
+## Contract requests [#contract-requests]
+
+On a server that bills, anyone cancels a contract or withdraws from one without signing in ([Plans and billing](/billing#cancelling)). A request that gives its contract number, or whose sender follows the link emailed to an address that manages a contract, is applied without anyone's help. **Contract requests** lists the others: those no contract was found for, and those whose sender has not followed their link yet. Each shows what its sender wrote, and nothing else: their name, the address their acknowledgement went to, the contract as they named it, the day wanted, and the account that address signs in to, if any.
+
+- **Apply to this workspace** ties the request to a workspace's contract, by the workspace's id: do it only once you know the sender holds that contract, as by writing to the address the account has on file. It takes effect as of the date the request was received, whenever you apply it: a renewal charged since is refunded, and a withdrawal's 14 days and refund count from that date. The sender is emailed what became of it.
+- **Close without applying**, for a request sent twice or by someone who holds no contract. The sender is not written to: write to them yourself when they need an answer.
+
+Both ask why, and are in the audit log with the request's id and the workspace's, never the name or the address the request holds. Requests are kept 5 years, as the contract's orders are.
 
 ## The audit log [#audit-log]
 
@@ -73,6 +83,16 @@ When an account is closed, the log forgets it as the account acted on: entries a
 
 ## Legal requests [#legal-requests]
 
-A judicial authority may ask, in writing, for the data that identifies who contributed content (loi n° 2004-575, Article 6, V, B). Answer it with `POST /api/admin/legal-requests`, as staff in your own session, behind the same access as the console, with the legal role too: give it to the few people who answer authorities, and no one else, with `UPDATE auth."user" SET role = 'admin,legal' WHERE email = 'you@example.com';`, then sign in again. Other staff get 404 there. Give the authority, the request's reference, and what it asks about: an email address (the closed accounts that had it), an account's id (closed or not), or a workspace's id. The answer holds the closed accounts that match, with who held them and, for a year after closing, how they signed in, and the connections that created, changed or deleted content of those accounts, of the account named, or in the workspace named, from the past year.
+A judicial authority may ask, in writing, for the data that identifies who contributed content (loi n° 2004-575, Article 6, V, B). A server that keeps it ([Legal retention](/self-hosting#legal-retention)) answers from **Legal requests** in the console (`/admin/legal`), which staff see only with the legal role too: give it to the few people who answer authorities, and no one else, with `UPDATE auth."user" SET role = 'admin,legal' WHERE email = 'you@example.com';`, then sign in again. Other staff get the not-found page there, and 404 from its API, like anyone else.
 
-This is the only way to read what a closed account left. Each answer is recorded, before it is given, with the staff member, the authority, its reference, what was asked and how many records it returned, and the record is kept 5 years. It shows in the audit log too, as **Answered a legal request** with the authority and its reference, so the rest of staff see it. Enter only a request an authority made in writing, and keep the request itself with your legal records. A live account's details are on its page in the console; only the connections need a legal request.
+Fill in the request from the authority's document:
+
+- what it names: an email address (the closed accounts that had it), an account's id (closed or not), or a workspace's id;
+- the authority, the request's reference, and its legal basis, the text that gives the authority the power to ask;
+- what it asks for, and nothing more: who held the account, how it signed in, its payment references, the connections that created, changed or deleted content, and the period of those connections when the request names one.
+
+**Record the request and show the answer** records it first, then shows only what the request covers: the closed accounts that match, and the connections of those accounts, of the account named, or in the workspace named. A category the request did not ask for reads **Not covered by this request**, and the server sends none of it. How an account signed in and paid is kept {{keep-legal-account-en}} after it closed, who held it {{keep-legal-identity-en}}, and each connection {{keep-legal-connections-en}}.
+
+This is the only way to read what a closed account left. Each answer is recorded, before it is given, with the staff member, the authority, its reference, its legal basis, what was asked about and for, and how many records it returned, never the data handed over, and the record is kept {{keep-legal-disclosures-en}}. The page says so before anything is entered: tell the staff you give the role to that their answers are recorded and reviewed, as employment law may require of you. **Answers given** lists the records, newest first, and each shows in the audit log too, as **Answered a legal request** with the authority and its reference, so the rest of staff see it. Enter only a request an authority made in writing, and keep the request itself with your legal records. A live account's details are on its page in the console; only the connections need a legal request.
+
+The same is available to scripts, as staff in their own session: `POST /api/admin/legal-requests` answers a request, and `GET /api/admin/legal-requests` lists the answers given.

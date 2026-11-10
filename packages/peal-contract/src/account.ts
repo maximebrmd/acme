@@ -10,9 +10,11 @@ import { ApiKeySchema } from "./api-keys.ts";
 import { Authentication } from "./authentication.ts";
 import { BillingUnavailable } from "./billing-unavailable.ts";
 import { ConnectedAppSchema } from "./connected-apps.ts";
+import { DeletionIncomplete } from "./deletion-incomplete.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { LastOwner } from "./last-owner.ts";
+import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { NoticeEventSchema } from "./notices.ts";
 import { NotificationPreferencesSchema } from "./notification-preferences.ts";
 import { StaffActionSchema, StaffObjectIdsSchema } from "./staff.ts";
@@ -91,12 +93,24 @@ const ExportedChannelSchema = Schema.Struct({
   status: Schema.String,
 });
 
+// How a post was created or scheduled: in the web app (`web`), with an API
+// key (`apiKey`) or through an OAuth application (`application`), with the
+// key's or the application's name then.
+const ExportedPostOriginSchema = Schema.Struct({
+  name: nullable(Schema.String),
+  via: Schema.String,
+});
+
 const ExportedPostSchema = Schema.Struct({
+  // How it was created; null on a post from before this was kept.
+  createdVia: nullable(ExportedPostOriginSchema),
   id: Schema.String,
   media: Schema.Array(
     Schema.Struct({ altText: nullable(Schema.String), mediaId: Schema.String })
   ),
   scheduledAt: nullable(instant),
+  // How it was last scheduled; null on a draft, or when it was not kept.
+  scheduledVia: nullable(ExportedPostOriginSchema),
   status: Schema.String,
   targets: Schema.Array(
     Schema.Struct({
@@ -165,6 +179,74 @@ const ExportedLegalHoldSchema = Schema.Struct({
   ),
 });
 
+// What GDPR Article 15(1) has the controller tell with the copy: for each
+// category of data the server processes, what it holds, why, on which
+// legal basis, for how long and where it came from; who receives it; the
+// rights over it and how to exercise them; and the right to complain. In
+// the account's language, from the registry the privacy policy's retention
+// table is written from (`peal-contract/data-processing`). What only the
+// operator knows (who it is, its sub-processors, its supervisory
+// authority) is null until it declares it: the software guesses none.
+const ExportedAboutSchema = Schema.Struct({
+  categories: Schema.Array(
+    Schema.Struct({
+      // What the category holds.
+      data: Schema.String,
+      id: Schema.String,
+      legalBasis: Schema.String,
+      name: Schema.String,
+      purposes: Schema.String,
+      // How long it is kept, or what decides it.
+      retention: Schema.String,
+      // Where the data came from.
+      source: Schema.String,
+    })
+  ),
+  complaint: Schema.Struct({
+    // The operator's supervisory authority, when it declared one.
+    authority: nullable(
+      Schema.Struct({ name: Schema.String, url: nullable(Schema.String) })
+    ),
+    right: Schema.String,
+  }),
+  // Who decides what the data is processed for: whoever runs the server.
+  controller: nullable(
+    Schema.Struct({
+      address: nullable(Schema.String),
+      // Where to write to exercise the rights below.
+      contact: nullable(Schema.String),
+      dataProtectionOfficer: nullable(Schema.String),
+      name: Schema.String,
+    })
+  ),
+  // The language its sentences are in: the account's.
+  language: Schema.Literals(["en", "fr"]),
+  policyUrl: nullable(Schema.String),
+  // The providers the operator uses to run the service, each with what it
+  // does, where, and what safeguards a transfer outside the EEA.
+  processors: nullable(
+    Schema.Array(
+      Schema.Struct({
+        country: Schema.String,
+        name: Schema.String,
+        safeguard: nullable(Schema.String),
+        service: Schema.String,
+      })
+    )
+  ),
+  // Who receives the data because of how the service works.
+  recipients: Schema.Array(Schema.String),
+  rights: Schema.Array(
+    Schema.Struct({
+      // The GDPR article that gives the right.
+      article: Schema.String,
+      how: Schema.String,
+      id: Schema.String,
+      right: Schema.String,
+    })
+  ),
+});
+
 const ExportedMediaSchema = Schema.Struct({
   altText: nullable(Schema.String),
   byteSize: Schema.Int,
@@ -213,8 +295,9 @@ const ExportedBillingSchema = Schema.Struct({
   ),
 });
 
-// The orders and withdrawals the user made, kept as the proof of each
-// contract: the workspace is null once it is erased.
+// The orders and withdrawals the user made, and their requests to cancel
+// a contract or withdraw from it, kept as the proof of each contract: the
+// workspace is null once it is erased.
 const ExportedContractsSchema = Schema.Struct({
   orders: Schema.Array(
     Schema.Struct({
@@ -226,6 +309,33 @@ const ExportedContractsSchema = Schema.Struct({
       trial: Schema.Boolean,
       // When a checkout took it.
       usedAt: nullable(instant),
+      workspaceId: nullable(Schema.String),
+    })
+  ),
+  // Each request to cancel or withdraw the user made in session, or that
+  // came through the form with their address: when it was received, what
+  // it said and what became of it.
+  requests: Schema.Array(
+    Schema.Struct({
+      // `session`, or `form` for the form anyone reaches.
+      channel: Schema.String,
+      // The contract as the form named it.
+      contract: nullable(Schema.String),
+      // The day asked for the contract to end.
+      desiredAt: nullable(instant),
+      // When the contract ends, once applied.
+      effectiveAt: nullable(instant),
+      email: nullable(Schema.String),
+      // `cancellation` or `withdrawal`.
+      kind: Schema.String,
+      name: nullable(Schema.String),
+      receivedAt: instant,
+      refunded: nullable(
+        Schema.Struct({ amount: Schema.Int, currency: Schema.String })
+      ),
+      // Why its contract refused it.
+      refusal: nullable(Schema.String),
+      status: Schema.String,
       workspaceId: nullable(Schema.String),
     })
   ),
@@ -327,6 +437,17 @@ const ExportedUserReviewSchema = Schema.Struct({
   ),
 });
 
+// A webhook endpoint: where the workspace is told what happens in it,
+// without the secret that signs what it is sent.
+const ExportedWebhookSchema = Schema.Struct({
+  createdAt: instant,
+  description: Schema.String,
+  enabled: Schema.Boolean,
+  eventTypes: Schema.Array(Schema.String),
+  id: Schema.String,
+  url: Schema.String,
+});
+
 const ExportedWorkspaceSchema = Schema.Struct({
   analytics: Schema.Array(ExportedAnalyticsSchema),
   apiKeys: Schema.Array(ApiKeySchema),
@@ -340,6 +461,7 @@ const ExportedWorkspaceSchema = Schema.Struct({
   posts: Schema.Array(ExportedPostSchema),
   review: ExportedReviewSchema,
   slug: Schema.String,
+  webhooks: Schema.Array(ExportedWebhookSchema),
 });
 
 /**
@@ -355,6 +477,8 @@ const ExportedWorkspaceSchema = Schema.Struct({
  * belongs to the team, and is not part of it.
  */
 export const AccountExportSchema = Schema.Struct({
+  // The information GDPR Article 15(1) lists about this processing.
+  about: ExportedAboutSchema,
   // The posts the user wrote in the workspaces they share with others.
   authoredPosts: Schema.Array(ExportedAuthoredPostSchema),
   connectedApps: Schema.Array(ConnectedAppSchema),
@@ -388,6 +512,28 @@ export const AccountExportSchema = Schema.Struct({
 export type AccountExport = typeof AccountExportSchema.Type;
 
 /**
+ * What deleting the account would leave, for the page that asks before it.
+ */
+export const AccountClosureSchema = Schema.Struct({
+  // What the law has the server keep once the account is closed, apart
+  // and for authorities only, in years: who held it (`identityYears`), how
+  // they signed in and paid (`accountYears`), and each connection that
+  // created, changed or deleted content, from when it was made. Null on a
+  // server that keeps nothing, as most do; the first two are null on a
+  // server that stopped keeping these, where only the connections it
+  // already holds stay.
+  legalHold: nullable(
+    Schema.Struct({
+      accountYears: nullable(Schema.Int),
+      connectionYears: Schema.Int,
+      identityYears: nullable(Schema.Int),
+    })
+  ),
+}).annotate({ identifier: "AccountClosure" });
+
+export type AccountClosure = typeof AccountClosureSchema.Type;
+
+/**
  * What confirms an account's deletion: its password, and, when a workspace
  * it deletes has a subscription Stripe may still bill, the user's
  * agreement to cancel it.
@@ -419,8 +565,18 @@ export class AccountApi extends HttpApiGroup.make("account")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, what staff did to their account (action, time and reason, not who), the posts they wrote in the workspaces they share, the connections that created, changed or deleted content (time, address, protocol), what the law has Peal keep once the account closes and for how long, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model. Each copy is emailed to the account's address, saying whether the web app or the command line took it.",
+          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save, with what GDPR Article 15(1) has the controller tell (`about`: the purposes, legal bases, recipients, retention and source of each category of data, the rights and how to exercise them, in the account's language): their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, what staff did to their account (action, time and reason, not who), the posts they wrote in the workspaces they share, the connections that created, changed or deleted content (time, address, protocol), what the law has Peal keep once the account closes and for how long, and the channels, posts, media details, analytics, API keys, webhook endpoints, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model. Each copy is emailed to the account's address, saying whether the web app or the command line took it.",
         summary: "Export my data",
+      })
+    ),
+    HttpApiEndpoint.get("closure", "/closure", {
+      error: [Forbidden],
+      success: AccountClosureSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Says what deleting the account would leave: nothing, on most servers; on one whose operator French law has keep what identifies whoever contributed content, who held the account, how they signed in and the connections that made content, each for the years given. Open to the user in their own session only.",
+        summary: "What deleting my account leaves",
       })
     ),
     HttpApiEndpoint.delete("delete", "/", {
@@ -432,13 +588,15 @@ export class AccountApi extends HttpApiGroup.make("account")
         WorkspaceBusy,
         WorkspaceSubscribed,
         BillingUnavailable,
+        MediaStoreUnavailable,
+        DeletionIncomplete,
       ],
       payload: DeleteAccountSchema,
       success: HttpApiSchema.NoContent,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Deletes the account for good, once `password` confirms it is the user asking: the workspaces where they are the only member, with everything in them, their memberships of the others, where the posts they wrote stay without an author, their sessions, notices, preferences, invitations and connected applications. Refused (409) while they are the only owner of a workspace that has other members (`LastOwner`), while a post of a workspace it would delete is being published (`WorkspaceBusy`), and while one of those workspaces has a subscription Stripe may still bill (`WorkspaceSubscribed`, with its plan and the end of the period paid for) unless `cancelSubscriptions` is `true`, which cancels those subscriptions at Stripe at once, without a refund of the period paid for, except where the law gives one, or any further charge; (503) when Stripe cannot be reached (`BillingUnavailable`), and nothing is deleted; and (429) for a few seconds after three passwords tried within 10 seconds, as signing in is. A confirmation is emailed to the address the account had.",
+          "Deletes the account for good, once `password` confirms it is the user asking: the workspaces where they are the only member, with everything in them, their memberships of the others, where the posts they wrote stay without an author, their sessions, notices, preferences, invitations and connected applications. Refused (409) while they are the only owner of a workspace that has other members (`LastOwner`), while a post of a workspace it would delete is being published (`WorkspaceBusy`), and while one of those workspaces has a subscription Stripe may still bill (`WorkspaceSubscribed`, with its plan and the end of the period paid for) unless `cancelSubscriptions` is `true`, which cancels those subscriptions at Stripe at once, without a refund of the period paid for, except where the law gives one, or any further charge; (503) when Stripe cannot be reached (`BillingUnavailable`), or the object store, where the deletion is recorded by id before it is done so that a restored backup deletes the account again (`MediaStoreUnavailable`), and nothing is deleted; and (429) for a few seconds after three passwords tried within 10 seconds, as signing in is. A deletion that fails once subscriptions are cancelled, whatever stopped it, the object store included, says so (500 `DeletionIncomplete`): the cancellations stand, nothing was deleted, and deleting again cancels nothing more. A confirmation is emailed to the address the account had.",
         summary: "Delete my account",
       })
     )

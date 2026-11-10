@@ -15,11 +15,9 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
   connectedChannel,
   MastodonConnectTest,
+  mastodonInstance,
 } from "#test/channels/connect-support.ts";
-import {
-  fakeMastodon,
-  mastodonAccount,
-} from "#test/channels/fakes/fake-mastodon.ts";
+import { mastodonAccount } from "#test/channels/fakes/fake-mastodon.ts";
 import { actorIn, freshWorkspace } from "#test/channels/support.ts";
 
 const manager = (workspaceId: WorkspaceId) =>
@@ -63,7 +61,7 @@ const stored = (column: "access_token" | "refresh_token", channelId: string) =>
 layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
   it.effect("connects the account the member approves", () =>
     Effect.gen(function* connects() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const connect = yield* ConnectChannel;
 
@@ -122,7 +120,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
   it.effect("keeps the token and the app's secret encrypted at rest", () =>
     Effect.gen(function* encrypts() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const connect = yield* ConnectChannel;
       const cipher = yield* TokenCipher;
@@ -194,7 +192,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
   it.effect("registers Peal's app once per instance", () =>
     Effect.gen(function* registersOnce() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const connect = yield* ConnectChannel;
 
@@ -212,7 +210,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
   it.effect("registers again where its app cannot read statuses", () =>
     Effect.gen(function* registersAgain() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const connect = yield* ConnectChannel;
       const sql = yield* SqlClient.SqlClient;
@@ -250,7 +248,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
   it.effect("asks older instances for read:accounts instead of profile", () =>
     Effect.gen(function* legacyScopes() {
-      const instance = yield* fakeMastodon({ modern: false });
+      const instance = yield* mastodonInstance({ modern: false });
       const workspaceId = yield* freshWorkspace;
 
       const authorizationUrl = yield* ConnectChannel.use((connect) =>
@@ -270,7 +268,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
   it.effect("refuses callbacks whose state is not the member's own", () =>
     Effect.gen(function* badState() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const connect = yield* ConnectChannel;
       const member = manager(workspaceId);
@@ -317,7 +315,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
   it.effect("refuses a callback after the attempt expired", () =>
     Effect.gen(function* expired() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const connect = yield* ConnectChannel;
 
@@ -347,7 +345,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
   it.effect("connects nothing when the member refuses", () =>
     Effect.gen(function* denied() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const connect = yield* ConnectChannel;
 
@@ -375,7 +373,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
   it.effect("reconnects an account the workspace already has", () =>
     Effect.gen(function* again() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const connect = yield* ConnectChannel;
 

@@ -16,8 +16,14 @@ const userId = "5f6a7b8c-9d0e-4f1a-8b2c-3d4e5f6a7b8c";
 
 const answering = (answer: CheckoutAnswer): BillingHooks => ({
   checkout: async () => await Promise.resolve(answer),
-  freeWorkspace: async () => await Promise.resolve(false),
+  freeWorkspace: async () => await Promise.resolve(null),
   memberAllowance: async () => await Promise.resolve(Option.none()),
+  memberUpgrade: async () =>
+    await Promise.resolve({
+      billingUrl: "http://localhost:3001",
+      plan: "free" as const,
+      planWithRoom: null,
+    }),
   subscriptionChanged: async () => {
     await Promise.resolve();
   },

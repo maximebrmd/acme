@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import { CurrentMember } from "peal-contract";
 
 import { PeopleTools } from "#app/mcp/people-tools.ts";
-import { notAllowed, refuse } from "#app/mcp/refusals.ts";
+import { notAllowed, planRefusal, refuse } from "#app/mcp/refusals.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { invitationView, memberView } from "#workspace/api/members.ts";
 import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";
@@ -18,36 +18,34 @@ const gone = () =>
 export const PeopleToolsLive = PeopleTools.toLayer(
   Effect.gen(function* peopleTools() {
     const members = yield* WorkspaceMembers;
+    const refusedByPlan = yield* planRefusal;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
     return PeopleTools.of({
       invite_member: ({ email, role }) =>
         Effect.gen(function* invite() {
-          const sent = yield* members
-            .invite(yield* actor, { email, role })
-            .pipe(
-              Effect.catchTags({
-                AlreadyMember: () =>
-                  refuse("That address belongs to a member already."),
-                AuthUnavailable: Effect.die,
-                DirectoryUnavailable: Effect.die,
-                InvalidEmailAddress: () =>
-                  refuse(`${email} is not an email address.`),
-                MissingPermission: notAllowed("invite people"),
-                NotAMember: gone,
-                PlanLimitReached: ({ allowed }) =>
-                  refuse(
-                    `The workspace's plan allows ${String(allowed)} members, pending invitations included, and has them all: an owner or admin moves it to a larger plan in the web app.`
-                  ),
-                RoleNotInvitable: () => refuse("Only owners invite owners."),
-                TooManyInvitations: () =>
-                  refuse(
-                    "The workspace has 100 invitations pending, the most it may: revoke some first."
-                  ),
-                UserRequired: gone,
-              })
-            );
+          const inviter = yield* actor;
+
+          const sent = yield* members.invite(inviter, { email, role }).pipe(
+            Effect.catchTags({
+              AlreadyMember: () =>
+                refuse("That address belongs to a member already."),
+              AuthUnavailable: Effect.die,
+              DirectoryUnavailable: Effect.die,
+              InvalidEmailAddress: () =>
+                refuse(`${email} is not an email address.`),
+              MissingPermission: notAllowed("invite people"),
+              NotAMember: gone,
+              PlanLimitReached: refusedByPlan(inviter.workspaceId),
+              RoleNotInvitable: () => refuse("Only owners invite owners."),
+              TooManyInvitations: () =>
+                refuse(
+                  "The workspace has 100 invitations pending, the most it may: revoke some first."
+                ),
+              UserRequired: gone,
+            })
+          );
 
           return invitationView(sent);
         }),

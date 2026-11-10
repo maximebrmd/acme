@@ -2,7 +2,7 @@
 title: Déploiement
 description: Comment tournent les serveurs de Peal, la production et le bac à sable derrière Cloudflare, leurs versions, sauvegardes et alertes, et le serveur de disponibilité qui les surveille de l’extérieur.
 sidebar:
-  order: 13
+  order: 15
 ---
 
 L’instance de Peal fait tourner la pile que fait tourner une instance [auto-hébergée](/self-hosting), sur des serveurs que l’Ansible de `packages/peal-infra` configure et modifie : rien d’autre ne le fait. Son README est le manuel d’exploitation, avec chaque commande.
@@ -21,7 +21,9 @@ L’instance de Peal fait tourner la pile que fait tourner une instance [auto-h�
 | Bac à sable   | La même, avant la production, avec sa propre base de données, ses buckets, son compte Stripe et ses applications de plateforme         |
 | Disponibilité | [Gatus](#uptime), qui vérifie les deux autres de l’extérieur, et Caddy, son unique entrée publique                                     |
 
-Chacun est un serveur Hetzner Cloud sous Ubuntu LTS, avec les mises à jour de sécurité chaque jour, un compte d’administration qui se connecte avec une clé, et un pare-feu qui refuse toute connexion dont il n’a pas besoin. La production et le bac à sable ne sont joignables que par un tunnel Cloudflare, qu’ils ouvrent eux-mêmes vers Cloudflare, SSH compris, et Cloudflare Access protège Grafana, SSH, l’administration et tout le bac à sable. L’équipe qu’Access laisse entrer dans Grafana en est administratrice, avec un accès complet. Le serveur de disponibilité n’a ni tunnel, ni réseau privé, ni aucun de leurs secrets.
+Chacun est un serveur chez un hébergeur européen, sous Ubuntu LTS, avec les mises à jour de sécurité chaque jour, un compte d’administration qui se connecte avec une clé, et un pare-feu qui refuse toute connexion dont il n’a pas besoin. La production et le bac à sable ne sont joignables que par un tunnel Cloudflare, qu’ils ouvrent eux-mêmes vers Cloudflare, SSH compris, et Cloudflare Access protège Grafana, SSH, l’administration et tout le bac à sable. L’équipe qu’Access laisse entrer dans Grafana en est administratrice, avec un accès complet. Le serveur de disponibilité n’a ni tunnel, ni réseau privé, ni aucun de leurs secrets, et se trouve chez un autre hébergeur et dans une autre ville que la production : une panne chez un hébergeur, ou dans un centre de données, n’emporte jamais les deux.
+
+Les applications des plateformes, un jeu pour la production et un pour le bac à sable, reçoivent les adresses que chaque serveur affiche pour son propre nom, avec [la commande](/self-hosting#platform-addresses) qui les liste depuis les routes du serveur, sur le serveur lui-même : `sudo peal-compose exec server bun packages/peal-server/scripts/platform-addresses.ts`. Aucune n’est écrite à la main. Le bac à sable, derrière Access, laisse passer celles que les serveurs des plateformes appellent.
 
 Les secrets sont générés sur le serveur qui s’en sert et y restent. Ce que délivrent les services extérieurs, comme les clés du stockage ou le jeton d’un bot Telegram, vient d’un coffre chiffré ou est écrit sur le serveur, et Ansible ne le vérifie que par son nom.
 
@@ -35,7 +37,7 @@ Postgres archive ses journaux de transactions (WAL) dans Cloudflare R2 avec pgBa
 
 ## Alertes [#alerts]
 
-Le Grafana de la production et celui du bac à sable envoient leurs alertes à une discussion Telegram : quand le serveur ne répond à aucune requête, en échoue ou consigne des erreurs, quand aucune sauvegarde ne s’est terminée depuis 30 heures, et quand le disque est plein à 85 %.
+Le Grafana de la production et celui du bac à sable envoient leurs alertes à une discussion Telegram : quand le serveur ne répond à aucune requête, en échoue ou consigne des erreurs, quand une plateforme refuse l’application du serveur tant qu’elle n’est pas réglée, quand aucune sauvegarde ne s’est terminée depuis 30 heures, et quand le disque est plein à 85 %.
 
 ## Disponibilité [#uptime]
 

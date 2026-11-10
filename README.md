@@ -39,6 +39,11 @@ It is not released yet. Today you can:
   suggest hashtags, when the server has an AI provider;
 - manage a workspace's members, invitations and API keys, rename it or
   delete it with everything in it;
+- tell another system what happens in a workspace with webhooks: posts
+  scheduled, published, failed or cancelled, channels connected or to
+  reconnect, files ready, sent to HTTPS endpoints, signed as the Standard
+  Webhooks specification says, retried for about a day, with a delivery
+  log;
 - choose your language, see your sessions and connected applications,
   download your data or delete your account;
 - bill workspaces through Stripe, with plans that limit channels, members,
@@ -378,6 +383,8 @@ environment:
 - `DOCS_SITE_URL` and `SITE_URL`: the public origins, for absolute and
   canonical links.
 - `SITE_DOCS_URL`: links the marketing site to the docs.
+- `SITE_APP_URL`: links the marketing site to the web app's pages to
+  cancel a contract and to withdraw from one.
 - `DOCS_PLAUSIBLE_DOMAIN` and `SITE_PLAUSIBLE_DOMAIN`: turn on Plausible.
 - `DOCS_PLAUSIBLE_HOST` and `SITE_PLAUSIBLE_HOST`: point Plausible at a
   self-hosted instance.
@@ -547,11 +554,13 @@ read-only file system, and the server gets 75 seconds to stop.
 
 ### Production, behind Cloudflare
 
-Peal's own servers, production and the sandbox, run on Hetzner Cloud and are
-reachable only through a Cloudflare Tunnel: no inbound port, SSH included.
+Peal's own servers, production and the sandbox, each run on a server at a
+European provider and are reachable only through a Cloudflare Tunnel: no
+inbound port, SSH included.
 Cloudflare Access guards Grafana, SSH, the admin and the whole sandbox;
 Grafana's alerts go to a Telegram chat; Postgres is backed up to R2. A third
-server, linked to neither, checks their public endpoints from outside with
+server, linked to neither, at another provider and in another city, checks
+their public endpoints from outside with
 Gatus, alerts when production's Grafana stops sending its heartbeat, and
 serves the public status page, [status.peal.social](https://status.peal.social).
 Ansible in [`packages/peal-infra`](packages/peal-infra/README.md) sets the

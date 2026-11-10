@@ -36,6 +36,8 @@ module Peal
       member -> { Peal::Types::NoticeEventSubscriptionCancelled }, key: "SUBSCRIPTION_CANCELLED"
 
       member -> { Peal::Types::NoticeEventSubscriptionWithdrawn }, key: "SUBSCRIPTION_WITHDRAWN"
+
+      member -> { Peal::Types::NoticeEventWebhookEndpointDisabled }, key: "WEBHOOK_ENDPOINT_DISABLED"
     end
   end
 end

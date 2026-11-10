@@ -12,6 +12,8 @@ import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
 import { ClientErrorsApi } from "./client-errors.ts";
 import { ConnectedAppsApi } from "./connected-apps.ts";
+import { ContractRequestsDeskApi } from "./contract-requests-desk.ts";
+import { ContractRequestsApi } from "./contract-requests.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { InvitationsApi } from "./invitations.ts";
 import { LegalApi } from "./legal.ts";
@@ -27,17 +29,23 @@ import { SessionApi } from "./session.ts";
 import { StaffApi } from "./staff.ts";
 import { SystemApi } from "./system.ts";
 import { TikTokApi } from "./tiktok.ts";
+import { WebhooksApi } from "./webhooks.ts";
 import { WorkspacesApi } from "./workspaces.ts";
 
 export { DatabaseUnavailable } from "./database-unavailable.ts";
 
 export {
   AccountApi,
+  AccountClosureSchema,
   AccountExportSchema,
   DeleteAccountSchema,
 } from "./account.ts";
 
-export type { AccountExport, DeleteAccount } from "./account.ts";
+export type {
+  AccountClosure,
+  AccountExport,
+  DeleteAccount,
+} from "./account.ts";
 
 export { ConnectedAppNotFound } from "./connected-app-not-found.ts";
 
@@ -88,9 +96,20 @@ export type { SubscriptionToCancel } from "./workspace-subscribed.ts";
 
 export { BillingUnavailable } from "./billing-unavailable.ts";
 
+export { DeletionIncomplete } from "./deletion-incomplete.ts";
+
 export { BillingNotEnabled } from "./billing-not-enabled.ts";
 
+export {
+  DesiredDayTooFar,
+  desiredDayHorizonDays,
+} from "./desired-day-too-far.ts";
+
 export { NothingToCancel } from "./nothing-to-cancel.ts";
+
+export { ReductionRefused } from "./reduction-refused.ts";
+
+export { PlanTooSmall } from "./plan-too-small.ts";
 
 export { TrialUnavailable } from "./trial-unavailable.ts";
 
@@ -168,17 +187,69 @@ export { Authentication } from "./authentication.ts";
 
 export { BillingActionsApi } from "./billing-actions.ts";
 
+export { CaptchaRefused } from "./captcha-refused.ts";
+
+export { ContractRequestIntake } from "./contract-request-intake.ts";
+
+export { ContractRequestNotFound } from "./contract-request-not-found.ts";
+
+export { ContractRequestSettled } from "./contract-request-settled.ts";
+
+export {
+  ContractDaySchema,
+  ContractFunctionsSchema,
+  ContractRequestKindSchema,
+  ContractRequestOutcomeSchema,
+  ContractRequestPreviewSchema,
+  ContractRequestReceiptSchema,
+  ContractRequestRefusalSchema,
+  ContractRequestsApi,
+  ContractRequestStatusSchema,
+  contractRequestTextPattern,
+  HeldContractSchema,
+  maxContractRequestEmail,
+  maxContractRequestText,
+  NewContractRequestSchema,
+} from "./contract-requests.ts";
+
+export {
+  ContractRequestsDeskApi,
+  OpenContractRequestSchema,
+} from "./contract-requests-desk.ts";
+
+export type { OpenContractRequest } from "./contract-requests-desk.ts";
+
+export type {
+  ContractFunctions,
+  ContractRequestKind,
+  ContractRequestOutcome,
+  ContractRequestPreview,
+  ContractRequestReceipt,
+  ContractRequestRefusal,
+  ContractRequestStatus,
+  HeldContract,
+  NewContractRequest,
+} from "./contract-requests.ts";
+
+export { TooManyContractRequests } from "./too-many-contract-requests.ts";
+
 export {
   BillingApi,
   BillingSchema,
   BillingSubscriptionSchema,
   CancellationSchema,
+  CancelPayloadSchema,
+  ExcessSchema,
+  HeldLimitSchema,
   OrderPayloadSchema,
   OrderSchema,
   PeriodUsageSchema,
   PlanAllowancesSchema,
   PlanOfferSchema,
   PlanPriceSchema,
+  ReductionPayloadSchema,
+  ReductionSchema,
+  StandingSchema,
   SubscriptionStatusSchema,
   TrialOfferSchema,
   UsageSchema,
@@ -190,12 +261,17 @@ export type {
   Billing,
   BillingSubscription,
   Cancellation,
+  Excess,
+  HeldLimit,
   Order,
   OrderPayload,
   PeriodUsage,
   PlanAllowances,
   PlanOffer,
   PlanPrice,
+  Reduction,
+  ReductionPayload,
+  Standing,
   SubscriptionStatus,
   TrialOffer,
   Usage,
@@ -399,8 +475,11 @@ export { InvalidTimeZone } from "./invalid-time-zone.ts";
 export {
   defaultMediaPageSize,
   maxMediaPageSize,
+  maxMediaUrlLength,
   MediaContentTypeSchema,
   MediaDescriptionSchema,
+  MediaImportSchema,
+  mediaImportSeconds,
   MediaKindSchema,
   MediaPageSchema,
   MediaSchema,
@@ -416,6 +495,7 @@ export type {
   Media,
   MediaContentType,
   MediaDescription,
+  MediaImport,
   MediaKind,
   MediaPage,
   MediaUsage,
@@ -440,6 +520,7 @@ export {
   NoticeSchema,
   NoticesApi,
   UnreadNoticesSchema,
+  WebhookTurnOffReasonSchema,
 } from "./notices.ts";
 
 export type {
@@ -449,6 +530,7 @@ export type {
   NoticeEvent,
   NoticePage,
   UnreadNotices,
+  WebhookTurnOffReason,
 } from "./notices.ts";
 
 export {
@@ -475,6 +557,17 @@ export type {
 } from "./media-status.ts";
 
 export { MediaStoreUnavailable } from "./media-store-unavailable.ts";
+
+export { MediaImportBusy } from "./media-import-busy.ts";
+
+export { MediaSourceNotPublic } from "./media-source-not-public.ts";
+
+export {
+  MediaSourceFailureSchema,
+  MediaSourceUnreachable,
+} from "./media-source-unreachable.ts";
+
+export type { MediaSourceFailure } from "./media-source-unreachable.ts";
 
 export { MediaTooLarge } from "./media-too-large.ts";
 
@@ -513,19 +606,27 @@ export { PostStatusSchema } from "./post-status.ts";
 
 export type { PostStatus } from "./post-status.ts";
 
+export { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
+
 export {
   AttemptResultSchema,
   defaultDraftPageSize,
   DraftPageSchema,
   FailureReasonSchema,
+  idempotencyKeyLifetimeHours,
   maxDraftPageSize,
+  maxIdempotencyKeyLength,
   MediaAttachmentSchema,
+  NewPostSchema,
   PostContentSchema,
   PostDraftSchema,
+  PostOriginSchema,
+  PostOriginViaSchema,
   PostOutcomeSchema,
   PostScheduleSchema,
   PostSchema,
   PostTargetSchema,
+  PostTimingSchema,
   PublicationAttemptSchema,
   SchedulePostSchema,
   TargetConfirmationSchema,
@@ -538,12 +639,16 @@ export type {
   DraftPage,
   FailureReason,
   MediaAttachment,
+  NewPost,
   Post,
   PostContent,
   PostDraft,
+  PostOrigin,
+  PostOriginVia,
   PostOutcome,
   PostSchedule,
   PostTarget,
+  PostTiming,
   PublicationAttempt,
   SchedulePost,
   TargetConfirmation,
@@ -674,6 +779,7 @@ export {
   StaffUserPageSchema,
   StaffUserSchema,
   StaffUserSummarySchema,
+  StaffWebhookSchema,
   StaffWorkspacePageSchema,
   StaffWorkspaceSchema,
   StaffWorkspaceSummarySchema,
@@ -693,6 +799,7 @@ export type {
   StaffUser,
   StaffUserPage,
   StaffUserSummary,
+  StaffWebhook,
   StaffWorkspace,
   StaffWorkspacePage,
   StaffWorkspaceSummary,
@@ -702,13 +809,24 @@ export {
   LegalAnswerSchema,
   LegalApi,
   LegalConnectionSchema,
+  LegalCoverSchema,
+  LegalDisclosurePageSchema,
+  LegalDisclosureSchema,
+  legalDisclosureYears,
   LegalHeldAccountSchema,
   LegalRequestSchema,
   LegalSubjectSchema,
   maxLegalTextLength,
 } from "./legal.ts";
 
-export type { LegalAnswer, LegalRequest, LegalSubject } from "./legal.ts";
+export type {
+  LegalAnswer,
+  LegalCover,
+  LegalDisclosure,
+  LegalDisclosurePage,
+  LegalRequest,
+  LegalSubject,
+} from "./legal.ts";
 
 export { StaffAccess } from "./staff-access.ts";
 
@@ -734,6 +852,79 @@ export { UploadIncomplete } from "./upload-incomplete.ts";
 export { UploadRejected } from "./upload-rejected.ts";
 
 export { UserNotFound } from "./user-not-found.ts";
+
+export { TooManyWebhookEndpoints } from "./too-many-webhook-endpoints.ts";
+
+export { TooManyWebhookSends } from "./too-many-webhook-sends.ts";
+
+export { WebhookDeliveryNotFound } from "./webhook-delivery-not-found.ts";
+
+export { WebhookEndpointDisabled } from "./webhook-endpoint-disabled.ts";
+
+export { WebhookEndpointNotFound } from "./webhook-endpoint-not-found.ts";
+
+export {
+  MediaFailureReasonSchema,
+  SubscribableWebhookEventTypeSchema,
+  webhookEventVersion,
+  WebhookEventTypeSchema,
+  WebhookPayloadSchema,
+  WebhookTargetSchema,
+} from "./webhook-events.ts";
+
+export type {
+  MediaFailureReason,
+  SubscribableWebhookEventType,
+  WebhookEventType,
+  WebhookPayload,
+  WebhookTarget,
+} from "./webhook-events.ts";
+
+export {
+  WebhookUrlRefusalSchema,
+  WebhookUrlRefused,
+} from "./webhook-url-refused.ts";
+
+export type { WebhookUrlRefusal } from "./webhook-url-refused.ts";
+
+export {
+  defaultWebhookDeliveryPageSize,
+  maxWebhookAttempts,
+  maxWebhookDeliveryPageSize,
+  maxWebhookDescriptionLength,
+  maxWebhookEndpoints,
+  webhookManualSendsPerHour,
+  maxWebhookUrlLength,
+  NewWebhookEndpointSchema,
+  WebhookAttemptErrorSchema,
+  WebhookDeliveryFailureSchema,
+  WebhookDeliveryPageSchema,
+  WebhookDeliverySchema,
+  webhookDeliveryRetentionDays,
+  WebhookDeliveryStatusSchema,
+  WebhookDisabledReasonSchema,
+  WebhookEndpointChangeSchema,
+  WebhookEndpointSchema,
+  WebhookEndpointSecretSchema,
+  webhookFailingDays,
+  WebhooksApi,
+  webhookSecretOverlapHours,
+} from "./webhooks.ts";
+
+export type {
+  NewWebhookEndpoint,
+  WebhookAttemptError,
+  WebhookDelivery,
+  WebhookDeliveryFailure,
+  WebhookDeliveryPage,
+  WebhookDeliveryStatus,
+  WebhookDisabledReason,
+  WebhookEndpoint,
+  WebhookEndpointChange,
+  WebhookEndpointSecret,
+} from "./webhooks.ts";
+
+export { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
 
 export { WorkspaceAccess } from "./workspace-access.ts";
 
@@ -874,11 +1065,14 @@ export class Api extends HttpApi.make("peal")
   .add(TikTokApi)
   .add(CapabilitiesApi)
   .add(LookupsApi)
+  .add(WebhooksApi)
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)
   .add(ReviewApi)
   .add(ReviewLinkApi)
+  .add(ContractRequestsApi)
+  .add(ContractRequestsDeskApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.
   .annotateMerge(
@@ -887,3 +1081,22 @@ export class Api extends HttpApi.make("peal")
       title: "Peal API",
     })
   ) {}
+
+export {
+  complaintRight,
+  dataRights,
+  processingLocales,
+  processingRegister,
+  recipientCategories,
+  retentionPeriods,
+  retentionTable,
+} from "./data-processing.ts";
+
+export type {
+  DataRight,
+  ProcessingCategory,
+  ProcessingCondition,
+  ProcessingLocale,
+  ProcessingText,
+  RecipientCategory,
+} from "./data-processing.ts";

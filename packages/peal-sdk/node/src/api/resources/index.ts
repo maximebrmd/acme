@@ -30,3 +30,5 @@ export * as session from "./session/index.js";
 export * as system from "./system/index.js";
 export * as tiktok from "./tiktok/index.js";
 export * from "./tiktok/client/requests/index.js";
+export * as webhooks from "./webhooks/index.js";
+export * from "./webhooks/client/requests/index.js";

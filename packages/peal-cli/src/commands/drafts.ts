@@ -1,13 +1,16 @@
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
+  DraftPageSchema,
   maxDraftPageSize,
   PostDraftSchema,
-  TargetOptionsSchema,
+  PostSchema,
 } from "peal-contract";
 import type { ChannelOptions, Post, PostDraft } from "peal-contract";
 
 import { explain } from "#explain.ts";
+import { jsonFlag, printJson } from "#json.ts";
+import { optionsOf } from "#post-flags.ts";
 import { columns, excerpt } from "#print.ts";
 import { Refused } from "#refused.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
@@ -26,37 +29,6 @@ const checkDraft = (draft: PostDraft) =>
         })
     )
   );
-
-const decodeOptions = Schema.decodeUnknownEffect(
-  Schema.fromJsonString(TargetOptionsSchema)
-);
-
-// `--options <channel-id>=<json>`: a channel's platform options, as JSON.
-const optionsOf = (given: string) =>
-  Effect.gen(function* parse() {
-    const at = given.indexOf("=");
-
-    if (at <= 0) {
-      return yield* new Refused({
-        reason: `--options takes <channel-id>=<json>, not ${given}.`,
-      });
-    }
-
-    const channelId = given.slice(0, at);
-
-    const options = yield* decodeOptions(given.slice(at + 1)).pipe(
-      Effect.mapError(
-        (failure) =>
-          new Refused({
-            reason: `The options for channel ${channelId} are not a platform's options: ${failure.message}`,
-          })
-      )
-    );
-
-    const chosen: ChannelOptions = { channelId, options };
-
-    return chosen;
-  });
 
 // The options a draft goes with: those given replace the draft's on their
 // channel; the draft keeps the others it has on the channels it keeps.
@@ -81,6 +53,7 @@ const list = Command.make(
       Flag.withDescription("Where the page before ended, as it printed."),
       Flag.optional
     ),
+    json: jsonFlag,
     limit: Flag.Int("limit").pipe(
       Flag.withDescription(
         `How many drafts a page holds, at most ${String(maxDraftPageSize)}.`
@@ -91,6 +64,7 @@ const list = Command.make(
   },
   Effect.fn("drafts.list")(function* list({
     cursor,
+    json,
     limit,
     workspace: choice,
   }) {
@@ -113,6 +87,12 @@ const list = Command.make(
         },
       })
       .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(DraftPageSchema, page);
+
+      return;
+    }
 
     if (page.items.length === 0) {
       yield* Console.log(`${workspace.name} has no drafts.`);
@@ -150,6 +130,7 @@ const save = Command.make(
       ),
       Flag.atLeast(0)
     ),
+    json: jsonFlag,
     options: Flag.String("options").pipe(
       Flag.withMetavar("<channel-id>=<json>"),
       Flag.withDescription(
@@ -225,13 +206,19 @@ const save = Command.make(
         ),
     });
 
+    if (input.json) {
+      yield* printJson(PostSchema, saved);
+
+      return;
+    }
+
     yield* Console.log(
       `Saved draft ${saved.id} in ${workspace.name}, for ${plural(saved.targets.length, "channel", "channels")}.`
     );
   })
 ).pipe(
   Command.withDescription(
-    "Write a new draft, or change one: its text, channels and the options of platforms that ask for more. Scheduling it is for the web app."
+    "Write a new draft, or change one: its text, channels and the options of platforms that ask for more. peal posts schedule schedules it, and peal posts publish sends it now."
   )
 );
 

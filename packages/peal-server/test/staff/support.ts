@@ -182,6 +182,7 @@ export const memoryStaff = (
                 scheduled: 0,
               }),
             troubles: () => Effect.succeed([]),
+            webhooks: () => Effect.succeed([]),
           })
         ),
         Layer.succeed(

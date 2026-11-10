@@ -9,43 +9,45 @@ import {
   ListObjectsV2Command,
   ListPartsCommand,
   PutObjectCommand,
-  S3Client,
   S3ServiceException,
   UploadPartCommand,
 } from "@aws-sdk/client-s3";
 import type { ListPartsCommandOutput } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import {
-  Config,
-  Duration,
-  Effect,
-  Layer,
-  Option,
-  Redacted,
-  Schema,
-  Stream,
-} from "effect";
+import { Duration, Effect, Layer, Option, Ref, Schema, Stream } from "effect";
 
 import { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import { MultipartUploadNotFound } from "#media/application/multipart-upload-not-found.ts";
 import { MediaFolders } from "#media/application/ports/media-folders.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import type {
+  FileToStore,
   MultipartUpload,
   PartToSign,
   SignedRequest,
   StoredPart,
   UploadToSign,
 } from "#media/application/ports/media-storage.ts";
+import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import type { MediaContentType } from "#media/domain/media-format.ts";
 import { MultipartUploadIdSchema } from "#media/domain/media-status.ts";
 import type { StorageKey } from "#media/domain/storage-key.ts";
 import { PartNumberSchema } from "#media/domain/upload-plan.ts";
+import type { PartNumber } from "#media/domain/upload-plan.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
-  isProduction,
-  requiredInProduction,
-} from "#shared/infrastructure/environment.ts";
+  acquireS3Client,
+  S3StorageConfig,
+} from "#shared/infrastructure/s3-store.ts";
+import type { S3StorageSettings } from "#shared/infrastructure/s3-store.ts";
+
+import { PartBuffer } from "./part-buffer.ts";
+
+// The store's settings, which the shared kernel reads: the erasure ledger
+// keeps its entries in the same store.
+export { S3StorageConfig } from "#shared/infrastructure/s3-store.ts";
+
+export type { S3StorageSettings } from "#shared/infrastructure/s3-store.ts";
 
 // The media store, on any S3-compatible API: Cloudflare R2 in production,
 // SeaweedFS in development, or the store a self-hoster runs.
@@ -72,46 +74,6 @@ import {
 // |                              | default outside production                      |
 // | PEAL_S3_KEY_PREFIX           | prefix for every key, such as "staging/"        |
 // | PEAL_MEDIA_PUBLIC_BASE_URL   | where the bucket is served publicly, if it is   |
-
-/** Segments of letters, digits, `.`, `-` or `_`, each ending with `/`. */
-const KeyPrefixSchema = Schema.String.check(
-  Schema.isPattern(/^(?:[\w.-]+\/)*$/u)
-);
-
-export const S3StorageConfig = Config.all({
-  accessKeyId: requiredInProduction(
-    Config.Redacted("PEAL_S3_ACCESS_KEY_ID"),
-    Redacted.make("peal")
-  ),
-  bucket: requiredInProduction(
-    Config.NonEmptyString("PEAL_S3_BUCKET"),
-    "peal-media"
-  ),
-  endpoint: requiredInProduction(
-    Config.URL("PEAL_S3_ENDPOINT"),
-    new URL("http://127.0.0.1:18333")
-  ),
-  forcePathStyle: isProduction.pipe(
-    Config.flatMap((production) =>
-      Config.Boolean("PEAL_S3_FORCE_PATH_STYLE").pipe(
-        Config.withDefault(!production)
-      )
-    )
-  ),
-  keyPrefix: Config.schema(KeyPrefixSchema, "PEAL_S3_KEY_PREFIX").pipe(
-    Config.withDefault("")
-  ),
-  publicBaseUrl: Config.option(Config.URL("PEAL_MEDIA_PUBLIC_BASE_URL")),
-  region: Config.NonEmptyString("PEAL_S3_REGION").pipe(
-    Config.withDefault("auto")
-  ),
-  secretAccessKey: requiredInProduction(
-    Config.Redacted("PEAL_S3_SECRET_ACCESS_KEY"),
-    Redacted.make("peal-development-secret")
-  ),
-});
-
-export type S3StorageSettings = Config.Success<typeof S3StorageConfig>;
 
 // SigV4 presigned URLs last at most a week.
 const maxPresignedSeconds = 7 * 24 * 60 * 60;
@@ -152,6 +114,10 @@ const decodeParts = Schema.decodeUnknownEffect(Schema.Array(StoredPartSchema));
 
 const decodeUploadId = Schema.decodeUnknownEffect(MultipartUploadIdSchema);
 
+const decodeEtag = Schema.decodeUnknownEffect(Schema.NonEmptyString);
+
+const decodePartNumber = Schema.decodeUnknownEffect(PartNumberSchema);
+
 const decodeContentLength = Schema.decodeUnknownEffect(Schema.Int);
 
 // Runs one SDK call, aborted if the fiber is interrupted.
@@ -176,38 +142,11 @@ const multipartNotFound =
 const readFailed = (cause: unknown) =>
   new MediaStorageFailed({ cause, operation: "read a file" });
 
-// An SDK client for the store, destroyed when the scope closes.
-const acquireClient = (settings: S3StorageSettings) =>
-  Effect.acquireRelease(
-    Effect.sync(
-      () =>
-        new S3Client({
-          credentials: {
-            accessKeyId: Redacted.value(settings.accessKeyId),
-            secretAccessKey: Redacted.value(settings.secretAccessKey),
-          },
-          endpoint: settings.endpoint.href,
-          forcePathStyle: settings.forcePathStyle,
-          region: settings.region,
-          // By default the SDK adds a CRC32 checksum to uploads. In a
-          // presigned URL it is the checksum of an empty body, so the store
-          // refuses the real one (SeaweedFS answers BadDigest): keep to the
-          // checksums an operation requires.
-          requestChecksumCalculation: "WHEN_REQUIRED",
-          responseChecksumValidation: "WHEN_REQUIRED",
-        })
-    ),
-    (opened) =>
-      Effect.sync(() => {
-        opened.destroy();
-      })
-  );
-
 /** Builds the store from settings, closing the client with the layer. */
 export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
   function* makeS3MediaStorage(settings: S3StorageSettings) {
     const { bucket, keyPrefix, publicBaseUrl } = settings;
-    const client = yield* acquireClient(settings);
+    const client = yield* acquireS3Client(settings);
 
     const objectKey = (key: StorageKey): string => `${keyPrefix}${key}`;
 
@@ -510,6 +449,154 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
       );
     });
 
+    // Sends one part of a file the server stores itself.
+    const putPart = Effect.fn("S3MediaStorage.putPart")(function* putPart(
+      upload: MultipartUpload,
+      partNumber: PartNumber,
+      body: Uint8Array<ArrayBuffer>
+    ) {
+      const sent = yield* request(
+        "store a file part",
+        async (signal) =>
+          await client.send(
+            new UploadPartCommand({
+              Body: body,
+              Bucket: bucket,
+              ContentLength: body.byteLength,
+              Key: objectKey(upload.key),
+              PartNumber: partNumber,
+              UploadId: upload.uploadId,
+            }),
+            { abortSignal: signal }
+          )
+      );
+
+      const etag = yield* decodeEtag(sent.ETag).pipe(
+        Effect.mapError(
+          (cause) =>
+            new MediaStorageFailed({ cause, operation: "store a file part" })
+        )
+      );
+
+      const part: StoredPart = { byteSize: body.byteLength, etag, partNumber };
+
+      return part;
+    });
+
+    const store = <E>({ bytes, contentType, key }: FileToStore<E>) =>
+      Effect.gen(function* storing() {
+        const { partSize } = yield* CurrentUploadPolicy;
+        const buffer = new PartBuffer(partSize);
+        const upload = yield* Ref.make(Option.none<MultipartUpload>());
+        const parts = yield* Ref.make<readonly StoredPart[]>([]);
+
+        // The multipart upload, started with the first part to go.
+        const opened = Ref.get(upload).pipe(
+          Effect.flatMap(
+            Option.match({
+              onNone: () =>
+                startMultipartUpload(key, contentType).pipe(
+                  Effect.map((uploadId): MultipartUpload => ({
+                    key,
+                    uploadId,
+                  })),
+                  Effect.tap((started) => Ref.set(upload, Option.some(started)))
+                ),
+              onSome: (started) => Effect.succeed(started),
+            })
+          )
+        );
+
+        const sendPart = Effect.fn("S3MediaStorage.sendPart")(
+          function* sendPart(body: Uint8Array<ArrayBuffer>) {
+            const sent = (yield* Ref.get(parts)).length;
+
+            const partNumber = yield* decodePartNumber(sent + 1).pipe(
+              Effect.mapError(
+                (cause) =>
+                  new MediaStorageFailed({
+                    cause,
+                    operation: "store a file part",
+                  })
+              )
+            );
+
+            const part = yield* putPart(yield* opened, partNumber, body);
+
+            yield* Ref.update(parts, (all) => [...all, part]);
+          }
+        );
+
+        const stored = Effect.gen(function* sending() {
+          yield* Stream.runForEachArray(bytes, (chunks) =>
+            Effect.gen(function* buffering() {
+              for (const chunk of chunks) {
+                buffer.push(chunk);
+              }
+
+              while (buffer.hasPart) {
+                yield* sendPart(buffer.takePart());
+              }
+            })
+          );
+
+          const started = yield* Ref.get(upload);
+
+          // Smaller than a part: one request stores it.
+          if (Option.isNone(started)) {
+            const body = buffer.takeRest();
+
+            yield* request(
+              "store a file",
+              async (signal) =>
+                await client.send(
+                  new PutObjectCommand({
+                    Body: body,
+                    Bucket: bucket,
+                    ContentLength: body.byteLength,
+                    ContentType: contentType,
+                    Key: objectKey(key),
+                  }),
+                  { abortSignal: signal }
+                )
+            );
+
+            return body.byteLength;
+          }
+
+          if (buffer.size > 0) {
+            yield* sendPart(buffer.takeRest());
+          }
+
+          const sent = yield* Ref.get(parts);
+
+          yield* completeMultipartUpload(started.value, sent).pipe(
+            Effect.catchTag("MultipartUploadNotFound", (cause) =>
+              Effect.fail(
+                new MediaStorageFailed({ cause, operation: "store a file" })
+              )
+            )
+          );
+
+          return sent.reduce((total, part) => total + part.byteSize, 0);
+        });
+
+        // Nothing stays of a file that did not arrive whole: neither the
+        // parts sent so far, nor a file stored before something else failed.
+        const discard = Ref.get(upload).pipe(
+          Effect.flatMap(
+            Option.match({
+              onNone: () => Effect.void,
+              onSome: (started) => abortMultipartUpload(started),
+            })
+          ),
+          Effect.andThen(remove(key)),
+          Effect.ignore
+        );
+
+        return yield* stored.pipe(Effect.onError(() => discard));
+      }).pipe(Effect.withSpan("S3MediaStorage.store"));
+
     return MediaStorage.of({
       abortMultipartUpload,
       completeMultipartUpload,
@@ -522,6 +609,7 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
       signUpload,
       signUploadPart,
       startMultipartUpload,
+      store,
     });
   }
 );
@@ -544,7 +632,7 @@ const removals = 8;
 export const makeS3MediaFolders = Effect.fn("S3MediaFolders.make")(
   function* makeS3MediaFolders(settings: S3StorageSettings) {
     const { bucket, keyPrefix } = settings;
-    const client = yield* acquireClient(settings);
+    const client = yield* acquireS3Client(settings);
 
     const deleteObject = (key: string) =>
       request(

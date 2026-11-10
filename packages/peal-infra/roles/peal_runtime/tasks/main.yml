@@ -105,6 +105,45 @@
          | rejectattr('value', 'equalto', '') | rejectattr('value', 'none')
          | map(attribute='key') | list }}
 
+# The media bucket and the backup repository are any S3 API's, in the EU.
+# The server reads the media endpoint as an HTTPS URL, and pgBackRest the
+# backup endpoint as a host, without a scheme. On Cloudflare R2, a bucket
+# made in the EU jurisdiction, which cannot change afterwards, answers at
+# <account>.eu.r2.cloudflarestorage.com alone: the account's plain endpoint
+# would name buckets stored anywhere, and never find these. Nothing in
+# another store's endpoint says where its buckets are: the inventory names
+# the hosts the owner checked (peal_storage_eu_hosts). Hosts are compared
+# without their case or a port.
+- name: Refuse storage endpoints the stack would misread, or outside the EU
+  ansible.builtin.assert:
+    that: peal_runtime_misplaced | length == 0
+    fail_msg: >-
+      Change {{ peal_runtime_misplaced | join(', ') }}: the media endpoint is
+      an https:// URL, the backup endpoint a host without a scheme, an R2
+      endpoint is the EU jurisdiction's, <account>.eu.r2.cloudflarestorage.com,
+      and another store's host is listed in peal_storage_eu_hosts once its
+      buckets are known to be in the EU (README.md, "Object storage").
+    quiet: true
+  vars:
+    peal_runtime_r2: '(^|\.)r2\.cloudflarestorage\.com$'
+    peal_runtime_r2_eu: '\.eu\.r2\.cloudflarestorage\.com$'
+    peal_runtime_eu_hosts: "{{ peal_storage_eu_hosts | map('lower') | list }}"
+    peal_runtime_media_host: "{{ peal_media_endpoint | lower | regex_replace('^https://', '') | regex_replace('[:/].*$', '') }}"
+    peal_runtime_backup_host: "{{ peal_backup_endpoint | lower | regex_replace('[:/].*$', '') }}"
+    peal_runtime_media_in_eu: >-
+      {{ peal_runtime_media_host is search(peal_runtime_r2_eu)
+         or (peal_runtime_media_host is not search(peal_runtime_r2) and peal_runtime_media_host in peal_runtime_eu_hosts) }}
+    peal_runtime_backup_in_eu: >-
+      {{ peal_runtime_backup_host is search(peal_runtime_r2_eu)
+         or (peal_runtime_backup_host is not search(peal_runtime_r2) and peal_runtime_backup_host in peal_runtime_eu_hosts) }}
+    peal_runtime_misplaced: >-
+      {{ (['peal_media_endpoint']
+          if peal_media_endpoint is not match('https://') or not (peal_runtime_media_in_eu | bool)
+          else [])
+         + (['peal_backup_endpoint']
+            if peal_backup_endpoint is search('://') or not (peal_runtime_backup_in_eu | bool)
+            else []) }}
+
 # host.env holds NAME='value' lines, which Compose reads as they are: a
 # quote or a line break in a value would end it early, and the rest would be
 # read as more settings, or lost.
@@ -124,6 +163,37 @@
             | rejectattr('value', 'string') | rejectattr('value', 'number') | map(attribute='key') | list)
          + (peal_runtime_host_settings | dict2items | selectattr('value', 'string')
             | selectattr('value', 'search', "['\r\n]") | map(attribute='key') | list) }}
+
+# A public media bucket serves every object to whoever knows its key: the
+# erasure ledger then needs a bucket of its own, which the media bucket
+# named again is not.
+- name: Refuse a public media bucket that holds the erasure ledger
+  ansible.builtin.assert:
+    that: not peal_runtime_ledger_exposed
+    fail_msg: >-
+      PEAL_MEDIA_PUBLIC_BASE_URL serves the media bucket publicly: name a
+      private bucket for the erasure ledger with peal_erasure_ledger_bucket,
+      another than the media bucket.
+    quiet: true
+  vars:
+    peal_runtime_ledger_exposed: >-
+      {{ (peal_runtime_host_settings.PEAL_MEDIA_PUBLIC_BASE_URL | default('') | string | length > 0)
+         and ((peal_runtime_host_settings.PEAL_ERASURE_LEDGER_BUCKET | default('') | string | length == 0)
+              or (peal_runtime_host_settings.PEAL_ERASURE_LEDGER_BUCKET | string
+                  == peal_runtime_host_settings.PEAL_S3_BUCKET | default('') | string)) }}
+
+# Mounted read-only in the server, which runs without privileges: readable
+# by all, as it holds what the privacy policy publishes anyway. The server
+# reads it when it starts, so a change restarts it.
+- name: Write the privacy declaration
+  ansible.builtin.copy:
+    content: "{{ peal_privacy_declaration | to_nice_json }}\n"
+    dest: "{{ peal_root }}/privacy-declaration.json"
+    owner: root
+    group: root
+    mode: "0644"
+  when: not ansible_check_mode or peal_runtime_root.stat.exists
+  notify: Restart the server with the new privacy declaration
 
 - name: Write the host settings for Compose
   ansible.builtin.template:

@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -121,7 +121,16 @@ export const DrizzleStaffRecords = Layer.effect(
           const rows = yield* db
             .select()
             .from(auditEvents)
-            .where(eq(auditEvents.targetId, userId))
+            .where(
+              and(
+                eq(auditEvents.targetId, userId),
+                // Not that an authority asked about them: telling the
+                // person a request concerns can be forbidden (as by the
+                // secrecy of an investigation), so no export does, until
+                // counsel says in which cases Article 15 requires it.
+                ne(auditEvents.action, "legalDisclosure")
+              )
+            )
             .orderBy(asc(auditEvents.at), asc(auditEvents.id))
             .pipe(Effect.mapError(failed));
 

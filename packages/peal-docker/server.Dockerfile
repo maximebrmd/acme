@@ -53,6 +53,9 @@ COPY packages/peal-server/drizzle packages/peal-server/drizzle
 # Prints a new key for the Bluesky client, so a deployment can create
 # BLUESKY_CLIENT_KEYS on its own host: peal-infra does.
 COPY packages/peal-server/scripts/bluesky-key.ts packages/peal-server/scripts/
+# Prints the addresses to register with each platform's app for the
+# server's PUBLIC_URL, so operators read them from the server they run.
+COPY packages/peal-server/scripts/platform-addresses.ts packages/peal-server/scripts/
 
 USER nonroot
 

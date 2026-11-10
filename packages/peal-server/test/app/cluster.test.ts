@@ -18,6 +18,7 @@ import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import { clusterLayer } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
 import { PurgeContractRecords } from "#billing/application/purge-contract-records.ts";
+import { ReceiveContractRequest } from "#billing/application/receive-contract-request.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
@@ -58,6 +59,7 @@ import {
   ReferencesTest,
   syntheticContent,
 } from "#test/publishing/support.ts";
+import { PurgeDeliveries } from "#webhooks/application/purge-deliveries.ts";
 
 // The cluster as the server runs it: SingleRunner with SQL message and
 // runner storage, on the Postgres that DATABASE_URL names, with the real
@@ -102,12 +104,24 @@ const ChannelJobsTest = Layer.mergeAll(
     PurgeContractRecords.of({ run: Effect.succeed(0) })
   ),
   Layer.succeed(
+    ReceiveContractRequest,
+    ReceiveContractRequest.of({
+      catchUp: Effect.succeed(0),
+      process: () => Effect.void,
+      receive: () => Effect.die("not used by the crons"),
+    })
+  ),
+  Layer.succeed(
     PurgeLegalRecords,
     PurgeLegalRecords.of({ purge: Effect.succeed(0) })
   ),
   Layer.succeed(
     PurgeReviewData,
     PurgeReviewData.of({ purge: Effect.succeed({ emails: 0, names: 0 }) })
+  ),
+  Layer.succeed(
+    PurgeDeliveries,
+    PurgeDeliveries.of({ purge: Effect.succeed(0) })
   ),
   Layer.succeed(
     CollectMetrics,
@@ -117,6 +131,7 @@ const ChannelJobsTest = Layer.mergeAll(
           deferred: 0,
           discovered: 0,
           ended: 0,
+          left: 0,
           read: 0,
           skipped: 0,
         }),
@@ -126,13 +141,15 @@ const ChannelJobsTest = Layer.mergeAll(
     RefreshChannelTokens,
     RefreshChannelTokens.of({
       refresh: () => Effect.succeed("skipped"),
-      sweep: Effect.succeed({
-        due: 0,
-        failed: 0,
-        reconnectRequired: 0,
-        refreshed: 0,
-        unavailable: 0,
-      }),
+      sweep: () =>
+        Effect.succeed({
+          due: 0,
+          failed: 0,
+          left: 0,
+          reconnectRequired: 0,
+          refreshed: 0,
+          unavailable: 0,
+        }),
     })
   ),
   Layer.succeed(
@@ -164,6 +181,7 @@ const serverWith = <E, R>(
     never,
     never,
     | Layer.Success<typeof ChannelJobsTest>
+    | PostScheduling
     | Sharding.Sharding
     | SqlClient.SqlClient
   > = CronsLive

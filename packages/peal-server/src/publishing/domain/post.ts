@@ -13,6 +13,8 @@ import { InvalidPostTransition } from "./invalid-post-transition.ts";
 import type { PostAction } from "./invalid-post-transition.ts";
 import { PostContent } from "./post-content.ts";
 import { PostNotDue } from "./post-not-due.ts";
+import { PostAttribution, PostAttributionField } from "./post-origin.ts";
+import type { PostOrigin } from "./post-origin.ts";
 import { PostStatusSchema } from "./post-status.ts";
 import type { PostOutcome, PostStatus } from "./post-status.ts";
 import type { PostTarget } from "./post-target.ts";
@@ -42,7 +44,8 @@ import { Schedule } from "./schedule.ts";
  *
  * What the post says is its content (`./post-content.ts`), which only a
  * draft may change. Its author is the member who created it, none when an
- * API key did.
+ * API key did, and its attribution says how it was created and scheduled
+ * (`./post-origin.ts`).
  *
  * `scheduleRevision` counts the times the post was scheduled or taken back
  * to draft. The job that publishes a post is started for one revision, and
@@ -55,6 +58,7 @@ import { Schedule } from "./schedule.ts";
 export class Post extends Schema.Class<Post>(
   "peal-server/publishing/domain/Post"
 )({
+  attribution: PostAttributionField,
   authorId: Schema.Option(UserIdSchema),
   content: PostContent,
   id: PostIdSchema,
@@ -71,6 +75,7 @@ const withStatus = (
   scheduleRevision = post.scheduleRevision
 ): Post =>
   new Post({
+    attribution: post.attribution,
     authorId: post.authorId,
     content: post.content,
     id: post.id,
@@ -114,9 +119,16 @@ export const createDraft = (
   id: PostId,
   workspaceId: WorkspaceId,
   content: PostContent,
-  authorId: Option.Option<UserId>
+  authorId: Option.Option<UserId>,
+  // How its creator reached Peal, when known.
+  via: Option.Option<PostOrigin> = Option.none()
 ): Post =>
   new Post({
+    attribution: new PostAttribution({
+      createdVia: via,
+      scheduledBy: Option.none(),
+      scheduledVia: Option.none(),
+    }),
     authorId,
     content,
     id,
@@ -133,6 +145,7 @@ export const editDraft = (post: Post, content: PostContent): Transition =>
   post.status._tag === "draft"
     ? Result.succeed(
         new Post({
+          attribution: post.attribution,
           authorId: post.authorId,
           content,
           id: post.id,
@@ -159,6 +172,36 @@ export const discardDraft = (post: Post): Transition =>
  */
 export const scheduleGrace = Duration.minutes(1);
 
+// The post, with who scheduled it and how.
+const attributed = (
+  post: Post,
+  scheduledVia: Option.Option<PostOrigin>,
+  scheduledBy: Option.Option<UserId>
+): Post =>
+  new Post({
+    attribution: new PostAttribution({
+      createdVia: post.attribution.createdVia,
+      scheduledBy,
+      scheduledVia,
+    }),
+    authorId: post.authorId,
+    content: post.content,
+    id: post.id,
+    scheduleRevision: post.scheduleRevision,
+    status: post.status,
+    workspaceId: post.workspaceId,
+  });
+
+/**
+ * Records who scheduled or moved the post, and how they reached Peal: the
+ * latest to do so, as a post has one time.
+ */
+export const scheduledThrough = (
+  post: Post,
+  via: PostOrigin,
+  by: Option.Option<UserId>
+): Post => attributed(post, Option.some(via), by);
+
 // The time a post takes when asked for `schedule` at `now`: `now` itself
 // for a time up to `scheduleGrace` before it, and none for an earlier one.
 const timeFrom = (
@@ -183,6 +226,26 @@ const timeFrom = (
       : schedule
   );
 };
+
+/**
+ * The schedule a request asked for at `received`, once its checks are done
+ * at `now`: a time that was not past when it was asked is not past because
+ * the platforms were slow to say what their accounts take, and becomes
+ * `now`. One that was past then stays as it is, for `schedulePost` to
+ * refuse.
+ */
+export const asReceived = (
+  schedule: Schedule,
+  received: DateTime.Utc,
+  now: DateTime.Utc
+): Schedule =>
+  DateTime.isLessThan(schedule.at, now) &&
+  !DateTime.isLessThan(
+    schedule.at,
+    DateTime.subtractDuration(received, scheduleGrace)
+  )
+    ? new Schedule({ at: now, timeZone: schedule.timeZone })
+    : schedule;
 
 const hasNoTimeYet = ({ status }: Post) =>
   status._tag !== "draft" &&
@@ -244,7 +307,11 @@ export const releasePost = (post: Post, now: DateTime.Utc): Transition => {
   return Result.succeed(
     Result.match(timeFrom(post, status.schedule, now), {
       onFailure: () =>
-        withStatus(post, { _tag: "draft" }, post.scheduleRevision + 1),
+        attributed(
+          withStatus(post, { _tag: "draft" }, post.scheduleRevision + 1),
+          Option.none(),
+          Option.none()
+        ),
       onSuccess: (at) =>
         withStatus(
           post,
@@ -257,12 +324,17 @@ export const releasePost = (post: Post, now: DateTime.Utc): Transition => {
 
 /**
  * Takes a scheduled post, or one waiting for an approval, back to draft,
- * with a new revision.
+ * with a new revision. Nobody scheduled a draft: it keeps only how it was
+ * created.
  */
 export const moveToDraft = (post: Post): Transition =>
   post.status._tag === "scheduled" || post.status._tag === "awaitingApproval"
     ? Result.succeed(
-        withStatus(post, { _tag: "draft" }, post.scheduleRevision + 1)
+        attributed(
+          withStatus(post, { _tag: "draft" }, post.scheduleRevision + 1),
+          Option.none(),
+          Option.none()
+        )
       )
     : rejected(post, "moveToDraft");
 

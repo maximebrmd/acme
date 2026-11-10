@@ -12,7 +12,9 @@ import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
+import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
+import { PostOrigins } from "#publishing/application/post-origins.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
@@ -28,6 +30,7 @@ import {
   GatedPlatformPublisher,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
+import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
 import { DrizzlePostOversight } from "#publishing/infrastructure/drizzle-post-oversight.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
@@ -41,12 +44,19 @@ import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-me
 import { ListedChannelConnections } from "#publishing/infrastructure/listed-channel-connections.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
+import { LoggedOperatorAlerts } from "#publishing/infrastructure/logged-operator-alerts.ts";
 import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
+import { NamedPostOrigins } from "#publishing/infrastructure/named-post-origins.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { PlatformLookupsLive } from "#publishing/infrastructure/platforms/platform-lookups-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
+import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
+import {
+  webhookOutcomes,
+  WebhookPostEvents,
+} from "#publishing/infrastructure/webhook-post-events.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
@@ -54,13 +64,15 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 
 // The use cases over their adapters, asking whatever ApprovalGate they are
 // given before a post is scheduled.
-const publishingOver = <E, R, E2, R2>(
+const publishingOver = <E, R, E2, R2, E3, R3, R4>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
     R
   >,
-  accounts: Layer.Layer<AccountRules, E2, R2>
+  accounts: Layer.Layer<AccountRules, E2, R2>,
+  origins: Layer.Layer<PostOrigins, E3, R3>,
+  events: Layer.Layer<PostEvents, never, R4>
 ) =>
   Layer.mergeAll(
     PostDrafts.layer,
@@ -73,15 +85,19 @@ const publishingOver = <E, R, E2, R2>(
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzleIdempotencyKeys,
         DrizzlePostOversight,
         DrizzlePostRepository,
         DrizzlePublicationJournal,
         DrizzlePublishedTargets,
         DrizzleWorkspacePostStore,
         LoggedChannelHealth,
+        LoggedOperatorAlerts,
         WorkflowPublicationScheduler,
         references,
-        accounts
+        accounts,
+        origins,
+        events
       )
     )
   );
@@ -94,48 +110,70 @@ const publishingOver = <E, R, E2, R2>(
  * follows; `PostOversight`, for the staff console; in `PublishingLive`,
  * `PostingCapabilities` and `ChannelLookups`, which tell clients what a
  * post may hold) and the adapters behind its ports, with `references` for
- * the channels and media posts refer to and the posts a month allows. No
- * post waits for an approval here
- * (`ApprovalGate.open`). Needs the database (Drizzle), the
- * workflow engine, a TransactionRunner and Ids, and PublicationOutcomes for
- * PostFollowUp.
+ * the channels and media posts refer to and the posts a month allows,
+ * `accounts` for what each account refuses (by default, nothing), `origins`
+ * for the names of the keys and applications that write posts (by default,
+ * none) and `events` for who hears what happens to posts (by default,
+ * nobody). No post waits for an approval here (`ApprovalGate.open`). Needs
+ * the database (Drizzle), the workflow engine, a TransactionRunner and Ids,
+ * and PublicationOutcomes for PostFollowUp.
  */
-export const publishingWith = <E, R, E2 = never, R2 = never>(
+export const publishingWith = <
+  E,
+  R,
+  E2 = never,
+  R2 = never,
+  E3 = never,
+  R3 = never,
+  R4 = never,
+>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
     R
   >,
-  accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none
+  accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none,
+  origins: Layer.Layer<PostOrigins, E3, R3> = PostOrigins.unnamed,
+  events: Layer.Layer<PostEvents, never, R4> = PostEvents.none
 ) =>
-  publishingOver(references, accounts).pipe(
+  publishingOver(references, accounts, origins, events).pipe(
     Layer.provideMerge(ApprovalGate.open)
   );
 
 /**
  * The same behind `gate`, which says which posts wait for an approval, and
- * may bring what a test reads it with.
+ * may bring what a test reads it with; `events` hears what happens to
+ * posts (by default, nobody).
  */
-export const publishingBehind = <G, E3, R3, E, R>(
+export const publishingBehind = <G, E3, R3, E, R, R4 = never>(
   gate: Layer.Layer<ApprovalGate | G, E3, R3>,
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
     R
-  >
+  >,
+  events: Layer.Layer<PostEvents, never, R4> = PostEvents.none
 ) =>
-  publishingOver(references, AccountRules.none).pipe(Layer.provideMerge(gate));
+  publishingOver(
+    references,
+    AccountRules.none,
+    PostOrigins.unnamed,
+    events
+  ).pipe(Layer.provideMerge(gate));
 
 /**
  * The use cases as the server runs them: channels are those the channels
  * context lists, media the ready media its library holds, and the posts a
  * month allows the workspace's plan, which the composition root provides
- * (ListChannels, MediaLibrary, WorkspaceEntitlements). How each target ends
+ * (ListChannels, MediaLibrary, WorkspaceEntitlements), and a post names the
+ * key or application that wrote it as the workspace context does
+ * (CredentialNames). How each target ends
  * is told through the notifications context (Notify), naming channels as
  * the channels context has them (ChannelRepository), once billing counted
- * the posts that went out on platforms that bill per post (MeteredPosts).
- * Which posts wait for an approval is the ApprovalGate's say, which the
- * composition root provides from the review context.
+ * the posts that went out on platforms that bill per post (MeteredPosts),
+ * and the workspace's webhook endpoints hear what happens to its posts
+ * (WebhookEvents). Which posts wait for an approval is the ApprovalGate's
+ * say, which the composition root provides from the review context.
  */
 export const PublishingLive = publishingOver(
   Layer.mergeAll(
@@ -143,7 +181,9 @@ export const PublishingLive = publishingOver(
     LibraryAttachableMedia,
     PlanPostAllowanceLive
   ),
-  AccountRules.layer
+  AccountRules.layer,
+  NamedPostOrigins,
+  WebhookPostEvents
 ).pipe(
   Layer.provideMerge(
     TikTokCreatorInfo.layer.pipe(Layer.provide(ListedWorkspaceChannels))
@@ -170,7 +210,7 @@ export const PublishingLive = publishingOver(
     TikTokCreatorsLive.pipe(Layer.provide(ChannelAccessCredentials))
   ),
   Layer.provideMerge(
-    meteredOutcomes(NotifiedPublicationOutcomes).pipe(
+    webhookOutcomes(meteredOutcomes(NotifiedPublicationOutcomes)).pipe(
       Layer.provide(DrizzlePostRepository)
     )
   )
@@ -225,7 +265,8 @@ export const publishingWorkers = <E, R, E2 = never, R2 = never>(
  * Threads, Instagram, Facebook Pages, TikTok, YouTube and Pinterest, with
  * the tokens
  * the channels context hands out (ChannelAccess) and the files the media
- * context does (MediaForPlatforms), which the composition root provides
+ * context does (MediaForPlatforms), the large ones a few at a time
+ * (`limitedUploads`), which the composition root provides
  * with Dns, the database and the PostRepository.
  */
 export const PlatformsLive = RoutedPlatformPublisher.pipe(
@@ -233,7 +274,7 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
   Layer.provide(
     Layer.mergeAll(
       ChannelAccessCredentials,
-      LibraryMediaForPublishing,
+      limitedUploads.pipe(Layer.provide(LibraryMediaForPublishing)),
       DrizzlePublicationProgress,
       DrizzleUploadSessions,
       DrizzlePlatformQuota
@@ -262,3 +303,6 @@ export const publishingWorkersReading = <E, R>(readers: GateReaders<E, R>) =>
  * analytics' collection.
  */
 export { GatedMetricsReader } from "#publishing/infrastructure/channel-gate.ts";
+
+/** The idempotency keys' daily retention. Needs PostScheduling. */
+export { IdempotencyRetentionCron as PublishingCronsLive } from "#publishing/infrastructure/crons.ts";

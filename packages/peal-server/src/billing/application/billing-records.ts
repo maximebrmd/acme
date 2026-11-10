@@ -17,6 +17,8 @@ import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Checkouts } from "./ports/checkouts.ts";
 import { ContractRecords } from "./ports/contract-records.ts";
+import { ContractReferences } from "./ports/contract-references.ts";
+import { ContractRequests } from "./ports/contract-requests.ts";
 import { MeteredPostLedger } from "./ports/metered-post-ledger.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
@@ -164,10 +166,13 @@ export class BillingRecords extends Context.Service<
       const checkouts = yield* Checkouts;
       const metered = yield* MeteredPostLedger;
       const contracts = yield* ContractRecords;
+      const requests = yield* ContractRequests;
+      const references = yield* ContractReferences;
 
       const exportUser = Effect.fn("BillingRecords.exportUser")(
         function* exportUser(userId: UserId) {
           const made = yield* contracts.ofUser(userId);
+          const asked = yield* requests.ofUser(userId);
 
           const record: ContractsRecord = {
             orders: made.orders.map((order) => ({
@@ -178,6 +183,20 @@ export class BillingRecords extends Context.Service<
               trial: order.trial,
               usedAt: Option.getOrNull(order.usedAt),
               workspaceId: Option.getOrNull(order.workspaceId),
+            })),
+            requests: asked.map((request) => ({
+              channel: request.channel,
+              contract: Option.getOrNull(request.contract),
+              desiredAt: Option.getOrNull(request.desiredAt),
+              effectiveAt: Option.getOrNull(request.effectiveAt),
+              email: Option.getOrNull(request.email),
+              kind: request.kind,
+              name: Option.getOrNull(request.name),
+              receivedAt: request.receivedAt,
+              refunded: Option.getOrNull(request.refunded),
+              refusal: Option.getOrNull(request.refusal),
+              status: request.status,
+              workspaceId: Option.getOrNull(request.workspaceId),
             })),
             withdrawals: made.withdrawals.map((withdrawal) => ({
               refunded: withdrawal.refunded,
@@ -312,6 +331,10 @@ export class BillingRecords extends Context.Service<
 
           yield* subscriptions.eraseWorkspace(workspaceId);
           yield* metered.eraseWorkspace(workspaceId);
+          // Its requests stay without it, as its orders do; its contract
+          // numbers find nothing more.
+          yield* requests.eraseWorkspace(workspaceId);
+          yield* references.eraseWorkspace(workspaceId);
         }
       );
 
@@ -320,7 +343,10 @@ export class BillingRecords extends Context.Service<
         eraseWorkspace,
         exportUser,
         exportWorkspace,
-        forgetUser: subscriptions.forgetUser,
+        forgetUser: (userId, pseudonym) =>
+          subscriptions
+            .forgetUser(userId, pseudonym)
+            .pipe(Effect.andThen(requests.forgetUser(userId))),
         settleWorkspace,
       });
     })

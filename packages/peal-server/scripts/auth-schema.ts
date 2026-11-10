@@ -41,11 +41,17 @@ const auth = makeAuth({
   hooks: {
     checkout: async () =>
       await Promise.resolve({ _tag: "start", trialDays: null } as const),
-    freeWorkspace: async () => await Promise.resolve(false),
+    freeWorkspace: async () => await Promise.resolve(null),
     impersonatedRequest: async () => await Promise.resolve(true),
     invitation: ignore,
     log: ignore,
     memberAllowance: async () => await Promise.resolve(Option.none()),
+    memberUpgrade: async () =>
+      await Promise.resolve({
+        billingUrl: "http://localhost:3001",
+        plan: "free" as const,
+        planWithRoom: null,
+      }),
     resetPassword: ignore,
     subscriptionChanged: nothing,
     verifyEmail: ignore,

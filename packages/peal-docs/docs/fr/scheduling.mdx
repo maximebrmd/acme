@@ -137,7 +137,7 @@ La publication dans son ensemble indique alors **Publié**, **Publié en partie*
 
 ## Suivre une publication [#follow-up]
 
-Ouvrez une publication partie, depuis le calendrier ou une notification : sa page montre son texte et, pour chaque canal, son état, pourquoi elle a échoué ou est à vérifier, l’adresse de la publication sur la plateforme, et chaque tentative de Peal, avec l’heure du nouvel essai. Pendant l’envoi, la page se met à jour d’elle-même. Les membres qui peuvent programmer des publications peuvent alors :
+Ouvrez une publication partie, depuis le calendrier ou une notification : sa page montre son texte et, pour chaque canal, son état, pourquoi elle a échoué ou est à vérifier, l’adresse de la publication sur la plateforme, et chaque tentative de Peal, avec l’heure du nouvel essai. Elle indique aussi comment la publication a été créée et comment elle a été programmée : dans l’application web, avec une clé d’API, ou par une application comme la ligne de commande ou un client MCP, désignée par son nom. Pendant l’envoi, la page se met à jour d’elle-même. Les membres qui peuvent programmer des publications peuvent alors :
 
 - **Republier** sur un canal où elle a échoué ou est à vérifier : Peal l’envoie maintenant, en un nouvel envoi avec ses propres tentatives, et la publication indique **En cours de publication** jusqu’à son départ. Quand elle est à vérifier, regardez d’abord sur la plateforme, car elle est peut-être déjà en ligne ;
 - **Indiquer ce que vous avez trouvé** sur un canal à vérifier : **Elle est en ligne**, avec l’adresse de la publication si vous l’avez, ou **Elle n’y est pas**, qui la fait échouer sur ce canal pour qu’elle puisse être republiée. Les deux réponses la retirent des publications à vérifier, et marquent ses notifications comme lues.
@@ -153,6 +153,12 @@ Peal patiente plutôt que d’abandonner quand une plateforme est occupée :
 Une publication qui n’a pas pu partir dans l’heure qui suit son heure prévue, par exemple parce que le serveur était arrêté, est marquée manquée et ne part pas.
 
 Chaque image ou vidéo est envoyée comme la plateforme le demande, et certaines plateformes traitent d’abord les vidéos : Peal les attend jusqu’à 15 minutes, puis réessaie plus tard, comme pour une plateforme qui ne répond pas.
+
+## Depuis un agent, la ligne de commande ou l’API [#api]
+
+Ce que fait l’éditeur, un [client MCP](/mcp#tools), la [ligne de commande](/cli#posts) et l’[API HTTP](/api-overview) le font aussi, avec les mêmes vérifications : rédiger un brouillon, le programmer, le publier maintenant, le déplacer, le repasser en brouillon et l’annuler. `POST /api/workspaces/{workspaceId}/posts/send` crée une publication et l’envoie en une seule requête, maintenant ou à un instant, et la refuse en entier, en listant toutes les violations d’un coup, quand elle enfreint une règle de la plateforme de l’un de ses canaux.
+
+Une application que vous avez connectée ne programme et ne publie que si vous l’y autorisez : publier est une permission à part, que vous pouvez lui refuser pour qu’elle rédige des brouillons que vous relisez. Une clé d’API ne fait que ce que permettent les permissions qu’elle a reçues. [Publier depuis un agent IA](/agents) explique les deux, avec un exemple.
 
 ## Médias [#media]
 

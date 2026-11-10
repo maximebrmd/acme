@@ -46,6 +46,33 @@ public record UnprocessableEntityErrorBody
     }
 
     /// <summary>
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.MediaSourceNotPublic"/>.
+    /// </summary>
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.MediaSourceNotPublic value)
+    {
+        Type = "MediaSourceNotPublic";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.MediaSourceUnreachable"/>.
+    /// </summary>
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.MediaSourceUnreachable value)
+    {
+        Type = "MediaSourceUnreachable";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of UnprocessableEntityErrorBody with <see cref="UnprocessableEntityErrorBody.UploadRejected"/>.
+    /// </summary>
+    public UnprocessableEntityErrorBody(UnprocessableEntityErrorBody.UploadRejected value)
+    {
+        Type = "UploadRejected";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -70,6 +97,21 @@ public record UnprocessableEntityErrorBody
     /// Returns true if <see cref="Type"/> is "AltTextTooLong"
     /// </summary>
     public bool IsAltTextTooLong => Type == "AltTextTooLong";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "MediaSourceNotPublic"
+    /// </summary>
+    public bool IsMediaSourceNotPublic => Type == "MediaSourceNotPublic";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "MediaSourceUnreachable"
+    /// </summary>
+    public bool IsMediaSourceUnreachable => Type == "MediaSourceUnreachable";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "UploadRejected"
+    /// </summary>
+    public bool IsUploadRejected => Type == "UploadRejected";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.UnsupportedMediaTypeEncoded"/> if <see cref="Type"/> is 'UnsupportedMediaType', otherwise throws an exception.
@@ -104,10 +146,46 @@ public record UnprocessableEntityErrorBody
                 "UnprocessableEntityErrorBody.Type is not 'AltTextTooLong'"
             );
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.MediaSourceNotPublicEncoded"/> if <see cref="Type"/> is 'MediaSourceNotPublic', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'MediaSourceNotPublic'.</exception>
+    public Peal.MediaSourceNotPublicEncoded AsMediaSourceNotPublic() =>
+        IsMediaSourceNotPublic
+            ? (Peal.MediaSourceNotPublicEncoded)Value!
+            : throw new global::System.Exception(
+                "UnprocessableEntityErrorBody.Type is not 'MediaSourceNotPublic'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.MediaSourceUnreachableEncoded"/> if <see cref="Type"/> is 'MediaSourceUnreachable', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'MediaSourceUnreachable'.</exception>
+    public Peal.MediaSourceUnreachableEncoded AsMediaSourceUnreachable() =>
+        IsMediaSourceUnreachable
+            ? (Peal.MediaSourceUnreachableEncoded)Value!
+            : throw new global::System.Exception(
+                "UnprocessableEntityErrorBody.Type is not 'MediaSourceUnreachable'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.UploadRejectedEncoded"/> if <see cref="Type"/> is 'UploadRejected', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'UploadRejected'.</exception>
+    public Peal.UploadRejectedEncoded AsUploadRejected() =>
+        IsUploadRejected
+            ? (Peal.UploadRejectedEncoded)Value!
+            : throw new global::System.Exception(
+                "UnprocessableEntityErrorBody.Type is not 'UploadRejected'"
+            );
+
     public T Match<T>(
         Func<Peal.UnsupportedMediaTypeEncoded, T> onUnsupportedMediaType,
         Func<Peal.MediaTooLargeEncoded, T> onMediaTooLarge,
         Func<Peal.AltTextTooLongEncoded, T> onAltTextTooLong,
+        Func<Peal.MediaSourceNotPublicEncoded, T> onMediaSourceNotPublic,
+        Func<Peal.MediaSourceUnreachableEncoded, T> onMediaSourceUnreachable,
+        Func<Peal.UploadRejectedEncoded, T> onUploadRejected,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -116,6 +194,9 @@ public record UnprocessableEntityErrorBody
             "UnsupportedMediaType" => onUnsupportedMediaType(AsUnsupportedMediaType()),
             "MediaTooLarge" => onMediaTooLarge(AsMediaTooLarge()),
             "AltTextTooLong" => onAltTextTooLong(AsAltTextTooLong()),
+            "MediaSourceNotPublic" => onMediaSourceNotPublic(AsMediaSourceNotPublic()),
+            "MediaSourceUnreachable" => onMediaSourceUnreachable(AsMediaSourceUnreachable()),
+            "UploadRejected" => onUploadRejected(AsUploadRejected()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -124,6 +205,9 @@ public record UnprocessableEntityErrorBody
         Action<Peal.UnsupportedMediaTypeEncoded> onUnsupportedMediaType,
         Action<Peal.MediaTooLargeEncoded> onMediaTooLarge,
         Action<Peal.AltTextTooLongEncoded> onAltTextTooLong,
+        Action<Peal.MediaSourceNotPublicEncoded> onMediaSourceNotPublic,
+        Action<Peal.MediaSourceUnreachableEncoded> onMediaSourceUnreachable,
+        Action<Peal.UploadRejectedEncoded> onUploadRejected,
         Action<string, object?> onUnknown_
     )
     {
@@ -137,6 +221,15 @@ public record UnprocessableEntityErrorBody
                 break;
             case "AltTextTooLong":
                 onAltTextTooLong(AsAltTextTooLong());
+                break;
+            case "MediaSourceNotPublic":
+                onMediaSourceNotPublic(AsMediaSourceNotPublic());
+                break;
+            case "MediaSourceUnreachable":
+                onMediaSourceUnreachable(AsMediaSourceUnreachable());
+                break;
+            case "UploadRejected":
+                onUploadRejected(AsUploadRejected());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -186,6 +279,48 @@ public record UnprocessableEntityErrorBody
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.MediaSourceNotPublicEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsMediaSourceNotPublic(out Peal.MediaSourceNotPublicEncoded? value)
+    {
+        if (Type == "MediaSourceNotPublic")
+        {
+            value = (Peal.MediaSourceNotPublicEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.MediaSourceUnreachableEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsMediaSourceUnreachable(out Peal.MediaSourceUnreachableEncoded? value)
+    {
+        if (Type == "MediaSourceUnreachable")
+        {
+            value = (Peal.MediaSourceUnreachableEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.UploadRejectedEncoded"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsUploadRejected(out Peal.UploadRejectedEncoded? value)
+    {
+        if (Type == "UploadRejected")
+        {
+            value = (Peal.UploadRejectedEncoded)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator UnprocessableEntityErrorBody(
@@ -198,6 +333,18 @@ public record UnprocessableEntityErrorBody
 
     public static implicit operator UnprocessableEntityErrorBody(
         UnprocessableEntityErrorBody.AltTextTooLong value
+    ) => new(value);
+
+    public static implicit operator UnprocessableEntityErrorBody(
+        UnprocessableEntityErrorBody.MediaSourceNotPublic value
+    ) => new(value);
+
+    public static implicit operator UnprocessableEntityErrorBody(
+        UnprocessableEntityErrorBody.MediaSourceUnreachable value
+    ) => new(value);
+
+    public static implicit operator UnprocessableEntityErrorBody(
+        UnprocessableEntityErrorBody.UploadRejected value
     ) => new(value);
 
     [Serializable]
@@ -251,6 +398,20 @@ public record UnprocessableEntityErrorBody
                 ) ?? throw new JsonException("Failed to deserialize Peal.MediaTooLargeEncoded"),
                 "AltTextTooLong" => json.Deserialize<Peal.AltTextTooLongEncoded?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.AltTextTooLongEncoded"),
+                "MediaSourceNotPublic" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.MediaSourceNotPublicEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.MediaSourceNotPublicEncoded"
+                        ),
+                "MediaSourceUnreachable" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.MediaSourceUnreachableEncoded?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.MediaSourceUnreachableEncoded"
+                        ),
+                "UploadRejected" => json.Deserialize<Peal.UploadRejectedEncoded?>(options)
+                    ?? throw new JsonException("Failed to deserialize Peal.UploadRejectedEncoded"),
                 _ => json.Deserialize<object?>(options),
             };
             return new UnprocessableEntityErrorBody(discriminator, value);
@@ -268,6 +429,12 @@ public record UnprocessableEntityErrorBody
                     "UnsupportedMediaType" => JsonSerializer.SerializeToNode(value.Value, options),
                     "MediaTooLarge" => JsonSerializer.SerializeToNode(value.Value, options),
                     "AltTextTooLong" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "MediaSourceNotPublic" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "MediaSourceUnreachable" => JsonSerializer.SerializeToNode(
+                        value.Value,
+                        options
+                    ),
+                    "UploadRejected" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -353,6 +520,66 @@ public record UnprocessableEntityErrorBody
 
         public static implicit operator UnprocessableEntityErrorBody.AltTextTooLong(
             Peal.AltTextTooLongEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for MediaSourceNotPublic
+    /// </summary>
+    [Serializable]
+    public struct MediaSourceNotPublic
+    {
+        public MediaSourceNotPublic(Peal.MediaSourceNotPublicEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.MediaSourceNotPublicEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator UnprocessableEntityErrorBody.MediaSourceNotPublic(
+            Peal.MediaSourceNotPublicEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for MediaSourceUnreachable
+    /// </summary>
+    [Serializable]
+    public struct MediaSourceUnreachable
+    {
+        public MediaSourceUnreachable(Peal.MediaSourceUnreachableEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.MediaSourceUnreachableEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator UnprocessableEntityErrorBody.MediaSourceUnreachable(
+            Peal.MediaSourceUnreachableEncoded value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for UploadRejected
+    /// </summary>
+    [Serializable]
+    public struct UploadRejected
+    {
+        public UploadRejected(Peal.UploadRejectedEncoded value)
+        {
+            Value = value;
+        }
+
+        internal Peal.UploadRejectedEncoded Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator UnprocessableEntityErrorBody.UploadRejected(
+            Peal.UploadRejectedEncoded value
         ) => new(value);
     }
 }

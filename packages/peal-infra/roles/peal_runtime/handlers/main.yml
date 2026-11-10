@@ -1,0 +1,13 @@
+---
+# The server reads the declaration once, when it starts, and repeats it in
+# each user's export: restarted, it reads the new one. A restart keeps the
+# container and its settings, which only release.yml changes; before the
+# first release nothing runs, and nothing is restarted.
+- name: Restart the server with the new privacy declaration
+  ansible.builtin.command:
+    argv:
+      - "{{ peal_compose_bin }}"
+      - restart
+      - server
+    removes: "{{ peal_root }}/current"
+  changed_when: true

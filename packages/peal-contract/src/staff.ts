@@ -14,6 +14,7 @@ import { FailureReasonSchema, UnconfirmedReasonSchema } from "./posts.ts";
 import { StaffAccess } from "./staff-access.ts";
 import { StaffActionRefused } from "./staff-action-refused.ts";
 import { UserNotFound } from "./user-not-found.ts";
+import { WebhookDisabledReasonSchema } from "./webhooks.ts";
 import { WorkspaceNotFound } from "./workspace-not-found.ts";
 
 /** How many rows a page of the staff console's lists holds. */
@@ -57,7 +58,10 @@ export const StaffReasonSchema = Schema.Trim.check(
  * staff member or the account was banned or signed out everywhere, or the
  * staff member lost the role (`impersonationEnded`); and a legal request a
  * staff member answered (`legalDisclosure`), with the authority and its
- * reference as the reason.
+ * reference as the reason; and a request to cancel a contract or withdraw
+ * from one that staff applied to a workspace's contract or closed
+ * (`applyContractRequest`, `closeContractRequest`), its id among the
+ * object ids.
  */
 export const StaffActionSchema = Schema.Literals([
   "ban",
@@ -69,6 +73,8 @@ export const StaffActionSchema = Schema.Literals([
   "stopImpersonating",
   "impersonationEnded",
   "legalDisclosure",
+  "applyContractRequest",
+  "closeContractRequest",
 ]).annotate({ identifier: "StaffAction" });
 
 /**
@@ -183,6 +189,23 @@ export const StaffChannelSchema = Schema.Struct({
 
 export type StaffChannel = typeof StaffChannelSchema.Type;
 
+/**
+ * A webhook endpoint as staff see it: the host its deliveries go to, never
+ * its whole address, its description or its secret.
+ */
+export const StaffWebhookSchema = Schema.Struct({
+  disabledReason: Schema.NullOr(WebhookDisabledReasonSchema),
+  enabled: Schema.Boolean,
+  // How many event types it subscribes to.
+  eventTypes: Schema.Int,
+  // Since when every attempt has failed; null once one succeeded.
+  failingSince: Schema.NullOr(Schema.DateTimeUtc),
+  host: Schema.String,
+  id: Schema.String,
+}).annotate({ identifier: "StaffWebhook" });
+
+export type StaffWebhook = typeof StaffWebhookSchema.Type;
+
 /** How many of a workspace's posts are where, drafts included. */
 export const StaffPostCountsSchema = Schema.Struct({
   awaitingApproval: Schema.Int,
@@ -230,6 +253,7 @@ export const StaffWorkspaceSchema = Schema.Struct({
   name: Schema.String,
   posts: StaffPostCountsSchema,
   slug: Schema.String,
+  webhooks: Schema.Array(StaffWebhookSchema),
 }).annotate({ identifier: "StaffWorkspace" });
 
 export type StaffWorkspace = typeof StaffWorkspaceSchema.Type;

@@ -29,6 +29,7 @@ import {
 } from "react";
 import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 
+import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
 import {
   carriedOver,
   emptyDraft,
@@ -325,6 +326,9 @@ const UploadItem = ({
           )}
         </div>
       </div>
+      {outcome._tag === "failed" ? (
+        <OfferUpgrade reached={outcome.failure.reached} />
+      ) : null}
       {outcome._tag === "failed" ? (
         <p role="alert" className="text-destructive-text text-sm">
           {errorMessage(outcome.failure)}

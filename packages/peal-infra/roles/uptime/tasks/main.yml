@@ -8,6 +8,34 @@
 #
 # In check mode on a new server, the files that go in uptime_root wait for the
 # folder: the tasks that write them skip until it exists.
+# The uptime server alerts when the others cannot, so it is hosted apart from
+# them: at another provider (another network, console and account, which a
+# suspension or an outage takes whole) and in another city (another power
+# supply and other upstream networks). A server whose hosting is still a
+# placeholder counts as shared: nothing tells it apart yet.
+- name: Refuse an uptime server hosted with a server it watches
+  ansible.builtin.assert:
+    that: uptime_shared_hosting | length == 0
+    fail_msg: >-
+      Host the uptime server at another provider and in another city than
+      the servers it watches: its hosting_provider and hosting_location must
+      differ from the {{ uptime_shared_hosting | join(', ') }}, once each is
+      chosen (README.md, "Choosing a provider and a size").
+    quiet: true
+  vars:
+    uptime_watched: "{{ groups['servers'] | default([]) }}"
+    uptime_watched_providers: >-
+      {{ uptime_watched | map('extract', hostvars, 'hosting_provider') | map('trim') | map('lower') | list }}
+    uptime_watched_locations: >-
+      {{ uptime_watched | map('extract', hostvars, 'hosting_location') | map('trim') | map('lower') | list }}
+    uptime_shared_hosting: >-
+      {{ (uptime_watched | zip(uptime_watched_providers)
+          | selectattr('1', 'match', '(' ~ (hosting_provider | trim | lower | regex_escape) ~ '$|.*replace)')
+          | map(attribute='0') | map('regex_replace', '^', 'hosting_provider of ') | list)
+         + (uptime_watched | zip(uptime_watched_locations)
+            | selectattr('1', 'match', '(' ~ (hosting_location | trim | lower | regex_escape) ~ '$|.*replace)')
+            | map(attribute='0') | map('regex_replace', '^', 'hosting_location of ') | list) }}
+
 - name: Refuse environments the configuration cannot name
   ansible.builtin.assert:
     that:

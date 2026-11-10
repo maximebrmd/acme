@@ -2,6 +2,7 @@ import { Context, Effect, Layer, Option } from "effect";
 import type { Redacted } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { planClosure } from "#workspace/domain/account-closure.ts";
 import type { LastOwner } from "#workspace/domain/last-owner.ts";
@@ -15,13 +16,20 @@ import type { AuthUnavailable } from "./auth-unavailable.ts";
 import type { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContextRecords } from "./context-records.ts";
 import type { WorkspaceErasureOptions } from "./context-records.ts";
+import type { ErasureIncomplete } from "./erasure-incomplete.ts";
+import type { ErasureLedgerUnavailable } from "./erasure-ledger-unavailable.ts";
+import type { ErasureLedger } from "./erasure-ledger.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
 import { PasswordCheck } from "./password-check.ts";
 import type { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import {
+  confirmErasure,
+  discardOnFailure,
   eraseWorkspace,
+  erasureOf,
+  recordErasure,
   removeWorkspaceFiles,
   reportCancelledFirst,
 } from "./workspace-erasure.ts";
@@ -39,11 +47,13 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
  * `options` says the user agreed to, before the transaction and once
  * nothing else refuses; otherwise the closure is refused
  * (`WorkspaceSubscribed`, listing what cancelling would end in each).
- * Only what the law has a host keep is left, apart from everything else
- * and readable only on a legal request: who held the account, 5 years,
- * and how they signed in and paid, 1 year (`holdIdentification`); with the
- * connections that made content, each kept a year since it was made. A
- * confirmation is emailed to the address the account had, in its language.
+ * On a server that keeps what the law has a host keep, only that is left,
+ * apart from everything else and readable only on a legal request: who
+ * held the account, 5 years, and how they signed in and paid, 1 year
+ * (`holdIdentification`); with the connections that made content, each
+ * kept a year since it was made. A confirmation is emailed to the address
+ * the account had, in its language, saying what stays, if anything
+ * (`legalRemains`).
  */
 export class CloseAccount extends Context.Service<
   CloseAccount,
@@ -57,11 +67,13 @@ export class CloseAccount extends Context.Service<
       | AuthUnavailable
       | BillingUnavailable
       | DatabaseError
+      | ErasureLedgerUnavailable
       | IncorrectPassword
       | LastOwner
       | NotSignedIn
       | SessionRequired
       | TooManyPasswordAttempts
+      | ErasureIncomplete
       | WorkspaceBusy
       | WorkspaceSubscribed
     >;
@@ -71,7 +83,7 @@ export class CloseAccount extends Context.Service<
     CloseAccount,
     Effect.gen(function* CloseAccountLive() {
       const ports = yield* Effect.context<
-        AccountStore | ContextRecords | TransactionRunner
+        AccountStore | ContextRecords | ErasureLedger | Ids | TransactionRunner
       >();
 
       const store = yield* AccountStore;
@@ -106,61 +118,99 @@ export class CloseAccount extends Context.Service<
           planClosure(yield* store.standings(userId))
         );
 
-        const { subscriptionsCancelled } = yield* records.settleWorkspaces(
-          planned.deleted,
-          options
-        );
+        // In the ledger first, unconfirmed, with the workspaces it plans
+        // to delete: one that cannot be written stops here, before Stripe
+        // is asked to cancel anything, which cannot be undone.
+        const closing = yield* erasureOf(userId, planned.deleted);
 
-        const deleted = yield* transaction(
-          Effect.gen(function* closeInTransaction() {
-            // Again, under the workspaces' locks: a workspace someone
-            // joined meanwhile is left rather than deleted.
-            const plan = yield* Effect.fromResult(
-              planClosure(yield* store.standings(userId))
+        yield* recordErasure(closing);
+
+        const { subscriptionsCancelled } = yield* records
+          .settleWorkspaces(planned.deleted, options)
+          .pipe(discardOnFailure(closing));
+
+        // What the confirmation says stays, read while the account is there.
+        const legalHold = yield* records
+          .legalRemains(userId)
+          .pipe(discardOnFailure(closing));
+
+        // From here to the end without stopping, whatever becomes of the
+        // request: a client that goes away leaves no file behind, no
+        // entry unconfirmed and nobody untold.
+        yield* Effect.uninterruptible(
+          Effect.gen(function* erase() {
+            const erasure = yield* transaction(
+              Effect.gen(function* closeInTransaction() {
+                // Again, under the workspaces' locks: a workspace someone
+                // joined meanwhile is left rather than deleted.
+                const plan = yield* Effect.fromResult(
+                  planClosure(yield* store.standings(userId))
+                );
+
+                // Who held the account, as the law has Peal keep it, read
+                // before anything goes: the Stripe customers of the
+                // workspaces it deletes included.
+                const identification = yield* store.identification(
+                  userId,
+                  plan.deleted
+                );
+
+                yield* Effect.forEach(plan.deleted, eraseWorkspace, {
+                  discard: true,
+                });
+
+                yield* records.eraseUser(userId, user.email);
+                yield* store.deleteUser(userId);
+
+                yield* Effect.forEach(
+                  Option.toArray(identification),
+                  // As closed at the instant the ledger gives, so applying
+                  // the closure again after a restore holds the same
+                  // record.
+                  (held) => records.holdIdentification(held, closing.at),
+                  { discard: true }
+                );
+
+                // Last, with the workspaces deleted as the transaction
+                // found them: nothing is committed that the ledger does
+                // not hold.
+                const entry = { ...closing, workspaceIds: plan.deleted };
+
+                yield* recordErasure(entry);
+
+                return entry;
+              })
+            ).pipe(
+              discardOnFailure(closing),
+              reportCancelledFirst(subscriptionsCancelled)
             );
 
-            // Who held the account, as the law has Peal keep it, read
-            // before anything goes: the Stripe customers of the
-            // workspaces it deletes included.
-            const identification = yield* store.identification(
-              userId,
-              plan.deleted
-            );
+            yield* confirmErasure(erasure);
 
-            yield* Effect.forEach(plan.deleted, eraseWorkspace, {
+            const deleted = erasure.workspaceIds;
+
+            yield* Effect.forEach(deleted, removeWorkspaceFiles, {
               discard: true,
             });
 
-            yield* records.eraseUser(userId, user.email);
-            yield* store.deleteUser(userId);
-
-            yield* Effect.forEach(
-              Option.toArray(identification),
-              records.holdIdentification,
-              { discard: true }
+            // Ids only, as the ledger holds them.
+            yield* Effect.logInfo("Closed an account").pipe(
+              Effect.annotateLogs({
+                "event.name": "peal.erasure",
+                subscriptionsCancelled,
+                userId,
+                workspaceIds: deleted.join(","),
+              })
             );
 
-            return plan.deleted;
-          })
-        ).pipe(reportCancelledFirst(subscriptionsCancelled));
-
-        yield* Effect.forEach(deleted, removeWorkspaceFiles, { discard: true });
-
-        // Ids only: what a restore of the database must delete again.
-        yield* Effect.logInfo("Closed an account").pipe(
-          Effect.annotateLogs({
-            "event.name": "peal.erasure",
-            subscriptionsCancelled,
-            userId,
-            workspaceIds: deleted.join(","),
+            yield* mail.deleted({
+              email: user.email,
+              legalHold,
+              locale: user.locale,
+              subscriptionsCancelled,
+            });
           })
         );
-
-        yield* mail.deleted({
-          email: user.email,
-          locale: user.locale,
-          subscriptionsCancelled,
-        });
       }, Effect.provideContext(ports));
 
       return CloseAccount.of({ close });

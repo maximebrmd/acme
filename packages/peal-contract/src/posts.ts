@@ -9,6 +9,7 @@ import {
 
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
+import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { InvalidTimeRange } from "./invalid-time-range.ts";
 import { InvalidTimeZone } from "./invalid-time-zone.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
@@ -189,16 +190,50 @@ export const PostScheduleSchema = Schema.Struct({
 
 export type PostSchedule = typeof PostScheduleSchema.Type;
 
+/**
+ * How whoever created or scheduled a post reached Peal: in the web app
+ * (`web`), with an API key of the workspace (`apiKey`), or through an OAuth
+ * application acting for a member (`application`: the command line, an MCP
+ * client).
+ */
+export const PostOriginViaSchema = Schema.Literals([
+  "web",
+  "apiKey",
+  "application",
+]).annotate({ identifier: "PostOriginVia" });
+
+export type PostOriginVia = typeof PostOriginViaSchema.Type;
+
+/** How a post was created, or scheduled: through what, and which one. */
+export const PostOriginSchema = Schema.Struct({
+  // The API key's id (`apiKey`) or the OAuth client's (`application`);
+  // null for `web`.
+  id: Schema.NullOr(Schema.String),
+  // What the key or the application was called then, if it had a name.
+  name: Schema.NullOr(Schema.String),
+  via: PostOriginViaSchema,
+}).annotate({ identifier: "PostOrigin" });
+
+export type PostOrigin = typeof PostOriginSchema.Type;
+
 /** A post, what it says and where it goes. */
 export const PostSchema = Schema.Struct({
   // The user who created it; null when an API key did.
   authorId: Schema.NullOr(Schema.String),
   content: PostContentSchema,
+  // How it was created; null on a post from before this was kept.
+  createdVia: Schema.NullOr(PostOriginSchema),
   id: Schema.String,
   // How it ended, once it finished.
   outcome: Schema.NullOr(PostOutcomeSchema),
   // Its time, unless it is a draft. A cancelled post keeps the time it had.
   schedule: Schema.NullOr(PostScheduleSchema),
+  // The member who last scheduled or moved it; null on a draft, when an API
+  // key did, or on a post from before this was kept.
+  scheduledBy: Schema.NullOr(Schema.String),
+  // How it was last scheduled or moved; null on a draft, or on a post from
+  // before this was kept.
+  scheduledVia: Schema.NullOr(PostOriginSchema),
   status: PostStatusSchema,
   // One per channel, oldest first.
   targets: Schema.Array(PostTargetSchema),
@@ -234,6 +269,49 @@ export const SchedulePostSchema = Schema.Struct({
 }).annotate({ identifier: "SchedulePost" });
 
 export type SchedulePost = typeof SchedulePostSchema.Type;
+
+/**
+ * When a new post goes out: `now`, or `at` an instant. Either way it keeps
+ * the IANA time zone it was chosen in, which calendars show it in; left out
+ * of `now`, UTC.
+ */
+export const PostTimingSchema = Schema.Union([
+  Schema.TaggedStruct("now", {
+    timeZone: Schema.optionalKey(Schema.String),
+  }),
+  Schema.TaggedStruct("at", {
+    at: Schema.DateTimeUtc,
+    timeZone: Schema.String,
+  }),
+]).annotate({ identifier: "PostTiming" });
+
+export type PostTiming = typeof PostTimingSchema.Type;
+
+/**
+ * A post to create and send in one call: what it says, the channels it
+ * goes to, the options it has on those whose platform takes them, and when.
+ */
+export const NewPostSchema = Schema.Struct({
+  channelIds: Schema.NonEmptyArray(Schema.String),
+  content: PostContentSchema,
+  options: Schema.optionalKey(
+    Schema.Array(ChannelOptionsSchema).check(
+      uniqueBy(
+        (chosen: ChannelOptions) => chosen.channelId,
+        "options for each channel once"
+      )
+    )
+  ),
+  when: PostTimingSchema,
+}).annotate({ identifier: "NewPost" });
+
+export type NewPost = typeof NewPostSchema.Type;
+
+/** The longest `Idempotency-Key` Peal takes. */
+export const maxIdempotencyKeyLength = 255;
+
+/** How long Peal remembers an `Idempotency-Key`, in hours. */
+export const idempotencyKeyLifetimeHours = 24;
 
 /** A page of drafts, newest first. */
 export const DraftPageSchema = Schema.Struct({
@@ -387,6 +465,34 @@ export class PostsApi extends HttpApiGroup.make("posts")
         description:
           "Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.",
         summary: "Create a draft",
+      })
+    ),
+    HttpApiEndpoint.post("send", "/send", {
+      error: [
+        Forbidden,
+        ScheduleInPast,
+        InvalidTimeZone,
+        PostContentInvalid,
+        UnknownChannels,
+        UnknownMedia,
+        PlanLimitReached,
+        IdempotencyKeyReused,
+        PostNotFound,
+      ],
+      headers: {
+        "idempotency-key": Schema.optionalKey(
+          Schema.String.check(
+            Schema.isBetweenLength(1, maxIdempotencyKeyLength)
+          )
+        ),
+      },
+      params: workspace,
+      payload: NewPostSchema,
+      success: PostSchema.pipe(HttpApiSchema.status(201)),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Creates a post and sends it to some of the workspace's channels in one call: \`when\` is \`now\`, which publishes at once, or \`at\` an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an \`Idempotency-Key\` header (any text of your choosing, at most ${maxIdempotencyKeyLength} characters, such as a UUID) to make a request safe to send again: within ${idempotencyKeyLifetimeHours} hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.`,
+        summary: "Create and send a post",
       })
     ),
     HttpApiEndpoint.get("get", "/:postId", {

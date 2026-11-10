@@ -2,6 +2,7 @@ import { Effect, Layer, Option } from "effect";
 
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { AttachableMedia } from "#publishing/application/attachable-media.ts";
+import { PostOrigins } from "#publishing/application/post-origins.ts";
 import { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { MediaFile } from "#publishing/domain/media-file.ts";
@@ -19,6 +20,7 @@ import type {
 } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
+import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 // Stand-ins for what posts refer to in other contexts, and synthetic content.
@@ -79,14 +81,24 @@ export const postAllowance = (
         ChannelUsage,
         ChannelUsage.of({ connected: () => Effect.succeed(connected) })
       )
+    ),
+    Layer.provide(
+      Layer.succeed(
+        WorkspaceSeats,
+        WorkspaceSeats.of({ taken: () => Effect.succeed(1) })
+      )
     )
   );
 
-/** Channels on Mastodon, no media, and no limit: what most tests need. */
+/**
+ * Channels on Mastodon, no media, no limit, and keys and applications
+ * without names: what most tests need.
+ */
 export const ReferencesTest = Layer.mergeAll(
   anyChannelOn(),
   attachableMedia(),
-  postAllowance()
+  postAllowance(),
+  PostOrigins.unnamed
 );
 
 const syntheticUser = UserIdSchema.make("5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");

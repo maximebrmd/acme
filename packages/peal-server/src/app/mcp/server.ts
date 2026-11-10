@@ -2,21 +2,24 @@ import { Context, Layer } from "effect";
 import { McpProtocol, McpServer, Tool } from "effect/ai";
 
 import { PealToolsLive } from "#app/mcp/handlers.ts";
+import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReviewTools } from "#app/mcp/review-tools.ts";
 import { PealTools } from "#app/mcp/tools.ts";
 import { mcpAuthentication } from "#workspace/container.ts";
 
-// The tools that create, change or delete posts, or decide on their
-// approval: the law has Peal keep the connection of each call a year, as it
-// keeps the API's writes to posts and reviews.
+// The tools that create, change or delete posts and media, or decide on a
+// post's approval: the law has Peal keep the connection of each call a
+// year, as it keeps the API's writes to them.
 const contentTools: ReadonlySet<string> = new Set(
   [
     ...Object.values(PostTools.tools),
+    ...Object.values(MediaTools.tools),
     ...Object.values(ReviewTools.tools),
-  ].flatMap((tool) =>
-    Context.get(tool.annotations, Tool.Readonly) ? [] : [tool.name]
-  )
+  ]
+    .values()
+    .filter((tool) => !Context.get(tool.annotations, Tool.Readonly))
+    .map((tool) => tool.name)
 );
 
 /** Where the MCP endpoint answers, under PUBLIC_URL. */
@@ -40,7 +43,7 @@ export const mcpPath = "/api/mcp";
 export const McpLive = McpServer.layerHttp({
   allowSessionTermination: true,
   instructions:
-    "Peal schedules social media posts for teams. These tools act in the one workspace the user picked when they connected; call whoami to see which, and what this connection may do there. Tools that change something (drafts, follow-ups on published posts, invitations) need the user to have let this client do what their role allows, and say what they change: ask the user before reposting, confirming or inviting. Scheduling and publishing are for the user, in the web app.",
+    "Peal schedules social media posts for teams. These tools act in the one workspace the user picked when they connected; call whoami to see which, and what this connection may do there. Posting: list_channels answers where a post can go, list_media and import_media what it can show, create_draft saves a post for the user to review, and schedule_post, publish_post and create_post put one out, at a time or now. What goes out is public on the platforms and cannot be taken back from Peal: schedule or publish only what the user asked for, on the channels they named, and prefer a draft when unsure. Those tools need the scope workspace:publish, which the user grants when they connect; without it, drafts and media still work. A refused post lists every violation at once. After publishing, get_post says how it went on each channel; ask the user before reposting, confirming or inviting.",
   name: "Peal",
   path: mcpPath,
   protocols: [

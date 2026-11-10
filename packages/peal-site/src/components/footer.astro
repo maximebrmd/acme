@@ -1,7 +1,7 @@
 ---
 import { getRelativeLocaleUrl } from "astro:i18n";
 
-import { repositoryUrl } from "../config.ts";
+import { appLink, repositoryUrl } from "../config.ts";
 import type { Locale } from "../i18n/locales.ts";
 import { messages } from "../i18n/messages.ts";
 import { legalDocuments } from "../legal.ts";
@@ -15,6 +15,13 @@ interface Props {
 const { locale, path } = Astro.props;
 
 const t = messages(locale);
+
+// The functions to cancel a contract and to withdraw from one, which the
+// web app serves to anyone: on every page, under the law's own words.
+const contract = [
+  { href: appLink(locale, "cancel"), label: t.footer.cancel },
+  { href: appLink(locale, "withdraw"), label: t.footer.withdraw },
+].flatMap(({ href, label }) => (href === undefined ? [] : [{ href, label }]));
 ---
 
 <footer class="border-t border-neutral-200 dark:border-neutral-800">
@@ -37,6 +44,24 @@ const t = messages(locale);
         }
       </ul>
     </nav>
+    {
+      contract.length === 0 ? null : (
+        <nav aria-label={t.footer.contract}>
+          <ul class="flex flex-col gap-2">
+            {contract.map(({ href, label }) => (
+              <li>
+                <a
+                  href={href}
+                  class="hover:text-neutral-900 hover:underline dark:hover:text-neutral-100"
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )
+    }
     <div class="flex flex-col gap-4 sm:items-end">
       <LanguageLinks label={t.footer.language} locale={locale} path={path} />
       <p class="max-w-sm sm:text-right">{t.footer.license}</p>

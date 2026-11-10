@@ -79,6 +79,18 @@ export class MediaAssets extends Context.Service<
       asset: MediaAsset,
       from: MediaStatusName
     ) => Effect.Effect<MediaAsset, MediaAssetNotFound>;
+    /**
+     * Saves an asset whose file arrived after the room held for it lapsed
+     * (it was started before `pendingSince`, so `storedBytes` no longer
+     * counts it), if it is still pending and its bytes fit the allowance
+     * with what the workspace stores, under the workspace's lock:
+     * PlanLimitReached otherwise. Answers as `update` does.
+     */
+    readonly updateWithin: (
+      asset: MediaAsset,
+      allowance: Allowance,
+      pendingSince: DateTime.Utc
+    ) => Effect.Effect<MediaAsset, MediaAssetNotFound | PlanLimitReached>;
     /** Deletes the asset's record. Succeeds if it is gone. */
     readonly remove: (
       workspaceId: WorkspaceId,

@@ -14,22 +14,28 @@ import {
 } from "#analytics/container.ts";
 import { ClientErrorsLive } from "#app/client-errors/live.ts";
 import { ClusterLive } from "#app/cluster.ts";
+import { ContractRequestsLive } from "#app/contract-requests/live.ts";
 import { CronsLive } from "#app/crons.ts";
 import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
+import { countRequests } from "#app/request-metrics.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
   BillingApiLive,
+  StripePricesCheckedLive,
   BillingActionsApiLive,
   BillingLive,
   BillingOverviewLive,
+  ContractRequestsDeskApiLive,
+  ContractRequestsLive as ContractRequestsUseCasesLive,
 } from "#billing/container.ts";
 import {
   ChannelOAuthApiLive,
   ChannelsApiLive,
   ChannelsLive,
   DataDeletionApiLive,
+  TokenCipherLive,
 } from "#channels/container.ts";
 import {
   LegalApiLive,
@@ -65,6 +71,7 @@ import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import {
+  ContractRequestAuditLive,
   ImpersonationAuditLive,
   LegalDisclosureAuditLive,
   StaffApiLive,
@@ -72,7 +79,14 @@ import {
   StaffRecordsLive,
 } from "#staff/container.ts";
 import {
+  WebhooksApiLive,
+  WebhooksLive,
+  WebhooksWorkersLive,
+} from "#webhooks/container.ts";
+import {
+  AccountLookupLive,
   AuthRoutesLive,
+  ErasureReplayLive,
   StripeCheckoutsLive,
   WorkspaceApiLive,
   WorkspaceLive,
@@ -97,7 +111,9 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   LookupsApiLive,
   StaffApiLive,
   LegalApiLive,
-  ReviewApiLive
+  ReviewApiLive,
+  WebhooksApiLive,
+  ContractRequestsDeskApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -106,6 +122,7 @@ const ApiLive = HttpApiBuilder.layer(Api, {
   Layer.provide([
     SystemHandlers,
     ClientErrorsLive,
+    ContractRequestsLive,
     ChannelOAuthApiLive,
     DataDeletionApiLive,
     ReviewLinkApiLive,
@@ -125,12 +142,18 @@ const BillingContextsLive = BillingLive.pipe(
   Layer.provide(StripeCheckoutsLive)
 );
 
+// Webhooks, whose signing secrets the channels context's cipher encrypts.
+const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
+
 // The workspace context with the notifications it sends, the plans that
 // limit it, the audit log of staff's impersonations it records and the
 // legal records of the connections that change content, then the
-// notices, which read the workspace's members, then the channels context,
-// which sends them, as publishing does.
+// notices, which read the workspace's members, then the webhooks, which
+// tell a workspace through them that an endpoint was turned off, then the
+// channels context, which sends notices and webhook events, as publishing
+// does.
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
+  Layer.provideMerge(WebhooksContextLive),
   Layer.provideMerge(NoticesLive),
   Layer.provideMerge(
     WorkspaceLive.pipe(
@@ -143,9 +166,16 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
 );
 
 // The media context, which asks publishing which posts show an asset before
-// deleting it, and billing how much a workspace may store.
+// deleting it, and billing how much a workspace may store, and tells the
+// webhooks how uploads end.
 const MediaContextLive = MediaLive.pipe(
-  Layer.provide(Layer.mergeAll(MediaInPostsLive, BillingContextsLive))
+  Layer.provide(
+    Layer.mergeAll(
+      MediaInPostsLive,
+      BillingContextsLive,
+      ChannelsWithNoticesLive
+    )
+  )
 );
 
 // What the review context decides before publishing schedules a post (its
@@ -202,6 +232,17 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
   )
 );
 
+// What an erasure reaches in every context, as the settings do.
+const ErasedContextsLive = Layer.mergeAll(
+  ChannelsWithNoticesLive,
+  PublishingContextLive,
+  MediaContextLive,
+  AssistantContextLive,
+  AnalyticsLive,
+  StaffRecordsLive,
+  ReviewGateContextLive
+);
+
 // The staff console, which reads accounts and workspaces from the workspace
 // context, and each workspace's plan, channels and posts from billing, the
 // channels context and publishing.
@@ -227,6 +268,20 @@ const BillingContextLive = BillingOverviewLive.pipe(
       PublishingContextLive,
       MediaContextLive,
       AssistantContextLive
+    )
+  )
+);
+
+// The cancel and withdraw functions anyone reaches, which find the account
+// an address signs in to in the workspace context, tell members and write
+// acknowledgements through the notifications, and record what staff do
+// with requests in the audit log.
+const ContractRequestsContextLive = ContractRequestsUseCasesLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      AccountLookupLive,
+      ContractRequestAuditLive
     )
   )
 );
@@ -263,8 +318,24 @@ const ServicesLive = Layer.mergeAll(
   StaffContextLive,
   LegalRequestsContextLive,
   ReviewGateContextLive,
-  ReviewContextLive
+  ReviewContextLive,
+  ContractRequestsContextLive
 ).pipe(
+  Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
+  Layer.provideMerge(MigrationsLive),
+  Layer.provideMerge(DatabaseLive)
+);
+
+/**
+ * Applying the erasure ledger again after the database was restored
+ * (`src/replay-erasures.ts`): the contexts an erasure reaches, on the
+ * migrated database, with no HTTP server, worker or cron, so nothing is
+ * published or answered meanwhile. The jobs of the posts it erases stay in
+ * the cluster's tables: each wakes to a post that is gone, and is
+ * superseded.
+ */
+export const ErasureReplayServicesLive = ErasureReplayLive.pipe(
+  Layer.provide(ErasedContextsLive),
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
   Layer.provideMerge(DatabaseLive)
@@ -286,6 +357,7 @@ const HttpServerLive = Layer.unwrap(
 const WorkersLive = Layer.mergeAll(
   publishingWorkersReading(PlatformMetricsReaderLive),
   NotificationsWorkersLive,
+  WebhooksWorkersLive,
   CronsLive
 );
 
@@ -308,7 +380,8 @@ const ContextsLive = Layer.mergeAll(
   StaffContextLive,
   LegalRequestsContextLive,
   ReviewGateContextLive,
-  ReviewContextLive
+  ReviewContextLive,
+  ContractRequestsContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)
@@ -321,10 +394,15 @@ const ContextsLive = Layer.mergeAll(
 // database is up to date, and the cluster shares the pool with Drizzle, so a
 // use case can save a post and start its workflow in one transaction.
 export const ServerLive = Layer.mergeAll(
-  HttpRouter.serve(RoutesLive).pipe(Layer.provide(HttpServerLive)),
+  HttpRouter.serve(RoutesLive, { middleware: countRequests }).pipe(
+    Layer.provide(HttpServerLive)
+  ),
   WorkersLive
 ).pipe(
   Layer.provide(ContextsLive),
+  // Before anything listens: a server that bills starts only with
+  // Stripe's prices as it publishes them.
+  Layer.provide(StripePricesCheckedLive),
   Layer.provide(ClusterLive),
   Layer.provide(MigrationsLive),
   Layer.provide(DatabaseLive),

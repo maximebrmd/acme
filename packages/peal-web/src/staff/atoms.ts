@@ -16,3 +16,17 @@ export const resendVerification = PealApi.mutation(
 );
 
 export const impersonateUser = PealApi.mutation("staff", "impersonate");
+
+// Records a legal request, then answers it: for staff who hold the legal
+// role.
+export const answerLegalRequest = PealApi.mutation("legal", "answer");
+
+export const applyContractRequest = PealApi.mutation(
+  "contractRequestsDesk",
+  "apply"
+);
+
+export const closeContractRequest = PealApi.mutation(
+  "contractRequestsDesk",
+  "close"
+);

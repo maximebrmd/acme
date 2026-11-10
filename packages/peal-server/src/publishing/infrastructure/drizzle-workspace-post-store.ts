@@ -3,16 +3,18 @@ import { DateTime, Effect, Layer, Schema } from "effect";
 
 import { ExecutionIdSchema } from "#publishing/application/publication-scheduler.ts";
 import { WorkspacePostStore } from "#publishing/application/workspace-post-store.ts";
+import { PostOriginSchema } from "#publishing/domain/post-origin.ts";
 import { PostStatusNameSchema } from "#publishing/domain/post-status.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   AuthoredPostRecord,
+  PostOriginRecord,
   PostRecord,
 } from "#shared/application/personal-data.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { posts, postTargets } from "./schema.ts";
+import { idempotencyKeys, posts, postTargets } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -35,12 +37,31 @@ const decodeOverrides = Schema.decodeUnknownEffect(
   Schema.Array(Schema.Struct({ channelId: Schema.String, text: Schema.String }))
 );
 
-const utcOrNull = (date: Date | null) =>
-  date === null ? null : DateTime.fromDateUnsafe(date);
+// How a post was created or scheduled, as the post repository writes it.
+const decodeOrigin = Schema.decodeUnknownEffect(
+  Schema.NullOr(PostOriginSchema)
+);
 
 type PostRow = typeof posts.$inferSelect;
 
 type TargetRow = typeof postTargets.$inferSelect;
+
+// How the post was created, or scheduled, as an export holds it.
+const originRecord = (row: PostRow, column: "createdVia" | "scheduledVia") =>
+  decodeOrigin(row[column]).pipe(
+    Effect.orDie,
+    Effect.map((origin): PostOriginRecord | null =>
+      origin === null
+        ? null
+        : {
+            name: origin._tag === "web" ? null : (origin.name ?? null),
+            via: origin._tag,
+          }
+    )
+  );
+
+const utcOrNull = (date: Date | null) =>
+  date === null ? null : DateTime.fromDateUnsafe(date);
 
 // A post as an export holds it, with its targets among `targetRows`.
 const recordOf = Effect.fnUntraced(function* recordOf(
@@ -54,12 +75,14 @@ const recordOf = Effect.fnUntraced(function* recordOf(
   );
 
   const record: PostRecord = {
+    createdVia: yield* originRecord(row, "createdVia"),
     id: row.id,
     media: media.map(({ altText, mediaId }) => ({
       altText: altText === "" ? null : altText,
       mediaId,
     })),
     scheduledAt: utcOrNull(row.scheduledAt),
+    scheduledVia: yield* originRecord(row, "scheduledVia"),
     status: row.status,
     targets: targetRows.flatMap((target) =>
       target.postId === row.id
@@ -191,6 +214,13 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .set({ authorId: null })
           .where(eq(posts.authorId, userId))
           .pipe(Effect.mapError(failed));
+
+        // Nor that they scheduled any: how it was scheduled stays.
+        yield* db
+          .update(posts)
+          .set({ scheduledBy: null })
+          .where(eq(posts.scheduledBy, userId))
+          .pipe(Effect.mapError(failed));
       }
     );
 
@@ -199,6 +229,12 @@ export const DrizzleWorkspacePostStore = Layer.effect(
         yield* db
           .delete(posts)
           .where(eq(posts.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        // And the keys of the requests that made them.
+        yield* db
+          .delete(idempotencyKeys)
+          .where(eq(idempotencyKeys.workspaceId, workspaceId))
           .pipe(Effect.mapError(failed));
       }
     );

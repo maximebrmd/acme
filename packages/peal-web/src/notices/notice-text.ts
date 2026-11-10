@@ -1,6 +1,9 @@
 import { DateTime, Match } from "effect";
 import { useFormatter, useTranslations } from "next-intl";
+import { webhookFailingDays } from "peal-contract";
 import type { NoticeChannel, NoticeEvent } from "peal-contract";
+
+import { useSize } from "#billing/size.ts";
 
 /** What a notice says, and where the reader acts on it. */
 export interface NoticeText {
@@ -19,6 +22,7 @@ export interface NoticeText {
 export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
   const t = useTranslations("Notices");
   const format = useFormatter();
+  const size = useSize();
 
   const channelName = (channel: NoticeChannel | null) =>
     channel === null
@@ -53,6 +57,12 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
     const billing = (text: string): NoticeText => ({
       href: `/app/${workspaceId}/billing`,
       open: t("open", { page: "billing" }),
+      text,
+    });
+
+    const webhooks = (text: string): NoticeText => ({
+      href: `/app/${workspaceId}/settings/webhooks`,
+      open: t("open", { page: "webhooks" }),
       text,
     });
 
@@ -150,11 +160,36 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
             workspace,
           })
         ),
-      TrialEnding: ({ endsAt, plan: name }) =>
+      TrialEnding: ({ endsAt, over, plan: name }) =>
         billing(
-          t("event.TrialEnding", {
-            endsAt: DateTime.toDate(endsAt),
-            plan: plan(name),
+          over.length === 0
+            ? t("event.TrialEnding", {
+                endsAt: DateTime.toDate(endsAt),
+                plan: plan(name),
+                workspace,
+              })
+            : t("event.TrialEndingOver", {
+                endsAt: DateTime.toDate(endsAt),
+                over: over
+                  .map(({ allowed, limit, used }) =>
+                    limit === "mediaStorage"
+                      ? t("excessStorage", {
+                          allowed: size(allowed),
+                          used: size(used),
+                        })
+                      : t("excess", { allowed, limit, used })
+                  )
+                  .join(", "),
+                plan: plan(name),
+                workspace,
+              })
+        ),
+      WebhookEndpointDisabled: ({ host, reason }) =>
+        webhooks(
+          t("event.WebhookEndpointDisabled", {
+            days: webhookFailingDays,
+            host,
+            reason,
             workspace,
           })
         ),

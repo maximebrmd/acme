@@ -15,7 +15,7 @@ const failed = (cause: unknown) => new DatabaseError({ cause });
 // A copy of the data holds a link to each file the user uploaded, as
 // portability asks for what they provided: presigned, even when the bucket
 // is served publicly, for the longest a presigned GET works.
-const downloadLifetime = Duration.days(7);
+export const downloadLifetime = Duration.days(7);
 
 // The statuses whose file the store holds.
 const stored: ReadonlySet<string> = new Set(["uploaded", "ready"]);

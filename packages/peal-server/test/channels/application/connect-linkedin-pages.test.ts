@@ -385,7 +385,9 @@ layer(AdaptersTest)("connecting LinkedIn pages", (it) => {
 
         const channel = yield* connectedPage(on, workspaceId);
 
-        const sweep = RefreshChannelTokens.use((tokens) => tokens.sweep).pipe(
+        const sweep = RefreshChannelTokens.use((tokens) =>
+          tokens.sweep({ budget: Duration.minutes(1) })
+        ).pipe(
           Effect.provide(
             Layer.mergeAll(
               RefreshChannelTokens.layer,

@@ -4,17 +4,20 @@ import type { Subscription } from "./subscription.ts";
 
 /**
  * How long before a yearly plan renews its members are told: 45 days, so
- * between one and three months before, as Code de la consommation L215-1
- * asks of a contract that renews on its own.
+ * between three months and one month before the last day to refuse the
+ * renewal, which here is the renewal itself, as Code de la consommation
+ * L215-1 asks of a contract that renews on its own.
  */
 export const renewalNotice = Duration.days(45);
 
 /**
- * The renewal notice goes out once, on the first daily run within this
- * long after `renewalNotice` before the renewal: a run missed for a day or
- * two still sends it a month before at least.
+ * The renewal notice goes out once, on the first run within this long
+ * after `renewalNotice` before the renewal: a run missed for days still
+ * sends it more than 32 days before, so always "one month" before at
+ * least, whatever the month's length (one month before 31 March is 28
+ * February, 31 days earlier).
  */
-export const renewalWindow = Duration.days(15);
+export const renewalWindow = Duration.days(13);
 
 /** How long before a trial ends its members are told. */
 export const trialNotice = Duration.days(3);

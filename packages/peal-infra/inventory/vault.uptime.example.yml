@@ -15,6 +15,9 @@ uptime_credentials:
   TELEGRAM_CHAT_ID: REPLACE
   # A Cloudflare Access service token (Zero Trust › Access › Service
   # credentials), which the sandbox's Access application lets in with a
-  # Service Auth policy.
+  # Service Auth policy for that token alone: its client id, which ends in
+  # .access, and its secret, shown once. The names follow the environment's
+  # (uptime_environments), in upper case. It lasts a year: refresh it before
+  # it ends, or every check of the sandbox fails.
   SANDBOX_ACCESS_CLIENT_ID: REPLACE
   SANDBOX_ACCESS_CLIENT_SECRET: REPLACE

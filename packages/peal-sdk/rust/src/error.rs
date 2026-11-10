@@ -26,7 +26,11 @@ pub enum ApiError {
         message: String,
         tag: Option<PlanLimitReachedEncodedTag>,
         allowed: Option<i64>,
+        billing_url: Option<String>,
         limit: Option<PlanLimit>,
+        plan: Option<Plan>,
+        plan_with_room: Option<PaidPlan>,
+        used: Option<i64>,
     },
     #[error("UnprocessableEntityError: Unprocessable entity - {message}")]
     UnprocessableEntityError {
@@ -178,9 +182,21 @@ impl ApiError {
                             allowed: parsed
                                 .get("allowed")
                                 .and_then(|v| serde_json::from_value::<i64>(v.clone()).ok()),
+                            billing_url: parsed
+                                .get("billingUrl")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
                             limit: parsed
                                 .get("limit")
                                 .and_then(|v| serde_json::from_value::<PlanLimit>(v.clone()).ok()),
+                            plan: parsed
+                                .get("plan")
+                                .and_then(|v| serde_json::from_value::<Plan>(v.clone()).ok()),
+                            plan_with_room: parsed
+                                .get("planWithRoom")
+                                .and_then(|v| serde_json::from_value::<PaidPlan>(v.clone()).ok()),
+                            used: parsed
+                                .get("used")
+                                .and_then(|v| serde_json::from_value::<i64>(v.clone()).ok()),
                         };
                     }
                 }
@@ -188,7 +204,11 @@ impl ApiError {
                     message: body.unwrap_or("Unknown error").to_string(),
                     tag: None,
                     allowed: None,
+                    billing_url: None,
                     limit: None,
+                    plan: None,
+                    plan_with_room: None,
+                    used: None,
                 };
             }
             422 => {

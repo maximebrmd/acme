@@ -2,7 +2,7 @@
 title: Présentation de l’API
 description: L’organisation de l’API HTTP de Peal, comment s’y authentifier, l’emplacement de son document OpenAPI et la référence de chaque point d’accès.
 sidebar:
-  order: 10
+  order: 11
 ---
 
 L’application web, la ligne de commande et le point d’accès MCP reposent sur la même API HTTP : tout ce qu’ils font, votre propre code peut le faire aussi.
@@ -28,21 +28,23 @@ curl -i https://api.example.com/api/health
 
 En dehors des sondes de santé et des documents que les plateformes lisent sur Peal, chaque point d’accès demande l’un de ces moyens :
 
-- **Une clé d’API**, pour les scripts et les intégrations : envoyez-la en `Authorization: Bearer peal_…`. Une clé appartient à un espace de travail et porte une partie des permissions du membre qui l’a créée, jamais plus. Les membres qui peuvent gérer les clés (propriétaires et administrateurs) en créent une avec `POST /api/workspaces/{workspaceId}/api-keys` une fois connectés, et ne voient la clé que dans cette réponse. Une clé peut envoyer 600 requêtes par minute.
-- **Un jeton d’accès OAuth**, que la [ligne de commande](/cli) et les [clients MCP](/mcp) obtiennent quand vous les connectez, envoyé de la même façon. Il agit en votre nom, dans la limite de ce que vous avez accepté.
+- **Une clé d’API**, pour les scripts et les intégrations : envoyez-la en `Authorization: Bearer peal_…`. Une clé appartient à un espace de travail et porte une partie des permissions du membre qui l’a créée, jamais plus : une clé sans `post:schedule` ne programme ni ne publie. Les membres qui peuvent gérer les clés (propriétaires et administrateurs) en créent une avec `POST /api/workspaces/{workspaceId}/api-keys` une fois connectés, et ne voient la clé que dans cette réponse. Une clé peut envoyer 600 requêtes par minute.
+- **Un jeton d’accès OAuth**, que la [ligne de commande](/cli) et les [clients MCP](/mcp) obtiennent quand vous les connectez, envoyé de la même façon. Il agit en votre nom, dans la limite de ce que vous avez accepté : `workspace:read` lit, `workspace:write` fait ce que votre rôle permet, sauf ce qui fait partir des publications, et `workspace:publish` programme et publie ([Ce que permet chaque permission](/agents#scopes)). Tout point d’accès qui demande `post:schedule` demande `workspace:publish` à un jeton OAuth, et répond 403 sans lui.
 - **Le cookie de session** de l’application web, pour l’application web elle-même. Une requête qui change quelque chose avec lui doit venir de l’origine même de l’application web.
 
 Avec une session ou un jeton OAuth, `GET /api/me` dit qui vous êtes, et liste vos espaces de travail, avec votre rôle et vos permissions dans chacun. Une clé d’API appartient à un espace de travail, pas à une personne, et y reçoit 403.
 
 ## Espaces de travail [#workspaces]
 
-Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{workspaceId}/` : `channels`, `posts`, `media`, `assistant`, `analytics`, `billing` et `api-keys` ; `DELETE /api/workspaces/{workspaceId}` supprime l’espace de travail lui-même, avec tout son contenu ([Espaces de travail et compte](/settings#delete-workspace)). La référence de chaque point d’accès nomme la permission qu’il demande, comme `post:schedule` ou `channel:connect`.
+Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{workspaceId}/` : `channels`, `posts`, `media`, `assistant`, `analytics`, `billing`, `webhooks` et `api-keys` ; `DELETE /api/workspaces/{workspaceId}` supprime l’espace de travail lui-même, avec tout son contenu ([Espaces de travail et compte](/settings#delete-workspace)). La référence de chaque point d’accès nomme la permission qu’il demande, comme `post:schedule` ou `channel:connect`.
 
 | Code | Signification                                                                                |
 | ---- | -------------------------------------------------------------------------------------------- |
 | 401  | Pas d’identifiants, ou des identifiants qui ne fonctionnent plus.                            |
 | 403  | Les identifiants fonctionnent, mais ne permettent pas cette requête, ou le compte est banni. |
 | 404  | Aucune ressource de ce nom, ou un espace de travail auquel l’appelant n’appartient pas.      |
+
+`POST /api/workspaces/{workspaceId}/posts/send` crée une publication et l’envoie en une seule requête, maintenant ou à un instant ; `POST /api/workspaces/{workspaceId}/media/import` fait récupérer au serveur une image ou une vidéo à une adresse HTTPS publique, pour l’ajouter aux médias de l’espace de travail. Envoyée avec un en-tête `Idempotency-Key`, une requête `send` peut être renvoyée sans risque : dans les 24 heures, la même clé avec le même corps répond la publication créée par la première requête, et un autre corps répond 409 `IdempotencyKeyReused`. [Publier depuis un agent IA](/agents#api) montre les deux.
 
 Les erreurs répondent par un corps JSON dont `_tag` nomme l’erreur, comme `PostContentInvalid` ou `ConnectFailed`, avec les détails que liste la référence. Les points d’accès de l’assistant de rédaction répondent aussi 429 une fois que l’espace de travail a utilisé ses demandes du jour, 503 quand l’instance n’a pas de fournisseur d’IA, et 502 quand le fournisseur n’a donné aucune réponse que l’assistant puisse utiliser. Sur une instance qui facture, connecter un canal, programmer une publication ou commencer un envoi pour lesquels l’abonnement de l’espace de travail n’a plus de place répond 402 `PlanLimitReached`, qui nomme la limite (`limit` : `channels`, `members`, `scheduledPosts`, `assistantRequests` ou `mediaStorage`, en octets) et ce que l’abonnement permet (`allowed`) ([Abonnements et facturation](/billing#limits)) ; `GET /api/workspaces/:workspaceId/billing` montre l’abonnement, ce qu’il permet et ce que l’espace de travail en utilise.
 
@@ -83,6 +85,10 @@ Certaines options prennent des valeurs que seul le compte connaît. Une recherch
 | `pinterestBoardSections` | Pinterest                              | `boardId` (obligatoire), `limit`, `cursor`                            | Les sections de ce tableau : `id`, que prend l’option `boardSectionId`, et `name`                                      |
 
 Une recherche ne change rien, et demande `channel:read`. Chacune est une requête à la plateforme, comptée dans ce qu’elle accorde à cette instance : lancez-en une quand une publication en a besoin plutôt qu’à intervalles réguliers. Un nom que le canal n’a pas, parce que sa plateforme ou son type de canal LinkedIn ne l’a pas, répond 404 `LookupNotFound`, et une entrée que la recherche ne prend pas, ou à laquelle manque un champ dont elle a besoin, 422 `LookupInputInvalid`. Une page peut arriver vide et nommer pourtant la suivante. Un canal désactivé ou à reconnecter répond 409 `ChannelCannotPost` ; une plateforme qui ne répond pas, 502 `PlatformUnreachable` ; une plateforme qui demande de ralentir, 429 `PlatformRateLimited`, avec `retryAfterSeconds` quand elle a dit combien de temps.
+
+## Webhooks [#webhooks]
+
+Plutôt que d’interroger l’API sans cesse, faites appeler votre serveur par Peal quand il se passe quelque chose dans un espace de travail : une publication est partie ou a échoué, un canal doit être reconnecté, un fichier est prêt. Les membres qui peuvent gérer les webhooks (propriétaires et administrateurs), et les clés d’API qui ont reçu cette permission, ajoutent des points de terminaison sous `/api/workspaces/{workspaceId}/webhooks`. [Webhooks](/webhooks) liste chaque événement avec son schéma, et dit comment les livraisons sont signées, retentées et vérifiées.
 
 ## Votre compte [#me]
 

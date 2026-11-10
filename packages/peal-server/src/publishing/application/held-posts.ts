@@ -8,6 +8,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { ApprovalGate } from "./approval-gate.ts";
+import { PostEvents } from "./post-events.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets } from "./post-repository.ts";
@@ -45,8 +46,8 @@ export class HeldPosts extends Context.Service<
       postId: PostId
     ) => Effect.Effect<PostWithTargets, DatabaseError | PostNotFound>;
     /**
-     * Schedules an approved post for the time it was asked for, and starts
-     * its job. Approved after that time, it goes back to draft instead
+     * Schedules an approved post for the time it was asked for, starts its
+     * job, and tells PostEvents it is scheduled, in one transaction. Approved after that time, it goes back to draft instead
      * (`late`), and keeps its approval: a member gives it a new time.
      */
     readonly release: (
@@ -72,6 +73,7 @@ export class HeldPosts extends Context.Service<
       const posts = yield* PostRepository;
       const scheduler = yield* PublicationScheduler;
       const gate = yield* ApprovalGate;
+      const events = yield* PostEvents;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<PostRepository>();
 
@@ -129,6 +131,9 @@ export class HeldPosts extends Context.Service<
             });
 
             yield* applied(yield* posts.setExecution(released, executionId));
+            // Now it is scheduled: whoever follows the workspace hears it,
+            // which they did not while it waited.
+            yield* events.scheduled(released, targets);
 
             return { late: false, post: released, targets };
           })

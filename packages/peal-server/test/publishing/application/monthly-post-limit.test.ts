@@ -40,6 +40,7 @@ const TwoPostsServer = postsServerWith(
     PostAllowance,
     PostAllowance.of({
       channels: () => Effect.succeed({ allowed: Option.none(), connected: 0 }),
+      members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
       scheduledPerMonth: () => Effect.succeed(Option.some(allowed)),
     })
   )
@@ -54,6 +55,7 @@ const ChangingPlanServer = postsServerWith(
     PostAllowance,
     PostAllowance.of({
       channels: () => Effect.succeed({ allowed: Option.none(), connected: 0 }),
+      members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
       scheduledPerMonth: () =>
         Ref.get(changingAllowance).pipe(Effect.map(Option.some)),
     })
@@ -67,6 +69,39 @@ const OverChannelsServer = postsServerWith(
     PostAllowance,
     PostAllowance.of({
       channels: () => Effect.succeed({ allowed: Option.some(3), connected: 4 }),
+      members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
+      scheduledPerMonth: () => Effect.succeed(Option.none()),
+    })
+  )
+);
+
+// A workspace whose channels the test puts over its plan, as when its
+// trial ends with posts already scheduled.
+const connectedChannels = Ref.makeUnsafe(3);
+
+const TrialEndingServer = postsServerWith(
+  attachableMedia(),
+  Layer.succeed(
+    PostAllowance,
+    PostAllowance.of({
+      channels: () =>
+        Ref.get(connectedChannels).pipe(
+          Effect.map((connected) => ({ allowed: Option.some(3), connected }))
+        ),
+      members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
+      scheduledPerMonth: () => Effect.succeed(Option.none()),
+    })
+  )
+);
+
+// A workspace with five members on a plan of two, as after its trial.
+const OverMembersServer = postsServerWith(
+  attachableMedia(),
+  Layer.succeed(
+    PostAllowance,
+    PostAllowance.of({
+      channels: () => Effect.succeed({ allowed: Option.some(3), connected: 3 }),
+      members: () => Effect.succeed({ allowed: Option.some(2), taken: 5 }),
       scheduledPerMonth: () => Effect.succeed(Option.none()),
     })
   )
@@ -97,6 +132,8 @@ const freshWorkspace = newId(WorkspaceIdSchema);
 const limitReached = new PlanLimitReached({
   allowed,
   limit: "scheduledPosts",
+  needed: allowed + 1,
+  used: allowed,
 });
 
 // A draft scheduled on the channel at `iso`.
@@ -495,10 +532,135 @@ describe("the channel limit", () => {
             assert.deepStrictEqual(
               failure,
               Option.some(
-                new PlanLimitReached({ allowed: 3, limit: "channels" })
+                new PlanLimitReached({
+                  allowed: 3,
+                  limit: "channels",
+                  needed: 4,
+                  used: 4,
+                })
               )
             );
           }).pipe(Effect.provide(OverChannelsServer))
+        )
+      )
+  );
+
+  it.effect(
+    "lets a workspace over its plan's members schedule nothing until some leave",
+    () =>
+      setTime("2026-06-10T07:00:00Z").pipe(
+        Effect.andThen(
+          Effect.gen(function* overMembers() {
+            const workspaceId = yield* freshWorkspace;
+            const channel = yield* connect(workspaceId, "mastodon");
+
+            const { failure } = yield* scheduledAt(
+              workspaceId,
+              channel,
+              "2026-06-20T08:00:00Z"
+            );
+
+            assert.deepStrictEqual(
+              failure,
+              Option.some(
+                new PlanLimitReached({
+                  allowed: 2,
+                  limit: "members",
+                  needed: 5,
+                  used: 5,
+                })
+              )
+            );
+          }).pipe(Effect.provide(OverMembersServer))
+        )
+      )
+  );
+
+  it.effect(
+    "lets it send nothing in one call either, now or later, and keeps no idempotency key for what it refused",
+    () =>
+      setTime("2026-06-10T07:00:00Z").pipe(
+        Effect.andThen(
+          Effect.gen(function* sendOverChannels() {
+            const workspaceId = yield* freshWorkspace;
+            const channel = yield* connect(workspaceId, "mastodon");
+            const scheduling = yield* PostScheduling;
+            const actor = actorIn(workspaceId);
+
+            const over = new PlanLimitReached({
+              allowed: 3,
+              limit: "channels",
+              needed: 4,
+              used: 4,
+            });
+
+            const request = {
+              channelIds: [channel] as const,
+              content: contentOf("Hi"),
+              idempotency: Option.some({
+                fingerprint: "synthetic-fingerprint",
+                key: "synthetic-over-plan",
+              }),
+              timeZone: scheduleIn("2026-06-20T08:00:00Z").timeZone,
+            };
+
+            for (const at of [
+              Option.none(),
+              Option.some(scheduleIn("2026-06-20T08:00:00Z").at),
+            ]) {
+              // Sent again with its key, it is refused again: the first
+              // refusal made no post for the key to answer.
+              assert.deepStrictEqual(
+                yield* scheduling
+                  .send(actor, { ...request, at })
+                  .pipe(Effect.flip),
+                over
+              );
+            }
+          }).pipe(Effect.provide(OverChannelsServer))
+        )
+      )
+  );
+
+  it.effect(
+    "moves nothing either while it is over, even within the month a post was scheduled in",
+    () =>
+      setTime("2026-06-10T07:00:00Z").pipe(
+        Effect.andThen(
+          Effect.gen(function* moveOverChannels() {
+            yield* Ref.set(connectedChannels, 3);
+
+            const workspaceId = yield* freshWorkspace;
+            const channel = yield* connect(workspaceId, "mastodon");
+            const scheduling = yield* PostScheduling;
+            const actor = actorIn(workspaceId);
+
+            const { postId } = yield* scheduledAt(
+              workspaceId,
+              channel,
+              "2026-06-20T08:00:00Z"
+            );
+
+            // A fourth channel on a plan of three, as when a trial ends.
+            yield* Ref.set(connectedChannels, 4);
+
+            const moved = yield* scheduling
+              .reschedule(actor, postId, scheduleIn("2026-06-21T08:00:00Z"))
+              .pipe(Effect.flip);
+
+            assert.deepStrictEqual(
+              moved,
+              new PlanLimitReached({
+                allowed: 3,
+                limit: "channels",
+                needed: 4,
+                used: 4,
+              })
+            );
+
+            yield* Ref.set(connectedChannels, 3);
+            yield* scheduling.cancel(actor, postId);
+          }).pipe(Effect.provide(TrialEndingServer))
         )
       )
   );

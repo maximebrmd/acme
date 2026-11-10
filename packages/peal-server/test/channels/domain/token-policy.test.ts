@@ -97,16 +97,19 @@ describe(tokenLifetimeOf, () => {
 
 describe(refreshDueBefore, () => {
   it("is the policy's lead time from now", () => {
-    expect(refreshDueBefore(tokenPolicies.tiktok, now)).toStrictEqual(
-      Option.some(after("30 minutes"))
+    expect(refreshDueBefore(tokenPolicies.threads, now)).toStrictEqual(
+      Option.some(after("7 days"))
     );
   });
 
-  it("is a month ago for X, whose tokens are renewed as they are used", () => {
-    expect(refreshDueBefore(tokenPolicies.x, now)).toStrictEqual(
-      Option.some(after("-30 days"))
-    );
-  });
+  it.each(["x", "tiktok", "youtube"] as const)(
+    "is a month ago for %s, whose tokens are renewed as they are used",
+    (platform) => {
+      expect(refreshDueBefore(tokenPolicies[platform], now)).toStrictEqual(
+        Option.some(after("-30 days"))
+      );
+    }
+  );
 
   it("is a week ahead for Pinterest, whose tokens last 30 days", () => {
     expect(refreshDueBefore(tokenPolicies.pinterest, now)).toStrictEqual(
@@ -156,11 +159,11 @@ const refreshable = (expiresAt: DateTime.Utc): TokenLifetime => ({
 
 describe(isRefreshDue, () => {
   it("is due within the lead time, or past expiry", () => {
-    for (const expiresAt of [after("29 minutes"), after("-1 hour")]) {
+    for (const expiresAt of [after("6 days"), after("-1 hour")]) {
       expect(
         isRefreshDue(
           channelWith(refreshable(expiresAt)),
-          tokenPolicies.tiktok,
+          tokenPolicies.threads,
           now
         )
       ).toBeTruthy();
@@ -170,25 +173,67 @@ describe(isRefreshDue, () => {
   it("is not due before the lead time", () => {
     expect(
       isRefreshDue(
-        channelWith(refreshable(after("31 minutes"))),
-        tokenPolicies.tiktok,
+        channelWith(refreshable(after("8 days"))),
+        tokenPolicies.threads,
         now
       )
     ).toBeFalsy();
   });
 
-  it("leaves an X token to be renewed when used, until a month unused", () => {
-    for (const expiresAt of [after("1 minute"), after("-29 days")]) {
+  // Hours-long access tokens (X, TikTok, YouTube) are renewed by the call
+  // that needs one: a sweep ahead of every expiry would refresh each
+  // channel a dozen times a day or more, whether it posts or not.
+  it.each(["x", "tiktok", "youtube"] as const)(
+    "leaves a token of %s to be renewed when used, until a month unused",
+    (platform) => {
+      const policy = tokenPolicies[platform];
+
+      for (const expiresAt of [after("1 minute"), after("-29 days")]) {
+        expect(
+          isRefreshDue(channelWith(refreshable(expiresAt)), policy, now)
+        ).toBeFalsy();
+      }
+
       expect(
-        isRefreshDue(channelWith(refreshable(expiresAt)), tokenPolicies.x, now)
-      ).toBeFalsy();
+        isRefreshDue(channelWith(refreshable(after("-30 days"))), policy, now)
+      ).toBeTruthy();
     }
+  );
+
+  it("sweeps ahead of expiry only the tokens that lapse when nobody renews them", () => {
+    const sweeps = Object.fromEntries(
+      Object.entries(tokenPolicies).map(([name, { refresh }]) => [
+        name,
+        refresh._tag === "refreshToken" ? refresh.sweep._tag : "none",
+      ])
+    );
+
+    expect(sweeps).toStrictEqual({
+      bluesky: "beforeExpiry",
+      blueskyLoopback: "beforeExpiry",
+      facebook: "none",
+      instagram: "none",
+      instagramLogin: "beforeExpiry",
+      linkedin: "none",
+      mastodon: "none",
+      threads: "beforeExpiry",
+      tiktok: "keepAlive",
+      x: "keepAlive",
+      youtube: "keepAlive",
+    });
+
+    // What is swept ahead of expiry lasts weeks: a channel comes up once
+    // in a run out of thousands, never at every run.
+    const sweptAhead = Object.values(tokenPolicies).filter(
+      ({ refresh }) =>
+        refresh._tag === "refreshToken" && refresh.sweep._tag === "beforeExpiry"
+    );
 
     expect(
-      isRefreshDue(
-        channelWith(refreshable(after("-30 days"))),
-        tokenPolicies.x,
-        now
+      sweptAhead.every(({ lifetime }) =>
+        Option.exists(lifetime, (lasts) =>
+          Duration.isGreaterThanOrEqualTo(lasts, Duration.days(14))
+        )
       )
     ).toBeTruthy();
   });
@@ -208,7 +253,7 @@ describe(isRefreshDue, () => {
           expiresAt: after("1 minute"),
           issuedAt: now,
         }),
-        tokenPolicies.tiktok,
+        tokenPolicies.threads,
         now
       )
     ).toBeFalsy();

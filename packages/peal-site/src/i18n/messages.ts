@@ -9,11 +9,14 @@ const en = {
     title: "Draft pending legal review",
   },
   footer: {
+    cancel: "Cancel your contract",
+    contract: "Your contract",
     language: "Language",
     legal: "Legal",
     license:
       "Fair source under the Functional Source License (FSL-1.1-ALv2); the SDKs are under the Apache License 2.0.",
     source: "Source code on GitHub",
+    withdraw: "Withdraw from contract here",
   },
   home: {
     description:
@@ -79,7 +82,7 @@ const en = {
     lead: "Priced by connected accounts: the more you connect, the less each costs. Every plan has every platform, the calendar, analytics, the API, the MCP server and the command line.",
     legal: {
       cancel:
-        "Cancel online at any time, from the billing page, in a few clicks: the plan ends with the period paid for, and nothing more is charged.",
+        "Cancel online at any time, with “Cancel your contract”, at the foot of every page and on the billing page, signed in or not: the plan ends with the period paid for, and nothing more is charged.",
       prices:
         "A price change is announced by email 30 days ahead, and applies from the next renewal: you may cancel before it.",
       renewal:
@@ -87,7 +90,7 @@ const en = {
       terms: "Read the terms of service",
       title: "Clear terms",
       withdrawal:
-        "As a consumer, you may withdraw within 14 days of subscribing, with the “Withdraw from contract here” button: the plan ends at once and the unused part is refunded.",
+        "As a consumer, you may withdraw within 14 days of subscribing, with “Withdraw from contract here”, at the foot of every page and on the billing page: the plan ends at once and the unused part is refunded.",
     },
     limits: {
       assistantRequests: "{count} writing assistant requests a day",
@@ -132,11 +135,14 @@ const fr: Messages = {
     title: "Projet en attente de relecture juridique",
   },
   footer: {
+    cancel: "Résilier votre contrat",
+    contract: "Votre contrat",
     language: "Langue",
     legal: "Informations juridiques",
     license:
       "Fair source sous la Functional Source License (FSL-1.1-ALv2) ; les SDK sont sous licence Apache 2.0.",
     source: "Code source sur GitHub",
+    withdraw: "Renoncer au contrat ici",
   },
   home: {
     description:
@@ -202,7 +208,7 @@ const fr: Messages = {
     lead: "Au nombre de comptes connectés : plus vous en connectez, moins chacun coûte. Chaque abonnement comprend toutes les plateformes, le calendrier, les statistiques, l’API, le serveur MCP et la ligne de commande.",
     legal: {
       cancel:
-        "Résiliez en ligne à tout moment, depuis la page de facturation, en quelques clics : l’abonnement prend fin avec la période payée, et plus rien n’est facturé.",
+        "Résiliez en ligne à tout moment, avec « Résilier votre contrat », au pied de chaque page et sur la page de facturation, connecté ou non : l’abonnement prend fin avec la période payée, et plus rien n’est facturé.",
       prices:
         "Un changement de prix est annoncé par e-mail 30 jours à l’avance, et s’applique au renouvellement suivant : vous pouvez résilier avant.",
       renewal:
@@ -210,7 +216,7 @@ const fr: Messages = {
       terms: "Lire les conditions d’utilisation",
       title: "Des conditions claires",
       withdrawal:
-        "En tant que consommateur, vous pouvez vous rétracter dans les 14 jours suivant la souscription, avec le bouton « Se rétracter du contrat ici » : l’abonnement prend fin immédiatement et la part non utilisée vous est remboursée.",
+        "En tant que consommateur, vous pouvez vous rétracter dans les 14 jours suivant la souscription, avec « Renoncer au contrat ici », au pied de chaque page et sur la page de facturation : l’abonnement prend fin immédiatement et la part non utilisée vous est remboursée.",
     },
     limits: {
       assistantRequests: "{count} demandes à l’assistant de rédaction par jour",

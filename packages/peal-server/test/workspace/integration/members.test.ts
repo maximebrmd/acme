@@ -372,11 +372,23 @@ layer(BillingLive, { excludeTestServices: true, timeout: "180 seconds" })(
             Schema.Struct({
               _tag: Schema.String,
               allowed: Schema.Int,
+              billingUrl: Schema.String,
               limit: Schema.String,
+              plan: Schema.String,
+              planWithRoom: Schema.NullOr(Schema.String),
+              used: Schema.Int,
             }),
             second
           ),
-          { _tag: "PlanLimitReached", allowed: 2, limit: "members" }
+          {
+            _tag: "PlanLimitReached",
+            allowed: 2,
+            billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
+            limit: "members",
+            plan: "free",
+            planWithRoom: "starter",
+            used: 2,
+          }
         );
 
         // Inviting the same person again replaces their invitation.

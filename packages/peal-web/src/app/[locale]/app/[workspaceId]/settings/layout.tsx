@@ -30,10 +30,17 @@ const WorkspaceSettingsLayout = async ({
     general: true,
     invitations: may.has("invitation:create"),
     members: true,
+    webhooks: may.has("webhook:read"),
   };
 
   const sections = (
-    ["general", "members", "invitations", "apiKeys"] satisfies SettingsSection[]
+    [
+      "general",
+      "members",
+      "invitations",
+      "apiKeys",
+      "webhooks",
+    ] satisfies SettingsSection[]
   ).filter((section) => allowed[section]);
 
   return (

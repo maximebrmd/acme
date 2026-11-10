@@ -1,3 +1,5 @@
+import { DateTime } from "effect";
+
 import type { Locale } from "#shared/domain/locale.ts";
 
 import type { EmailCatalog } from "./email-catalog.ts";
@@ -32,6 +34,28 @@ export const escapeHtml = (value: string): string =>
     (character) => htmlEntities.get(character) ?? character
   );
 
+/**
+ * An instant as an email writes it. Readers' time zones are not known:
+ * instants are written in UTC, and say so.
+ */
+export const instantIn = (instant: DateTime.Utc, locale: Locale): string =>
+  `${DateTime.format(instant, {
+    dateStyle: "long",
+    locale,
+    timeStyle: "short",
+    timeZone: "UTC",
+  })} UTC`;
+
+/** An amount in its currency's cents, as the reader writes money. */
+export const moneyIn = (
+  { amount, currency }: { readonly amount: number; readonly currency: string },
+  locale: Locale
+): string =>
+  new Intl.NumberFormat(locale, {
+    currency: currency.toUpperCase(),
+    style: "currency",
+  }).format(amount / 100);
+
 const placeholder = /\{(?<name>\w+)\}/gu;
 
 export const fill = (
@@ -63,6 +87,7 @@ const linkParagraphs = ({ action, linkFallback, url }: EmailLink) => [
 const framed = (
   parts: {
     readonly body: string;
+    readonly highlight?: string;
     readonly ignore: string;
     readonly locale: Locale;
     readonly signature: string;
@@ -76,6 +101,11 @@ const framed = (
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">',
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:8px;"><tr><td style="padding:32px;">',
     `<p style="margin:0 0 24px;">${parts.body}</p>`,
+    ...(parts.highlight === undefined
+      ? []
+      : [
+          `<p style="margin:0 0 24px;padding:12px 16px;border:2px solid #18181b;border-radius:6px;font-weight:600;">${parts.highlight}</p>`,
+        ]),
     ...link,
     `<p style="margin:0 0 24px;color:#52525b;font-size:14px;">${parts.ignore}</p>`,
     `<p style="margin:0;color:#52525b;font-size:14px;">${parts.signature}</p>`,
@@ -101,6 +131,8 @@ export const linklessLayout = (parts: {
 export const layout = (parts: {
   readonly action: string;
   readonly body: string;
+  /** What the email sets apart in a box under its body, if anything. */
+  readonly highlight?: string;
   readonly ignore: string;
   readonly linkFallback: string;
   readonly locale: Locale;

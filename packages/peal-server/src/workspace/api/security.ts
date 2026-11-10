@@ -5,6 +5,7 @@ import { HttpApiError } from "effect/http-api";
 import {
   Authentication,
   ClientErrorIntake,
+  ContractRequestIntake,
   CurrentMember,
   CurrentPrincipal,
   CurrentStaff,
@@ -18,6 +19,7 @@ import {
 } from "peal-contract";
 import type { Member } from "peal-contract";
 
+import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
@@ -349,7 +351,8 @@ export const StaffAccessLive = Layer.effect(
   })
 );
 
-// For tests: nobody is staff, and every error report passes the intake.
+// For tests: nobody is staff, and every error report and every request
+// to cancel or withdraw passes its intake.
 // HttpApiTest serves every group of the API, so tests provide every
 // middleware, whichever groups they exercise.
 const noStaffTest = Layer.succeed(
@@ -357,7 +360,7 @@ const noStaffTest = Layer.succeed(
   StaffAccess.of({ session: notFound })
 );
 
-const openIntakeTest = Layer.merge(
+const openIntakeTest = Layer.mergeAll(
   Layer.succeed(
     ClientErrorIntake,
     ClientErrorIntake.of((httpEffect) => httpEffect)
@@ -373,17 +376,23 @@ const openIntakeTest = Layer.merge(
         )
       )
     )
+  ),
+  Layer.succeed(
+    ContractRequestIntake,
+    ContractRequestIntake.of((httpEffect) => httpEffect)
   )
 );
 
 /**
  * For tests of workspace handlers: every request authenticates as the
- * member's principal and acts as the member, without Better Auth.
+ * member's principal and acts as the member, without Better Auth. A plan's
+ * refusal names the upgrade `UpgradePaths.layerTest` gives.
  */
 export const securityTest = (member: Member) =>
   Layer.mergeAll(
     noStaffTest,
     openIntakeTest,
+    UpgradePaths.layerTest,
     Layer.succeed(
       Authentication,
       Authentication.of({

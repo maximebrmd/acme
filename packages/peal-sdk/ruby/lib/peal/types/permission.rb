@@ -35,6 +35,8 @@ module Peal
       POST_SCHEDULE = "post:schedule"
       POST_APPROVE = "post:approve"
       POST_PUBLISH = "post:publish"
+      WEBHOOK_READ = "webhook:read"
+      WEBHOOK_MANAGE = "webhook:manage"
     end
   end
 end

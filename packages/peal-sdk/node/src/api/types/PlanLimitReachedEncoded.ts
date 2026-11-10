@@ -5,7 +5,11 @@ import * as Peal from "../index.js";
 export interface PlanLimitReachedEncoded {
     _tag: PlanLimitReachedEncoded.Tag;
     allowed: number;
+    billingUrl: string;
     limit: Peal.PlanLimit;
+    plan: Peal.Plan;
+    planWithRoom: Peal.PaidPlan | null;
+    used: number;
 }
 
 export namespace PlanLimitReachedEncoded {

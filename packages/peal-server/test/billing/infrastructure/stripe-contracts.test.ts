@@ -37,6 +37,59 @@ const list = (data: readonly JsonValue[], url: string) =>
 // 1500 (a change of plan's) and 900 cents, and one of nothing, `sub_free`
 // none; `sub_missing` is no subscription Stripe knows. `failing` answers
 // every request an error.
+// What sub_paid's customer paid: a change of plan, a first period, and an
+// invoice that took nothing.
+const paidInvoices = [
+  {
+    amount_paid: 1500,
+    currency: "eur",
+    id: "in_proration",
+    lines: {
+      data: [
+        {
+          amount: 1250,
+          period: { end: 1_796_083_200, start: 1_794_009_600 },
+        },
+      ],
+    },
+    object: "invoice",
+    status: "paid",
+  },
+  {
+    amount_paid: 900,
+    currency: "eur",
+    id: "in_synthetic",
+    lines: {
+      data: [{ period: { end: 1_796_083_200, start: 1_793_491_200 } }],
+    },
+    object: "invoice",
+    status: "paid",
+  },
+  {
+    amount_paid: 0,
+    currency: "eur",
+    id: "in_nothing",
+    object: "invoice",
+    status: "paid",
+  },
+];
+
+// Only the business's VAT number was verified.
+const verificationOf = (customer: string) =>
+  customer === "cus_business" ? "verified" : "pending";
+
+// One invoice was credited for a late cancellation, some time ago.
+const notesOf = (invoice: string | null) =>
+  invoice === "in_synthetic"
+    ? [
+        {
+          id: "cn_earlier",
+          metadata: { key: "late-cancellation-credit-request-1-in_synthetic" },
+          object: "credit_note",
+        },
+      ]
+    : [];
+
 const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
   platformServer((request): PlatformAnswer => {
     if (options.failing === true) {
@@ -56,9 +109,7 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
             object: "tax_id",
             type: "eu_vat",
             value: "FR00000000000",
-            verification: {
-              status: taxIds === "cus_business" ? "verified" : "pending",
-            },
+            verification: { status: verificationOf(taxIds) },
           },
         ],
         path
@@ -67,41 +118,7 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
 
     if (method === "GET" && path === "/v1/invoices") {
       return list(
-        query.get("subscription") === "sub_paid"
-          ? [
-              {
-                amount_paid: 1500,
-                currency: "eur",
-                id: "in_proration",
-                lines: {
-                  data: [
-                    { period: { end: 1_796_083_200, start: 1_794_009_600 } },
-                  ],
-                },
-                object: "invoice",
-                status: "paid",
-              },
-              {
-                amount_paid: 900,
-                currency: "eur",
-                id: "in_synthetic",
-                lines: {
-                  data: [
-                    { period: { end: 1_796_083_200, start: 1_793_491_200 } },
-                  ],
-                },
-                object: "invoice",
-                status: "paid",
-              },
-              {
-                amount_paid: 0,
-                currency: "eur",
-                id: "in_nothing",
-                object: "invoice",
-                status: "paid",
-              },
-            ]
-          : [],
+        query.get("subscription") === "sub_paid" ? paidInvoices : [],
         path
       );
     }
@@ -112,6 +129,10 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
 
     if (method === "POST" && path === "/v1/credit_notes") {
       return json({ id: "cn_synthetic", object: "credit_note" });
+    }
+
+    if (method === "GET" && path === "/v1/credit_notes") {
+      return list(notesOf(query.get("invoice")), path);
     }
 
     const subscription = /^\/v1\/subscriptions\/(?<id>[^/]+)$/u.exec(path)
@@ -184,26 +205,46 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
         assert.deepStrictEqual(invoices, [
           {
             invoiceId: "in_proration",
+            lines: [
+              { amount: 1250, start: DateTime.makeUnsafe(1_794_009_600_000) },
+            ],
             paid: { amount: 1500, currency: "eur" },
             periodEnd: Option.some(DateTime.makeUnsafe(1_796_083_200_000)),
             periodStart: Option.some(DateTime.makeUnsafe(1_794_009_600_000)),
           },
           {
             invoiceId: "in_synthetic",
+            lines: [],
             paid: { amount: 900, currency: "eur" },
             periodEnd: Option.some(DateTime.makeUnsafe(1_796_083_200_000)),
             periodStart: Option.some(DateTime.makeUnsafe(1_793_491_200_000)),
           },
         ]);
 
-        yield* contracts.credit(workspaceId, "sub_paid", [
-          { amount: 1250, invoiceId: "in_proration" },
-          { amount: 0, invoiceId: "in_synthetic" },
-        ]);
+        yield* contracts.credit(
+          workspaceId,
+          "sub_paid",
+          [
+            { amount: 1250, invoiceId: "in_proration" },
+            { amount: 0, invoiceId: "in_synthetic" },
+          ],
+          { _tag: "withdrawal" }
+        );
+        // A request whose credit note Stripe already has, made days ago,
+        // past the life of an idempotency key: not made again.
+        yield* contracts.credit(
+          workspaceId,
+          "sub_paid",
+          [{ amount: 900, invoiceId: "in_synthetic" }],
+          { _tag: "lateCancellation", requestKey: "request-1" }
+        );
 
         const credits = stripe
           .requests()
-          .filter(({ path }) => path === "/v1/credit_notes");
+          .filter(
+            ({ method, path }) =>
+              method === "POST" && path === "/v1/credit_notes"
+          );
 
         // Nothing to credit, no credit note.
         assert.strictEqual(credits.length, 1);
@@ -216,6 +257,10 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
           assert.strictEqual(form.get("invoice"), "in_proration");
           assert.strictEqual(form.get("amount"), "1250");
           assert.strictEqual(form.get("refund_amount"), "1250");
+          assert.strictEqual(
+            form.get("metadata[key]"),
+            "withdrawal-credit-sub_paid-in_proration"
+          );
           assert.strictEqual(
             headerOf(creditNote, "idempotency-key"),
             "withdrawal-credit-sub_paid-in_proration"
@@ -273,7 +318,11 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
         yield* contracts.endNow(workspaceId, "sub_paid", "withdrawn");
         // One Stripe no longer has is already ended.
         yield* contracts.endNow(workspaceId, "sub_missing", "withdrawn");
-        yield* contracts.cancelAtPeriodEnd(workspaceId, "sub_paid");
+        yield* contracts.cancelAtPeriodEnd(
+          workspaceId,
+          "sub_paid",
+          "request-2"
+        );
 
         const [ended, , cancelled] = stripe.requests();
 
@@ -294,6 +343,12 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
           ).get("cancel_at_period_end"),
           "true"
         );
+        // Named after the request: another one, as after the cancellation
+        // was undone, is another call to Stripe.
+        assert.strictEqual(
+          cancelled === undefined ? "" : headerOf(cancelled, "idempotency-key"),
+          "cancel-sub_paid-request-2"
+        );
       }).pipe(Effect.scoped)
   );
 
@@ -308,5 +363,27 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
 
       assert.deepStrictEqual(failure._tag, "StripeUnreachable");
     }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "tell a request Stripe refuses, which asking again will not change, from Stripe not answering",
+    () =>
+      Effect.gen(function* refusing() {
+        const down = yield* fakeStripe({ failing: true });
+        const up = yield* fakeStripe();
+
+        const unanswered = yield* (yield* contractsOn(down.url))
+          .cancelAtPeriodEnd(workspaceId, "sub_paid", "request-3")
+          .pipe(Effect.flip);
+
+        const refused = yield* (yield* contractsOn(up.url))
+          .cancelAtPeriodEnd(workspaceId, "sub_missing", "request-3")
+          .pipe(Effect.flip);
+
+        assert.deepStrictEqual(
+          [unanswered.permanent, refused.permanent],
+          [false, true]
+        );
+      }).pipe(Effect.scoped)
   );
 });

@@ -3,6 +3,7 @@ import { Layer } from "effect";
 import { AnalyticsQueries } from "#analytics/application/analytics-queries.ts";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import type { MetricsReader } from "#analytics/application/metrics-reader.ts";
+import { CollectionPaceLive } from "#analytics/infrastructure/collection-pace.ts";
 import { DrizzleAnalyticsRecords } from "#analytics/infrastructure/drizzle-analytics-records.ts";
 import { DrizzleTrackedPosts } from "#analytics/infrastructure/drizzle-tracked-posts.ts";
 import { PublishingPublishedPosts } from "#analytics/infrastructure/publishing-published-posts.ts";
@@ -22,7 +23,8 @@ export const AnalyticsLive = Layer.merge(
 /**
  * The collection (CollectMetrics), which follows the posts publishing
  * lists (PublishedTargets) and reads their counts with `readers`: through
- * the channels' gates on the server. Needs the database too.
+ * the channels' gates on the server, so many channels at a time
+ * (`PEAL_ANALYTICS_CONCURRENCY`). Needs the database too.
  */
 export const analyticsCollection = <E, R>(
   readers: Layer.Layer<MetricsReader, E, R>
@@ -30,7 +32,8 @@ export const analyticsCollection = <E, R>(
   CollectMetrics.layer.pipe(
     Layer.provide(
       Layer.mergeAll(DrizzleTrackedPosts, PublishingPublishedPosts, readers)
-    )
+    ),
+    Layer.provide(CollectionPaceLive)
   );
 
 // The analytics endpoints. They need the use cases AnalyticsLive provides,

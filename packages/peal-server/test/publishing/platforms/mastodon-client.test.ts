@@ -14,6 +14,7 @@ import {
 import type { FakeMastodonOptions } from "#test/publishing/fakes/fake-mastodon-instance.ts";
 import {
   empty,
+  formPartsOf,
   headerOf,
   json,
 } from "#test/publishing/fakes/platform-server.ts";
@@ -150,6 +151,40 @@ describe("publishing on Mastodon", () => {
         .requests()
         .filter((request) => request.path.startsWith("/api/v1/media/"));
 
+      // The file was streamed, with the form's length rather than chunked:
+      // what arrived is the video, whole.
+      const upload = instance
+        .requests()
+        .find((request) => request.path === "/api/v2/media");
+
+      assert(upload !== undefined);
+      assert.strictEqual(
+        headerOf(upload, "content-length"),
+        String(upload.body.length)
+      );
+      assert.strictEqual(headerOf(upload, "transfer-encoding"), "");
+      assert.deepStrictEqual(
+        formPartsOf(upload).map(({ contentType, data, fileName, name }) => ({
+          contentType,
+          fileName,
+          name,
+          size: data.length,
+        })),
+        [
+          {
+            contentType: "",
+            fileName: undefined,
+            name: "description",
+            size: "A synthetic picture".length,
+          },
+          {
+            contentType: "video/mp4",
+            fileName: video.media.fileName,
+            name: "file",
+            size: video.bytes.length,
+          },
+        ]
+      );
       assert.strictEqual(result._tag, "published");
       assert.lengthOf(looks, 3);
       assert.deepStrictEqual(
@@ -297,6 +332,9 @@ describe("publishing on Mastodon", () => {
       instance.script("POST /api/v2/media", [
         json({ error: "Validation failed: File content type is invalid" }, 422),
         json({ error: "Service unavailable" }, 503),
+        // A proxy that gave up waiting for the file's bytes: the file is
+        // not at fault, and nothing was done.
+        empty(408),
       ]);
 
       instance.script("POST /api/v1/statuses", [
@@ -313,6 +351,7 @@ describe("publishing on Mastodon", () => {
 
       const mediaRefused = yield* client.publish(withImage).pipe(Effect.flip);
       const unavailable = yield* client.publish(withImage).pipe(Effect.flip);
+      const timedOut = yield* client.publish(withImage).pipe(Effect.flip);
 
       const postRefused = yield* client
         .publish(yield* outgoing({ accountId }))
@@ -323,6 +362,7 @@ describe("publishing on Mastodon", () => {
         new MediaRejected({ code: "unprocessable" })
       );
       assert.deepStrictEqual(unavailable, new PlatformUnavailable());
+      assert.deepStrictEqual(timedOut, new PlatformUnavailable());
       assert.deepStrictEqual(
         postRefused,
         new BadRequest({ code: "unprocessable" })

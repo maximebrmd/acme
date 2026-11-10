@@ -9,15 +9,18 @@ import {
   Layer,
   Option,
 } from "effect";
+import { TestClock } from "effect/testing";
 import sharp from "sharp";
 
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
+import { StorageAllowance } from "#media/application/ports/storage-allowance.ts";
 import {
   CurrentUploadPolicy,
   defaultUploadPolicy,
 } from "#media/application/upload-policy.ts";
 import { completeUpload } from "#media/application/use-cases/complete-upload.ts";
+import { createUpload } from "#media/application/use-cases/create-upload.ts";
 import type { PreparedUpload } from "#media/application/use-cases/create-upload.ts";
 import { MediaLibrary } from "#media/container.ts";
 import { MediaMetadata } from "#media/domain/media-metadata.ts";
@@ -370,6 +373,7 @@ layer(LibraryTest)("the media library", (it) => {
 
       const slow = yield* completeUpload(target).pipe(
         Effect.provideService(MediaStorage, slowStorage),
+        Effect.provideService(StorageAllowance, StorageAllowance.unlimited),
         Effect.forkChild
       );
 
@@ -868,5 +872,106 @@ layer(WithoutFfprobeTest)("the media library without ffprobe", (it) => {
           Option.some(finished)
         );
       })
+  );
+});
+
+// A plan with room for one of the two files below.
+const smallStorage = StorageAllowance.of({
+  bytes: () => Effect.succeed(Option.some(8000)),
+});
+
+layer(LibraryTest)("an upload finished after its room lapsed", (it) => {
+  it.effect("is refused when the plan's storage filled meanwhile", () =>
+    Effect.gen(function* lapsed() {
+      const workspaceId = yield* freshWorkspace;
+      const storage = yield* MediaStorage;
+      const body = syntheticBytes(5000);
+
+      const start = createUpload({
+        altText: Option.none(),
+        byteSize: body.length,
+        contentType: "image/webp",
+        workspaceId,
+      }).pipe(Effect.provideService(StorageAllowance, smallStorage));
+
+      const finish = (prepared: PreparedUpload) =>
+        completeUpload({ assetId: prepared.asset.id, workspaceId }).pipe(
+          Effect.provideService(StorageAllowance, smallStorage)
+        );
+
+      const send = (prepared: PreparedUpload) =>
+        singleRequest(prepared).pipe(
+          Effect.flatMap((request) => sendSigned(request, body))
+        );
+
+      const late = yield* start;
+
+      yield* Effect.addFinalizer(() =>
+        storage.remove(late.asset.storageKey).pipe(Effect.orDie)
+      );
+      yield* send(late);
+
+      // Its file arrived, but nobody said so: past its URLs' life, the
+      // room held for it is given to others.
+      yield* TestClock.adjust(
+        Duration.sum(defaultUploadPolicy.partUploadExpiry, Duration.minutes(1))
+      );
+
+      const other = yield* start;
+
+      yield* Effect.addFinalizer(() =>
+        storage.remove(other.asset.storageKey).pipe(Effect.orDie)
+      );
+      yield* send(other);
+
+      assert.strictEqual((yield* finish(other)).status._tag, "uploaded");
+
+      // No room is left for the first: it is refused, and its file goes.
+      assert.deepInclude(yield* Effect.flip(finish(late)), {
+        _tag: "PlanLimitReached",
+        allowed: 8000,
+        limit: "mediaStorage",
+        needed: 10_000,
+        used: 5000,
+      });
+      assert.deepStrictEqual(
+        yield* storage.head(late.asset.storageKey),
+        Option.none()
+      );
+      assert.strictEqual(
+        (yield* Effect.flip(finish(late)))._tag,
+        "UploadIncomplete"
+      );
+    })
+  );
+
+  it.effect("is kept while the plan still has room for it", () =>
+    Effect.gen(function* roomLeft() {
+      const workspaceId = yield* freshWorkspace;
+      const storage = yield* MediaStorage;
+      const body = syntheticBytes(5000);
+
+      const late = yield* createUpload({
+        altText: Option.none(),
+        byteSize: body.length,
+        contentType: "image/webp",
+        workspaceId,
+      }).pipe(Effect.provideService(StorageAllowance, smallStorage));
+
+      yield* Effect.addFinalizer(() =>
+        storage.remove(late.asset.storageKey).pipe(Effect.orDie)
+      );
+      yield* sendSigned(yield* singleRequest(late), body);
+      yield* TestClock.adjust(
+        Duration.sum(defaultUploadPolicy.partUploadExpiry, Duration.minutes(1))
+      );
+
+      const finished = yield* completeUpload({
+        assetId: late.asset.id,
+        workspaceId,
+      }).pipe(Effect.provideService(StorageAllowance, smallStorage));
+
+      assert.strictEqual(finished.status._tag, "uploaded");
+    })
   );
 });

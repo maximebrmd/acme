@@ -13,6 +13,7 @@ import { ReviewRecords } from "#review/application/review-records.ts";
 import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { StaffRecords } from "#staff/application/staff-records.ts";
+import { WebhookRecords } from "#webhooks/application/webhook-records.ts";
 import { BillingUnavailable } from "#workspace/application/billing-unavailable.ts";
 import { ContextRecords } from "#workspace/application/context-records.ts";
 import type { ErasedWorkspace } from "#workspace/application/context-records.ts";
@@ -41,8 +42,8 @@ const billingRefusals = (workspaceId: WorkspaceId) => ({
 /**
  * ContextRecords through each context's own records: publishing's posts,
  * the channels, the media library, the notices, the assistant's usage,
- * analytics' posts followed, billing's subscriptions, the staff audit
- * log, the legal records, and the reviews of posts.
+ * analytics' posts followed, billing's subscriptions, the webhooks, the
+ * staff audit log, the legal records, and the reviews of posts.
  */
 export const ContextRecordsLive = Layer.effect(
   ContextRecords,
@@ -57,6 +58,7 @@ export const ContextRecordsLive = Layer.effect(
     const staff = yield* StaffRecords;
     const legal = yield* LegalRecords;
     const reviews = yield* ReviewRecords;
+    const webhooks = yield* WebhookRecords;
     const pseudonyms = yield* Pseudonyms;
 
     return ContextRecords.of({
@@ -86,6 +88,7 @@ export const ContextRecordsLive = Layer.effect(
           yield* media.eraseWorkspace(workspaceId);
           yield* notices.eraseWorkspace(workspaceId);
           yield* usage.eraseWorkspace(workspaceId);
+          yield* webhooks.eraseWorkspace(workspaceId);
 
           // Billing last: refused if Stripe still bills it, which settling
           // made sure it no longer does, unless a checkout completed since.
@@ -123,8 +126,10 @@ export const ContextRecordsLive = Layer.effect(
           media: media.exportWorkspace(workspaceId),
           posts: posts.exportWorkspace(workspaceId),
           review: reviews.exportWorkspace(workspaceId),
+          webhooks: webhooks.exportWorkspace(workspaceId),
         }),
-      holdIdentification: (record) => legal.hold(record),
+      holdIdentification: (record, closedAt) => legal.hold(record, closedAt),
+      legalRemains: (userId) => legal.afterClosure(userId),
       removeWorkspaceFiles: (workspaceId) =>
         media
           .removeWorkspaceFiles(workspaceId)

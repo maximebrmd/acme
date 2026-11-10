@@ -108,6 +108,7 @@ const ExistingPost = ({
           channels={channels}
           permissions={permissions}
           post={post}
+          userId={userId}
           workspaceId={workspaceId}
         />
         <PostReviewSection

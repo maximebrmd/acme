@@ -3,6 +3,9 @@
 import { Effect, Layer, Option } from "effect";
 
 import { ContractRecords } from "#billing/application/ports/contract-records.ts";
+import { ContractReferences } from "#billing/application/ports/contract-references.ts";
+import { ContractRequests } from "#billing/application/ports/contract-requests.ts";
+import { MemberAddresses } from "#billing/application/ports/member-addresses.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
@@ -69,13 +72,39 @@ export const NoTrialsTest = Layer.succeed(
   })
 );
 
-/** No order or withdrawal kept. */
-export const NoContractsTest = Layer.succeed(
-  ContractRecords,
-  ContractRecords.of({
-    ofUser: () => Effect.succeed({ orders: [], withdrawals: [] }),
-    purge: () => Effect.succeed(0),
-  })
+/** No order, withdrawal, request or contract number kept. */
+export const NoContractsTest = Layer.mergeAll(
+  Layer.succeed(
+    ContractRecords,
+    ContractRecords.of({
+      ofUser: () => Effect.succeed({ orders: [], withdrawals: [] }),
+      purge: () => Effect.succeed(0),
+    })
+  ),
+  Layer.succeed(
+    ContractRequests,
+    ContractRequests.of({
+      byConfirmation: () => Effect.succeedNone,
+      byId: () => Effect.succeedNone,
+      claimAcknowledgement: () => Effect.succeed(true),
+      eraseWorkspace: () => Effect.void,
+      forgetUser: () => Effect.void,
+      ofUser: () => Effect.succeed([]),
+      open: () => Effect.succeed([]),
+      pending: () => Effect.succeed([]),
+      purge: () => Effect.succeed(0),
+      save: () => Effect.void,
+      setConfirmation: () => Effect.void,
+    })
+  ),
+  Layer.succeed(
+    ContractReferences,
+    ContractReferences.of({
+      eraseWorkspace: () => Effect.void,
+      find: () => Effect.succeedNone,
+      issue: () => Effect.succeed("0000-0000-0000"),
+    })
+  )
 );
 
 /** Stripe for tests that never call it: any call dies. */
@@ -98,6 +127,12 @@ export const subscriptionsHolding = (held: readonly Subscription[]) =>
       remindable: () => Effect.succeed(held),
     })
   );
+
+/** Members whose addresses billing is not told. */
+export const NoAddressesTest = Layer.succeed(
+  MemberAddresses,
+  MemberAddresses.of({ of: () => Effect.succeed(Option.none()) })
+);
 
 /** Pseudonyms that spell the address out, for tests to read. */
 export const PlainPseudonymsTest = Layer.succeed(

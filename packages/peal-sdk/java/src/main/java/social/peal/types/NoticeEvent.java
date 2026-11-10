@@ -82,6 +82,10 @@ public final class NoticeEvent {
         return new NoticeEvent(new SubscriptionWithdrawnValue(value));
     }
 
+    public static NoticeEvent webhookEndpointDisabled(NoticeEventWebhookEndpointDisabled value) {
+        return new NoticeEvent(new WebhookEndpointDisabledValue(value));
+    }
+
     public boolean isPostPublished() {
         return value instanceof PostPublishedValue;
     }
@@ -136,6 +140,10 @@ public final class NoticeEvent {
 
     public boolean isSubscriptionWithdrawn() {
         return value instanceof SubscriptionWithdrawnValue;
+    }
+
+    public boolean isWebhookEndpointDisabled() {
+        return value instanceof WebhookEndpointDisabledValue;
     }
 
     public boolean _isUnknown() {
@@ -240,6 +248,13 @@ public final class NoticeEvent {
         return Optional.empty();
     }
 
+    public Optional<NoticeEventWebhookEndpointDisabled> getWebhookEndpointDisabled() {
+        if (isWebhookEndpointDisabled()) {
+            return Optional.of(((WebhookEndpointDisabledValue) value).value);
+        }
+        return Optional.empty();
+    }
+
     public Optional<Object> _getUnknown() {
         if (_isUnknown()) {
             return Optional.of(((_UnknownValue) value).value);
@@ -297,6 +312,8 @@ public final class NoticeEvent {
 
         T visitSubscriptionWithdrawn(NoticeEventSubscriptionWithdrawn subscriptionWithdrawn);
 
+        T visitWebhookEndpointDisabled(NoticeEventWebhookEndpointDisabled webhookEndpointDisabled);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -315,7 +332,8 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(TrialEndingValue.class),
         @JsonSubTypes.Type(SubscriptionRenewingValue.class),
         @JsonSubTypes.Type(SubscriptionCancelledValue.class),
-        @JsonSubTypes.Type(SubscriptionWithdrawnValue.class)
+        @JsonSubTypes.Type(SubscriptionWithdrawnValue.class),
+        @JsonSubTypes.Type(WebhookEndpointDisabledValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -868,6 +886,46 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(SubscriptionWithdrawnValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("WebhookEndpointDisabled")
+    @JsonIgnoreProperties("_tag")
+    private static final class WebhookEndpointDisabledValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventWebhookEndpointDisabled value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private WebhookEndpointDisabledValue() {}
+
+        private WebhookEndpointDisabledValue(NoticeEventWebhookEndpointDisabled value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitWebhookEndpointDisabled(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof WebhookEndpointDisabledValue && equalTo((WebhookEndpointDisabledValue) other);
+        }
+
+        private boolean equalTo(WebhookEndpointDisabledValue other) {
             return value.equals(other.value);
         }
 

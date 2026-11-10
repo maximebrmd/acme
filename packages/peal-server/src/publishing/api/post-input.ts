@@ -5,12 +5,16 @@ import {
   PostNotFound,
   UnknownChannels,
   UnknownMedia,
+  NewPostSchema,
 } from "peal-contract";
 import type {
   ChannelOptions as OptionsInput,
+  NewPost as NewPostInput,
   PostContent as ContentInput,
 } from "peal-contract";
 
+import type { KeyedRequest } from "#publishing/application/idempotency-keys.ts";
+import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
 import { ChannelOptionsListSchema } from "#publishing/domain/channel-options.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
@@ -103,4 +107,79 @@ export const scheduleFrom = (at: DateTime.Utc, timeZone: string) =>
   Option.match(decodeTimeZone(timeZone), {
     onNone: () => Effect.fail(new InvalidTimeZone({ timeZone })),
     onSome: (zone) => Effect.succeed(new Schedule({ at, timeZone: zone })),
+  });
+
+// The request as JSON, whatever spelling it came in: an instant written
+// with or without milliseconds is the same request.
+const encodeNewPost = Schema.encodeEffect(Schema.toCodecJson(NewPostSchema));
+
+const decodeJson = Schema.decodeUnknownEffect(Schema.Json);
+
+const isJsonArray = Schema.is(Schema.Array(Schema.Json));
+
+const isJsonObject = Schema.is(Schema.JsonObject);
+
+// JSON with every object's keys in order, so the same request always reads
+// the same.
+const canonical = (value: Schema.Json): string => {
+  if (isJsonArray(value)) {
+    return `[${value.map(canonical).join(",")}]`;
+  }
+
+  if (isJsonObject(value)) {
+    const entries = Object.keys(value)
+      .toSorted()
+      .map((key) => `${JSON.stringify(key)}:${canonical(value[key] ?? null)}`);
+
+    return `{${entries.join(",")}}`;
+  }
+
+  return JSON.stringify(value);
+};
+
+/**
+ * The request with the idempotency key it came with, if any: the key, and
+ * the request in a form that is the same every time the same one is sent.
+ */
+const keyedFrom = (input: NewPostInput, key: string | undefined) =>
+  key === undefined
+    ? Effect.succeed(Option.none<KeyedRequest>())
+    : encodeNewPost(input).pipe(
+        Effect.flatMap(decodeJson),
+        Effect.orDie,
+        Effect.map((json) => Option.some({ fingerprint: canonical(json), key }))
+      );
+
+/**
+ * A post to create and send in one call, with its ids and zone decoded,
+ * and the idempotency key its request came with, if any. A `now` without
+ * a zone is in UTC.
+ */
+export const sendRequestFrom = (input: NewPostInput, key?: string) =>
+  Effect.gen(function* decodingNewPost() {
+    const channelIds = yield* channelIdsFrom(input.channelIds);
+
+    // The contract asks for one channel at least.
+    if (!Arr.isReadonlyArrayNonEmpty(channelIds)) {
+      return yield* new UnknownChannels({ channelIds: [] });
+    }
+
+    const { when } = input;
+    const timeZone = when.timeZone ?? "UTC";
+
+    const zone = yield* Option.match(decodeTimeZone(timeZone), {
+      onNone: () => Effect.fail(new InvalidTimeZone({ timeZone })),
+      onSome: Effect.succeed,
+    });
+
+    const request: SendPostRequest = {
+      at: when._tag === "at" ? Option.some(when.at) : Option.none(),
+      channelIds,
+      content: yield* contentFrom(input.content),
+      idempotency: yield* keyedFrom(input, key),
+      options: yield* optionsFrom(input.options ?? []),
+      timeZone: zone,
+    };
+
+    return request;
   });

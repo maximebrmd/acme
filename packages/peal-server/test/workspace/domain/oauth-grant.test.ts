@@ -4,7 +4,10 @@ import { DateTime, Option, Result } from "effect";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { actorFor, userPermissions } from "#workspace/domain/membership.ts";
 import type { Membership } from "#workspace/domain/membership.ts";
-import { grantedPermissions } from "#workspace/domain/oauth-grant.ts";
+import {
+  grantedPermissions,
+  publishingPermissions,
+} from "#workspace/domain/oauth-grant.ts";
 import type { OAuthGrant } from "#workspace/domain/oauth-grant.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
@@ -34,15 +37,61 @@ const through = (oauth: OAuthGrant) =>
 const ownerPermissions = permissionsFor("owner");
 
 describe(grantedPermissions, () => {
-  it("leaves everything to workspace:write", () => {
+  it("leaves everything to workspace:write with workspace:publish", () => {
     assert.deepStrictEqual(
       grantedPermissions(
-        grant(["workspace:read", "workspace:write"]),
+        grant(["workspace:read", "workspace:write", "workspace:publish"]),
         studio,
         ownerPermissions
       ),
       ownerPermissions
     );
+  });
+
+  it("leaves workspace:write everything but what puts posts out", () => {
+    const permissions = grantedPermissions(
+      grant(["workspace:read", "workspace:write"]),
+      studio,
+      ownerPermissions
+    );
+
+    assert.deepStrictEqual(
+      permissions,
+      ownerPermissions.filter(
+        (permission) => !publishingPermissions.has(permission)
+      )
+    );
+    assert.include(permissions, "post:create");
+    assert.include(permissions, "media:upload");
+    assert.notInclude(permissions, "post:schedule");
+    assert.notInclude(permissions, "post:approve");
+    assert.notInclude(permissions, "post:publish");
+  });
+
+  it("leaves workspace:publish reading and what puts posts out", () => {
+    const permissions = grantedPermissions(
+      grant(["workspace:publish"]),
+      studio,
+      ownerPermissions
+    );
+
+    assert.include(permissions, "post:schedule");
+    assert.include(permissions, "post:publish");
+    assert.include(permissions, "post:approve");
+    assert.include(permissions, "channel:read");
+    assert.notInclude(permissions, "post:create");
+    assert.notInclude(permissions, "media:upload");
+  });
+
+  it("gives workspace:publish no more than the role holds", () => {
+    const permissions = grantedPermissions(
+      grant(["workspace:write", "workspace:publish"]),
+      studio,
+      permissionsFor("contributor")
+    );
+
+    assert.deepStrictEqual(permissions, permissionsFor("contributor"));
+    assert.notInclude(permissions, "post:schedule");
   });
 
   it("leaves only reading to workspace:read", () => {
@@ -71,7 +120,10 @@ describe(grantedPermissions, () => {
   });
 
   it("leaves nothing outside the workspace a token is bound to", () => {
-    const bound = grant(["workspace:write"], Option.some(studio));
+    const bound = grant(
+      ["workspace:write", "workspace:publish"],
+      Option.some(studio)
+    );
 
     assert.deepStrictEqual(
       grantedPermissions(bound, shop, ownerPermissions),
@@ -115,7 +167,7 @@ describe("an OAuth client acting for a user", () => {
   });
 
   it("acts wherever its user belongs when its token is not bound", () => {
-    const principal = through(grant(["workspace:write"]));
+    const principal = through(grant(["workspace:write", "workspace:publish"]));
 
     for (const workspaceId of [studio, shop]) {
       const actor = Result.getOrThrow(
@@ -127,7 +179,9 @@ describe("an OAuth client acting for a user", () => {
   });
 
   it("shows no permission in the workspaces its token is not bound to", () => {
-    const principal = through(grant(["workspace:write"], Option.some(studio)));
+    const principal = through(
+      grant(["workspace:write", "workspace:publish"], Option.some(studio))
+    );
 
     assert.deepStrictEqual(userPermissions(principal, shop, "owner"), []);
     assert.deepStrictEqual(

@@ -3,6 +3,8 @@
 # The uptime server's group names its own.
 peal_preflight_names:
   - ansible_host
+  - hosting_provider
+  - hosting_location
   - admin_ssh_public_keys
   - peal_hostnames
   - cloudflare_access_team

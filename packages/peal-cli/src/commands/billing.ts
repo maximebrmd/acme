@@ -1,6 +1,6 @@
 import { Console, Effect } from "effect";
 import { Command } from "effect/cli";
-import type { Billing, PeriodUsage } from "peal-contract";
+import type { Billing, Excess, PeriodUsage, Standing } from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { columns, instant } from "#print.ts";
@@ -60,9 +60,45 @@ const planLine = (billing: Billing): string => {
   const ends =
     subscription.currentPeriodEnd === null
       ? ""
-      : `, ${subscription.cancelAtPeriodEnd ? "ending" : "renewing"} ${instant(subscription.currentPeriodEnd)}`;
+      : `, ${subscription.cancelAtPeriodEnd ? "ending" : "renewing"} ${instant(subscription.endsAt ?? subscription.currentPeriodEnd)}`;
 
   return `Plan: ${billing.plan}, paid each ${subscription.interval}, subscription ${subscription.status}${ends}.`;
+};
+
+const heldNames: Readonly<Record<Excess["limit"], string>> = {
+  channels: "channels",
+  mediaStorage: "of media",
+  members: "members",
+};
+
+const excess = ({ allowed: plan, limit, used }: Excess): string =>
+  limit === "mediaStorage"
+    ? `${bytes(used)} ${heldNames[limit]} of ${bytes(plan)}`
+    : `${String(used)} ${heldNames[limit]} of ${String(plan)}`;
+
+// What a workspace over its plan is told: what it holds beyond the plan,
+// what waits on it, and the way back.
+const standingLines = (standing: Standing): string[] => {
+  if (standing.over.length === 0) {
+    return [];
+  }
+
+  const waiting = standing.mustReduce
+    ? [
+        `Until it is back within its plan, nothing is scheduled or published: the ${String(standing.scheduledPosts)} posts going out this month each fail when due, and can be posted again afterwards.`,
+      ]
+    : ["Until it is back within its plan's storage, it uploads nothing."];
+
+  const wayOut =
+    standing.planWithRoom === null
+      ? "No plan holds everything: an owner or an admin chooses which channels and members stay, in the web app, or writes to the people who run this server."
+      : `The ${standing.planWithRoom} plan holds everything: an owner or an admin orders it, or chooses which channels and members stay, in the web app.`;
+
+  return [
+    `The workspace holds more than its plan allows: ${standing.over.map(excess).join(", ")}.`,
+    ...waiting,
+    wayOut,
+  ];
 };
 
 export const billing = Command.make(
@@ -75,8 +111,17 @@ export const billing = Command.make(
       .get({ params: { workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
 
+    const standing = yield* client.billing
+      .standing({ params: { workspaceId: workspace.id } })
+      .pipe(Effect.mapError(explain(url)));
+
     yield* Console.log(`Billing of ${workspace.name}:`);
     yield* Console.log(planLine(found));
+
+    for (const line of standingLines(standing)) {
+      yield* Console.log(line);
+    }
+
     yield* Console.log("Used:");
 
     for (const line of usageLines(found)) {
@@ -97,6 +142,6 @@ export const billing = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Show the workspace's plan, what it allows and how much of it the workspace uses. It changes nothing."
+    "Show the workspace's plan, what it allows, how much of it the workspace uses, and what it holds beyond the plan, as after a trial. It changes nothing."
   )
 );

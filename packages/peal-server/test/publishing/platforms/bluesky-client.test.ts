@@ -233,6 +233,13 @@ describe("publishing on Bluesky", () => {
       assert.lengthOf(looks, 3);
       assert(upload !== undefined && blob !== undefined);
       assert.strictEqual(headerOf(upload, "authorization"), "Bearer service-1");
+      // Streamed, with its length rather than chunked.
+      assert.strictEqual(upload.body.length, clip.bytes.length);
+      assert.strictEqual(
+        headerOf(upload, "content-length"),
+        String(clip.bytes.length)
+      );
+      assert.strictEqual(headerOf(upload, "transfer-encoding"), "");
       assert.strictEqual(upload.query.get("did"), blueskyDid);
       assert.deepStrictEqual(network.records()[0]?.value["embed"], {
         $type: "app.bsky.embed.video",

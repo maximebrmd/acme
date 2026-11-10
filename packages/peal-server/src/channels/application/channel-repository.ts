@@ -1,5 +1,5 @@
-import { Context } from "effect";
-import type { DateTime, Duration, Effect, Option } from "effect";
+import { Context, Option } from "effect";
+import type { DateTime, Duration, Effect } from "effect";
 
 import type { Channel } from "#channels/domain/channel.ts";
 import type { SignedInChannels } from "#channels/domain/data-deletion.ts";
@@ -9,6 +9,50 @@ import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import type { ChannelAlreadyConnected } from "./channel-already-connected.ts";
 import type { ChannelCredentials } from "./channel-credentials.ts";
+
+/** Tokens of `platform` expiring before `before` are due for a refresh. */
+export interface RefreshCutoff {
+  readonly before: DateTime.Utc;
+  readonly platform: Platform;
+}
+
+/**
+ * Where a page of `dueForRefresh` ended: its last channel's expiry and id.
+ * The jobs page with it rather than an offset, as the channels they handle
+ * leave the list.
+ */
+export interface RefreshCursor {
+  readonly channelId: ChannelId;
+  readonly expiresAt: DateTime.Utc;
+}
+
+/** The cursor after `channel`, the last of a page; none without an expiry. */
+export const refreshCursorOf = (
+  channel: Channel
+): Option.Option<RefreshCursor> =>
+  channel.token._tag === "nonExpiring"
+    ? Option.none()
+    : Option.some({
+        channelId: channel.id,
+        expiresAt: channel.token.expiresAt,
+      });
+
+/**
+ * Where a page of `needingReconnect` ended: whether its last channel was
+ * already marked, when it last changed, and its id.
+ */
+export interface ReconnectCursor {
+  readonly channelId: ChannelId;
+  readonly marked: boolean;
+  readonly updatedAt: DateTime.Utc;
+}
+
+/** The cursor after `channel`, the last of a page. */
+export const reconnectCursorOf = (channel: Channel): ReconnectCursor => ({
+  channelId: channel.id,
+  marked: channel.status._tag === "refreshNeeded",
+  updatedAt: channel.updatedAt,
+});
 
 /**
  * The channels of every workspace, and their encrypted tokens. Reads that
@@ -57,26 +101,32 @@ export class ChannelRepository extends Context.Service<
       channelId: ChannelId
     ) => Effect.Effect<Option.Option<ChannelCredentials>, DatabaseError>;
     /**
-     * Active channels whose token renews itself and expires before the
-     * cutoff given for their platform, soonest first, at most `limit`.
-     * Platforms without a cutoff are left out.
+     * A page of the active channels whose token renews itself and expires
+     * before the cutoff given for their platform, soonest first, at most
+     * `limit` of those that come after `after`. Platforms without a cutoff
+     * are left out.
      */
     readonly dueForRefresh: (request: {
-      readonly cutoffs: readonly {
-        readonly before: DateTime.Utc;
-        readonly platform: Platform;
-      }[];
+      readonly after: Option.Option<RefreshCursor>;
+      readonly cutoffs: readonly RefreshCutoff[];
       readonly limit: number;
     }) => Effect.Effect<readonly Channel[], DatabaseError>;
+    /** How many channels `dueForRefresh` would list for the cutoffs. */
+    readonly countDueForRefresh: (
+      cutoffs: readonly RefreshCutoff[]
+    ) => Effect.Effect<number, DatabaseError>;
     /**
-     * Channels the user must reconnect, at most `limit`: the active ones
-     * whose token cannot be renewed and is within `leadTime` of expiring, or
-     * half its lifetime when that is shorter (`reconnectWarningFrom` in the
-     * domain), expired or not; then those that already need a refresh. Each
-     * group comes oldest change first. The active ones come first, so the
-     * marked channels nobody reconnects never crowd them out.
+     * A page of the channels the user must reconnect, at most `limit` of
+     * those that come after `after`: the active ones whose token cannot be
+     * renewed and is within `leadTime` of expiring, or half its lifetime
+     * when that is shorter (`reconnectWarningFrom` in the domain), expired
+     * or not; then those that already need a refresh. Each group comes
+     * oldest change first. The active ones come first, so a run cut short
+     * warns them before it tells again of the marked channels nobody
+     * reconnects.
      */
     readonly needingReconnect: (request: {
+      readonly after: Option.Option<ReconnectCursor>;
       readonly leadTime: Duration.Duration;
       readonly limit: number;
       readonly now: DateTime.Utc;

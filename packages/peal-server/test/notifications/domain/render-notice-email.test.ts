@@ -85,6 +85,73 @@ describe(renderNoticeEmail, () => {
       "Votre abonnement annuel Business se renouvelle le 31 janvier 2027 à 00:00 UTC"
     );
     expect(email.text).toContain("300,00\u00A0€ TTC");
+    // The last day to refuse the renewal, set apart in a box (Code de la
+    // consommation L215-1).
+    expect(email.text).toContain(
+      "\n\nDate limite de non-reconduction : 31 janvier 2027 à 00:00 UTC\n\n"
+    );
+    expect(email.html).toMatch(
+      /<p style="[^"]*border:2px solid[^"]*">Date limite de non-reconduction : 31 janvier 2027 à 00:00 UTC<\/p>/u
+    );
+    expect(email.text).toContain("Résilier votre contrat");
+  });
+
+  it("gives the contract's number with the confirmation and the reminder", () => {
+    const started = render(
+      {
+        _tag: "SubscriptionStarted",
+        interval: "month",
+        plan: "pro",
+        price: { amount: 1500, currency: "eur" },
+        reference: "7K3M-9QXD-42TN",
+        startedAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),
+        trialEnd: Option.none(),
+      },
+      "en"
+    );
+
+    expect(started.text).toContain("Contract number: 7K3M-9QXD-42TN");
+    expect(started.text).toContain("at the foot of every page");
+
+    const renewing = render(
+      {
+        _tag: "SubscriptionRenewing",
+        plan: "business",
+        price: { amount: 30_000, currency: "eur" },
+        reference: "7K3M-9QXD-42TN",
+        renewsAt: DateTime.makeUnsafe("2027-01-31T00:00:00Z"),
+      },
+      "fr"
+    );
+
+    expect(renewing.text).toContain("Numéro de contrat : 7K3M-9QXD-42TN");
+  });
+
+  it("lists what a trial's end leaves beyond the free plan", () => {
+    const ending = {
+      _tag: "TrialEnding",
+      endsAt: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
+      over: [
+        { allowed: 3, limit: "channels", used: 8 },
+        { allowed: 2, limit: "members", used: 5 },
+        { allowed: 500_000_000, limit: "mediaStorage", used: 1_200_000_000 },
+      ],
+      plan: "pro",
+    } as const;
+
+    expect(render(ending, "en").text).toContain(
+      "Today it holds more than the free plan allows: 8 channels (3 allowed), 5 members (2 allowed), 1.2 GB of media (500 MB allowed). From that day, nothing is scheduled or published until it is back within the free plan: posts already scheduled fail when due, and can be posted again afterwards. Order a plan, or choose which channels and members stay, on the billing page."
+    );
+    expect(render(ending, "fr").text).toContain(
+      "Aujourd’hui, il dépasse ce que permet l’offre gratuite : 8 canaux (3 permis), 5 membres (2 permis), 1,2\u202FGo de médias (500\u202FMo permis). À partir de ce jour, rien n’est programmé ni publié tant qu’il n’est pas revenu dans l’offre gratuite : les publications déjà programmées échouent à leur échéance, et peuvent être republiées ensuite. Commandez un abonnement, ou choisissez les canaux et les membres qui restent, sur la page de facturation."
+    );
+
+    const within = render({ ...ending, over: [] }, "en").text;
+
+    expect(within).toContain(
+      "It holds nothing beyond what the free plan allows, and keeps its content."
+    );
+    expect(within).not.toContain("Today it holds more");
   });
 
   it("tells a trial's end and a cancellation's", () => {
@@ -93,6 +160,7 @@ describe(renderNoticeEmail, () => {
         {
           _tag: "TrialEnding",
           endsAt: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
+          over: [],
           plan: "pro",
         },
         "en"
@@ -110,6 +178,43 @@ describe(renderNoticeEmail, () => {
       ).subject
     ).toBe(
       "Votre abonnement Agency est résilié : il prend fin le 1 décembre 2026 à 00:00 UTC"
+    );
+  });
+
+  it("tells that a webhook endpoint was turned off, by its host and why", () => {
+    const failing = render(
+      {
+        _tag: "WebhookEndpointDisabled",
+        endpointId: "00000000-0000-7000-8000-000000000051",
+        host: "hooks.example.com",
+        reason: "failing",
+      },
+      "en"
+    );
+
+    expect(failing.subject).toBe(
+      "Webhook endpoint turned off: hooks.example.com"
+    );
+    expect(failing.text).toContain(
+      "Peal turned off the webhook endpoint at hooks.example.com in Studio Nord: every delivery to it failed for 5 days."
+    );
+    expect(failing.text).toContain(url);
+
+    const gone = render(
+      {
+        _tag: "WebhookEndpointDisabled",
+        endpointId: "00000000-0000-7000-8000-000000000051",
+        host: "hooks.example.com",
+        reason: "gone",
+      },
+      "fr"
+    );
+
+    expect(gone.subject).toBe(
+      "Point de terminaison de webhook désactivé : hooks.example.com"
+    );
+    expect(gone.text).toContain(
+      "Peal a désactivé le point de terminaison de webhook hooks.example.com dans Studio Nord : il a répondu 410 Gone, ce qui demande de ne plus rien lui envoyer."
     );
   });
 

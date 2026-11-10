@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Predicate, Schema } from "effect";
+import { DateTime, Predicate, Schema } from "effect";
 
 import type { AuthEmail } from "#notifications/domain/auth-email.ts";
 import type { EmailCatalog } from "#notifications/domain/email-catalog.ts";
@@ -11,6 +11,8 @@ import { renderAuthEmail } from "#notifications/domain/render-auth-email.ts";
 const url =
   "https://app.example.test/api/auth/verify-email?token=abc&callbackURL=%2F";
 
+const at = (iso: string) => DateTime.makeUnsafe(iso);
+
 const invitation = (locale: "en" | "fr", role: string): AuthEmail => ({
   _tag: "Invitation",
   inviterName: "Ada <Admin> & Co",
@@ -21,13 +23,70 @@ const invitation = (locale: "en" | "fr", role: string): AuthEmail => ({
   workspaceName: 'Studio "Nord"',
 });
 
+// What a server that keeps what French law has a host keep leaves of a
+// closed account, and one that turned it off after having kept connections.
+const identification = {
+  accountYears: 1,
+  connectionYears: 1,
+  identityYears: 5,
+};
+
+const connectionsOnly = {
+  accountYears: null,
+  connectionYears: 1,
+  identityYears: null,
+};
+
 // The text of a deletion's confirmation, in `locale`.
-const deleted = (locale: "en" | "fr") =>
+const deleted = (
+  locale: "en" | "fr",
+  legalHold: typeof identification | typeof connectionsOnly | null
+) =>
   renderAuthEmail({
     _tag: "AccountDeleted",
+    legalHold,
     locale,
     subscriptionsCancelled: 0,
     to: "ada@example.test",
+    url: "https://app.example.test",
+  }).text;
+
+// A cancellation's acknowledgement, in `locale`, with what became of it.
+const cancellationAcknowledged = (
+  locale: "en" | "fr",
+  outcome: "cancelled" | "confirm" | "review"
+) =>
+  renderAuthEmail({
+    _tag: "ContractRequestAcknowledged",
+    contract: "Studio Nord",
+    desiredAt: null,
+    effectiveAt:
+      outcome === "cancelled" ? at("2026-12-01T00:00:00.000Z") : null,
+    kind: "cancellation",
+    locale,
+    name: "Camille Synthetic",
+    outcome,
+    receivedAt: at("2026-11-10T08:05:00.000Z"),
+    refunded: null,
+    to: "camille@example.test",
+    url: "https://app.example.test/fr/contract-request?token=abc",
+  });
+
+// A withdrawal's acknowledgement in English, which named no contract.
+const withdrawalAcknowledged = (outcome: "expired" | "withdrawn") =>
+  renderAuthEmail({
+    _tag: "ContractRequestAcknowledged",
+    contract: "",
+    desiredAt: null,
+    effectiveAt:
+      outcome === "withdrawn" ? at("2026-11-10T08:05:00.000Z") : null,
+    kind: "withdrawal",
+    locale: "en",
+    name: "Camille Synthetic",
+    outcome,
+    receivedAt: at("2026-11-10T08:05:00.000Z"),
+    refunded: outcome === "withdrawn" ? { amount: 810, currency: "eur" } : null,
+    to: "camille@example.test",
     url: "https://app.example.test",
   }).text;
 
@@ -46,6 +105,99 @@ describe(renderAuthEmail, () => {
     expect(email.html).toContain(`href="${escapeHtml(url)}"`);
   });
 
+  it("says nothing is refunded when nothing was charged, and that a plan renews until a later day asked for", () => {
+    const base = {
+      _tag: "ContractRequestAcknowledged",
+      contract: "",
+      locale: "en",
+      name: "Camille Synthetic",
+      receivedAt: at("2026-11-10T08:05:00.000Z"),
+      refunded: null,
+      to: "camille@example.test",
+      url: "https://app.example.test",
+    } as const;
+
+    const unpaid = renderAuthEmail({
+      ...base,
+      desiredAt: null,
+      effectiveAt: at("2026-11-10T08:05:00.000Z"),
+      kind: "withdrawal",
+      outcome: "withdrawn",
+    }).text;
+
+    const later = renderAuthEmail({
+      ...base,
+      desiredAt: at("2027-02-15T00:00:00.000Z"),
+      effectiveAt: at("2027-02-15T00:00:00.000Z"),
+      kind: "cancellation",
+      outcome: "cancelled",
+    }).text;
+
+    const laterInFrench = renderAuthEmail({
+      ...base,
+      desiredAt: at("2027-02-15T00:00:00.000Z"),
+      effectiveAt: at("2027-02-15T00:00:00.000Z"),
+      kind: "cancellation",
+      locale: "fr",
+      outcome: "cancelled",
+    }).text;
+
+    expect([
+      unpaid.includes("Nothing had been charged"),
+      later.includes("it renews until then"),
+      laterInFrench.includes("il se renouvelle jusque-là"),
+    ]).toStrictEqual([true, true, true]);
+    // Neither a refund of nothing, nor a promise the renewals break.
+    expect(
+      [
+        unpaid.includes("is refunded to"),
+        unpaid.includes("and  is"),
+        later.includes("nothing more is charged"),
+        laterInFrench.includes("plus rien n’est prélevé"),
+      ].filter(Boolean)
+    ).toStrictEqual([]);
+  });
+
+  it("acknowledges a cancellation with when it came and what it said, in the reader's language", () => {
+    const { subject, text } = cancellationAcknowledged("fr", "confirm");
+
+    expect(subject).toBe(
+      "Nous avons reçu la notification de votre résiliation"
+    );
+    // The date and the time, the statement's content, and the link.
+    expect(text).toContain("10 novembre 2026 à 08:05 UTC");
+    expect(text).toContain(
+      "nom, Camille Synthetic ; contrat : Studio Nord ; accusé de réception à envoyer à camille@example.test"
+    );
+    expect(text).toContain("Appliquer ma demande");
+    expect(text).toContain(
+      "https://app.example.test/fr/contract-request?token=abc"
+    );
+  });
+
+  it("says what became of a cancellation: applied, or left to a person", () => {
+    const applied = cancellationAcknowledged("en", "cancelled").text;
+
+    expect(applied).toContain("November 10, 2026 at 8:05 AM UTC");
+    expect(applied).toContain(
+      "The contract ends on December 1, 2026 at 12:00 AM UTC"
+    );
+    expect(applied).not.toContain("follow the link");
+    expect(cancellationAcknowledged("en", "review").text).toContain(
+      "a person will look at it"
+    );
+  });
+
+  it("acknowledges a withdrawal with what is refunded, or why it could not be applied", () => {
+    expect(withdrawalAcknowledged("withdrawn")).toContain("€8.10 is refunded");
+    expect(withdrawalAcknowledged("withdrawn")).toContain(
+      "contract: not given"
+    );
+    expect(withdrawalAcknowledged("expired")).toContain(
+      "14 days to withdraw were over"
+    );
+  });
+
   it("writes a password reset email in French", () => {
     const email = renderAuthEmail({
       _tag: "ResetPassword",
@@ -62,6 +214,7 @@ describe(renderAuthEmail, () => {
   it("confirms an account's deletion in its language, linking to Peal", () => {
     const inEnglish = renderAuthEmail({
       _tag: "AccountDeleted",
+      legalHold: null,
       locale: "en",
       subscriptionsCancelled: 0,
       to: "ada@example.test",
@@ -70,6 +223,7 @@ describe(renderAuthEmail, () => {
 
     const inFrench = renderAuthEmail({
       _tag: "AccountDeleted",
+      legalHold: null,
       locale: "fr",
       subscriptionsCancelled: 0,
       to: "ada@example.test",
@@ -84,14 +238,37 @@ describe(renderAuthEmail, () => {
     );
   });
 
-  it("says what French law has a host keep after an account's deletion, and for whom", () => {
-    expect(deleted("en")).toContain("for judicial authorities only");
-    expect(deleted("fr")).toContain("pour les seules autorités judiciaires");
+  it("says what French law has a host keep after an account's deletion, for how long and for whom, on a server that keeps it", () => {
+    expect(deleted("en", identification)).toContain(
+      "for judicial authorities only, your name and email address for 5 years, and how you signed in and the connections that created content for 1 year"
+    );
+    expect(deleted("fr", identification)).toContain(
+      "pour les seules autorités judiciaires, vos nom et adresse e-mail pendant 5\u00A0ans, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant 1\u00A0an"
+    );
+  });
+
+  it("says nothing is kept on a server that keeps nothing for the law", () => {
+    expect(deleted("en", null)).not.toContain("judicial");
+    expect(deleted("en", null)).not.toContain("French law");
+    expect(deleted("fr", null)).not.toContain("judiciaires");
+  });
+
+  it("says only the connections already kept stay, on a server that stopped keeping them", () => {
+    const inEnglish = deleted("en", connectionsOnly);
+
+    expect(inEnglish).toContain(
+      "the connections that created content, kept so far, stay 1 year from each"
+    );
+    expect(inEnglish).not.toContain("your name and email address");
+    expect(deleted("fr", connectionsOnly)).toContain(
+      "les connexions ayant créé du contenu, conservées jusqu’ici, le restent 1\u00A0an à compter de chacune"
+    );
   });
 
   it("says when deleting cancelled subscriptions, and that nothing more is charged", () => {
     const account = renderAuthEmail({
       _tag: "AccountDeleted",
+      legalHold: null,
       locale: "en",
       subscriptionsCancelled: 1,
       to: "ada@example.test",
@@ -102,6 +279,7 @@ describe(renderAuthEmail, () => {
     expect(
       renderAuthEmail({
         _tag: "AccountDeleted",
+        legalHold: null,
         locale: "en",
         subscriptionsCancelled: 0,
         to: "ada@example.test",

@@ -27,6 +27,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { PostMetrics } from "#components/analytics/post-metrics.tsx";
+import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
 import { AssistantMenu } from "#components/posts/assistant-menu.tsx";
 import { ChannelPicker } from "#components/posts/channel-picker.tsx";
 import { CharacterCounters } from "#components/posts/character-counters.tsx";
@@ -34,6 +35,7 @@ import { ComposerActions } from "#components/posts/composer-actions.tsx";
 import type { ComposerAction } from "#components/posts/composer-actions.tsx";
 import { ComposerErrors } from "#components/posts/composer-errors.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
+import { PostOrigins } from "#components/posts/post-origins.tsx";
 import {
   instantOfChoice,
   ScheduleFields,
@@ -473,6 +475,9 @@ export const Composer = ({
             )}
           </div>
         )}
+        {post === undefined ? null : (
+          <PostOrigins post={post} viewerId={userId} />
+        )}
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-6">
@@ -592,6 +597,7 @@ export const Composer = ({
             failure={requests.failure}
             media={attached}
           />
+          <OfferUpgrade failure={requests.failure} />
         </div>
       </CardContent>
       <CardFooter>

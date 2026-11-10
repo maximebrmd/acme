@@ -3,12 +3,15 @@ import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { Digest } from "effect/crypto";
 import { SqlClient, SqlError } from "effect/sql";
 
+import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { DataDeletions } from "#channels/application/data-deletions.ts";
 import {
   channelsSignedInWith,
   DataDeletion,
 } from "#channels/domain/data-deletion.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { PlatformSchema } from "#shared/domain/platform.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { channels, connectChoices, dataDeletions } from "./schema.ts";
@@ -17,6 +20,18 @@ import { signedInRows, userChannels } from "./signed-in-rows.ts";
 type Row = typeof dataDeletions.$inferSelect;
 
 const decodeDeletion = Schema.decodeUnknownEffect(DataDeletion);
+
+// What a deleted channel's row says of it, for those who follow the
+// workspace.
+const decodeRemoved = Schema.decodeUnknownEffect(
+  Schema.Array(
+    Schema.Struct({
+      id: ChannelIdSchema,
+      platform: PlatformSchema,
+      workspaceId: WorkspaceIdSchema,
+    })
+  )
+);
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -37,8 +52,9 @@ const toDeletion = (row: Row) =>
 /**
  * Data deletion requests in the channels schema, each under the digest of
  * its signed request. Claiming the request, deleting the channels and the
- * choices offered, and counting the channels share one transaction: the
- * same request sent twice at once waits on the first, then finds it.
+ * choices offered, telling ChannelEvents of each channel gone, and counting
+ * them share one transaction: the same request sent twice at once waits on
+ * the first, then finds it, and tells nothing more.
  */
 export const DrizzleDataDeletions = Layer.effect(
   DataDeletions,
@@ -46,6 +62,7 @@ export const DrizzleDataDeletions = Layer.effect(
     const db = yield* Drizzle;
     const sql = yield* SqlClient.SqlClient;
     const digest = yield* Digest.Digest;
+    const events = yield* ChannelEvents;
 
     const erase = Effect.fn("DataDeletions.erase")(function* erase(request: {
       readonly app: DataDeletion["app"];
@@ -95,8 +112,22 @@ export const DrizzleDataDeletions = Layer.effect(
       const removed = yield* db
         .delete(channels)
         .where(userChannels(signedIn, request.userId))
-        .returning({ id: channels.id })
-        .pipe(Effect.mapError(failed));
+        .returning({
+          id: channels.id,
+          platform: channels.platform,
+          workspaceId: channels.workspaceId,
+        })
+        .pipe(
+          Effect.mapError(failed),
+          // Rows the repository wrote: one it cannot read is a bug.
+          Effect.flatMap((rows) => decodeRemoved(rows).pipe(Effect.orDie))
+        );
+
+      // Disconnected, as by a member: the workspace's followers hear it.
+      yield* Effect.all(
+        removed.map((channel) => events.disconnected(channel)),
+        { discard: true }
+      );
 
       // The accounts their sign-in offers a member, with Page tokens, until
       // the member chooses: they go too, whoever started the sign-in.

@@ -2,6 +2,7 @@ import { Option } from "effect";
 
 import type { Allowance } from "#shared/domain/allowance.ts";
 import type { PlanLimit } from "#shared/domain/plan-limit.ts";
+import { PaidPlanSchema } from "#shared/domain/plan.ts";
 import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
 
 /** What a workspace may have, limit by limit. */
@@ -82,6 +83,34 @@ export const plans: readonly Plan[] = [
 /** The larger of two paid plans. */
 export const largerPlan = (left: PaidPlan, right: PaidPlan): PaidPlan =>
   plans.indexOf(right) > plans.indexOf(left) ? right : left;
+
+/**
+ * The smallest plan larger than `current` whose allowance of `limit` holds
+ * `needed`: the one to offer a workspace its plan refused something. None
+ * past the largest plan, which is asked for by quote.
+ */
+export const planWithRoom = (
+  current: Plan,
+  limit: PlanLimit,
+  needed: number
+): Option.Option<PaidPlan> =>
+  Option.fromUndefinedOr(
+    PaidPlanSchema.literals.find(
+      (plan) =>
+        plans.indexOf(plan) > plans.indexOf(current) &&
+        Option.match(planAllowances[plan][limit], {
+          onNone: () => true,
+          onSome: (allowed) => needed <= allowed,
+        })
+    )
+  );
+
+/**
+ * The plan to order for a workspace that must be paid for: the smallest,
+ * or the one it has, as in its trial.
+ */
+export const planToPay = (current: Plan): PaidPlan =>
+  current === "free" ? "starter" : current;
 
 /**
  * The plan a workspace may try for free, once: `trialDays` days, without a

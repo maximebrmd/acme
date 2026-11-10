@@ -9,6 +9,8 @@ peal_runtime_host_settings: >-
        'PEAL_TERMS_URL': 'https://' ~ peal_hostnames.site ~ '/terms/',
        'AUTH_IP_HEADERS': 'cf-connecting-ip',
        'MAIL_FROM': peal_mail_from,
+       'PEAL_LEGAL_RETENTION': peal_legal_retention,
+       'PEAL_PRIVACY_DECLARATION': peal_root ~ '/privacy-declaration.json',
        'PEAL_S3_ENDPOINT': peal_media_endpoint,
        'PEAL_S3_BUCKET': peal_media_bucket,
        'PEAL_POSTGRES_ARCHIVE_MODE': 'on',
@@ -26,6 +28,8 @@ peal_runtime_host_settings: >-
        'PEAL_GRAFANA_PORT': peal_ports.grafana,
        'PEAL_OTLP_HTTP_PORT': peal_ports.otlp_http,
      }
+     | combine({'PEAL_ERASURE_LEDGER_BUCKET': peal_erasure_ledger_bucket}
+               if peal_erasure_ledger_bucket else {})
      | combine({
          'PEAL_GRAFANA_HEARTBEAT': './config/production/grafana/alerting/heartbeat.yaml',
          'PEAL_HEARTBEAT_URL': peal_heartbeat_url,

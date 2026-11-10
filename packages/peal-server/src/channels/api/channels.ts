@@ -7,10 +7,10 @@ import {
   CurrentMember,
   Forbidden,
   OAuthClientNotPublished,
-  PlanLimitReached,
   PlatformUnreachable,
 } from "peal-contract";
 import type {
+  PlanLimitReached,
   ConnectCallback,
   ConnectFailureReason,
   ConnectOutcome as ConnectOutcomeView,
@@ -29,6 +29,8 @@ import { ListChannels } from "#channels/application/list-channels.ts";
 import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
 import type { AuthorizationCallback } from "#channels/application/platform-authorizer.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { limitRefusal } from "#shared/api/limit-reached.ts";
+import type { LimitRefusal } from "#shared/api/limit-reached.ts";
 import { isConnectionOf } from "#shared/domain/channel-connection.ts";
 
 import { toChannelView } from "./channel-view.ts";
@@ -78,17 +80,18 @@ const beginFailure = (failure: BeginRefusal) =>
   });
 
 // Connecting a new account also needs room in the plan.
-const startFailure = (
-  failure: StartFailure
-): Effect.Effect<
-  never,
-  ConnectFailed | Forbidden | PlanLimitReached | PlatformUnreachable
-> =>
-  failure._tag === "PlanLimitReached"
-    ? Effect.fail(
-        new PlanLimitReached({ allowed: failure.allowed, limit: failure.limit })
-      )
-    : beginFailure(failure);
+const startFailureWith =
+  (limitReached: LimitRefusal) =>
+  (
+    failure: StartFailure
+  ): Effect.Effect<
+    never,
+    ConnectFailed | Forbidden | PlanLimitReached | PlatformUnreachable,
+    CurrentMember
+  > =>
+    failure._tag === "PlanLimitReached"
+      ? limitReached(failure)
+      : beginFailure(failure);
 
 // Reconnecting adds no channel, so the plan never refuses it.
 const reconnectFailure = (
@@ -107,41 +110,46 @@ type Refusal = Effect.Effect<
   | ConnectFailed
   | Forbidden
   | PlanLimitReached
-  | PlatformUnreachable
+  | PlatformUnreachable,
+  CurrentMember
 >;
 
 // Completing fails as starting does, and also on the callback itself.
-const completeFailure = (failure: CompleteConnectFailure): Refusal =>
-  Match.valueTags(failure, {
-    AuthorizationDenied: () => refused("denied"),
-    AuthorizationFailed: startFailure,
-    ChannelNotFound: () => Effect.fail(new ChannelNotFound()),
-    DatabaseError: startFailure,
-    InstanceNotAllowed: startFailure,
-    InvalidConnectState: () => refused("invalidState"),
-    MissingPermission: startFailure,
-    MissingTokenKey: startFailure,
-    NoAccountsToConnect: () => refused("noAccounts"),
-    PlanLimitReached: startFailure,
-    PlatformNotConnectable: startFailure,
-    PlatformUnavailable: startFailure,
-    ReconnectAccountMismatch: () => refused("accountMismatch"),
-  });
+const completeFailureWith =
+  (startFailure: ReturnType<typeof startFailureWith>) =>
+  (failure: CompleteConnectFailure): Refusal =>
+    Match.valueTags(failure, {
+      AuthorizationDenied: () => refused("denied"),
+      AuthorizationFailed: startFailure,
+      ChannelNotFound: () => Effect.fail(new ChannelNotFound()),
+      DatabaseError: startFailure,
+      InstanceNotAllowed: startFailure,
+      InvalidConnectState: () => refused("invalidState"),
+      MissingPermission: startFailure,
+      MissingTokenKey: startFailure,
+      NoAccountsToConnect: () => refused("noAccounts"),
+      PlanLimitReached: startFailure,
+      PlatformNotConnectable: startFailure,
+      PlatformUnavailable: startFailure,
+      ReconnectAccountMismatch: () => refused("accountMismatch"),
+    });
 
 // Choosing fails as completing does: the choice, like the attempt, is the
 // member's own and is used once.
-const chooseFailure = (failure: ChooseFailure): Refusal =>
-  Match.valueTags(failure, {
-    AuthorizationFailed: startFailure,
-    ChannelNotFound: () => Effect.fail(new ChannelNotFound()),
-    DatabaseError: startFailure,
-    InvalidConnectState: () => refused("invalidState"),
-    MissingPermission: startFailure,
-    MissingTokenKey: startFailure,
-    PlanLimitReached: startFailure,
-    PlatformNotConnectable: startFailure,
-    ReconnectAccountMismatch: () => refused("accountMismatch"),
-  });
+const chooseFailureWith =
+  (startFailure: ReturnType<typeof startFailureWith>) =>
+  (failure: ChooseFailure): Refusal =>
+    Match.valueTags(failure, {
+      AuthorizationFailed: startFailure,
+      ChannelNotFound: () => Effect.fail(new ChannelNotFound()),
+      DatabaseError: startFailure,
+      InvalidConnectState: () => refused("invalidState"),
+      MissingPermission: startFailure,
+      MissingTokenKey: startFailure,
+      PlanLimitReached: startFailure,
+      PlatformNotConnectable: startFailure,
+      ReconnectAccountMismatch: () => refused("accountMismatch"),
+    });
 
 const outcomeView = (outcome: ConnectOutcome): ConnectOutcomeView =>
   outcome._tag === "connected"
@@ -166,6 +174,9 @@ export const ChannelsHandlers = HttpApiBuilder.group(
     const listChannels = yield* ListChannels;
     const disconnectChannel = yield* DisconnectChannel;
     const connectChannel = yield* ConnectChannel;
+    const startFailure = startFailureWith(yield* limitRefusal);
+    const completeFailure = completeFailureWith(startFailure);
+    const chooseFailure = chooseFailureWith(startFailure);
 
     return handlers.handleAll({
       chooseAccounts: ({ params, payload }) =>

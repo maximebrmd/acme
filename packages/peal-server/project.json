@@ -33,6 +33,11 @@
       "options": { "cwd": "{projectRoot}" },
       "cache": false
     },
+    "platform-addresses": {
+      "command": "bun scripts/platform-addresses.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
     "db:generate": {
       "command": "drizzle-kit generate",
       "options": { "cwd": "{projectRoot}" },
@@ -40,6 +45,11 @@
     },
     "media-cors": {
       "command": "bun scripts/media-cors.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
+    "erasures:replay": {
+      "command": "bun src/replay-erasures.ts",
       "options": { "cwd": "{projectRoot}" },
       "cache": false
     },

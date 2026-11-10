@@ -278,6 +278,41 @@ layer(FileTest)("ChannelAccess", (it) => {
     })
   );
 
+  // The refresh sweep keeps idle channels' tokens alive; it is never what
+  // a call depends on. A token no sweep renewed, however long ago it ran
+  // out, is renewed by the call that needs it.
+  it.effect(
+    "renews a token no sweep ever renewed, weeks after it ran out",
+    () =>
+      Effect.gen(function* sweepBehind() {
+        const workspaceId = yield* freshWorkspace;
+        const now = yield* DateTime.now;
+
+        for (const platform of ["x", "tiktok", "youtube"] as const) {
+          const channel = yield* stored(workspaceId, {
+            platform,
+            token: {
+              _tag: "refreshable",
+              expiresAt: DateTime.subtractDuration(now, Duration.days(45)),
+            },
+          });
+
+          const { authorizer, calls } = yield* scripted(platform);
+          const { record, seen } = yield* recording();
+
+          yield* ChannelAccess.use((access) =>
+            access.withToken(channel.id, ({ accessToken }) =>
+              record(accessToken)
+            )
+          ).pipe(Effect.provide(accessWith(authorizer)));
+
+          assert.strictEqual(yield* calls, 1);
+          assert.deepStrictEqual(yield* seen, ["renewed-access-1"]);
+          assert.strictEqual(yield* statusOf(channel.id), "active");
+        }
+      })
+  );
+
   it.effect("renews a token the platform refused once, and calls again", () =>
     Effect.gen(function* renewsRefused() {
       const workspaceId = yield* freshWorkspace;
