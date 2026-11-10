@@ -255,7 +255,7 @@
         "budget": "Budget",
         "budgetValue": "{kind, select, daily {{amount} a day} other {{amount} for the whole run}}",
         "most": "The most it can cost",
-        "mostExplained": "{kind, select, daily {A daily budget counts for each of the {days, plural, one {# calendar day} other {# calendar days}} the run touches, and {percent, number}% more, which the ad network may spend above a daily budget on any day.} other {A budget for the whole run is never passed.}}",
+        "mostExplained": "{kind, select, daily {A daily budget counts for each of the {days, plural, one {# calendar day} other {# calendar days}} the run touches, with {percent, number}% more, which the ad network may spend above a daily budget on any day, and never more than {week, number} times it in a week, Sunday to Saturday.} other {A budget for the whole run is never passed.}}",
         "ceiling": "Monthly ceiling an owner set",
         "committed": "Already committed by this ad account’s other boosts",
         "capRoom": "Room left under the ad account’s own spend cap",

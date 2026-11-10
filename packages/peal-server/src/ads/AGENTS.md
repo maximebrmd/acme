@@ -36,9 +36,12 @@ weaken a rule below to make something pass.
   monthly ceiling in the account's currency (`SpendAuthorizations.decide`).
   The ceiling bounds what boosts made through Peal commit in each calendar
   month of the account's time zone; a boost counts whole in every month its
-  run touches. A total budget commits its amount; a daily budget its
-  amount for each calendar day touched, plus the 25% the network may add
-  on a day (`commitmentOf`). Every state but `failed` counts
+  run touches. A total budget commits its amount; a daily budget, for each
+  calendar week (Sunday to Saturday, the account's zone) the run touches,
+  175% of its amount for each day touched and never more than 7 times it
+  (`commitmentOf`, `committedWhenStopped`), the limits Meta's "About daily
+  budgets" page states; ad set budget sharing stays off, as it would allow
+  more. Every state but `failed` counts
   (`countsAgainstCeiling`); `committed` only ever goes down. A ceiling may
   always be lowered, under running boosts too; turning spending off, and
   disconnecting an account, are refused while a boost is requested, active

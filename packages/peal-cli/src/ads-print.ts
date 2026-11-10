@@ -1,5 +1,9 @@
 import { Effect } from "effect";
-import { dailyOverspendPercent, maxBoostAge } from "peal-contract";
+import {
+  dailyOverspendPercent,
+  maxBoostAge,
+  weeklySpendLimitDays,
+} from "peal-contract";
 import type {
   AdAccount,
   Boost,
@@ -115,7 +119,7 @@ export const amountsIn = (client: SignedInClient, workspaceId: string) =>
 export const budgetOf = (budget: BoostBudget, amount: string): string =>
   budget.kind === "total"
     ? `${amount} for the whole run`
-    : `${amount} a day, and up to ${String(dailyOverspendPercent)}% more on any one day`;
+    : `${amount} a day, up to ${String(dailyOverspendPercent)}% more on any one day and ${String(weeklySpendLimitDays)} times it in a week`;
 
 const age = (years: number): string =>
   years === maxBoostAge ? `${String(years)} and over` : String(years);

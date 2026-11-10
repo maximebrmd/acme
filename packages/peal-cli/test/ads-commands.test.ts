@@ -501,35 +501,38 @@ describe("peal ads boost quote", () => {
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
-  it.effect("counts a daily budget over its days, and a quarter more", () =>
-    Effect.gen(function* daily() {
-      const session = yield* withAds;
+  it.effect(
+    "counts a daily budget over its days, and up to 75% more on each",
+    () =>
+      Effect.gen(function* daily() {
+        const session = yield* withAds;
 
-      const quoted = parsed(
-        yield* session.printed(
-          boostArgs(
-            "quote",
-            {
-              "--daily": "4.35",
-              "--ends": "2026-11-13T10:00",
-              "--starts": "2026-11-10T10:00",
-              "--total": null,
-            },
-            "--json"
+        const quoted = parsed(
+          yield* session.printed(
+            boostArgs(
+              "quote",
+              {
+                "--daily": "4.35",
+                "--ends": "2026-11-13T10:00",
+                "--starts": "2026-11-10T10:00",
+                "--total": null,
+              },
+              "--json"
+            )
           )
-        )
-      );
+        );
 
-      // Four days of Paris, at 4.35 EUR, and 25% more: 21.75 EUR.
-      assert.deepInclude(quoted, {
-        commitment: 2175,
-        committed: 12_000,
-        currency: "EUR",
-        days: 4,
-        endsAt: "2026-11-13T09:00:00.000Z",
-        minorUnitDigits: 2,
-      });
-    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+        // Four days of Paris in one week, at 4.35 EUR, and 75% more on each:
+        // 30.45 EUR.
+        assert.deepInclude(quoted, {
+          commitment: 3045,
+          committed: 12_000,
+          currency: "EUR",
+          days: 4,
+          endsAt: "2026-11-13T09:00:00.000Z",
+          minorUnitDigits: 2,
+        });
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
   it.effect("refuses, before any request, what it can tell by itself", () =>

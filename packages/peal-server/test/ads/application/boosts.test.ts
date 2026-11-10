@@ -541,9 +541,9 @@ layer(AdsTest, { excludeTestServices: true })("boosting a post", (it) => {
           })
         );
 
-        // Three calendar days at 10.00, and a quarter more on any of them.
+        // Three calendar days at 10.00, and up to 75% more on each of them.
         assert.strictEqual(quote.plan.days, 3);
-        assert.strictEqual(quote.plan.committed, 3750);
+        assert.strictEqual(quote.plan.committed, 5250);
         assert.strictEqual(quote.room.ceiling, 20_000);
         assert.strictEqual(quote.room.committed, 5000);
         // A quote reserves nothing.

@@ -11,11 +11,7 @@ import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 
 import { Audience, reachesEu } from "./audience.ts";
 import type { BoostViolation } from "./boost-violation.ts";
-import {
-  calendarDays,
-  commitmentOf,
-  dailyOverspendPercent,
-} from "./commitment.ts";
+import { calendarDays, commitmentOf } from "./commitment.ts";
 import {
   AdAccountIdSchema,
   BoostIdSchema,
@@ -445,11 +441,11 @@ export const committedWhenStopped = (
 
   const until = DateTime.isLessThan(now, boost.endsAt) ? now : boost.endsAt;
 
-  const ran = Math.ceil(
-    (boost.budget.amount *
-      calendarDays(boost.activatedAt.value, until, timeZone) *
-      (100 + dailyOverspendPercent)) /
-      100
+  const ran = commitmentOf(
+    boost.budget,
+    boost.activatedAt.value,
+    until,
+    timeZone
   );
 
   return Math.min(boost.committed, ran);

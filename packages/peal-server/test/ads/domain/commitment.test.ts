@@ -72,8 +72,9 @@ describe(commitmentOf, () => {
     ).toBe(5000);
   });
 
-  it("commits a daily budget for every day touched, with the share the network may add", () => {
-    // 8 calendar days, 10.00 a day, a quarter more on any of them.
+  it("commits a daily budget as the network may spend it: 175% a day, 7 days' worth a calendar week", () => {
+    // Tuesday 10 to Tuesday 17 November: five days of the week that ends
+    // on Saturday 14, capped at 7 days' worth, then three days of the next.
     expect(
       commitmentOf(
         { _tag: "daily", amount: 1000 },
@@ -81,7 +82,42 @@ describe(commitmentOf, () => {
         at("2026-11-17T12:00:00Z"),
         utc
       )
-    ).toBe(10_000);
+    ).toBe(12_250);
+  });
+
+  it("commits a short run at 175% of each day's budget", () => {
+    // Two days of 100.00: up to 175.00 on each.
+    expect(
+      commitmentOf(
+        { _tag: "daily", amount: 10_000 },
+        at("2026-11-10T09:00:00Z"),
+        at("2026-11-11T09:00:00Z"),
+        utc
+      )
+    ).toBe(35_000);
+  });
+
+  it("commits a whole week, Sunday to Saturday, at 7 days' worth", () => {
+    expect(
+      commitmentOf(
+        { _tag: "daily", amount: 1000 },
+        at("2026-11-08T00:00:00Z"),
+        at("2026-11-14T23:00:00Z"),
+        utc
+      )
+    ).toBe(7000);
+  });
+
+  it("counts the weeks in the account's zone", () => {
+    // Saturday 23:30 in UTC is Sunday in Auckland: a new week there.
+    expect(
+      commitmentOf(
+        { _tag: "daily", amount: 1000 },
+        at("2026-11-07T23:30:00Z"),
+        at("2026-11-07T23:45:00Z"),
+        TimeZoneIdSchema.make("Pacific/Auckland")
+      )
+    ).toBe(1750);
   });
 
   it("rounds a daily commitment up", () => {
@@ -92,7 +128,7 @@ describe(commitmentOf, () => {
         at("2026-11-10T23:00:00Z"),
         utc
       )
-    ).toBe(417);
+    ).toBe(583);
   });
 });
 

@@ -329,16 +329,16 @@ describe(committedWhenStopped, () => {
   it("counts the days a daily budget ran, with the network's share", () => {
     const daily = Result.getOrThrow(
       activated(
-        boost({ budget: { _tag: "daily", amount: 1000 }, committed: 10_000 }),
+        boost({ budget: { _tag: "daily", amount: 1000 }, committed: 12_250 }),
         now
       )
     );
 
-    // The 10th, 11th and 12th: three days at 12.50 at most.
-    expect(committedWhenStopped(daily, later, utc)).toBe(3750);
+    // The 10th, 11th and 12th: three days at 17.50 at most.
+    expect(committedWhenStopped(daily, later, utc)).toBe(5250);
     // Never more than it committed at first.
     expect(committedWhenStopped(daily, at("2026-12-25T00:00:00Z"), utc)).toBe(
-      10_000
+      12_250
     );
   });
 });

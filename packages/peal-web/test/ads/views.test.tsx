@@ -239,14 +239,14 @@ describe(BoostSummaryView, () => {
   it("explains the most a daily budget can cost, which the button names", async () => {
     const html = await summary("en", {
       boost: boostOf({ ...ready, amount: "10", kind: "daily" }),
-      quote: { ...totalQuote, capRoom: null, commitment: 10_000 },
+      quote: { ...totalQuote, capRoom: null, commitment: 12_250 },
     });
 
     expect(html).toContain("€10.00 a day");
     expect(html).toContain(
-      "A daily budget counts for each of the 8 calendar days the run touches, and 25% more, which the ad network may spend above a daily budget on any day."
+      "A daily budget counts for each of the 8 calendar days the run touches, with 75% more, which the ad network may spend above a daily budget on any day, and never more than 7 times it in a week, Sunday to Saturday."
     );
-    expect(html).toMatch(/<button[^>]*>Spend up to €100.00 until Nov 17</u);
+    expect(html).toMatch(/<button[^>]*>Spend up to €122.50 until Nov 17</u);
     expect(html).not.toContain(
       "Room left under the ad account’s own spend cap"
     );

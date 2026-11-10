@@ -97,9 +97,9 @@ The ad network bills the advertiser directly, on the ad account's payment method
 Before a boost is accepted, Peal counts the most it can cost, its **commitment**:
 
 - a `total` budget commits its amount;
-- a `daily` budget commits its amount, for each calendar day of the account's time zone the run touches, and 25% more, as the network may spend up to 25% more than a daily budget on any one day.
+- a `daily` budget commits, for each calendar week of the account's time zone (Sunday to Saturday) the run touches, its amount and 75% more for each day of the run in that week, and never more than 7 times its amount in a week. Meta's page "About daily budgets" says why: on any day the network may spend up to 75% over a daily budget, 175% of it, and in a week ending on Saturday at midnight never more than 7 times it.
 
-A daily budget of 10.00 € over a run that touches 7 days commits 87.50 €.
+A daily budget of 10.00 € over a run of two days commits 35.00 €. Over a whole week, Sunday to Saturday, it commits 70.00 €.
 
 ### The monthly ceiling [#ceiling]
 

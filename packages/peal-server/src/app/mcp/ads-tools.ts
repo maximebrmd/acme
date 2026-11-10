@@ -13,6 +13,7 @@ import {
   BoostSchema,
   CurrentMember,
   dailyOverspendPercent,
+  weeklySpendLimitDays,
   maxBoostRunDays,
   NewBoostSchema,
   PostAdPerformanceSchema,
@@ -154,7 +155,7 @@ export const GetBoost = Tool.make("get_boost", {
 
 export const QuoteBoost = Tool.make("quote_boost", {
   dependencies: [CurrentMember],
-  description: `Checks a boost exactly as boost_post would, and answers the most it can cost (commitment), the days it runs, the monthly ceiling and what the account's other boosts already commit, without reserving or sending anything. Always call it before boost_post, and show the user the result. A total budget commits its amount; a daily budget commits its amount for each calendar day the run touches and ${String(dailyOverspendPercent)}% more, which the ad network may add on any day. ${amounts}`,
+  description: `Checks a boost exactly as boost_post would, and answers the most it can cost (commitment), the days it runs, the monthly ceiling and what the account's other boosts already commit, without reserving or sending anything. Always call it before boost_post, and show the user the result. A total budget commits its amount; a daily budget commits, for each calendar week (Sunday to Saturday, in the account's zone) the run touches, its amount and ${String(dailyOverspendPercent)}% more for each day of the run in that week, as the ad network may spend that much on any day, and never more than ${String(weeklySpendLimitDays)} times its amount in a week. ${amounts}`,
   failure: ToolRefused,
   parameters: Schema.Struct(boostFields),
   success: BoostQuoteSchema,

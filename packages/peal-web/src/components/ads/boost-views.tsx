@@ -4,6 +4,7 @@ import { DateTime } from "effect";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import {
   dailyOverspendPercent,
+  weeklySpendLimitDays,
   maxBoostAge,
   maxBoostCountries,
   maxBoostPartyLength,
@@ -537,6 +538,7 @@ export const BoostSummaryView = ({
               days: quote.days,
               kind: boost.budget.kind,
               percent: dailyOverspendPercent,
+              week: weeklySpendLimitDays,
             })}
           </span>
         </Line>

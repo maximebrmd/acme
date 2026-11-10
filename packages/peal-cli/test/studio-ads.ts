@@ -444,6 +444,8 @@ const checkBoost = (studio: Studio, workspaceId: string, asked: NewBoost) =>
         aDay +
       1;
 
+    // The tests' daily runs stay within a week, under its cap of 7 days'
+    // worth, which the server counts too.
     const commitment =
       asked.budget.kind === "total"
         ? asked.budget.amount

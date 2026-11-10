@@ -1282,6 +1282,7 @@ export {
   BoostStepSchema,
   CampaignObjectiveSchema,
   dailyOverspendPercent,
+  weeklySpendLimitDays,
   maxAdAccountsPerRequest,
   maxAdAmount,
   maxBoostAge,

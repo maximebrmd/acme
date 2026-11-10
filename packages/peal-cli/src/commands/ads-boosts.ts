@@ -5,6 +5,7 @@ import {
   BoostQuoteSchema,
   BoostSchema,
   dailyOverspendPercent,
+  weeklySpendLimitDays,
   maxBoostAge,
   maxBoostCountries,
   maxBoostRunDays,
@@ -107,7 +108,7 @@ const boostFlags = {
   ),
   daily: amountFlag(
     "daily",
-    `The budget for each day of the run, in the currency's units, such as 10 or 10.50. The ad network may spend up to ${String(dailyOverspendPercent)}% more on any one day. One of --total and --daily is required.`
+    `The budget for each day of the run, in the currency's units, such as 10 or 10.50. The ad network may spend up to ${String(dailyOverspendPercent)}% more on any one day, and up to ${String(weeklySpendLimitDays)} times it in a week, Sunday to Saturday: the quote counts that much. One of --total and --daily is required.`
   ),
   ends: Flag.String("ends").pipe(
     Flag.withMetavar("<instant>"),

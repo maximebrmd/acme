@@ -76,9 +76,16 @@ export const adInsightRetentionDays = 396;
 
 /**
  * The share over a daily budget an ad network may spend on one day, which
- * Peal counts when it says what a daily budget commits.
+ * Peal counts when it says what a daily budget commits: Meta spends up to
+ * 175% of a daily budget in a day.
  */
-export const dailyOverspendPercent = 25;
+export const dailyOverspendPercent = 75;
+
+/**
+ * The most a daily budget costs in a calendar week, Sunday to Saturday, in
+ * days of it: Meta spends at most 7 times a daily budget in a week.
+ */
+export const weeklySpendLimitDays = 7;
 
 const CurrencySchema = Schema.String.check(
   Schema.isPattern(/^[A-Z]{3}$/u)
@@ -833,7 +840,7 @@ export class AdsApi extends HttpApiGroup.make("ads")
       success: BoostQuoteSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Checks a boost as \`createBoost\` would, and says what it would commit and the room it has, without reserving or sending anything: show it before the last step. A total budget commits its amount; a daily budget commits its amount for each calendar day of the account's zone the run touches, and ${dailyOverspendPercent}% more, which the network may add on any day. Needs ads:spend.`,
+        description: `Checks a boost as \`createBoost\` would, and says what it would commit and the room it has, without reserving or sending anything: show it before the last step. A total budget commits its amount; a daily budget commits, for each calendar week of the account's zone (Sunday to Saturday) the run touches, its amount and ${dailyOverspendPercent}% more for each day of the run in that week, which the network may spend on any day, and never more than ${weeklySpendLimitDays} times its amount, the most the network spends in a week. Needs ads:spend.`,
         summary: "Check a boost and what it would commit",
       })
     ),

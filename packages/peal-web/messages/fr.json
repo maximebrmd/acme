@@ -255,7 +255,7 @@
         "budget": "Budget",
         "budgetValue": "{kind, select, daily {{amount} par jour} other {{amount} pour toute la durée}}",
         "most": "Ce qu’elle peut coûter au plus",
-        "mostExplained": "{kind, select, daily {Un budget quotidien compte pour chacun des {days, plural, one {# jour civil} other {# jours civils}} que touche la mise en avant, plus {percent, number} %, que le réseau publicitaire peut dépenser au-delà d’un budget quotidien n’importe quel jour.} other {Un budget pour toute la durée n’est jamais dépassé.}}",
+        "mostExplained": "{kind, select, daily {Un budget quotidien compte pour chacun des {days, plural, one {# jour civil} other {# jours civils}} que touche la mise en avant, plus {percent, number} %, que le réseau publicitaire peut dépenser au-delà d’un budget quotidien n’importe quel jour, et jamais plus de {week, number} fois ce budget par semaine, du dimanche au samedi.} other {Un budget pour toute la durée n’est jamais dépassé.}}",
         "ceiling": "Plafond mensuel fixé par un propriétaire",
         "committed": "Déjà engagé par les autres mises en avant de ce compte publicitaire",
         "capRoom": "Marge restante sous le plafond de dépenses propre au compte publicitaire",
