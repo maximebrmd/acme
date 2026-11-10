@@ -50,7 +50,9 @@ you change before you change it. The ones contributors meet first:
   logs, screenshots or test artifacts.
 - **Synthetic credentials never look real.** Write `sk_test_synthetic_…`,
   not a prefix followed by as many characters as a real key has: GitHub's push
-  protection refuses a branch for one such value, even after it is removed.
+  protection refuses a branch for one such value, even after it is removed,
+  and CI scans every commit for secrets with Betterleaks
+  (`.betterleaks.toml`): a value that says `synthetic` passes.
 - **No other products by name.** Do not name a competitor or another product
   in code, comments, docs, commits, pull requests or issues. Describe the
   behaviour instead.
