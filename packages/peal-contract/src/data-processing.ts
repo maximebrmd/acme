@@ -28,8 +28,13 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  * - `legalIdentity`, `legalAccount`, `legalConnections`,
  *   `legalDisclosures`: what French law has a host keep
  *   (`legal/domain/legal-retention.ts`);
- * - `contracts`, `trialMemory`: orders, withdrawals and trials
- *   (`billing/domain/contract-retention.ts`, `trial-memory.ts`);
+ * - `contracts`, `trialMemory`: orders, withdrawals, requests to cancel
+ *   or withdraw, and trials (`billing/domain/contract-retention.ts`,
+ *   `trial-memory.ts`);
+ * - `webhookDeliveries`: a webhook endpoint's delivery log
+ *   (`webhooks/domain/delivery-policy.ts`);
+ * - `idempotencyKeys`: the keys of the requests that make a post in one
+ *   call (`publishing/domain/idempotency.ts`);
  * - `erasureLedger`: the record of deletions kept outside the database
  *   (`workspace/domain/erasure-ledger.ts`), a little longer than `backups`;
  * - `exportLinks`: the links an export gives to media files;
@@ -45,6 +50,7 @@ export const retentionPeriods = {
   contracts: { years: 5 },
   erasureLedger: { days: 42 },
   exportLinks: { days: 7 },
+  idempotencyKeys: { hours: 24 },
   invoices: { years: 10 },
   legalAccount: { years: 1 },
   legalConnections: { years: 1 },
@@ -54,6 +60,7 @@ export const retentionPeriods = {
   serverLogs: { days: 31 },
   traces: { days: 14 },
   trialMemory: { years: 2 },
+  webhookDeliveries: { days: 30 },
 } as const;
 
 const p = retentionPeriods;
@@ -135,8 +142,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The posts, media and schedules of your workspaces, the history of each publication, and the figures the platforms report for your posts",
-      fr: "Les publications, médias et planifications de vos espaces de travail, l’historique de chaque mise en ligne, et les chiffres que les plateformes communiquent pour vos publications",
+      en: "The posts, media and schedules of your workspaces, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts; for a post made in one call with an idempotency key, a digest of that key and of its request, never either",
+      fr: "Les publications, médias et planifications de vos espaces de travail, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre",
     },
     id: "content",
     legalBasis: contract,
@@ -150,8 +157,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Planifier et mettre en ligne vos publications, et montrer leurs résultats",
     },
     retention: {
-      en: "Until a member deletes the post or the file, or the workspace is deleted. The posts you wrote in a workspace you share stay with it when you close your account, without your name",
-      fr: "Jusqu’à ce qu’un membre supprime la publication ou le fichier, ou que l’espace de travail soit supprimé. Les publications que vous avez écrites dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom",
+      en: `Until a member deletes the post or the file, or the workspace is deleted. The posts you wrote or scheduled in a workspace you share stay with it when you close your account, without your name. Idempotency key digests: ${p.idempotencyKeys.hours} hours`,
+      fr: `Jusqu’à ce qu’un membre supprime la publication ou le fichier, ou que l’espace de travail soit supprimé. Les publications que vous avez écrites ou programmées dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures`,
     },
     source: {
       en: "You and the other members of your workspaces; the platforms you connected, for the figures",
@@ -237,6 +244,32 @@ export const processingRegister: readonly ProcessingCategory[] = [
     },
   },
   {
+    applies: "always",
+    data: {
+      en: "The addresses a workspace has Peal call when something happens in it, with their description, the events each wants and its signing secret, stored encrypted; the events sent (identifiers, states and times, never what a post says) and, for each delivery, its attempts, the receiver’s status code and the start of its answer",
+      fr: "Les adresses qu’un espace de travail fait appeler par Peal quand il s’y passe quelque chose, avec leur description, les événements que chacune veut recevoir et son secret de signature, stocké chiffré ; les événements envoyés (identifiants, états et dates, jamais le texte d’une publication) et, pour chaque livraison, ses tentatives, le code de réponse du destinataire et le début de sa réponse",
+    },
+    id: "webhooks",
+    legalBasis: contract,
+    name: {
+      en: "Webhook endpoints and delivery logs",
+      fr: "Points de terminaison de webhooks et journaux de livraison",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Tell the systems a workspace names what happens in it, and show its owners and admins whether each delivery arrived",
+      fr: "Prévenir les systèmes qu’un espace de travail désigne de ce qui s’y passe, et montrer à ses propriétaires et administrateurs si chaque livraison est arrivée",
+    },
+    retention: {
+      en: `Endpoints: until an owner or admin deletes them, or the workspace is deleted. Events and deliveries: ${p.webhookDeliveries.days} days`,
+      fr: `Points de terminaison : jusqu’à leur suppression par un propriétaire ou un administrateur, ou celle de l’espace de travail. Événements et livraisons : ${p.webhookDeliveries.days} jours`,
+    },
+    source: {
+      en: "The owners and admins of your workspaces, for the endpoints; the service, from what happens to posts, channels and media; the receiving server, for its answers",
+      fr: "Les propriétaires et administrateurs de vos espaces de travail, pour les points de terminaison ; le service, d’après ce qui arrive aux publications, aux canaux et aux médias ; le serveur destinataire, pour ses réponses",
+    },
+  },
+  {
     applies: "billing",
     data: {
       en: "Each workspace’s plan and the status of its subscription. Payment details and invoices are held by the payment provider",
@@ -268,30 +301,30 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "billing",
     data: {
-      en: "Each order placed before paying, with the consent given and the version of its words; the trial each account and workspace started; each withdrawal and what it refunded",
-      fr: "Chaque commande passée avant de payer, avec le consentement donné et la version de ses termes ; l’essai que chaque compte et chaque espace de travail a commencé ; chaque rétractation et ce qu’elle a remboursé",
+      en: "Each order placed before paying, with the consent given and the version of its words; the trial each account and workspace started; each withdrawal and what it refunded; each request to cancel a contract or to withdraw from it, with the date and time it was received, what became of it and its acknowledgement, and, when it came through the form that needs no account, what was written there (the name, the email address for the acknowledgement, the contract, the day wanted)",
+      fr: "Chaque commande passée avant de payer, avec le consentement donné et la version de ses termes ; l’essai que chaque compte et chaque espace de travail a commencé ; chaque rétractation et ce qu’elle a remboursé ; chaque demande de résiliation ou de rétractation, avec la date et l’heure de sa réception, la suite qui lui a été donnée et son accusé de réception, et, lorsqu’elle a été envoyée par le formulaire accessible sans compte, ce qui y a été indiqué (le nom, l’adresse e-mail de l’accusé de réception, le contrat, la date souhaitée)",
     },
     id: "contracts",
     legalBasis: {
-      en: "Legal obligation (GDPR Article 6(1)(c)): proving the request to start at once and the information on withdrawal (Directive 2011/83/EU, Articles 7(3) and 8(8)); performance of a contract (point (b)); legitimate interests (point (f)): giving each person one trial",
-      fr: "Obligation légale (RGPD, article 6, paragraphe 1, point c) : prouver la demande de commencer immédiatement et l’information sur la rétractation (directive 2011/83/UE, articles 7, paragraphe 3, et 8, paragraphe 8) ; exécution d’un contrat (point b) ; intérêts légitimes (point f) : n’accorder qu’un essai par personne",
+      en: "Legal obligation (GDPR Article 6(1)(c)): proving the request to start at once and the information on withdrawal (Directive 2011/83/EU, Articles 7(3) and 8(8)), and receiving and acknowledging requests to cancel or withdraw (French Consumer Code, articles L215-1-1 and L221-21); performance of a contract (point (b)); legitimate interests (point (f)): giving each person one trial, keeping strangers from ending a contract, and proving what was asked and when",
+      fr: "Obligation légale (RGPD, article 6, paragraphe 1, point c) : prouver la demande de commencer immédiatement et l’information sur la rétractation (directive 2011/83/UE, articles 7, paragraphe 3, et 8, paragraphe 8), et recevoir les demandes de résiliation ou de rétractation et en accuser réception (Code de la consommation, articles L215-1-1 et L221-21) ; exécution d’un contrat (point b) ; intérêts légitimes (point f) : n’accorder qu’un essai par personne, empêcher un tiers de mettre fin à un contrat, et prouver ce qui a été demandé et quand",
     },
     name: {
-      en: "Orders, trials and withdrawals",
-      fr: "Commandes, essais et rétractations",
+      en: "Orders, trials, withdrawals and contract requests",
+      fr: "Commandes, essais, rétractations et demandes sur les contrats",
     },
     operatorSet: false,
     purposes: {
-      en: "Record each order and its consent, and handle the trial and withdrawals",
-      fr: "Consigner chaque commande et son consentement, et gérer l’essai et les rétractations",
+      en: "Record each order and its consent, handle the trial and withdrawals, and receive, acknowledge and apply requests to cancel a contract or withdraw from it",
+      fr: "Consigner chaque commande et son consentement, gérer l’essai et les rétractations, et recevoir les demandes de résiliation ou de rétractation, en accuser réception et les appliquer",
     },
     retention: {
-      en: `Orders and withdrawals: while their workspace exists, then ${years(p.contracts.years).en} after it is deleted if it had a subscription, the period in which a claim about the contract can be brought; closing your account removes you from them. That an account or a workspace had its trial: as long as either exists, and ${years(p.trialMemory.years).en} after the account closes, by a keyed pseudonym of its email address, so the same address gets no second trial`,
-      fr: `Commandes et rétractations : tant que leur espace de travail existe, puis ${years(p.contracts.years).fr} après sa suppression s’il avait un abonnement, le délai pour agir en justice au sujet du contrat ; la fermeture de votre compte vous en retire. Le fait qu’un compte ou un espace de travail a eu son essai : tant que l’un des deux existe, et ${years(p.trialMemory.years).fr} après la fermeture du compte, par un pseudonyme chiffré de son adresse e-mail, pour que la même adresse n’ait pas de second essai`,
+      en: `Orders, withdrawals and requests to cancel or withdraw: while their workspace exists, then ${years(p.contracts.years).en} after it is deleted if it had a subscription, the period in which a claim about the contract can be brought; a request no contract was found for, ${years(p.contracts.years).en} from its receipt; closing your account removes you from them, with the name and the address you wrote in a request. That an account or a workspace had its trial: as long as either exists, and ${years(p.trialMemory.years).en} after the account closes, by a keyed pseudonym of its email address, so the same address gets no second trial`,
+      fr: `Commandes, rétractations et demandes de résiliation ou de rétractation : tant que leur espace de travail existe, puis ${years(p.contracts.years).fr} après sa suppression s’il avait un abonnement, le délai pour agir en justice au sujet du contrat ; une demande pour laquelle aucun contrat n’a été trouvé, ${years(p.contracts.years).fr} à compter de sa réception ; la fermeture de votre compte vous en retire, avec le nom et l’adresse indiqués dans une demande. Le fait qu’un compte ou un espace de travail a eu son essai : tant que l’un des deux existe, et ${years(p.trialMemory.years).fr} après la fermeture du compte, par un pseudonyme chiffré de son adresse e-mail, pour que la même adresse n’ait pas de second essai`,
     },
     source: {
-      en: "You, when you order, start a trial or withdraw",
-      fr: "Vous, lorsque vous commandez, commencez un essai ou vous rétractez",
+      en: "You, when you order, start a trial, withdraw, or ask to cancel or withdraw, signed in or through the form that needs no account",
+      fr: "Vous, lorsque vous commandez, commencez un essai, vous rétractez, ou demandez une résiliation ou une rétractation, connecté ou par le formulaire accessible sans compte",
     },
   },
   {
