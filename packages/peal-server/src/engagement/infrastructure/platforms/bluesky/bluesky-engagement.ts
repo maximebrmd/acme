@@ -20,6 +20,7 @@ import type {
   OutgoingReply,
   PlatformHttp,
 } from "#engagement/infrastructure/platforms/engagement-platform.ts";
+import { threadBodyOf } from "#engagement/infrastructure/platforms/thread-body.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
 import { sessionOf } from "#shared/infrastructure/platforms/bluesky/bluesky-session.ts";
 import type { BlueskySession } from "#shared/infrastructure/platforms/bluesky/bluesky-session.ts";
@@ -31,6 +32,11 @@ export interface BlueskyEngagementOptions {
   /** The AppView that serves threads to anyone: Bluesky's public one. */
   readonly appView: URL;
   readonly http: PlatformHttp;
+  /**
+   * The client threads are read with, whose answers end at
+   * `maxThreadBytes` rather than fail past a megabyte; `http` otherwise.
+   */
+  readonly reader?: PlatformHttp;
   /** How long a read may keep the channel's gate. */
   readonly deadline?: Duration.Duration;
 }
@@ -101,9 +107,7 @@ const ThreadNodeSchema: Schema.Codec<ThreadNode, unknown> = Schema.Struct({
   ),
 });
 
-const threadOf = HttpClientResponse.schemaBodyJson(
-  Schema.Struct({ thread: ThreadNodeSchema })
-);
+const threadOf = threadBodyOf(Schema.Struct({ thread: ThreadNodeSchema }));
 
 const postsOf = HttpClientResponse.schemaBodyJson(
   Schema.Struct({
@@ -276,6 +280,7 @@ export const blueskyEngagement = Effect.fn("BlueskyEngagement.make")(
   function* blueskyEngagement(options: BlueskyEngagementOptions) {
     const access = yield* ChannelAccess;
     const { appView, http } = options;
+    const reader = options.reader ?? http;
     const dpop = yield* dpopSender(http);
     const deadlineAfter = options.deadline ?? defaultDeadline;
 
@@ -290,7 +295,7 @@ export const blueskyEngagement = Effect.fn("BlueskyEngagement.make")(
           reading: { _tag: "failed", threadId: thread.threadId },
         };
 
-        const sent = yield* http
+        const sent = yield* reader
           .get(new URL("/xrpc/app.bsky.feed.getPostThread", appView), {
             urlParams: {
               depth: String(threadDepth),
@@ -329,13 +334,13 @@ export const blueskyEngagement = Effect.fn("BlueskyEngagement.make")(
           return failedOn;
         }
 
-        const found = yield* threadOf(response).pipe(Effect.option);
+        const found = yield* threadOf(response);
 
         if (Option.isNone(found)) {
           return failedOn;
         }
 
-        const root = found.value.thread;
+        const root = found.value.body.thread;
 
         // A root without a post is one the AppView does not show.
         if (root.post === undefined) {
@@ -347,7 +352,8 @@ export const blueskyEngagement = Effect.fn("BlueskyEngagement.make")(
           return step;
         }
 
-        const walked: Walked = { comments: [], complete: true };
+        // An answer cut off lost the end of some replies' lists.
+        const walked: Walked = { comments: [], complete: found.value.whole };
 
         walk(
           root,

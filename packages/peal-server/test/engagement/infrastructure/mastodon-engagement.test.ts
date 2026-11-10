@@ -6,9 +6,13 @@ import { TestClock } from "effect/testing";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import type { ReplyFailure } from "#engagement/domain/reply.ts";
 import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodon/mastodon-engagement.ts";
+import { maxThreadBytes } from "#engagement/infrastructure/platforms/thread-body.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
-import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
+import {
+  publicHttpClient,
+  publicHttpClientWith,
+} from "#shared/infrastructure/platforms/public-http.ts";
 import { channelAccessOf } from "#test/analytics/access-log.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 import { replyId, threadId } from "#test/engagement/support.ts";
@@ -58,6 +62,8 @@ const bodyOf = jsonBodyOf(
 const onServer = Effect.fnUntraced(function* onServer(
   handle: (request: PlatformRequest) => PlatformAnswer,
   options: {
+    /** Where the answers threads are read from end. */
+    readonly readerBytes?: number;
     readonly scopes?: readonly string[];
     readonly tokens?: readonly string[];
   } = {}
@@ -75,6 +81,11 @@ const onServer = Effect.fnUntraced(function* onServer(
   const platform = yield* Effect.gen(function* building() {
     return yield* mastodonEngagement({
       http: yield* publicHttpClient,
+      reader: yield* publicHttpClientWith({
+        maxResponseBytes: options.readerBytes ?? maxThreadBytes,
+        overflow: "truncate",
+        timeout: "20 seconds",
+      }),
       scheme: "http:",
     });
   }).pipe(
@@ -111,6 +122,17 @@ const outgoing = {
   rootPlatformPostId: "1001",
   text: "@reader@social.example Thank you!",
 };
+
+// A context of `length` replies, each answering the one before it.
+const chain = (length: number) =>
+  json({
+    ancestors: [],
+    descendants: Array.from({ length }, (_, index) =>
+      status(String(3000 + index), {
+        in_reply_to_id: index === 0 ? "1001" : String(2999 + index),
+      })
+    ),
+  });
 
 // How a resumed reply ends on a server that answers `answer`.
 const resumed = (answer: PlatformAnswer) =>
@@ -234,6 +256,65 @@ describe("Mastodon's comments", () => {
             ["2003", false, "1003"],
           ]
         );
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "reads the start of a thread too large for one answer, and says it is not all of it",
+    () =>
+      Effect.gen(function* readsLarge() {
+        // Three thousand replies: more than the answer Peal reads holds.
+        const { account, platform } = yield* onServer(
+          () =>
+            json({
+              ancestors: [],
+              descendants: Array.from({ length: 3000 }, (_, index) =>
+                status(String(5000 + index))
+              ),
+            }),
+          { readerBytes: 64 * 1024 }
+        );
+
+        const batch = yield* platform.read(account, toRead);
+        const [reading] = batch.readings;
+
+        // Not failed, which would put the thread off for ever.
+        assert.strictEqual(reading?._tag, "read");
+
+        if (reading?._tag !== "read") {
+          return;
+        }
+
+        assert.isAbove(reading.comments.length, 100);
+        assert.isBelow(reading.comments.length, 3000);
+        assert.strictEqual(reading.comments[0]?.platformCommentId, "5000");
+        // So a comment the read did not reach is not taken for deleted.
+        assert.isFalse(reading.complete);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "takes a signed-out read that goes twenty replies deep for a part of the thread",
+    () =>
+      Effect.gen(function* readsDeep() {
+        const signedOut = { scopes: ["write:statuses"] };
+
+        const deep = yield* onServer(() => chain(20), signedOut);
+        const shallow = yield* onServer(() => chain(19), signedOut);
+        const signedIn = yield* onServer(() => chain(20));
+
+        const completeOn = (on: typeof deep): Effect.Effect<boolean | string> =>
+          on.platform.read(on.account, toRead).pipe(
+            Effect.map(({ readings: [reading] }) =>
+              reading?._tag === "read" ? reading.complete : "not read"
+            ),
+            Effect.orElseSucceed(() => "refused")
+          );
+
+        // Mastodon gives a signed-out read twenty levels at most.
+        assert.isFalse(yield* completeOn(deep));
+        assert.isTrue(yield* completeOn(shallow));
+        assert.isTrue(yield* completeOn(signedIn));
       }).pipe(Effect.scoped)
   );
 

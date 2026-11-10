@@ -85,7 +85,9 @@ You can also mark a comment as answered when it needs no reply. A comment the ac
 
 `GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` and each thread answer the same for one channel: `available`, `reconnect` (the account was connected before Peal asked for what the ability takes: disconnect the channel and [connect the account again](/channels)), or `unsupported`.
 
-On Mastodon, replies to public and unlisted posts are read; Peal reads them with the account's access when the account allowed it, which shows every reply, and without it otherwise, which shows the first 60. On Bluesky, Peal reads the thread from Bluesky's public service, without the account's session.
+On Mastodon, replies to public and unlisted posts are read; Peal reads them with the account's access when the account allowed it, which shows every reply, and without it otherwise, which shows the first 60, twenty replies deep at most. On Bluesky, Peal reads the thread from Bluesky's public service, without the account's session.
+
+A thread keeps its first 500 comments. Under a post with thousands of replies, Peal reads as far as that and no further: the comments past them stay on the platform, and are not shown here.
 
 ### Other platforms [#other-platforms]
 

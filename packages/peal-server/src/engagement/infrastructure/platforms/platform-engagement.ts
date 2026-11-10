@@ -30,9 +30,13 @@ import type {
   OutgoingReply,
 } from "#engagement/infrastructure/platforms/engagement-platform.ts";
 import { mastodonEngagement } from "#engagement/infrastructure/platforms/mastodon/mastodon-engagement.ts";
+import { maxThreadBytes } from "#engagement/infrastructure/platforms/thread-body.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
-import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
+import {
+  publicHttpClient,
+  publicHttpClientWith,
+} from "#shared/infrastructure/platforms/public-http.ts";
 
 /** Where the platforms' comments are read. */
 export interface EngagementSettings {
@@ -77,13 +81,23 @@ export const platformEngagementWith = (settings: EngagementSettings) =>
       const store = yield* EngagementStore;
       const http = yield* publicHttpClient;
 
+      // Threads are read with answers that end at `maxThreadBytes`: a post
+      // with thousands of replies is read as far as that, never dropped.
+      const reader = yield* publicHttpClientWith({
+        maxResponseBytes: maxThreadBytes,
+        overflow: "truncate",
+        timeout: "20 seconds",
+      });
+
       const platforms: Readonly<Record<EngagedPlatform, EngagementPlatform>> = {
         bluesky: yield* blueskyEngagement({
           appView: settings.blueskyAppView,
           http,
+          reader,
         }),
         mastodon: yield* mastodonEngagement({
           http,
+          reader,
           scheme: settings.mastodonScheme,
         }),
       };

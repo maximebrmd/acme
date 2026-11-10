@@ -46,6 +46,15 @@
   enough for the longest post), so comments under every part are kept, a
   part is the account's own reply and never a comment, and a comment
   under a later part answers the post (`parentId` null).
+- Threads are read with a client of their own (`reader`,
+  `overflow: "truncate"`): an answer ends at `maxThreadBytes` (8 MiB)
+  instead of failing past a megabyte, and `threadBodyOf` keeps what it
+  held whole before the cut (`closedJson`), far more than the
+  `commentsPerThread` a thread keeps. A read is `complete` only when the
+  answer came whole and the platform gave all it has: never for a
+  truncated answer, nor for Mastodon's signed-out context once it is 60
+  statuses long or 20 replies deep. Only a complete read may take a
+  comment it did not see for deleted.
 - A reply follows publishing's contract, under one rule: a public reply is
   never sent twice, and never sent after a person was told it did not go
   out. `EngagementReplies.reply` checks the permission, the comment, the

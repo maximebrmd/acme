@@ -9,10 +9,14 @@ import {
   blueskyEngagement,
   threadDepth,
 } from "#engagement/infrastructure/platforms/bluesky/bluesky-engagement.ts";
+import { maxThreadBytes } from "#engagement/infrastructure/platforms/thread-body.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { recordKeyOf } from "#shared/infrastructure/platforms/bluesky/record-key.ts";
-import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
+import {
+  publicHttpClient,
+  publicHttpClientWith,
+} from "#shared/infrastructure/platforms/public-http.ts";
 import { channelAccessOf } from "#test/analytics/access-log.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 import { replyId, threadId } from "#test/engagement/support.ts";
@@ -74,7 +78,9 @@ const WriteSchema = Schema.Struct({
 const writeOf = jsonBodyOf(WriteSchema);
 
 const onNetwork = Effect.fnUntraced(function* onNetwork(
-  handle: (request: PlatformRequest) => PlatformAnswer
+  handle: (request: PlatformRequest) => PlatformAnswer,
+  // Where the answers threads are read from end.
+  readerBytes: number = maxThreadBytes
 ) {
   const server = yield* platformServer(handle);
 
@@ -97,6 +103,11 @@ const onNetwork = Effect.fnUntraced(function* onNetwork(
     return yield* blueskyEngagement({
       appView: new URL(server.url),
       http: yield* publicHttpClient,
+      reader: yield* publicHttpClientWith({
+        maxResponseBytes: readerBytes,
+        overflow: "truncate",
+        timeout: "20 seconds",
+      }),
     });
   }).pipe(
     Effect.provide(
@@ -146,6 +157,45 @@ const cids = json({
 const notFound = json({ error: "RecordNotFound" }, 400);
 
 describe("Bluesky's comments", () => {
+  it.effect(
+    "reads the start of a thread too large for one answer, and says it is not all of it",
+    () =>
+      Effect.gen(function* readsLarge() {
+        const replies = Array.from({ length: 2000 }, (_, index) => ({
+          post: view(
+            `at://${reader}/app.bsky.feed.post/3l${String(index).padStart(4, "0")}`,
+            reader,
+            root
+          ),
+          replies: [],
+        }));
+
+        const { account, platform } = yield* onNetwork(
+          () =>
+            json({
+              thread: {
+                post: view(root, did, root, replies.length),
+                replies,
+              },
+            }),
+          64 * 1024
+        );
+
+        const batch = yield* platform.read(account, toRead);
+        const [reading] = batch.readings;
+
+        assert.strictEqual(reading?._tag, "read");
+
+        if (reading?._tag !== "read") {
+          return;
+        }
+
+        assert.isAbove(reading.comments.length, 50);
+        assert.isBelow(reading.comments.length, 2000);
+        assert.isFalse(reading.complete);
+      }).pipe(Effect.scoped)
+  );
+
   it.effect(
     "reads a post's thread from the AppView, with what each reply answers and what is hidden",
     () =>

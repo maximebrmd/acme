@@ -28,10 +28,16 @@ import type {
   PlatformHttp,
 } from "#engagement/infrastructure/platforms/engagement-platform.ts";
 import { textOfHtml } from "#engagement/infrastructure/platforms/html-text.ts";
+import { threadBodyOf } from "#engagement/infrastructure/platforms/thread-body.ts";
 import { TokenRejected } from "#shared/domain/token-rejected.ts";
 
 export interface MastodonEngagementOptions {
   readonly http: PlatformHttp;
+  /**
+   * The client threads are read with, whose answers end at
+   * `maxThreadBytes` rather than fail past a megabyte; `http` otherwise.
+   */
+  readonly reader?: PlatformHttp;
   /** `https:`, or `http:` for tests against a local fake. */
   readonly scheme: "http:" | "https:";
   /** How long a read may keep the channel's gate. */
@@ -72,9 +78,33 @@ const StatusSchema = Schema.Struct({
 
 type Status = typeof StatusSchema.Type;
 
-const contextOf = HttpClientResponse.schemaBodyJson(
+const contextOf = threadBodyOf(
   Schema.Struct({ descendants: Schema.Array(StatusSchema) })
 );
+
+// How deep an unauthenticated context goes (Mastodon's API reference: "a
+// maximum depth of 20"): a reply that deep may have others under it that
+// the read was not given.
+const signedOutDepth = 20;
+
+// Whether a reply sits `depth` levels or more under the post, following
+// what each status answers among those read.
+const reachesDepth = (statuses: readonly Status[], depth: number): boolean => {
+  const depths = new Map<string, number>();
+
+  // A context lists a status after the one it answers.
+  for (const { id, in_reply_to_id: parent } of statuses) {
+    const at = (depths.get(parent ?? "") ?? 0) + 1;
+
+    if (at >= depth) {
+      return true;
+    }
+
+    depths.set(id, at);
+  }
+
+  return false;
+};
 
 const createdOf = HttpClientResponse.schemaBodyJson(
   Schema.Struct({
@@ -154,6 +184,7 @@ export const mastodonEngagement = Effect.fn("MastodonEngagement.make")(
   function* mastodonEngagement(options: MastodonEngagementOptions) {
     const access = yield* ChannelAccess;
     const { http, scheme } = options;
+    const reader = options.reader ?? http;
     const deadlineAfter = options.deadline ?? defaultDeadline;
 
     const placeOf = (account: ChannelAccount) =>
@@ -195,7 +226,7 @@ export const mastodonEngagement = Effect.fn("MastodonEngagement.make")(
         reading: { _tag: "failed", threadId: thread.threadId },
       };
 
-      const sent = yield* http.execute(request).pipe(Effect.result);
+      const sent = yield* reader.execute(request).pipe(Effect.result);
 
       if (sent._tag === "Failure") {
         return failedOn;
@@ -204,17 +235,21 @@ export const mastodonEngagement = Effect.fn("MastodonEngagement.make")(
       const response = sent.success;
 
       if (response.status === 200) {
-        const context = yield* contextOf(response).pipe(Effect.option);
+        const context = yield* contextOf(response);
 
         if (Option.isNone(context)) {
           return failedOn;
         }
 
-        const { descendants } = context.value;
+        const { descendants } = context.value.body;
 
         const ceiling = Option.isSome(token)
           ? commentsPerThread
           : Math.min(signedOutDescendants, commentsPerThread);
+
+        // A signed-out read is cut in depth as well as in number.
+        const cutInDepth =
+          Option.isNone(token) && reachesDepth(descendants, signedOutDepth);
 
         const step: Step = {
           _tag: "read",
@@ -229,10 +264,15 @@ export const mastodonEngagement = Effect.fn("MastodonEngagement.make")(
                     )
                   : []
               ),
-            // Every reply was read only when fewer came than the server
-            // gives at most, and none was left out for being private.
+            // Every reply was read only when the answer came whole, fewer
+            // came than the server gives at most, none sits as deep as a
+            // signed-out read goes, and none was left out for being
+            // private.
             complete:
-              descendants.length < ceiling && descendants.every(isPublic),
+              context.value.whole &&
+              descendants.length < ceiling &&
+              !cutInDepth &&
+              descendants.every(isPublic),
             threadId: thread.threadId,
           },
         };

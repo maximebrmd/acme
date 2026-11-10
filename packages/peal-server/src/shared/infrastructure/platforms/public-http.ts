@@ -20,10 +20,19 @@ const bodilessStatuses: ReadonlySet<number> = new Set([
   101, 103, 204, 205, 304,
 ]);
 
-// The answer, whose body fails to read once it goes past `limit` bytes; the
-// rest is never downloaded.
+/** What becomes of an answer larger than Peal reads. */
+export type Overflow =
+  // Reading it fails: nothing of it is used.
+  | "fail"
+  // It ends at the limit, as if the host had sent no more: for a caller
+  // that can use the start of an answer, and tells by itself that the
+  // rest is missing.
+  | "truncate";
+
+// The answer, whose body fails to read, or ends, once it goes past `limit`
+// bytes; the rest is never downloaded.
 const boundedTo =
-  (limit: number) =>
+  (limit: number, overflow: Overflow = "fail") =>
   (response: Response): Response => {
     if (response.body === null || bodilessStatuses.has(response.status)) {
       return response;
@@ -33,9 +42,17 @@ const boundedTo =
 
     const cutOff = new TransformStream<Uint8Array, Uint8Array>({
       transform: (chunk, controller) => {
+        const room = limit - received;
+
         received += chunk.byteLength;
 
-        if (received > limit) {
+        if (received <= limit) {
+          controller.enqueue(chunk);
+
+          return;
+        }
+
+        if (overflow === "fail") {
           controller.error(
             new TypeError(`The answer is larger than ${limit} bytes`)
           );
@@ -43,7 +60,12 @@ const boundedTo =
           return;
         }
 
-        controller.enqueue(chunk);
+        // What fits of the last chunk, then nothing more.
+        if (room > 0) {
+          controller.enqueue(chunk.subarray(0, room));
+        }
+
+        controller.terminate();
       },
     });
 
@@ -93,8 +115,8 @@ const withStreamedLength = (init: RequestInit | undefined) => {
 };
 
 // A fetch whose answers are cut off past `limit` bytes.
-const fetchBoundedTo = (limit: number) => {
-  const bounded = boundedTo(limit);
+const fetchBoundedTo = (limit: number, overflow: Overflow = "fail") => {
+  const bounded = boundedTo(limit, overflow);
 
   return withPreconnect(async (input, init) =>
     bounded(await globalThis.fetch(input, withStreamedLength(init)))
@@ -129,10 +151,12 @@ export const streamedBody =
  * after `timeout`: for uploads of images and videos, which take longer than
  * the default allows. With `maxResponseBytes`, answers are cut off past
  * that many bytes rather than past a megabyte: for a file a member asked
- * Peal to fetch, whose caller counts the bytes it takes.
+ * Peal to fetch, whose caller counts the bytes it takes. With `overflow`
+ * `truncate`, a longer answer ends there instead of failing.
  */
 export const publicHttpClientWith = (options: {
   readonly maxResponseBytes?: number;
+  readonly overflow?: Overflow;
   readonly timeout: Duration.Input;
 }) =>
   Effect.gen(function* publicHttpClient() {
@@ -142,7 +166,7 @@ export const publicHttpClientWith = (options: {
     const fetch =
       options.maxResponseBytes === undefined
         ? boundedFetch
-        : fetchBoundedTo(options.maxResponseBytes);
+        : fetchBoundedTo(options.maxResponseBytes, options.overflow);
 
     return client.pipe(
       HttpClient.mapRequestEffect((request) =>
