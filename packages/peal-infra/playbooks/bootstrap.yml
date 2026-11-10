@@ -26,12 +26,16 @@
         groups: [sudo]
         append: true
         password_lock: true
+      register: bootstrap_admin_user
 
+    # In check mode on a new server the user is not made yet, and the keys
+    # have no home to go to.
     - name: Authorize the admin keys
       ansible.posix.authorized_key:
         user: "{{ admin_user }}"
         key: "{{ admin_ssh_public_keys | join('\n') }}"
         exclusive: true
+      when: not (ansible_check_mode and bootstrap_admin_user.changed)
 
     # Ansible needs sudo without a password; the account has none to type.
     - name: Let the admin user use sudo without a password
