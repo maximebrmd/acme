@@ -752,7 +752,7 @@ describe("the retention of comments", () => {
   it.effect("keeps every thread still read", () => {
     const world = worldWith();
 
-    return Effect.gen(function* purging() {
+    return Effect.gen(function* keeping() {
       yield* TestClock.setTime(
         DateTime.toEpochMillis(DateTime.addDuration(now, "400 days"))
       );

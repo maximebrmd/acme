@@ -6,6 +6,8 @@ CREATE SCHEMA "billing";
 --> statement-breakpoint
 CREATE SCHEMA "channels";
 --> statement-breakpoint
+CREATE SCHEMA "engagement";
+--> statement-breakpoint
 CREATE SCHEMA "legal";
 --> statement-breakpoint
 CREATE SCHEMA "media";
@@ -240,6 +242,70 @@ CREATE TABLE "channels"."mastodon_apps" (
 	"redirect_uri" text,
 	"scopes" text NOT NULL,
 	CONSTRAINT "mastodon_apps_pkey" PRIMARY KEY("instance","redirect_uri")
+);
+--> statement-breakpoint
+CREATE TABLE "engagement"."comments" (
+	"answered_at" timestamp with time zone,
+	"author_display_name" text,
+	"author_handle" text,
+	"author_platform_id" text,
+	"channel_id" uuid NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"liked" boolean DEFAULT false NOT NULL,
+	"parent_platform_id" text,
+	"permalink" text,
+	"platform_comment_id" text NOT NULL,
+	"received_at" timestamp with time zone NOT NULL,
+	"state" text NOT NULL,
+	"text" text NOT NULL,
+	"thread_id" uuid NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	"written_at" timestamp with time zone NOT NULL,
+	CONSTRAINT "comments_state" CHECK ("state" IN ('new', 'answered', 'hidden', 'deleted')),
+	CONSTRAINT "comments_deleted_forgotten" CHECK ("state" <> 'deleted' OR ("text" = '' AND "author_platform_id" IS NULL AND "author_handle" IS NULL AND "author_display_name" IS NULL))
+);
+--> statement-breakpoint
+CREATE TABLE "engagement"."erased_workspaces" (
+	"erased_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid PRIMARY KEY
+);
+--> statement-breakpoint
+CREATE TABLE "engagement"."replies" (
+	"attempted_at" timestamp with time zone,
+	"author_id" uuid,
+	"channel_id" uuid NOT NULL,
+	"comment_id" uuid NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"permalink" text,
+	"platform_comment_id" text,
+	"reason" text,
+	"settled_at" timestamp with time zone,
+	"status" text NOT NULL,
+	"text" text NOT NULL,
+	"thread_id" uuid NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "replies_status" CHECK ("status" IN ('sending', 'sent', 'failed', 'unconfirmed', 'withdrawn')),
+	CONSTRAINT "replies_settled" CHECK (("status" = 'sending') = ("settled_at" IS NULL))
+);
+--> statement-breakpoint
+CREATE TABLE "engagement"."threads" (
+	"channel_id" uuid NOT NULL,
+	"comment_count" integer DEFAULT 0 NOT NULL,
+	"end_reason" text,
+	"ended_at" timestamp with time zone,
+	"id" uuid PRIMARY KEY,
+	"last_collected_at" timestamp with time zone,
+	"last_comment_at" timestamp with time zone,
+	"next_collection_at" timestamp with time zone,
+	"permalink" text,
+	"platform_post_id" text NOT NULL,
+	"post_id" uuid NOT NULL,
+	"published_at" timestamp with time zone NOT NULL,
+	"target_id" uuid NOT NULL,
+	"unanswered_count" integer DEFAULT 0 NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "threads_collection" CHECK (("next_collection_at" IS NULL) <> ("ended_at" IS NULL))
 );
 --> statement-breakpoint
 CREATE TABLE "legal"."connections" (
@@ -855,6 +921,18 @@ CREATE INDEX "channels_granted_by" ON "channels"."channels" ("granted_by") WHERE
 CREATE INDEX "connect_attempts_expires_at" ON "channels"."connect_attempts" ("expires_at");--> statement-breakpoint
 CREATE INDEX "connect_choices_expires_at" ON "channels"."connect_choices" ("expires_at");--> statement-breakpoint
 CREATE INDEX "connect_choices_granted_by" ON "channels"."connect_choices" ("granted_by") WHERE "granted_by" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "comments_platform_id" ON "engagement"."comments" ("thread_id","platform_comment_id");--> statement-breakpoint
+CREATE INDEX "comments_thread_written" ON "engagement"."comments" ("thread_id","written_at");--> statement-breakpoint
+CREATE INDEX "replies_thread" ON "engagement"."replies" ("thread_id","id");--> statement-breakpoint
+CREATE INDEX "replies_comment" ON "engagement"."replies" ("comment_id");--> statement-breakpoint
+CREATE INDEX "replies_author" ON "engagement"."replies" ("author_id") WHERE "author_id" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "threads_target" ON "engagement"."threads" ("target_id");--> statement-breakpoint
+CREATE INDEX "threads_due" ON "engagement"."threads" ("next_collection_at","channel_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "threads_channel_due" ON "engagement"."threads" ("channel_id","next_collection_at","id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "threads_workspace_listed" ON "engagement"."threads" ("workspace_id","last_comment_at","id") WHERE "comment_count" > 0;--> statement-breakpoint
+CREATE INDEX "threads_post" ON "engagement"."threads" ("post_id");--> statement-breakpoint
+CREATE INDEX "threads_published" ON "engagement"."threads" ("published_at","target_id");--> statement-breakpoint
+CREATE INDEX "threads_ended" ON "engagement"."threads" ("ended_at") WHERE "ended_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "connections_at" ON "legal"."connections" ("at");--> statement-breakpoint
 CREATE INDEX "connections_user" ON "legal"."connections" ("user_id","at");--> statement-breakpoint
 CREATE INDEX "connections_workspace" ON "legal"."connections" ("workspace_id","at");--> statement-breakpoint
@@ -919,6 +997,9 @@ CREATE UNIQUE INDEX "organization_slug_uidx" ON "auth"."organization" ("slug");-
 CREATE INDEX "session_userId_idx" ON "auth"."session" ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "auth"."verification" ("identifier");--> statement-breakpoint
 ALTER TABLE "analytics"."metric_snapshots" ADD CONSTRAINT "metric_snapshots_target_id_tracked_posts_target_id_fkey" FOREIGN KEY ("target_id") REFERENCES "analytics"."tracked_posts"("target_id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "engagement"."comments" ADD CONSTRAINT "comments_thread_id_threads_id_fkey" FOREIGN KEY ("thread_id") REFERENCES "engagement"."threads"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "engagement"."replies" ADD CONSTRAINT "replies_comment_id_comments_id_fkey" FOREIGN KEY ("comment_id") REFERENCES "engagement"."comments"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "engagement"."replies" ADD CONSTRAINT "replies_thread_id_threads_id_fkey" FOREIGN KEY ("thread_id") REFERENCES "engagement"."threads"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."post_targets" ADD CONSTRAINT "post_targets_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "publishing"."posts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_attempts" ADD CONSTRAINT "publication_attempts_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_calls" ADD CONSTRAINT "publication_calls_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint

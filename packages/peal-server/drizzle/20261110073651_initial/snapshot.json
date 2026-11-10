@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "bec6f946-b52a-46ee-8490-39c9dce167e5",
+  "id": "94d1509c-958e-4d0a-8273-96c04555e05d",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -53,6 +53,18 @@
         "s|sch|channels",
         "n|sch|channels",
         "e|sch|channels"
+      ]
+    },
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "engagement"
+      ],
+      "writes": [
+        "s|sch|engagement",
+        "n|sch|engagement",
+        "e|sch|engagement"
       ]
     },
     {
@@ -475,6 +487,82 @@
       ],
       "reads": [
         "n|sch|channels"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "comments"
+      ],
+      "writes": [
+        "s|tbl|engagement.comments",
+        "n|tbl|engagement.comments",
+        "e|tbl|engagement.comments",
+        "n|rel|engagement.comments",
+        "n|type|engagement.comments",
+        "n|rel|engagement.comments_pkey"
+      ],
+      "reads": [
+        "n|sch|engagement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "erased_workspaces"
+      ],
+      "writes": [
+        "s|tbl|engagement.erased_workspaces",
+        "n|tbl|engagement.erased_workspaces",
+        "e|tbl|engagement.erased_workspaces",
+        "n|rel|engagement.erased_workspaces",
+        "n|type|engagement.erased_workspaces",
+        "n|rel|engagement.erased_workspaces_pkey"
+      ],
+      "reads": [
+        "n|sch|engagement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "replies"
+      ],
+      "writes": [
+        "s|tbl|engagement.replies",
+        "n|tbl|engagement.replies",
+        "e|tbl|engagement.replies",
+        "n|rel|engagement.replies",
+        "n|type|engagement.replies",
+        "n|rel|engagement.replies_pkey"
+      ],
+      "reads": [
+        "n|sch|engagement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "threads"
+      ],
+      "writes": [
+        "s|tbl|engagement.threads",
+        "n|tbl|engagement.threads",
+        "e|tbl|engagement.threads",
+        "n|rel|engagement.threads",
+        "n|type|engagement.threads",
+        "n|rel|engagement.threads_pkey"
+      ],
+      "reads": [
+        "n|sch|engagement"
       ]
     },
     {
@@ -1861,6 +1949,255 @@
       "statementType": "create_index",
       "statementTarget": [
         "index",
+        "engagement",
+        "comments",
+        "comments_platform_id"
+      ],
+      "writes": [
+        "s|idx|engagement.comments_platform_id",
+        "n|idx|engagement.comments_platform_id",
+        "e|idx|engagement.comments_platform_id",
+        "n|rel|engagement.comments_platform_id"
+      ],
+      "reads": [
+        "n|tbl|engagement.comments",
+        "n|sch|engagement",
+        "n|col|engagement.comments.thread_id",
+        "n|col|engagement.comments.platform_comment_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "comments",
+        "comments_thread_written"
+      ],
+      "writes": [
+        "s|idx|engagement.comments_thread_written",
+        "n|idx|engagement.comments_thread_written",
+        "e|idx|engagement.comments_thread_written",
+        "n|rel|engagement.comments_thread_written"
+      ],
+      "reads": [
+        "n|tbl|engagement.comments",
+        "n|sch|engagement",
+        "n|col|engagement.comments.thread_id",
+        "n|col|engagement.comments.written_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "replies",
+        "replies_thread"
+      ],
+      "writes": [
+        "s|idx|engagement.replies_thread",
+        "n|idx|engagement.replies_thread",
+        "e|idx|engagement.replies_thread",
+        "n|rel|engagement.replies_thread"
+      ],
+      "reads": [
+        "n|tbl|engagement.replies",
+        "n|sch|engagement",
+        "n|col|engagement.replies.thread_id",
+        "n|col|engagement.replies.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "replies",
+        "replies_comment"
+      ],
+      "writes": [
+        "s|idx|engagement.replies_comment",
+        "n|idx|engagement.replies_comment",
+        "e|idx|engagement.replies_comment",
+        "n|rel|engagement.replies_comment"
+      ],
+      "reads": [
+        "n|tbl|engagement.replies",
+        "n|sch|engagement",
+        "n|col|engagement.replies.comment_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "replies",
+        "replies_author"
+      ],
+      "writes": [
+        "s|idx|engagement.replies_author",
+        "n|idx|engagement.replies_author",
+        "e|idx|engagement.replies_author",
+        "n|rel|engagement.replies_author"
+      ],
+      "reads": [
+        "n|tbl|engagement.replies",
+        "n|sch|engagement",
+        "n|col|engagement.replies.author_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "threads",
+        "threads_target"
+      ],
+      "writes": [
+        "s|idx|engagement.threads_target",
+        "n|idx|engagement.threads_target",
+        "e|idx|engagement.threads_target",
+        "n|rel|engagement.threads_target"
+      ],
+      "reads": [
+        "n|tbl|engagement.threads",
+        "n|sch|engagement",
+        "n|col|engagement.threads.target_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "threads",
+        "threads_due"
+      ],
+      "writes": [
+        "s|idx|engagement.threads_due",
+        "n|idx|engagement.threads_due",
+        "e|idx|engagement.threads_due",
+        "n|rel|engagement.threads_due"
+      ],
+      "reads": [
+        "n|tbl|engagement.threads",
+        "n|sch|engagement",
+        "n|col|engagement.threads.next_collection_at",
+        "n|col|engagement.threads.channel_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "threads",
+        "threads_channel_due"
+      ],
+      "writes": [
+        "s|idx|engagement.threads_channel_due",
+        "n|idx|engagement.threads_channel_due",
+        "e|idx|engagement.threads_channel_due",
+        "n|rel|engagement.threads_channel_due"
+      ],
+      "reads": [
+        "n|tbl|engagement.threads",
+        "n|sch|engagement",
+        "n|col|engagement.threads.channel_id",
+        "n|col|engagement.threads.next_collection_at",
+        "n|col|engagement.threads.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "threads",
+        "threads_workspace_listed"
+      ],
+      "writes": [
+        "s|idx|engagement.threads_workspace_listed",
+        "n|idx|engagement.threads_workspace_listed",
+        "e|idx|engagement.threads_workspace_listed",
+        "n|rel|engagement.threads_workspace_listed"
+      ],
+      "reads": [
+        "n|tbl|engagement.threads",
+        "n|sch|engagement",
+        "n|col|engagement.threads.workspace_id",
+        "n|col|engagement.threads.last_comment_at",
+        "n|col|engagement.threads.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "threads",
+        "threads_post"
+      ],
+      "writes": [
+        "s|idx|engagement.threads_post",
+        "n|idx|engagement.threads_post",
+        "e|idx|engagement.threads_post",
+        "n|rel|engagement.threads_post"
+      ],
+      "reads": [
+        "n|tbl|engagement.threads",
+        "n|sch|engagement",
+        "n|col|engagement.threads.post_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "threads",
+        "threads_published"
+      ],
+      "writes": [
+        "s|idx|engagement.threads_published",
+        "n|idx|engagement.threads_published",
+        "e|idx|engagement.threads_published",
+        "n|rel|engagement.threads_published"
+      ],
+      "reads": [
+        "n|tbl|engagement.threads",
+        "n|sch|engagement",
+        "n|col|engagement.threads.published_at",
+        "n|col|engagement.threads.target_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "engagement",
+        "threads",
+        "threads_ended"
+      ],
+      "writes": [
+        "s|idx|engagement.threads_ended",
+        "n|idx|engagement.threads_ended",
+        "e|idx|engagement.threads_ended",
+        "n|rel|engagement.threads_ended"
+      ],
+      "reads": [
+        "n|tbl|engagement.threads",
+        "n|sch|engagement",
+        "n|col|engagement.threads.ended_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
         "legal",
         "connections",
         "connections_at"
@@ -3161,6 +3498,75 @@
       "statementType": "create_fk",
       "statementTarget": [
         "table",
+        "engagement",
+        "comments"
+      ],
+      "writes": [
+        "s|fk|engagement.comments.comments_thread_id_threads_id_fkey",
+        "n|fk|engagement.comments.comments_thread_id_threads_id_fkey",
+        "e|fk|engagement.comments.comments_thread_id_threads_id_fkey",
+        "n|con|engagement.comments.comments_thread_id_threads_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|engagement.comments",
+        "n|sch|engagement",
+        "n|tbl|engagement.threads",
+        "n|sch|engagement",
+        "n|col|engagement.comments.thread_id",
+        "n|col|engagement.threads.id",
+        "e|uniqueness|engagement.threads.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "replies"
+      ],
+      "writes": [
+        "s|fk|engagement.replies.replies_comment_id_comments_id_fkey",
+        "n|fk|engagement.replies.replies_comment_id_comments_id_fkey",
+        "e|fk|engagement.replies.replies_comment_id_comments_id_fkey",
+        "n|con|engagement.replies.replies_comment_id_comments_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|engagement.replies",
+        "n|sch|engagement",
+        "n|tbl|engagement.comments",
+        "n|sch|engagement",
+        "n|col|engagement.replies.comment_id",
+        "n|col|engagement.comments.id",
+        "e|uniqueness|engagement.comments.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "engagement",
+        "replies"
+      ],
+      "writes": [
+        "s|fk|engagement.replies.replies_thread_id_threads_id_fkey",
+        "n|fk|engagement.replies.replies_thread_id_threads_id_fkey",
+        "e|fk|engagement.replies.replies_thread_id_threads_id_fkey",
+        "n|con|engagement.replies.replies_thread_id_threads_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|engagement.replies",
+        "n|sch|engagement",
+        "n|tbl|engagement.threads",
+        "n|sch|engagement",
+        "n|col|engagement.replies.thread_id",
+        "n|col|engagement.threads.id",
+        "e|uniqueness|engagement.threads.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
         "publishing",
         "post_targets"
       ],
@@ -3728,6 +4134,10 @@
       "entityType": "schemas"
     },
     {
+      "name": "engagement",
+      "entityType": "schemas"
+    },
+    {
       "name": "legal",
       "entityType": "schemas"
     },
@@ -3858,6 +4268,30 @@
     {
       "schema": "channels",
       "name": "mastodon_apps",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "engagement",
+      "name": "comments",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "engagement",
+      "name": "erased_workspaces",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "engagement",
+      "name": "replies",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "engagement",
+      "name": "threads",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -6127,6 +6561,617 @@
       "table": "mastodon_apps",
       "name": "scopes",
       "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "answered_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "author_display_name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "author_handle",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "author_platform_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "liked",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "parent_platform_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "permalink",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "platform_comment_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "received_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "state",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "text",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "thread_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "written_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "erased_workspaces",
+      "name": "erased_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "erased_workspaces",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "attempted_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "author_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "comment_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "permalink",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "platform_comment_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "settled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "text",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "thread_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "comment_count",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "end_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "ended_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "last_collected_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "last_comment_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "next_collection_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "permalink",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "platform_post_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "post_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "published_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "unanswered_count",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "workspace_id",
+      "type": "uuid",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -12586,6 +13631,321 @@
       "entityType": "indexes"
     },
     {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "comments_platform_id",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "thread_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "platform_comment_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "comments_thread_written",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "thread_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "written_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "replies_thread",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "thread_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "replies_comment",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "comment_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "replies_author",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "author_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"author_id\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "threads_target",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "target_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "threads_due",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "next_collection_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "channel_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"next_collection_at\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "threads_channel_due",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "channel_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "next_collection_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"next_collection_at\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "threads_workspace_listed",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "last_comment_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"comment_count\" > 0",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "threads_post",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "post_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "threads_published",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "published_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "target_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "threads_ended",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "ended_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"ended_at\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "legal",
       "table": "connections",
       "name": "connections_at",
@@ -14045,6 +15405,57 @@
       "entityType": "fks"
     },
     {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "comments_thread_id_threads_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "thread_id"
+      ],
+      "schemaTo": "engagement",
+      "tableTo": "threads",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "replies_comment_id_comments_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "comment_id"
+      ],
+      "schemaTo": "engagement",
+      "tableTo": "comments",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "replies_thread_id_threads_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "thread_id"
+      ],
+      "schemaTo": "engagement",
+      "tableTo": "threads",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
       "schema": "publishing",
       "table": "post_targets",
       "name": "post_targets_post_id_posts_id_fkey",
@@ -14657,6 +16068,46 @@
       "name": "data_deletions_pkey",
       "columns": [
         "code"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "comments_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "engagement",
+      "table": "erased_workspaces",
+      "name": "erased_workspaces_pkey",
+      "columns": [
+        "workspace_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "replies_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "threads_pkey",
+      "columns": [
+        "id"
       ],
       "nameExplicit": false,
       "entityType": "pks"
@@ -15277,6 +16728,41 @@
       "table": "channels",
       "name": "channels_token_key",
       "value": "split_part(\"access_token\", '.', 1) = \"token_key_id\" AND (\"refresh_token\" IS NULL OR split_part(\"refresh_token\", '.', 1) = \"token_key_id\")",
+      "entityType": "checks"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "comments_state",
+      "value": "\"state\" IN ('new', 'answered', 'hidden', 'deleted')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "engagement",
+      "table": "comments",
+      "name": "comments_deleted_forgotten",
+      "value": "\"state\" <> 'deleted' OR (\"text\" = '' AND \"author_platform_id\" IS NULL AND \"author_handle\" IS NULL AND \"author_display_name\" IS NULL)",
+      "entityType": "checks"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "replies_status",
+      "value": "\"status\" IN ('sending', 'sent', 'failed', 'unconfirmed', 'withdrawn')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "engagement",
+      "table": "replies",
+      "name": "replies_settled",
+      "value": "(\"status\" = 'sending') = (\"settled_at\" IS NULL)",
+      "entityType": "checks"
+    },
+    {
+      "schema": "engagement",
+      "table": "threads",
+      "name": "threads_collection",
+      "value": "(\"next_collection_at\" IS NULL) <> (\"ended_at\" IS NULL)",
       "entityType": "checks"
     },
     {
