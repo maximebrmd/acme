@@ -1,4 +1,4 @@
-import { Effect, Option, Schema, Stream } from "effect";
+import { Effect, Option, Schema } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 import type { HttpClient, HttpClientError } from "effect/http";
 
@@ -14,6 +14,7 @@ import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
+import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 
 import { mediaRefusal } from "./linkedin-refusal.ts";
 import { authorUrnOf, encodedUrn, restCall } from "./linkedin-rest.ts";
@@ -130,19 +131,29 @@ export const linkedinDocuments = (options: {
 
     const uploadUrl = yield* uploadUrlOf(value.uploadUrl);
 
-    // The whole file in one request, as an image: 100 MiB at most.
-    const bytes = yield* Stream.mkUint8Array(
-      media.open(post.workspaceId, attachment.mediaId)
-    );
-
-    yield* call(
-      post,
-      uploads,
-      HttpClientRequest.put(uploadUrl).pipe(
-        HttpClientRequest.bodyUint8Array(bytes, "application/octet-stream")
-      ),
-      false,
-      (response) => (isSuccess(response) ? Effect.void : mediaRefusal(response))
+    // The whole file in one request, up to 100 MiB, streamed from the
+    // media store as it is sent, never held whole, with its length
+    // (`streamedBody`). Its turn among the large uploads is waited for
+    // before the request opens, and kept if the request is sent again with
+    // a renewed token.
+    yield* Effect.scoped(
+      media.held(post.workspaceId, attachment.mediaId).pipe(
+        Effect.flatMap((bytes) =>
+          call(
+            post,
+            uploads,
+            HttpClientRequest.put(uploadUrl).pipe(
+              streamedBody(bytes, {
+                contentLength: described.byteSize,
+                contentType: "application/octet-stream",
+              })
+            ),
+            false,
+            (response) =>
+              isSuccess(response) ? Effect.void : mediaRefusal(response)
+          )
+        )
+      )
     );
 
     return value.document;

@@ -30,13 +30,16 @@ import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
+import {
+  formBoundary,
+  multipartBody,
+} from "#shared/infrastructure/platforms/multipart-stream.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
-import { publicStreamedPost } from "#shared/infrastructure/platforms/public-upload.ts";
+import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 
 import { isSamePin } from "./pinterest-pin-match.ts";
 import { refused } from "./pinterest-refusal.ts";
 import type { PinterestRefusal } from "./pinterest-refusal.ts";
-import { uploadForm } from "./upload-form.ts";
 
 /** The HTTP client the adapter sends through: the public one. */
 export type PinterestHttp = HttpClient.HttpClient.With<
@@ -49,6 +52,8 @@ export interface PinterestClientOptions {
   /** The API's origin: `https://api.pinterest.com`, or its Sandbox's. */
   readonly apiUrl: URL;
   readonly timing?: StepTiming;
+  /** For a video's upload, which takes longer. */
+  readonly uploads: PinterestHttp;
 }
 
 // Reading an answer's body fails with these.
@@ -56,10 +61,6 @@ type AnswerError = HttpClientError.HttpClientError | Schema.SchemaError;
 
 // Pinterest fetches a Pin's images itself, while it makes the Pin.
 const mediaUrlLifetime = Duration.hours(2);
-
-// A video goes up in one request, however large: half an hour for a
-// gibibyte on a slow line.
-const uploadTimeout = Duration.minutes(30);
 
 // Pinterest's guide: processing normally takes a few seconds.
 const pollAfter = Duration.seconds(5);
@@ -232,8 +233,7 @@ export const pinterestClient = Effect.fn("PinterestClient.make")(
   function* pinterestClient(options: PinterestClientOptions) {
     const credentials = yield* PlatformCredentials;
     const media = yield* MediaForPublishing;
-    const streamedPost = yield* publicStreamedPost;
-    const { api, apiUrl } = options;
+    const { api, apiUrl, uploads } = options;
 
     // Sends a request with the channel's token, renewed once if refused.
     // Without an answer, nothing anyone sees happened.
@@ -293,25 +293,45 @@ export const pinterestClient = Effect.fn("PinterestClient.make")(
         return yield* new PlatformUnavailable();
       }
 
-      const form = uploadForm({
-        boundary: `peal-${post.idempotencyKey}`,
-        fields: registered.upload_parameters,
-        file: {
-          byteSize: video.byteSize,
-          bytes: media.open(post.workspaceId, video.mediaId),
-          contentType: video.contentType,
-          fileName: video.fileName,
-        },
-      });
+      // The file's turn among the large uploads is waited for before the
+      // request opens, as the store times out a request whose body does not
+      // come. The form is streamed, the fields first, in Pinterest's order,
+      // then the file: its bytes pass from the media store to Pinterest's
+      // as they are read, never held whole, with the length the store
+      // needs (`streamedBody`).
+      const status = yield* Effect.scoped(
+        Effect.gen(function* sendingFile() {
+          const bytes = yield* media.held(post.workspaceId, video.mediaId);
 
-      const status = yield* streamedPost({
-        ...form,
-        timeout: uploadTimeout,
-        url: destination,
-      }).pipe(
+          const form = multipartBody({
+            boundary: formBoundary(post.idempotencyKey),
+            fields: Object.entries(registered.upload_parameters).map(
+              ([name, value]) => ({ name, value })
+            ),
+            file: {
+              byteSize: video.byteSize,
+              bytes,
+              contentType: video.contentType,
+              fileName: video.fileName,
+              name: "file",
+            },
+          });
+
+          const response = yield* uploads.execute(
+            HttpClientRequest.post(destination).pipe(
+              streamedBody(form.bytes, {
+                contentLength: form.contentLength,
+                contentType: form.contentType,
+              })
+            )
+          );
+
+          return response.status;
+        })
+      ).pipe(
         Effect.catchTags({
+          HttpClientError: () => Effect.fail(new PlatformUnavailable()),
           OutboundRequestRefused: unanswered,
-          UploadUnanswered: () => Effect.fail(new PlatformUnavailable()),
         })
       );
 

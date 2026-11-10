@@ -1,12 +1,11 @@
-import { assert, describe, expect, it } from "@effect/vitest";
-import { DateTime, Effect, Option, Stream } from "effect";
+import { describe, expect, it } from "@effect/vitest";
+import { DateTime, Option } from "effect";
 
 import { isSamePin } from "#publishing/infrastructure/platforms/pinterest/pinterest-pin-match.ts";
 import type {
   ListedPin,
   SentPin,
 } from "#publishing/infrastructure/platforms/pinterest/pinterest-pin-match.ts";
-import { uploadForm } from "#publishing/infrastructure/platforms/pinterest/upload-form.ts";
 
 const since = DateTime.makeUnsafe("2026-03-01T10:00:00Z");
 
@@ -61,52 +60,4 @@ describe(isSamePin, () => {
       expect(isSamePin(sent, other)).toBeFalsy();
     }
   });
-});
-
-describe(uploadForm, () => {
-  it.effect("frames the fields, then the file, in the length it declares", () =>
-    Effect.gen(function* framed() {
-      const file = Uint8Array.from([0, 13, 10, 45, 45, 255]);
-
-      const form = uploadForm({
-        boundary: "peal-synthetic",
-        fields: { key: "uploads/1", policy: "c3ludGhldGlj" },
-        file: {
-          byteSize: file.byteLength,
-          bytes: Stream.make(file.subarray(0, 2), file.subarray(2)),
-          contentType: "video/mp4",
-          fileName: 'clip".mp4',
-        },
-      });
-
-      const body = yield* Stream.mkUint8Array(form.body);
-      const text = new TextDecoder("latin1").decode(body);
-
-      assert.strictEqual(
-        form.contentType,
-        "multipart/form-data; boundary=peal-synthetic"
-      );
-      assert.strictEqual(body.byteLength, form.contentLength);
-      assert.strictEqual(
-        text,
-        [
-          "--peal-synthetic",
-          'Content-Disposition: form-data; name="key"',
-          "",
-          "uploads/1",
-          "--peal-synthetic",
-          'Content-Disposition: form-data; name="policy"',
-          "",
-          "c3ludGhldGlj",
-          "--peal-synthetic",
-          'Content-Disposition: form-data; name="file"; filename="clip_.mp4"',
-          "Content-Type: video/mp4",
-          "",
-          new TextDecoder("latin1").decode(file),
-          "--peal-synthetic--",
-          "",
-        ].join("\r\n")
-      );
-    })
-  );
 });

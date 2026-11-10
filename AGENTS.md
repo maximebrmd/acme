@@ -1035,9 +1035,9 @@ and no socket, for tests.
   (`multiple_image_urls`), or a video registered first (media/create), sent
   to the address and with the form fields the answer gives, then polled.
   That upload is one multipart request to an object store, which needs its
-  `Content-Length`: `uploadForm` frames the media stream and
-  `publicStreamedPost` (`#shared/infrastructure/platforms/public-upload.ts`)
-  sends it, as the fetch HttpClient drops the length of a stream body.
+  `Content-Length`: `multipartBody` frames the media stream, the form's
+  fields first in Pinterest's order, and `streamedBody` names its length,
+  after the file took its upload slot (`media.held`).
   Pinterest has no idempotency key: `lookUp` searches the Pins of the
   board, or of its section, made since the attempt started
   (`pinterest-pin-match.ts`: title, description, link, kind of media), and
@@ -1049,7 +1049,8 @@ and no socket, for tests.
   LinkedIn's video parts, X's 4 MiB appends, TikTok's and YouTube's
   chunks), and a file a platform takes in one request is streamed with
   `streamedBody` (`#shared/infrastructure/platforms/public-http.ts`), in a
-  form with `multipartBody` (Mastodon), never `Stream.mkUint8Array` or
+  form with `multipartBody` (Mastodon, Pinterest's videos; LinkedIn's
+  documents go as they are), never `Stream.mkUint8Array` or
   `FormData` (only Bluesky's images, 2 MB at most, are read whole).
   `streamedBody` names the length, which the public client's fetch sends
   as Content-Length: Effect's fetch client drops that header, and a body

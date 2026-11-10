@@ -659,6 +659,7 @@ export const pinterestClientWith = Effect.fn("test.pinterestClient")(
       api,
       apiUrl: new URL(options.api),
       timing: testTiming,
+      uploads: api,
     }).pipe(
       Effect.provide(
         Layer.mergeAll(

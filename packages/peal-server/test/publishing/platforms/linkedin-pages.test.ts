@@ -398,6 +398,15 @@ describe("a document on LinkedIn", () => {
         look?.path,
         "/rest/documents/urn:li:document:D5510AQ1"
       );
+
+      // The file is streamed with its length, never sent chunked.
+      const upload = linkedin
+        .requests()
+        .find(({ path }) => path.startsWith("/dms-uploads/document/"));
+
+      assert(upload !== undefined);
+      assert.strictEqual(headerOf(upload, "content-length"), "4096");
+      assert.strictEqual(headerOf(upload, "transfer-encoding"), "");
     }).pipe(Effect.scoped)
   );
 

@@ -142,6 +142,7 @@ export const platformClientsWith = (settings: PlatformClientSettings) =>
         yield* pinterestClient({
           api,
           apiUrl: settings.pinterestApi,
+          uploads,
           ...timing,
         }),
         yield* googleBusinessClient({
