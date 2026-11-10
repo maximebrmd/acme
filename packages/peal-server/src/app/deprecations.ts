@@ -90,11 +90,20 @@ export const deprecatedRoutes = <
   return routes;
 };
 
-/** The deprecation headers of the endpoint a request reaches, if any. */
+/**
+ * The deprecation headers of the endpoint a request reaches, if any. HEAD
+ * reaches what GET does, and is told the same: a client that checks an
+ * endpoint without reading it learns it is deprecated too.
+ */
 export const deprecationOf = (
   routes: readonly DeprecatedRoute[],
   method: string,
   path: string
-): Readonly<Record<string, string>> =>
-  routes.find((route) => route.method === method && route.path.test(path))
-    ?.headers ?? {};
+): Readonly<Record<string, string>> => {
+  const asked = method === "HEAD" ? "GET" : method;
+
+  return (
+    routes.find((route) => route.method === asked && route.path.test(path))
+      ?.headers ?? {}
+  );
+};

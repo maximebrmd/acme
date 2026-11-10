@@ -8,7 +8,11 @@ import {
 import { Api, deprecated, Deprecation } from "peal-contract";
 import { describe, expect, it } from "vitest";
 
-import { deprecatedRoutes, deprecationHeaders } from "#app/deprecations.ts";
+import {
+  deprecatedRoutes,
+  deprecationHeaders,
+  deprecationOf,
+} from "#app/deprecations.ts";
 
 const notice = { since: "2026-12-01T00:00:00Z" };
 
@@ -59,6 +63,16 @@ describe("deprecations", () => {
     expect(paths["/api/old"]?.get?.deprecated).toBeTruthy();
     expect(paths["/api/current"]?.get?.deprecated).toBeUndefined();
     expect(deprecatedRoutes(Small)).toHaveLength(1);
+  });
+
+  it("tells whoever asks for a deprecated endpoint, with GET or with HEAD", () => {
+    const routes = deprecatedRoutes(Small);
+    const told = { deprecation: "@1796083200" };
+
+    expect(deprecationOf(routes, "GET", "/api/old")).toStrictEqual(told);
+    expect(deprecationOf(routes, "HEAD", "/api/old")).toStrictEqual(told);
+    expect(deprecationOf(routes, "POST", "/api/old")).toStrictEqual({});
+    expect(deprecationOf(routes, "HEAD", "/api/current")).toStrictEqual({});
   });
 
   it("says only what is decided: no sunset, no link, until there is one", () => {
