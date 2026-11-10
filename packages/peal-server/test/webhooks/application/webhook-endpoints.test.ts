@@ -17,6 +17,7 @@ import { DeliverWebhook } from "#webhooks/application/deliver-webhook.ts";
 import { EndpointStore } from "#webhooks/application/ports/endpoint-store.ts";
 import { WebhookEndpoints } from "#webhooks/application/webhook-endpoints.ts";
 import { maxEndpointsPerWorkspace } from "#webhooks/domain/delivery-policy.ts";
+import { changeEndpoint } from "#webhooks/domain/webhook-endpoint.ts";
 
 const tagOf = <E extends { readonly _tag: string }, R>(
   effect: Effect.Effect<unknown, E, R>
@@ -264,6 +265,45 @@ layer(WebhooksTest)("webhook endpoints", (it) => {
       assert.deepStrictEqual(on.eventTypes, ["channel.connected"]);
       assert.deepStrictEqual(yield* endpoints.get(owner, endpoint.id), on);
     })
+  );
+
+  it.effect(
+    "stay off when a change read before Peal turned one off is saved after",
+    () =>
+      Effect.gen(function* raced() {
+        const owner = yield* freshOwner;
+        const store = yield* EndpointStore;
+        const { endpoint } = yield* freshEndpoint(owner);
+        const now = yield* DateTime.now;
+
+        // A member's change of the description, read while it was on...
+        const described = changeEndpoint(
+          endpoint,
+          { description: "Renamed meanwhile" },
+          now
+        );
+
+        // ...and saved after its deliveries failed for good.
+        yield* store.markFailing(endpoint.id, now);
+        assert.isTrue(yield* store.disable(endpoint.id, "failing", now));
+        assert.isTrue(yield* store.update(described, endpoint));
+
+        const kept = Option.getOrThrow(yield* store.get(endpoint.id));
+
+        assert.strictEqual(kept.description, "Renamed meanwhile");
+        assert.strictEqual(kept.status._tag, "disabled");
+        assert.isTrue(Option.isSome(kept.failingSince));
+
+        // Turned on by a member, it is on, and its failures forgotten.
+        const turnedOn = changeEndpoint(kept, { enabled: true }, now);
+
+        assert.isTrue(yield* store.update(turnedOn, kept));
+
+        const on = Option.getOrThrow(yield* store.get(endpoint.id));
+
+        assert.strictEqual(on.status._tag, "enabled");
+        assert.isTrue(Option.isNone(on.failingSince));
+      })
   );
 
   it.effect("are deleted with their secrets", () =>

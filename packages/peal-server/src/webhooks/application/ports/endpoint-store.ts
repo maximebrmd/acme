@@ -53,11 +53,15 @@ export class EndpointStore extends Context.Service<
       secret: SealedSecret
     ) => Effect.Effect<void, DatabaseError>;
     /**
-     * Saves what a member changed of the endpoint. Says whether it was
-     * still there.
+     * Saves what a member changed of the endpoint, `from` what they read:
+     * its address, description and events, and whether it is on only when
+     * they turned it on or off. Peal turning it off meanwhile, as when its
+     * deliveries failed for good, is never undone by a change of something
+     * else read before. Says whether it was still there.
      */
     readonly update: (
-      endpoint: WebhookEndpoint
+      endpoint: WebhookEndpoint,
+      from: WebhookEndpoint
     ) => Effect.Effect<boolean, DatabaseError>;
     /**
      * Makes `secret` the endpoint's, and keeps the one it had as the

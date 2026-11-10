@@ -239,9 +239,12 @@ export class WebhookEndpoints extends Context.Service<
           yield* DateTime.now
         );
 
-        return (yield* store.update(changed))
-          ? changed
-          : yield* new EndpointNotFound({ endpointId });
+        if (!(yield* store.update(changed, current))) {
+          return yield* new EndpointNotFound({ endpointId });
+        }
+
+        // As it now stands: Peal may have turned it off meanwhile.
+        return Option.getOrElse(yield* store.get(changed.id), () => changed);
       });
 
       const remove = Effect.fn("WebhookEndpoints.remove")(function* remove(

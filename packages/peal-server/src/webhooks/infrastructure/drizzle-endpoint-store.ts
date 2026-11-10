@@ -69,6 +69,14 @@ const settingsOf = (endpoint: WebhookEndpoint) => {
   };
 };
 
+// What a member writes of an endpoint they neither turned on nor off:
+// whether it is on, and since when it fails, stay as the row has them.
+const writtenOf = (endpoint: WebhookEndpoint) => {
+  const { description, eventTypes, updatedAt, url } = settingsOf(endpoint);
+
+  return { description, eventTypes, updatedAt, url };
+};
+
 const byId = (workspaceId: WorkspaceId, endpointId: WebhookEndpointId) =>
   and(eq(endpoints.workspaceId, workspaceId), eq(endpoints.id, endpointId));
 
@@ -221,10 +229,14 @@ export const DrizzleEndpointStore = Layer.effect(
               )
             )
           ),
-      update: (endpoint) =>
+      update: (endpoint, from) =>
         db
           .update(endpoints)
-          .set(settingsOf(endpoint))
+          .set(
+            endpoint.status._tag === from.status._tag
+              ? writtenOf(endpoint)
+              : settingsOf(endpoint)
+          )
           .where(byId(endpoint.workspaceId, endpoint.id))
           .returning({ id: endpoints.id })
           .pipe(
