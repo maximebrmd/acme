@@ -229,4 +229,49 @@ layer(RecordTest)("recording a subscription", (it) => {
         ]);
       })
   );
+
+  it.effect(
+    "keeps following a subscription whose price this server no longer lists, on the plan it recorded",
+    () =>
+      Effect.gen(function* repriced() {
+        yield* reset;
+        yield* record({
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_old",
+          trialEnd: Option.none(),
+        });
+
+        // The prices changed since: Stripe's events about the subscribers
+        // of the old ones name a price that is none of this server's now.
+        const cancelled = yield* record({
+          interval: null,
+          plan: null,
+          startedBy: Option.none(),
+          status: "canceled",
+          stripeSubscriptionId: "sub_synthetic_old",
+          trialEnd: Option.none(),
+        });
+
+        assert.strictEqual(cancelled, "recorded");
+        assert.deepStrictEqual(
+          (yield* RecordLog.use(({ held }) => Ref.get(held))).map(
+            ({ plan, status }) => [plan, status]
+          ),
+          [["pro", "canceled"]]
+        );
+
+        // One billing never recorded is none of its workspaces' plans.
+        const unknown = yield* record({
+          interval: null,
+          plan: null,
+          startedBy: Option.none(),
+          status: "active",
+          stripeSubscriptionId: "sub_synthetic_by_hand",
+          trialEnd: Option.none(),
+        });
+
+        assert.strictEqual(unknown, "ignored");
+      })
+  );
 });

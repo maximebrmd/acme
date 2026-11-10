@@ -207,8 +207,9 @@ const isSubscriptionEvent = (type: string): boolean =>
 /**
  * Turns a Stripe event about a subscription into what billing records: the
  * workspace from the customer, the plan from the prices. An event about
- * another kind of object, or a subscription of no workspace or plan, as one
- * made by hand in Stripe's dashboard, is logged and left alone.
+ * another kind of object, or a subscription of no workspace, is logged and
+ * left alone; one whose price is none this server lists goes to billing
+ * without a plan, which keeps the one it recorded.
  */
 const subscriptionEventOf = async (
   settings: StripeSettings,
@@ -237,10 +238,8 @@ const subscriptionEventOf = async (
 
   const workspaceId = await workspaceOfCustomer(customerId);
 
-  if (Option.isNone(plan) || Option.isNone(workspaceId)) {
-    log(
-      `Stripe event ${event.id} is about a subscription of no workspace or no plan of this server`
-    );
+  if (Option.isNone(workspaceId)) {
+    log(`Stripe event ${event.id} is about a subscription of no workspace`);
 
     return Option.none();
   }
@@ -277,9 +276,17 @@ const subscriptionEventOf = async (
         ? Option.none()
         : Option.some(fromStripeTime(Math.min(...periodStarts))),
     eventId: event.id,
-    interval: plan.value.interval,
+    // None when the price is none this server lists now, as after its
+    // prices changed: billing keeps the plan it recorded.
+    interval: plan.pipe(
+      Option.map(({ interval }) => interval),
+      Option.getOrNull
+    ),
     occurredAt: fromStripeTime(event.created),
-    plan: plan.value.plan,
+    plan: plan.pipe(
+      Option.map((priced) => priced.plan),
+      Option.getOrNull
+    ),
     startedAt: optionalTime(subscription.start_date),
     startedBy: Option.fromNullishOr(subscription.metadata?.["userId"]).pipe(
       Option.flatMap(decodeUserId)
