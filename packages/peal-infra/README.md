@@ -494,9 +494,8 @@ playbook logs in as. Images come in two kinds:
 | an account of its own with sudo, such as `ubuntu`, not root | `bootstrap_user: ubuntu`       | The bootstrap uses sudo, which that account has without a password. `site.yml`, or `uptime.yml`, removes it, with its home and its sudo rule |
 
 Set `bootstrap_user` in the group's `main.yml`, so every later run knows
-which account to remove, rather than with `-e`. To see which kind an image
-is, try `ssh root@<address> true` once the server is up: an image of the
-second kind answers with the name of the account to use.
+which account to remove, rather than with `-e`. The provider's page for
+the image names the account it lets your key into.
 
 The image's own account holds your key and sudo without a password, so it
 goes once `ops` works: the `ssh` role, which runs as `ops` with sudo,
