@@ -95,7 +95,7 @@ export const english: EmailCatalog = {
     appNotAudited:
       "the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.",
     channelDisabled:
-      "its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.",
+      "its channel was turned off before it went out. Turn the channel back on, then schedule it in a new post.",
     channelDisconnected:
       "its channel was disconnected from the workspace before it went out.",
     contentRejected: "the platform refused its text or its format.",

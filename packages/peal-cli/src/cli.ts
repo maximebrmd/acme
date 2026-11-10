@@ -22,6 +22,8 @@ import { partner } from "#commands/partner.ts";
 import { post } from "#commands/post.ts";
 import { posts } from "#commands/posts.ts";
 import { review } from "#commands/review.ts";
+import { sets } from "#commands/sets.ts";
+import { signatures } from "#commands/signatures.ts";
 import { tags } from "#commands/tags.ts";
 import { webhooks } from "#commands/webhooks.ts";
 import { whoami } from "#commands/whoami.ts";
@@ -48,6 +50,8 @@ export const cli = peal.pipe(
     post,
     posts,
     tags,
+    signatures,
+    sets,
     approvals,
     review,
     media,

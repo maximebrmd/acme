@@ -4,6 +4,7 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   AuthoredPostRecord,
   PostRecord,
+  SavedItemsRecord,
 } from "#shared/application/personal-data.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -23,8 +24,14 @@ export class PostRecords extends Context.Service<
     readonly exportWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly PostRecord[], DatabaseError>;
+    /** What the workspace saved to write and file its posts. */
+    readonly exportSaved: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<SavedItemsRecord, DatabaseError>;
     /**
-     * Deletes the workspace's posts, in the caller's transaction if any,
+     * Deletes the workspace's posts, and what it saved to write and file
+     * them (tags, signatures, channel sets, default options), in the
+     * caller's transaction if any,
      * and stops the jobs of those still scheduled, so nothing of the
      * workspace goes out. Refused while one of them is being published.
      */
@@ -105,6 +112,7 @@ export class PostRecords extends Context.Service<
         eraseWorkspace,
         exportAuthored: (userId, workspaceIds) =>
           store.exportAuthored(userId, workspaceIds),
+        exportSaved: (workspaceId) => store.exportSaved(workspaceId),
         exportWorkspace: (workspaceId) => store.exportAll(workspaceId),
         forgetAuthor: (userId) => store.clearAuthor(userId),
       });

@@ -169,6 +169,7 @@ peal channels list
 peal channels capabilities [<channel-id>] [--json]
 peal channels lookup <channel-id> [<lookup>] [--region <country>] [--language <tag>] [--vanity-name <name>] [--limit <n>] [--cursor <cursor>] [--json]
 peal channels tiktok <channel-id>
+peal channels defaults show <channel-id>
 ```
 
 `peal channels list` liste les canaux de l’espace de travail avec leurs identifiants, que les brouillons et les publications prennent, et si chacun publie ou est à reconnecter. Connecter un canal se fait dans l’application web.
@@ -179,6 +180,8 @@ peal channels tiktok <channel-id>
 
 `peal channels tiktok` lit les réglages d’un canal TikTok sur TikTok, comme TikTok le demande avant une publication : sous quel nom il publie, les audiences qu’une publication peut choisir (son `privacyLevel`, sans valeur par défaut), les interactions que le compte a désactivées, qui restent désactivées, et sa vidéo la plus longue, ou pourquoi il ne peut pas publier aujourd’hui. Publier sur TikTok vaut acceptation de sa confirmation d’utilisation de la musique, et de sa politique sur le contenu de marque pour un contenu de marque.
 
+`peal channels defaults` montre, enregistre et efface les [options par défaut](#default-options) d’un canal : ce que prend une nouvelle publication sur ce canal quand elle n’en donne pas.
+
 ## Brouillons [#drafts]
 
 ```sh
@@ -187,12 +190,16 @@ peal drafts save --text "Le catalogue de printemps est sorti" --channel <channel
 peal drafts save --post <post-id> --text "Le catalogue de printemps sort aujourd’hui"
 peal drafts save --post <post-id> --options '<channel-id>={"platform":"youtube","title":"Catalogue de printemps","madeForKids":false}'
 peal drafts save --post <post-id> --tag "Campagne de printemps"
+peal drafts save --text "Le catalogue de printemps est sorti" --set Lancement --default-signatures
 peal drafts discard <post-id>
 ```
 
 - `peal drafts save` sans `--post` écrit un nouveau brouillon, pour les canaux que nomme `--channel` (aucun pour l’instant convient). Avec `--post`, il modifie ce brouillon : le texte, quand `--text` est donné, et les canaux, quand un `--channel` l’est. Ce que vous laissez de côté reste tel quel, médias et [options des plateformes](/scheduling#options) des canaux qu’il garde compris.
 - `--options <channel-id>=<json>` règle les options de la plateforme d’un canal, en JSON avec sa `platform` : pour YouTube, `title` et `madeForKids` (tous deux nécessaires pour programmer), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia` ; pour TikTok, `privacyLevel` (nécessaire, l’un de ceux que liste `peal channels tiktok`), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated` ; pour Pinterest, `boardId` (nécessaire, l’un de ceux que liste `peal channels lookup`), `boardSectionId`, `title`, `link`, `coverSecond`, `dominantColor` ; pour LinkedIn, `visibility` (`public` par défaut, `connections` sur un profil, ou `loggedIn`), `disableReshare`, `mentions` (des pages d’entreprise, chacune un `name` et un `urn` que `peal channels lookup` trouve sur un canal de page d’entreprise), `linkUrl` avec son `linkTitle` et une `linkDescription`, et le `documentTitle` d’un document PDF ; pour Google Business Profile, `postType` (`standard` par défaut, `event` ou `offer`), `title`, `startsAt` et `endsAt` (nécessaires pour un événement ou une offre, comme `2026-11-27T09:00`, à l’heure de l’établissement), `callToAction` avec `callToActionUrl`, et pour une offre `couponCode`, `redeemUrl` et `terms`. Répétez-le pour plusieurs canaux ; il remplace en entier les options de ce canal.
 - `--tag <id-ou-nom>` range le brouillon sous l’une des [étiquettes](#tags) de l’espace de travail ; répétez-le pour plusieurs. Sans lui, un brouillon que vous modifiez garde ses étiquettes ; avec lui, il prend celles données à leur place.
+- `--set <id-ou-nom>` nomme l’un des [groupes de canaux](#sets) de l’espace de travail au lieu d’en lister les canaux ; répétez-le pour plusieurs. Le brouillon est aussi pour les canaux connectés du groupe, avec les options que le groupe garde pour eux là où `--options` n’en donne pas. Un canal du groupe qui n’est plus connecté est laissé de côté, et `peal` dit lequel.
+- `--signature <id-ou-nom>` place l’une des [signatures](#signatures) de l’espace de travail sous le texte du brouillon, sur tous les canaux, et `--default-signatures` celle par défaut de chaque canal. Une signature fait alors partie du texte du brouillon, et n’est jamais ajoutée sous un texte qui se termine déjà par elle.
+- Un nouveau brouillon prend les [options par défaut](#default-options) d’un canal là où il n’en donne pas ; un brouillon que vous modifiez garde ce qu’il a.
 - Un brouillon ne part à aucune heure. Son texte, ses médias et ses options sont vérifiés contre les règles de chaque plateforme quand il est programmé, avec `peal posts schedule` ou dans l’application web.
 - `peal drafts discard` supprime un brouillon pour de bon. Une publication programmée ou partie n’est pas un brouillon : déprogrammez-la ou annulez-la plutôt.
 
@@ -211,13 +218,14 @@ peal post "Le catalogue de printemps est sorti" --channel <channel-id> --now --w
 `peal post` écrit une publication et l’envoie en une seule commande, au public des comptes que connectent ses canaux. Ce qui part ne peut pas être repris depuis Peal.
 
 - **Quand.** `--at` la programme, `--now` la publie aussitôt, et l’un des deux est obligatoire : publier n’est jamais le comportement par défaut. `--at` prend un instant avec son décalage, comme `2026-11-20T09:00:00Z` ou `2026-11-20T10:00:00+01:00`, ou une heure locale sans décalage, comme `2026-11-20T10:00`, lue dans `--time-zone` (ou `--zone`), un fuseau IANA comme `Europe/Paris`. Sans l’option, le fuseau est `TZ`, puis celui de votre ordinateur. Une heure locale que les horloges sautent ou répètent dans ce fuseau est refusée : donnez l’instant avec son décalage.
-- **Où.** `--channel` (ou `--channels`) nomme un canal par son identifiant ; répétez-le, ou séparez les identifiants par des virgules. Il en faut au moins un.
+- **Où.** `--channel` (ou `--channels`) nomme un canal par son identifiant ; répétez-le, ou séparez les identifiants par des virgules. `--set <id-ou-nom>` nomme un [groupe de canaux](#sets), et vaut pour ses canaux connectés : il faut au moins un canal ou un groupe. Un canal d’un groupe qui n’est plus connecté est laissé de côté, et `peal` dit lequel après la publication ; quand il n’en reste aucun et qu’aucun `--channel` n’est donné, rien n’est publié.
 - **Médias.** Chaque `--media` est un fichier, importé d’abord ; une adresse `https://`, que le serveur va chercher ; ou l’identifiant d’un média que l’espace de travail a déjà, tel que `peal media list` le montre. Ils s’affichent dans l’ordre donné, 20 au plus. Le premier `--alt` décrit le premier `--media`, le deuxième le deuxième.
-- **Options.** `--options <channel-id>=<json>` règle les [options de la plateforme](/scheduling#options) d’un canal, comme les prend `peal drafts save`.
+- **Options.** `--options <channel-id>=<json>` règle les [options de la plateforme](/scheduling#options) d’un canal, comme les prend `peal drafts save`. Un canal pour lequel vous n’en donnez pas prend les options d’un groupe que vous nommez, puis les [options par défaut](#default-options) du canal.
+- **Signatures.** `--signature <id-ou-nom>` place l’une des [signatures](#signatures) de l’espace de travail sous le texte, sur tous les canaux ; `--default-signatures` place celle par défaut de chaque canal. Une signature fait partie du texte de la publication : elle compte dans la limite de chaque plateforme, et n’est jamais ajoutée deux fois.
 - **Étiquettes.** `--tag <id-ou-nom>` range la publication sous l’une des [étiquettes](#tags) de l’espace de travail ; répétez-le pour plusieurs.
 - **La relancer.** `--idempotency-key` prend le texte de votre choix, de 255 caractères au plus, comme un UUID : dans les 24 heures, la même clé avec la même publication répond la publication créée la première fois, sans en faire une autre ; avec une autre publication, elle est refusée. Sans elle, `peal` n’envoie aucune clé. Pour relancer une publication avec des médias, donnez à `--media` des identifiants de médias : fichiers et adresses sont stockés de nouveau à chaque lancement, ce qui en fait une autre publication.
 - **Deux fois la même publication.** En dehors des clés, une publication dont le contenu (le texte que reçoit le canal et les mêmes médias, dans le même ordre) part déjà sur l’un de ses canaux à moins de 23 heures de son heure est refusée, et `peal` nomme la publication qui l’a déjà. `--allow-duplicate` la laisse passer, quand vous voulez vraiment publier deux fois la même chose ([Publications en double](/posting-api#duplicates)).
-- **Vérifier d’abord.** `--dry-run` vérifie la publication et ne publie rien : il dit ce qui serait refusé.
+- **Vérifier d’abord.** `--dry-run` vérifie la publication et ne publie rien : il dit ce qui serait refusé, et quels canaux d’un groupe seraient laissés de côté.
 - **Attendre le résultat.** Avec `--now`, `--wait <seconds>` (60 au plus) attend que chaque canal ait son résultat avant de répondre. Quand le temps est écoulé avant, la publication continue de se publier : `peal posts wait` attend la suite.
 
 La publication est d’abord vérifiée contre la plateforme de chaque canal. Quand elle enfreint une règle, rien n’est publié, et `peal` liste chaque violation sur sa propre ligne, avec son canal, sa plateforme, son option ou son média, et la limite.
@@ -249,7 +257,7 @@ peal posts tag <post-id> --tag "Campagne de printemps" --tag Intemporel
 - `peal posts attempts` liste chaque tentative de Peal pour publier la publication, par canal, envoi et tentative : quand elle a commencé, comment elle a fini, le code qui accompagne un refus, celui de la plateforme ou celui de Peal, et quand Peal a réessayé.
 - `peal posts show` affiche le statut et l’heure de la publication, ses étiquettes quand elle en a, puis une ligne par canal, qui commence par l’identifiant de sa cible, avec ce qui s’y est passé : échouée et pourquoi, non confirmée et pourquoi, ou publiée à son adresse (et gardée privée, quand YouTube a gardé privée une vidéo publique ou non répertoriée), puis les options de la publication sur chaque canal qui en a.
 - `peal posts wait` attend que chaque canal d’une publication ait son résultat, jusqu’à `--seconds` (60 au plus), puis montre la publication dans son état du moment. Attendre ne change rien : relancez-le quand le temps s’est écoulé avant.
-- `peal posts import` crée et envoie les publications que liste un fichier CSV, une par ligne, avec les colonnes `text`, `channels` et `at`, et au besoin `media`, `time_zone`, `allow_duplicate` et `idempotency_key` ([Importer des publications depuis un fichier CSV](/posting-api#import)). Chaque ligne est d’abord vérifiée, et rien n’est créé si une seule n’est pas valide. `--dry-run` ne fait que vérifier le fichier. `--idempotency-key` permet de relancer l’import sans risque pendant 24 heures : les lignes déjà créées ne le sont pas deux fois.
+- `peal posts import` crée et envoie les publications que liste un fichier CSV, une par ligne, avec les colonnes `text`, `channels` (des identifiants de canaux, ou un [groupe de canaux](#sets) par son identifiant ou par un nom sans espace, virgule ni point-virgule) et `at`, et au besoin `media`, `time_zone`, `allow_duplicate` et `idempotency_key` ([Importer des publications depuis un fichier CSV](/posting-api#import)). Chaque ligne est d’abord vérifiée, et rien n’est créé si une seule n’est pas valide. `--dry-run` ne fait que vérifier le fichier. `--idempotency-key` permet de relancer l’import sans risque pendant 24 heures : les lignes déjà créées ne le sont pas deux fois.
 - `peal posts schedule` programme un brouillon pour `--at`, lu comme le lit `peal post`, sur les canaux qu’il a, ou sur ceux que nomme `--channel`. Son texte, ses médias et ses options doivent respecter les règles de chaque plateforme, sinon rien n’est programmé.
 - `peal posts publish` publie maintenant un brouillon, ou une publication programmée, sur ses canaux. Elle atteint le public des comptes, et ne peut pas être reprise depuis Peal une fois partie.
 - `peal posts reschedule` déplace une publication programmée à une autre heure. Un brouillon est alors programmé, sur les canaux qu’il a.
@@ -275,6 +283,54 @@ peal posts tag <post-id> --tag Intemporel
 - `peal tags delete` supprime définitivement une étiquette et la retire de chaque publication qui la portait ; les publications restent.
 - `peal posts tag` range une publication sous les étiquettes que nomme `--tag`, 10 au plus, à la place de celles qu’elle avait ; sans `--tag`, il les retire toutes. Une publication prend des étiquettes quel que soit son statut, partie ou non.
 - Tout membre qui lit les publications lit les étiquettes ; créer, modifier et supprimer une étiquette, et étiqueter une publication, demandent le droit de modifier les publications.
+
+## Signatures [#signatures]
+
+```sh
+peal signatures list
+peal signatures create "Formule de fin" --text "L’équipe du Studio" --default
+peal signatures create "Fédivers" --text "#studio" --platform mastodon
+peal signatures update "Formule de fin" --text "À la semaine prochaine"
+peal signatures delete "Fédivers"
+```
+
+- Une signature est un texte qu’un espace de travail garde pour terminer ses publications, de 2000 caractères au plus ; un espace de travail en garde 50. Elle est faite pour tous les canaux, pour les canaux d’une plateforme (`--platform`) ou pour un seul canal (`--channel <channel-id>`).
+- `--default` en fait la signature par défaut là où elle s’applique : les publications qui demandent les signatures par défaut (`--default-signatures`) la prennent à cet endroit, celle de l’espace de travail sous le texte de la publication, celle d’une plateforme ou d’un canal sous le texte que ce canal a à la place. La signature qui était celle par défaut à cet endroit ne l’est plus.
+- Une fois sous le texte d’une publication, une signature fait partie de ce texte : elle compte dans la limite de chaque plateforme quand la publication est programmée, et elle n’est jamais ajoutée sous un texte qui se termine déjà par elle.
+- Partout où une commande prend une signature, donnez son identifiant ou son nom, quelle que soit sa casse : `peal signatures list` montre les deux.
+- `peal signatures update` change ce que nomment ses options (`--name`, `--text`, `--whole-workspace`, `--platform` ou `--channel`, `--default` ou `--no-default`) et garde le reste. Les publications qui portent déjà le texte de la signature le gardent tel qu’il était.
+- `peal signatures delete` supprime définitivement une signature ; les publications qui portent déjà son texte le gardent.
+- Tout membre qui lit les publications lit les signatures ; en créer, en modifier et en supprimer une demandent le droit de modifier les publications.
+
+## Groupes de canaux [#sets]
+
+```sh
+peal sets list
+peal sets create "Lancement" --channel <channel-id> --channel <channel-id>
+peal sets create "Vidéos" --channel <channel-id> --options '<channel-id>={"platform":"youtube","madeForKids":false}'
+peal sets update "Lancement" --name "Jour du lancement"
+peal sets delete "Vidéos"
+peal post "Le catalogue de printemps est sorti" --set Lancement --at 2026-11-20T09:00:00Z
+```
+
+- Un groupe de canaux est une sélection des canaux de l’espace de travail gardée sous un nom, de 50 canaux au plus, avec les options que prennent les publications sur certains d’entre eux (`--options`, comme les prend `peal drafts save`) ; un espace de travail garde 50 groupes. `peal post --set` et `peal drafts save --set` nomment un groupe au lieu d’en lister les canaux.
+- Partout où une commande prend un groupe, donnez son identifiant ou son nom, quelle que soit sa casse : `peal sets list` montre les deux. Un import CSV ne nomme un groupe que par son identifiant ou par un nom sans espace, virgule ni point-virgule.
+- `peal sets list` montre les canaux de chaque groupe, et dit lesquels ne sont plus connectés. Une publication créée avec le groupe les laisse de côté et le dit ; elle ne part jamais sur moins de canaux en silence.
+- `peal sets update` change le nom, les canaux (ceux que nomme `--channel` remplacent ceux du groupe) ou les options, et garde ce que vous laissez de côté, sauf les canaux qui ne sont plus connectés : un groupe n’est enregistré qu’avec des canaux connectés, et c’est donc aussi ainsi qu’on en retire un. Les publications créées avec le groupe auparavant gardent leurs canaux.
+- `peal sets delete` supprime définitivement un groupe ; ses canaux, et les publications créées avec lui, restent.
+
+## Options par défaut [#default-options]
+
+```sh
+peal channels defaults show <channel-id>
+peal channels defaults set <channel-id> --options '{"platform":"youtube","madeForKids":false,"privacy":"unlisted"}'
+peal channels defaults clear <channel-id>
+```
+
+- Les options par défaut d’un canal sont celles que prend une nouvelle publication sur ce canal quand elle n’y donne aucune [option de plateforme](/scheduling#options) et qu’aucun groupe de canaux qu’elle nomme n’en donne : un nouveau brouillon, et une publication créée en une seule commande. Un brouillon que vous modifiez garde ce qu’il a.
+- `--options <json>` prend les options de la plateforme du canal, en JSON avec sa `platform`, comme `peal drafts save --options` les prend après l’identifiant du canal. Elles remplacent celles que le canal avait, et peuvent être incomplètes.
+- Les options par défaut sont un point de départ, jamais un moyen de contourner les règles : une publication qui les prend est vérifiée quand elle est programmée comme une publication qui les aurait écrites elle-même.
+- `peal channels defaults clear` laisse le canal sans options par défaut ; les publications déjà créées gardent les leurs.
 
 ## Médias [#media]
 

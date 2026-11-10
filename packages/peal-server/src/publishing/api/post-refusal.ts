@@ -1,5 +1,6 @@
 import { Array as Arr, Effect, Match, Option, Schema } from "effect";
 import {
+  ChannelSetNotFound,
   DuplicatePost,
   errorCodeOf,
   IdempotencyKeyReused,
@@ -7,6 +8,7 @@ import {
   PostNotFound,
   PostRefusalSchema,
   ScheduleInPast,
+  SignatureNotFound,
   UnknownChannels,
   UnknownMedia,
   UnknownTags,
@@ -91,6 +93,8 @@ export const refusalOf =
   (limitReached: LimitRefusal) =>
   (failure: SendRefusal): Effect.Effect<PostRefusal, never, CurrentMember> =>
     Match.valueTags(failure, {
+      ChannelSetNotFound: () =>
+        Effect.succeed<PostRefusal>(new ChannelSetNotFound()),
       DuplicateContent: ({ duplicates }) =>
         Effect.succeed<PostRefusal>(
           new DuplicatePost({
@@ -113,6 +117,8 @@ export const refusalOf =
         Effect.succeed<PostRefusal>(new PostContentInvalid({ violations })),
       PostNotFound: () => Effect.succeed<PostRefusal>(new PostNotFound()),
       ScheduleInPast: () => Effect.succeed<PostRefusal>(new ScheduleInPast()),
+      SignatureNotFound: () =>
+        Effect.succeed<PostRefusal>(new SignatureNotFound()),
       UnknownChannels: ({ channelIds }) =>
         Effect.succeed<PostRefusal>(new UnknownChannels({ channelIds })),
       UnknownMedia: ({ mediaIds }) =>

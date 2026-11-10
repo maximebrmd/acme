@@ -31,6 +31,8 @@ const byteOrderMark = String.fromCodePoint(0xfe_ff);
 // Why a row's post was refused, as its author corrects the row.
 const refusalOf = (refusal: PostRefusal): string =>
   Match.valueTags(refusal, {
+    ChannelSetNotFound: () =>
+      "its channels name a channel set the workspace does not have: peal sets list shows them",
     DuplicatePost: ({ duplicates, message }) =>
       // Another row of the file, which has no post yet: the server says
       // which.
@@ -49,6 +51,8 @@ const refusalOf = (refusal: PostRefusal): string =>
     PostNotFound: () =>
       "the post its idempotency key made was deleted: give the row a new key to make it again",
     ScheduleInPast: () => "its time has passed: give it a later one, or now",
+    SignatureNotFound: () =>
+      "it names a signature the workspace does not have: peal signatures list shows them",
     UnknownChannels: ({ channelIds }) =>
       `these channels are not the workspace's: ${channelIds.join(", ")}`,
     UnknownMedia: ({ mediaIds }) =>
@@ -194,7 +198,7 @@ export const importPosts = Command.make(
     ),
     file: Argument.String("file").pipe(
       Argument.withDescription(
-        `A CSV file of at most ${String(maxImportRows)} posts, one per row under a first line that names its columns, in any order: text, channels (ids separated by spaces, commas or semicolons) and at (now, an instant with its offset, or a local time read in the row's time_zone) are required; media (ids of the workspace's media), time_zone, allow_duplicate (true or false) and idempotency_key are optional. A cell with a comma, a quote or a line break goes between double quotes, a quote inside it written twice.`
+        `A CSV file of at most ${String(maxImportRows)} posts, one per row under a first line that names its columns, in any order: text, channels (channel ids separated by spaces, commas or semicolons; a channel set's id or its name, as peal sets list shows them, stands for its connected channels, when the name holds no space, comma or semicolon) and at (now, an instant with its offset, or a local time read in the row's time_zone) are required; media (ids of the workspace's media), time_zone, allow_duplicate (true or false) and idempotency_key are optional. A cell with a comma, a quote or a line break goes between double quotes, a quote inside it written twice.`
       )
     ),
     idempotencyKey: Flag.String("idempotency-key").pipe(
@@ -254,6 +258,6 @@ export const importPosts = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Create and send the posts a CSV file lists, one per row, each as peal post would: to the public of the accounts its channels connect, at its time or now. Every row is checked first, and nothing is made unless all of them are valid; each row is printed with what became of it. --dry-run checks the file and makes nothing."
+    "Create and send the posts a CSV file lists, one per row, each as peal post would: to the public of the accounts its channels connect, at its time or now. A row's channels may name a channel set instead of listing its channels. Every row is checked first, and nothing is made unless all of them are valid; each row is printed with what became of it. --dry-run checks the file and makes nothing."
   )
 );

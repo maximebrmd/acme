@@ -52,10 +52,19 @@ export const readPost = (
     })
   );
 
-/** The post a CSV row wrote, as the contract writes one. */
-export const newPostOf = (post: ImportedPost): NewPostInput => ({
+/**
+ * The post a CSV row wrote, as the contract writes one. What its
+ * `channels` cell lists is a channel's id, or one of the workspace's
+ * channel sets (`sets`: those of the file's entries that name one, by id
+ * or by name).
+ */
+export const newPostOf = (
+  post: ImportedPost,
+  sets: ReadonlySet<string> = new Set()
+): NewPostInput => ({
   allowDuplicate: post.allowDuplicate,
-  channelIds: [post.channels[0] ?? "", ...post.channels.slice(1)],
+  channelIds: post.channels.filter((entry) => !sets.has(entry)),
+  channelSets: post.channels.filter((entry) => sets.has(entry)),
   content: {
     media: post.media.map((mediaId) => ({ altText: "", mediaId })),
     overrides: [],

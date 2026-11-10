@@ -1,4 +1,15 @@
-import { and, asc, count, eq, inArray, lte, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gt,
+  ilike,
+  inArray,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import {
   DateTime,
   Duration,
@@ -13,12 +24,16 @@ import { SqlClient, SqlError } from "effect/sql";
 import { ChannelAlreadyConnected } from "#channels/application/channel-already-connected.ts";
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
-import type { RefreshCutoff } from "#channels/application/channel-repository.ts";
+import type {
+  ChannelPageRequest,
+  ChannelStatusCounts,
+  RefreshCutoff,
+} from "#channels/application/channel-repository.ts";
 import { tokenKeyIdOf } from "#channels/application/token-cipher.ts";
 import { Channel } from "#channels/domain/channel.ts";
 import type { TokenLifetime } from "#channels/domain/channel.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
-import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -56,6 +71,7 @@ const toChannel = (row: Row) =>
     displayName: Option.fromNullOr(row.displayName),
     handle: row.handle,
     id: row.id,
+    label: Option.fromNullOr(row.label),
     platform: row.platform,
     scopes: row.scopes,
     status: statusOf(row),
@@ -138,6 +154,40 @@ const dueBefore = (cutoffs: readonly RefreshCutoff[]) =>
 
 const byId = (workspaceId: WorkspaceId, channelId: ChannelId) =>
   and(eq(channels.workspaceId, workspaceId), eq(channels.id, channelId));
+
+// The text as a LIKE pattern that finds it anywhere, its own wildcards
+// read as the characters they are.
+const containing = (text: string) =>
+  `%${text.replaceAll(/[\\%_]/gu, (wildcard) => `\\${wildcard}`)}%`;
+
+// What a channel must hold to be listed, its status apart.
+const matching = ({ platform, query, workspaceId }: ChannelPageRequest) =>
+  and(
+    eq(channels.workspaceId, workspaceId),
+    platform.pipe(
+      Option.map((asked) => eq(channels.platform, asked)),
+      Option.getOrUndefined
+    ),
+    query.pipe(
+      Option.map((text) =>
+        or(
+          ilike(channels.handle, containing(text)),
+          ilike(channels.displayName, containing(text)),
+          ilike(channels.label, containing(text))
+        )
+      ),
+      Option.getOrUndefined
+    )
+  );
+
+const noChannels = {
+  active: 0,
+  disabled: 0,
+  refreshNeeded: 0,
+} satisfies ChannelStatusCounts;
+
+const isCounted = (status: string): status is keyof ChannelStatusCounts =>
+  Object.hasOwn(noChannels, status);
 
 const firstChannel = (rows: readonly Row[]) => {
   const [row] = rows;
@@ -374,6 +424,92 @@ export const DrizzleChannelRepository = Layer.effect(
           .pipe(
             Effect.mapError(failed),
             Effect.flatMap(Effect.forEach(toChannel))
+          ),
+      search: (request) =>
+        Effect.gen(function* search() {
+          const counted = yield* db
+            .select({ channels: count(), status: channels.status })
+            .from(channels)
+            .where(matching(request))
+            .groupBy(channels.status);
+
+          // One more than asked tells whether another page follows.
+          const rows = yield* db
+            .select()
+            .from(channels)
+            .where(
+              and(
+                matching(request),
+                request.status.pipe(
+                  Option.map((status) => eq(channels.status, status)),
+                  Option.getOrUndefined
+                ),
+                request.after.pipe(
+                  Option.map((last) => gt(channels.id, last)),
+                  Option.getOrUndefined
+                )
+              )
+            )
+            .orderBy(asc(channels.id))
+            .limit(request.limit + 1);
+
+          const page = rows.slice(0, request.limit);
+          const last = page.at(-1);
+
+          const counts = { ...noChannels };
+
+          for (const { channels: found, status } of counted) {
+            if (isCounted(status)) {
+              counts[status] = found;
+            }
+          }
+
+          return {
+            counts,
+            items: page,
+            next:
+              rows.length > request.limit && last !== undefined
+                ? Option.some(last.id)
+                : Option.none<string>(),
+          };
+        }).pipe(
+          Effect.mapError(failed),
+          Effect.flatMap(({ counts, items, next }) =>
+            Effect.all({
+              counts: Effect.succeed(counts),
+              items: Effect.all(items.map((row) => toChannel(row))),
+              next: Effect.succeed(
+                next.pipe(Option.map((id) => ChannelIdSchema.make(id)))
+              ),
+            })
+          )
+        ),
+      setLabel: (workspaceId, channelId, label, now) =>
+        db
+          .update(channels)
+          .set({ label: Option.getOrNull(label), updatedAt: date(now) })
+          .where(byId(workspaceId, channelId))
+          .returning({ id: channels.id })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length > 0)
+          ),
+      setStatus: (channel) =>
+        db
+          .update(channels)
+          .set({
+            refreshNeeded:
+              channel.status._tag === "refreshNeeded" ||
+              (channel.status._tag === "disabled" &&
+                channel.status.refreshNeeded),
+            status: channel.status._tag,
+            updatedAt: date(channel.updatedAt),
+          })
+          .where(byId(channel.workspaceId, channel.id))
+          .returning({ id: channels.id })
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length > 0)
           ),
       update: (channel, credentials) =>
         db

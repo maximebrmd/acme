@@ -217,6 +217,14 @@ const reasonOf =
         refused(
           "The workspace has no such channel, or it is not of this platform: peal channels list shows them."
         ),
+      ChannelSetNameTaken: () =>
+        refused(
+          "The workspace already has a channel set of that name, whatever its case: nothing was changed. peal sets list shows them."
+        ),
+      ChannelSetNotFound: () =>
+        refused(
+          "The workspace has no such channel set, by id or by name: peal sets list shows them."
+        ),
       CommentInvalid: ({ problem }) =>
         refused(`Peal refused the comment: ${commentProblems[problem]}.`),
       CommentNotFound: () =>
@@ -336,6 +344,14 @@ const reasonOf =
       ScheduleInPast: () =>
         refused("That time has passed: give a later --at, or publish it now."),
       SchemaError: requestFailed(url),
+      SignatureNameTaken: () =>
+        refused(
+          "The workspace already has a signature of that name, whatever its case: nothing was changed. peal signatures list shows them."
+        ),
+      SignatureNotFound: () =>
+        refused(
+          "The workspace has no signature with that id: peal signatures list shows them."
+        ),
       TagNameTaken: () =>
         refused(
           "The workspace already has a tag of that name, whatever its case: nothing was changed. peal tags list shows them."
@@ -347,6 +363,10 @@ const reasonOf =
       TargetStatusConflict: ({ status }) =>
         refused(
           `The post is ${status} on that channel: only a failed or unconfirmed post is posted again, and only an unconfirmed one confirmed.`
+        ),
+      TooManyChannelSets: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} channel sets, the most it may: delete one first, with peal sets delete.`
         ),
       TooManyConnectLinks: ({ allowed }) =>
         refused(
@@ -363,6 +383,10 @@ const reasonOf =
       TooManyReviewLinks: ({ limit }) =>
         refused(
           `The post has ${String(limit)} working review links, the most it may: revoke one first.`
+        ),
+      TooManySignatures: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} signatures, the most it may: delete one first, with peal signatures delete.`
         ),
       TooManyTags: ({ allowed }) =>
         refused(

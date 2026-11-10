@@ -6,13 +6,20 @@ import {
   PostDraftSchema,
   PostSchema,
 } from "peal-contract";
-import type { ChannelOptions, Post, PostDraft } from "peal-contract";
+import type { Post, PostDraft } from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson, printNothing } from "#json.ts";
-import { optionsOf } from "#post-flags.ts";
+import { optionsOf, withOptions } from "#post-flags.ts";
 import { columns, excerpt } from "#print.ts";
 import { Refused } from "#refused.ts";
+import {
+  defaultSignaturesFlag,
+  presetsOf,
+  setsFlag,
+  signatureFlag,
+  warningLines,
+} from "#saved-items.ts";
 import { tagIdsOf, tagsFlag } from "#tags.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
@@ -30,21 +37,6 @@ const checkDraft = (draft: PostDraft) =>
         })
     )
   );
-
-// The options a draft goes with: those given replace the draft's on their
-// channel; the draft keeps the others it has on the channels it keeps.
-const withOptions = (
-  channelIds: readonly string[],
-  given: readonly ChannelOptions[],
-  draft: readonly ChannelOptions[]
-): ChannelOptions[] => [
-  ...draft.filter(
-    ({ channelId }) =>
-      channelIds.includes(channelId) &&
-      !given.some((chosen) => chosen.channelId === channelId)
-  ),
-  ...given,
-];
 
 const list = Command.make(
   "list",
@@ -131,11 +123,14 @@ const save = Command.make(
       ),
       Flag.atLeast(0)
     ),
+    defaultSignatures: defaultSignaturesFlag(
+      "Put each channel's default signature under its text, as peal signatures list shows them: the workspace's under the post's text, a platform's or a channel's own under the text that channel has instead. A text that already ends with its signature is left as it is."
+    ),
     json: jsonFlag,
     options: Flag.String("options").pipe(
       Flag.withMetavar("<channel-id>=<json>"),
       Flag.withDescription(
-        'What the post sets on a channel whose platform asks for more, as JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels. A draft you change keeps the options it has on its other channels. peal channels tiktok shows what a TikTok channel takes, and peal channels capabilities every option of a channel.'
+        'What the post sets on a channel whose platform asks for more, as JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels. A draft you change keeps the options it has on its other channels; a new draft takes a channel\'s default options where it gives none (peal channels defaults). peal channels tiktok shows what a TikTok channel takes, and peal channels capabilities every option of a channel.'
       ),
       Flag.atLeast(0)
     ),
@@ -143,6 +138,12 @@ const save = Command.make(
       Flag.withMetavar("<post-id>"),
       Flag.withDescription("The draft to change. Without it, a new draft."),
       Flag.optional
+    ),
+    sets: setsFlag(
+      "A channel set the post is for as well, by its id or its name, as peal sets list shows them; repeat it for several: its connected channels, with the options the set keeps for them where --options gives none. A channel of the set that is no longer connected is left out, and said."
+    ),
+    signature: signatureFlag(
+      "A signature to put under the post's text, on every channel, by its id or its name, as peal signatures list shows them. It is then text of the post, counted against each platform's limit, and never added twice."
     ),
     tags: tagsFlag(
       "A tag to file the post under, by its id or its name, as peal tags list shows them; repeat it for several. A draft you change keeps its tags without it, and takes those given instead of them with it; peal posts tag takes them all off."
@@ -165,6 +166,7 @@ const save = Command.make(
     // Tags are sent only when some were given: a new draft has none
     // without them, and a draft that changes keeps its own.
     const filed = tagIds.length === 0 ? {} : { tagIds };
+    const presets = yield* presetsOf(session, input);
 
     const saved: Post = yield* Option.match(input.postId, {
       onNone: () =>
@@ -177,6 +179,7 @@ const save = Command.make(
           },
           options: given,
           ...filed,
+          ...presets,
         }).pipe(
           Effect.flatMap((payload) =>
             client.posts
@@ -208,6 +211,7 @@ const save = Command.make(
               },
               options: withOptions(channelIds, given, kept),
               ...filed,
+              ...presets,
             });
           }),
           Effect.flatMap((payload) =>
@@ -227,10 +231,14 @@ const save = Command.make(
     yield* Console.log(
       `Saved draft ${saved.id} in ${workspace.name}, for ${plural(saved.targets.length, "channel", "channels")}.`
     );
+
+    for (const line of warningLines(saved.warnings, true)) {
+      yield* Console.log(line);
+    }
   })
 ).pipe(
   Command.withDescription(
-    "Write a new draft, or change one: its text, channels, tags and the options of platforms that ask for more. peal posts schedule schedules it, and peal posts publish sends it now."
+    "Write a new draft, or change one: its text, channels, tags and the options of platforms that ask for more. --set names a channel set instead of listing its channels, and --signature or --default-signatures puts a signature under its text. peal posts schedule schedules it, and peal posts publish sends it now."
   )
 );
 

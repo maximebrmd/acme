@@ -210,6 +210,7 @@ CREATE TABLE "channels"."channels" (
 	"granted_by" text,
 	"handle" text NOT NULL,
 	"id" uuid PRIMARY KEY,
+	"label" text,
 	"platform" text NOT NULL,
 	"refresh_needed" boolean NOT NULL,
 	"refresh_token" text,
@@ -388,6 +389,24 @@ CREATE TABLE "notifications"."sent_notices" (
 	"sent_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "publishing"."channel_defaults" (
+	"channel_id" uuid PRIMARY KEY,
+	"options" jsonb NOT NULL,
+	"updated_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "publishing"."channel_sets" (
+	"channel_ids" uuid[] NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"name" text NOT NULL,
+	"name_key" text NOT NULL,
+	"options" jsonb DEFAULT '[]' NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "channel_sets_workspace_name" UNIQUE("workspace_id","name_key")
+);
+--> statement-breakpoint
 CREATE TABLE "publishing"."idempotency_keys" (
 	"created_at" timestamp with time zone NOT NULL,
 	"key_digest" text,
@@ -471,6 +490,20 @@ CREATE TABLE "publishing"."quota_usage" (
 	"units" integer NOT NULL,
 	CONSTRAINT "quota_usage_pkey" PRIMARY KEY("bucket","day"),
 	CONSTRAINT "quota_usage_units" CHECK ("units" >= 0)
+);
+--> statement-breakpoint
+CREATE TABLE "publishing"."signatures" (
+	"created_at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"is_default" boolean DEFAULT false NOT NULL,
+	"name" text NOT NULL,
+	"name_key" text NOT NULL,
+	"scope" text NOT NULL,
+	"scope_channel_id" uuid,
+	"scope_platform" text,
+	"text" text NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "signatures_workspace_name" UNIQUE("workspace_id","name_key")
 );
 --> statement-breakpoint
 CREATE TABLE "publishing"."tags" (
@@ -989,6 +1022,7 @@ CREATE INDEX "identification_holds_user" ON "legal"."identification_holds" ("use
 CREATE INDEX "media_assets_workspace_id_id_index" ON "media"."media_assets" ("workspace_id","id" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "notices_user" ON "notifications"."notices" ("user_id","id");--> statement-breakpoint
 CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHERE "read_at" IS NULL;--> statement-breakpoint
+CREATE INDEX "channel_defaults_workspace" ON "publishing"."channel_defaults" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "idempotency_keys_created_at" ON "publishing"."idempotency_keys" ("created_at");--> statement-breakpoint
 CREATE INDEX "post_targets_channel_content" ON "publishing"."post_targets" ("channel_id","content_digest") WHERE "content_digest" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint

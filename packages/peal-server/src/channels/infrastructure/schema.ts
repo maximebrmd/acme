@@ -39,6 +39,10 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  *   (`instagramLogin` or `facebookLogin`); null on other platforms, and on
  *   Instagram channels connected before Instagram Login, which came through
  *   Facebook Login. The repository reads null so.
+ * - `label` is the name the workspace gave the channel, shown in Peal only;
+ *   null when it gave none. It is written on its own
+ *   (`ChannelRepository.setLabel`), never with the rest of the row, so a
+ *   token renewal never undoes a renaming made meanwhile.
  * - The platform is not checked here, so adding one needs no migration: the
  *   repository decodes every row with the domain's schema.
  */
@@ -54,6 +58,7 @@ export const channels = channelsSchema.table(
     grantedBy: text("granted_by"),
     handle: text("handle").notNull(),
     id: uuid("id").primaryKey(),
+    label: text("label"),
     platform: text("platform").notNull(),
     refreshNeeded: boolean("refresh_needed").notNull(),
     refreshToken: text("refresh_token"),

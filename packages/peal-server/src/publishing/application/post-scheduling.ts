@@ -51,6 +51,7 @@ import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 import type { AccountRules } from "./account-rules.ts";
 import { ApprovalGate } from "./approval-gate.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
+import type { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import type { ContentFingerprints } from "./content-fingerprints.ts";
 import { admit, remember } from "./duplicate-guard.ts";
 import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
@@ -60,13 +61,16 @@ import { PostAllowance } from "./post-allowance.ts";
 import { PostEvents } from "./post-events.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { PostOrigins } from "./post-origins.ts";
+import { nothingAsked, PostPresets } from "./post-presets.ts";
+import type { PresetAsk } from "./post-presets.ts";
 import { channelsFor, mediaFor, tagsFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets, StoredPost } from "./post-repository.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
 import { violationsOf } from "./publishability.ts";
+import type { SignatureNotFound } from "./signature-not-found.ts";
 import type { TagStore } from "./tag-store.ts";
-import type { UnknownChannels } from "./unknown-channels.ts";
+import { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
 import type { UnknownTags } from "./unknown-tags.ts";
 import { withinPlan as withinPlanOf } from "./within-plan.ts";
@@ -107,14 +111,20 @@ export interface SchedulePostRequest {
  */
 export interface SendPostRequest {
   /**
+   * What it takes from what the workspace saved: channel sets, whose
+   * channels it goes to as well, and signatures. Left out, nothing.
+   */
+  readonly presets?: PresetAsk;
+  /**
    * True when the same content may go to a channel that already has it
    * within `duplicateWindow`; otherwise that is DuplicateContent.
    */
   readonly allowDuplicate?: boolean;
   /** When it goes out; none is now. */
   readonly at: Option.Option<DateTime.Utc>;
-  // At least one; a channel listed twice gets one target.
-  readonly channelIds: readonly [ChannelId, ...ChannelId[]];
+  // At least one, with those of the sets it names; a channel listed
+  // twice gets one target.
+  readonly channelIds: readonly ChannelId[];
   readonly content: PostContent;
   /**
    * The key the request names itself with, if it does: sent again with it
@@ -152,8 +162,13 @@ type Unpublishable =
   | UnknownChannels
   | UnknownMedia;
 
-// A new post is refused too when a tag it names is not the workspace's.
-type Unfiled = Unpublishable | UnknownTags;
+// A new post is refused too when a tag, a channel set or a signature it
+// names is not the workspace's.
+type Unfiled =
+  | ChannelSetNotFound
+  | SignatureNotFound
+  | Unpublishable
+  | UnknownTags;
 
 type Ports =
   | AccountRules
@@ -164,6 +179,7 @@ type Ports =
   | Ids
   | PostAllowance
   | PostOrigins
+  | PostPresets
   | PostRepository
   | TagStore
   | WorkspaceChannels;
@@ -722,10 +738,37 @@ export class PostScheduling extends Context.Service<
           return yield* replay(actor, before.value);
         }
 
+        // What it names of the workspace's saved items, filled in: the
+        // sets' channels and options, the channels' default options, and
+        // signatures.
+        const filled = yield* PostPresets.use((presets) =>
+          presets.fill(actor, {
+            ...(request.presets ?? nothingAsked),
+            channelIds: request.channelIds,
+            content: request.content,
+            defaultOptions: true,
+            options: request.options ?? [],
+          })
+        ).pipe(withPorts);
+
+        const { channelIds, dropped } = filled;
+
+        // Every channel its sets named is gone, and it lists no other.
+        if (!Arr.isReadonlyArrayNonEmpty(channelIds)) {
+          const gone = dropped.flatMap((set) => set.channelIds);
+
+          return yield* Arr.isReadonlyArrayNonEmpty(gone)
+            ? new UnknownChannels({ channelIds: gone })
+            : Effect.die("A post was sent to no channel");
+        }
+
         const { made, used } = yield* scheduleNew(
           actor,
           {
             ...request,
+            channelIds,
+            content: filled.content,
+            options: filled.options,
             schedule: new Schedule({
               at: Option.getOrElse(at, () => now),
               timeZone,
@@ -750,7 +793,7 @@ export class PostScheduling extends Context.Service<
           return yield* replay(actor, used.value);
         }
 
-        const sent: SentPost = { ...made, replayed: false };
+        const sent: SentPost = { ...made, dropped, replayed: false };
 
         return sent;
       });

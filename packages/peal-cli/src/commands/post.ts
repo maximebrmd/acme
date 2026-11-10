@@ -1,4 +1,4 @@
-import { Array as Arr, Console, Effect, Option, Schema } from "effect";
+import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
   duplicateWindowHours,
@@ -30,6 +30,14 @@ import {
 } from "#post-flags.ts";
 import { channelsOf, namesFor, printPost, timeOf } from "#post-result.ts";
 import { Refused } from "#refused.ts";
+import {
+  defaultSignaturesFlag,
+  presetsOf,
+  setsFlag,
+  signatureFlag,
+  warningLines,
+} from "#saved-items.ts";
+import type { Presets } from "#saved-items.ts";
 import { tagIdsOf, tagsFlag } from "#tags.ts";
 import { instantOf, timeZoneFlag } from "#when.ts";
 import { channelNames, inWorkspace, workspaceFlag } from "#workspace.ts";
@@ -153,6 +161,10 @@ const check = (
       for (const line of previewLines(validation, names)) {
         yield* Console.log(line);
       }
+
+      for (const line of warningLines(validation.warnings, false)) {
+        yield* Console.log(line);
+      }
     }
 
     if (!validation.valid) {
@@ -175,6 +187,7 @@ const planned = (input: {
   readonly media: readonly string[];
   readonly now: boolean;
   readonly options: readonly string[];
+  readonly sets: readonly string[];
   readonly timeZone: string;
 }) =>
   Effect.gen(function* planning() {
@@ -190,9 +203,10 @@ const planned = (input: {
 
     const channelIds = channelIdsOf(input.channels);
 
-    if (!Arr.isArrayNonEmpty(channelIds)) {
+    // One channel at least, unless a channel set brings some.
+    if (channelIds.length === 0 && input.sets.length === 0) {
       return yield* refuse(
-        "Name the channels it goes to with --channel: peal channels list shows their ids."
+        "Name the channels it goes to with --channel, or a channel set with --set: peal channels list shows the channels' ids, and peal sets list the sets."
       );
     }
 
@@ -261,7 +275,10 @@ export const post = Command.make(
       Flag.optional
     ),
     channels: channelsFlag(
-      "A channel the post goes to, as peal channels list shows its id; repeat it, or separate ids with commas. At least one."
+      "A channel the post goes to, as peal channels list shows its id; repeat it, or separate ids with commas. At least one, unless --set names a channel set."
+    ),
+    defaultSignatures: defaultSignaturesFlag(
+      "Put each channel's default signature under its text, as peal signatures list shows them: the workspace's under the post's text, a platform's or a channel's own under the text that channel has instead. They are then text of the post, counted against each platform's limit; a text that already ends with its signature is left as it is."
     ),
     dryRun: Flag.Boolean("dry-run").pipe(
       Flag.withDescription(
@@ -291,7 +308,13 @@ export const post = Command.make(
       Flag.withDefault(false)
     ),
     options: optionsFlag(
-      'What the post sets on a channel whose platform asks for more, as peal drafts save takes it: JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels.'
+      'What the post sets on a channel whose platform asks for more, as peal drafts save takes it: JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels. A channel on which it gives none takes the options of a set it names, then the channel\'s default options (peal channels defaults).'
+    ),
+    sets: setsFlag(
+      "A channel set the post goes to, by its id or its name, as peal sets list shows them; repeat it for several: its connected channels, beside any --channel, with the options the set keeps for them where --options gives none. A channel of the set that is no longer connected is left out, and said; when none is left and no --channel is given, nothing is posted."
+    ),
+    signature: signatureFlag(
+      "A signature to put under the post's text, on every channel, by its id or its name, as peal signatures list shows them. It is then text of the post, counted against each platform's limit, and never added twice."
     ),
     tags: tagsFlag(
       "A tag to file the post under, by its id or its name, as peal tags list shows them; repeat it for several. Tags say nothing to the platforms."
@@ -316,13 +339,15 @@ export const post = Command.make(
 
     const withMedia = (
       media: readonly MediaAttachment[],
-      tagIds: readonly string[] = []
+      tagIds: readonly string[] = [],
+      presets: Presets = {}
     ) => {
       const written: NewPost = {
         channelIds,
         content: { media, overrides: [], text: input.text },
         options,
         when,
+        ...presets,
       };
 
       // Tags are sent only when some were given.
@@ -341,6 +366,8 @@ export const post = Command.make(
     const destination = { client, url, workspaceId: workspace.id };
     // A tag the workspace lacks is refused before any media is stored.
     const tagIds = yield* tagIdsOf(session, input.tags);
+    // So is a channel set or a signature it lacks.
+    const presets = yield* presetsOf(session, input);
     const media: MediaAttachment[] = [];
 
     for (const [index, source] of input.media.entries()) {
@@ -354,7 +381,11 @@ export const post = Command.make(
     }
 
     if (input.dryRun) {
-      yield* check(session, yield* withMedia(media, tagIds), input.json);
+      yield* check(
+        session,
+        yield* withMedia(media, tagIds, presets),
+        input.json
+      );
 
       return;
     }
@@ -366,7 +397,7 @@ export const post = Command.make(
           onSome: (key) => ({ "idempotency-key": key }),
         }),
         params: { workspaceId: workspace.id },
-        payload: yield* withMedia(media, tagIds),
+        payload: yield* withMedia(media, tagIds, presets),
         query: Option.match(input.wait, {
           onNone: () => ({}),
           onSome: (wait) => ({ wait }),
@@ -388,9 +419,15 @@ export const post = Command.make(
         yield* Console.log(line);
       }
     }
+
+    if (!input.json) {
+      for (const line of warningLines(sent.warnings, true)) {
+        yield* Console.log(line);
+      }
+    }
   })
 ).pipe(
   Command.withDescription(
-    "Write a post and send it in one command, to the public of the accounts its channels connect: scheduled with --at, or published at once with --now. One of the two is required. Its media are uploaded or imported first, and its text, media and options must fit each platform's rules, or nothing is posted. --dry-run checks it and makes nothing; --wait, with --now, says how it went on each channel."
+    "Write a post and send it in one command, to the public of the accounts its channels connect: scheduled with --at, or published at once with --now. One of the two is required. --set names a channel set instead of listing its channels, and --signature or --default-signatures puts a signature under its text. Its media are uploaded or imported first, and its text, media and options must fit each platform's rules, or nothing is posted. --dry-run checks it and makes nothing; --wait, with --now, says how it went on each channel."
   )
 );

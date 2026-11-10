@@ -13,7 +13,9 @@ import { PostTools } from "#app/mcp/posts-tools.ts";
 import {
   notAllowed,
   planRefusal,
+  presetRefusals,
   refuse,
+  unknownSignature,
   unknownTags,
 } from "#app/mcp/refusals.ts";
 import { keyAt, readPost, sendRead } from "#publishing/api/post-batch.ts";
@@ -26,6 +28,7 @@ import {
   optionsFrom,
   postIdFrom,
   postIdOption,
+  presetsFrom,
   scheduleFrom,
   sendRequestFrom,
   targetIdFrom,
@@ -275,7 +278,7 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(confirmed);
         }).pipe(Effect.catchTags(malformedPost)),
-      create_draft: ({ channelIds, content, options, tagIds }) =>
+      create_draft: ({ channelIds, content, options, tagIds, ...saved }) =>
         Effect.gen(function* create() {
           const given = yield* givenOptions(options);
           const tags = yield* draftTagsFrom(tagIds);
@@ -285,10 +288,12 @@ export const PostToolsLive = PostTools.toLayer(
               channelIds: yield* channelIdsFrom(channelIds),
               content: yield* contentFrom(content),
               options: Option.getOrElse(given, () => []),
+              presets: yield* presetsFrom(saved),
               ...tags,
             })
             .pipe(
               Effect.catchTags({
+                ...presetRefusals,
                 DatabaseError: Effect.die,
                 MissingPermission: notAllowed("write drafts"),
                 PostContentRejected: contentRejected,
@@ -300,7 +305,11 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(created);
         }).pipe(
-          Effect.catchTags({ ...malformedContent, UnknownTags: unknownTags })
+          Effect.catchTags({
+            ...malformedContent,
+            SignatureNotFound: unknownSignature,
+            UnknownTags: unknownTags,
+          })
         ),
       create_post: ({ idempotencyKey, waitSeconds = 0, ...post }) =>
         Effect.gen(function* createPost() {
@@ -308,6 +317,7 @@ export const PostToolsLive = PostTools.toLayer(
 
           const sent = yield* scheduling.send(yield* actor, request).pipe(
             Effect.catchTags({
+              ...presetRefusals,
               ...newPostFailures,
               DuplicateContent: ({ duplicates }) =>
                 refuse(
@@ -342,6 +352,7 @@ export const PostToolsLive = PostTools.toLayer(
           Effect.catchTags({
             ...malformedContent,
             ...badZone,
+            SignatureNotFound: unknownSignature,
             UnknownTags: unknownTags,
           })
         ),
@@ -616,7 +627,14 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(draft);
         }).pipe(Effect.catchTags(malformedPost)),
-      update_draft: ({ channelIds, content, options, postId, tagIds }) =>
+      update_draft: ({
+        channelIds,
+        content,
+        options,
+        postId,
+        tagIds,
+        ...saved
+      }) =>
         Effect.gen(function* update() {
           const id = yield* postIdFrom(postId);
           const channels = yield* channelIdsFrom(channelIds);
@@ -635,10 +653,12 @@ export const PostToolsLive = PostTools.toLayer(
               channelIds: channels,
               content: yield* contentFrom(content),
               options: kept,
+              presets: yield* presetsFrom(saved),
               ...tags,
             })
             .pipe(
               Effect.catchTags({
+                ...presetRefusals,
                 DatabaseError: Effect.die,
                 InvalidPostTransition: postConflict,
                 MissingPermission: notAllowed("change drafts"),
@@ -655,6 +675,7 @@ export const PostToolsLive = PostTools.toLayer(
           Effect.catchTags({
             ...malformedPost,
             ...malformedContent,
+            SignatureNotFound: unknownSignature,
             UnknownTags: unknownTags,
           })
         ),
@@ -664,13 +685,14 @@ export const PostToolsLive = PostTools.toLayer(
 
           const check = yield* checks.check(yield* actor, read.request).pipe(
             Effect.catchTags({
+              ...presetRefusals,
               DatabaseError: Effect.die,
               MissingPermission: notAllowed("read posts"),
             })
           );
 
           return yield* toValidation(check, read);
-        }),
+        }).pipe(Effect.catchTag("SignatureNotFound", unknownSignature)),
     });
   })
 );

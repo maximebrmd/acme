@@ -5,6 +5,7 @@ import {
   PlanLimitSchema,
   PlanSchema,
 } from "./billing-plans.ts";
+import { PostWarningSchema } from "./channel-sets.ts";
 import { DuplicateOnChannelSchema } from "./duplicate-post.ts";
 import { Int64Schema } from "./int64.ts";
 import { PlatformSchema } from "./platform.ts";
@@ -107,6 +108,9 @@ export const PostValidationSchema = Schema.Struct({
   // What is wrong with the post whatever the channel: no channel at all,
   // or a text or options for a channel it does not go to.
   violations: Schema.Array(ContentViolationSchema),
+  // Channels of the sets it names that are no longer connected, which the
+  // post would be made without. Left out when there are none.
+  warnings: Schema.optionalKey(Schema.Array(PostWarningSchema)),
 }).annotate({ identifier: "PostValidation" });
 
 export type PostValidation = typeof PostValidationSchema.Type;

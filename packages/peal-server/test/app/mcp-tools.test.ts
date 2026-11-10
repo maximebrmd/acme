@@ -7,11 +7,14 @@ import {
   ApprovalRequestSchema,
   ChangesOutcomeSchema,
   ChannelCapabilitiesSchema,
+  ChannelDefaultsSchema,
+  ChannelSetSchema,
   InvitationSchema,
   PostChannelSchema,
   PostReviewSchema,
   PostSchema,
   PostValidationSchema,
+  SignatureSchema,
   TagSchema,
 } from "peal-contract";
 import type { TargetOptions } from "peal-contract";
@@ -258,23 +261,31 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           approve_post: [false, false, false, true],
           await_post: [true, false, true, false],
           cancel_post: [false, true, true, false],
+          // The options that were kept are gone.
+          clear_channel_defaults: [false, true, true, false],
           confirm_target: [false, true, true, false],
+          create_channel_set: [false, false, false, false],
           // A link's address lets whoever holds it connect an account,
           // through Peal's own page: nothing leaves Peal with the call.
           create_connect_link: [false, false, false, false],
           create_draft: [false, false, false, false],
           create_post: [false, false, false, true],
           create_posts: [false, false, false, true],
+          // As a default, it takes the place of the one its scope had.
+          create_signature: [false, true, false, false],
           create_tag: [false, false, false, false],
           // An endpoint is a server outside Peal, which then hears of the
           // workspace.
           create_webhook: [false, false, false, true],
+          delete_channel_set: [false, true, true, false],
+          delete_signature: [false, true, true, false],
           // Its posts lose it, and stay.
           delete_tag: [false, true, true, false],
           discard_draft: [false, true, true, false],
           find_tools: [true, false, true, false],
           get_billing: [true, false, true, false],
           get_channel_capabilities: [true, false, true, true],
+          get_channel_defaults: [true, false, true, false],
           get_connect_link: [true, false, true, false],
           get_partner_account: [true, false, true, false],
           get_post: [true, false, true, false],
@@ -284,6 +295,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           invite_member: [false, true, false, true],
           list_activity: [true, false, true, false],
           list_approvals: [true, false, true, false],
+          list_channel_sets: [true, false, true, false],
           list_channels: [true, false, true, false],
           list_connect_links: [true, false, true, false],
           list_drafts: [true, false, true, false],
@@ -293,6 +305,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_partner_workspaces: [true, false, true, false],
           list_post_attempts: [true, false, true, false],
           list_posts: [true, false, true, false],
+          list_signatures: [true, false, true, false],
           list_tags: [true, false, true, false],
           list_webhook_deliveries: [true, false, true, false],
           list_webhooks: [true, false, true, false],
@@ -307,11 +320,15 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           run_channel_lookup: [true, false, true, true],
           schedule_post: [false, false, false, true],
           server_health: [true, false, true, false],
+          // They replace the options the channel had.
+          set_channel_defaults: [false, true, true, false],
           // The same tags again change nothing more, and remove nothing
           // but a label.
           tag_post: [false, false, true, false],
           unschedule_post: [false, true, true, false],
+          update_channel_set: [false, true, true, false],
           update_draft: [false, true, true, false],
+          update_signature: [false, true, true, false],
           update_tag: [false, true, true, false],
           // It asks TikTok what a creator takes.
           validate_post: [true, false, true, true],
@@ -376,6 +393,28 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.deepStrictEqual(
             media.tools.map(({ name }) => name),
             ["list_media", "import_media"]
+          );
+
+          // So is what a workspace saves to write its posts with.
+          const saving = yield* reader.call("find_tools", FoundSchema, {
+            area: "saved",
+          });
+
+          assert.deepStrictEqual(
+            saving.tools.map(({ name, scope }) => [name, scope]),
+            [
+              ["list_signatures", "workspace:read"],
+              ["create_signature", "workspace:write"],
+              ["update_signature", "workspace:write"],
+              ["delete_signature", "workspace:write"],
+              ["list_channel_sets", "workspace:read"],
+              ["create_channel_set", "workspace:write"],
+              ["update_channel_set", "workspace:write"],
+              ["delete_channel_set", "workspace:write"],
+              ["get_channel_defaults", "workspace:read"],
+              ["set_channel_defaults", "workspace:write"],
+              ["clear_channel_defaults", "workspace:write"],
+            ]
           );
 
           // Connect links and the partner account are an area of their own.
@@ -908,6 +947,421 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           );
 
           for (const postId of [draft.id, plain.id]) {
+            yield* writer.call(
+              "discard_draft",
+              Schema.Struct({ discarded: Schema.String }),
+              { postId }
+            );
+          }
+        })
+    );
+
+    it.effect(
+      "keep the workspace's signatures, channel sets and default options, which posts take",
+      () =>
+        Effect.gen(function* saved() {
+          const fixture = yield* ToolsFixture;
+          const writer = yield* connected(fixture.writing);
+          const reader = yield* connected(fixture.reading);
+          const workspaceId = WorkspaceIdSchema.make(fixture.workspaceId);
+
+          const SignatureJsonSchema = Schema.toCodecJson(SignatureSchema);
+          const SetJsonSchema = Schema.toCodecJson(ChannelSetSchema);
+          const DefaultsJsonSchema = Schema.toCodecJson(ChannelDefaultsSchema);
+          const DeletedSchema = Schema.Struct({ deleted: Schema.String });
+
+          const SignaturesJsonSchema = Schema.toCodecJson(
+            Schema.Struct({ signatures: Schema.Array(SignatureSchema) })
+          );
+
+          const SetsJsonSchema = Schema.toCodecJson(
+            Schema.Struct({ channelSets: Schema.Array(ChannelSetSchema) })
+          );
+
+          const drafts: string[] = [];
+
+          const drafted = (args: ToolArguments) =>
+            writer.call("create_draft", PostJsonSchema, args).pipe(
+              Effect.tap((draft) =>
+                Effect.sync(() => {
+                  drafts.push(draft.id);
+                })
+              )
+            );
+
+          const stranger = "0190f3a0-0000-7000-8000-00000000c0de";
+
+          // A signature, the default of the whole workspace.
+          const signOff = yield* writer.call(
+            "create_signature",
+            SignatureJsonSchema,
+            {
+              isDefault: true,
+              name: "Synthetic sign-off",
+              text: "The synthetic team",
+            }
+          );
+
+          assert.deepStrictEqual(signOff.scope, { _tag: "workspace" });
+          assert.isTrue(signOff.isDefault);
+          assert.include(
+            yield* writer.refused("create_signature", {
+              name: "SYNTHETIC SIGN-OFF",
+              text: "Another synthetic text",
+            }),
+            "The workspace already has a signature of this name"
+          );
+
+          // A connection that reads only reads them, and makes none.
+          assert.include(
+            yield* reader.refused("create_signature", {
+              name: "Not for a reader",
+              text: "A synthetic text",
+            }),
+            "did not give this client the scope workspace:write"
+          );
+          assert.deepStrictEqual(
+            (yield* reader.call(
+              "list_signatures",
+              SignaturesJsonSchema
+            )).signatures.map(({ id }) => id),
+            [signOff.id]
+          );
+
+          // A draft that asks for the defaults takes it under its text.
+          const signed = yield* drafted({
+            channelIds: [fixture.channelId],
+            content: content("A synthetic draft, signed."),
+            defaultSignatures: true,
+          });
+
+          assert.strictEqual(
+            signed.content.text,
+            "A synthetic draft, signed.\n\nThe synthetic team"
+          );
+
+          // And never twice: the text ends with it already.
+          const again = yield* writer.call("update_draft", PostJsonSchema, {
+            channelIds: [fixture.channelId],
+            content: content(signed.content.text),
+            postId: signed.id,
+            signatureId: signOff.id,
+          });
+
+          assert.strictEqual(again.content.text, signed.content.text);
+          assert.include(
+            yield* writer.refused("create_draft", {
+              channelIds: [fixture.channelId],
+              content: content("A synthetic draft, unsigned."),
+              signatureId: stranger,
+            }),
+            "The signature this names is not the workspace's"
+          );
+
+          // What is left out of a change stays.
+          const renamed = yield* writer.call(
+            "update_signature",
+            SignatureJsonSchema,
+            { name: "Synthetic farewell", signatureId: signOff.id }
+          );
+
+          assert.strictEqual(renamed.name, "Synthetic farewell");
+          assert.strictEqual(renamed.text, "The synthetic team");
+          assert.isTrue(renamed.isDefault);
+          assert.include(
+            yield* writer.refused("update_signature", {
+              signatureId: signOff.id,
+            }),
+            "Give a name, a text, a scope, isDefault or several"
+          );
+          assert.include(
+            yield* writer.refused("update_signature", {
+              scope: { _tag: "channel", channelId: stranger },
+              signatureId: signOff.id,
+            }),
+            "These channels are not the workspace's"
+          );
+
+          // A set of channels, one of which is disconnected later.
+          const passing = yield* freshChannel(workspaceId);
+
+          yield* ChannelRepository.use((channels) =>
+            channels.insert(passing, syntheticCredentials(passing))
+          );
+
+          const videoOptions: TargetOptions = {
+            madeForKids: false,
+            platform: "youtube",
+            title: "A synthetic title",
+          };
+
+          const set = yield* writer.call("create_channel_set", SetJsonSchema, {
+            channelIds: [fixture.channelId, fixture.youtubeId, passing.id],
+            name: "Synthetic launch",
+            options: [{ channelId: fixture.youtubeId, options: videoOptions }],
+          });
+
+          assert.deepStrictEqual(set.unavailableChannelIds, []);
+          assert.include(
+            yield* writer.refused("create_channel_set", {
+              channelIds: [fixture.channelId],
+              name: "synthetic LAUNCH",
+            }),
+            "The workspace already has a channel set of this name"
+          );
+          assert.include(
+            yield* writer.refused("create_channel_set", {
+              channelIds: [fixture.channelId],
+              name: "Synthetic misfit",
+              options: [
+                { channelId: fixture.channelId, options: videoOptions },
+              ],
+            }),
+            "The options were refused, and nothing was changed"
+          );
+          assert.include(
+            yield* reader.refused("create_channel_set", {
+              channelIds: [fixture.channelId],
+              name: "Not for a reader",
+            }),
+            "did not give this client the scope workspace:write"
+          );
+
+          // A draft names the set, whatever the case of its name, and
+          // takes the options it keeps.
+          const whole = yield* drafted({
+            channelIds: [],
+            channelSets: ["synthetic LAUNCH"],
+            content: content("A synthetic draft for a set."),
+          });
+
+          assert.deepStrictEqual(
+            whole.targets.map(({ channelId }) => channelId).toSorted(),
+            [fixture.channelId, fixture.youtubeId, passing.id].toSorted()
+          );
+          assert.deepStrictEqual(
+            whole.targets.find(
+              ({ channelId }) => channelId === fixture.youtubeId
+            )?.options,
+            videoOptions
+          );
+          assert.isUndefined(whole.warnings);
+
+          // Once a channel is disconnected, the set says so, and a post
+          // made with it is told which channel it went without.
+          yield* ChannelRepository.use((channels) =>
+            channels.remove(workspaceId, passing.id)
+          );
+
+          const listed = yield* reader.call(
+            "list_channel_sets",
+            SetsJsonSchema
+          );
+
+          assert.deepStrictEqual(
+            listed.channelSets.map(({ id, unavailableChannelIds }) => ({
+              id,
+              unavailableChannelIds,
+            })),
+            [{ id: set.id, unavailableChannelIds: [passing.id] }]
+          );
+
+          const partial = yield* drafted({
+            channelIds: [],
+            channelSets: [set.id],
+            content: content("A synthetic draft for what is left of a set."),
+          });
+
+          assert.deepStrictEqual(
+            partial.targets.map(({ channelId }) => channelId).toSorted(),
+            [fixture.channelId, fixture.youtubeId].toSorted()
+          );
+          assert.deepStrictEqual(partial.warnings, [
+            {
+              _tag: "channelsDropped",
+              channelIds: [passing.id],
+              channelSetId: set.id,
+              channelSetName: "Synthetic launch",
+            },
+          ]);
+
+          // Checking a post says the same, and signs what it would send.
+          const checked = yield* reader.call(
+            "validate_post",
+            Schema.toCodecJson(PostValidationSchema),
+            {
+              channelIds: [],
+              channelSets: [set.id],
+              content: content("A synthetic post, checked."),
+              defaultSignatures: true,
+            }
+          );
+
+          assert.deepStrictEqual(
+            checked.warnings?.map(({ channelIds }) => channelIds),
+            [[passing.id]]
+          );
+          assert.isTrue(
+            checked.channels.every(({ text }) =>
+              text.endsWith("\n\nThe synthetic team")
+            )
+          );
+          assert.include(
+            yield* writer.refused("create_draft", {
+              channelIds: [],
+              channelSets: ["No such synthetic set"],
+              content: content("A synthetic draft for no set."),
+            }),
+            "A channel set this names is not the workspace's"
+          );
+
+          // A change keeps what it leaves out, but the channel that is
+          // gone, which a set cannot keep.
+          const kept = yield* writer.call("update_channel_set", SetJsonSchema, {
+            channelSetId: set.id,
+            name: "Synthetic videos",
+          });
+
+          assert.strictEqual(kept.name, "Synthetic videos");
+          assert.deepStrictEqual(kept.channelIds, [
+            fixture.channelId,
+            fixture.youtubeId,
+          ]);
+          assert.deepStrictEqual(kept.options, [
+            { channelId: fixture.youtubeId, options: videoOptions },
+          ]);
+
+          // The options of a channel it loses go with it.
+          const narrowed = yield* writer.call(
+            "update_channel_set",
+            SetJsonSchema,
+            { channelIds: [fixture.channelId], channelSetId: set.id }
+          );
+
+          assert.deepStrictEqual(narrowed.options, []);
+          assert.include(
+            yield* writer.refused("update_channel_set", {
+              channelSetId: set.id,
+            }),
+            "Give a name, channels, options or several"
+          );
+
+          // A channel's default options, which a new draft takes where it
+          // gives none.
+          const defaults: TargetOptions = {
+            madeForKids: false,
+            platform: "youtube",
+            privacy: "unlisted",
+          };
+
+          assert.deepStrictEqual(
+            yield* reader.call("get_channel_defaults", DefaultsJsonSchema, {
+              channelId: fixture.youtubeId,
+            }),
+            { options: null }
+          );
+          assert.deepStrictEqual(
+            yield* writer.call("set_channel_defaults", DefaultsJsonSchema, {
+              channelId: fixture.youtubeId,
+              options: defaults,
+            }),
+            { options: defaults }
+          );
+          assert.include(
+            yield* reader.refused("set_channel_defaults", {
+              channelId: fixture.youtubeId,
+              options: defaults,
+            }),
+            "did not give this client the scope workspace:write"
+          );
+          assert.include(
+            yield* writer.refused("set_channel_defaults", {
+              channelId: fixture.channelId,
+              options: defaults,
+            }),
+            "The options were refused, and nothing was changed"
+          );
+          assert.include(
+            yield* writer.refused("get_channel_defaults", {
+              channelId: "not-a-channel",
+            }),
+            "The workspace has no channel with this id"
+          );
+
+          const defaulted = yield* drafted({
+            channelIds: [fixture.youtubeId],
+            content: content("A synthetic video draft."),
+          });
+
+          assert.deepStrictEqual(
+            defaulted.targets.map(({ options }) => options),
+            [defaults]
+          );
+
+          // Its own options win.
+          const own = yield* drafted({
+            channelIds: [fixture.youtubeId],
+            content: content("A synthetic video draft of its own."),
+            options: [
+              {
+                channelId: fixture.youtubeId,
+                options: { platform: "youtube", title: "Its own title" },
+              },
+            ],
+          });
+
+          assert.deepStrictEqual(
+            own.targets.map(({ options }) => options),
+            [{ platform: "youtube", title: "Its own title" }]
+          );
+
+          // Everything goes, and the posts stay as they are.
+          assert.deepStrictEqual(
+            yield* writer.call(
+              "clear_channel_defaults",
+              Schema.Struct({ cleared: Schema.String }),
+              { channelId: fixture.youtubeId }
+            ),
+            { cleared: fixture.youtubeId }
+          );
+          assert.deepStrictEqual(
+            yield* reader.call("get_channel_defaults", DefaultsJsonSchema, {
+              channelId: fixture.youtubeId,
+            }),
+            { options: null }
+          );
+          assert.deepStrictEqual(
+            yield* writer.call("delete_channel_set", DeletedSchema, {
+              channelSetId: set.id,
+            }),
+            { deleted: set.id }
+          );
+          assert.include(
+            yield* writer.refused("delete_channel_set", {
+              channelSetId: set.id,
+            }),
+            "The workspace has no channel set with this id"
+          );
+          assert.deepStrictEqual(
+            yield* writer.call("delete_signature", DeletedSchema, {
+              signatureId: signOff.id,
+            }),
+            { deleted: signOff.id }
+          );
+          assert.include(
+            yield* writer.refused("delete_signature", {
+              signatureId: signOff.id,
+            }),
+            "The workspace has no signature with this id"
+          );
+          assert.strictEqual(
+            (yield* writer.call("get_post", PostJsonSchema, {
+              postId: signed.id,
+            })).content.text,
+            signed.content.text
+          );
+
+          for (const postId of drafts) {
             yield* writer.call(
               "discard_draft",
               Schema.Struct({ discarded: Schema.String }),

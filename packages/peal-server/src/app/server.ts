@@ -58,11 +58,14 @@ import {
 } from "#notifications/container.ts";
 import {
   CapabilitiesApiLive,
+  ChannelDefaultsApiLive,
+  ChannelSetsApiLive,
   GatedMetricsReader,
   LookupsApiLive,
   MediaInPostsLive,
   PostsApiLive,
   PublishingLive,
+  SignaturesApiLive,
   TagsApiLive,
   TikTokApiLive,
   publishingWorkersReading,
@@ -125,7 +128,10 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   WebhooksApiLive,
   ActivityApiLive,
   ContractRequestsDeskApiLive,
-  TagsApiLive
+  TagsApiLive,
+  SignaturesApiLive,
+  ChannelSetsApiLive,
+  ChannelDefaultsApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {

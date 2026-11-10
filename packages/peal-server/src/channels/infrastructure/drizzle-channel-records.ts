@@ -78,6 +78,7 @@ export const DrizzleChannelRecords = Layer.effect(
               displayName: channels.displayName,
               handle: channels.handle,
               id: channels.id,
+              label: channels.label,
               platform: channels.platform,
               status: channels.status,
             })

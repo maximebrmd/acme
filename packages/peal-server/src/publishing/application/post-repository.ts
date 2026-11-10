@@ -16,6 +16,7 @@ import type {
 } from "#shared/domain/ids.ts";
 
 import type { PostPageRequest, StoredPostPage } from "./post-listing.ts";
+import type { DroppedChannels } from "./post-presets.ts";
 import type { ExecutionId } from "./publication-scheduler.ts";
 
 /** A stored post, and the job started for its current revision, if any. */
@@ -26,6 +27,11 @@ export interface StoredPost {
 
 /** A post and its targets, oldest target first. */
 export interface PostWithTargets {
+  /**
+   * Channels of the sets its request named that it was made without, as
+   * the workspace no longer has them: said once, to whoever made it.
+   */
+  readonly dropped?: readonly DroppedChannels[];
   readonly post: Post;
   readonly targets: readonly PostTarget[];
 }

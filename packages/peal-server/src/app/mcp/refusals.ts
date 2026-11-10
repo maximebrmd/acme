@@ -119,3 +119,21 @@ export const planRefusal = UpgradePaths.use((paths) =>
           )
   )
 );
+
+/** A channel set a post names is not the workspace's. */
+export const unknownChannelSet = () =>
+  refuse(
+    "A channel set this names is not the workspace's: list_channel_sets answers its sets, each with its id and its name. Nothing was made."
+  );
+
+/** A signature a post names is not the workspace's. */
+export const unknownSignature = () =>
+  refuse(
+    "The signature this names is not the workspace's: list_signatures answers its signatures. Nothing was made."
+  );
+
+/** What a post that names saved items is refused with when one is gone. */
+export const presetRefusals = {
+  ChannelSetNotFound: unknownChannelSet,
+  SignatureNotFound: unknownSignature,
+} as const;

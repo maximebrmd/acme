@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "39d10d9b-564d-434a-957f-8fbbf41891d7",
+  "id": "35069572-7646-4849-9047-fbaf0bc14667",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -699,6 +699,45 @@
       "statementTarget": [
         "table",
         "publishing",
+        "channel_defaults"
+      ],
+      "writes": [
+        "s|tbl|publishing.channel_defaults",
+        "n|tbl|publishing.channel_defaults",
+        "e|tbl|publishing.channel_defaults",
+        "n|rel|publishing.channel_defaults",
+        "n|type|publishing.channel_defaults",
+        "n|rel|publishing.channel_defaults_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "channel_sets"
+      ],
+      "writes": [
+        "s|tbl|publishing.channel_sets",
+        "n|tbl|publishing.channel_sets",
+        "e|tbl|publishing.channel_sets",
+        "n|rel|publishing.channel_sets",
+        "n|type|publishing.channel_sets",
+        "n|rel|publishing.channel_sets_pkey",
+        "n|rel|publishing.channel_sets_workspace_name"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
         "idempotency_keys"
       ],
       "writes": [
@@ -805,6 +844,26 @@
         "n|rel|publishing.quota_usage",
         "n|type|publishing.quota_usage",
         "n|rel|publishing.quota_usage_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "signatures"
+      ],
+      "writes": [
+        "s|tbl|publishing.signatures",
+        "n|tbl|publishing.signatures",
+        "e|tbl|publishing.signatures",
+        "n|rel|publishing.signatures",
+        "n|type|publishing.signatures",
+        "n|rel|publishing.signatures_pkey",
+        "n|rel|publishing.signatures_workspace_name"
       ],
       "reads": [
         "n|sch|publishing"
@@ -2381,6 +2440,26 @@
         "n|tbl|notifications.notices",
         "n|sch|notifications",
         "n|col|notifications.notices.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "channel_defaults",
+        "channel_defaults_workspace"
+      ],
+      "writes": [
+        "s|idx|publishing.channel_defaults_workspace",
+        "n|idx|publishing.channel_defaults_workspace",
+        "e|idx|publishing.channel_defaults_workspace",
+        "n|rel|publishing.channel_defaults_workspace"
+      ],
+      "reads": [
+        "n|tbl|publishing.channel_defaults",
+        "n|sch|publishing",
+        "n|col|publishing.channel_defaults.workspace_id"
       ]
     },
     {
@@ -4509,6 +4588,18 @@
     },
     {
       "schema": "publishing",
+      "name": "channel_defaults",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "channel_sets",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
       "name": "idempotency_keys",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -4540,6 +4631,12 @@
     {
       "schema": "publishing",
       "name": "quota_usage",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "signatures",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -6466,6 +6563,19 @@
     {
       "schema": "channels",
       "table": "channels",
+      "name": "label",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "channels",
       "name": "platform",
       "type": "text",
       "typeSchema": null,
@@ -8090,6 +8200,149 @@
     },
     {
       "schema": "publishing",
+      "table": "channel_defaults",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_defaults",
+      "name": "options",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_defaults",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_defaults",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_sets",
+      "name": "channel_ids",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_sets",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_sets",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_sets",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_sets",
+      "name": "name_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_sets",
+      "name": "options",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_sets",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
       "table": "idempotency_keys",
       "name": "created_at",
       "type": "timestamp with time zone",
@@ -8873,6 +9126,136 @@
       "table": "quota_usage",
       "name": "units",
       "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "is_default",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "name_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "scope",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "scope_channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "scope_platform",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "text",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "workspace_id",
+      "type": "uuid",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -14593,6 +14976,27 @@
     },
     {
       "schema": "publishing",
+      "table": "channel_defaults",
+      "name": "channel_defaults_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
       "table": "idempotency_keys",
       "name": "idempotency_keys_created_at",
       "nameExplicit": true,
@@ -16818,6 +17222,26 @@
     },
     {
       "schema": "publishing",
+      "table": "channel_defaults",
+      "name": "channel_defaults_pkey",
+      "columns": [
+        "channel_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "channel_sets",
+      "name": "channel_sets_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
       "table": "post_targets",
       "name": "post_targets_pkey",
       "columns": [
@@ -16842,6 +17266,16 @@
       "name": "publication_calls_pkey",
       "columns": [
         "idempotency_key"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "signatures_pkey",
+      "columns": [
+        "id"
       ],
       "nameExplicit": false,
       "entityType": "pks"
@@ -17215,6 +17649,18 @@
     },
     {
       "schema": "publishing",
+      "table": "channel_sets",
+      "name": "channel_sets_workspace_name",
+      "nameExplicit": true,
+      "columns": [
+        "workspace_id",
+        "name_key"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "publishing",
       "table": "post_targets",
       "name": "post_targets_post_channel",
       "nameExplicit": true,
@@ -17234,6 +17680,18 @@
         "target_id",
         "round",
         "attempt"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "publishing",
+      "table": "signatures",
+      "name": "signatures_workspace_name",
+      "nameExplicit": true,
+      "columns": [
+        "workspace_id",
+        "name_key"
       ],
       "nullsNotDistinct": false,
       "entityType": "uniques"

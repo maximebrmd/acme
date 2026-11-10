@@ -535,6 +535,8 @@
         "unknownChannels": "Some of these channels are no longer connected.",
         "unknownMedia": "Some images or videos can no longer be attached.",
         "unknownTags": "Some tags no longer exist. Choose the post's tags again.",
+        "unknownChannelSet": "This channel set no longer exists. Choose the post's channels again.",
+        "unknownSignature": "This signature no longer exists. Choose another one.",
         "content": "Fix these before scheduling:"
       },
       "violation": {

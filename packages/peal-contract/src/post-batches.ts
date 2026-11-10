@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import { DuplicatePost } from "./duplicate-post.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
@@ -8,6 +9,7 @@ import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PostContentInvalid } from "./post-content-invalid.ts";
 import { PostNotFound } from "./post-not-found.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
+import { SignatureNotFound } from "./signature-not-found.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
 import { UnknownMedia } from "./unknown-media.ts";
 import { UnknownTags } from "./unknown-tags.ts";
@@ -38,6 +40,8 @@ export const PostRefusalSchema = Schema.Union([
   DuplicatePost,
   Forbidden,
   UnknownTags,
+  ChannelSetNotFound,
+  SignatureNotFound,
 ]).annotate({ identifier: "PostRefusal" });
 
 export type PostRefusal = typeof PostRefusalSchema.Type;

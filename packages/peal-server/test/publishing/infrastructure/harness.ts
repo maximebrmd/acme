@@ -27,6 +27,7 @@ import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import { ChannelHealth } from "#publishing/application/channel-health.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
+import { PostPresets } from "#publishing/application/post-presets.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SchedulePostRequest } from "#publishing/application/post-scheduling.ts";
@@ -37,10 +38,13 @@ import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
+import { DrizzleChannelDefaultsStore } from "#publishing/infrastructure/drizzle-channel-defaults-store.ts";
+import { DrizzleChannelSetStore } from "#publishing/infrastructure/drizzle-channel-set-store.ts";
 import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
+import { DrizzleSignatureStore } from "#publishing/infrastructure/drizzle-signature-store.ts";
 import { DrizzleTagStore } from "#publishing/infrastructure/drizzle-tag-store.ts";
 import {
   FakePlatform,
@@ -139,8 +143,12 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
 ) =>
   publishingWorkers(platforms).pipe(
     Layer.provideMerge(PostScheduling.layer),
+    Layer.provideMerge(PostPresets.layer),
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzleChannelDefaultsStore,
+        DrizzleChannelSetStore,
+        DrizzleSignatureStore,
         DrizzleContentFingerprints,
         DrizzleIdempotencyKeys,
         DrizzlePostRepository,

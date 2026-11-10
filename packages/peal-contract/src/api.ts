@@ -9,7 +9,9 @@ import { BillingActionsApi } from "./billing-actions.ts";
 import { BillingApi } from "./billing.ts";
 import { CapabilitiesApi } from "./capabilities.ts";
 import { CaptchaApi } from "./captcha.ts";
+import { ChannelDefaultsApi } from "./channel-defaults.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
+import { ChannelSetsApi } from "./channel-sets.ts";
 import { ChannelsApi } from "./channels.ts";
 import { ClientErrorsApi } from "./client-errors.ts";
 import { ConnectLinksApi } from "./connect-links.ts";
@@ -31,6 +33,7 @@ import { PostsApi } from "./posts.ts";
 import { ReviewLinkApi } from "./review-link.ts";
 import { ReviewApi } from "./review.ts";
 import { SessionApi } from "./session.ts";
+import { SignaturesApi } from "./signatures.ts";
 import { StaffApi } from "./staff.ts";
 import { SystemApi } from "./system.ts";
 import { TagsApi } from "./tags.ts";
@@ -61,6 +64,64 @@ export { TagNotFound } from "./tag-not-found.ts";
 export { TooManyTags } from "./too-many-tags.ts";
 
 export { UnknownTags } from "./unknown-tags.ts";
+
+export {
+  maxSignatureLength,
+  maxSignatureNameLength,
+  maxSignaturesPerWorkspace,
+  SignatureDetailsSchema,
+  SignatureSchema,
+  SignatureScopeSchema,
+  SignaturesApi,
+  signedText,
+} from "./signatures.ts";
+
+export type {
+  Signature,
+  SignatureDetails,
+  SignatureScope,
+} from "./signatures.ts";
+
+export { SignatureNameTaken } from "./signature-name-taken.ts";
+
+export { SignatureNotFound } from "./signature-not-found.ts";
+
+export { TooManySignatures } from "./too-many-signatures.ts";
+
+export {
+  ChannelSetDetailsSchema,
+  ChannelSetReferencesSchema,
+  ChannelSetsApi,
+  ChannelSetSchema,
+  maxChannelSetNameLength,
+  maxChannelSetsPerPost,
+  maxChannelSetsPerWorkspace,
+  maxChannelsPerSet,
+  PostWarningSchema,
+} from "./channel-sets.ts";
+
+export type {
+  ChannelSet,
+  ChannelSetDetails,
+  PostWarning,
+} from "./channel-sets.ts";
+
+export { ChannelSetNameTaken } from "./channel-set-name-taken.ts";
+
+export {
+  ChannelDefaultsApi,
+  ChannelDefaultsSchema,
+  NewChannelDefaultsSchema,
+} from "./channel-defaults.ts";
+
+export type {
+  ChannelDefaults,
+  NewChannelDefaults,
+} from "./channel-defaults.ts";
+
+export { ChannelSetNotFound } from "./channel-set-not-found.ts";
+
+export { TooManyChannelSets } from "./too-many-channel-sets.ts";
 
 export {
   ActivityActorSchema,
@@ -1361,6 +1422,9 @@ export class Api extends HttpApi.make("peal")
   .add(ContractRequestsApi)
   .add(ContractRequestsDeskApi)
   .add(TagsApi)
+  .add(SignaturesApi)
+  .add(ChannelSetsApi)
+  .add(ChannelDefaultsApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.
   .annotateMerge(

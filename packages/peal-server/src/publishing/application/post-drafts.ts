@@ -27,11 +27,15 @@ import { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import { ApprovalGate } from "./approval-gate.ts";
 import { AttachableMedia } from "./attachable-media.ts";
+import type { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { PostOrigins } from "./post-origins.ts";
+import { nothingAsked, PostPresets } from "./post-presets.ts";
+import type { PresetAsk } from "./post-presets.ts";
 import { channelsFor, mediaFor, tagsFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets } from "./post-repository.ts";
+import type { SignatureNotFound } from "./signature-not-found.ts";
 import { TagStore } from "./tag-store.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
@@ -55,6 +59,11 @@ export interface DraftRequest {
   // One at most per channel; left out, none on any channel.
   readonly options?: readonly ChannelOptions[];
   /**
+   * What it takes from what the workspace saved: channel sets, and
+   * signatures. Left out, nothing.
+   */
+  readonly presets?: PresetAsk;
+  /**
    * The workspace's tags it is filed under. Left out, a new draft has
    * none, and a draft that is changed keeps its own.
    */
@@ -62,9 +71,11 @@ export interface DraftRequest {
 }
 
 type DraftFailure =
+  | ChannelSetNotFound
   | DatabaseError
   | MissingPermission
   | PostContentRejected
+  | SignatureNotFound
   | UnknownChannels
   | UnknownMedia
   | UnknownTags;
@@ -72,6 +83,7 @@ type DraftFailure =
 type Ports =
   | AttachableMedia
   | Ids
+  | PostPresets
   | PostOrigins
   | PostRepository
   | TagStore
@@ -158,6 +170,25 @@ export class PostDrafts extends Context.Service<
         return channels.map(({ channelId }) => channelId);
       }, withPorts);
 
+      // The request with what it names of the workspace's saved items
+      // filled in. Only a new draft takes the channels' default options.
+      const filled = (actor: Actor, request: DraftRequest, isNew: boolean) =>
+        PostPresets.use((presets) =>
+          presets.fill(actor, {
+            ...(request.presets ?? nothingAsked),
+            channelIds: request.channelIds,
+            content: request.content,
+            defaultOptions: isNew,
+            options: request.options ?? [],
+          })
+        ).pipe(
+          Effect.map(
+            ({ channelIds, content, dropped, options }) =>
+              [{ ...request, channelIds, content, options }, dropped] as const
+          ),
+          withPorts
+        );
+
       // The tags a request names, once they are the workspace's.
       const tagsOf = (actor: Actor, { tagIds }: DraftRequest) =>
         tagIds === undefined
@@ -169,8 +200,11 @@ export class PostDrafts extends Context.Service<
 
       const create = Effect.fn("PostDrafts.create")(function* create(
         actor: Actor,
-        request: DraftRequest
+        asked: DraftRequest
       ) {
+        yield* Effect.fromResult(authorize(actor, "post:create"));
+
+        const [request, dropped] = yield* filled(actor, asked, true);
         const channels = yield* checked(actor, "post:create", request);
         const tags = yield* tagsOf(actor, request);
         const postId = yield* newId(PostIdSchema).pipe(withPorts);
@@ -199,14 +233,17 @@ export class PostDrafts extends Context.Service<
 
         yield* transaction(posts.insert(post, targets));
 
-        return { post, targets };
+        return { dropped, post, targets };
       });
 
       const update = Effect.fn("PostDrafts.update")(function* update(
         actor: Actor,
         postId: PostId,
-        request: DraftRequest
+        asked: DraftRequest
       ) {
+        yield* Effect.fromResult(authorize(actor, "post:update"));
+
+        const [request, dropped] = yield* filled(actor, asked, false);
         const channels = yield* checked(actor, "post:update", request);
         const tags = yield* tagsOf(actor, request);
 
@@ -240,7 +277,7 @@ export class PostDrafts extends Context.Service<
               yield* posts.setTags(postId, tags.value);
             }
 
-            return { post, targets };
+            return { dropped, post, targets };
           })
         );
       });
@@ -306,6 +343,8 @@ export class PostDrafts extends Context.Service<
           // Checked a moment ago: gone since, they are the server's to
           // answer for, not the request's.
           Effect.catchTags({
+            ChannelSetNotFound: Effect.die,
+            SignatureNotFound: Effect.die,
             UnknownChannels: Effect.die,
             UnknownMedia: Effect.die,
             UnknownTags: Effect.die,

@@ -153,6 +153,7 @@ export const ComposerErrors = ({
   const generic = () => t("errors.generic");
 
   const message = Match.valueTags(failure, {
+    ChannelSetNotFound: () => t("errors.unknownChannelSet"),
     Forbidden: () => t("errors.forbidden"),
     InvalidTime: () => t("invalidTime"),
     InvalidTimeZone: () => t("errors.timeZone"),
@@ -161,6 +162,7 @@ export const ComposerErrors = ({
     PostNotFound: () => t("errors.notFound"),
     PostStatusConflict: ({ status }) => t("errors.conflict", { status }),
     ScheduleInPast: () => t("errors.inPast"),
+    SignatureNotFound: () => t("errors.unknownSignature"),
     TooManyRequests: generic,
     Unauthenticated: generic,
     Unexpected: generic,

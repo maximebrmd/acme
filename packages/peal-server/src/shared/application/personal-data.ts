@@ -18,6 +18,8 @@ export interface ChannelRecord {
   readonly displayName: string | null;
   readonly handle: string;
   readonly id: string;
+  /** The name the workspace gave it, shown in Peal only; null when none. */
+  readonly label: string | null;
   readonly platform: string;
   readonly status: string;
 }
@@ -45,6 +47,8 @@ export interface PostRecord {
   /** How it was last scheduled; null on a draft, or when not kept. */
   readonly scheduledVia: PostOriginRecord | null;
   readonly status: string;
+  /** The workspace's tags it is filed under, by id. */
+  readonly tagIds: readonly string[];
   readonly targets: readonly {
     readonly channelId: string;
     readonly finishedAt: DateTime.Utc | null;
@@ -69,6 +73,44 @@ export interface PostRecord {
  */
 export interface AuthoredPostRecord extends PostRecord {
   readonly workspaceId: string;
+}
+
+/**
+ * What a workspace saved to write and file its posts: its tags, its
+ * signatures, its channel sets and its channels' default options.
+ * Workspace content, naming nobody.
+ */
+export interface SavedItemsRecord {
+  readonly channelDefaults: readonly {
+    readonly channelId: string;
+    /** As stored: plain JSON, tagged by platform. */
+    readonly options: unknown;
+  }[];
+  readonly channelSets: readonly {
+    readonly channelIds: readonly string[];
+    readonly createdAt: DateTime.Utc;
+    readonly id: string;
+    readonly name: string;
+    /** As stored: plain JSON, options by channel. */
+    readonly options: unknown;
+  }[];
+  readonly signatures: readonly {
+    readonly createdAt: DateTime.Utc;
+    readonly id: string;
+    readonly isDefault: boolean;
+    readonly name: string;
+    /** `workspace`, `platform` or `channel`. */
+    readonly scope: string;
+    readonly scopeChannelId: string | null;
+    readonly scopePlatform: string | null;
+    readonly text: string;
+  }[];
+  readonly tags: readonly {
+    readonly colour: string;
+    readonly createdAt: DateTime.Utc;
+    readonly id: string;
+    readonly name: string;
+  }[];
 }
 
 /** A media asset of a workspace: what is known of the file, not the file. */

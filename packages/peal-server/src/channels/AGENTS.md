@@ -287,3 +287,12 @@
 - Erasure covers the new tables (`erasure.test.ts`): a workspace's links,
   its partner row and keys go with it; usage days name no person and go
   with the partner.
+- `ChannelSettings` holds what a workspace decides about a channel it
+  keeps, for members with channel:connect. Its name there (`label`) is
+  Peal's own, shown beside the platform's handle and name, never instead,
+  and never sent anywhere; it is written alone (`setLabel`), as the status
+  is (`setStatus`, under the channel's lock): `ChannelRepository.update`
+  writes neither the label nor anything a renewal did not read, so a token
+  renewal and a renaming never undo each other. `ListChannels.search`
+  pages by id (UUIDv7, oldest first) and counts by status whatever the
+  status asked for.

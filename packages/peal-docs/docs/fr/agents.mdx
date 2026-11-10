@@ -9,21 +9,22 @@ Un agent IA peut publier par Peal comme le fait un membre : il lit les canaux de
 
 ## Ce qu’un agent peut faire [#what]
 
-| Il peut                                                                                                               | Avec                                                       |
-| --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Voir pour qui il agit, dans quel espace de travail, et ce qu’il peut y faire                                          | `whoami`                                                   |
-| Trouver l’outil qui convient à une tâche, et savoir quels outils la connexion peut appeler                            | `find_tools`                                               |
-| Lister les canaux où une publication peut partir, les médias qu’elle peut montrer, les brouillons et les publications | `list_channels`, `list_media`, `list_drafts`, `list_posts` |
-| Faire entrer une image ou une vidéo depuis une adresse publique                                                       | `import_media`                                             |
-| Rédiger un brouillon, le modifier ou le supprimer                                                                     | `create_draft`, `update_draft`, `discard_draft`            |
-| Ranger des publications sous les étiquettes de l’espace de travail, et lister celles d’une étiquette                  | `list_tags`, `create_tag`, `tag_post`, `list_posts`        |
-| Programmer un brouillon, publier maintenant, ou créer et envoyer une publication en un seul appel                     | `schedule_post`, `publish_post`, `create_post`             |
-| Vérifier une publication avant de l’envoyer, et voir ce que recevrait chaque canal                                    | `validate_post`                                            |
-| Créer et envoyer jusqu’à 50 publications en un seul appel                                                             | `create_posts`                                             |
-| Déplacer une publication programmée, la repasser en brouillon ou l’annuler                                            | `reschedule_post`, `unschedule_post`, `cancel_post`        |
-| Lire ce qu’une publication est devenue sur chaque canal, et chaque tentative de Peal                                  | `get_post`, `list_post_attempts`                           |
-| Attendre qu’une publication qui part maintenant ait son résultat sur chaque canal                                     | `await_post`                                               |
-| Republier là où une publication a échoué, ou enregistrer ce que vous avez trouvé sur la plateforme                    | `repost_target`, `confirm_target`                          |
+| Il peut                                                                                                               | Avec                                                                                          |
+| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Voir pour qui il agit, dans quel espace de travail, et ce qu’il peut y faire                                          | `whoami`                                                                                      |
+| Trouver l’outil qui convient à une tâche, et savoir quels outils la connexion peut appeler                            | `find_tools`                                                                                  |
+| Lister les canaux où une publication peut partir, les médias qu’elle peut montrer, les brouillons et les publications | `list_channels`, `list_media`, `list_drafts`, `list_posts`                                    |
+| Faire entrer une image ou une vidéo depuis une adresse publique                                                       | `import_media`                                                                                |
+| Rédiger un brouillon, le modifier ou le supprimer                                                                     | `create_draft`, `update_draft`, `discard_draft`                                               |
+| Ranger des publications sous les étiquettes de l’espace de travail, et lister celles d’une étiquette                  | `list_tags`, `create_tag`, `tag_post`, `list_posts`                                           |
+| Publier sur un groupe de canaux enregistré, avec une signature enregistrée et les options par défaut d’un canal       | `list_channel_sets`, `list_signatures`, `get_channel_defaults`, `create_draft`, `create_post` |
+| Programmer un brouillon, publier maintenant, ou créer et envoyer une publication en un seul appel                     | `schedule_post`, `publish_post`, `create_post`                                                |
+| Vérifier une publication avant de l’envoyer, et voir ce que recevrait chaque canal                                    | `validate_post`                                                                               |
+| Créer et envoyer jusqu’à 50 publications en un seul appel                                                             | `create_posts`                                                                                |
+| Déplacer une publication programmée, la repasser en brouillon ou l’annuler                                            | `reschedule_post`, `unschedule_post`, `cancel_post`                                           |
+| Lire ce qu’une publication est devenue sur chaque canal, et chaque tentative de Peal                                  | `get_post`, `list_post_attempts`                                                              |
+| Attendre qu’une publication qui part maintenant ait son résultat sur chaque canal                                     | `await_post`                                                                                  |
+| Republier là où une publication a échoué, ou enregistrer ce que vous avez trouvé sur la plateforme                    | `repost_target`, `confirm_target`                                                             |
 
 [Connecter un client MCP](/mcp#tools) liste chaque outil avec ce qu’il change. Un agent ne connecte aucun canal : vous connectez les comptes dans l’application web, où vous vous identifiez sur chaque plateforme ([Connecter des canaux](/channels)). Il agit dans un seul espace de travail, en votre nom, sans dépasser ce que votre [rôle](/scheduling#roles) permet : propriétaires, administrateurs et éditeurs programment et publient ; les contributeurs rédigent des brouillons.
 
@@ -212,24 +213,26 @@ Un agent qui lance des commandes dans un terminal utilise [`peal`](/cli), connec
 
 Faites d’abord lancer `peal doctor --json` à l’agent : il vérifie le serveur, le moyen d’authentification, s’il peut programmer et publier, et l’espace de travail, ne change rien, et dit quoi faire pour chaque vérification en échec ([Vérifier la configuration](/cli#doctor)).
 
-| Outil                             | Commande                                                                                                               |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `whoami`                          | `peal whoami`                                                                                                          |
-| `list_channels`                   | `peal channels list`                                                                                                   |
-| `list_media`, `import_media`      | `peal media list`, `peal media import <url> --alt "…"` ; `peal media upload <file>` envoie un fichier depuis le disque |
-| `list_drafts`, `create_draft`     | `peal drafts list`, `peal drafts save --text "…" --channel <channel-id>`                                               |
-| `create_post`                     | `peal post "…" --channel <channel-id> --at <instant>`, ou `--now`                                                      |
-| `validate_post`                   | `peal post "…" --channel <channel-id> --at <instant> --dry-run`                                                        |
-| `schedule_post`                   | `peal posts schedule <post-id> --at <instant>`                                                                         |
-| `publish_post`                    | `peal posts publish <post-id>`                                                                                         |
-| `reschedule_post`                 | `peal posts reschedule <post-id> --at <instant>`                                                                       |
-| `unschedule_post`, `cancel_post`  | `peal posts unschedule <post-id>`, `peal posts cancel <post-id>`                                                       |
-| `get_post`                        | `peal posts show <post-id>`                                                                                            |
-| `list_posts`, `await_post`        | `peal posts list`, `peal posts wait <post-id>`                                                                         |
-| `list_post_attempts`              | `peal posts attempts <post-id>`                                                                                        |
-| `list_tags`, `tag_post`           | `peal tags list`, `peal posts tag <post-id> --tag <tag>`                                                               |
-| `list_activity`                   | `peal activity list`                                                                                                   |
-| `repost_target`, `confirm_target` | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`                        |
+| Outil                                          | Commande                                                                                                               |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `whoami`                                       | `peal whoami`                                                                                                          |
+| `list_channels`                                | `peal channels list`                                                                                                   |
+| `list_media`, `import_media`                   | `peal media list`, `peal media import <url> --alt "…"` ; `peal media upload <file>` envoie un fichier depuis le disque |
+| `list_drafts`, `create_draft`                  | `peal drafts list`, `peal drafts save --text "…" --channel <channel-id>`                                               |
+| `create_post`                                  | `peal post "…" --channel <channel-id> --at <instant>`, ou `--now`                                                      |
+| `validate_post`                                | `peal post "…" --channel <channel-id> --at <instant> --dry-run`                                                        |
+| `schedule_post`                                | `peal posts schedule <post-id> --at <instant>`                                                                         |
+| `publish_post`                                 | `peal posts publish <post-id>`                                                                                         |
+| `reschedule_post`                              | `peal posts reschedule <post-id> --at <instant>`                                                                       |
+| `unschedule_post`, `cancel_post`               | `peal posts unschedule <post-id>`, `peal posts cancel <post-id>`                                                       |
+| `get_post`                                     | `peal posts show <post-id>`                                                                                            |
+| `list_posts`, `await_post`                     | `peal posts list`, `peal posts wait <post-id>`                                                                         |
+| `list_post_attempts`                           | `peal posts attempts <post-id>`                                                                                        |
+| `list_tags`, `tag_post`                        | `peal tags list`, `peal posts tag <post-id> --tag <tag>`                                                               |
+| `list_signatures`, `list_channel_sets`         | `peal signatures list`, `peal sets list`                                                                               |
+| `get_channel_defaults`, `set_channel_defaults` | `peal channels defaults show <channel-id>`, `peal channels defaults set <channel-id> --options <json>`                 |
+| `list_activity`                                | `peal activity list`                                                                                                   |
+| `repost_target`, `confirm_target`              | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`                        |
 
 ```sh
 peal post "Notre catalogue de printemps est sorti. À lire sur https://example.com/printemps" \
@@ -254,23 +257,26 @@ Le dépôt contient une compétence (skill) pour agents dans le dossier [`skills
 
 Votre propre agent ou script peut appeler les points d’accès sur lesquels reposent les outils, sous `/api/workspaces/{workspaceId}/` ([Présentation de l’API](/api-overview)) ; [Conventions de l’API](/api-conventions) décrit leurs erreurs, leur pagination et leurs limites :
 
-| Outil                             | Point d’accès                                                                      |
-| --------------------------------- | ---------------------------------------------------------------------------------- |
-| `list_channels`                   | `GET …/channels`                                                                   |
-| `list_media`, `import_media`      | `GET …/media`, `POST …/media/import`                                               |
-| `list_drafts`, `list_posts`       | `GET …/posts/drafts`, `GET …/posts/search`                                         |
-| `create_draft`, `update_draft`    | `POST …/posts`, `PUT …/posts/{postId}`                                             |
-| `create_post`                     | `POST …/posts/send`                                                                |
-| `create_posts`                    | `POST …/posts/bulk`                                                                |
-| `validate_post`                   | `POST …/posts/validate`                                                            |
-| `schedule_post`                   | `POST …/posts/{postId}/schedule`                                                   |
-| `reschedule_post`, `publish_post` | `POST …/posts/{postId}/reschedule`, avec l’instant présent pour publier maintenant |
-| `unschedule_post`, `cancel_post`  | `POST …/posts/{postId}/unschedule`, `POST …/posts/{postId}/cancel`                 |
-| `get_post`, `list_post_attempts`  | `GET …/posts/{postId}`, `GET …/posts/{postId}/attempts`                            |
-| `list_tags`, `create_tag`         | `GET …/tags`, `POST …/tags`                                                        |
-| `tag_post`                        | `PUT …/posts/{postId}/tags`                                                        |
-| `await_post`                      | `GET …/posts/{postId}/outcome`                                                     |
-| `repost_target`, `confirm_target` | `POST …/posts/{postId}/targets/{targetId}/repost`, `…/confirm`                     |
+| Outil                                          | Point d’accès                                                                              |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `list_channels`                                | `GET …/channels`                                                                           |
+| `list_media`, `import_media`                   | `GET …/media`, `POST …/media/import`                                                       |
+| `list_drafts`, `list_posts`                    | `GET …/posts/drafts`, `GET …/posts/search`                                                 |
+| `create_draft`, `update_draft`                 | `POST …/posts`, `PUT …/posts/{postId}`                                                     |
+| `create_post`                                  | `POST …/posts/send`                                                                        |
+| `create_posts`                                 | `POST …/posts/bulk`                                                                        |
+| `validate_post`                                | `POST …/posts/validate`                                                                    |
+| `schedule_post`                                | `POST …/posts/{postId}/schedule`                                                           |
+| `reschedule_post`, `publish_post`              | `POST …/posts/{postId}/reschedule`, avec l’instant présent pour publier maintenant         |
+| `unschedule_post`, `cancel_post`               | `POST …/posts/{postId}/unschedule`, `POST …/posts/{postId}/cancel`                         |
+| `get_post`, `list_post_attempts`               | `GET …/posts/{postId}`, `GET …/posts/{postId}/attempts`                                    |
+| `list_tags`, `create_tag`                      | `GET …/tags`, `POST …/tags`                                                                |
+| `tag_post`                                     | `PUT …/posts/{postId}/tags`                                                                |
+| `list_signatures`, `create_signature`          | `GET …/signatures`, `POST …/signatures`                                                    |
+| `list_channel_sets`, `create_channel_set`      | `GET …/channel-sets`, `POST …/channel-sets`                                                |
+| `get_channel_defaults`, `set_channel_defaults` | `GET …/channels/{channelId}/default-options`, `PUT …/channels/{channelId}/default-options` |
+| `await_post`                                   | `GET …/posts/{postId}/outcome`                                                             |
+| `repost_target`, `confirm_target`              | `POST …/posts/{postId}/targets/{targetId}/repost`, `…/confirm`                             |
 
 `POST …/posts/send` crée une publication et l’envoie en une seule requête. Envoyez un en-tête `Idempotency-Key`, un texte de votre choix de 255 caractères au plus, comme un UUID, pour que la requête puisse être renvoyée sans risque :
 

@@ -535,6 +535,8 @@
         "unknownChannels": "Certains de ces canaux ne sont plus connectés.",
         "unknownMedia": "Certaines images ou vidéos ne peuvent plus être jointes.",
         "unknownTags": "Certaines étiquettes n’existent plus. Choisissez à nouveau celles de la publication.",
+        "unknownChannelSet": "Ce groupe de canaux n’existe plus. Choisissez à nouveau les canaux de la publication.",
+        "unknownSignature": "Cette signature n’existe plus. Choisissez-en une autre.",
         "content": "À corriger avant de programmer :"
       },
       "violation": {

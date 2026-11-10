@@ -450,3 +450,60 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   on the platform. Test them against the loopback fakes.
 - `GET …/channels/:id/tiktok-creator` stays, for the composer; the
   `tiktokCreator` lookup answers the same view.
+
+## Tags, signatures, channel sets and default options
+
+What a workspace saves to stay organised is workspace content, kept in
+publishing's schema, naming nobody: each goes with its workspace
+(`WorkspacePostStore.deleteAll`), and none is ever handed to an adapter.
+
+- A tag (`#publishing/domain/tag.ts`, `PostTags`) is a name, one per
+  workspace whatever its case, and a colour of the palette
+  (`TagColourSchema`: names each client draws with its own theme, never a
+  CSS value). A post's tags are `Post.tagIds` (`posts.tag_ids`, a uuid
+  array with a GIN index): no part of what it says, so they change whatever
+  its status (`tagPost`), and are written on their own
+  (`PostRepository.setTags`), never with the post's status, so a job that
+  settles the post never undoes a tagging. Deleting a tag takes it off its
+  posts in the same transaction. Reading needs post:read; writing a tag
+  and tagging a post, post:update. An update of a draft that says nothing
+  of tags keeps them. Add a filter on tags as any other (`PostFilter`).
+- A signature (`signature.ts`, `Signatures`) is text a workspace ends its
+  posts with, meant for the workspace, a platform or one channel, one
+  default per scope. Applied, it is text of the post: `signed` puts it
+  under a text, a blank line between, and never under a text that ends
+  with it already, so the platforms' limits count it when the post is
+  scheduled and nothing is added twice. `withDefaultSignatures` signs the
+  post's text with the workspace's default, and gives a channel whose own
+  or platform's default is another a text of its own (an override) signed
+  with that one; `withSignature` signs every text with one signature. A
+  post in several parts is signed under its last part: when parts land in
+  `PostContent`, these two functions sign the last one, and nothing else
+  changes. The contract's `signedText` is the clients' copy
+  (`test/publishing/api/saved-items-contract.test.ts` keeps it, and every
+  limit, equal).
+- A channel set (`channel-set.ts`, `ChannelSets`) is channels kept under a
+  name, with the options posts take on some. It keeps the channels it was
+  given: one disconnected since stays listed (`unavailable`), is left out
+  of a post that names the set and told to whoever made it
+  (`PostWithTargets.dropped`, the view's `warnings`), never silently; a
+  post left with no channel is `UnknownChannels`. Saving a set takes
+  connected channels only.
+- A channel's default options (`ChannelDefaults`,
+  `publishing.channel_defaults`) are what a new post takes on the channel
+  when it gives none there. They are a starting point: saved unfinished as
+  a draft's may be, and checked by `problems()` when a post that took them
+  is scheduled, as options it wrote itself.
+- `PostPresets.fill` is the one place a post is filled in from all of
+  these, before it is checked and kept as any other: `PostDrafts.create`
+  and `update`, `PostScheduling.send` (after the idempotency replay, so a
+  retry never fails on a set deleted since) and `PostChecks.check` call it
+  with what the request names (`PresetAsk`: `channelSets` by id or name,
+  `defaultSignatures`, `signatureId`). Options are taken in this order:
+  the post's own, a named set's, the channel's defaults; only a new post
+  takes defaults, never a draft that is changed. Nothing is applied unless
+  the request asks, but default options: an API caller's text is never
+  signed unasked.
+- `PostDrafts.duplicate` copies a post, whatever its status, into a new
+  draft of whoever asked: what the workspace no longer has (a channel, a
+  media, a tag) is left out rather than refused.

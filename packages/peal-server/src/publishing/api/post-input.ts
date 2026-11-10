@@ -3,6 +3,7 @@ import { Array as Arr, Effect, Option, Schema } from "effect";
 import {
   InvalidTimeZone,
   PostNotFound,
+  SignatureNotFound,
   UnknownChannels,
   UnknownMedia,
   UnknownTags,
@@ -15,11 +16,13 @@ import type {
 } from "peal-contract";
 
 import type { KeyedRequest } from "#publishing/application/idempotency-keys.ts";
+import type { PresetAsk } from "#publishing/application/post-presets.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
 import { ChannelOptionsListSchema } from "#publishing/domain/channel-options.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
+import { SignatureIdSchema } from "#publishing/domain/signature-id.ts";
 import { TagIdSchema } from "#publishing/domain/tag-id.ts";
 import type { TagId } from "#publishing/domain/tag-id.ts";
 import {
@@ -39,6 +42,8 @@ const decodeMediaId = Schema.decodeUnknownOption(MediaAssetIdSchema);
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
 
 const decodeTargetId = Schema.decodeUnknownOption(PostTargetIdSchema);
+
+const decodeSignatureId = Schema.decodeUnknownOption(SignatureIdSchema);
 
 const decodeTagId = Schema.decodeUnknownOption(TagIdSchema);
 
@@ -108,6 +113,38 @@ const tagsGiven = (
 
 /** A draft's tags, as a request gives them: left out, nothing is said. */
 export const draftTagsFrom = tagsGiven;
+
+/** What a request names of what the workspace saved. */
+export interface PresetInput {
+  readonly channelSets?: readonly string[];
+  readonly defaultSignatures?: boolean;
+  readonly signatureId?: string;
+}
+
+/**
+ * What a request asks of the workspace's saved items, with its ids
+ * decoded: a signature id that is not even of the right form names none.
+ */
+export const presetsFrom = ({
+  channelSets = [],
+  defaultSignatures = false,
+  signatureId,
+}: PresetInput): Effect.Effect<PresetAsk, SignatureNotFound> =>
+  signatureId === undefined
+    ? Effect.succeed({
+        channelSets,
+        defaultSignatures,
+        signatureId: Option.none(),
+      })
+    : Option.match(decodeSignatureId(signatureId), {
+        onNone: () => Effect.fail(new SignatureNotFound()),
+        onSome: (id) =>
+          Effect.succeed({
+            channelSets,
+            defaultSignatures,
+            signatureId: Option.some(id),
+          }),
+      });
 
 /** The post a path names, or PostNotFound. */
 export const postIdFrom = (raw: string) =>
@@ -185,9 +222,10 @@ const keyedFrom = (input: NewPostInput, key: string | undefined) =>
 export const sendRequestFrom = (input: NewPostInput, key?: string) =>
   Effect.gen(function* decodingNewPost() {
     const channelIds = yield* channelIdsFrom(input.channelIds);
+    const presets = yield* presetsFrom(input);
 
-    // The contract asks for one channel at least.
-    if (!Arr.isReadonlyArrayNonEmpty(channelIds)) {
+    // One channel at least, unless a channel set brings some.
+    if (channelIds.length === 0 && presets.channelSets.length === 0) {
       return yield* new UnknownChannels({ channelIds: [] });
     }
 
@@ -206,6 +244,7 @@ export const sendRequestFrom = (input: NewPostInput, key?: string) =>
       content: yield* contentFrom(input.content),
       idempotency: yield* keyedFrom(input, key),
       options: yield* optionsFrom(input.options ?? []),
+      presets,
       ...(yield* tagsGiven(input.tagIds)),
       timeZone: zone,
     };

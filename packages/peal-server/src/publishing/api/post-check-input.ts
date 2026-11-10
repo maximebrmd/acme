@@ -7,6 +7,8 @@ import { PostContent } from "#publishing/domain/post-content.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
+import { presetsFrom } from "./post-input.ts";
+
 // A post to check names channels and media as strings. An id that is not
 // even of the right form names nothing here: it is answered with the
 // others that name nothing, and what it came with (a text, options, alt
@@ -39,6 +41,7 @@ export interface CheckInputRead {
 export const checkRequestFrom = (input: CheckInput) =>
   Effect.gen(function* decodingCheck() {
     const { content, options = [], when } = input;
+    const presets = yield* presetsFrom(input);
 
     const named = [
       ...input.channelIds,
@@ -68,6 +71,7 @@ export const checkRequestFrom = (input: CheckInput) =>
         options: yield* decodeOptions(
           options.filter(({ channelId }) => isChannelId(channelId))
         ),
+        presets,
         when: Option.fromUndefinedOr(when).pipe(
           Option.map((timing) => ({
             at: timing._tag === "at" ? Option.some(timing.at) : Option.none(),
@@ -78,4 +82,4 @@ export const checkRequestFrom = (input: CheckInput) =>
     };
 
     return read;
-  }).pipe(Effect.orDie);
+  }).pipe(Effect.catchTag("SchemaError", Effect.die));

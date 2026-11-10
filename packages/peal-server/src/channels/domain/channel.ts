@@ -1,4 +1,4 @@
-import { DateTime, Duration, Option, Schema } from "effect";
+import { DateTime, Duration, Effect, Option, Schema } from "effect";
 
 import { ChannelConnectionSchema } from "#shared/domain/channel-connection.ts";
 import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
@@ -40,6 +40,23 @@ export const TokenLifetimeSchema = Schema.Union([
 
 export type TokenLifetime = typeof TokenLifetimeSchema.Type;
 
+/** The longest name a workspace gives one of its channels. */
+export const maxChannelLabelLength = 60;
+
+/**
+ * The name a workspace gives a channel, for its members to tell their
+ * accounts apart: one line, shown in Peal only, never sent to a platform.
+ */
+export const ChannelLabelSchema = Schema.String.check(
+  Schema.isBetweenLength(1, maxChannelLabelLength),
+  Schema.makeFilter((label: string) => label === label.trim(), {
+    expected: "a name without spaces around it",
+  }),
+  Schema.makeFilter((label: string) => !/\p{Cc}/u.test(label), {
+    expected: "a name on one line, without control characters",
+  })
+);
+
 /** A social account connected to a workspace. */
 export class Channel extends Schema.Class<Channel>(
   "peal-server/channels/domain/Channel"
@@ -58,6 +75,11 @@ export class Channel extends Schema.Class<Channel>(
   // The name people mention the account by, such as "@peal_example".
   handle: Schema.NonEmptyString,
   id: ChannelIdSchema,
+  // The name the workspace gave it, if any: Peal's own, beside the handle
+  // and name the platform shows, which it never replaces.
+  label: Schema.Option(ChannelLabelSchema).pipe(
+    Schema.withConstructorDefault(Effect.succeed(Option.none()))
+  ),
   platform: PlatformSchema,
   // What the account allowed Peal to do, in the platform's own words.
   scopes: Schema.Array(Schema.NonEmptyString),
@@ -130,6 +152,7 @@ const withChange = (
     displayName: account.displayName,
     handle: account.handle,
     id: channel.id,
+    label: channel.label,
     platform: channel.platform,
     scopes: account.scopes,
     status,
@@ -203,6 +226,32 @@ export const renewToken = (
     handle: channel.handle,
     scopes: renewed.scopes,
     token: renewed.token,
+  });
+
+/**
+ * Gives the channel the name its workspace calls it by, or takes it back
+ * (none). Nothing else of it changes.
+ */
+export const labelled = (
+  channel: Channel,
+  label: Option.Option<string>,
+  now: DateTime.Utc
+): Channel =>
+  new Channel({
+    accountId: channel.accountId,
+    avatarUrl: channel.avatarUrl,
+    connection: channel.connection,
+    createdAt: channel.createdAt,
+    displayName: channel.displayName,
+    handle: channel.handle,
+    id: channel.id,
+    label,
+    platform: channel.platform,
+    scopes: channel.scopes,
+    status: channel.status,
+    token: channel.token,
+    updatedAt: now,
+    workspaceId: channel.workspaceId,
   });
 
 /** Turns a channel off. It keeps whether its token needs a refresh. */
