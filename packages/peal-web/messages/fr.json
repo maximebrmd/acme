@@ -1434,7 +1434,10 @@
         "published": "Une publication est en ligne sur un canal",
         "failed": "Une publication échoue sur un canal",
         "unconfirmed": "Une publication est peut-être partie sur un canal",
-        "cancelled": "Une publication est annulée"
+        "cancelled": "Une publication est annulée",
+        "approval_requested": "Une publication attend une approbation",
+        "approved": "Une publication est approuvée",
+        "changes_requested": "Des modifications sont demandées sur une publication"
       },
       "channel": {
         "connected": "Un canal est connecté ou reconnecté",

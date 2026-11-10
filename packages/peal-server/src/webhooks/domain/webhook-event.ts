@@ -29,6 +29,19 @@ export const EventTargetSchema = Schema.Struct({
 
 export type EventTarget = typeof EventTargetSchema.Type;
 
+/**
+ * Who decided on a post's approval, by kind only: a member, someone without
+ * an account who came through a review link, or an application. Never a
+ * name.
+ */
+export const ReviewPartySchema = Schema.Literals([
+  "member",
+  "visitor",
+  "application",
+]);
+
+export type ReviewParty = typeof ReviewPartySchema.Type;
+
 const workspace = { workspaceId: WorkspaceIdSchema };
 
 const post = { ...workspace, postId: PostIdSchema };
@@ -111,6 +124,30 @@ export const WebhookEventSchema = Schema.Union([
       targets: Schema.Array(EventTargetSchema),
     }),
     type: Schema.Literal("post.cancelled"),
+  }),
+  // Someone asked for the post to go out at `scheduledAt`, in a workspace
+  // that asks for approvals: it waits, and no `post.scheduled` is sent
+  // until it is approved.
+  Schema.Struct({
+    data: Schema.Struct({ ...post, scheduledAt: Schema.DateTimeUtc }),
+    type: Schema.Literal("post.approval_requested"),
+  }),
+  // The post was approved, by a member, a visitor of a review link or an
+  // application. `late` when its time had passed: it is a draft again, and
+  // no `post.scheduled` follows.
+  Schema.Struct({
+    data: Schema.Struct({
+      ...post,
+      by: ReviewPartySchema,
+      late: Schema.Boolean,
+    }),
+    type: Schema.Literal("post.approved"),
+  }),
+  // Changes were asked for: the post is a draft again. What was asked is
+  // a comment, read through the API.
+  Schema.Struct({
+    data: Schema.Struct({ ...post, by: ReviewPartySchema }),
+    type: Schema.Literal("post.changes_requested"),
   }),
   // An account was connected to the workspace, or, `reconnected`, a
   // channel it had was authorized again.

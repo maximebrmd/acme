@@ -865,6 +865,7 @@ export { WebhookEndpointNotFound } from "./webhook-endpoint-not-found.ts";
 
 export {
   MediaFailureReasonSchema,
+  WebhookReviewPartySchema,
   SubscribableWebhookEventTypeSchema,
   webhookEventVersion,
   WebhookEventTypeSchema,
@@ -874,6 +875,7 @@ export {
 
 export type {
   MediaFailureReason,
+  WebhookReviewParty,
   SubscribableWebhookEventType,
   WebhookEventType,
   WebhookPayload,

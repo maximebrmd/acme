@@ -25,6 +25,7 @@ import { PublishingReviewedPosts } from "#review/infrastructure/publishing-revie
 import { ReviewApprovalGate } from "#review/infrastructure/review-approval-gate.ts";
 import { ReviewVisitorLive } from "#review/infrastructure/review-visitor-live.ts";
 import { SecureLinkTokens } from "#review/infrastructure/secure-link-tokens.ts";
+import { webhookReviewOutcomes } from "#review/infrastructure/webhook-review-outcomes.ts";
 
 // The review schema's tables, behind their ports.
 const StoresLive = Layer.mergeAll(
@@ -44,13 +45,17 @@ const StoresLive = Layer.mergeAll(
  * and the notifications context's Notify, which the composition root
  * brings.
  */
+// What happens in a review, told to the members through the notices and to
+// the workspace's webhook endpoints.
+const ToldReviewOutcomes = webhookReviewOutcomes(NotifiedReviewOutcomes);
+
 export const ReviewGateLive = Layer.mergeAll(
   ReviewApprovalGate,
   DrizzleReviewRecords,
   PurgeReviewData.layer
 ).pipe(
   Layer.provide(ApprovalIntake.layer),
-  Layer.provide(NotifiedReviewOutcomes),
+  Layer.provide(ToldReviewOutcomes),
   Layer.provide(StoresLive)
 );
 
@@ -79,7 +84,7 @@ export const reviewWith = <E, R>(guard: Layer.Layer<VisitorGuard, E, R>) =>
         DirectoryMemberNames,
         LibraryMediaPreviews,
         MailedVisitorReplies,
-        NotifiedReviewOutcomes,
+        ToldReviewOutcomes,
         PublicLinkAddresses,
         PublishingReviewedPosts,
         SecureLinkTokens,

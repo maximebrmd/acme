@@ -89,6 +89,9 @@ Les types d’événements et leurs champs sont un contrat public. Peal ajoute d
 | [`post.failed`](#post-failed)                           | Une publication n’est pas partie sur un canal                                                              |
 | [`post.unconfirmed`](#post-unconfirmed)                 | Peal ne peut pas savoir si une publication est en ligne sur un canal                                       |
 | [`post.cancelled`](#post-cancelled)                     | Une publication a été annulée                                                                              |
+| [`post.approval_requested`](#post-approval-requested)   | Une publication attend une approbation                                                                     |
+| [`post.approved`](#post-approved)                       | Une publication qui attendait a été approuvée                                                              |
+| [`post.changes_requested`](#post-changes-requested)     | Des modifications ont été demandées sur une publication qui attendait                                      |
 | [`channel.connected`](#channel-connected)               | Un compte a été connecté, ou un canal de nouveau autorisé                                                  |
 | [`channel.disconnected`](#channel-disconnected)         | Un canal a été déconnecté                                                                                  |
 | [`channel.reconnect_needed`](#channel-reconnect-needed) | L’autorisation d’un canal ne fonctionne plus                                                               |
@@ -109,7 +112,7 @@ Le `data` de chaque événement contient `workspaceId`, l’espace de travail o�
 
 ### post.scheduled [#post-scheduled]
 
-Une publication a été programmée, ou déplacée à une autre heure.
+Une publication a été programmée, ou déplacée à une autre heure. Une publication qui attend une [approbation](/review) n’est pas encore programmée : elle envoie `post.approval_requested`, et cet événement seulement une fois approuvée.
 
 | Champ         | Type    | Ce qu’il contient                                                          |
 | ------------- | ------- | -------------------------------------------------------------------------- |
@@ -324,6 +327,80 @@ La publication a été annulée. `targets` liste les canaux où elle ne partira 
         "platform": "mastodon"
       }
     ]
+  }
+}
+```
+
+### post.approval_requested [#post-approval-requested]
+
+Quelqu’un a demandé que la publication parte, dans un espace de travail qui demande des [approbations](/review) : elle attend. Elle garde son heure, et aucun `post.scheduled` n’est envoyé tant qu’elle n’est pas approuvée. Ce qu’une application y envoie ou y programme commence ainsi.
+
+| Champ         | Type   | Ce qu’il contient                                 |
+| ------------- | ------ | ------------------------------------------------- |
+| `workspaceId` | chaîne | L’espace de travail                               |
+| `postId`      | chaîne | La publication                                    |
+| `scheduledAt` | chaîne | Le moment demandé pour son départ, en instant UTC |
+
+```json title="post.approval_requested"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0a",
+  "type": "post.approval_requested",
+  "version": 1,
+  "timestamp": "2026-11-09T16:40:00.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "scheduledAt": "2026-11-12T08:00:00.000Z"
+  }
+}
+```
+
+### post.approved [#post-approved]
+
+La publication a été approuvée. Approuvée à temps, elle est programmée, et un `post.scheduled` suit. Approuvée après son heure (`late`), rien ne part en retard : elle repasse en brouillon, et aucun `post.scheduled` ne suit.
+
+| Champ         | Type    | Ce qu’il contient                                                                                                               |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `workspaceId` | chaîne  | L’espace de travail                                                                                                             |
+| `postId`      | chaîne  | La publication                                                                                                                  |
+| `by`          | chaîne  | Qui l’a approuvée, par type : `member`, `visitor` (une personne venue par un lien de relecture) ou `application`. Jamais un nom |
+| `late`        | booléen | Si son heure était passée                                                                                                       |
+
+```json title="post.approved"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0b",
+  "type": "post.approved",
+  "version": 1,
+  "timestamp": "2026-11-09T17:00:00.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "by": "visitor",
+    "late": false
+  }
+}
+```
+
+### post.changes_requested [#post-changes-requested]
+
+Des modifications ont été demandées sur une publication qui attendait : elle repasse en brouillon. Ce qui est demandé est un commentaire sur la publication, que l’événement ne porte pas : lisez la relecture de la publication par l’API.
+
+| Champ         | Type   | Ce qu’il contient                                              |
+| ------------- | ------ | -------------------------------------------------------------- |
+| `workspaceId` | chaîne | L’espace de travail                                            |
+| `postId`      | chaîne | La publication                                                 |
+| `by`          | chaîne | Qui a demandé, par type : `member`, `visitor` ou `application` |
+
+```json title="post.changes_requested"
+{
+  "id": "019a6f40-2f6b-7a1c-9d2e-5b4c3a2f1e0c",
+  "type": "post.changes_requested",
+  "version": 1,
+  "timestamp": "2026-11-09T17:00:00.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
+    "by": "member"
   }
 }
 ```

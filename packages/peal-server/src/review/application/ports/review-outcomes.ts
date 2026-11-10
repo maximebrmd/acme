@@ -40,11 +40,11 @@ export interface PostCommented extends AboutPost {
 /**
  * Tells the rest of Peal what happened in a review, in the transaction
  * that made it happen: an approval asked for, given or refused with
- * changes requested, and a comment. Today the members concerned hear
- * through the notices. This is where other listeners belong: outgoing
- * webhooks (`post.approval_requested`, `post.approved`,
- * `post.changes_requested`) would be told here, beside the notices, with
- * nothing to change in the use cases.
+ * changes requested, and a comment. The members concerned hear through
+ * the notices (`NotifiedReviewOutcomes`), and the workspace's webhook
+ * endpoints through `webhookReviewOutcomes` (`post.approval_requested`,
+ * `post.approved`, `post.changes_requested`). Another listener is told
+ * here too, with nothing to change in the use cases.
  */
 export class ReviewOutcomes extends Context.Service<
   ReviewOutcomes,

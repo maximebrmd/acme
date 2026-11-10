@@ -1434,7 +1434,10 @@
         "published": "A post goes live on a channel",
         "failed": "A post fails on a channel",
         "unconfirmed": "A post may have gone out on a channel",
-        "cancelled": "A post is cancelled"
+        "cancelled": "A post is cancelled",
+        "approval_requested": "A post waits for an approval",
+        "approved": "A post is approved",
+        "changes_requested": "Changes are requested on a post"
       },
       "channel": {
         "connected": "A channel is connected or reconnected",

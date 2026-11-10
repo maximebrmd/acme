@@ -942,6 +942,20 @@ and no socket, for tests.
   repost's rate-limit deadline counts from the repost. `confirm` records
   what a member found for an unconfirmed target and revises the outcome.
   Both call `PublicationOutcomes.resolved`.
+- Every way of scheduling passes the `ApprovalGate` in the transaction that
+  saves the post: `schedule`, `scheduleDraft`, `reschedule` and `send` (so
+  `posts.send`, `create_post`, `publish_post` and `peal post` too) ask
+  `mayAsk`, then `throughGate` before `roomInMonth`. A held post takes its
+  month's room and gets no job; `PostEvents.scheduled` is told only for a
+  post that is scheduled (`announce`), and `HeldPosts.release` tells it once
+  the post is approved, so no `post.scheduled` webhook goes before. An
+  application is answered the post with `awaitingApproval`, never a
+  refusal. Approving is publishing (`post:approve` is in
+  `publishingPermissions`): an OAuth client needs `workspace:publish`.
+  What happens in a review reaches webhooks through `ReviewOutcomes`
+  (`webhookReviewOutcomes`: `post.approval_requested`, `post.approved`,
+  `post.changes_requested`, by kind of reviewer, never a name or a
+  comment).
 - Refusals Peal makes itself, before any platform call (a channel
   disconnected or turned off, media deleted), carry the codes of
   `#publishing/domain/own-refusals.ts`; the policy maps them to their own
