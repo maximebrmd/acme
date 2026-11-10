@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "@effect/vitest";
 
+import { rememberConnection } from "#channels/pending-connection.ts";
 import { cameThroughLink, frameOf } from "#connect-link/frame.ts";
 import {
   forgetLink,
@@ -23,6 +24,17 @@ describe("the connect link a tab came from", () => {
     forgetLink();
 
     expect(pendingLink("mastodon")).toBeNull();
+  });
+
+  it("is forgotten once the tab starts a member's own connection, a reconnection included", () => {
+    rememberLink({ platform: "mastodon", token });
+    rememberConnection({
+      platform: "mastodon",
+      workspaceId: "5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60",
+    });
+
+    expect(pendingLink("mastodon")).toBeNull();
+    expect(cameThroughLink("/connect/mastodon/callback")).toBeFalsy();
   });
 
   it("reads as none when the tab stored something else", () => {
