@@ -1,8 +1,10 @@
 import type { DateTime } from "effect";
-import { Option } from "effect";
+import { Effect, Option } from "effect";
 import { Atom } from "effect/reactivity";
 
 import { PealApi } from "#api/client.ts";
+
+import type { LookupItems } from "./lookup-choices.ts";
 
 // The queries and mutations of the composer and the calendar. A mutation
 // passes `reactivityKeys: postsKeys`, which refreshes every posts query.
@@ -25,6 +27,120 @@ export const tiktokCreator = (workspaceId: string, channelId: string) =>
     params: { channelId, workspaceId },
     reactivityKeys: ["channels"],
   });
+
+// A lookup's page holds 50 items at most; the composer reads ten pages.
+const lookupPageSize = 50;
+
+const lookupPages = 10;
+
+interface LookupPage<Item> {
+  readonly items: readonly Item[];
+  readonly nextCursor: string | null;
+}
+
+// Every page of a paged lookup, the first ten at most. A page may come
+// empty and still name a next one.
+const everyPage = Effect.fnUntraced(function* everyPage<Item, E, R>(
+  read: (cursor: string | null) => Effect.Effect<LookupPage<Item>, E, R>
+) {
+  const items: Item[] = [];
+  let cursor: string | null = null;
+
+  for (let page = 0; page < lookupPages; page += 1) {
+    const answer: LookupPage<Item> = yield* read(cursor);
+
+    items.push(...answer.items);
+    cursor = answer.nextCursor;
+
+    if (cursor === null) {
+      break;
+    }
+  }
+
+  const all: LookupItems<Item> = { items, truncated: cursor !== null };
+
+  return all;
+});
+
+const paged = (cursor: string | null) =>
+  cursor === null
+    ? { limit: lookupPageSize }
+    : { cursor, limit: lookupPageSize };
+
+// Ids are UUIDs and digits, so a slash cannot appear in any.
+const boardLists = Atom.family((key: string) => {
+  const [workspaceId = "", channelId = ""] = key.split("/");
+
+  return PealApi.runtime.atom(
+    PealApi.use((client) =>
+      everyPage((cursor) =>
+        client.lookups
+          .run({
+            params: { channelId, name: "pinterestBoards", workspaceId },
+            payload: paged(cursor),
+          })
+          .pipe(
+            Effect.map((result) =>
+              result._tag === "pinterestBoards"
+                ? result
+                : { items: [], nextCursor: null }
+            )
+          )
+      )
+    )
+  );
+});
+
+/**
+ * A Pinterest channel's boards, read from Pinterest each time the composer
+ * opens the channel's options.
+ */
+export const pinterestBoards = (workspaceId: string, channelId: string) =>
+  boardLists(`${workspaceId}/${channelId}`);
+
+const noSections: LookupPage<{ readonly id: string; readonly name: string }> = {
+  items: [],
+  nextCursor: null,
+};
+
+const sectionLists = Atom.family((key: string) => {
+  const [workspaceId = "", channelId = "", boardId = ""] = key.split("/");
+
+  return PealApi.runtime.atom(
+    PealApi.use((client) =>
+      everyPage((cursor) =>
+        boardId === ""
+          ? Effect.succeed(noSections)
+          : client.lookups
+              .run({
+                params: {
+                  channelId,
+                  name: "pinterestBoardSections",
+                  workspaceId,
+                },
+                payload: { ...paged(cursor), boardId },
+              })
+              .pipe(
+                Effect.map((result) =>
+                  result._tag === "pinterestBoardSections"
+                    ? result
+                    : { items: [], nextCursor: null }
+                )
+              )
+      )
+    )
+  );
+});
+
+/**
+ * The sections of one board of a Pinterest channel: none, unasked, while
+ * no board is chosen.
+ */
+export const pinterestBoardSections = (
+  workspaceId: string,
+  channelId: string,
+  boardId: string
+) => sectionLists(`${workspaceId}/${channelId}/${boardId}`);
 
 /** A post of the workspace. */
 export const workspacePost = (workspaceId: string, postId: string) =>

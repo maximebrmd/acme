@@ -314,6 +314,11 @@
       "title": "YouTube",
       "description": "Votre chaîne YouTube. Vous vous connectez avec Google, choisissez la chaîne si votre compte en a plusieurs, et autorisez Peal à mettre en ligne des vidéos et à lire la chaîne.",
       "connect": "Connecter YouTube"
+    },
+    "pinterest": {
+      "title": "Pinterest",
+      "description": "Votre compte Pinterest. Vous vous connectez sur Pinterest et autorisez Peal à créer des épingles sur vos tableaux et à lire leurs statistiques.",
+      "connect": "Connecter Pinterest"
     }
   },
   "ConnectCallbackPage": {
@@ -478,6 +483,30 @@
       "tooLong": "{length} sur {maximum} caractères.",
       "invalid": "Une valeur que la plateforme refuse.",
       "unknownField": "une option",
+      "lookupLoading": "Lecture de la liste sur la plateforme…",
+      "lookupFailed": "{reason, select, reconnect {Reconnectez ce compte pour lire sa liste.} disabled {Ce canal est désactivé : déconnectez-le et connectez à nouveau le compte pour y publier.} rateLimited {La plateforme demande de ralentir. Réessayez dans un instant.} other {La liste n’a pas pu être lue sur la plateforme. Réessayez dans un instant.}}",
+      "lookupRetry": "Réessayer",
+      "lookupNone": "Aucune",
+      "lookupUnknown": "Absent de la liste ({value})",
+      "lookupTruncated": "Seuls les {count, number} premiers sont listés.",
+      "pinterest": {
+        "board": "Tableau",
+        "boardHint": "Le tableau où l’épingle est enregistrée. Le texte de la publication est la description de l’épingle, et la description du premier fichier son texte alternatif.",
+        "boardInvalid": "Choisissez l’un des tableaux du compte.",
+        "boardEmpty": "Ce compte n’a pas encore de tableau : créez-en un sur Pinterest, puis réessayez.",
+        "boardSection": "Section du tableau",
+        "boardSectionInvalid": "Choisissez l’une des sections du tableau.",
+        "title": "Titre",
+        "titleHint": "100 caractères au plus.",
+        "link": "Lien",
+        "linkHint": "Là où l’on arrive en cliquant sur l’épingle : une adresse qui commence par http:// ou https://.",
+        "linkInvalid": "Un lien commence par http:// ou https://, sans espace.",
+        "coverSecond": "Couverture de la vidéo, à la seconde",
+        "coverSecondHint": "Pour une vidéo : la seconde dont l’image devient la couverture. La première image si le champ reste vide.",
+        "dominantColor": "Couleur dominante",
+        "dominantColorHint": "La couleur affichée pendant le chargement de l’image : un # et six chiffres hexadécimaux, comme #6E7874.",
+        "dominantColorInvalid": "Une couleur est un # suivi de six chiffres hexadécimaux, comme #6E7874."
+      },
       "youtube": {
         "title": "Titre",
         "titleHint": "100 caractères au plus, sans < ni >. Le texte de la publication en est la description.",

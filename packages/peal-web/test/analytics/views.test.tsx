@@ -221,7 +221,7 @@ describe(PostMetricsView, () => {
     );
 
     expect(html).toContain(
-      "Peal relève pour l’instant les chiffres sur Mastodon, Bluesky, TikTok, YouTube et Instagram, dans l’heure qui suit la parution."
+      "Peal relève pour l’instant les chiffres sur Mastodon, Bluesky, TikTok, YouTube, Instagram et Pinterest, dans l’heure qui suit la parution."
     );
   });
 
@@ -252,11 +252,11 @@ describe(PostMetricsView, () => {
     const french = await render("fr", view);
 
     expect(english).toContain(
-      "Counts are not available on LinkedIn and X: Peal reads them on Mastodon, Bluesky, TikTok, YouTube, and Instagram only, so far."
+      "Counts are not available on LinkedIn and X: Peal reads them on Mastodon, Bluesky, TikTok, YouTube, Instagram, and Pinterest only, so far."
     );
     expect(english).not.toContain("within the hour");
     expect(french).toContain(
-      "Les chiffres ne sont pas disponibles sur LinkedIn et X : Peal ne les relève pour l’instant que sur Mastodon, Bluesky, TikTok, YouTube et Instagram."
+      "Les chiffres ne sont pas disponibles sur LinkedIn et X : Peal ne les relève pour l’instant que sur Mastodon, Bluesky, TikTok, YouTube, Instagram et Pinterest."
     );
     expect(french).not.toContain("dans l’heure");
   });

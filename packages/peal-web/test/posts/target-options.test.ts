@@ -99,6 +99,66 @@ describe(optionsOf, () => {
   });
 });
 
+describe("Pinterest's fields", () => {
+  it("give the board, a whole second for the cover, and nothing left empty", () => {
+    expect(
+      optionsOf("pinterest", {
+        boardId: "549755885001",
+        boardSectionId: "5000000000001",
+        coverSecond: " 12 ",
+        dominantColor: "",
+        link: "https://peal.example/recipes",
+        title: "Tomato salad",
+      })
+    ).toStrictEqual(
+      Option.some({
+        boardId: "549755885001",
+        boardSectionId: "5000000000001",
+        coverSecond: 12,
+        link: "https://peal.example/recipes",
+        platform: "pinterest",
+        title: "Tomato salad",
+      })
+    );
+    // Anything but digits is no second the API would take.
+    expect(
+      optionsOf("pinterest", { boardId: "549755885001", coverSecond: "1.5" })
+    ).toStrictEqual(
+      Option.some({ boardId: "549755885001", platform: "pinterest" })
+    );
+  });
+
+  it("fill back from stored options, the second as its digits", () => {
+    expect(
+      valuesOf("pinterest", {
+        boardId: "549755885001",
+        coverSecond: 0,
+        platform: "pinterest",
+      })
+    ).toStrictEqual({ boardId: "549755885001", coverSecond: "0" });
+    expect(initialValues("pinterest")).toStrictEqual({});
+  });
+
+  it("forget the section when the board changes, and only then", () => {
+    const values = {
+      boardId: "549755885001",
+      boardSectionId: "5000000000001",
+      title: "Tomato salad",
+    };
+
+    expect(
+      withValue("pinterest", values, "boardId", "549755885002")
+    ).toStrictEqual({ boardId: "549755885002", title: "Tomato salad" });
+    expect(
+      withValue("pinterest", values, "boardId", "549755885001")
+    ).toStrictEqual(values);
+    expect(withValue("pinterest", values, "title", "Salad")).toStrictEqual({
+      ...values,
+      title: "Salad",
+    });
+  });
+});
+
 describe(valuesOfPost, () => {
   it("fills in the targets of platforms that take options", () => {
     const platforms = new Map<string, Platform>([

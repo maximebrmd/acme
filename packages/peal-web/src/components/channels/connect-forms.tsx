@@ -153,13 +153,14 @@ const ConnectBluesky = ({ workspaceId }: { readonly workspaceId: string }) => {
 };
 
 // The platforms whose sign-in needs nothing typed first: a button.
-type ButtonPlatform = "linkedin" | "tiktok" | "x" | "youtube";
+type ButtonPlatform = "linkedin" | "pinterest" | "tiktok" | "x" | "youtube";
 
 const buttonPlatforms: readonly ButtonPlatform[] = [
   "linkedin",
   "x",
   "tiktok",
   "youtube",
+  "pinterest",
 ];
 
 const ConnectWithButton = ({
@@ -250,9 +251,9 @@ const ConnectWithInstagram = ({
 /**
  * Where a member starts connecting an account, for each platform this
  * server connects: a form for Mastodon and Bluesky, which ask for a server
- * or a handle, a button for LinkedIn, X, TikTok and YouTube, one for each
- * of Instagram's ways in the server has, and Meta's sign-in for Threads
- * and Facebook Pages.
+ * or a handle, a button for LinkedIn, X, TikTok, YouTube and Pinterest,
+ * one for each of Instagram's ways in the server has, and Meta's sign-in
+ * for Threads and Facebook Pages.
  */
 export const ConnectForms = ({
   instagramConnections,

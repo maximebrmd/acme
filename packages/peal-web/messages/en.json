@@ -314,6 +314,11 @@
       "title": "YouTube",
       "description": "Your YouTube channel. You sign in with Google, pick the channel if your account has several, and allow Peal to upload videos and read the channel.",
       "connect": "Connect YouTube"
+    },
+    "pinterest": {
+      "title": "Pinterest",
+      "description": "Your Pinterest account. You sign in on Pinterest and allow Peal to create Pins on your boards and read their counts.",
+      "connect": "Connect Pinterest"
     }
   },
   "ConnectCallbackPage": {
@@ -478,6 +483,30 @@
       "tooLong": "{length} of {maximum} characters.",
       "invalid": "Not a value the platform takes.",
       "unknownField": "an option",
+      "lookupLoading": "Reading the list on the platform…",
+      "lookupFailed": "{reason, select, reconnect {Reconnect this account to read its list.} disabled {This channel is turned off: disconnect it and connect the account again to post to it.} rateLimited {The platform asked to slow down. Try again in a moment.} other {The list could not be read from the platform. Try again in a moment.}}",
+      "lookupRetry": "Try again",
+      "lookupNone": "None",
+      "lookupUnknown": "Not in the list ({value})",
+      "lookupTruncated": "Only the first {count, number} are listed.",
+      "pinterest": {
+        "board": "Board",
+        "boardHint": "The board the Pin is saved to. The post’s text is the Pin’s description, and the first file’s description its alt text.",
+        "boardInvalid": "Choose one of the account’s boards.",
+        "boardEmpty": "This account has no board yet: create one on Pinterest, then try again.",
+        "boardSection": "Board section",
+        "boardSectionInvalid": "Choose one of the board’s sections.",
+        "title": "Title",
+        "titleHint": "At most 100 characters.",
+        "link": "Link",
+        "linkHint": "Where people land when they click the Pin: an address that starts with http:// or https://.",
+        "linkInvalid": "A link starts with http:// or https://, and has no space.",
+        "coverSecond": "Video cover, at second",
+        "coverSecondHint": "For a video: the second whose frame becomes the cover. The first frame when left empty.",
+        "dominantColor": "Dominant colour",
+        "dominantColorHint": "The colour shown while the image loads, as # and six hex digits, such as #6E7874.",
+        "dominantColorInvalid": "A colour is # and six hex digits, such as #6E7874."
+      },
       "youtube": {
         "title": "Title",
         "titleHint": "At most 100 characters, without < or >. The post's text is the description.",

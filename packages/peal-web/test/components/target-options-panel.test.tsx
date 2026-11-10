@@ -7,11 +7,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { ComposerErrors } from "#components/posts/composer-errors.tsx";
 import {
+  PinterestOptionsFields,
   takesOptions,
   TargetOptionsPanel,
   TikTokOptionsFields,
 } from "#components/posts/target-options-panel.tsx";
-import type { TikTokAccountState } from "#components/posts/target-options-panel.tsx";
+import type {
+  LookupSource,
+  TikTokAccountState,
+} from "#components/posts/target-options-panel.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 import { initialValues } from "#posts/target-options.ts";
 import type { OptionValues } from "#posts/target-options.ts";
@@ -279,6 +283,179 @@ describe(TikTokOptionsFields, () => {
     expect(html).toContain("Publication en tant que Peal Clips (@peal_clips).");
     expect(html).toMatch(
       /En publiant, vous acceptez la <a [^>]+>Confirmation d’utilisation de la musique<\/a> de TikTok\./u
+    );
+  });
+});
+
+const pinterest = channel(
+  "00000000-0000-7000-8000-000000000004",
+  "pinterest",
+  "@pealexample"
+);
+
+const boardChoices = [
+  { label: "Summer recipes", value: "549755885001" },
+  { label: "Garden", value: "549755885002" },
+];
+
+const boards: LookupSource = {
+  choices: { _tag: "loaded", choices: boardChoices, truncated: false },
+};
+
+const noSections: LookupSource = {
+  choices: { _tag: "loaded", choices: [], truncated: false },
+};
+
+const renderPinterest = async (
+  locale: Locale,
+  sources: {
+    readonly boards: LookupSource;
+    readonly sections?: LookupSource;
+  },
+  values: OptionValues = {},
+  refused: readonly ContentViolation[] = []
+) => {
+  const messages = await loadMessages(locale);
+
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <PinterestOptionsFields
+        channel={pinterest}
+        disabled={false}
+        boards={sources.boards}
+        sections={sources.sections ?? noSections}
+        values={values}
+        violations={refused}
+        onChange={() => {
+          // Rendered once, never changed.
+        }}
+      />
+    </NextIntlClientProvider>
+  );
+};
+
+const boardsFailed = async (
+  reason: "rateLimited" | "reconnect" | "unreachable"
+) =>
+  await renderPinterest("en", {
+    boards: {
+      choices: { _tag: "failed", reason },
+      retry: () => {
+        // Never clicked in a static render.
+      },
+    },
+  });
+
+describe(PinterestOptionsFields, () => {
+  it("says the boards are being read", async () => {
+    const html = await renderPinterest("en", {
+      boards: { choices: { _tag: "loading" } },
+    });
+
+    expect(html).toContain("@pealexample on Pinterest: options");
+    expect(html).toContain("Board (required)");
+    expect(html).toContain("Reading the list on the platform…");
+  });
+
+  it("offers the boards once read, with the Pin's other fields", async () => {
+    const html = await renderPinterest(
+      "en",
+      { boards },
+      { boardId: "549755885002" }
+    );
+
+    expect(html).not.toContain("Reading the list");
+    expect(html).toContain("Garden");
+    expect(html).toContain("Title");
+    expect(html).toContain("Video cover, at second");
+  });
+
+  it("shows a board's sections once a board is chosen and has some", async () => {
+    const sections: LookupSource = {
+      choices: {
+        _tag: "loaded",
+        choices: [{ label: "Salads", value: "5000000000001" }],
+        truncated: false,
+      },
+    };
+
+    const unchosen = await renderPinterest("en", { boards, sections });
+
+    const chosen = await renderPinterest(
+      "en",
+      { boards, sections },
+      { boardId: "549755885001", boardSectionId: "5000000000001" }
+    );
+
+    const without = await renderPinterest(
+      "en",
+      { boards },
+      { boardId: "549755885001" }
+    );
+
+    expect(unchosen).not.toContain("Board section");
+    expect(chosen).toContain("Board section");
+    expect(chosen).toContain("Salads");
+    expect(without).not.toContain("Board section");
+  });
+
+  it("says why the boards could not be read, with a way to ask again", async () => {
+    await expect(boardsFailed("reconnect")).resolves.toContain(
+      "Reconnect this account to read its list."
+    );
+    await expect(boardsFailed("rateLimited")).resolves.toContain(
+      "The platform asked to slow down."
+    );
+
+    const unreachable = await boardsFailed("unreachable");
+
+    expect(unreachable).toContain("The list could not be read");
+    expect(unreachable).toContain("Try again</button>");
+  });
+
+  it("says an account has no board, and keeps a board the list lacks", async () => {
+    const empty = await renderPinterest("en", { boards: noSections });
+
+    const gone = await renderPinterest(
+      "en",
+      {
+        boards: {
+          choices: { _tag: "loaded", choices: boardChoices, truncated: true },
+        },
+      },
+      { boardId: "549755885999" }
+    );
+
+    expect(empty).toContain("This account has no board yet");
+    expect(gone).toContain("Not in the list (549755885999)");
+    expect(gone).toContain("Only the first 2 are listed.");
+  });
+
+  it("shows what scheduling refused, in the reader's language", async () => {
+    const html = await renderPinterest(
+      "fr",
+      { boards },
+      { link: "peal.example" },
+      [
+        {
+          _tag: "optionMissing",
+          channelId: pinterest.id,
+          field: "boardId",
+          platform: "pinterest",
+        },
+        {
+          _tag: "optionInvalid",
+          channelId: pinterest.id,
+          field: "link",
+          platform: "pinterest",
+        },
+      ]
+    );
+
+    expect(html).toContain("Tableau (obligatoire)");
+    expect(html).toContain("Obligatoire pour programmer.");
+    expect(html).toContain(
+      "Un lien commence par http:// ou https://, sans espace."
     );
   });
 });
