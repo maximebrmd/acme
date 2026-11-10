@@ -2,11 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-<<<<<<<< HEAD:packages/peal-server/drizzle/20261110063658_initial/snapshot.json
-  "id": "c9fab1d9-9934-4adb-a827-0257ac0c37cf",
-========
-  "id": "bec6f946-b52a-46ee-8490-39c9dce167e5",
->>>>>>>> origin/main:packages/peal-server/drizzle/20261110061438_initial/snapshot.json
+  "id": "28db30a9-efec-4e46-a21b-38efa03a83ff",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
