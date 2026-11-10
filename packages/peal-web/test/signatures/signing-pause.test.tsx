@@ -41,6 +41,36 @@ describe(textsChanged, () => {
   });
 });
 
+// A part after the first.
+const part = (text: string) => ({
+  delaySeconds: 0,
+  media: [],
+  overrides: [],
+  text,
+});
+
+describe("a thread's texts", () => {
+  it("sees a signature the server put under a thread's last part", () => {
+    expect(
+      textsChanged(
+        { ...sent, followUps: [part("Second"), part("Last")] },
+        {
+          content: {
+            ...unsigned.content,
+            followUps: [part("Second"), part("Last\n\nThe studio")],
+          },
+        }
+      )
+    ).toBeTruthy();
+    expect(
+      textsChanged(
+        { ...sent, followUps: [part("Second")] },
+        { content: { ...unsigned.content, followUps: [part("Second")] } }
+      )
+    ).toBeFalsy();
+  });
+});
+
 describe(pausesToCheck, () => {
   it("stops a schedule whose save created the post with signatures", () => {
     expect(

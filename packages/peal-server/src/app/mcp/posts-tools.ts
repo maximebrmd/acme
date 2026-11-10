@@ -85,7 +85,7 @@ const namesSets =
   "Instead of listing channels, or beside them, `channelSets` names channel sets of the workspace (list_channel_sets): a set's channels that are no longer connected are left out, and told in the answer's `warnings`, never silently, so tell the user which.";
 
 const signs =
-  "`signatureId` puts a signature under the text on every channel, and `defaultSignatures` each channel's default one: a signature becomes text of the post, is counted against the platforms' limits, and is never added twice.";
+  "`signatureId` puts a signature under the text on every channel, and `defaultSignatures` each channel's default one: a signature becomes text of the post, is counted against the platforms' limits, and is never added twice. A post in several parts (`content.followUps`) is signed under its last part.";
 
 const takesSaved = `${namesSets} ${signs} A channel without options takes those a set it names keeps for it, then its default options (get_channel_defaults).`;
 

@@ -38,8 +38,9 @@ peal post "Spring catalogue is out" --set Launch --signature "Sign-off" --at 202
 `--set` stands for the set's connected channels, so `peal post` needs no
 `--channel` with it. A channel of the set that is no longer connected is
 left out: the answer says so in `warnings`, and the user should hear it. A
-signature becomes text of the post, counted against each platform's limit,
-and is never added twice. A channel without `--options` takes the set's
+signature becomes text of the post, under its last part when it has
+`--then` parts, counted against each platform's limit, and is never added
+twice. A channel without `--options` takes the set's
 options, then its default options. Create or change a signature, a set or
 default options (`peal signatures create`, `peal sets create`, `peal
 channels defaults set`) only when the user asked for it.

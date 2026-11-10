@@ -78,7 +78,7 @@ import {
   timeKey,
   wallClockOf,
 } from "#posts/zoned-time.ts";
-import { withSignature } from "#signatures/insert.ts";
+import { withSignatureUnderLastPart } from "#signatures/insert.ts";
 import { pausesToCheck } from "#signatures/signing-pause.ts";
 
 const utcZone = "UTC";
@@ -365,6 +365,8 @@ export const Composer = ({
       if (signed !== undefined) {
         setText(signed.text);
         setOverrides(signed.overrides);
+        // A post of several parts is signed under its last.
+        setParts(partsOf(saved.content));
         setAccepted((count) => count + 1);
       }
 
@@ -618,14 +620,16 @@ export const Composer = ({
               disabled={locked}
               workspaceId={workspaceId}
               onInsert={(channelId, signature) => {
-                const signed = withSignature(
-                  { overrides, text },
+                // A post of several parts is signed under its last.
+                const signed = withSignatureUnderLastPart(
+                  { overrides, parts, text },
                   channelId,
                   signature
                 );
 
                 setText(signed.text);
                 setOverrides(signed.overrides);
+                setParts(signed.parts);
                 setAccepted((count) => count + 1);
               }}
             />

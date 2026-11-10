@@ -321,7 +321,7 @@ export const post = Command.make(
       "A channel set the post goes to, by its id or its name, as peal sets list shows them; repeat it for several: its connected channels, beside any --channel, with the options the set keeps for them where --options gives none. A channel of the set that is no longer connected is left out, and said; when none is left and no --channel is given, nothing is posted."
     ),
     signature: signatureFlag(
-      "A signature to put under the post's text, on every channel, by its id or its name, as peal signatures list shows them. It is then text of the post, counted against each platform's limit, and never added twice."
+      "A signature to put under the post's text, on every channel, by its id or its name, as peal signatures list shows them; under the last part of a post with --then parts. It is then text of the post, counted against each platform's limit, and never added twice."
     ),
     tags: tagsFlag(
       "A tag to file the post under, by its id or its name, as peal tags list shows them; repeat it for several. Tags say nothing to the platforms."

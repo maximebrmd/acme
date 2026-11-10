@@ -153,7 +153,7 @@ const save = Command.make(
       "A channel set the post is for as well, by its id or its name, as peal sets list shows them; repeat it for several: its connected channels, with the options the set keeps for them where --options gives none. A channel of the set that is no longer connected is left out, and said."
     ),
     signature: signatureFlag(
-      "A signature to put under the post's text, on every channel, by its id or its name, as peal signatures list shows them. It is then text of the post, counted against each platform's limit, and never added twice."
+      "A signature to put under the post's text, on every channel, by its id or its name, as peal signatures list shows them; under the last part of a post with --then parts. It is then text of the post, counted against each platform's limit, and never added twice."
     ),
     tags: tagsFlag(
       "A tag to file the post under, by its id or its name, as peal tags list shows them; repeat it for several. A draft you change keeps its tags without it, and takes those given instead of them with it; peal posts tag takes them all off."

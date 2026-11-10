@@ -1,5 +1,7 @@
 import { signedText } from "peal-contract";
 
+import type { PartDraft } from "#posts/parts.ts";
+
 // Putting a signature under one of a post's texts, as the composer holds
 // them.
 
@@ -33,5 +35,51 @@ export const withSignature = (
       [channelId]: signedText(own.trim() === "" ? text : own, signature),
     },
     text,
+  };
+};
+
+/** A post's texts, and the parts that follow it. */
+export interface ThreadTexts extends PostTexts {
+  readonly parts: readonly PartDraft[];
+}
+
+/**
+ * The texts with the signature under the last part, as the server signs a
+ * post of several parts: the post itself when no part follows it.
+ */
+export const withSignatureUnderLastPart = (
+  texts: ThreadTexts,
+  channelId: string | undefined,
+  signature: string
+): ThreadTexts => {
+  const last = texts.parts.at(-1);
+
+  if (last === undefined) {
+    return { ...texts, ...withSignature(texts, channelId, signature) };
+  }
+
+  const signed = withSignature(
+    {
+      overrides: Object.fromEntries(
+        last.overrides.map(({ channelId: id, text }) => [id, text])
+      ),
+      text: last.text,
+    },
+    channelId,
+    signature
+  );
+
+  return {
+    ...texts,
+    parts: [
+      ...texts.parts.slice(0, -1),
+      {
+        ...last,
+        overrides: Object.entries(signed.overrides)
+          .map(([id, text]) => ({ channelId: id, text }))
+          .toSorted((a, b) => a.channelId.localeCompare(b.channelId)),
+        text: signed.text,
+      },
+    ],
   };
 };

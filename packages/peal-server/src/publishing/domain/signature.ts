@@ -7,6 +7,7 @@ import { PlatformSchema } from "#shared/domain/platform.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 import { PostContent } from "./post-content.ts";
+import { PostPart } from "./post-part.ts";
 import { isWithoutNul, maxPostTextLength } from "./post-text.ts";
 import { SignatureIdSchema } from "./signature-id.ts";
 import type { SignatureId } from "./signature-id.ts";
@@ -171,11 +172,43 @@ export const defaultFor = (
   );
 };
 
-const withTexts = (
+/** The texts of the part a signature goes under. */
+interface SignedPart {
+  readonly overrides: readonly TextOverride[];
+  readonly text: string;
+}
+
+/**
+ * The part a signature goes under: the last, the post itself when it has
+ * no other.
+ */
+const lastPartOf = (content: PostContent): SignedPart =>
+  content.followUps.at(-1) ?? content;
+
+/** The content with the last part's texts replaced, every other kept. */
+const withLastPart = (
   content: PostContent,
-  text: string,
-  overrides: readonly TextOverride[]
-): PostContent => new PostContent({ media: content.media, overrides, text });
+  { overrides, text }: SignedPart
+): PostContent => {
+  const last = content.followUps.at(-1);
+
+  return last === undefined
+    ? new PostContent({ media: content.media, overrides, text })
+    : new PostContent({
+        followUps: [
+          ...content.followUps.slice(0, -1),
+          new PostPart({
+            delaySeconds: last.delaySeconds,
+            media: last.media,
+            overrides,
+            text,
+          }),
+        ],
+        media: content.media,
+        overrides: content.overrides,
+        text: content.text,
+      });
+};
 
 /**
  * The content with one signature under its text, and under the text it has
@@ -186,15 +219,17 @@ const withTexts = (
 export const withSignature = (
   content: PostContent,
   signature: Signature
-): PostContent =>
-  withTexts(
-    content,
-    signed(content.text, signature.text),
-    content.overrides.map(
+): PostContent => {
+  const last = lastPartOf(content);
+
+  return withLastPart(content, {
+    overrides: last.overrides.map(
       ({ channelId, text }) =>
         new TextOverride({ channelId, text: signed(text, signature.text) })
-    )
-  );
+    ),
+    text: signed(last.text, signature.text),
+  });
+};
 
 /**
  * The content with the default signatures of its channels: the
@@ -223,8 +258,10 @@ export const withDefaultSignatures = (
       onSome: (signature) => unsigned(text, signature.text),
     });
 
+  const last = lastPartOf(content);
+
   const overridden = new Map(
-    content.overrides.map(({ channelId, text }) => [channelId, text])
+    last.overrides.map(({ channelId, text }) => [channelId, text])
   );
 
   const known = new Set<ChannelId>(channels.map(({ channelId }) => channelId));
@@ -247,7 +284,7 @@ export const withDefaultSignatures = (
       });
     }
 
-    const base = Option.getOrElse(written, () => content.text);
+    const base = Option.getOrElse(written, () => last.text);
 
     return [
       new TextOverride({
@@ -261,16 +298,15 @@ export const withDefaultSignatures = (
   });
 
   // The texts of channels the post is not for yet stay as they are.
-  const others = content.overrides.filter(
+  const others = last.overrides.filter(
     ({ channelId }) => !known.has(channelId)
   );
 
-  return withTexts(
-    content,
-    Option.match(general, {
-      onNone: () => content.text,
-      onSome: (signature) => signed(content.text, signature.text),
+  return withLastPart(content, {
+    overrides: [...onChannels, ...others],
+    text: Option.match(general, {
+      onNone: () => last.text,
+      onSome: (signature) => signed(last.text, signature.text),
     }),
-    [...onChannels, ...others]
-  );
+  });
 };

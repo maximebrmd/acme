@@ -566,9 +566,9 @@ publishing's schema, naming nobody: each goes with its workspace
   post's text with the workspace's default, and gives a channel whose own
   or platform's default is another a text of its own (an override) signed
   with that one; `withSignature` signs every text with one signature. A
-  post in several parts is signed under its last part: when parts land in
-  `PostContent`, these two functions sign the last one, and nothing else
-  changes. The contract's `signedText` is the clients' copy
+  post in several parts is signed under its last part (the post itself
+  when none follows), every other part kept; the web composer signs by
+  hand the same way (`withSignatureUnderLastPart`). The contract's `signedText` is the clients' copy
   (`test/publishing/api/saved-items-contract.test.ts` keeps it, and every
   limit, equal).
 - A channel set (`channel-set.ts`, `ChannelSets`) is channels kept under a

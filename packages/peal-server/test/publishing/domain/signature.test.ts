@@ -1,6 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option, Schema } from "effect";
 
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import { maxPostTextLength } from "#publishing/domain/post-text.ts";
 import { SignatureIdSchema } from "#publishing/domain/signature-id.ts";
 import {
@@ -13,7 +15,9 @@ import {
   withSignature,
 } from "#publishing/domain/signature.ts";
 import type { SignatureScope } from "#publishing/domain/signature.ts";
+import { TextOverride } from "#publishing/domain/text-override.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { ChannelId } from "#shared/domain/ids.ts";
 import { contentOf } from "#test/publishing/support.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -272,5 +276,97 @@ describe("a signature inserted by hand", () => {
     expect(textsOf(withSignature(content, chosen))).toStrictEqual(
       textsOf(content)
     );
+  });
+});
+
+// A post of three parts, with the last one's own texts on some channels.
+const thread = (overrides: readonly (readonly [ChannelId, string])[] = []) =>
+  new PostContent({
+    followUps: [
+      new PostPart({
+        delaySeconds: 0,
+        media: [],
+        overrides: [],
+        text: "Second",
+      }),
+      new PostPart({
+        delaySeconds: 60,
+        media: [],
+        overrides: overrides.map(
+          ([channelId, text]) => new TextOverride({ channelId, text })
+        ),
+        text: "Last",
+      }),
+    ],
+    media: [],
+    overrides: [
+      new TextOverride({
+        channelId: mastodon.channelId,
+        text: "First, fediverse",
+      }),
+    ],
+    text: "First",
+  });
+
+// The texts of a post's last part.
+const lastOf = (content: PostContent) => {
+  const last = content.followUps.at(-1);
+
+  return {
+    overrides: Object.fromEntries(
+      (last?.overrides ?? []).map(({ channelId, text }) => [channelId, text])
+    ),
+    text: last?.text,
+  };
+};
+
+describe("a post in several parts", () => {
+  it("is signed by hand under its last part, and keeps every part", () => {
+    const chosen = signature("Chosen", everywhere, false);
+
+    const content = withSignature(
+      thread([[mastodon.channelId, "Last, fediverse"]]),
+      chosen
+    );
+
+    expect(textsOf(content)).toStrictEqual({
+      overrides: { [mastodon.channelId]: "First, fediverse" },
+      text: "First",
+    });
+    expect(content.followUps.map(({ text }) => text)).toStrictEqual([
+      "Second",
+      "Last\n\nChosen",
+    ]);
+    expect(lastOf(content)).toStrictEqual({
+      overrides: { [mastodon.channelId]: "Last, fediverse\n\nChosen" },
+      text: "Last\n\nChosen",
+    });
+    expect(content.followUps[1]?.delaySeconds).toBe(60);
+    expect(withSignature(content, chosen)).toStrictEqual(content);
+  });
+
+  it("takes its channels' default signatures under its last part", () => {
+    const general = signature("General");
+
+    const onMastodon = signature("On Mastodon", {
+      _tag: "platform",
+      platform: "mastodon",
+    });
+
+    const content = withDefaultSignatures(
+      thread(),
+      [mastodon, bluesky],
+      [general, onMastodon]
+    );
+
+    expect(textsOf(content)).toStrictEqual(textsOf(thread()));
+    expect(content.followUps[0]?.text).toBe("Second");
+    expect(lastOf(content)).toStrictEqual({
+      overrides: { [mastodon.channelId]: "Last\n\nOn Mastodon" },
+      text: "Last\n\nGeneral",
+    });
+    expect(
+      withDefaultSignatures(content, [mastodon, bluesky], [general, onMastodon])
+    ).toStrictEqual(content);
   });
 });

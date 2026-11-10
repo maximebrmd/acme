@@ -9,7 +9,10 @@ import {
   signatureDetailsOf,
   signatureDraftOf,
 } from "#signatures/draft.ts";
-import { withSignature } from "#signatures/insert.ts";
+import {
+  withSignature,
+  withSignatureUnderLastPart,
+} from "#signatures/insert.ts";
 
 const signature = (
   id: string,
@@ -173,5 +176,58 @@ describe(withSignature, () => {
     expect(
       withSignature({ overrides: {}, text: "" }, undefined, "The team").text
     ).toBe("The team");
+  });
+});
+
+// A part after the first.
+const part = (key: string, text: string, own: Record<string, string> = {}) => ({
+  delaySeconds: 0,
+  key,
+  media: [],
+  overrides: Object.entries(own).map(([channelId, ownText]) => ({
+    channelId,
+    text: ownText,
+  })),
+  text,
+});
+
+describe(withSignatureUnderLastPart, () => {
+  const thread = {
+    overrides: { c2: "First, on this channel" },
+    parts: [part("p1", "Second"), part("p2", "Last", { c2: "Last, here" })],
+    text: "First",
+  };
+
+  it("signs the post itself when it has no other part", () => {
+    expect(
+      withSignatureUnderLastPart(
+        { overrides: {}, parts: [], text: "Hello" },
+        undefined,
+        "The team"
+      )
+    ).toStrictEqual({ overrides: {}, parts: [], text: "Hello\n\nThe team" });
+  });
+
+  it("signs the last part of a thread, and leaves the others", () => {
+    expect(
+      withSignatureUnderLastPart(thread, undefined, "The team")
+    ).toStrictEqual({
+      ...thread,
+      parts: [
+        part("p1", "Second"),
+        part("p2", "Last\n\nThe team", { c2: "Last, here" }),
+      ],
+    });
+  });
+
+  it("signs a channel's own text in the last part, or gives it one", () => {
+    expect(
+      withSignatureUnderLastPart(thread, "c2", "The team").parts[1]
+    ).toStrictEqual(part("p2", "Last", { c2: "Last, here\n\nThe team" }));
+    expect(
+      withSignatureUnderLastPart(thread, "c1", "The team").parts[1]
+    ).toStrictEqual(
+      part("p2", "Last", { c1: "Last\n\nThe team", c2: "Last, here" })
+    );
   });
 });

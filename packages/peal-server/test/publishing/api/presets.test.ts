@@ -351,6 +351,97 @@ describe("signatures", () => {
   );
 });
 
+// A post of three parts, the last saying `last`.
+const thread = (last: string): PostContent => ({
+  ...text("First"),
+  followUps: [
+    { delaySeconds: 0, media: [], overrides: [], text: "Second" },
+    { delaySeconds: 60, media: [], overrides: [], text: last },
+  ],
+});
+
+describe("a post of several parts", () => {
+  it.effect(
+    "is signed under its last part, and checked and compared as signed",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* signsLast() {
+          const { bluesky, editor, params } = yield* studio;
+
+          const signOff = yield* editor.signatures.create({
+            params,
+            payload: { name: "Sign-off", text: "— The studio" },
+          });
+
+          const sent = yield* editor.posts.send({
+            headers: {},
+            params,
+            payload: {
+              channelIds: [bluesky],
+              content: thread("Last"),
+              signatureId: signOff.id,
+              when: tomorrow,
+            },
+            query: {},
+          });
+
+          assert.strictEqual(sent.content.text, "First");
+          assert.deepStrictEqual(
+            (sent.content.followUps ?? []).map((part) => [
+              part.text,
+              part.delaySeconds,
+            ]),
+            [
+              ["Second", 0],
+              ["Last\n\n— The studio", 60],
+            ]
+          );
+
+          // Checked as it would go out: the last part with its signature.
+          const signed = yield* editor.posts.validate({
+            params,
+            payload: {
+              channelIds: [bluesky],
+              content: thread("Last"),
+              signatureId: signOff.id,
+              when: tomorrow,
+            },
+          });
+
+          assert.deepStrictEqual(
+            signed.channels.flatMap(({ parts }) =>
+              parts.map((part) => part.text)
+            ),
+            ["Second", "Last\n\n— The studio"]
+          );
+
+          // The same post, signed, is already on its way; unsigned, it is
+          // another post.
+          assert.deepStrictEqual(signed.duplicates, [
+            { channelId: bluesky, postId: sent.id },
+          ]);
+
+          const unsigned = yield* editor.posts.validate({
+            params,
+            payload: {
+              channelIds: [bluesky],
+              content: thread("Last"),
+              when: tomorrow,
+            },
+          });
+
+          assert.deepStrictEqual(unsigned.duplicates, []);
+
+          yield* editor.posts.cancel({
+            params: { ...params, postId: sent.id },
+          });
+        })
+      ),
+    timeout
+  );
+});
+
 describe("channel sets", () => {
   it.effect(
     "keep channels of the workspace under a name, with their options",

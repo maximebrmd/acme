@@ -307,7 +307,7 @@ peal signatures delete "Fediverse"
 
 - A signature is a text a workspace keeps to end its posts with, 2000 characters at most; a workspace keeps 50. It is meant for every channel, for the channels of one platform (`--platform`) or for one channel (`--channel <channel-id>`).
 - `--default` makes it the default where it is meant for: posts that ask for the default signatures (`--default-signatures`) take it there, the workspace's under the post's text, a platform's or a channel's own under the text that channel has instead. The signature that was the default there is one no longer.
-- Once under a post's text, a signature is text of the post: it counts against each platform's limit when the post is scheduled, and it is never added under a text that already ends with it.
+- Once under a post's text, a signature is text of the post: it counts against each platform's limit when the post is scheduled, and it is never added under a text that already ends with it. A post in several parts (`--then`) is signed under its last part.
 - Wherever a command takes a signature, give its id or its name, whatever its case: `peal signatures list` shows both.
 - `peal signatures update` changes what its flags name (`--name`, `--text`, `--whole-workspace`, `--platform` or `--channel`, `--default` or `--no-default`) and keeps the rest. Posts that already hold the signature's text keep it as it was.
 - `peal signatures delete` deletes a signature for good; posts that already hold its text keep it.
