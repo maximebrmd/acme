@@ -7,6 +7,7 @@ import type { AttachableMedia } from "#publishing/application/attachable-media.t
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
+import { PostBatches } from "#publishing/application/post-batches.ts";
 import { PostChecks } from "#publishing/application/post-checks.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostEvents } from "#publishing/application/post-events.ts";
@@ -58,7 +59,7 @@ import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publis
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 /**
- * The publishing context's use cases (`PostChecks`, `PostDrafts`, `PostOutcomes`, `PostQueries`,
+ * The publishing context's use cases (`PostBatches`, `PostChecks`, `PostDrafts`, `PostOutcomes`, `PostQueries`,
  * `PostScheduling`, `PostFollowUp`, for the handlers; `PostRecords`, for the
  * workspace context's exports and erasures; `PostUsage`, for billing;
  * `PublishedTargets`, which analytics follows; `PostOversight`, for the
@@ -89,12 +90,13 @@ export const publishingWith = <
   events: Layer.Layer<PostEvents, never, R4> = PostEvents.none
 ) =>
   Layer.mergeAll(
-    PostChecks.layer,
+    PostBatches.layer.pipe(
+      Layer.provideMerge(Layer.merge(PostChecks.layer, PostScheduling.layer))
+    ),
     PostDrafts.layer,
     PostOutcomes.layer,
     PostQueries.layer,
     PostRecords.layer,
-    PostScheduling.layer,
     PostFollowUp.layer,
     PostUsage.layer
   ).pipe(

@@ -532,6 +532,26 @@ export type { PostStatus } from "./post-status.ts";
 
 export { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 
+export { ImportProblemSchema, ImportUnreadable } from "./import-unreadable.ts";
+
+export type { ImportProblem } from "./import-unreadable.ts";
+
+export {
+  ImportCellProblemSchema,
+  ImportColumnSchema,
+  importColumns,
+  maxBulkPosts,
+  maxImportLength,
+  maxImportRows,
+  PostRefusalSchema,
+} from "./post-batches.ts";
+
+export type {
+  ImportCellProblem,
+  ImportColumn,
+  PostRefusal,
+} from "./post-batches.ts";
+
 export {
   DuplicateOnChannelSchema,
   DuplicatePost,
@@ -560,10 +580,16 @@ export type {
 
 export {
   AttemptResultSchema,
+  BulkPostResultSchema,
+  BulkPostSchema,
+  BulkPostsSchema,
+  BulkResultSchema,
   defaultDraftPageSize,
   DraftPageSchema,
   FailureReasonSchema,
   idempotencyKeyLifetimeHours,
+  ImportResultSchema,
+  ImportRowResultSchema,
   maxDraftPageSize,
   maxIdempotencyKeyLength,
   maxOutcomeWaitSeconds,
@@ -571,6 +597,7 @@ export {
   NewPostSchema,
   PostContentSchema,
   PostDraftSchema,
+  PostImportSchema,
   PostOriginSchema,
   PostOriginViaSchema,
   PostOutcomeSchema,
@@ -588,7 +615,14 @@ export {
 
 export type {
   AttemptResult,
+  BulkPost,
+  BulkPostResult,
+  BulkPosts,
+  BulkResult,
   DraftPage,
+  ImportResult,
+  ImportRowResult,
+  PostImport,
   FailureReason,
   MediaAttachment,
   NewPost,

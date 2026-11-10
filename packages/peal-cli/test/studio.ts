@@ -1041,6 +1041,8 @@ export const studioGroupsLive = (studio: Studio) =>
     HttpApiBuilder.group(Api, "posts", (handlers) =>
       handlers.handleAll({
         attempts: () => refusing,
+        // No command sends several posts yet.
+        bulk: () => Effect.fail(new Forbidden()),
         cancel: ({ params }) =>
           Effect.gen(function* cancel() {
             yield* publishing;
@@ -1169,6 +1171,8 @@ export const studioGroupsLive = (studio: Studio) =>
           allowed("post:read").pipe(
             Effect.andThen(findPost(studio, params.workspaceId, params.postId))
           ),
+        // No command imports a file of posts yet.
+        import: () => Effect.fail(new Forbidden()),
         list: () => refusing,
         // No command waits for an outcome yet.
         outcome: () => Effect.fail(new Forbidden()),
