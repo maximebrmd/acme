@@ -160,6 +160,39 @@ layer(Test)("channels, to webhook endpoints", (it) => {
   );
 
   it.effect(
+    "say nothing more of a channel left to reconnect for longer than events are kept",
+    () =>
+      Effect.gen(function* left() {
+        const owner = yield* freshOwner;
+        const notices = yield* ChannelNotices;
+        const { channel, endpointId } = yield* connected(owner);
+        const now = yield* DateTime.now;
+
+        // Marked 40 days ago: its event was sent then, and purged since
+        // with its key. The daily check still tells it.
+        yield* notices.reconnectRequired(
+          markRefreshNeeded(channel, DateTime.subtract(now, { days: 40 }))
+        );
+
+        assert.deepStrictEqual(
+          (yield* eventsSentTo(owner, endpointId)).map(({ type }) => type),
+          ["channel.connected"]
+        );
+
+        // One marked days ago, whose event could not be recorded then, is
+        // still told.
+        yield* notices.reconnectRequired(
+          markRefreshNeeded(channel, DateTime.subtract(now, { days: 6 }))
+        );
+
+        assert.deepStrictEqual(
+          (yield* eventsSentTo(owner, endpointId)).map(({ type }) => type),
+          ["channel.connected", "channel.reconnect_needed"]
+        );
+      })
+  );
+
+  it.effect(
     "say that a channel is disconnected when its platform asks for the user's data to be deleted, once",
     () =>
       Effect.gen(function* deleted() {

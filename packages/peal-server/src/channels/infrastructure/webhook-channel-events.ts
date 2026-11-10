@@ -1,8 +1,9 @@
-import { DateTime, Effect, Layer } from "effect";
+import { DateTime, Duration, Effect, Layer } from "effect";
 
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import type { DisconnectedChannel } from "#channels/application/channel-events.ts";
 import { ChannelNotices } from "#channels/application/channel-notices.ts";
+import type { Channel } from "#channels/domain/channel.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
 
@@ -61,11 +62,21 @@ export const WebhookChannelEvents = Layer.effect(
   })
 );
 
+// How long after a channel entered `refreshNeeded` its event is still
+// published: long enough for the daily check to make up for a failure,
+// and well within the 30 days an event, and so its key, is kept. Past
+// it, the daily check would otherwise send the event again each time its
+// key is purged.
+const toldFor = Duration.days(7);
+
+const stillTold = (channel: Channel, now: DateTime.Utc) =>
+  DateTime.isLessThan(now, DateTime.addDuration(channel.updatedAt, toldFor));
+
 /**
  * Channel notices told through `told`, after the workspace's webhook
  * endpoints heard `channel.reconnect_needed`, under the key of the channel
  * entering `refreshNeeded` (its `updatedAt` then), so the daily check,
- * which tells it again, sends it once. Like the notice, it never fails: one
+ * which tells it again, sends it once, and for a week only (`toldFor`). Like the notice, it never fails: one
  * that could not be recorded is logged, and the daily check tells it again.
  */
 export const webhookChannelNotices = <E, R>(
@@ -79,24 +90,27 @@ export const webhookChannelNotices = <E, R>(
 
       return ChannelNotices.of({
         reconnectRequired: (channel) =>
-          webhooks
-            .publish({
-              event: {
-                data: dataOf(channel),
-                type: "channel.reconnect_needed",
-              },
-              key: `channel:${channel.id}:reconnect-needed:${DateTime.formatIso(channel.updatedAt)}`,
-            })
-            .pipe(
-              Effect.catchCause((cause) =>
-                Effect.logError(
-                  "A channel's webhook event could not be published",
-                  cause
-                )
-              ),
-              Effect.annotateLogs({ channelId: channel.id }),
-              Effect.andThen(notices.reconnectRequired(channel))
+          DateTime.now.pipe(
+            Effect.flatMap((now) =>
+              stillTold(channel, now)
+                ? webhooks.publish({
+                    event: {
+                      data: dataOf(channel),
+                      type: "channel.reconnect_needed",
+                    },
+                    key: `channel:${channel.id}:reconnect-needed:${DateTime.formatIso(channel.updatedAt)}`,
+                  })
+                : Effect.void
             ),
+            Effect.catchCause((cause) =>
+              Effect.logError(
+                "A channel's webhook event could not be published",
+                cause
+              )
+            ),
+            Effect.annotateLogs({ channelId: channel.id }),
+            Effect.andThen(notices.reconnectRequired(channel))
+          ),
         reconnectSoon: notices.reconnectSoon,
       });
     })
