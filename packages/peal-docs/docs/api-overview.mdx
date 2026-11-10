@@ -7,9 +7,12 @@ sidebar:
 
 The web app, the command line and the MCP endpoint are built on the same HTTP API, so anything they do, your own code can do too.
 
-<Callout type="warning" title="Not stable yet">
-  The API changes with every commit until the first release. Expect endpoints to
-  be added, renamed and removed.
+[API conventions](/api-conventions) describes what every endpoint shares: request ids, the format of errors and every error code, paging, idempotency, rate limits, and how the API changes over time.
+
+<Callout type="note" title="The API only grows">
+  Fields, operations, values and errors are added; none is renamed, removed or
+  made stricter. Write clients that ignore what they do not know
+  ([Versioning](/api-conventions#versioning)).
 </Callout>
 
 ## One contract [#contract]
@@ -28,7 +31,7 @@ curl -i https://api.example.com/api/health
 
 Apart from the health checks and the documents platforms read about Peal, every endpoint needs one of these:
 
-- **An API key**, for scripts and integrations: send it as `Authorization: Bearer peal_…`. A key belongs to one workspace and holds some of the permissions of the member who created it, never more: a key without `post:schedule` neither schedules nor publishes. Members who may manage keys (owners and admins) create one with `POST /api/workspaces/{workspaceId}/api-keys` while signed in, and see the key only in that answer. A key may send 600 requests a minute.
+- **An API key**, for scripts and integrations: send it as `Authorization: Bearer peal_…`. A key belongs to one workspace and holds some of the permissions of the member who created it, never more: a key without `post:schedule` neither schedules nor publishes. Members who may manage keys (owners and admins) create one with `POST /api/workspaces/{workspaceId}/api-keys` while signed in, and see the key only in that answer. A key may send 600 requests a minute ([Rate limits](/api-conventions#rate-limits)).
 - **An OAuth access token**, which the [command line](/cli) and [MCP clients](/mcp) obtain when you sign them in, sent the same way. It acts as you, limited to what you agreed to: `workspace:read` reads, `workspace:write` does what your role allows but what puts posts out, and `workspace:publish` schedules and publishes ([What each permission allows](/agents#scopes)). Every endpoint that needs `post:schedule` needs `workspace:publish` from an OAuth token, and answers 403 without it.
 - **The session cookie** of the web app, for the web app itself. A request that changes something with it must come from the web app's own origin.
 
@@ -36,7 +39,7 @@ With a session or an OAuth token, `GET /api/me` tells who you are, and lists you
 
 ## Workspaces [#workspaces]
 
-A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media`, `assistant`, `analytics`, `billing`, `webhooks` and `api-keys`; `DELETE /api/workspaces/{workspaceId}` deletes the workspace itself, with everything in it ([Workspaces and your account](/settings#delete-workspace)). Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
+A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media`, `assistant`, `analytics`, `billing`, `webhooks`, `activity` and `api-keys`; `DELETE /api/workspaces/{workspaceId}` deletes the workspace itself, with everything in it ([Workspaces and your account](/settings#delete-workspace)). Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
 
 | Status | Meaning                                                                        |
 | ------ | ------------------------------------------------------------------------------ |
@@ -46,11 +49,15 @@ A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`,
 
 `POST /api/workspaces/{workspaceId}/posts/send` creates a post and sends it in one request, now or at an instant; `POST /api/workspaces/{workspaceId}/media/import` has the server fetch an image or a video from a public HTTPS address into the workspace's media. Sent with an `Idempotency-Key` header, a `send` request is safe to send again: within 24 hours, the same key with the same body answers the post the first request made, and another body answers 409 `IdempotencyKeyReused`. [Posting from an AI agent](/agents#api) shows both.
 
-Errors answer with a JSON body whose `_tag` names the error, such as `PostContentInvalid` or `ConnectFailed`, with the details the reference lists. The writing assistant's endpoints also answer 429 once the workspace has used its requests for the day, 503 when the instance has no AI provider, and 502 when the provider gave no answer the assistant could use. On an instance that bills, connecting a channel, scheduling a post or starting an upload the workspace's plan has no room for answers 402 `PlanLimitReached`, which names the `limit` (`channels`, `members`, `scheduledPosts`, `assistantRequests` or `mediaStorage`, in bytes) and what the plan `allowed` ([Plans and billing](/billing#limits)); `GET /api/workspaces/:workspaceId/billing` shows the plan, its allowances and the workspace's usage.
+Errors answer with a JSON body in one format: a stable `code`, such as `post_content_invalid` or `connect_failed`, the same name as `_tag` (`PostContentInvalid`) for clients generated from the contract, a `message` for people, the `requestId`, and the details the reference lists. [Errors](/api-conventions#errors) describes it, and [Error codes](/api-conventions#error-codes) lists every code. The writing assistant's endpoints also answer 429 once the workspace has used its requests for the day, 503 when the instance has no AI provider, and 502 when the provider gave no answer the assistant could use. On an instance that bills, connecting a channel, scheduling a post or starting an upload the workspace's plan has no room for answers 402 `PlanLimitReached`, which names the `limit` (`channels`, `members`, `scheduledPosts`, `assistantRequests` or `mediaStorage`, in bytes) and what the plan `allowed` ([Plans and billing](/billing#limits)); `GET /api/workspaces/:workspaceId/billing` shows the plan, its allowances and the workspace's usage.
 
 ## Webhooks [#webhooks]
 
 Rather than asking the API again and again, have Peal call your server when something happens in a workspace: a post went out or failed, a channel must be reconnected, a file is ready. Members who may manage webhooks (owners and admins), and API keys given that permission, add endpoints under `/api/workspaces/{workspaceId}/webhooks`. [Webhooks](/webhooks) lists every event with its schema, and tells how deliveries are signed, retried and verified.
+
+## The activity log [#activity]
+
+`GET /api/workspaces/{workspaceId}/activity` lists the requests that asked to change something in the workspace: who asked, through which key or application, which operation, and how it was answered. It needs `activity:read`, which owners hold ([The activity log](/settings#activity)).
 
 ## Your account [#me]
 
@@ -60,7 +67,9 @@ A copy of your data (`GET /api/me/export`), deleting your account (`DELETE /api/
 
 ## OpenAPI document [#openapi]
 
-The server publishes its OpenAPI 3.1 document at `/openapi.json` on its own address, such as `http://localhost:3000/openapi.json` for a server running from source; the web app does not forward it. Use it to generate a client in another language or to import the API into an HTTP tool.
+The OpenAPI 3.1 document of the API is public at `/api/openapi.json`, at the address you open Peal at, such as `https://api.example.com/api/openapi.json`. Use it to generate a client in another language or to import the API into an HTTP tool. The server also answers it at `/openapi.json` on its own address, such as `http://localhost:3000/openapi.json` for a server running from source, which the web app does not forward.
+
+The API catalogue at `/.well-known/api-catalog` (RFC 9727) points programs to that document, to the [MCP endpoint](/mcp) and to where each gets a credential ([Discovery](/api-conventions#discovery)). `GET /api/changelog` lists what each release of the API added ([Changelog](/api-conventions#changelog)).
 
 ## Reference [#reference]
 

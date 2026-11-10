@@ -37,6 +37,35 @@ The list says of each key whether it **can schedule and publish posts**: it can 
 
 Under **Webhooks**, owners and admins add the addresses Peal calls when something happens in the workspace, 10 at most: each has the events it wants, a description, and a signing secret that appears once, right after it is created or rotated. Each endpoint keeps a log of its deliveries for 30 days, from which a delivery can be sent again, and takes a test event. [Webhooks](/webhooks) lists the events, and tells how to verify a delivery. Staff acting as a member cannot change webhooks.
 
+### The activity log [#activity]
+
+Each workspace keeps a log of who changed what, and through which application: every request that asked to change something in it, whether it was done or refused, and every call of an [MCP](/mcp) tool that changes something. Requests that only read are not kept.
+
+Owners read it, and nobody else: it needs the permission `activity:read`, which only the owner role holds. An owner may give that permission to an [API key](#api-keys), and an application an owner connected reads it as they do. The log has no page in the web app yet. Read it:
+
+- through the API, with `GET /api/workspaces/{workspaceId}/activity`, newest first, a page at a time ([Paging](/api-conventions#paging) shows an answer);
+- from the [command line](/cli), with `peal activity list`;
+- from an MCP client, with the tool `list_activity`.
+
+`operation` keeps the events of one operation, such as `posts.schedule`, and `actor` those one member, by their user id, or one API key, by its id, asked for.
+
+| Field          | What it holds                                                                                                                                            |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `occurredAt`   | When.                                                                                                                                                    |
+| `operation`    | The endpoint, as the reference names it (`posts.schedule`, `channels.disconnect`), or the MCP tool, as `mcp.` followed by its name (`mcp.create_draft`). |
+| `status`       | The HTTP status answered; `null` for an MCP tool call, which has none.                                                                                   |
+| `errorCode`    | The [error code](/api-conventions#error-codes) when the request was refused or failed; `null` when it was done.                                          |
+| `actor`        | Who asked: a member (`user`, with their `userId`) or an API key (`apiKey`, with its `apiKeyId`).                                                         |
+| `via`          | How they authenticated: `session` (the web app), `apiKey`, `oauth` (an application through the API, such as the command line) or `mcp`.                  |
+| `application`  | The key or the application it came through, with its `id` and the `name` it had then; `null` for a person in the web app.                                |
+| `impersonated` | Whether staff acting as the member asked. Never who.                                                                                                     |
+| `objectIds`    | The ids the request's path named, such as `postId` or `channelId`.                                                                                       |
+| `requestId`    | The request's id, as its `X-Request-Id` header gave it ([Requests and answers](/api-conventions#requests)).                                              |
+
+The log holds no more than that: never what a request or its answer carried, a post's text, an address or a browser.
+
+An event is kept {{keep-activity-en}}, then a daily job deletes it. Deleting the workspace deletes its log. When a member closes their account, the events they left in the workspaces that remain stay, without their id; each member's [export](#export) holds the changes they asked for themselves.
+
 ### Delete a workspace [#delete-workspace]
 
 On **General**, owners choose **Delete this workspace…**, then type the workspace's name to confirm. Everything in it goes, for good: its channels and their authorizations, its posts, scheduled or not, and their analytics, its media library and the files in it, its notifications, its writing assistant usage, what Peal recorded of its subscriptions and of its posts on X, its members and invitations, and its API keys, which stop working at once. Nothing more is posted from it. Stripe keeps the invoices it issued.
@@ -70,6 +99,7 @@ Choose **Account settings** in the account menu.
 - your account, how you sign in, and your sessions, with their browser and address (not those staff opened to act as you, which are theirs);
 - your memberships, and the invitations you sent or received;
 - your connected applications, your notifications and your email preferences, including whether you hear about every post;
+- the changes you asked for in workspaces, as their [activity logs](#activity) keep them: when, which operation, how you signed in and the status answered, never what a request carried;
 - what the server's staff did to your account (a ban, a confirmation sent again, acting as you, and each change they made while acting as you, with where and on which ids…), when, and the reason they gave, but not who did it;
 - the posts you wrote in the workspaces you share, with where they went, the options each platform got, and whether YouTube kept a video private;
 - the workspaces where you are the only member, with their channels, posts, analytics (each post's counts, as Peal read them), media, API keys, writing assistant usage and billing: their plan, how each of their subscriptions stands, and how many posts they made each month on X, with and without a link. Each image or video the store holds comes with a link that downloads it for 7 days;
