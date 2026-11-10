@@ -29,7 +29,14 @@ import {
 } from "./partner-view.ts";
 import { partnerKeyPrincipalOf } from "./principal.ts";
 
-const forbidden = () => Effect.fail(new Forbidden());
+// The key works, and its partner account is gone: closed meanwhile.
+const forbidden = () =>
+  Effect.fail(
+    new Forbidden({
+      message:
+        "The partner account this key belongs to was closed: its keys do nothing more.",
+    })
+  );
 
 // A key without the scope a request takes is told which, and who gives it.
 const withoutScope = ({ scope }: MissingPartnerScope) =>

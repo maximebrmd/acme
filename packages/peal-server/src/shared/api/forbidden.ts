@@ -21,6 +21,7 @@ const messages: Readonly<Record<ForbiddenReason, string>> = {
 
 // The use cases' refusals, by what they mean to a caller.
 const reasons = new Map<string, ForbiddenReason>([
+  ["ApprovalNeedsPerson", "personRequired"],
   ["BannedUser", "suspended"],
   ["InboxAccessDenied", "personRequired"],
   ["MissingPermission", "missingPermission"],
