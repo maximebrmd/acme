@@ -69,3 +69,8 @@ approval are in the root [`AGENTS.md`](../../../AGENTS.md), under Infrastructure
   endpoints, or another store's host listed in `peal_storage_eu_hosts` once
   the owner checked it; hosts are compared without case or port. A ledger
   bucket that is the media bucket is not one of its own.
+- An environment with a Pulumi stack (the sandbox) takes its Cloudflare
+  values from it: `scripts/cloudflare_from_pulumi.py` writes
+  `group_vars/<environment>/cloudflare.yml` (generated, committed, never
+  edited by hand) and the tunnel's token and buckets' keys into the vault.
+  Change them in `packages/peal-infra/pulumi`, then run the script.

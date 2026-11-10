@@ -9,7 +9,8 @@
     "url": "git+https://github.com/peal-social/peal.git"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "packages/peal-infra/pulumi"
   ],
   "type": "module",
   "scripts": {

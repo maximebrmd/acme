@@ -20,20 +20,14 @@ peal_hostnames:
   grafana: sandbox-grafana.peal.social
   ssh: sandbox-ssh.peal.social
 
+# The audience tags of the sandbox's Access applications (one covers its
+# app, site and docs), its buckets and their endpoints come from its Pulumi
+# stack, in cloudflare.yml (scripts/cloudflare_from_pulumi.py).
 cloudflare_access_team: winter-resonance-b4ec
-cloudflare_access_aud:
-  # One application covers the sandbox's app, site and docs.
-  sandbox: 3823cf7d18f15fc04895ec62c1ebf12aae817877bfa133535a051451507430f6
-  grafana: 061dcc5b23aa4a756b31697aa95ee39677939c09e16852145f00dfd84906c8e1
-  ssh: 115b57932dbf918138cca334366d4f6dea680cbbafbdc19b63e0875d4fa1aef9
 peal_access_everything: true
 
 peal_mail_from: Peal Sandbox <notifications@peal.social>
 
-peal_media_endpoint: https://6fdd7e600b33c2c948da88b6cf8b5f26.eu.r2.cloudflarestorage.com
-peal_media_bucket: peal-sandbox-media
-peal_backup_endpoint: 6fdd7e600b33c2c948da88b6cf8b5f26.eu.r2.cloudflarestorage.com
-peal_backup_bucket: peal-sandbox-backups
 peal_backup_path: /sandbox
 
 # Few people use the sandbox: the server traces every request there.

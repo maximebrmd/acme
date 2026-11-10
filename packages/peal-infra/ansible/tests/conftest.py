@@ -52,12 +52,15 @@ def ansible_render(text: str, **names: Any) -> Any:
 
 def settings(group: str) -> dict[str, Any]:
     """The inventory's settings for a group: group_vars/all, then the
-    group's own."""
+    group's own files (main.yml, and cloudflare.yml where Pulumi writes it),
+    never its vault."""
     folder = INFRA / "inventory" / "group_vars"
-    return {
-        **yaml.safe_load((folder / "all" / "main.yml").read_text()),
-        **yaml.safe_load((folder / group / "main.yml").read_text()),
-    }
+    merged: dict[str, Any] = {}
+    for name in ("all", group):
+        for path in sorted((folder / name).glob("*.yml")):
+            if path.name != "vault.yml":
+                merged.update(yaml.safe_load(path.read_text()) or {})
+    return merged
 
 
 def role_file(role: str, folder: str) -> dict[str, Any]:
