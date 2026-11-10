@@ -42,9 +42,11 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
  * deletion is refused (`WorkspaceSubscribed`, with what cancelling would
  * end). Refused too while Stripe cannot be reached, or while one of its
  * posts is going out. The erasure is written in the ledger kept outside
- * the database before it commits, by id only, so a restore of the database
- * deletes the workspace again; when the ledger cannot be written, nothing
- * is deleted. The owner is emailed a confirmation, in their language.
+ * the database before anything is cancelled or deleted, by id only, so a
+ * restore of the database deletes the workspace again; when the ledger
+ * cannot be written, nothing is cancelled or deleted. Once Stripe is
+ * settled, the rest runs to its end even if the request is abandoned. The
+ * owner is emailed a confirmation, in their language.
  */
 export class DeleteWorkspace extends Context.Service<
   DeleteWorkspace,
@@ -111,53 +113,62 @@ export class DeleteWorkspace extends Context.Service<
           yield* new WorkspaceNameMismatch({ workspaceId });
         }
 
-        const { subscriptionsCancelled } = yield* records.settleWorkspaces(
-          [workspaceId],
-          options
-        );
-
+        // In the ledger first, unconfirmed: one that cannot be written
+        // stops here, before Stripe is asked to cancel anything, which
+        // cannot be undone.
         const erasure = yield* erasureOf(null, [workspaceId]);
 
-        yield* transaction(
-          Effect.gen(function* deleteInTransaction() {
-            // Locked first, as closing an account locks its workspaces
-            // before erasing them: the two wait for each other, never
-            // deadlock.
-            yield* found(workspaceId);
-            yield* eraseWorkspace(workspaceId);
-            // Last: nothing is committed that the ledger does not hold.
-            yield* recordErasure(erasure);
+        yield* recordErasure(erasure);
+
+        const { subscriptionsCancelled } = yield* records
+          .settleWorkspaces([workspaceId], options)
+          .pipe(discardOnFailure(erasure));
+
+        // From here to the end without stopping, whatever becomes of the
+        // request: a client that goes away leaves no file behind, no
+        // entry unconfirmed and no owner untold.
+        yield* Effect.uninterruptible(
+          Effect.gen(function* erase() {
+            yield* transaction(
+              Effect.gen(function* deleteInTransaction() {
+                // Locked first, as closing an account locks its workspaces
+                // before erasing them: the two wait for each other, never
+                // deadlock.
+                yield* found(workspaceId);
+                yield* eraseWorkspace(workspaceId);
+              })
+            ).pipe(
+              discardOnFailure(erasure),
+              reportCancelledFirst(subscriptionsCancelled)
+            );
+
+            yield* confirmErasure(erasure);
+
+            yield* removeWorkspaceFiles(workspaceId);
+
+            // Ids only, as the ledger holds them.
+            yield* Effect.logInfo("Deleted a workspace").pipe(
+              Effect.annotateLogs({
+                "event.name": "peal.erasure",
+                subscriptionsCancelled,
+                workspaceId,
+              })
+            );
+
+            const owner = yield* store.records(userId);
+
+            if (Option.isSome(owner)) {
+              const { email, locale } = owner.value.user;
+
+              yield* mail.workspaceDeleted({
+                email,
+                locale,
+                subscriptionsCancelled,
+                workspaceName,
+              });
+            }
           })
-        ).pipe(
-          discardOnFailure(erasure),
-          reportCancelledFirst(subscriptionsCancelled)
         );
-
-        yield* confirmErasure(erasure);
-
-        yield* removeWorkspaceFiles(workspaceId);
-
-        // Ids only, as the ledger holds them.
-        yield* Effect.logInfo("Deleted a workspace").pipe(
-          Effect.annotateLogs({
-            "event.name": "peal.erasure",
-            subscriptionsCancelled,
-            workspaceId,
-          })
-        );
-
-        const owner = yield* store.records(userId);
-
-        if (Option.isSome(owner)) {
-          const { email, locale } = owner.value.user;
-
-          yield* mail.workspaceDeleted({
-            email,
-            locale,
-            subscriptionsCancelled,
-            workspaceName,
-          });
-        }
       }, Effect.provideContext(ports));
 
       return DeleteWorkspace.of({ delete: remove });

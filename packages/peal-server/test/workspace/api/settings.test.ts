@@ -1,6 +1,8 @@
 import { assert, layer } from "@effect/vitest";
 import {
   Context,
+  Deferred,
+  Fiber,
   DateTime,
   Effect,
   Layer,
@@ -13,6 +15,7 @@ import { HttpApiTest } from "effect/http-api";
 import { Api } from "peal-contract";
 import type { Member, Principal } from "peal-contract";
 
+import { actorOf } from "#shared/api/actor.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -44,6 +47,7 @@ import { WorkspaceSubscribed } from "#workspace/application/workspace-subscribed
 import type { MembershipStanding } from "#workspace/domain/account-closure.ts";
 import { undeclared } from "#workspace/domain/operator-declaration.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
+import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 // The settings endpoints on their real use cases, over ports kept in memory.
 // Each request acts as a principal, as the Authentication and
@@ -120,6 +124,8 @@ class Fakes extends Context.Service<
     readonly standings: Ref.Ref<
       ReadonlyMap<UserId, readonly MembershipStanding[]>
     >;
+    /** What removing a workspace's files waits for, as a test sets it. */
+    readonly whileRemovingFiles: Ref.Ref<Effect.Effect<void>>;
   }
 >()("test/workspace/api/Fakes") {
   static readonly layer = Layer.effect(
@@ -129,6 +135,7 @@ class Fakes extends Context.Service<
       standings: Ref.make<ReadonlyMap<UserId, readonly MembershipStanding[]>>(
         new Map()
       ),
+      whileRemovingFiles: Ref.make<Effect.Effect<void>>(Effect.void),
     })
   );
 }
@@ -278,7 +285,14 @@ const PortsLive = Layer.mergeAll(
             connectionYears: 1,
             identityYears: 5,
           }),
-        removeWorkspaceFiles: (id) => record(`removeFiles:${id}`).pipe(provide),
+        removeWorkspaceFiles: (id) =>
+          Fakes.use(({ whileRemovingFiles }) =>
+            Ref.get(whileRemovingFiles)
+          ).pipe(
+            Effect.flatten,
+            Effect.andThen(record(`removeFiles:${id}`)),
+            provide
+          ),
         // Stripe may still bill one, until the person agrees to cancel:
         // nothing is cancelled while another refuses.
         settleWorkspaces: (ids, { cancelSubscriptions }) =>
@@ -559,12 +573,68 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
         // delete the workspace again.
         const pending = done.indexOf(`ledger:workspace:${harbour}:pending`);
 
-        assert.isAbove(pending, done.indexOf(`deleteWorkspace:${harbour}`));
+        assert.isAbove(pending, -1);
+        assert.isBelow(pending, done.indexOf(`deleteWorkspace:${harbour}`));
         assert.isAbove(
           done.indexOf(`ledger:workspace:${harbour}:confirmed`),
-          pending
+          done.indexOf(`deleteWorkspace:${harbour}`)
         );
         assert.notInclude(done, "ledger:discard");
+      })
+  );
+
+  it.effect(
+    "finish a deletion that committed when its client goes away: the files go, the ledger is confirmed and the owner is told",
+    () =>
+      Effect.gen(function* abandoned() {
+        const fakes = yield* Fakes;
+
+        yield* Ref.set(fakes.calls, []);
+
+        const reached = yield* Deferred.make<void>();
+        const released = yield* Deferred.make<void>();
+
+        // The store is slow to remove the files, and the client gives up.
+        yield* Ref.set(
+          fakes.whileRemovingFiles,
+          Deferred.succeed(reached, undefined).pipe(
+            Effect.andThen(Deferred.await(released))
+          )
+        );
+
+        const owner: Member = {
+          permissions: permissionsFor("owner"),
+          principal: user(),
+          workspaceId: harbour,
+        };
+
+        const deleting = yield* DeleteWorkspace.use((deletion) =>
+          deletion.delete(
+            actorOf(owner),
+            new UserPrincipal({ impersonatedBy: Option.none(), userId }),
+            "Harbour",
+            { cancelSubscriptions: false }
+          )
+        ).pipe(Effect.provide(UseCasesLive), Effect.forkChild);
+
+        yield* Deferred.await(reached);
+
+        const gone = yield* Fiber.interrupt(deleting).pipe(Effect.forkChild);
+
+        // The interruption lands while the files are still being removed.
+        yield* Effect.yieldNow.pipe(Effect.repeat({ times: 20 }));
+        yield* Deferred.succeed(released, undefined);
+        yield* Fiber.join(gone);
+        yield* Ref.set(fakes.whileRemovingFiles, Effect.void);
+
+        assert.includeMembers(
+          [...(yield* calls)],
+          [
+            `removeFiles:${harbour}`,
+            `ledger:workspace:${harbour}:confirmed`,
+            "mail:workspaceDeleted:ana@example.test:fr:Harbour:0",
+          ]
+        );
       })
   );
 
@@ -651,8 +721,20 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           payload: { cancelSubscriptions: true, name: "Subscribed" },
         });
 
+        // The erasure is in the ledger before Stripe is asked to cancel:
+        // a ledger that cannot be written costs nobody their paid period.
+        const made = yield* calls;
+
+        assert.isAbove(
+          made.indexOf(`ledger:workspace:${subscribed}:pending`),
+          -1
+        );
+        assert.isBelow(
+          made.indexOf(`ledger:workspace:${subscribed}:pending`),
+          made.indexOf(`cancel:${subscribed}`)
+        );
         assert.includeMembers(
-          [...(yield* calls)],
+          [...made],
           [
             `cancel:${subscribed}`,
             `eraseWorkspace:${subscribed}`,

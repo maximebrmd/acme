@@ -118,83 +118,99 @@ export class CloseAccount extends Context.Service<
           planClosure(yield* store.standings(userId))
         );
 
-        const { subscriptionsCancelled } = yield* records.settleWorkspaces(
-          planned.deleted,
-          options
-        );
+        // In the ledger first, unconfirmed, with the workspaces it plans
+        // to delete: one that cannot be written stops here, before Stripe
+        // is asked to cancel anything, which cannot be undone.
+        const closing = yield* erasureOf(userId, planned.deleted);
+
+        yield* recordErasure(closing);
+
+        const { subscriptionsCancelled } = yield* records
+          .settleWorkspaces(planned.deleted, options)
+          .pipe(discardOnFailure(closing));
 
         // What the confirmation says stays, read while the account is there.
-        const legalHold = yield* records.legalRemains(userId);
+        const legalHold = yield* records
+          .legalRemains(userId)
+          .pipe(discardOnFailure(closing));
 
-        // The ledger's entry, completed with the workspaces deleted once
-        // the transaction knows them.
-        const closing = yield* erasureOf(userId, []);
+        // From here to the end without stopping, whatever becomes of the
+        // request: a client that goes away leaves no file behind, no
+        // entry unconfirmed and nobody untold.
+        yield* Effect.uninterruptible(
+          Effect.gen(function* erase() {
+            const erasure = yield* transaction(
+              Effect.gen(function* closeInTransaction() {
+                // Again, under the workspaces' locks: a workspace someone
+                // joined meanwhile is left rather than deleted.
+                const plan = yield* Effect.fromResult(
+                  planClosure(yield* store.standings(userId))
+                );
 
-        const erasure = yield* transaction(
-          Effect.gen(function* closeInTransaction() {
-            // Again, under the workspaces' locks: a workspace someone
-            // joined meanwhile is left rather than deleted.
-            const plan = yield* Effect.fromResult(
-              planClosure(yield* store.standings(userId))
+                // Who held the account, as the law has Peal keep it, read
+                // before anything goes: the Stripe customers of the
+                // workspaces it deletes included.
+                const identification = yield* store.identification(
+                  userId,
+                  plan.deleted
+                );
+
+                yield* Effect.forEach(plan.deleted, eraseWorkspace, {
+                  discard: true,
+                });
+
+                yield* records.eraseUser(userId, user.email);
+                yield* store.deleteUser(userId);
+
+                yield* Effect.forEach(
+                  Option.toArray(identification),
+                  // As closed at the instant the ledger gives, so applying
+                  // the closure again after a restore holds the same
+                  // record.
+                  (held) => records.holdIdentification(held, closing.at),
+                  { discard: true }
+                );
+
+                // Last, with the workspaces deleted as the transaction
+                // found them: nothing is committed that the ledger does
+                // not hold.
+                const entry = { ...closing, workspaceIds: plan.deleted };
+
+                yield* recordErasure(entry);
+
+                return entry;
+              })
+            ).pipe(
+              discardOnFailure(closing),
+              reportCancelledFirst(subscriptionsCancelled)
             );
 
-            // Who held the account, as the law has Peal keep it, read
-            // before anything goes: the Stripe customers of the
-            // workspaces it deletes included.
-            const identification = yield* store.identification(
-              userId,
-              plan.deleted
-            );
+            yield* confirmErasure(erasure);
 
-            yield* Effect.forEach(plan.deleted, eraseWorkspace, {
+            const deleted = erasure.workspaceIds;
+
+            yield* Effect.forEach(deleted, removeWorkspaceFiles, {
               discard: true,
             });
 
-            yield* records.eraseUser(userId, user.email);
-            yield* store.deleteUser(userId);
-
-            yield* Effect.forEach(
-              Option.toArray(identification),
-              // As closed at the instant the ledger gives, so applying the
-              // closure again after a restore holds the same record.
-              (held) => records.holdIdentification(held, closing.at),
-              { discard: true }
+            // Ids only, as the ledger holds them.
+            yield* Effect.logInfo("Closed an account").pipe(
+              Effect.annotateLogs({
+                "event.name": "peal.erasure",
+                subscriptionsCancelled,
+                userId,
+                workspaceIds: deleted.join(","),
+              })
             );
 
-            // Last: nothing is committed that the ledger does not hold.
-            const entry = { ...closing, workspaceIds: plan.deleted };
-
-            yield* recordErasure(entry);
-
-            return entry;
-          })
-        ).pipe(
-          discardOnFailure(closing),
-          reportCancelledFirst(subscriptionsCancelled)
-        );
-
-        yield* confirmErasure(erasure);
-
-        const deleted = erasure.workspaceIds;
-
-        yield* Effect.forEach(deleted, removeWorkspaceFiles, { discard: true });
-
-        // Ids only, as the ledger holds them.
-        yield* Effect.logInfo("Closed an account").pipe(
-          Effect.annotateLogs({
-            "event.name": "peal.erasure",
-            subscriptionsCancelled,
-            userId,
-            workspaceIds: deleted.join(","),
+            yield* mail.deleted({
+              email: user.email,
+              legalHold,
+              locale: user.locale,
+              subscriptionsCancelled,
+            });
           })
         );
-
-        yield* mail.deleted({
-          email: user.email,
-          legalHold,
-          locale: user.locale,
-          subscriptionsCancelled,
-        });
       }, Effect.provideContext(ports));
 
       return CloseAccount.of({ close });
