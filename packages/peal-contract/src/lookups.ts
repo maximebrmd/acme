@@ -67,6 +67,10 @@ export const LookupInputSchema = Schema.Struct({
   regionCode: Schema.optionalKey(
     Schema.String.check(Schema.isPattern(/^[A-Z]{2}$/u))
   ),
+  // The name in a LinkedIn page's address: linkedin.com/company/<name>.
+  vanityName: Schema.optionalKey(
+    Schema.String.check(Schema.isPattern(/^[^\s/?#]{1,100}$/u))
+  ),
 }).annotate({ identifier: "LookupInput" });
 
 export type LookupInput = typeof LookupInputSchema.Type;
@@ -86,6 +90,16 @@ export const YouTubePlaylistSchema = Schema.Struct({
   title: Schema.String,
 }).annotate({ identifier: "YouTubePlaylist" });
 
+/**
+ * A LinkedIn page a post can name: a mention takes its `name`, as it is,
+ * and its `urn`.
+ */
+export const LinkedInOrganizationSchema = Schema.Struct({
+  name: Schema.String,
+  urn: Schema.String,
+  vanityName: Schema.NullOr(Schema.String),
+}).annotate({ identifier: "LinkedInOrganization" });
+
 const page = <Item extends Schema.Top>(item: Item) => ({
   items: Schema.Array(item),
   // What the next page's `cursor` takes; null on the last page.
@@ -103,6 +117,10 @@ export const LookupResultSchema = Schema.Union([
   ),
   Schema.TaggedStruct("youtubePlaylists", page(YouTubePlaylistSchema)),
   Schema.TaggedStruct("tiktokCreator", page(TikTokAccountSchema)),
+  Schema.TaggedStruct(
+    "linkedinOrganizations",
+    page(LinkedInOrganizationSchema)
+  ),
 ]).annotate({ identifier: "LookupResult" });
 
 export type LookupResult = typeof LookupResultSchema.Type;

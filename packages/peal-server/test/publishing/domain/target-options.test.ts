@@ -62,8 +62,8 @@ const on = (target: ChannelOnPlatform, options: TargetOptions) =>
   new ChannelOptions({ channelId: target.channelId, options });
 
 describe("the platforms that take options", () => {
-  it("are YouTube and TikTok", () => {
-    expect(optionsPlatforms).toStrictEqual(["tiktok", "youtube"]);
+  it("are LinkedIn, TikTok and YouTube", () => {
+    expect(optionsPlatforms).toStrictEqual(["linkedin", "tiktok", "youtube"]);
     expect(takesOptions("mastodon")).toBeFalsy();
     expect(noOptionsOn("x")).toStrictEqual(Option.none());
   });

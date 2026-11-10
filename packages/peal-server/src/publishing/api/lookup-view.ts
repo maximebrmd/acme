@@ -28,6 +28,18 @@ export const lookupResultView = (result: LookupResult): LookupResultView => {
     };
   }
 
+  if (result._tag === "linkedinOrganizations") {
+    return {
+      _tag: result._tag,
+      items: result.items.map(({ name, urn, vanityName }) => ({
+        name,
+        urn,
+        vanityName: Option.getOrNull(vanityName),
+      })),
+      nextCursor,
+    };
+  }
+
   return {
     _tag: result._tag,
     items: result.items.map(tiktokAccountView),

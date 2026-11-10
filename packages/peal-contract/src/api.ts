@@ -266,6 +266,7 @@ export type { LookupName } from "./lookup-name.ts";
 export { LookupNotFound } from "./lookup-not-found.ts";
 
 export {
+  LinkedInOrganizationSchema,
   LookupDescriptionSchema,
   LookupInputSchema,
   LookupResultSchema,
@@ -548,6 +549,15 @@ export type {
 
 export {
   ChannelOptionsSchema,
+  LinkedInMentionSchema,
+  LinkedInOptionsSchema,
+  LinkedInVisibilitySchema,
+  maxLinkedInDocumentTitleLength,
+  maxLinkedInLinkDescriptionLength,
+  maxLinkedInLinkTitleLength,
+  maxLinkedInLinkUrlLength,
+  maxLinkedInMentionNameLength,
+  maxLinkedInMentions,
   maxYouTubeTagsLength,
   maxYouTubeTitleLength,
   optionsPlatforms,
@@ -561,6 +571,9 @@ export {
 
 export type {
   ChannelOptions,
+  LinkedInMention,
+  LinkedInOptions,
+  LinkedInVisibility,
   OptionsPlatform,
   TargetOptions,
   TikTokOptions,

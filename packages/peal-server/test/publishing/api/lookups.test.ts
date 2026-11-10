@@ -62,6 +62,17 @@ const creator = new TikTokCreator({
 });
 
 const answers = {
+  linkedinOrganizations: {
+    _tag: "linkedinOrganizations",
+    items: [
+      {
+        name: "Example Bakery",
+        urn: "urn:li:organization:2414183",
+        vanityName: Option.some("example-bakery"),
+      },
+    ],
+    nextCursor: Option.none(),
+  },
   tiktokCreator: {
     _tag: "tiktokCreator",
     items: [{ posting: { _tag: "ready", creator }, takesPhotos: false }],

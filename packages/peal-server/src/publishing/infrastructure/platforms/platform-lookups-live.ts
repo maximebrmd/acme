@@ -11,9 +11,11 @@ import type {
   LookupResultOf,
 } from "#publishing/domain/lookup.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
+import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 
+import { linkedinLookups } from "./linkedin/linkedin-lookups.ts";
 import { youtubeLookups } from "./youtube/youtube-lookups.ts";
 
 /** One adapter per lookup: a name left out does not compile. */
@@ -33,6 +35,8 @@ type Adapters = {
  * platform added later adds its adapters to the registry below.
  */
 export const platformLookupsWith = (settings: {
+  /** LinkedIn's API origin. */
+  readonly linkedinApi: URL;
   /** The YouTube Data API's origin. */
   readonly youtubeApi: URL;
 }) =>
@@ -44,7 +48,17 @@ export const platformLookupsWith = (settings: {
       const api = yield* publicHttpClient;
       const youtube = youtubeLookups({ api, apiUrl: settings.youtubeApi });
 
+      const linkedin = linkedinLookups({
+        api,
+        apiUrl: settings.linkedinApi,
+        version: yield* linkedinVersionConfig,
+      });
+
       const adapters: Adapters = {
+        linkedinOrganizations: (channelId, query) =>
+          credentials.withToken(channelId, (token) =>
+            linkedin.organizations(query, token)
+          ),
         tiktokCreator: (channelId) =>
           creators.read(channelId).pipe(
             Effect.map((posting) => ({
@@ -69,6 +83,10 @@ export const platformLookupsWith = (settings: {
             return adapters.youtubeVideoCategories(channelId, query);
           }
 
+          if (query._tag === "linkedinOrganizations") {
+            return adapters.linkedinOrganizations(channelId, query);
+          }
+
           return query._tag === "youtubePlaylists"
             ? adapters.youtubePlaylists(channelId, query)
             : adapters.tiktokCreator(channelId, query);
@@ -82,6 +100,7 @@ export const platformLookupsWith = (settings: {
  * TikTokCreators and Dns.
  */
 export const PlatformLookupsLive = platformLookupsWith({
+  linkedinApi: new URL("https://api.linkedin.com"),
   youtubeApi: new URL("https://www.googleapis.com"),
 }).pipe(
   Layer.provide(OutboundGuard.layer),

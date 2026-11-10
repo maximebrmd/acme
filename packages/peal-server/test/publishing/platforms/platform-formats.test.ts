@@ -35,6 +35,26 @@ describe("LinkedIn's little text format", () => {
     );
   });
 
+  it("writes the pages the text names as mentions, their names escaped", () => {
+    const mentions = [
+      { name: "Example Bakery", urn: "urn:li:organization:2414183" },
+      { name: "Example (UK)", urn: "urn:li:organization:5515715" },
+    ];
+
+    expect(
+      littleTextOf(
+        "Thanks @Example Bakery & @Example (UK)! #launch @someone",
+        mentions
+      )
+    ).toBe(
+      "Thanks @[Example Bakery](urn:li:organization:2414183) & @[Example \\(UK\\)](urn:li:organization:5515715)! {hashtag|\\#|launch} \\@someone"
+    );
+    // Without its page among the mentions, a name is plain text.
+    expect(littleTextOf("Thanks @Example Bakery", [])).toBe(
+      "Thanks \\@Example Bakery"
+    );
+  });
+
   it("keeps plain text and line breaks as they are", () => {
     expect(littleTextOf("Hello, world.\nSecond line: ok?")).toBe(
       "Hello, world.\nSecond line: ok?"

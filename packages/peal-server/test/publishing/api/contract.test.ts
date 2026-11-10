@@ -9,10 +9,20 @@ import {
   TargetOptionsSchema as ContractOptionsSchema,
   youTubeTagsLength as contractTagsLength,
 } from "peal-contract";
+import * as contractLinkedIn from "peal-contract";
 import type { ContentViolation as ContractViolation } from "peal-contract";
 import * as ContractText from "peal-contract/post-text";
 
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import { maxLinkedInMentionNameLength } from "#publishing/domain/linkedin-mentions.ts";
+import {
+  LinkedInVisibilitySchema,
+  maxLinkedInDocumentTitleLength,
+  maxLinkedInLinkDescriptionLength,
+  maxLinkedInLinkTitleLength,
+  maxLinkedInLinkUrlLength,
+  maxLinkedInMentions,
+} from "#publishing/domain/linkedin-options.ts";
 import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";
 import { platformRules } from "#publishing/domain/platform-rules.ts";
 import {
@@ -388,6 +398,37 @@ const options: readonly unknown[] = [
   },
   { platform: "tiktok", privacyLevel: "FRIENDS" },
   { platform: "tiktok", title: "TikTok's caption is the post's text" },
+  { platform: "linkedin" },
+  {
+    disableReshare: true,
+    documentTitle: "A synthetic deck",
+    linkDescription: "What ships",
+    linkTitle: "Launch day",
+    linkUrl: "https://example.test/launch",
+    mentions: [{ name: "Example Bakery", urn: "urn:li:organization:2414183" }],
+    platform: "linkedin",
+    visibility: "loggedIn",
+  },
+  // Unfinished or refused later: kept until the post is scheduled.
+  { linkTitle: "A title without its link", platform: "linkedin" },
+  {
+    mentions: [{ name: "Alice", urn: "urn:li:person:aB3dE5fG7h" }],
+    platform: "linkedin",
+  },
+  { platform: "linkedin", visibility: "friends" },
+  { mentions: [{ name: "No URN" }], platform: "linkedin" },
+  {
+    mentions: [{ name: "a".repeat(201), urn: "urn:li:organization:1" }],
+    platform: "linkedin",
+  },
+  {
+    mentions: Array.from({ length: 31 }, () => ({
+      name: "Example Bakery",
+      urn: "urn:li:organization:2414183",
+    })),
+    platform: "linkedin",
+  },
+  { documentTitle: "a\u0000b", platform: "linkedin" },
   { platform: "mastodon" },
   { platform: "youtube", title: "A title", unknownOption: true },
 ];
@@ -397,6 +438,25 @@ describe("the contract's target options", () => {
     expect(contractOptionsPlatforms).toStrictEqual(optionsPlatforms);
     expect(contractMaxTitleLength).toBe(maxYouTubeTitleLength);
     expect(contractMaxTagsLength).toBe(maxYouTubeTagsLength);
+
+    expect([
+      contractLinkedIn.maxLinkedInDocumentTitleLength,
+      contractLinkedIn.maxLinkedInLinkDescriptionLength,
+      contractLinkedIn.maxLinkedInLinkTitleLength,
+      contractLinkedIn.maxLinkedInLinkUrlLength,
+      contractLinkedIn.maxLinkedInMentionNameLength,
+      contractLinkedIn.maxLinkedInMentions,
+    ]).toStrictEqual([
+      maxLinkedInDocumentTitleLength,
+      maxLinkedInLinkDescriptionLength,
+      maxLinkedInLinkTitleLength,
+      maxLinkedInLinkUrlLength,
+      maxLinkedInMentionNameLength,
+      maxLinkedInMentions,
+    ]);
+    expect(contractLinkedIn.LinkedInVisibilitySchema.literals).toStrictEqual(
+      LinkedInVisibilitySchema.literals
+    );
 
     for (const tags of [[], ["Foo-Baz", "Foo Baz"], ["日本語", "👍🏽 ok"]]) {
       expect(contractTagsLength(tags)).toBe(youTubeTagsLength(tags));

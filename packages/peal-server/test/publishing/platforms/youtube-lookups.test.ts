@@ -54,7 +54,10 @@ const onYouTube = Effect.fn("test.lookupsOnYouTube")(function* onYouTube(
   );
 
   const lookups = yield* Layer.build(
-    platformLookupsWith({ youtubeApi: new URL(youtube.url) }).pipe(
+    platformLookupsWith({
+      linkedinApi: new URL(youtube.url),
+      youtubeApi: new URL(youtube.url),
+    }).pipe(
       Layer.provide(
         Layer.mergeAll(
           Layer.succeedContext(credentials),

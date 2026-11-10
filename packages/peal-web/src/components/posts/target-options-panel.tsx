@@ -37,6 +37,7 @@ import type {
   OptionValues,
   OptionViolation,
   TagsField,
+  MentionsField,
   TextField,
   ToggleField,
   YesNoField,
@@ -143,7 +144,7 @@ const TextInput = ({
   limits,
   value,
   violation,
-}: FieldProps<TagsField | TextField>) => {
+}: FieldProps<MentionsField | TagsField | TextField>) => {
   const t = useTranslations("Posts.Options");
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -336,6 +337,7 @@ const FieldInput = (props: FieldProps<OptionField>) =>
   Match.value(props.field).pipe(
     Match.discriminatorsExhaustive("kind")({
       choice: (field) => <ChoiceInput {...props} field={field} />,
+      mentions: (field) => <TextInput {...props} field={field} />,
       tags: (field) => <TextInput {...props} field={field} />,
       text: (field) => <TextInput {...props} field={field} />,
       toggle: (field) => <ToggleInput {...props} field={field} />,

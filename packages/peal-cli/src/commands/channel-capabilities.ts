@@ -165,6 +165,7 @@ const inputFlags: Readonly<Record<keyof LookupInput, string>> = {
   language: "--language",
   limit: "--limit",
   regionCode: "--region",
+  vanityName: "--vanity-name",
 };
 
 const isInput = (name: string): name is keyof LookupInput => name in inputFlags;
@@ -350,6 +351,16 @@ const resultLines = (
   creatorLines: CreatorLines
 ): readonly string[] =>
   Match.valueTags(result, {
+    linkedinOrganizations: ({ items }) =>
+      items.length === 0
+        ? ["LinkedIn has no page of that name."]
+        : columns(
+            items.map(({ name, urn, vanityName }) => [
+              urn,
+              name,
+              vanityName ?? "",
+            ])
+          ),
     tiktokCreator: ({ items }) => items.flatMap(creatorLines),
     youtubePlaylists: ({ items }) =>
       items.length === 0
@@ -398,6 +409,13 @@ export const lookupWith = (creatorLines: CreatorLines) =>
         Flag.withMetavar("<country>"),
         Flag.withDescription(
           "A country as two capital letters, such as FR: US when left out."
+        ),
+        Flag.optional
+      ),
+      vanityName: Flag.String("vanity-name").pipe(
+        Flag.withMetavar("<name>"),
+        Flag.withDescription(
+          "The name in a LinkedIn page's address, linkedin.com/company/<name>, to find the page a post mentions."
         ),
         Flag.optional
       ),
@@ -453,6 +471,10 @@ export const lookupWith = (creatorLines: CreatorLines) =>
         ...Option.match(given.region, {
           onNone: () => ({}),
           onSome: (regionCode) => ({ regionCode }),
+        }),
+        ...Option.match(given.vanityName, {
+          onNone: () => ({}),
+          onSome: (vanityName) => ({ vanityName }),
         }),
       };
 

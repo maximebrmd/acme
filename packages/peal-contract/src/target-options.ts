@@ -122,6 +122,76 @@ export const TikTokOptionsSchema = Schema.Struct({
 
 export type TikTokOptions = typeof TikTokOptionsSchema.Type;
 
+/** Who sees a LinkedIn post. `connections` is for a member's profile. */
+export const LinkedInVisibilitySchema = Schema.Literals([
+  "public",
+  "connections",
+  "loggedIn",
+]).annotate({ identifier: "LinkedInVisibility" });
+
+export type LinkedInVisibility = typeof LinkedInVisibilitySchema.Type;
+
+/** The longest title of a LinkedIn document Peal takes, in characters. */
+export const maxLinkedInDocumentTitleLength = 400;
+
+/** The longest title of a LinkedIn link Peal takes, in characters. */
+export const maxLinkedInLinkTitleLength = 400;
+
+/** The longest description of a LinkedIn link Peal takes, in characters. */
+export const maxLinkedInLinkDescriptionLength = 4000;
+
+/** The longest address of a LinkedIn link Peal takes, in characters. */
+export const maxLinkedInLinkUrlLength = 2000;
+
+/** The most pages one LinkedIn post names. */
+export const maxLinkedInMentions = 30;
+
+/** The longest name a mention holds, in UTF-16 code units. */
+export const maxLinkedInMentionNameLength = 200;
+
+/**
+ * A company page a LinkedIn post names: its full name, exactly as the
+ * `linkedinOrganizations` lookup answers it, and its URN
+ * (`urn:li:organization:<id>`). LinkedIn links it where the post's text
+ * holds `@` followed by that name.
+ */
+export const LinkedInMentionSchema = Schema.Struct({
+  name: Schema.String.check(
+    Schema.isMaxLength(maxLinkedInMentionNameLength),
+    Schema.makeFilter((text: string) => !text.includes(nul), {
+      expected: "text without NUL characters",
+    })
+  ),
+  urn: Schema.String.check(Schema.isMaxLength(64)),
+}).annotate({ identifier: "LinkedInMention" });
+
+export type LinkedInMention = typeof LinkedInMentionSchema.Type;
+
+/**
+ * A post on a LinkedIn profile or company page: its commentary is the
+ * post's text there.
+ */
+export const LinkedInOptionsSchema = Schema.Struct({
+  disableReshare: Schema.optionalKey(Schema.Boolean),
+  documentTitle: Schema.optionalKey(OptionTextSchema),
+  linkDescription: Schema.optionalKey(OptionTextSchema),
+  linkTitle: Schema.optionalKey(OptionTextSchema),
+  linkUrl: Schema.optionalKey(OptionTextSchema),
+  mentions: Schema.optionalKey(
+    Schema.Array(LinkedInMentionSchema).check(
+      Schema.isMaxLength(maxLinkedInMentions)
+    )
+  ),
+  platform: Schema.Literal("linkedin"),
+  visibility: Schema.optionalKey(LinkedInVisibilitySchema),
+}).annotate({
+  description:
+    "How a post goes out on a LinkedIn profile or company page. Scheduling needs none of them; a link (`linkUrl`) needs its `linkTitle`.",
+  identifier: "LinkedInOptions",
+});
+
+export type LinkedInOptions = typeof LinkedInOptionsSchema.Type;
+
 /**
  * What a post says on a channel that only its platform knows, tagged by
  * `platform`. Platforms without a member here take no options.
@@ -129,6 +199,7 @@ export type TikTokOptions = typeof TikTokOptionsSchema.Type;
 export const TargetOptionsSchema = Schema.Union([
   YouTubeOptionsSchema,
   TikTokOptionsSchema,
+  LinkedInOptionsSchema,
 ]).annotate({
   description:
     "What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.",
