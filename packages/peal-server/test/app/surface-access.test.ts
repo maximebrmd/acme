@@ -89,6 +89,13 @@ const decodeTagged = Schema.decodeUnknownOption(
 // else once they are let through to the use case's own rules.
 type Answer = "forbidden" | "let through";
 
+// A request of the second table: its path, and what it sends.
+interface Asked {
+  readonly body?: unknown;
+  readonly method?: string;
+  readonly path: string;
+}
+
 const answerOf = (status: number): Answer =>
   status === 403 ? "forbidden" : "let through";
 
@@ -415,16 +422,7 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             },
           };
 
-          const requests: Readonly<
-            Record<
-              string,
-              {
-                readonly body?: unknown;
-                readonly method?: string;
-                readonly path: string;
-              }
-            >
-          > = {
+          const requests = {
             answerComment: {
               body: { text: "Thank you." },
               path: `${base}/inbox/comments/${unknown}/replies`,
@@ -462,7 +460,7 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
               method: "DELETE",
               path: `${base}/inbox/replies/${unknown}`,
             },
-          };
+          } satisfies Readonly<Record<string, Asked>>;
 
           const asked = yield* Effect.forEach(
             Object.entries(callers),
@@ -488,8 +486,9 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             asked.map(([caller, byRequest]) => [
               caller,
               [...byRequest]
-                .filter(([, { answer }]) => answer === "let through")
-                .map(([name]) => name)
+                .flatMap(([name, { answer }]) =>
+                  answer === "let through" ? [name] : []
+                )
                 .toSorted(),
             ])
           );
