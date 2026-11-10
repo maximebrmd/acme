@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "2b4ac82f-2dae-4f5c-9324-442cbb16b767",
+  "id": "df3ca63d-d407-4fc3-b88e-8b806b1c8c71",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -8268,6 +8268,19 @@
     {
       "schema": "webhooks",
       "table": "endpoints",
+      "name": "scope",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'workspace'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
       "name": "secret",
       "type": "text",
       "typeSchema": null,
@@ -8337,6 +8350,19 @@
       "type": "jsonb",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "webhooks",
+      "table": "events",
+      "name": "external_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -15104,6 +15130,13 @@
       "table": "endpoints",
       "name": "endpoints_status",
       "value": "\"status\" IN ('enabled', 'disabled')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "webhooks",
+      "table": "endpoints",
+      "name": "endpoints_scope",
+      "value": "\"scope\" IN ('workspace', 'partner')",
       "entityType": "checks"
     },
     {

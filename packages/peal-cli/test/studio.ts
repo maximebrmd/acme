@@ -466,6 +466,7 @@ export const webhooks: readonly WebhookEndpoint[] = [
     failingSince: at("2026-11-09T11:00:00Z"),
     id: hookId,
     previousSecretExpiresAt: null,
+    scope: "workspace",
     updatedAt: at("2026-11-01T10:00:00Z"),
     url: "https://hooks.example.com/peal",
   },
@@ -479,6 +480,7 @@ export const webhooks: readonly WebhookEndpoint[] = [
     failingSince: at("2026-11-01T10:00:00Z"),
     id: failingHookId,
     previousSecretExpiresAt: null,
+    scope: "workspace",
     updatedAt: at("2026-11-06T10:00:00Z"),
     url: "https://hooks.example.com/old",
   },
@@ -1795,6 +1797,7 @@ export const studioGroupsLive = (studio: Studio) =>
               failingSince: null,
               id: `0190f3a0-0000-7000-8000-00000000b${String(current.webhooks.length + 1).padStart(3, "0")}`,
               previousSecretExpiresAt: null,
+              scope: "workspace",
               updatedAt: now,
               url: payload.url,
             });

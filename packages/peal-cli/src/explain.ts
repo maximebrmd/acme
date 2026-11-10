@@ -20,6 +20,7 @@ import type {
   MediaSourceUnreachable,
   MediaStoreUnavailable,
   MediaTooLarge,
+  PartnerNotFound,
   PlanLimitReached,
   PlatformUnreachable,
   PostContentInvalid,
@@ -72,6 +73,7 @@ export type ApiFailure =
   | MediaSourceUnreachable
   | MediaStoreUnavailable
   | MediaTooLarge
+  | PartnerNotFound
   | PlanLimitReached
   | PlatformUnreachable
   | PostContentInvalid
@@ -279,6 +281,10 @@ export const explain =
       MediaTooLarge: ({ byteSize, kind, maxByteSize }) =>
         refused(
           `The ${kind} weighs ${size(byteSize)}, and Peal stores ${kind}s up to ${size(maxByteSize)}.`
+        ),
+      PartnerNotFound: () =>
+        refused(
+          "The workspace has no partner account: an owner or an admin opens one in the web app's settings, where the server lets them, or its operator does."
         ),
       PlanLimitReached: (reached) => refused(planLimitReason(reached)),
       PlatformUnreachable: () =>

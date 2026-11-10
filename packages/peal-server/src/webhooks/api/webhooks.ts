@@ -5,6 +5,7 @@ import {
   CurrentMember,
   defaultWebhookDeliveryPageSize,
   Forbidden,
+  PartnerNotFound,
   TooManyWebhookEndpoints,
   WebhookDeliveryNotFound,
   TooManyWebhookSends,
@@ -68,6 +69,7 @@ export const WebhooksHandlers = HttpApiBuilder.group(
               description: payload.description ?? "",
               enabled: payload.enabled ?? true,
               eventTypes: payload.eventTypes,
+              scope: payload.scope ?? "workspace",
               url: payload.url,
             })
             .pipe(
@@ -76,6 +78,8 @@ export const WebhooksHandlers = HttpApiBuilder.group(
                 DatabaseError: Effect.die,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: forbidden,
+                PartnerScopeUnavailable: () =>
+                  Effect.fail(new PartnerNotFound()),
                 SecretsNotConfigured: notConfigured,
                 TooManyEndpoints: ({ allowed }) =>
                   Effect.fail(new TooManyWebhookEndpoints({ allowed })),

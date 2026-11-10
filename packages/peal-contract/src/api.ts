@@ -807,6 +807,7 @@ export {
   WebhookDisabledReasonSchema,
   WebhookEndpointChangeSchema,
   WebhookEndpointSchema,
+  WebhookEndpointScopeSchema,
   WebhookEndpointSecretSchema,
   webhookFailingDays,
   WebhooksApi,
@@ -823,6 +824,7 @@ export type {
   WebhookDisabledReason,
   WebhookEndpoint,
   WebhookEndpointChange,
+  WebhookEndpointScope,
   WebhookEndpointSecret,
 } from "./webhooks.ts";
 

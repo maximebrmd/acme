@@ -59,13 +59,14 @@ webhook-signature: v1,Mfm1tWLUX4U95AK/DHjduW4e8bHrj/HztAOACn91BF4=
 
 Le corps est un objet JSON :
 
-| Champ       | Type   | Ce qu’il contient                                                                               |
-| ----------- | ------ | ----------------------------------------------------------------------------------------------- |
-| `id`        | chaîne | L’identifiant de l’événement, comme dans `webhook-id`                                           |
-| `type`      | chaîne | Ce qui s’est passé, comme `post.published`. Il dit ce que contient `data`.                      |
-| `version`   | entier | La version de `data` : 1                                                                        |
-| `timestamp` | chaîne | Le moment où cela s’est passé, en instant ISO 8601 en UTC. Pas celui où la requête est envoyée. |
-| `data`      | objet  | Les champs propres à l’événement, [ci-dessous](#events)                                         |
+| Champ                 | Type           | Ce qu’il contient                                                                                                                                                                                                         |
+| --------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | chaîne         | L’identifiant de l’événement, comme dans `webhook-id`                                                                                                                                                                     |
+| `type`                | chaîne         | Ce qui s’est passé, comme `post.published`. Il dit ce que contient `data`.                                                                                                                                                |
+| `version`             | entier         | La version de `data` : 1                                                                                                                                                                                                  |
+| `timestamp`           | chaîne         | Le moment où cela s’est passé, en instant ISO 8601 en UTC. Pas celui où la requête est envoyée.                                                                                                                           |
+| `workspaceExternalId` | chaîne ou null | Pour un espace de travail que possède un compte partenaire, l’identifiant que le partenaire lui a donné, tel qu’il était à ce moment-là ; null quand le partenaire n’en a pas donné, et pour tout autre espace de travail |
+| `data`                | objet          | Les champs propres à l’événement, [ci-dessous](#events)                                                                                                                                                                   |
 
 L’ordre des champs dans le corps ne fait pas partie du contrat.
 
@@ -125,6 +126,7 @@ Une publication a été programmée, ou déplacée à une autre heure.
   "type": "post.scheduled",
   "version": 1,
   "timestamp": "2026-11-09T16:42:10.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -161,6 +163,7 @@ Une publication programmée est repassée en brouillon : elle ne part nulle part
   "type": "post.unscheduled",
   "version": 1,
   "timestamp": "2026-11-09T17:05:44.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01"
@@ -189,6 +192,7 @@ La publication est en ligne sur le canal.
   "type": "post.published",
   "version": 1,
   "timestamp": "2026-11-10T09:00:03.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -242,6 +246,7 @@ La publication n’est pas partie sur le canal.
   "type": "post.failed",
   "version": 1,
   "timestamp": "2026-11-10T09:00:04.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -283,6 +288,7 @@ Peal ne peut pas savoir si la publication est en ligne sur le canal, et ne la re
   "type": "post.unconfirmed",
   "version": 1,
   "timestamp": "2026-11-10T09:00:21.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -313,6 +319,7 @@ La publication a été annulée. `targets` liste les canaux où elle ne partira 
   "type": "post.cancelled",
   "version": 1,
   "timestamp": "2026-11-09T18:30:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "postId": "019a6f3e-8c2a-7b1e-9f40-3d5a1c2b4e01",
@@ -345,6 +352,7 @@ Un compte a été connecté à l’espace de travail, ou un canal que l’espace
   "type": "channel.connected",
   "version": 1,
   "timestamp": "2026-11-08T10:15:30.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d10-41f7-7c3a-a2b9-8d6e0f1a2b3c",
@@ -370,6 +378,7 @@ Un canal a été déconnecté de l’espace de travail.
   "type": "channel.disconnected",
   "version": 1,
   "timestamp": "2026-11-12T14:02:09.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
@@ -394,6 +403,7 @@ L’autorisation du canal ne fonctionne plus : rien n’y est publié tant que p
   "type": "channel.reconnect_needed",
   "version": 1,
   "timestamp": "2026-11-11T06:00:12.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "channelId": "019a5d12-9b0e-7e44-9d1f-2c3b4a5d6e7f",
@@ -418,6 +428,7 @@ Peal [a lu le fichier](/media#library) une fois stocké, et il peut aller dans d
   "type": "media.ready",
   "version": 1,
   "timestamp": "2026-11-09T16:30:55.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
@@ -452,6 +463,7 @@ Le fichier a été refusé, ou Peal n’a pas pu le lire. Un fichier qui n’a p
   "type": "media.failed",
   "version": 1,
   "timestamp": "2026-11-09T16:31:20.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
@@ -475,6 +487,7 @@ Quelqu’un a demandé un événement de test sur le point de terminaison. Il es
   "type": "webhook.test",
   "version": 1,
   "timestamp": "2026-11-10T08:12:00.000Z",
+  "workspaceExternalId": null,
   "data": {
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "endpointId": "019a6e00-77aa-7f12-b0c4-1a2b3c4d5e6f"

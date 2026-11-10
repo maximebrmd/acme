@@ -40,6 +40,10 @@ export class PartnerOwnership extends Context.Service<
     readonly poolOf: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<Option.Option<PlanPool>, DatabaseError>;
+    /** Whether the workspace is a partner account's home workspace. */
+    readonly isHome: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<boolean, DatabaseError>;
     /**
      * Refuses while the partner account of one of these workspaces still
      * owns workspaces: deleting it would leave them with nobody to answer
@@ -116,6 +120,8 @@ export class PartnerOwnership extends Context.Service<
 
       return PartnerOwnership.of({
         ensureDeletable,
+        isHome: (workspaceId) =>
+          partners.ofWorkspace(workspaceId).pipe(Effect.map(Option.isSome)),
         ownerOf: (workspaceId) => workspaces.ownerOf(workspaceId),
         poolOf,
       });
@@ -127,6 +133,7 @@ export class PartnerOwnership extends Context.Service<
     PartnerOwnership,
     PartnerOwnership.of({
       ensureDeletable: () => Effect.void,
+      isHome: () => Effect.succeed(false),
       ownerOf: () => Effect.succeedNone,
       poolOf: () => Effect.succeedNone,
     })

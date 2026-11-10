@@ -57,6 +57,9 @@ export const WebhookToolsLive = WebhookTools.toLayer(
                 DatabaseError: Effect.die,
                 InvalidWebhookUrl: urlRefused,
                 MissingPermission: notAllowed("manage webhooks"),
+                // The tool adds endpoints that hear their own workspace.
+                PartnerScopeUnavailable: () =>
+                  refuse("The workspace has no partner account."),
                 SecretsNotConfigured: () =>
                   refuse(
                     "This server cannot keep a signing secret: its operator has not set the keys that encrypt them (PEAL_TOKEN_KEYS)."

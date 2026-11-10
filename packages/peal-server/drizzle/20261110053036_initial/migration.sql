@@ -469,17 +469,20 @@ CREATE TABLE "webhooks"."endpoints" (
 	"id" uuid PRIMARY KEY,
 	"previous_secret" text,
 	"previous_secret_expires_at" timestamp with time zone,
+	"scope" text DEFAULT 'workspace' NOT NULL,
 	"secret" text NOT NULL,
 	"status" text NOT NULL,
 	"updated_at" timestamp with time zone NOT NULL,
 	"url" text NOT NULL,
 	"workspace_id" uuid NOT NULL,
 	CONSTRAINT "endpoints_status" CHECK ("status" IN ('enabled', 'disabled')),
+	CONSTRAINT "endpoints_scope" CHECK ("scope" IN ('workspace', 'partner')),
 	CONSTRAINT "endpoints_disabled" CHECK (("status" = 'disabled') = ("disabled_reason" IS NOT NULL AND "disabled_at" IS NOT NULL))
 );
 --> statement-breakpoint
 CREATE TABLE "webhooks"."events" (
 	"data" jsonb NOT NULL,
+	"external_id" text,
 	"id" uuid PRIMARY KEY,
 	"key" text NOT NULL CONSTRAINT "events_key" UNIQUE,
 	"occurred_at" timestamp with time zone NOT NULL,
