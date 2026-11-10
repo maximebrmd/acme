@@ -479,6 +479,7 @@
         "content": "À corriger avant de programmer :"
       },
       "violation": {
+        "inPart": "Partie {part} : {text}",
         "noChannels": "Choisissez au moins un canal.",
         "overrideWithoutChannel": "Un canal avec son propre texte n’est plus sélectionné.",
         "empty": "{channel} : il n’y a rien à publier.",
@@ -497,6 +498,23 @@
         "forbiddenCharacters": "{channel} : le texte ne peut pas contenir {characters}."
       },
       "channelDetail": "{handle} sur {platform}"
+    },
+    "Parts": {
+      "legend": "Fil",
+      "hint": "Ajoutez les parties qui suivent la publication. Sur les plateformes qui ont des fils, chacune part en réponse à la précédente, dans l’ordre, et rien n’est envoyé après une partie qui a échoué.",
+      "partTitle": "Partie {position}",
+      "textPlaceholder": "Ce que dit cette partie",
+      "textHint": "Le texte de la partie {position}, pour tous les canaux.",
+      "add": "Ajouter une partie",
+      "remove": "Retirer la partie {position}",
+      "moveEarlier": "Monter la partie {position}",
+      "moveLater": "Descendre la partie {position}",
+      "delayLabel": "Attente après la partie précédente",
+      "delay": "{seconds, select, 0 {Aucune : juste après} 60 {1 minute} 300 {5 minutes} 900 {15 minutes} 1800 {30 minutes} 3600 {1 heure} 7200 {2 heures} 21600 {6 heures} 43200 {12 heures} 86400 {1 jour} other {{seconds} secondes}}",
+      "mediaLegend": "Images et vidéos de la partie {position}",
+      "alone": "{channel} : cette plateforme prend une publication seule, sans rien à sa suite. Retirez les parties, ou laissez ce canal de côté : la publication y serait refusée.",
+      "tooMany": "{channel} : {maximum} parties au plus après la première.",
+      "full": "Une publication a au plus {maximum} parties après la première."
     },
     "Options": {
       "section": "Options des plateformes",
@@ -677,6 +695,15 @@
     "newPost": "Nouvelle publication"
   },
   "PostDetail": {
+    "partsTitle": "Parties",
+    "partsLive": "{live} parties en ligne sur {count}.",
+    "partLive": "Partie {position} : en ligne",
+    "partLink": "Partie {position} : la voir sur {platform}",
+    "partNotSent": "Partie {position} : non envoyée",
+    "partsRest": "La renvoyer envoie les parties qui ne sont pas parties, jamais une partie en ligne.",
+    "partsCounts": "Ses compteurs sont lus pour la première partie.",
+    "partText": "Partie {position}",
+    "attemptPart": "Partie {position}. ",
     "title": "{status, select, publishing {Publication en cours d’envoi} cancelled {Publication annulée} other {Publication}}",
     "description": "Comment la publication s’est passée sur chacun de ses canaux, tentative par tentative.",
     "scheduledFor": "Programmée le {at, date, medium} à {at, time, short}",
@@ -2009,6 +2036,10 @@
       "wholePost": "Commenter plutôt toute la publication"
     },
     "preview": {
+      "partsLabel": "Les parties qui suivent, envoyées dans l’ordre, en fil :",
+      "part": "Partie {position}",
+      "partDelay": "{seconds, select, 60 {1 minute} 300 {5 minutes} 900 {15 minutes} 1800 {30 minutes} 3600 {1 heure} 7200 {2 heures} 21600 {6 heures} 43200 {12 heures} 86400 {1 jour} other {{seconds} secondes}} après la partie précédente",
+      "partMediaLabel": "Images, vidéos et documents de la partie {position}",
       "title": "La publication sur chaque canal",
       "hint": "Ce que chaque canal recevra. Ce n’est pas la mise en page de la plateforme.",
       "hintSelect": "Ce que chaque canal recevra. Ce n’est pas la mise en page de la plateforme. Sélectionnez des mots pour les commenter.",

@@ -479,6 +479,7 @@
         "content": "Fix these before scheduling:"
       },
       "violation": {
+        "inPart": "Part {part}: {text}",
         "noChannels": "Pick at least one channel.",
         "overrideWithoutChannel": "A channel with its own text is no longer selected.",
         "empty": "{channel}: there is nothing to publish.",
@@ -497,6 +498,23 @@
         "forbiddenCharacters": "{channel}: the text cannot hold {characters}."
       },
       "channelDetail": "{handle} on {platform}"
+    },
+    "Parts": {
+      "legend": "Thread",
+      "hint": "Add the parts that follow the post. On the platforms with threads, each goes out as a reply to the part before it, in order, and nothing is sent after a part that failed.",
+      "partTitle": "Part {position}",
+      "textPlaceholder": "What this part says",
+      "textHint": "The text of part {position}, for all channels.",
+      "add": "Add a part",
+      "remove": "Remove part {position}",
+      "moveEarlier": "Move part {position} earlier",
+      "moveLater": "Move part {position} later",
+      "delayLabel": "Wait after the part before it",
+      "delay": "{seconds, select, 0 {None: right after it} 60 {1 minute} 300 {5 minutes} 900 {15 minutes} 1800 {30 minutes} 3600 {1 hour} 7200 {2 hours} 21600 {6 hours} 43200 {12 hours} 86400 {1 day} other {{seconds} seconds}}",
+      "mediaLegend": "Images and videos of part {position}",
+      "alone": "{channel}: this platform takes a post alone, with nothing after it. Remove the parts, or leave this channel out: the post would be refused there.",
+      "tooMany": "{channel}: at most {maximum} parts after the first.",
+      "full": "A post has {maximum} parts after its first at most."
     },
     "Options": {
       "section": "Platform options",
@@ -677,6 +695,15 @@
     "newPost": "New post"
   },
   "PostDetail": {
+    "partsTitle": "Parts",
+    "partsLive": "{live} of {count} parts are live.",
+    "partLive": "Part {position}: live",
+    "partLink": "Part {position}: see it on {platform}",
+    "partNotSent": "Part {position}: not sent",
+    "partsRest": "Sending it again sends the parts that are not out, never one that is live.",
+    "partsCounts": "Its counts are read for the first part.",
+    "partText": "Part {position}",
+    "attemptPart": "Part {position}. ",
     "title": "{status, select, publishing {Post going out} cancelled {Cancelled post} other {Post}}",
     "description": "How the post went on each of its channels, attempt by attempt.",
     "scheduledFor": "Scheduled for {at, date, medium} at {at, time, short}",
@@ -2009,6 +2036,10 @@
       "wholePost": "Comment on the whole post instead"
     },
     "preview": {
+      "partsLabel": "The parts that follow, sent in order as a thread:",
+      "part": "Part {position}",
+      "partDelay": "{seconds, select, 60 {1 minute} 300 {5 minutes} 900 {15 minutes} 1800 {30 minutes} 3600 {1 hour} 7200 {2 hours} 21600 {6 hours} 43200 {12 hours} 86400 {1 day} other {{seconds} seconds}} after the part before it",
+      "partMediaLabel": "Images, videos and documents of part {position}",
       "title": "The post on each channel",
       "hint": "What each channel will receive. This is not how the platform will lay it out.",
       "hintSelect": "What each channel will receive. This is not how the platform will lay it out. Select some words to comment on them.",

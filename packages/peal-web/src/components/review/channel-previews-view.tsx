@@ -8,17 +8,6 @@ import { shownOptionsOf } from "#review/shown-options.ts";
 import type { ShownOption } from "#review/shown-options.ts";
 import { channelText } from "#review/use-chosen-words.ts";
 
-/** A post on one channel, as the channel will receive it. */
-export interface PreviewedChannel {
-  readonly channelId: string;
-  /** The account's name; none once it was disconnected. */
-  readonly handle: string | null;
-  /** What the post has there that only its platform knows; none if none. */
-  readonly options: TargetOptions | null;
-  readonly platform: string | null;
-  readonly text: string;
-}
-
 /** An image, a video or a document the post shows. */
 export interface PreviewedMedia {
   readonly altText: string;
@@ -26,6 +15,27 @@ export interface PreviewedMedia {
   readonly mediaId: string;
   /** Where the file is read from; none for a file that cannot be shown. */
   readonly url: string | null;
+}
+
+/** A part that follows the post on a channel, as it will receive it. */
+export interface PreviewedPart {
+  /** The seconds it waits after the part before it went out. */
+  readonly delaySeconds: number;
+  readonly media: readonly PreviewedMedia[];
+  readonly text: string;
+}
+
+/** A post on one channel, as the channel will receive it. */
+export interface PreviewedChannel {
+  readonly channelId: string;
+  /** The parts that follow the post there, in order. */
+  readonly followUps: readonly PreviewedPart[];
+  /** The account's name; none once it was disconnected. */
+  readonly handle: string | null;
+  /** What the post has there that only its platform knows; none if none. */
+  readonly options: TargetOptions | null;
+  readonly platform: string | null;
+  readonly text: string;
 }
 
 // A file, with the text that describes it to people who cannot see it,
@@ -130,9 +140,60 @@ const OptionsView = ({ options }: { readonly options: TargetOptions }) => {
   );
 };
 
+// The parts that follow the post on a channel, in order: each with its
+// place (the post itself is the first), its wait, its text and its files.
+// An approval covers them, so reviewers read them with the post.
+const PartsView = ({ parts }: { readonly parts: readonly PreviewedPart[] }) => {
+  const t = useTranslations("Review");
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-muted-foreground text-sm">{t("preview.partsLabel")}</p>
+      <ol className="flex flex-col gap-3">
+        {parts.map((part, index) => {
+          const position = index + 2;
+
+          return (
+            <li key={position} className="flex flex-col gap-2 border-l-2 pl-3">
+              <p className="flex flex-wrap items-baseline gap-2 text-sm">
+                <span className="font-medium">
+                  {t("preview.part", { position })}
+                </span>
+                {part.delaySeconds === 0 ? null : (
+                  <span className="text-muted-foreground">
+                    {t("preview.partDelay", { seconds: part.delaySeconds })}
+                  </span>
+                )}
+              </p>
+              {part.text === "" ? (
+                <p className="text-muted-foreground text-sm">
+                  {t("preview.noText")}
+                </p>
+              ) : (
+                <p className="break-words whitespace-pre-wrap">{part.text}</p>
+              )}
+              {part.media.length === 0 ? null : (
+                <section
+                  aria-label={t("preview.partMediaLabel", { position })}
+                  className="grid gap-4 sm:grid-cols-2"
+                >
+                  {part.media.map((file) => (
+                    <MediaView key={file.mediaId} media={file} />
+                  ))}
+                </section>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+};
+
 /**
  * The post as each channel will receive it: the channel's name and
- * platform, then the text it has there, as plain text. An honest preview,
+ * platform, then the text it has there, as plain text, and the parts that
+ * follow it. An honest preview,
  * not an imitation of the platform: line breaks are the post's, and the
  * platform lays it out its own way.
  */
@@ -177,6 +238,9 @@ export const ChannelPreviewsView = ({
             )}
             {channel.options === null ? null : (
               <OptionsView options={channel.options} />
+            )}
+            {channel.followUps.length === 0 ? null : (
+              <PartsView parts={channel.followUps} />
             )}
           </li>
         ))}

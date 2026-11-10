@@ -17,7 +17,6 @@ import { Label } from "peal-ui/components/label";
 import { Skeleton } from "peal-ui/components/skeleton";
 import { Textarea } from "peal-ui/components/textarea";
 import { useId, useRef, useState } from "react";
-import type { Dispatch, SetStateAction } from "react";
 import { flushSync } from "react-dom";
 import { toast } from "sonner";
 
@@ -213,7 +212,13 @@ interface MediaAttachmentsProps {
    * media. Defaults to `!disabled`.
    */
   readonly editable?: boolean;
-  readonly onChange: Dispatch<SetStateAction<readonly MediaAttachment[]>>;
+  /**
+   * Changes the attachments from what they are now: a state setter, or
+   * anything that applies the update to the list it holds.
+   */
+  readonly onChange: (
+    update: (current: readonly MediaAttachment[]) => readonly MediaAttachment[]
+  ) => void;
   /** The platforms of the channels the post goes to. */
   readonly platforms: readonly Platform[];
   readonly workspaceId: string;

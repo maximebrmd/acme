@@ -34,6 +34,7 @@ import { CharacterCounters } from "#components/posts/character-counters.tsx";
 import { ComposerActions } from "#components/posts/composer-actions.tsx";
 import type { ComposerAction } from "#components/posts/composer-actions.tsx";
 import { ComposerErrors } from "#components/posts/composer-errors.tsx";
+import { FollowUpParts } from "#components/posts/follow-up-parts.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
 import {
@@ -50,6 +51,8 @@ import { connectedTargets } from "#posts/channel-selection.ts";
 import { fitOn, fits } from "#posts/character-count.ts";
 import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits } from "#posts/media-fit.ts";
+import { followUpsOf, partsOf, partsTaken } from "#posts/parts.ts";
+import type { PartDraft } from "#posts/parts.ts";
 import {
   channelOptionsOf,
   initialValues,
@@ -115,13 +118,16 @@ const withOverride = (
 };
 
 // What the post says, from the composer's fields: a text of its own only for
-// the channels it goes to, and only when it is not blank.
+// the channels it goes to, and only when it is not blank, then the parts
+// that follow it.
 const contentOf = (
   text: string,
   overrides: Readonly<Record<string, string>>,
   channelIds: readonly string[],
-  media: readonly MediaAttachment[]
+  media: readonly MediaAttachment[],
+  parts: readonly PartDraft[]
 ): PostContent => ({
+  followUps: followUpsOf(parts, channelIds),
   media,
   overrides: channelIds.flatMap((channelId) => {
     const own = overrides[channelId] ?? "";
@@ -204,8 +210,8 @@ interface ComposerProps {
 }
 
 // Writes a post: its text, a text of its own on some channels, its images
-// and videos, the options of the channels whose platform takes some, where
-// it goes and when. A draft is saved as it is, or discarded; scheduling
+// and videos, the parts that follow it in a thread, the options of the
+// channels whose platform takes some, where it goes and when. A draft is saved as it is, or discarded; scheduling
 // checks it against each platform's limits, which the counters show as the
 // user types, and the options each platform needs, which the options fields
 // show once scheduling refused them. A scheduled post keeps its text and
@@ -245,6 +251,11 @@ export const Composer = ({
 
   const [media, setMedia] = useState<readonly MediaAttachment[]>(start.media);
 
+  // The parts that follow the post, in order.
+  const [parts, setParts] = useState<readonly PartDraft[]>(() =>
+    partsOf(post?.content)
+  );
+
   const [channelIds, setChannelIds] = useState<readonly string[]>(() =>
     connectedTargets(post, channels)
   );
@@ -281,7 +292,7 @@ export const Composer = ({
     channels.filter(({ id }) => id === channelId)
   );
 
-  const content = contentOf(text, overrides, channelIds, media);
+  const content = contentOf(text, overrides, channelIds, media, parts);
   const options = channelOptionsOf(selected, optionValues);
   const attached = useAttachedMedia(workspaceId, media);
 
@@ -299,6 +310,15 @@ export const Composer = ({
       media: mediaFitOn(channel.platform, attached),
     };
   });
+
+  // Whether every channel takes the parts that follow: their number, and
+  // each one's text, as the server will check them. Their images and
+  // videos are checked where they are shown, and again by the server.
+  const partsFit = selected.every(
+    ({ platform }) =>
+      partsTaken(platform, parts.length)._tag === "taken" &&
+      parts.every((part) => fits(fitOn(platform, part.text, part.media.length)))
+  );
 
   const formatted = (at: DateTime.Utc) =>
     format.dateTime(DateTime.toDate(at), {
@@ -576,6 +596,16 @@ export const Composer = ({
             />
           </fieldset>
           <Separator />
+          <FollowUpParts
+            disabled={locked}
+            editable={canWrite}
+            parts={parts}
+            permissions={permissions}
+            selected={selected}
+            workspaceId={workspaceId}
+            onChange={setParts}
+          />
+          <Separator />
           <fieldset className="flex flex-col gap-3">
             <legend className="mb-3 text-sm font-medium">
               {t("scheduleLegend")}
@@ -616,9 +646,11 @@ export const Composer = ({
           willWait={willWait}
           canDiscard={canDiscard}
           canCancel={canCancel}
-          publishable={channelFits.every(
-            ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)
-          )}
+          publishable={
+            channelFits.every(
+              ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)
+            ) && partsFit
+          }
           onAction={perform}
         />
       </CardFooter>
