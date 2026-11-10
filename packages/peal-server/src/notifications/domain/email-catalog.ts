@@ -18,6 +18,42 @@ export interface EmailCatalog {
     readonly workspace: string;
   };
   /**
+   * The acknowledgement of a request to cancel a contract or withdraw from
+   * one, to the address its sender gave. Its body is, in order: `received`
+   * for its kind (`{receivedAt}`), `content` (`{name}`, `{contract}`,
+   * `{email}`), `desired` when a day was asked for (`{desiredAt}`), then
+   * what became of it, from `outcomes` (`{receivedAt}`, `{effectiveAt}`,
+   * `{refunded}`), and `renewalRefunded` when a renewal went back
+   * (`{refunded}`).
+   */
+  readonly contractRequest: {
+    readonly actions: { readonly confirm: string; readonly open: string };
+    readonly content: string;
+    /** `{contract}` when the request named none. */
+    readonly contractNotGiven: string;
+    readonly desired: string;
+    readonly ignore: string;
+    readonly outcomes: {
+      readonly business: string;
+      readonly cancelled: string;
+      readonly confirm: string;
+      readonly expired: string;
+      readonly notSubscribed: string;
+      readonly nothingToCancel: string;
+      readonly review: string;
+      readonly withdrawn: string;
+    };
+    readonly received: {
+      readonly cancellation: string;
+      readonly withdrawal: string;
+    };
+    readonly renewalRefunded: string;
+    readonly subjects: {
+      readonly cancellation: string;
+      readonly withdrawal: string;
+    };
+  };
+  /**
    * A copy of the account's data was downloaded `{via}`, one of
    * `exportChannels`.
    */

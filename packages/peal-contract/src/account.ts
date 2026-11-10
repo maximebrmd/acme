@@ -208,8 +208,9 @@ const ExportedBillingSchema = Schema.Struct({
   ),
 });
 
-// The orders and withdrawals the user made, kept as the proof of each
-// contract: the workspace is null once it is erased.
+// The orders and withdrawals the user made, and their requests to cancel
+// a contract or withdraw from it, kept as the proof of each contract: the
+// workspace is null once it is erased.
 const ExportedContractsSchema = Schema.Struct({
   orders: Schema.Array(
     Schema.Struct({
@@ -221,6 +222,33 @@ const ExportedContractsSchema = Schema.Struct({
       trial: Schema.Boolean,
       // When a checkout took it.
       usedAt: nullable(instant),
+      workspaceId: nullable(Schema.String),
+    })
+  ),
+  // Each request to cancel or withdraw the user made in session, or that
+  // came through the form with their address: when it was received, what
+  // it said and what became of it.
+  requests: Schema.Array(
+    Schema.Struct({
+      // `session`, or `form` for the form anyone reaches.
+      channel: Schema.String,
+      // The contract as the form named it.
+      contract: nullable(Schema.String),
+      // The day asked for the contract to end.
+      desiredAt: nullable(instant),
+      // When the contract ends, once applied.
+      effectiveAt: nullable(instant),
+      email: nullable(Schema.String),
+      // `cancellation` or `withdrawal`.
+      kind: Schema.String,
+      name: nullable(Schema.String),
+      receivedAt: instant,
+      refunded: nullable(
+        Schema.Struct({ amount: Schema.Int, currency: Schema.String })
+      ),
+      // Why its contract refused it.
+      refusal: nullable(Schema.String),
+      status: Schema.String,
       workspaceId: nullable(Schema.String),
     })
   ),

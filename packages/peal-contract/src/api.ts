@@ -11,6 +11,8 @@ import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
 import { ClientErrorsApi } from "./client-errors.ts";
 import { ConnectedAppsApi } from "./connected-apps.ts";
+import { ContractRequestsDeskApi } from "./contract-requests-desk.ts";
+import { ContractRequestsApi } from "./contract-requests.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { InvitationsApi } from "./invitations.ts";
 import { LegalApi } from "./legal.ts";
@@ -164,11 +166,58 @@ export { Authentication } from "./authentication.ts";
 
 export { BillingActionsApi } from "./billing-actions.ts";
 
+export { CaptchaRefused } from "./captcha-refused.ts";
+
+export { ContractRequestIntake } from "./contract-request-intake.ts";
+
+export { ContractRequestNotFound } from "./contract-request-not-found.ts";
+
+export { ContractRequestSettled } from "./contract-request-settled.ts";
+
+export {
+  ContractDaySchema,
+  ContractFunctionsSchema,
+  ContractRequestKindSchema,
+  ContractRequestOutcomeSchema,
+  ContractRequestPreviewSchema,
+  ContractRequestReceiptSchema,
+  ContractRequestRefusalSchema,
+  ContractRequestsApi,
+  ContractRequestStatusSchema,
+  contractRequestTextPattern,
+  HeldContractSchema,
+  maxContractRequestEmail,
+  maxContractRequestText,
+  NewContractRequestSchema,
+} from "./contract-requests.ts";
+
+export {
+  ContractRequestsDeskApi,
+  OpenContractRequestSchema,
+} from "./contract-requests-desk.ts";
+
+export type { OpenContractRequest } from "./contract-requests-desk.ts";
+
+export type {
+  ContractFunctions,
+  ContractRequestKind,
+  ContractRequestOutcome,
+  ContractRequestPreview,
+  ContractRequestReceipt,
+  ContractRequestRefusal,
+  ContractRequestStatus,
+  HeldContract,
+  NewContractRequest,
+} from "./contract-requests.ts";
+
+export { TooManyContractRequests } from "./too-many-contract-requests.ts";
+
 export {
   BillingApi,
   BillingSchema,
   BillingSubscriptionSchema,
   CancellationSchema,
+  CancelPayloadSchema,
   OrderPayloadSchema,
   OrderSchema,
   PeriodUsageSchema,
@@ -667,6 +716,8 @@ export class Api extends HttpApi.make("peal")
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)
+  .add(ContractRequestsApi)
+  .add(ContractRequestsDeskApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.
   .annotateMerge(

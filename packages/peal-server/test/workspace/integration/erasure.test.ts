@@ -83,6 +83,13 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM auth.session WHERE active_organization_id = ${id}`,
   "auth.subscription": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.subscription WHERE reference_id = ${id}`,
+  // Its contract numbers find nothing more.
+  "billing.contract_references": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.contract_references WHERE workspace_id = ${id}`,
+  // Requests to cancel or withdraw stay without the workspace, as its
+  // orders do.
+  "billing.contract_requests": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.contract_requests WHERE workspace_id = ${id}`,
   "billing.metered_posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.metered_posts WHERE workspace_id = ${id}`,
   "billing.orders": (sql, id) =>
@@ -146,8 +153,11 @@ const userRows = {
   // Password reset tokens hold their user's id.
   "auth.verification": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.verification WHERE value = ${id}`,
-  // Orders, trials and withdrawals stay with their workspaces, without the
-  // user.
+  // Orders, trials, withdrawals and requests to cancel or withdraw stay
+  // with their workspaces, without the user, nor, for requests, the name
+  // and the address they wrote.
+  "billing.contract_requests": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.contract_requests WHERE user_id = ${id}`,
   "billing.orders": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.orders WHERE user_id = ${id}`,
   "billing.trials": (sql, id) =>
@@ -306,6 +316,14 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO billing.withdrawals (stripe_subscription_id, workspace_id, user_id, refunded, currency, requested_at)
     VALUES (${`sub_${randomUUID()}`}, ${workspaceId}, ${person.id}, 0, 'eur', now())`;
+
+  // A request to cancel, from the form, tied to the workspace, and the
+  // contract number that found it.
+  yield* sql`INSERT INTO billing.contract_requests (id, kind, channel, status, acknowledgement, locale, name, email, received_at, user_id, workspace_id)
+    VALUES (${uuid7()}, 'cancellation', 'form', 'applied', 'sent', 'en', 'Synthetic Holder', ${person.email}, now(), ${person.id}, ${workspaceId})`;
+
+  yield* sql`INSERT INTO billing.contract_references (reference, stripe_subscription_id, workspace_id, issued_at)
+    VALUES (${randomUUID()}, ${`sub_${randomUUID()}`}, ${workspaceId}, now())`;
 
   yield* sql`INSERT INTO media.media_assets (id, workspace_id, storage_key, content_type, byte_size, status, created_at, updated_at)
     VALUES (${randomUUID()}, ${workspaceId}, ${`media/${workspaceId}/${randomUUID()}.png`}, 'image/png', 128, 'pending', now(), now())`;

@@ -2,7 +2,15 @@ import { Match } from "effect";
 
 import type { AuthEmail } from "./auth-email.ts";
 import type { EmailCatalog, EmailMessages } from "./email-catalog.ts";
-import { catalogs, escapeHtml, fill, keep, layout } from "./email-layout.ts";
+import {
+  catalogs,
+  escapeHtml,
+  fill,
+  instantIn,
+  keep,
+  layout,
+  moneyIn,
+} from "./email-layout.ts";
 import type { RenderedEmail } from "./email-layout.ts";
 
 interface Content {
@@ -20,6 +28,64 @@ const withBilling = (
     ? { ...messages, body: `${messages.body} ${billingEnded}` }
     : messages;
 
+type Acknowledged = Extract<
+  AuthEmail,
+  { readonly _tag: "ContractRequestAcknowledged" }
+>;
+
+// A request's acknowledgement: when it came, what it said, what became of
+// it.
+const acknowledgementOf = (
+  email: Acknowledged,
+  { contractRequest: words }: EmailCatalog
+): Content => {
+  const { locale } = email;
+
+  const body = [
+    words.received[email.kind],
+    words.content,
+    ...(email.desiredAt === null ? [] : [words.desired]),
+    words.outcomes[email.outcome],
+    // A cancellation that gives money back: its plan had renewed since.
+    ...(email.outcome === "cancelled" && email.refunded !== null
+      ? [words.renewalRefunded]
+      : []),
+  ].join(" ");
+
+  return {
+    messages: {
+      action:
+        email.outcome === "confirm"
+          ? words.actions.confirm
+          : words.actions.open,
+      body,
+      ignore: words.ignore,
+      subject: words.subjects[email.kind],
+    },
+    values: new Map([
+      [
+        "contract",
+        email.contract === "" ? words.contractNotGiven : email.contract,
+      ],
+      [
+        "desiredAt",
+        email.desiredAt === null ? "" : instantIn(email.desiredAt, locale),
+      ],
+      [
+        "effectiveAt",
+        email.effectiveAt === null ? "" : instantIn(email.effectiveAt, locale),
+      ],
+      ["email", email.to],
+      ["name", email.name],
+      ["receivedAt", instantIn(email.receivedAt, locale)],
+      [
+        "refunded",
+        email.refunded === null ? "" : moneyIn(email.refunded, locale),
+      ],
+    ]),
+  };
+};
+
 const contentOf = (email: AuthEmail, catalog: EmailCatalog): Content =>
   Match.valueTags(email, {
     AccountDeleted: ({ subscriptionsCancelled }): Content => ({
@@ -30,6 +96,8 @@ const contentOf = (email: AuthEmail, catalog: EmailCatalog): Content =>
       ),
       values: new Map(),
     }),
+    ContractRequestAcknowledged: (acknowledged): Content =>
+      acknowledgementOf(acknowledged, catalog),
     DataExported: ({ via }): Content => ({
       messages: catalog.dataExported,
       values: new Map([["via", catalog.exportChannels[via]]]),

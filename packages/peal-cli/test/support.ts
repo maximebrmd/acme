@@ -18,7 +18,10 @@ import { TestConsole } from "effect/testing";
 import {
   Api,
   Authentication,
+  BillingNotEnabled,
   ClientErrorIntake,
+  ContractRequestIntake,
+  ContractRequestNotFound,
   CurrentPrincipal,
   DataDeletionNotFound,
   MetaAppNotConfigured,
@@ -250,6 +253,39 @@ const LegalLive = HttpApiBuilder.group(Api, "legal", (handlers) =>
   )
 );
 
+// This server sells no subscription: it has no contract to cancel or
+// withdraw from, and no request waits for staff.
+const noContract = Effect.fail(new BillingNotEnabled());
+
+const ContractRequestsLive = Layer.mergeAll(
+  HttpApiBuilder.group(Api, "contractRequests", (handlers) =>
+    handlers.handleAll({
+      confirm: () => noContract,
+      functions: () =>
+        Effect.succeed({ enabled: false, turnstileSiteKey: null }),
+      preview: () => Effect.fail(new ContractRequestNotFound()),
+      send: () => noContract,
+    })
+  ),
+  HttpApiBuilder.group(Api, "contractRequestsDesk", (handlers) =>
+    handlers.handleAll({
+      apply: () => notStaff,
+      close: () => notStaff,
+      list: () => notStaff,
+    })
+  )
+).pipe(
+  Layer.provideMerge(
+    Layer.mergeAll(
+      Layer.succeed(
+        ContractRequestIntake,
+        ContractRequestIntake.of((httpEffect) => httpEffect)
+      ),
+      Layer.succeed(StaffAccess, StaffAccess.of({ session: () => notStaff }))
+    )
+  )
+);
+
 // Error reports are taken, and dropped.
 const ClientErrorsLive = HttpApiBuilder.group(Api, "clientErrors", (handlers) =>
   handlers.handleAll({ reportClientError: () => Effect.void })
@@ -305,7 +341,8 @@ export const inMemoryServer = (
                 Layer.provide(DataDeletionLive),
                 Layer.provide(StaffLive),
                 Layer.provide(LegalLive),
-                Layer.provide(ClientErrorsLive)
+                Layer.provide(ClientErrorsLive),
+                Layer.provide(ContractRequestsLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(
                 Layer.provide(server.handlers)

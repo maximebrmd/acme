@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Predicate, Schema } from "effect";
+import { DateTime, Predicate, Schema } from "effect";
 
 import type { AuthEmail } from "#notifications/domain/auth-email.ts";
 import type { EmailCatalog } from "#notifications/domain/email-catalog.ts";
@@ -10,6 +10,8 @@ import { renderAuthEmail } from "#notifications/domain/render-auth-email.ts";
 
 const url =
   "https://app.example.test/api/auth/verify-email?token=abc&callbackURL=%2F";
+
+const at = (iso: string) => DateTime.makeUnsafe(iso);
 
 const invitation = (locale: "en" | "fr", role: string): AuthEmail => ({
   _tag: "Invitation",
@@ -31,6 +33,45 @@ const deleted = (locale: "en" | "fr") =>
     url: "https://app.example.test",
   }).text;
 
+// A cancellation's acknowledgement, in `locale`, with what became of it.
+const cancellationAcknowledged = (
+  locale: "en" | "fr",
+  outcome: "cancelled" | "confirm" | "review"
+) =>
+  renderAuthEmail({
+    _tag: "ContractRequestAcknowledged",
+    contract: "Studio Nord",
+    desiredAt: null,
+    effectiveAt:
+      outcome === "cancelled" ? at("2026-12-01T00:00:00.000Z") : null,
+    kind: "cancellation",
+    locale,
+    name: "Camille Synthetic",
+    outcome,
+    receivedAt: at("2026-11-10T08:05:00.000Z"),
+    refunded: null,
+    to: "camille@example.test",
+    url: "https://app.example.test/fr/contract-request?token=abc",
+  });
+
+// A withdrawal's acknowledgement in English, which named no contract.
+const withdrawalAcknowledged = (outcome: "expired" | "withdrawn") =>
+  renderAuthEmail({
+    _tag: "ContractRequestAcknowledged",
+    contract: "",
+    desiredAt: null,
+    effectiveAt:
+      outcome === "withdrawn" ? at("2026-11-10T08:05:00.000Z") : null,
+    kind: "withdrawal",
+    locale: "en",
+    name: "Camille Synthetic",
+    outcome,
+    receivedAt: at("2026-11-10T08:05:00.000Z"),
+    refunded: outcome === "withdrawn" ? { amount: 810, currency: "eur" } : null,
+    to: "camille@example.test",
+    url: "https://app.example.test",
+  }).text;
+
 describe(renderAuthEmail, () => {
   it("writes a verification email in English", () => {
     const email = renderAuthEmail({
@@ -44,6 +85,46 @@ describe(renderAuthEmail, () => {
     expect(email.text).toContain(`Confirm my email: ${url}`);
     expect(email.html).toContain('<html lang="en">');
     expect(email.html).toContain(`href="${escapeHtml(url)}"`);
+  });
+
+  it("acknowledges a cancellation with when it came and what it said, in the reader's language", () => {
+    const { subject, text } = cancellationAcknowledged("fr", "confirm");
+
+    expect(subject).toBe(
+      "Nous avons reçu la notification de votre résiliation"
+    );
+    // The date and the time, the statement's content, and the link.
+    expect(text).toContain("10 novembre 2026 à 08:05 UTC");
+    expect(text).toContain(
+      "nom, Camille Synthetic ; contrat : Studio Nord ; accusé de réception à envoyer à camille@example.test"
+    );
+    expect(text).toContain("Appliquer ma demande");
+    expect(text).toContain(
+      "https://app.example.test/fr/contract-request?token=abc"
+    );
+  });
+
+  it("says what became of a cancellation: applied, or left to a person", () => {
+    const applied = cancellationAcknowledged("en", "cancelled").text;
+
+    expect(applied).toContain("November 10, 2026 at 8:05 AM UTC");
+    expect(applied).toContain(
+      "The contract ends on December 1, 2026 at 12:00 AM UTC"
+    );
+    expect(applied).not.toContain("follow the link");
+    expect(cancellationAcknowledged("en", "review").text).toContain(
+      "a person will look at it"
+    );
+  });
+
+  it("acknowledges a withdrawal with what is refunded, or why it could not be applied", () => {
+    expect(withdrawalAcknowledged("withdrawn")).toContain("€8.10 is refunded");
+    expect(withdrawalAcknowledged("withdrawn")).toContain(
+      "contract: not given"
+    );
+    expect(withdrawalAcknowledged("expired")).toContain(
+      "14 days to withdraw were over"
+    );
   });
 
   it("writes a password reset email in French", () => {

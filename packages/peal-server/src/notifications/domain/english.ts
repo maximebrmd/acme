@@ -29,6 +29,44 @@ export const english: EmailCatalog = {
       "You receive this email because you manage the channels of {workspaceName} on Peal. Choose which notifications you receive by email in your notification preferences.",
     subject: "Reconnect {handle} on {platform} by {expiresAt}",
   },
+  contractRequest: {
+    actions: { confirm: "Apply my request", open: "Open Peal" },
+    content:
+      "It says: name, {name}; contract: {contract}; acknowledgement to be sent to {email}.",
+    contractNotGiven: "not given",
+    desired: "Day wanted for the contract to end: {desiredAt}.",
+    ignore:
+      "You receive this email because this address was given in the form to cancel a contract or withdraw from one on Peal. Keep it: it is your record of the date. If you did not send the request, ignore this email, and tell whoever runs this Peal server if it happens again.",
+    outcomes: {
+      business:
+        "It could not be applied: the contract was concluded by a business, with a verified VAT number, which has no right to withdraw. The contract can be cancelled instead, with Cancel your contract, at the foot of every page.",
+      cancelled:
+        "It is applied. The contract ends on {effectiveAt}. Until then the workspace keeps its plan; it then moves to the free plan, with its content, and nothing more is charged.",
+      confirm:
+        "This address manages a contract’s billing on Peal, but the request does not give the contract number, so we must make sure it comes from you: follow the link below, within 30 days, and choose the contract. The request is then applied as of {receivedAt}, the date that counts. Nothing changes until then.",
+      expired:
+        "It could not be applied: the 14 days to withdraw were over when your statement came. The contract can be cancelled instead, with Cancel your contract, at the foot of every page.",
+      notSubscribed:
+        "It could not be applied: the contract has no subscription to withdraw from.",
+      nothingToCancel:
+        "There was nothing to cancel: the contract’s subscription is already set to end, or has ended.",
+      review:
+        "We could not find the contract from what the request says, so a person will look at it and write to you at this address. If it is applied, it is as of {receivedAt}, the date that counts. To have it applied at once, send it again with the contract number, which is in the email that confirmed your subscription.",
+      withdrawn:
+        "It is applied. The contract ended on {effectiveAt}, and {refunded} is refunded to the payment method used, within 14 days of your statement.",
+    },
+    received: {
+      cancellation:
+        "We received the notification of your cancellation on {receivedAt}.",
+      withdrawal: "We received your withdrawal statement on {receivedAt}.",
+    },
+    renewalRefunded:
+      "The plan renewed after your notification came: {refunded} charged since is refunded to the payment method used.",
+    subjects: {
+      cancellation: "We received the notification of your cancellation",
+      withdrawal: "We received your withdrawal statement",
+    },
+  },
   dataExported: {
     action: "Open my account settings",
     body: "A copy of your Peal account’s data was just downloaded {via}. It holds your profile, your sessions with their addresses, and your workspaces’ content.",

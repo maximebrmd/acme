@@ -14,6 +14,7 @@ import {
 } from "#analytics/container.ts";
 import { ClientErrorsLive } from "#app/client-errors/live.ts";
 import { ClusterLive } from "#app/cluster.ts";
+import { ContractRequestsLive } from "#app/contract-requests/live.ts";
 import { CronsLive } from "#app/crons.ts";
 import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
@@ -24,6 +25,8 @@ import {
   BillingActionsApiLive,
   BillingLive,
   BillingOverviewLive,
+  ContractRequestsDeskApiLive,
+  ContractRequestsLive as ContractRequestsUseCasesLive,
 } from "#billing/container.ts";
 import {
   ChannelOAuthApiLive,
@@ -57,6 +60,7 @@ import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import {
+  ContractRequestAuditLive,
   ImpersonationAuditLive,
   LegalDisclosureAuditLive,
   StaffApiLive,
@@ -64,6 +68,7 @@ import {
   StaffRecordsLive,
 } from "#staff/container.ts";
 import {
+  AccountLookupLive,
   AuthRoutesLive,
   StripeCheckoutsLive,
   WorkspaceApiLive,
@@ -86,7 +91,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   AnalyticsApiLive,
   TikTokApiLive,
   StaffApiLive,
-  LegalApiLive
+  LegalApiLive,
+  ContractRequestsDeskApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -95,6 +101,7 @@ const ApiLive = HttpApiBuilder.layer(Api, {
   Layer.provide([
     SystemHandlers,
     ClientErrorsLive,
+    ContractRequestsLive,
     ChannelOAuthApiLive,
     DataDeletionApiLive,
     WorkspaceGroupsLive,
@@ -192,6 +199,20 @@ const BillingContextLive = BillingOverviewLive.pipe(
   )
 );
 
+// The cancel and withdraw functions anyone reaches, which find the account
+// an address signs in to in the workspace context, tell members and write
+// acknowledgements through the notifications, and record what staff do
+// with requests in the audit log.
+const ContractRequestsContextLive = ContractRequestsUseCasesLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      AccountLookupLive,
+      ContractRequestAuditLive
+    )
+  )
+);
+
 // Durable jobs as AppLive runs them, for tests that write and read posts and
 // notices: the engine in memory has no workflow registered, so scheduling a
 // post, or emailing a notice, through AppLive fails. Tests that schedule use
@@ -222,7 +243,8 @@ const ServicesLive = Layer.mergeAll(
   BillingContextLive,
   AnalyticsLive,
   StaffContextLive,
-  LegalRequestsContextLive
+  LegalRequestsContextLive,
+  ContractRequestsContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -265,7 +287,8 @@ const ContextsLive = Layer.mergeAll(
   BillingContextLive,
   AnalyticsContextLive,
   StaffContextLive,
-  LegalRequestsContextLive
+  LegalRequestsContextLive,
+  ContractRequestsContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

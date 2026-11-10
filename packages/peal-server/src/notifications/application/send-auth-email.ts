@@ -19,7 +19,14 @@ const retries = 3;
  */
 export class SendAuthEmail extends Context.Service<
   SendAuthEmail,
-  { readonly send: (email: AuthEmail) => Effect.Effect<void> }
+  {
+    /**
+     * Sends it, and says whether the transport took it: for an email whose
+     * sender tries again later, as the acknowledgement of a request.
+     */
+    readonly deliver: (email: AuthEmail) => Effect.Effect<boolean>;
+    readonly send: (email: AuthEmail) => Effect.Effect<void>;
+  }
 >()("peal-server/notifications/application/SendAuthEmail") {
   static readonly layer = Layer.effect(
     SendAuthEmail,
@@ -27,27 +34,38 @@ export class SendAuthEmail extends Context.Service<
       const mailer = yield* Mailer;
       const ids = yield* Ids;
 
-      const send = Effect.fn("SendAuthEmail.send")(function* send(
+      const deliver = Effect.fn("SendAuthEmail.deliver")(function* deliver(
         email: AuthEmail
       ) {
         const rendered = renderAuthEmail(email);
         const idempotencyKey = yield* ids.next;
 
-        yield* mailer.send({ ...rendered, idempotencyKey, to: email.to }).pipe(
-          Effect.retry({
-            schedule: backoff,
-            times: retries,
-            while: (failure) => failure.retryable,
-          }),
-          // The link signs its reader in: it stays out of the logs.
-          Effect.catchTag("MailDeliveryFailed", (failure) =>
-            Effect.logError("An account email was not sent", failure.cause)
-          ),
-          Effect.annotateLogs("email", email._tag)
-        );
+        return yield* mailer
+          .send({ ...rendered, idempotencyKey, to: email.to })
+          .pipe(
+            Effect.retry({
+              schedule: backoff,
+              times: retries,
+              while: (failure) => failure.retryable,
+            }),
+            Effect.as(true),
+            // The link signs its reader in: it stays out of the logs.
+            Effect.catchTag("MailDeliveryFailed", (failure) =>
+              Effect.logError(
+                "An account email was not sent",
+                failure.cause
+              ).pipe(Effect.as(false))
+            ),
+            Effect.annotateLogs("email", email._tag)
+          );
       });
 
-      return SendAuthEmail.of({ send });
+      return SendAuthEmail.of({
+        deliver,
+        send: (email) => deliver(email).pipe(Effect.asVoid),
+      });
     })
   );
 }
+
+export type { ContractRequestOutcome } from "#notifications/domain/auth-email.ts";

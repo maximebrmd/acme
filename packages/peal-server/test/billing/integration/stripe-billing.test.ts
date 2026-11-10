@@ -1161,7 +1161,7 @@ layer(BillingIntegration, {
         );
 
         const cancellation = `/api/workspaces/${workspaceId}/billing/cancellation`;
-        const nothing = yield* post(owner, cancellation);
+        const nothing = yield* post(owner, cancellation, {});
 
         assert.strictEqual(nothing.status, 409);
         assert.deepInclude(nothing.body, { _tag: "NothingToCancel" });
@@ -1175,7 +1175,7 @@ layer(BillingIntegration, {
 
         yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${editor.id}, 'editor', now())`;
 
-        assert.strictEqual((yield* post(editor, cancellation)).status, 403);
+        assert.strictEqual((yield* post(editor, cancellation, {})).status, 403);
         assert.strictEqual(
           (yield* post(
             editor,

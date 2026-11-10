@@ -29,6 +29,45 @@ export const french: EmailCatalog = {
       "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Peal. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Reconnectez {handle} sur {platform} avant le {expiresAt}",
   },
+  contractRequest: {
+    actions: { confirm: "Appliquer ma demande", open: "Ouvrir Peal" },
+    content:
+      "Elle indique : nom, {name} ; contrat : {contract} ; accusé de réception à envoyer à {email}.",
+    contractNotGiven: "non précisé",
+    desired: "Date de fin de contrat souhaitée : {desiredAt}.",
+    ignore:
+      "Vous recevez cet e-mail parce que cette adresse a été indiquée dans le formulaire de résiliation ou de rétractation d’un contrat sur Peal. Conservez-le : il fait foi de la date. Si vous n’êtes pas à l’origine de la demande, ignorez cet e-mail, et prévenez la personne qui gère ce serveur Peal si cela se reproduit.",
+    outcomes: {
+      business:
+        "Elle n’a pas pu être appliquée : le contrat a été conclu par une entreprise, avec un numéro de TVA vérifié, qui ne dispose pas du droit de rétractation. Le contrat peut être résilié, avec Résilier votre contrat, au pied de chaque page.",
+      cancelled:
+        "Elle est appliquée. Le contrat prend fin le {effectiveAt}. Jusque-là, l’espace de travail conserve son offre ; il passe ensuite à l’offre gratuite, avec son contenu, et plus rien n’est prélevé.",
+      confirm:
+        "Cette adresse gère la facturation d’un contrat sur Peal, mais la demande n’indique pas le numéro de contrat : nous devons nous assurer qu’elle vient de vous. Suivez le lien ci-dessous, sous 30 jours, et choisissez le contrat. La demande est alors appliquée à la date du {receivedAt}, qui fait foi. Rien ne change d’ici là.",
+      expired:
+        "Elle n’a pas pu être appliquée : le délai de rétractation de 14 jours était écoulé à la réception de votre déclaration. Le contrat peut être résilié, avec Résilier votre contrat, au pied de chaque page.",
+      notSubscribed:
+        "Elle n’a pas pu être appliquée : le contrat n’a pas d’abonnement dont se rétracter.",
+      nothingToCancel:
+        "Il n’y avait rien à résilier : la fin de l’abonnement du contrat est déjà programmée, ou il a pris fin.",
+      review:
+        "Nous n’avons pas retrouvé le contrat à partir de ce qu’indique la demande : une personne va l’examiner et vous écrira à cette adresse. Si elle est appliquée, elle l’est à la date du {receivedAt}, qui fait foi. Pour qu’elle soit appliquée immédiatement, renvoyez-la avec le numéro de contrat, qui figure dans l’e-mail de confirmation de votre abonnement.",
+      withdrawn:
+        "Elle est appliquée. Le contrat a pris fin le {effectiveAt}, et {refunded} vous sont remboursés sur le moyen de paiement utilisé, dans les 14 jours suivant votre déclaration.",
+    },
+    received: {
+      cancellation:
+        "Nous avons reçu la notification de votre résiliation le {receivedAt}.",
+      withdrawal:
+        "Nous avons reçu votre déclaration de rétractation le {receivedAt}.",
+    },
+    renewalRefunded:
+      "L’abonnement s’est renouvelé après la réception de votre notification : {refunded} prélevés depuis vous sont remboursés sur le moyen de paiement utilisé.",
+    subjects: {
+      cancellation: "Nous avons reçu la notification de votre résiliation",
+      withdrawal: "Nous avons reçu votre déclaration de rétractation",
+    },
+  },
   dataExported: {
     action: "Ouvrir les paramètres de mon compte",
     body: "Une copie des données de votre compte Peal vient d’être téléchargée {via}. Elle contient votre profil, vos sessions avec leurs adresses, et le contenu de vos espaces de travail.",

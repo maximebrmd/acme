@@ -1,15 +1,19 @@
-import { DateTime, Match, Option } from "effect";
+import { Match, Option } from "effect";
 
 import type { Locale } from "#shared/domain/locale.ts";
 
 import type { EmailCatalog, EmailMessages } from "./email-catalog.ts";
-import { catalogs, escapeHtml, fill, keep, layout } from "./email-layout.ts";
+import {
+  catalogs,
+  escapeHtml,
+  fill,
+  instantIn,
+  keep,
+  layout,
+  moneyIn,
+} from "./email-layout.ts";
 import type { RenderedEmail } from "./email-layout.ts";
-import type {
-  NoticeChannel,
-  NoticeEvent,
-  NoticeMoney,
-} from "./notice-event.ts";
+import type { NoticeChannel, NoticeEvent } from "./notice-event.ts";
 
 /** A notice for one reader, as an email. */
 export interface NoticeEmail {
@@ -19,22 +23,6 @@ export interface NoticeEmail {
   readonly url: string;
   readonly workspaceName: string;
 }
-
-// Readers' time zones are not known: instants are written in UTC, and say so.
-const instantIn = (instant: DateTime.Utc, locale: Locale): string =>
-  `${DateTime.format(instant, {
-    dateStyle: "long",
-    locale,
-    timeStyle: "short",
-    timeZone: "UTC",
-  })} UTC`;
-
-// An amount in its currency, as the reader writes money.
-const moneyIn = ({ amount, currency }: NoticeMoney, locale: Locale): string =>
-  new Intl.NumberFormat(locale, {
-    currency: currency.toUpperCase(),
-    style: "currency",
-  }).format(amount / 100);
 
 const platformName = (catalog: EmailCatalog, channel: NoticeChannel) =>
   catalog.platforms[channel.platform] ?? channel.platform;

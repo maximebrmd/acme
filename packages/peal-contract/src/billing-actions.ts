@@ -6,6 +6,7 @@ import { BillingNotEnabled } from "./billing-not-enabled.ts";
 import { BillingUnavailable } from "./billing-unavailable.ts";
 import {
   CancellationSchema,
+  CancelPayloadSchema,
   OrderPayloadSchema,
   OrderSchema,
   WithdrawalPreviewSchema,
@@ -55,11 +56,12 @@ export class BillingActionsApi extends HttpApiGroup.make("billingActions")
         NothingToCancel,
       ],
       params: workspaceParams,
+      payload: CancelPayloadSchema,
       success: CancellationSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Cancels the subscription: a paid one ends when its period does, without further charge; a trial ends now. The members who manage billing are told by email.",
+          "Cancels the subscription: a paid one ends when its period does, without further charge, or on `desiredOn` when that is later, the last period then charged only up to that day; a trial ends now. The members who manage billing are told by email.",
         summary: "Cancel the subscription",
       })
     )

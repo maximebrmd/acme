@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { DateTime, Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
@@ -95,11 +95,17 @@ export const BillingActionsHandlers = HttpApiBuilder.group(
           };
         })
       )
-      .handle("cancel", () =>
+      .handle("cancel", ({ payload }) =>
         Effect.gen(function* cancel() {
           const actor = yield* inPerson(yield* CurrentMember);
 
-          return yield* cancellations.cancel(actor).pipe(
+          // The end of the day asked for, UTC.
+          const desiredAt = Option.fromNullishOr(payload.desiredOn).pipe(
+            Option.flatMap((day) => DateTime.make(`${day}T00:00:00Z`)),
+            Option.map((start) => DateTime.add(start, { days: 1 }))
+          );
+
+          return yield* cancellations.cancel(actor, desiredAt).pipe(
             Effect.catchTags({
               BillingOff: notEnabled,
               DatabaseError: Effect.die,
