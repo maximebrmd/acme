@@ -379,8 +379,7 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
   Match.valueTags(event, {
     ChannelReconnectRequired: () => `/app/${workspaceId}/channels`,
     ChannelReconnectSoon: () => `/app/${workspaceId}/channels`,
-    CommentsReceived: ({ threadId }) =>
-      `/app/${workspaceId}/inbox/${threadId}`,
+    CommentsReceived: ({ threadId }) => `/app/${workspaceId}/inbox/${threadId}`,
     PostApprovalRequested: ({ postId }) =>
       `/app/${workspaceId}/posts/${postId}`,
     PostApproved: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
