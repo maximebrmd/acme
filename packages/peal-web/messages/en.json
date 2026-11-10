@@ -291,7 +291,7 @@
       "forbidden": "You may not do this in this workspace.",
       "notFound": "This channel is no longer connected.",
       "unknown": "Something went wrong. Try again.",
-      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel."
+      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel; on LinkedIn, you are not an administrator or a content administrator of any page."
     }
   },
   "PlatformConnect": {
@@ -333,8 +333,8 @@
     "description": "{platform, select, facebook {Sign in with Facebook, then choose the Pages this workspace posts to.} instagram {Professional accounts linked to a Facebook Page: sign in with Facebook, then choose the accounts.} threads {Sign in with your Threads account.} other {Sign in on the platform.}}",
     "connect": "{platform, select, facebook {Connect Facebook Pages} instagram {Connect Instagram} threads {Connect Threads} other {Connect}}",
     "connecting": "Opening…",
-    "chooseTitle": "{platform, select, facebook {The Pages to connect} instagram {The Instagram accounts to connect} other {The accounts to connect}}",
-    "chooseDescription": "{platform, select, facebook {Your sign-in reached these Pages.} instagram {Your sign-in reached these Instagram accounts.} other {Your sign-in reached these accounts.}} Choose those this workspace posts to, within a quarter of an hour.",
+    "chooseTitle": "{platform, select, facebook {The Pages to connect} instagram {The Instagram accounts to connect} linkedin {The LinkedIn pages to connect} other {The accounts to connect}}",
+    "chooseDescription": "{platform, select, facebook {Your sign-in reached these Pages.} instagram {Your sign-in reached these Instagram accounts.} linkedin {You administer these LinkedIn pages.} other {Your sign-in reached these accounts.}} Choose those this workspace posts to, within a quarter of an hour.",
     "alreadyConnected": "Connected: choosing it reconnects it",
     "connectChosen": "{count, plural, =0 {Connect} one {Connect # account} other {Connect # accounts}}",
     "connectingChosen": "Connecting…",

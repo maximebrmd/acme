@@ -291,7 +291,7 @@
       "forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
       "notFound": "Ce canal n’est plus connecté.",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne."
+      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne ; sur LinkedIn, vous n’êtes administrateur ou administrateur de contenu d’aucune page."
     }
   },
   "PlatformConnect": {
@@ -333,8 +333,8 @@
     "description": "{platform, select, facebook {Connectez-vous avec Facebook, puis choisissez les Pages où cet espace de travail publie.} instagram {Comptes professionnels liés à une Page Facebook : connectez-vous avec Facebook, puis choisissez les comptes.} threads {Connectez-vous avec votre compte Threads.} other {Connectez-vous sur la plateforme.}}",
     "connect": "{platform, select, facebook {Connecter des Pages Facebook} instagram {Connecter Instagram} threads {Connecter Threads} other {Connecter}}",
     "connecting": "Ouverture…",
-    "chooseTitle": "{platform, select, facebook {Les Pages à connecter} instagram {Les comptes Instagram à connecter} other {Les comptes à connecter}}",
-    "chooseDescription": "{platform, select, facebook {Votre connexion a atteint ces Pages.} instagram {Votre connexion a atteint ces comptes Instagram.} other {Votre connexion a atteint ces comptes.}} Choisissez ceux où cet espace de travail publie, dans le quart d’heure.",
+    "chooseTitle": "{platform, select, facebook {Les Pages à connecter} instagram {Les comptes Instagram à connecter} linkedin {Les pages LinkedIn à connecter} other {Les comptes à connecter}}",
+    "chooseDescription": "{platform, select, facebook {Votre connexion a atteint ces Pages.} instagram {Votre connexion a atteint ces comptes Instagram.} linkedin {Vous administrez ces pages LinkedIn.} other {Votre connexion a atteint ces comptes.}} Choisissez ceux où cet espace de travail publie, dans le quart d’heure.",
     "alreadyConnected": "Connecté : le choisir le reconnecte",
     "connectChosen": "{count, plural, =0 {Connecter} one {Connecter # compte} other {Connecter # comptes}}",
     "connectingChosen": "Connexion…",
