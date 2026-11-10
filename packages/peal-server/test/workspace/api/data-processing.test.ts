@@ -20,6 +20,9 @@ import { erasureLedgerRetention } from "#workspace/domain/erasure-ledger.ts";
 const categoryOf = (id: string) =>
   processingRegister.find((category) => category.id === id);
 
+// How long a category is kept, in English.
+const kept = (id: string) => categoryOf(id)?.retention.en ?? "";
+
 describe("the data processing registry", () => {
   it("keeps what French law has a host keep as long as the purge does", () => {
     expect({
@@ -94,6 +97,23 @@ describe("the data processing registry", () => {
       expect.stringContaining("5 years from its receipt"),
       expect.stringContaining("5 ans à compter de sa réception"),
     ]);
+  });
+
+  it("promises no deletion the software does not make", () => {
+    // Only drafts and media files are deleted by members: a post that
+    // left draft, and its figures, stay until the workspace goes.
+    expect(kept("content")).toContain(
+      "Posts that were scheduled, published or cancelled, their publication history and their figures: until the workspace is deleted"
+    );
+    expect(kept("content")).not.toContain("deletes the post");
+    // The daily purges run once a day: a period is its rule's, then at
+    // most a day more.
+    expect(kept("content")).toContain("then deleted within a day");
+    expect(kept("webhooks")).toContain(
+      "days from each, then deleted within a day"
+    );
+    // Invoices are the payment provider's: this server deletes none.
+    expect(kept("billing")).toContain("which deletes none of them");
   });
 
   it("says something of every category, in both languages", () => {

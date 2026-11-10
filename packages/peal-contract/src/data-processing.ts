@@ -157,8 +157,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Planifier et mettre en ligne vos publications, et montrer leurs résultats",
     },
     retention: {
-      en: `Until a member deletes the post or the file, or the workspace is deleted. The posts you wrote or scheduled in a workspace you share stay with it when you close your account, without your name. Idempotency key digests: ${p.idempotencyKeys.hours} hours`,
-      fr: `Jusqu’à ce qu’un membre supprime la publication ou le fichier, ou que l’espace de travail soit supprimé. Les publications que vous avez écrites ou programmées dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures`,
+      en: `Drafts and media files: until a member deletes them, or the workspace is deleted. Posts that were scheduled, published or cancelled, their publication history and their figures: until the workspace is deleted. The posts you wrote or scheduled in a workspace you share stay with it when you close your account, without your name. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
+      fr: `Brouillons et fichiers média : jusqu’à leur suppression par un membre, ou celle de l’espace de travail. Publications programmées, mises en ligne ou annulées, leur historique de mise en ligne et leurs chiffres : jusqu’à la suppression de l’espace de travail. Les publications que vous avez écrites ou programmées dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
     },
     source: {
       en: "You and the other members of your workspaces; the platforms you connected, for the figures",
@@ -261,8 +261,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Prévenir les systèmes qu’un espace de travail désigne de ce qui s’y passe, et montrer à ses propriétaires et administrateurs si chaque livraison est arrivée",
     },
     retention: {
-      en: `Endpoints: until an owner or admin deletes them, or the workspace is deleted. Events and deliveries: ${p.webhookDeliveries.days} days`,
-      fr: `Points de terminaison : jusqu’à leur suppression par un propriétaire ou un administrateur, ou celle de l’espace de travail. Événements et livraisons : ${p.webhookDeliveries.days} jours`,
+      en: `Endpoints: until an owner or admin deletes them, or the workspace is deleted. Deliveries: ${p.webhookDeliveries.days} days from each, then deleted within a day; an event, as long as one of its deliveries, so one sent again stays that long after it was last sent`,
+      fr: `Points de terminaison : jusqu’à leur suppression par un propriétaire ou un administrateur, ou celle de l’espace de travail. Livraisons : ${p.webhookDeliveries.days} jours à compter de chacune, puis supprimées dans la journée ; un événement, aussi longtemps que l’une de ses livraisons, donc autant après son dernier renvoi`,
     },
     source: {
       en: "The owners and admins of your workspaces, for the endpoints; the service, from what happens to posts, channels and media; the receiving server, for its answers",
@@ -290,8 +290,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Facturer votre abonnement et tenir la comptabilité",
     },
     retention: {
-      en: `Plan and subscription status: until the workspace is deleted. Invoices: ${years(p.invoices.years).en}, as French accounting law requires (Code de commerce, Article L123-22), at the payment provider`,
-      fr: `Offre et état de l’abonnement : jusqu’à la suppression de l’espace de travail. Factures : ${years(p.invoices.years).fr}, comme l’impose le droit comptable français (Code de commerce, article L123-22), chez le prestataire de paiement`,
+      en: `Plan and subscription status: until the workspace is deleted. Invoices are held by the payment provider, not by this service, which deletes none of them: French accounting law has them kept ${years(p.invoices.years).en} (Code de commerce, Article L123-22)`,
+      fr: `Offre et état de l’abonnement : jusqu’à la suppression de l’espace de travail. Les factures sont détenues par le prestataire de paiement, non par ce service, qui n’en supprime aucune : le droit comptable français impose de les conserver ${years(p.invoices.years).fr} (Code de commerce, article L123-22)`,
     },
     source: {
       en: "You, when you subscribe; the payment provider, for the status of your subscription",
@@ -495,8 +495,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Rétablir le service et ses données après un incident",
     },
     retention: {
-      en: `Deleted data leaves the encrypted backups within ${p.backups.weeks} weeks. A backup is restored only to recover from an incident; the deletions of accounts and workspaces made since that backup are then applied again before the service reopens`,
-      fr: `Les données supprimées disparaissent des sauvegardes chiffrées sous ${p.backups.weeks} semaines. Une sauvegarde n’est restaurée que pour se remettre d’un incident ; les suppressions de comptes et d’espaces de travail faites depuis cette sauvegarde sont alors appliquées de nouveau avant la réouverture du service`,
+      en: `Deleted data leaves the encrypted backups once four newer weekly backups were made: within ${p.backups.weeks} weeks while backups run as scheduled. A backup is restored only to recover from an incident; the deletions of accounts and workspaces made since that backup are then applied again before the service reopens`,
+      fr: `Les données supprimées disparaissent des sauvegardes chiffrées une fois quatre sauvegardes hebdomadaires plus récentes faites : sous ${p.backups.weeks} semaines tant que les sauvegardes se font comme prévu. Une sauvegarde n’est restaurée que pour se remettre d’un incident ; les suppressions de comptes et d’espaces de travail faites depuis cette sauvegarde sont alors appliquées de nouveau avant la réouverture du service`,
     },
     source: {
       en: "The service’s database",
