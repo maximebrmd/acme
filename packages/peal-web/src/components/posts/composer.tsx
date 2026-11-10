@@ -184,6 +184,13 @@ const noticeOf = (
 const calendarOf = (workspaceId: string, date: ScheduleChoice["date"]) =>
   `/app/${workspaceId}/calendar?date=${dateKey(date)}`;
 
+// What the composer starts with: the post's, or nothing for a new one.
+const startOf = (post: Post | undefined) => ({
+  media: post?.content.media ?? [],
+  schedule: post?.schedule ?? null,
+  text: post?.content.text ?? "",
+});
+
 interface ComposerProps {
   /** Which of the workspace's posts wait for an approval. */
   readonly approvalPolicy: ApprovalPolicy;
@@ -221,7 +228,8 @@ export const Composer = ({
   const [isPending, startTransition] = useTransition();
   const [action, setAction] = useState<ComposerAction | null>(null);
 
-  const [text, setText] = useState(post?.content.text ?? "");
+  const start = startOf(post);
+  const [text, setText] = useState(start.text);
   // Counts the texts accepted from the assistant: each starts fresh editors.
   const [accepted, setAccepted] = useState(0);
   const [overrides, setOverrides] = useState(() => overridesOf(post));
@@ -235,16 +243,14 @@ export const Composer = ({
     )
   );
 
-  const [media, setMedia] = useState<readonly MediaAttachment[]>(
-    post?.content.media ?? []
-  );
+  const [media, setMedia] = useState<readonly MediaAttachment[]>(start.media);
 
   const [channelIds, setChannelIds] = useState<readonly string[]>(() =>
     connectedTargets(post, channels)
   );
 
   const [choice, setChoice] = useState<ScheduleChoice>(() =>
-    choiceOf(post?.schedule ?? null)
+    choiceOf(start.schedule)
   );
 
   // A new post is saved once, then updated. It gets its own address, without

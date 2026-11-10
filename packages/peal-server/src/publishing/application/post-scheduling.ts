@@ -779,13 +779,7 @@ export class PostScheduling extends Context.Service<
 
               yield* posts.setTargets(postId, targets);
 
-              const post = yield* move(
-                actor,
-                current,
-                at,
-                received,
-                targets
-              );
+              const post = yield* move(actor, current, at, received, targets);
 
               yield* announce(post, targets);
 
@@ -822,13 +816,7 @@ export class PostScheduling extends Context.Service<
                 );
               }
 
-              const post = yield* move(
-                actor,
-                current,
-                at,
-                received,
-                targets
-              );
+              const post = yield* move(actor, current, at, received, targets);
 
               yield* announce(post, targets);
 
