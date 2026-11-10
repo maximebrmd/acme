@@ -554,7 +554,10 @@ publishing's schema, naming nobody: each goes with its workspace
   its status (`tagPost`), and are written on their own
   (`PostRepository.setTags`), never with the post's status, so a job that
   settles the post never undoes a tagging. Deleting a tag takes it off its
-  posts in the same transaction. Reading needs post:read; writing a tag
+  posts in the same transaction, and tagging a post or saving a draft
+  with tags claims the workspace's tags (`TagStore.claim`) before it reads
+  them and locks the post, in that transaction: no post keeps the id of a
+  tag deleted meanwhile. Reading needs post:read; writing a tag
   and tagging a post, post:update. An update of a draft that says nothing
   of tags keeps them. Add a filter on tags as any other (`PostFilter`).
 - A signature (`signature.ts`, `Signatures`) is text a workspace ends its

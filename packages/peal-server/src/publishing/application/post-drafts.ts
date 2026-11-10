@@ -190,11 +190,14 @@ export class PostDrafts extends Context.Service<
           withPorts
         );
 
-      // The tags a request names, once they are the workspace's.
+      // The tags a request names, once they are the workspace's. Inside
+      // the transaction that keeps them, after the workspace's tags are
+      // claimed: a tag deleted meanwhile is refused, never kept.
       const tagsOf = (actor: Actor, { tagIds }: DraftRequest) =>
         tagIds === undefined
           ? Effect.succeed(Option.none<readonly TagId[]>())
-          : tagsFor(actor.workspaceId, tagIds).pipe(
+          : TagStore.use((store) => store.claim(actor.workspaceId)).pipe(
+              Effect.andThen(tagsFor(actor.workspaceId, tagIds)),
               Effect.map(Option.some),
               withPorts
             );
@@ -207,22 +210,10 @@ export class PostDrafts extends Context.Service<
 
         const [request, dropped] = yield* filled(actor, asked, true);
         const channels = yield* checked(actor, "post:create", request);
-        const tags = yield* tagsOf(actor, request);
         const postId = yield* newId(PostIdSchema).pipe(withPorts);
 
         const via = yield* PostOrigins.use((origins) => origins.of(actor)).pipe(
           withPorts
-        );
-
-        const post = tagPost(
-          createDraft(
-            postId,
-            actor.workspaceId,
-            request.content,
-            authorOf(actor),
-            Option.some(via)
-          ),
-          Option.getOrElse(tags, () => [])
         );
 
         const targets = yield* targetsOn(
@@ -232,7 +223,26 @@ export class PostDrafts extends Context.Service<
           Option.some(request.options ?? [])
         ).pipe(withPorts);
 
-        yield* transaction(posts.insert(post, targets));
+        const post = yield* transaction(
+          Effect.gen(function* insert() {
+            const tags = yield* tagsOf(actor, request);
+
+            const made = tagPost(
+              createDraft(
+                postId,
+                actor.workspaceId,
+                request.content,
+                authorOf(actor),
+                Option.some(via)
+              ),
+              Option.getOrElse(tags, () => [])
+            );
+
+            yield* posts.insert(made, targets);
+
+            return made;
+          })
+        );
 
         return { dropped, post, targets };
       });
@@ -246,10 +256,12 @@ export class PostDrafts extends Context.Service<
 
         const [request, dropped] = yield* filled(actor, asked, false);
         const channels = yield* checked(actor, "post:update", request);
-        const tags = yield* tagsOf(actor, request);
 
         return yield* transaction(
           Effect.gen(function* edit() {
+            // Before the post, as deleting a tag takes them in turn.
+            const tags = yield* tagsOf(actor, request);
+
             const current = yield* lockInWorkspace(
               actor.workspaceId,
               postId

@@ -193,6 +193,10 @@ export class PostTags extends Context.Service<
 
         return yield* transaction(
           Effect.gen(function* file() {
+            // After a tag being deleted, which then has no post to leave,
+            // and before the post, as deleting a tag takes them in turn.
+            yield* tags.claim(actor.workspaceId);
+
             const current = yield* lockInWorkspace(
               actor.workspaceId,
               postId
