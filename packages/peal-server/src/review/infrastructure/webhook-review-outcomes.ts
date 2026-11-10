@@ -30,8 +30,8 @@ const neverStopping = <R>(
 /**
  * Outcomes told through `told`, after the workspace's webhook endpoints
  * heard them, in the transaction that made them: `post.approval_requested`
- * when a post starts waiting, `post.approved` and `post.changes_requested`
- * when someone decides. Once per outcome, by its key. Events carry ids,
+ * when a post starts waiting, and again when it is moved while it waits,
+ * `post.approved` and `post.changes_requested` when someone decides. Once per outcome, by its key. Events carry ids,
  * instants and who decided by kind: never a name, a comment or what the
  * post says. A comment sends no event.
  */
@@ -48,15 +48,21 @@ export const webhookReviewOutcomes = <E, R>(
         neverStopping(webhooks.publish({ event, key: `review:${key}` }));
 
       return ReviewOutcomes.of({
+        // Under the request's key and its time: a post moved while it
+        // waits is told again, with its new time, and the same time is
+        // told once.
         approvalRequested: (outcome) =>
-          publish(outcome.key, {
-            data: {
-              postId: outcome.postId,
-              scheduledAt: outcome.scheduledAt,
-              workspaceId: outcome.workspaceId,
-            },
-            type: "post.approval_requested",
-          }).pipe(Effect.andThen(outcomes.approvalRequested(outcome))),
+          publish(
+            `${outcome.key}:${String(outcome.scheduledAt.epochMilliseconds)}`,
+            {
+              data: {
+                postId: outcome.postId,
+                scheduledAt: outcome.scheduledAt,
+                workspaceId: outcome.workspaceId,
+              },
+              type: "post.approval_requested",
+            }
+          ).pipe(Effect.andThen(outcomes.approvalRequested(outcome))),
         approved: (outcome) =>
           publish(outcome.key, {
             data: {

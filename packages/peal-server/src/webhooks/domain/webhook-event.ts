@@ -78,8 +78,8 @@ export const WebhookEventSchema = Schema.Union([
     }),
     type: Schema.Literal("post.scheduled"),
   }),
-  // A scheduled post was taken back to draft: it goes out nowhere until it
-  // is scheduled again.
+  // A scheduled post, or one that waited for an approval, was taken back
+  // to draft: it goes out nowhere until it is scheduled again.
   Schema.Struct({
     data: Schema.Struct(post),
     type: Schema.Literal("post.unscheduled"),

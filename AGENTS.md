@@ -1984,6 +1984,13 @@ and no socket, for tests.
   (409): the client shows the post again. Never decide for "whatever
   waits", and render a decision's post from the answer that gave its
   request, never from another query.
+- Whoever heard a post waits (`post.approval_requested`) hears what became
+  of it: the same event again with its new time when it is moved (the
+  request's key and its time; members are not asked twice),
+  `post.approved` then `post.scheduled` unless late,
+  `post.changes_requested`, `post.unscheduled` when it is taken back to
+  draft, `post.cancelled`, or `post.scheduled` alone when a member who may
+  schedule did. A new way for a post to stop waiting tells one of these.
 - An approval after the post's time (beyond `scheduleGrace`) publishes
   nothing: `releasePost` takes the post back to draft, still approved.
 - `review.approval_requests` is the record of who approved what: a decided

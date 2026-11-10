@@ -92,11 +92,54 @@ describe("a review's outcomes, for the workspace's webhook endpoints", () => {
             data: { postId, scheduledAt, workspaceId },
             type: "post.approval_requested",
           },
-          key: "review:approval:1",
+          key: `review:approval:1:${String(scheduledAt.epochMilliseconds)}`,
         },
       ]);
       // Members are told as before.
       assert.deepStrictEqual(notices, ["approvalRequested:approval:1"]);
+    })
+  );
+
+  it.effect("say it again when the post that waits is moved", () =>
+    Effect.gen(function* moved() {
+      const later = DateTime.makeUnsafe("2026-11-22T09:00:00Z");
+
+      const { sent } = yield* told((outcomes) =>
+        Effect.forEach(
+          [scheduledAt, later],
+          (at) =>
+            outcomes.approvalRequested({
+              ...about,
+              key: "approval:1",
+              scheduledAt: at,
+            }),
+          { discard: true }
+        ).pipe(Effect.orDie)
+      );
+
+      // The same request, at two times: two events, each under its own
+      // key, so the same time told twice is sent once.
+      assert.deepStrictEqual(
+        sent.map(({ event, key }) => [
+          event.type,
+          event.type === "post.approval_requested"
+            ? event.data.scheduledAt
+            : undefined,
+          key,
+        ]),
+        [
+          [
+            "post.approval_requested",
+            scheduledAt,
+            `review:approval:1:${String(scheduledAt.epochMilliseconds)}`,
+          ],
+          [
+            "post.approval_requested",
+            later,
+            `review:approval:1:${String(later.epochMilliseconds)}`,
+          ],
+        ]
+      );
     })
   );
 

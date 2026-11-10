@@ -292,11 +292,33 @@ describe("a workspace where contributors and applications wait", () => {
             ["scheduled", byKey.post.id],
           ]);
 
-          // Taken back while it waits, the contributor's was never
-          // scheduled: nothing says it was unscheduled.
+          // Moved while it waits, the contributor's is asked for again,
+          // under the same request, so that whoever follows the workspace
+          // knows its new time; nobody is asked twice to decide.
+          yield* scheduling.reschedule(
+            contributor,
+            byContributor.post.id,
+            scheduleIn("2026-06-15T09:00:00Z")
+          );
+
+          const asked = (yield* Told.use((told) => told.outcomes)).filter(
+            ({ kind }) => kind === "approvalRequested"
+          );
+
+          assert.deepStrictEqual(
+            asked.map(({ key }) => key),
+            [asked[0]?.key, asked[1]?.key, asked[1]?.key]
+          );
+
+          // Taken back while it waits, it was never scheduled, yet those
+          // who heard it waited hear it no longer does.
           yield* scheduling.unschedule(contributor, byContributor.post.id);
 
-          assert.lengthOf(yield* heard, 2);
+          assert.deepStrictEqual(yield* heard, [
+            ["scheduled", byEditor.post.id],
+            ["scheduled", byKey.post.id],
+            ["unscheduled", byContributor.post.id],
+          ]);
         })
       ),
     timeout

@@ -825,10 +825,10 @@ export class PostScheduling extends Context.Service<
               yield* stopJob(current);
               yield* noLongerWaits(current.post);
 
-              // A post that waited was never told as scheduled.
-              if (current.post.status._tag === "scheduled") {
-                yield* events.unscheduled(draft);
-              }
+              // A post that waited was never told as scheduled, yet those
+              // who heard it waited (`post.approval_requested`) hear it no
+              // longer does, as those who heard it scheduled do.
+              yield* events.unscheduled(draft);
 
               return { post: draft, targets: yield* posts.targets(postId) };
             })

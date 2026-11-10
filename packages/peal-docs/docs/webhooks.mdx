@@ -84,7 +84,7 @@ Event types and their fields are a public contract. Peal adds event types, and f
 | Event                                                   | When                                                                      |
 | ------------------------------------------------------- | ------------------------------------------------------------------------- |
 | [`post.scheduled`](#post-scheduled)                     | A post was scheduled, or moved to another time                            |
-| [`post.unscheduled`](#post-unscheduled)                 | A scheduled post was taken back to draft                                  |
+| [`post.unscheduled`](#post-unscheduled)                 | A scheduled post, or one that waited, was taken back to draft             |
 | [`post.published`](#post-published)                     | A post went live on a channel                                             |
 | [`post.failed`](#post-failed)                           | A post did not go out on a channel                                        |
 | [`post.unconfirmed`](#post-unconfirmed)                 | Peal cannot tell whether a post went live on a channel                    |
@@ -151,7 +151,7 @@ A post was scheduled, or moved to another time. A post that waits for an [approv
 
 ### post.unscheduled [#post-unscheduled]
 
-A scheduled post was taken back to draft: it goes out nowhere until it is scheduled again.
+A scheduled post, or one that waited for an approval, was taken back to draft: it goes out nowhere until it is scheduled again.
 
 | Field         | Type   | What it holds |
 | ------------- | ------ | ------------- |
@@ -334,6 +334,15 @@ The post was cancelled. `targets` are the channels it will not go out on; a chan
 ### post.approval_requested [#post-approval-requested]
 
 Someone asked for the post to go out, in a workspace that asks for [approvals](/review): it waits. It keeps its time, and no `post.scheduled` is sent until it is approved. What an application sends or schedules there starts this way.
+
+What follows tells what became of it, one of:
+
+- `post.approval_requested` again, with its new `scheduledAt`: it was moved to another time, and still waits;
+- [`post.approved`](#post-approved), then `post.scheduled` unless the approval came `late`;
+- [`post.changes_requested`](#post-changes-requested): it is a draft again;
+- `post.unscheduled`: someone took it back to draft before anyone decided;
+- `post.cancelled`: it was cancelled while it waited;
+- `post.scheduled` alone: a member who may schedule without an approval scheduled it.
 
 | Field         | Type   | What it holds                                     |
 | ------------- | ------ | ------------------------------------------------- |

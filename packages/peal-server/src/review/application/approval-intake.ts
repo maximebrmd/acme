@@ -133,17 +133,28 @@ export class ApprovalIntake extends Context.Service<
         );
 
         // The request that waits follows the post: its time, and who asks
-        // now.
+        // now. Those who decide were asked already, and are not again
+        // (the key is the same); whoever follows the workspace from
+        // outside hears the new time.
         if (Option.isSome(pending)) {
-          yield* requests.update(
-            changed(pending.value, {
-              requestedBy: requesterOf(actor),
-              requestedVia: originOf(actor),
-              scheduledAt: submission.scheduledAt,
-              subjectHash: submission.subjectHash,
-              timeZone: submission.timeZone,
-            })
-          );
+          const renewed = changed(pending.value, {
+            requestedBy: requesterOf(actor),
+            requestedVia: originOf(actor),
+            scheduledAt: submission.scheduledAt,
+            subjectHash: submission.subjectHash,
+            timeZone: submission.timeZone,
+          });
+
+          yield* requests.update(renewed);
+
+          yield* outcomes.approvalRequested({
+            authorId: submission.authorId,
+            key: requestKeyOf(renewed),
+            postId: renewed.postId,
+            requestedBy: renewed.requestedBy,
+            scheduledAt: renewed.scheduledAt,
+            workspaceId: renewed.workspaceId,
+          });
 
           return;
         }
