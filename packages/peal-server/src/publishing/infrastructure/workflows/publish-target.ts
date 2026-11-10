@@ -25,6 +25,10 @@ import { retryingDatabase } from "./activity-retry.ts";
  * Publishes one post on one channel, for one round: claims the target, makes
  * attempts until one settles it, and records how it ended.
  *
+ * No job is started with it any more: PublishTargetV2
+ * (`./publish-parts.ts`) sends posts part by part. It stays registered
+ * until the executions started before, for posts of one part, have ended.
+ *
  * Persisted contract (see `./publish-post.ts`): the tag, the payload, the
  * idempotency key, the activity names `claim-target`, `publish/<n>` and
  * `record-outcome`, the clock names `retry/<n>`, and every result schema.
@@ -62,6 +66,8 @@ const attemptFrom = (
         attempt,
         channelId: claim.channelId,
         idempotencyKey,
+        // A job of this version sends a post whole, as its one part.
+        part: 0,
         postId: claim.postId,
         round,
         scheduledAt: claim.scheduledAt,

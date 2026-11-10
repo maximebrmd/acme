@@ -45,8 +45,8 @@ import {
   FakePlatformPublisher,
 } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
+import { PublishTargetV2 } from "#publishing/infrastructure/workflows/publish-parts.ts";
 import { PublishPostV1 } from "#publishing/infrastructure/workflows/publish-post.ts";
-import { PublishTargetV1 } from "#publishing/infrastructure/workflows/publish-target.ts";
 import { newId } from "#shared/application/ids.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
@@ -401,7 +401,9 @@ export const journalOf = (targetId: string) =>
       readonly attempt: number;
       readonly finished: boolean;
       readonly idempotency_key: string;
-    }>`SELECT attempt, finished_at IS NOT NULL AS finished, idempotency_key FROM publishing.publication_calls WHERE target_id = ${targetId} ORDER BY attempt`;
+      readonly part: number;
+      readonly round: number;
+    }>`SELECT attempt, finished_at IS NOT NULL AS finished, idempotency_key, part, round FROM publishing.publication_calls WHERE target_id = ${targetId} ORDER BY round, part, attempt`;
   });
 
 /** The attempts recorded for a target, in order. */
@@ -442,13 +444,13 @@ export const jobResult = (executionId: string) =>
  */
 export const isTargetWaiting = (targetId: PostTargetId, round = 1) =>
   Effect.gen(function* pollingTarget() {
-    const executionId = yield* PublishTargetV1.executionId({
+    const executionId = yield* PublishTargetV2.executionId({
       codeVersion: 1,
       round,
       targetId,
     });
 
-    const result = yield* PublishTargetV1.poll(executionId);
+    const result = yield* PublishTargetV2.poll(executionId);
 
     return Option.isSome(result) && result.value._tag === "Suspended";
   });

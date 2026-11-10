@@ -137,6 +137,7 @@ export const FailureReasonSchema = Schema.Literals([
   "quotaExceeded",
   "appBillingLimit",
   "planLimit",
+  "partsNotSent",
 ]).annotate({ identifier: "FailureReason" });
 
 export type FailureReason = typeof FailureReasonSchema.Type;
@@ -349,6 +350,7 @@ export const AttemptResultSchema = Schema.Literals([
   "quotaExceeded",
   "appBillingLimit",
   "planLimit",
+  "partsNotSent",
 ]).annotate({ identifier: "AttemptResult" });
 
 export type AttemptResult = typeof AttemptResultSchema.Type;

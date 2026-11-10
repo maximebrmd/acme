@@ -2,6 +2,7 @@ import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
+import { partCount } from "#publishing/domain/post-content.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import {
   confirmNotPublished,
@@ -60,7 +61,9 @@ export class PostFollowUp extends Context.Service<
   {
     /**
      * Sends a failed or unconfirmed target again, at once, in its next
-     * round. A finished post is publishing again until that round settles.
+     * round, from the part after the last that went live: never a part
+     * that is out. A finished post is publishing again until that round
+     * settles.
      */
     readonly repost: (
       actor: Actor,
@@ -70,7 +73,9 @@ export class PostFollowUp extends Context.Service<
     /**
      * Records what the member found on the platform for an unconfirmed
      * target: published, when its attempt was made, or failed, and the
-     * post's outcome follows.
+     * post's outcome follows. For a post of several parts, it is the part
+     * that was unconfirmed they found, or not: found, and not the last, the
+     * target fails as `partsNotSent`, and a repost sends the rest.
      */
     readonly confirm: (
       actor: Actor,
@@ -156,11 +161,12 @@ export class PostFollowUp extends Context.Service<
 
             const next = yield* Effect.fromResult(
               confirmation._tag === "published"
-                ? confirmPublished(
-                    target,
-                    Option.none(),
-                    confirmation.permalink
-                  )
+                ? confirmPublished(target, {
+                    now,
+                    parts: partCount(post.content),
+                    permalink: confirmation.permalink,
+                    platformPostId: Option.none(),
+                  })
                 : confirmNotPublished(target, now)
             );
 

@@ -25,6 +25,7 @@ const target = (suffix: string, options: Option.Option<TargetOptions>) =>
       `00000000-0000-7000-8000-00000000000${suffix}`
     ),
     id: PostTargetIdSchema.make(`00000000-0000-7000-8000-0000000000b${suffix}`),
+    liveParts: [],
     options,
     postId,
     round: 1,

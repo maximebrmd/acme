@@ -7,8 +7,10 @@ import { PlatformPublisher } from "#publishing/application/platform-publisher.ts
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
-import { createTarget } from "#publishing/domain/post-target.ts";
+import { createTarget, PostTarget } from "#publishing/domain/post-target.ts";
 import { createDraft, schedulePost } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
@@ -17,8 +19,10 @@ import { YouTubeOptions } from "#publishing/domain/youtube-options.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Allowance } from "#shared/domain/allowance.ts";
+import { BadRequest } from "#shared/domain/bad-request.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
 import { credentialsOf } from "#test/publishing/platforms/support.ts";
@@ -106,6 +110,9 @@ const PublisherTest = RoutedPlatformPublisher.pipe(
   Layer.provideMerge(DatabaseTest)
 );
 
+const part = (text: string) =>
+  new PostPart({ delaySeconds: 0, media: [], overrides: [], text });
+
 layer(PublisherTest)("the platform adapters", (it) => {
   it.effect("receive the target's options with the post", () =>
     Effect.gen(function* receiveOptions() {
@@ -134,6 +141,7 @@ layer(PublisherTest)("the platform adapters", (it) => {
         publisher.publish({
           channelId,
           idempotencyKey: "a-synthetic-attempt",
+          part: 0,
           postId,
           startedAt: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
           targetId: target.id,
@@ -154,6 +162,105 @@ layer(PublisherTest)("the platform adapters", (it) => {
       );
     })
   );
+  it.effect(
+    "receive a later part with the posts it answers to, or nothing when one is unknown",
+    () =>
+      Effect.gen(function* receiveParts() {
+        const posts = yield* PostRepository;
+        const postId = yield* newId(PostIdSchema);
+        const channelId = yield* newId(ChannelIdSchema);
+        const publishedAt = DateTime.makeUnsafe("2026-06-15T08:00:00Z");
+
+        const live = (index: number, id: Option.Option<string>) => ({
+          index,
+          permalink: Option.none(),
+          platformPostId: id.pipe(
+            Option.map((given) => PlatformPostIdSchema.make(given))
+          ),
+          publishedAt,
+        });
+
+        const pending = createTarget(
+          yield* newId(PostTargetIdSchema),
+          postId,
+          channelId
+        );
+
+        // Two parts are live; the second was found by hand, without an id.
+        const target = new PostTarget({
+          channelId,
+          id: pending.id,
+          liveParts: [live(0, Option.some("root-1")), live(1, Option.none())],
+          options: Option.none(),
+          postId,
+          round: 2,
+          status: {
+            _tag: "publishing",
+            cancelRequested: false,
+            startedAt: publishedAt,
+          },
+        });
+
+        yield* posts.insert(
+          createDraft(
+            postId,
+            yield* freshWorkspace,
+            new PostContent({
+              followUps: [part("Second"), part("Third")],
+              media: [],
+              overrides: [],
+              text: "First",
+            }),
+            Option.none()
+          ),
+          [target]
+        );
+
+        const send = (sent: number) =>
+          PlatformPublisher.use((publisher) =>
+            publisher.publish({
+              channelId,
+              idempotencyKey: `a-synthetic-part-${String(sent)}`,
+              part: sent,
+              postId,
+              startedAt: publishedAt,
+              targetId: target.id,
+            })
+          ).pipe(Effect.result);
+
+        const before = (yield* Ref.get(handed)).length;
+        const second = yield* send(1);
+        const third = yield* send(2);
+
+        yield* posts.remove(postId).pipe(Effect.orDie);
+
+        const received = (yield* Ref.get(handed)).slice(before);
+
+        // The second part answers the first, which is also its root.
+        assert.isTrue(Result.isSuccess(second));
+        assert.deepStrictEqual(
+          received.map(({ part: index, replyTo, text }) => ({
+            index,
+            replyTo,
+            text,
+          })),
+          [
+            {
+              index: 1,
+              replyTo: Option.some({ parent: "root-1", root: "root-1" }),
+              text: "Second",
+            },
+          ]
+        );
+
+        // The third would answer a part Peal has no id for: nothing is sent.
+        assert.deepStrictEqual(
+          Result.getFailure(third),
+          Option.some(new BadRequest({ code: "replyTargetUnknown" }))
+        );
+      })
+  );
+
   it.effect(
     "refuse a post the workspace's plan has no room for when it is due, sending nothing",
     () =>
@@ -210,6 +317,7 @@ layer(PublisherTest)("the platform adapters", (it) => {
             publisher.publish({
               channelId,
               idempotencyKey: `a-synthetic-attempt-${postId}`,
+              part: 0,
               postId,
               startedAt: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
               targetId,

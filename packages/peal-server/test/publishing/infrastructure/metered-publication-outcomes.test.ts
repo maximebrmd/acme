@@ -67,6 +67,7 @@ const targetOn = (channelId: ChannelId, status: PostTargetStatus) =>
   new PostTarget({
     channelId,
     id: PostTargetIdSchema.make("00000000-0000-7000-8000-000000000301"),
+    liveParts: [],
     options: Option.none(),
     postId,
     round: 1,

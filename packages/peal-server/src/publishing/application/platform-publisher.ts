@@ -1,17 +1,19 @@
-import { Context, Schema } from "effect";
-import type { Effect } from "effect";
+import { Context, Effect, Schema } from "effect";
 
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import type { PublishResult } from "#shared/domain/publish-result.ts";
 
-/** Publish this post on this channel. */
+/** Publish this part of this post on this channel. */
 export const PublishRequestSchema = Schema.Struct({
   channelId: ChannelIdSchema,
   // The same for every run of one attempt and different for each attempt.
   // Platforms that accept one get it, so a resent attempt posts once.
   idempotencyKey: Schema.NonEmptyString,
+  // The place of the part to send: 0, the post itself, when left out, as
+  // by a server from before posts had parts.
+  part: Schema.Int.pipe(Schema.withDecodingDefault(Effect.succeed(0))),
   postId: PostIdSchema,
   // When the attempt's call started, as the journal recorded it: the same
   // for every run of the attempt, so adapters can derive what they send

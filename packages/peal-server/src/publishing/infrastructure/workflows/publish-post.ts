@@ -15,6 +15,7 @@ import type { PostRunOutcome } from "#publishing/domain/publication-claims.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 
 import { retryingDatabase } from "./activity-retry.ts";
+import { PublishTargetV2 } from "./publish-parts.ts";
 import { PublishTargetV1 } from "./publish-target.ts";
 import { sleepUntil } from "./sleep-until.ts";
 
@@ -30,12 +31,25 @@ import { sleepUntil } from "./sleep-until.ts";
 // holds the fixtures that check this).
 
 /** Every workflow tag released, which the server must keep registering. */
-export const persistedWorkflowTags = ["PublishPostV1", "PublishTargetV1"];
+export const persistedWorkflowTags = [
+  "PublishPostV1",
+  "PublishTargetV1",
+  "PublishTargetV2",
+];
+
+/**
+ * The version of the steps a post's job runs, which `codeVersion` carries:
+ * 1 ran one PublishTargetV1 per channel; 2 runs one PublishTargetV2, which
+ * sends a post part by part. Jobs are started with the latest.
+ */
+export const postJobVersion = 2;
 
 /**
  * Publishes one revision of a post: sleeps until its time, claims it, then
- * runs one PublishTargetV1 per channel and finishes the post with what they
- * add up to. It stays small, as executions wait in it for weeks.
+ * runs one target job per channel (PublishTargetV2; PublishTargetV1 for an
+ * execution started with `codeVersion` 1, whose history may already hold
+ * its children) and finishes the post with what they add up to. It stays
+ * small, as executions wait in it for weeks.
  */
 export const PublishPostV1 = Workflow.make("PublishPostV1", {
   idempotencyKey: ({ postId, revision }) => `${postId}:${revision}`,
@@ -51,6 +65,7 @@ export const PublishPostV1 = Workflow.make("PublishPostV1", {
 
 export const PublishPostV1Live = PublishPostV1.toLayer(
   Effect.fn("PublishPostV1")(function* publishPost({
+    codeVersion,
     postId,
     revision,
     scheduledAt,
@@ -67,14 +82,16 @@ export const PublishPostV1Live = PublishPostV1.toLayer(
 
     return yield* Match.valueTags(claim, {
       cancelled: () => Effect.succeed<PostRunOutcome>("cancelled"),
-      // Started by the code running at wake-up time, so a post scheduled long
-      // ago publishes with the newest target workflow. Every child settles
-      // its target before the post finishes.
+      // Every child settles its target before the post finishes. Which
+      // child is the execution's own choice, made when it was started: a
+      // replay must start the children its history already holds.
       claimed: ({ targets }) =>
         Effect.forEach(
           targets,
           ({ round, targetId }) =>
-            PublishTargetV1.execute({ codeVersion: 1, round, targetId }),
+            codeVersion >= postJobVersion
+              ? PublishTargetV2.execute({ codeVersion: 1, round, targetId })
+              : PublishTargetV1.execute({ codeVersion: 1, round, targetId }),
           { concurrency: "unbounded", discard: true }
         ).pipe(
           Effect.andThen(

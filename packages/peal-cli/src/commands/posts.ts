@@ -54,6 +54,8 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   mediaRemoved: "one of its images or videos was deleted before it went out",
   missed: "Peal was down at its time, and it came too late to send",
   notPublished: "someone checked the platform and did not find it",
+  partsNotSent:
+    "its first parts are live and the parts after them were not sent: post it again to send the rest",
   planLimit:
     "the workspace's plan had no room for it when it was due: disconnect channels or move to a larger plan, then post it again",
   quotaExceeded:

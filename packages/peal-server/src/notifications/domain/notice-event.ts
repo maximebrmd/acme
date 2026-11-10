@@ -51,6 +51,7 @@ export const PostFailureReasonSchema = Schema.Literals([
   "quotaExceeded",
   "appBillingLimit",
   "planLimit",
+  "partsNotSent",
 ]);
 
 export type PostFailureReason = typeof PostFailureReasonSchema.Type;

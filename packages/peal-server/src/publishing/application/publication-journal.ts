@@ -10,9 +10,13 @@ import type {
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { PostId } from "#shared/domain/ids.ts";
 
-/** Which call: one attempt at a target, in one round. */
+/**
+ * Which call: one attempt at one part of a target, in one round. `part` is
+ * the part's place in the post, 0 for the post itself.
+ */
 export interface CallId {
   readonly attempt: number;
+  readonly part: number;
   readonly round: number;
   readonly targetId: PostTargetId;
 }
@@ -46,6 +50,7 @@ export interface AttemptRecord {
   readonly decision: PublicationDecision;
   readonly finishedAt: DateTime.Utc;
   readonly outcome: AttemptOutcome;
+  readonly part: number;
   readonly round: number;
   readonly startedAt: DateTime.Utc;
   readonly targetId: PostTargetId;
@@ -56,6 +61,8 @@ export interface RecordedAttempt {
   readonly attempt: number;
   readonly finishedAt: DateTime.Utc;
   readonly outcome: AttemptOutcome;
+  /** The place of the part it sent: 0 for the post itself. */
+  readonly part: number;
   /** The wait before the next attempt, when one followed. */
   readonly retryAfter: Option.Option<Duration.Duration>;
   readonly round: number;
@@ -87,8 +94,8 @@ export class PublicationJournal extends Context.Service<
       finishedAt: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
     /**
-     * How the attempts recorded before this call's, in its round, were
-     * refused.
+     * How the attempts recorded before this call's, at its part in its
+     * round, were refused.
      */
     readonly earlierRefusals: (
       call: CallId
@@ -98,7 +105,7 @@ export class PublicationJournal extends Context.Service<
       attempt: AttemptRecord
     ) => Effect.Effect<void, DatabaseError>;
     /**
-     * The attempts made at the post's targets, by target, round and
+     * The attempts made at the post's targets, by target, round, part and
      * attempt.
      */
     readonly attemptsOf: (

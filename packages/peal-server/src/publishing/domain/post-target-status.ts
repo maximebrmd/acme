@@ -50,6 +50,11 @@ export const FailureReasonSchema = Schema.Literals([
   // a trial or a smaller plan. Nothing was sent; the member can make room
   // or move to a larger plan, then post it again.
   "planLimit",
+  // Some parts of the post are live, and those after them were not sent:
+  // the part before them was unconfirmed until a member found it live, or
+  // Peal does not know the post to reply to, as when a part was found by
+  // hand. A repost sends the rest.
+  "partsNotSent",
 ]);
 
 export type FailureReason = typeof FailureReasonSchema.Type;

@@ -22,6 +22,8 @@ import type {
 } from "#publishing/application/post-repository.ts";
 import { ExecutionIdSchema } from "#publishing/application/publication-scheduler.ts";
 import type { ExecutionId } from "#publishing/application/publication-scheduler.ts";
+import { LivePartSchema } from "#publishing/domain/live-part.ts";
+import type { LivePart } from "#publishing/domain/live-part.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
@@ -118,15 +120,29 @@ const targetStatusOf = (row: TargetRow) => {
   return row.keptPrivate ? { ...status, keptPrivate: true } : status;
 };
 
-const toTarget = (row: TargetRow) =>
+// The parts that went live, as their column holds them: JSON.
+const LivePartsJson = Schema.toCodecJson(Schema.Array(LivePartSchema));
+
+const decodeLiveParts = Schema.decodeUnknownEffect(LivePartsJson);
+
+const encodeLiveParts = Schema.encodeSync(LivePartsJson);
+
+const decodeTargetRow = (row: TargetRow, liveParts: readonly LivePart[]) =>
   decodeTarget({
     channelId: row.channelId,
     id: row.id,
+    liveParts,
     options: Option.fromNullOr(row.options),
     postId: row.postId,
     round: row.round,
     status: targetStatusOf(row),
-  }).pipe(Effect.orDie);
+  });
+
+const toTarget = (row: TargetRow) =>
+  decodeLiveParts(row.liveParts).pipe(
+    Effect.flatMap((liveParts) => decodeTargetRow(row, liveParts)),
+    Effect.orDie
+  );
 
 const scheduleColumns = (schedule: Option.Option<Schedule>) =>
   Option.match(schedule, {
@@ -280,6 +296,7 @@ const targetRow = (target: PostTarget) => ({
   ...targetColumns(target.status),
   channelId: target.channelId,
   id: target.id,
+  liveParts: encodeLiveParts(target.liveParts),
   options: optionsColumn(target),
   postId: target.postId,
   round: target.round,
@@ -586,7 +603,11 @@ export const DrizzlePostRepository = Layer.effect(
       updateTarget: (next, current) =>
         db
           .update(postTargets)
-          .set({ ...targetColumns(next.status), round: next.round })
+          .set({
+            ...targetColumns(next.status),
+            liveParts: encodeLiveParts(next.liveParts),
+            round: next.round,
+          })
           .where(
             and(
               eq(postTargets.id, current.id),

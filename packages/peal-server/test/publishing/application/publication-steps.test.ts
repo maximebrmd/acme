@@ -119,6 +119,8 @@ const postStarted = (startedAt: DateTime.Utc): OutgoingPost => ({
   idempotencyKey: "4c9a82ce3e1a3b5b0a1f3bd3c1a7e0a2",
   media: [],
   options: Option.none(),
+  part: 0,
+  replyTo: Option.none(),
   startedAt,
   text: "A synthetic post for tests.",
   workspaceId: WorkspaceIdSchema.make("6a1c2d3e-4f50-4617-8829-3a4b5c6d7e8f"),

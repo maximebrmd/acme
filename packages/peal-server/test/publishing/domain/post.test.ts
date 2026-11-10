@@ -98,6 +98,7 @@ const targetIn = (suffix: string, status: PostTargetStatus): PostTarget =>
       `00000000-0000-7000-8000-00000000000${suffix}`
     ),
     id: PostTargetIdSchema.make(`00000000-0000-7000-9000-00000000000${suffix}`),
+    liveParts: [],
     options: Option.none(),
     postId,
     round: 1,

@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "2f1b825f-11d9-4e60-a6d6-b8e56d6a69ec",
+  "id": "3bc3ea7b-3a40-493a-b9ef-cabbb771c05f",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -703,7 +703,7 @@
         "n|rel|publishing.publication_calls",
         "n|type|publishing.publication_calls",
         "n|rel|publishing.publication_calls_pkey",
-        "n|rel|publishing.publication_calls_target_round_attempt"
+        "n|rel|publishing.publication_calls_target_round_part_attempt"
       ],
       "reads": [
         "n|sch|publishing"
@@ -7139,6 +7139,19 @@
     {
       "schema": "publishing",
       "table": "post_targets",
+      "name": "live_parts",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
       "name": "options",
       "type": "jsonb",
       "typeSchema": null,
@@ -7555,6 +7568,19 @@
     {
       "schema": "publishing",
       "table": "publication_attempts",
+      "name": "part",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
       "name": "retry_delay_millis",
       "type": "integer",
       "typeSchema": null,
@@ -7665,6 +7691,19 @@
       "notNull": false,
       "dimensions": 0,
       "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "part",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
       "generated": null,
       "identity": null,
       "entityType": "columns"
@@ -14528,6 +14567,7 @@
       "columns": [
         "target_id",
         "round",
+        "part",
         "attempt"
       ],
       "nameExplicit": false,
@@ -15105,11 +15145,12 @@
     {
       "schema": "publishing",
       "table": "publication_calls",
-      "name": "publication_calls_target_round_attempt",
+      "name": "publication_calls_target_round_part_attempt",
       "nameExplicit": true,
       "columns": [
         "target_id",
         "round",
+        "part",
         "attempt"
       ],
       "nullsNotDistinct": false,

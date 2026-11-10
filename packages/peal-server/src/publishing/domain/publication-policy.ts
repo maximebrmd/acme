@@ -252,6 +252,10 @@ const badRequestReason = (code: string): RefusalReason => {
     return "planLimit";
   }
 
+  if (code === ownRefusalCodes.replyTargetUnknown) {
+    return "partsNotSent";
+  }
+
   return code === ownRefusalCodes.channelDisabled
     ? "channelDisabled"
     : "contentRejected";

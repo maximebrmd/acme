@@ -41,6 +41,7 @@ const targetIn = (status: PostTargetStatus): PostTarget =>
   new PostTarget({
     channelId,
     id: targetId,
+    liveParts: [],
     options: Option.none(),
     postId,
     round: 1,
@@ -249,9 +250,20 @@ describe(cancelTarget, () => {
 describe("confirming an unconfirmed target", () => {
   const checkedAt = utc("2026-06-15T09:00:00Z");
 
+  // What a member found for a post of one part.
+  const foundAlone = (
+    given: Partial<Parameters<typeof confirmPublished>[1]> = {}
+  ): Parameters<typeof confirmPublished>[1] => ({
+    now: checkedAt,
+    parts: 1,
+    permalink: Option.none(),
+    platformPostId: Option.none(),
+    ...given,
+  });
+
   it("marks it published at the attempt when the user found it", () => {
     expect(
-      statusOf(confirmPublished(statuses.unconfirmed, Option.none()))
+      statusOf(confirmPublished(statuses.unconfirmed, foundAlone()))
     ).toStrictEqual({
       _tag: "published",
       permalink: Option.none(),
@@ -265,8 +277,9 @@ describe("confirming an unconfirmed target", () => {
       statusOf(
         confirmPublished(
           statuses.unconfirmed,
-          Option.none(),
-          Option.some("https://social.example/@peal/1")
+          foundAlone({
+            permalink: Option.some("https://social.example/@peal/1"),
+          })
         )
       )
     ).toMatchObject({
@@ -277,7 +290,10 @@ describe("confirming an unconfirmed target", () => {
   it("keeps the platform's id when the user gives it", () => {
     expect(
       statusOf(
-        confirmPublished(statuses.unconfirmed, Option.some(platformPostId))
+        confirmPublished(
+          statuses.unconfirmed,
+          foundAlone({ platformPostId: Option.some(platformPostId) })
+        )
       )
     ).toMatchObject({ platformPostId: Option.some(platformPostId) });
   });
@@ -302,7 +318,7 @@ describe("confirming an unconfirmed target", () => {
   ])(
     "applies only to unconfirmed targets, not $from.status._tag",
     ({ from }) => {
-      expect(failureOf(confirmPublished(from, Option.none()))).toMatchObject({
+      expect(failureOf(confirmPublished(from, foundAlone()))).toMatchObject({
         action: "confirmPublished",
       });
       expect(failureOf(confirmNotPublished(from, checkedAt))).toMatchObject({

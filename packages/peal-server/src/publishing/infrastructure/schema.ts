@@ -93,7 +93,11 @@ export const posts = publishing.table(
  * sees a TikTok post), tagged by `platform`, and is null on platforms that
  * take none: rows from before options were kept have none. `kept_private`
  * is true on a published target the platform made private although asked
- * to show it to more people.
+ * to show it to more people. `live_parts` lists the parts of the post that
+ * went live there, in order (each part's place, the platform's id and
+ * address for it, and when: never content), kept from round to round;
+ * empty on rows from before parts were kept. `platform_post_id` and
+ * `permalink` are the first part's.
  */
 export const postTargets = publishing.table(
   "post_targets",
@@ -105,6 +109,7 @@ export const postTargets = publishing.table(
     finishedAt: instant("finished_at"),
     id: uuid("id").primaryKey(),
     keptPrivate: boolean("kept_private").notNull().default(false),
+    liveParts: jsonb("live_parts").notNull().default([]),
     options: jsonb("options"),
     permalink: text("permalink"),
     platformPostId: text("platform_post_id"),
@@ -127,7 +132,9 @@ export const postTargets = publishing.table(
 
 /**
  * Every attempt at publishing a target, and what was decided after it: the
- * history support reads when a post went out late or not at all.
+ * history support reads when a post went out late or not at all. `part` is
+ * the place of the part the attempt sent, 0 for the post itself, as on
+ * every row from before posts had parts.
  */
 export const publicationAttempts = publishing.table(
   "publication_attempts",
@@ -139,6 +146,7 @@ export const publicationAttempts = publishing.table(
     detail: jsonb("detail").notNull(),
     finishedAt: instant("finished_at").notNull(),
     outcome: text("outcome").notNull(),
+    part: integer("part").notNull().default(0),
     retryDelayMillis: integer("retry_delay_millis"),
     round: integer("round").notNull(),
     startedAt: instant("started_at").notNull(),
@@ -147,7 +155,9 @@ export const publicationAttempts = publishing.table(
       .references(() => postTargets.id, { onDelete: "cascade" }),
   },
   (table) => [
-    primaryKey({ columns: [table.targetId, table.round, table.attempt] }),
+    primaryKey({
+      columns: [table.targetId, table.round, table.part, table.attempt],
+    }),
   ]
 );
 
@@ -156,9 +166,11 @@ export const publicationAttempts = publishing.table(
  * before the call; `finished_at` and `outcome` once it answered. A row with
  * no `finished_at` is a call whose fate is unknown.
  *
- * One row per attempt of a round, whatever its key: a second job for the same
- * attempt, as after a change to how keys are made, finds the first one's call
- * instead of sending again.
+ * One row per attempt at a part in a round, whatever its key: a second job
+ * for the same attempt, as after a change to how keys are made, finds the
+ * first one's call instead of sending again. `part` is the place of the
+ * part the call sends, 0 for the post itself, as on every row from before
+ * posts had parts.
  *
  * `progress` is how far a call of several requests got, as its adapter
  * recorded it before each request that matters (TikTok's `publish_id`):
@@ -172,6 +184,7 @@ export const publicationCalls = publishing.table(
     idempotencyKey: text("idempotency_key").primaryKey(),
     operation: text("operation").notNull(),
     outcome: jsonb("outcome"),
+    part: integer("part").notNull().default(0),
     progress: jsonb("progress"),
     round: integer("round").notNull(),
     startedAt: instant("started_at").notNull(),
@@ -180,9 +193,10 @@ export const publicationCalls = publishing.table(
       .references(() => postTargets.id, { onDelete: "cascade" }),
   },
   (table) => [
-    unique("publication_calls_target_round_attempt").on(
+    unique("publication_calls_target_round_part_attempt").on(
       table.targetId,
       table.round,
+      table.part,
       table.attempt
     ),
   ]

@@ -105,6 +105,8 @@ export const english: EmailCatalog = {
     missed:
       "Peal was unavailable at the scheduled time, and the post came too late to send.",
     notPublished: "someone checked the platform and did not find it.",
+    partsNotSent:
+      "its first parts are live, and the parts after them were not sent: the one before them had no confirmed outcome, or Peal does not know the post to reply to. Open the post and send the rest again, or post it by hand.",
     planLimit:
       "the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.",
     quotaExceeded:
