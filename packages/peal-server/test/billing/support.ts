@@ -84,9 +84,9 @@ export const NoContractsTest = Layer.mergeAll(
   Layer.succeed(
     ContractRequests,
     ContractRequests.of({
-      acknowledgedTo: () => Effect.succeed(0),
       byConfirmation: () => Effect.succeedNone,
       byId: () => Effect.succeedNone,
+      claimAcknowledgement: () => Effect.succeed(true),
       eraseWorkspace: () => Effect.void,
       forgetUser: () => Effect.void,
       ofUser: () => Effect.succeed([]),

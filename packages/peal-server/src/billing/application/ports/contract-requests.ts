@@ -17,11 +17,21 @@ import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 export class ContractRequests extends Context.Service<
   ContractRequests,
   {
-    /** How many acknowledgements were sent to the address since `since`. */
-    readonly acknowledgedTo: (
-      email: string,
-      since: DateTime.Utc
-    ) => Effect.Effect<number, DatabaseError>;
+    /**
+     * Takes one of the `limit` acknowledgements the address may be sent
+     * since `since`, for this request, at `at`: false when it has had them
+     * all. The address is read whatever its case, and those asking
+     * together take turns, so none passes the limit with another. A claim
+     * whose email then does not leave is given back by saving the request
+     * as it was.
+     */
+    readonly claimAcknowledgement: (claim: {
+      readonly at: DateTime.Utc;
+      readonly email: string;
+      readonly id: ContractRequestId;
+      readonly limit: number;
+      readonly since: DateTime.Utc;
+    }) => Effect.Effect<boolean, DatabaseError>;
     /**
      * The request the link's token opens, by the token's digest: one that
      * awaits its confirmation, whose link has not expired at `now`.

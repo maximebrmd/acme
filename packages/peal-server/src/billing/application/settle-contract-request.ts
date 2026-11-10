@@ -190,12 +190,15 @@ export class SettleContractRequest extends Context.Service<
 
           const now = yield* DateTime.now;
 
-          const before = yield* requests.acknowledgedTo(
-            request.email.value,
-            DateTime.subtractDuration(now, acknowledgementWindow)
-          );
+          const claimed = yield* requests.claimAcknowledgement({
+            at: now,
+            email: request.email.value,
+            id: request.id,
+            limit: acknowledgementsPerDay,
+            since: DateTime.subtractDuration(now, acknowledgementWindow),
+          });
 
-          if (before >= acknowledgementsPerDay) {
+          if (!claimed) {
             // Without its link, only staff can apply it.
             const withheld = changed(request, {
               acknowledgement: "withheld",
@@ -225,6 +228,9 @@ export class SettleContractRequest extends Context.Service<
           }
 
           if (!(yield* mail.acknowledge(request, token))) {
+            // Nothing left: the address gets its acknowledgement back.
+            yield* requests.save(request);
+
             // The mail will not take it: tried again by the sweep, for
             // `acknowledgingPatience`, then withheld, and a request that
             // needed its link left to staff.

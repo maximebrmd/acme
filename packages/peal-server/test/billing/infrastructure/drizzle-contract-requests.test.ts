@@ -190,29 +190,52 @@ layer(StoreTest, { timeout: 60_000 })("contract requests in Postgres", (it) => {
       })
   );
 
-  it.effect("count the acknowledgements an address was sent", () =>
-    Effect.gen(function* counted() {
-      const store = yield* ContractRequests;
-      const first = yield* received();
-      const email = Option.getOrThrow(first.email);
+  it.effect(
+    "give an address so many acknowledgements a day, whatever its case and however many ask at once",
+    () =>
+      Effect.gen(function* claimed() {
+        const store = yield* ContractRequests;
+        const first = yield* received();
+        const email = Option.getOrThrow(first.email);
 
-      yield* store.save(
-        changed(first, {
-          acknowledgedAt: Option.some(at("2019-03-04T10:00:05Z")),
-          acknowledgement: "sent",
-        })
-      );
-      yield* store.save(yield* received({ email: Option.some(email) }));
+        const others = yield* Effect.forEach([1, 2, 3, 4], () =>
+          received({ email: Option.some(email.toUpperCase()) })
+        );
 
-      assert.strictEqual(
-        yield* store.acknowledgedTo(email, at("2019-03-04T00:00:00Z")),
-        1
-      );
-      assert.strictEqual(
-        yield* store.acknowledgedTo(email, at("2019-03-05T00:00:00Z")),
-        0
-      );
-    })
+        yield* Effect.forEach([first, ...others], (request) =>
+          store.save(request)
+        );
+
+        const claim = (request: ContractRequest) =>
+          store.claimAcknowledgement({
+            at: at("2019-03-04T10:00:05Z"),
+            email: Option.getOrThrow(request.email),
+            id: request.id,
+            limit: 2,
+            since: at("2019-03-04T00:00:00Z"),
+          });
+
+        // Five ask together, in either case: two are given one.
+        const given = yield* Effect.forEach([first, ...others], claim, {
+          concurrency: "unbounded",
+        });
+
+        assert.lengthOf(
+          given.filter((taken) => taken),
+          2
+        );
+
+        // The day after, the address has them again.
+        assert.isTrue(
+          yield* store.claimAcknowledgement({
+            at: at("2019-03-05T10:00:05Z"),
+            email,
+            id: first.id,
+            limit: 2,
+            since: at("2019-03-05T00:00:00Z"),
+          })
+        );
+      })
   );
 
   it.effect(

@@ -21,6 +21,7 @@ import { Withdrawals } from "#billing/application/ports/withdrawals.ts";
 import type { Withdrawal } from "#billing/application/ports/withdrawals.ts";
 import { StripeUnreachable } from "#billing/application/stripe-unreachable.ts";
 import type { BillingNotice } from "#billing/domain/billing-notice.ts";
+import { changed } from "#billing/domain/contract-request.ts";
 import type { ContractRequest } from "#billing/domain/contract-request.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { Ids } from "#shared/application/ids.ts";
@@ -103,19 +104,6 @@ const RequestsInMemory = Layer.effect(
 
     return Effect.succeed(
       ContractRequests.of({
-        acknowledgedTo: (email, since) =>
-          all.pipe(
-            Effect.map(
-              (kept) =>
-                kept.filter(
-                  (request) =>
-                    Option.contains(request.email, email) &&
-                    Option.exists(request.acknowledgedAt, (at) =>
-                      DateTime.isGreaterThanOrEqualTo(at, since)
-                    )
-                ).length
-            )
-          ),
         byConfirmation: (digest, now) =>
           Effect.all([all, Ref.get(confirmations)]).pipe(
             Effect.map(([kept, links]) =>
@@ -137,6 +125,31 @@ const RequestsInMemory = Layer.effect(
           Ref.get(requests).pipe(
             Effect.map((kept) => Option.fromUndefinedOr(kept.get(id)))
           ),
+        claimAcknowledgement: ({ at, email, id, limit, since }) =>
+          Ref.modify(requests, (kept) => {
+            const sent = [...kept.values()].filter(
+              (request) =>
+                Option.exists(
+                  request.email,
+                  (address) => address.toLowerCase() === email.toLowerCase()
+                ) &&
+                Option.exists(request.acknowledgedAt, (acknowledged) =>
+                  DateTime.isGreaterThanOrEqualTo(acknowledged, since)
+                )
+            ).length;
+
+            const mine = kept.get(id);
+
+            return sent >= limit || mine === undefined
+              ? [false, kept]
+              : [
+                  true,
+                  new Map([
+                    ...kept,
+                    [id, changed(mine, { acknowledgedAt: Option.some(at) })],
+                  ]),
+                ];
+          }),
         eraseWorkspace: () => Effect.void,
         forgetUser: () => Effect.void,
         ofUser: () => Effect.succeed([]),

@@ -12,6 +12,7 @@ import {
   sql,
 } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { ContractRequests } from "#billing/application/ports/contract-requests.ts";
 import { ContractRequest } from "#billing/domain/contract-request.ts";
@@ -104,6 +105,7 @@ export const DrizzleContractRequestsLive = Layer.effect(
   ContractRequests,
   Effect.gen(function* DrizzleContractRequestsLive() {
     const db = yield* Drizzle;
+    const client = yield* SqlClient.SqlClient;
 
     const save = (request: ContractRequest) => {
       const values = valuesOf(request);
@@ -175,20 +177,52 @@ export const DrizzleContractRequestsLive = Layer.effect(
           Effect.withSpan("ContractRequests.setConfirmation")
         );
 
-    const acknowledgedTo = (email: string, since: DateTime.Utc) =>
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(contractRequests)
-        .where(
-          and(
-            eq(contractRequests.email, email),
-            gte(contractRequests.acknowledgedAt, date(since))
-          )
+    // Counted and taken under a lock on the address, in one transaction.
+    const claimAcknowledgement = ({
+      at,
+      email,
+      id,
+      limit,
+      since,
+    }: {
+      readonly at: DateTime.Utc;
+      readonly email: string;
+      readonly id: ContractRequestId;
+      readonly limit: number;
+      readonly since: DateTime.Utc;
+    }) =>
+      client
+        .withTransaction(
+          Effect.gen(function* claim() {
+            const address = email.toLowerCase();
+
+            yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/billing/acknowledgements'), hashtext(${address}))`;
+
+            const [sent] = yield* db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(contractRequests)
+              .where(
+                and(
+                  eq(sql`lower(${contractRequests.email})`, address),
+                  gte(contractRequests.acknowledgedAt, date(since))
+                )
+              );
+
+            if ((sent?.count ?? 0) >= limit) {
+              return false;
+            }
+
+            yield* db
+              .update(contractRequests)
+              .set({ acknowledgedAt: date(at) })
+              .where(eq(contractRequests.id, id));
+
+            return true;
+          })
         )
         .pipe(
           Effect.mapError(failed),
-          Effect.map(([row]) => row?.count ?? 0),
-          Effect.withSpan("ContractRequests.acknowledgedTo")
+          Effect.withSpan("ContractRequests.claimAcknowledgement")
         );
 
     const pendingBy = (
@@ -308,9 +342,9 @@ export const DrizzleContractRequestsLive = Layer.effect(
         );
 
     return ContractRequests.of({
-      acknowledgedTo,
       byConfirmation,
       byId,
+      claimAcknowledgement,
       eraseWorkspace,
       forgetUser,
       ofUser,
