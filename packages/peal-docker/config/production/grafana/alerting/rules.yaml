@@ -244,3 +244,100 @@ groups:
                 - evaluator:
                     type: gt
                     params: [0.85]
+
+      - uid: peal-token-refresh-behind
+        title: Token refreshes fall behind
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two or more of the last three token refresh runs stopped at their budget with channels still due (peal.channels.token_sweep.unfinished). Tokens are renewed later than their policy says, and posts on the channels left fail once theirs lapse. Read the server's "token refresh run could not finish" warnings for which platform does not answer.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 1800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A run every 10 minutes: three in the window.
+              expr: sum(increase(peal_channels_token_sweep_unfinished_total[30m])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1.5]
+
+      - uid: peal-collection-behind
+        title: The analytics collection falls behind
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two or more of the last three hourly collections of post counts stopped at their budget with posts still due (peal.analytics.collection.unfinished). Counts are read later than their schedule says. Raise PEAL_ANALYTICS_CONCURRENCY if platforms answer, or read the server's warnings for the one that does not.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A run an hour: three in the window.
+              expr: sum(increase(peal_analytics_collection_unfinished_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1.5]
+
+      - uid: peal-uploads-waiting
+        title: Uploads to platforms wait for a slot
+        condition: B
+        for: 30m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Large uploads to platforms have waited for one of the server's upload slots for 30 minutes (peal.publishing.uploads.waiting), so posts with videos go out late. Raise PEAL_MAX_CONCURRENT_UPLOADS if the server has the memory, or look for an upload that never ends.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The least that waited over the window: above 0, something
+              # waited the whole time.
+              expr: min_over_time((sum(peal_publishing_uploads_waiting) or vector(0))[10m:1m])
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
