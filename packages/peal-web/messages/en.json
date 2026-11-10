@@ -244,7 +244,7 @@
     "empty": "No account is connected yet.",
     "listTitle": "Connected accounts",
     "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
-    "platformVia": "{platform, select, instagram {Instagram} other {{platform}}} ({connection, select, instagramLogin {Instagram Login} facebookLogin {through a Facebook Page} other {{connection}}})",
+    "platformVia": "{platform, select, instagram {Instagram} linkedin {LinkedIn} other {{platform}}} ({connection, select, instagramLogin {Instagram Login} facebookLogin {through a Facebook Page} linkedinProfile {profile} linkedinPage {company page} other {{connection}}})",
     "status": {
       "active": "Connected",
       "refreshNeeded": "Reconnect needed",

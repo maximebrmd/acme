@@ -15,6 +15,7 @@ import {
   isProduction,
   publicUrlConfig,
 } from "#shared/infrastructure/environment.ts";
+import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import {
   instagramAppConfig,
   metaAppConfig,
@@ -42,6 +43,14 @@ export interface ChannelPlatformSettings {
   readonly instagram: Option.Option<MetaApp>;
   /** Peal's LinkedIn app, if the operator registered one. */
   readonly linkedin: Option.Option<OAuthClient>;
+  /**
+   * Peal's second LinkedIn app, the one LinkedIn granted its Community
+   * Management API, which connects company pages; none on a server that
+   * connects members' profiles only.
+   */
+  readonly linkedinPages: Option.Option<OAuthClient>;
+  /** The version of LinkedIn's API calls name (`Linkedin-Version`). */
+  readonly linkedinVersion: string;
   /**
    * Meta's main app, whose Facebook Login connects Facebook Pages and
    * Instagram accounts; none when this server connects neither.
@@ -172,6 +181,9 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   `X_CLIENT_SECRET`: the apps the operator registered on LinkedIn and X.
  *   Without them, the platform is not offered; one half alone stops the
  *   server.
+ * - `LINKEDIN_PAGES_CLIENT_ID` and `LINKEDIN_PAGES_CLIENT_SECRET`: a second
+ *   LinkedIn app, which has the Community Management API and nothing else,
+ *   for company pages. Without them, LinkedIn connects profiles only.
  * - `META_APP_ID` and `META_APP_SECRET`: Meta's app, for Facebook Pages and
  *   Instagram professional accounts.
  * - `THREADS_APP_ID` and `THREADS_APP_SECRET`: the same app's Threads
@@ -200,6 +212,8 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
 
   const mode = yield* blueskyModeOf({ keys, production, publicUrl });
   const linkedin = yield* oauthClientConfig("linkedin", "LINKEDIN");
+  const linkedinPages = yield* oauthClientConfig("linkedin", "LINKEDIN_PAGES");
+  const linkedinVersion = yield* linkedinVersionConfig;
   const x = yield* oauthClientConfig("x", "X");
   const meta = yield* metaAppConfig;
   const threads = yield* threadsAppConfig;
@@ -217,6 +231,8 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
     ),
     instagram,
     linkedin,
+    linkedinPages,
+    linkedinVersion,
     meta,
     metaHosts,
     publicUrl,

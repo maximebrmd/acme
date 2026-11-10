@@ -5,6 +5,7 @@ import { PlatformClients } from "#publishing/application/platform-client.ts";
 import type { PlatformClient } from "#publishing/application/platform-client.ts";
 import type { StepTiming } from "#publishing/application/publication-steps.ts";
 import type { Platform } from "#shared/domain/platform.ts";
+import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
@@ -16,7 +17,6 @@ import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 
 import { blueskyClient } from "./bluesky/bluesky-client.ts";
 import { linkedinClient } from "./linkedin/linkedin-client.ts";
-import { linkedinVersionConfig } from "./linkedin/linkedin-version.ts";
 import { mastodonClient } from "./mastodon/mastodon-client.ts";
 import { facebookClient } from "./meta/facebook-client.ts";
 import { instagramClient } from "./meta/instagram-client.ts";

@@ -22,10 +22,15 @@ import { Ids, newId } from "#shared/application/ids.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { roomForOneMore } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
+import {
+  connectionOf,
+  hasConnections,
+} from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
-import { connectionOf } from "#shared/domain/instagram-connection.ts";
 import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
+import type { LinkedInConnection } from "#shared/domain/linkedin-connection.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
@@ -108,10 +113,10 @@ export type ChooseFailure =
 /** What a member asked to connect. */
 export interface ConnectRequest {
   /**
-   * The way in, for Instagram: none takes the one the server prefers
-   * (`instagramConnections`' first).
+   * The way in, for Instagram and LinkedIn: none takes the server's first
+   * (`instagramConnections`', `linkedinConnections`').
    */
-  readonly connection: Option.Option<InstagramConnection>;
+  readonly connection: Option.Option<ChannelConnection>;
   readonly handle: Option.Option<string>;
   readonly instance: Option.Option<string>;
 }
@@ -123,6 +128,8 @@ export interface Connectable {
    * empty when it connects none.
    */
   readonly instagramConnections: readonly InstagramConnection[];
+  /** What it connects on LinkedIn: profiles, pages, or both. */
+  readonly linkedinConnections: readonly LinkedInConnection[];
   /** The platforms, in Peal's order. */
   readonly platforms: readonly Platform[];
 }
@@ -260,7 +267,7 @@ export class ConnectChannel extends Context.Service<
       // server lacks the settings for is not configured.
       const authorizerFor = (
         platform: Platform,
-        connection: Option.Option<InstagramConnection> = Option.none()
+        connection: Option.Option<ChannelConnection> = Option.none()
       ): Effect.Effect<PlatformAuthorizer, PlatformNotConnectable> =>
         Option.match(authorizers.for(platform, connection), {
           onNone: () =>
@@ -269,7 +276,7 @@ export class ConnectChannel extends Context.Service<
                 platform,
                 reason:
                   authorizers.unconfigured.has(platform) ||
-                  (platform === "instagram" && Option.isSome(connection))
+                  (hasConnections(platform) && Option.isSome(connection))
                     ? "notConfigured"
                     : "notSupported",
               })
@@ -826,6 +833,7 @@ export class ConnectChannel extends Context.Service<
 
           const reachable: Connectable = {
             instagramConnections: authorizers.instagramConnections,
+            linkedinConnections: authorizers.linkedinConnections,
             platforms: platforms.filter((platform) =>
               Option.isSome(authorizers.for(platform))
             ),

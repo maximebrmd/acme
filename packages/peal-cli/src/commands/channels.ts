@@ -3,7 +3,7 @@ import { Argument, Command } from "effect/cli";
 import type {
   Channel,
   ChannelStatus,
-  InstagramConnection,
+  ChannelConnection,
   TikTokAccount,
 } from "peal-contract";
 
@@ -20,12 +20,15 @@ const statusOf = (status: ChannelStatus): string =>
     refreshNeeded: () => "must be reconnected",
   });
 
-const connections: Readonly<Record<InstagramConnection, string>> = {
+const connections: Readonly<Record<ChannelConnection, string>> = {
   facebookLogin: "through a Facebook Page",
   instagramLogin: "Instagram Login",
+  linkedinPage: "company page",
+  linkedinProfile: "profile",
 };
 
-// The platform, and for Instagram the way in, which reconnecting takes.
+// The platform, and for Instagram and LinkedIn the way in, which
+// reconnecting takes.
 const platformOf = (channel: Channel): string =>
   channel.connection === null
     ? channel.platform

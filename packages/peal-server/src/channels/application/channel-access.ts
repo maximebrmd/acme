@@ -19,8 +19,8 @@ import type { Platform } from "#channels/domain/platform.ts";
 import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { TokenPolicy } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
-import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { isTokenRejected } from "#shared/domain/token-rejected.ts";
@@ -48,7 +48,7 @@ export interface ChannelAccount {
    * How an Instagram channel reaches its account, which decides the host
    * its calls go to; none on other platforms.
    */
-  readonly connection: Option.Option<InstagramConnection>;
+  readonly connection: Option.Option<ChannelConnection>;
   readonly platform: Platform;
   /**
    * What the account allowed Peal to do, in the platform's own words: a

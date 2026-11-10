@@ -107,6 +107,19 @@ export const tokenPolicies = {
     lifetime: Option.some(Duration.days(60)),
     refresh: { _tag: "none" },
   }),
+  // The Community Management API app's tokens last 60 days too. LinkedIn
+  // gives programmatic refresh tokens to approved partners only: one lasts
+  // a year from the sign-in, renewing does not extend it, and it does not
+  // rotate. A page whose sign-in brought one is renewed a week ahead; the
+  // others are reconnected every 60 days, as profiles are.
+  linkedinPage: new TokenPolicy({
+    lifetime: Option.some(Duration.days(60)),
+    refresh: {
+      _tag: "refreshToken",
+      rotates: false,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.days(7) },
+    },
+  }),
   // Tokens never expire; they stop working when the user revokes them.
   mastodon: new TokenPolicy({
     lifetime: Option.none(),

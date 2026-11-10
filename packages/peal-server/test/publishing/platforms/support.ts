@@ -37,14 +37,14 @@ import { tiktokClient } from "#publishing/infrastructure/platforms/tiktok/tiktok
 import { xClient } from "#publishing/infrastructure/platforms/x/x-client.ts";
 import { youtubeClient } from "#publishing/infrastructure/platforms/youtube/youtube-client.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { connectionOf } from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import {
   ChannelIdSchema,
   MediaAssetIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import type { ChannelId, MediaAssetId } from "#shared/domain/ids.ts";
-import { connectionOf } from "#shared/domain/instagram-connection.ts";
-import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
@@ -92,7 +92,7 @@ export class CredentialLog extends Context.Service<
 export const credentialsOf = (
   given: {
     readonly accountId: string;
-    readonly connection?: Option.Option<InstagramConnection>;
+    readonly connection?: Option.Option<ChannelConnection>;
     readonly platform: Platform;
   },
   tokens: readonly string[]

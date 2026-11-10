@@ -44,6 +44,8 @@ const settings = (apps: { readonly threads: boolean }) =>
       bluesky: Option.none(),
       instagram: Option.some(instagramApp),
       linkedin: Option.none(),
+      linkedinPages: Option.none(),
+      linkedinVersion: "202610",
       meta: Option.some(metaApp),
       metaHosts,
       publicUrl: "https://peal.test",

@@ -2,8 +2,8 @@ import { Context } from "effect";
 import type { Effect, Option, Redacted } from "effect";
 
 import type { BadRequest } from "#shared/domain/bad-request.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
-import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import type { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import type { TokenExpired } from "#shared/domain/token-expired.ts";
@@ -19,7 +19,7 @@ export interface PublishingAccount {
    * Facebook Login, to `graph.facebook.com` with its Page's. None on other
    * platforms.
    */
-  readonly connection: Option.Option<InstagramConnection>;
+  readonly connection: Option.Option<ChannelConnection>;
   readonly platform: Platform;
 }
 
