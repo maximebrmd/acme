@@ -41,3 +41,5 @@ vault.yml
 *.key
 *.p12
 .local/
+# A host's settings that stay on the machine running Ansible (peal-infra README)
+packages/peal-infra/inventory/host_vars/*/local.yml

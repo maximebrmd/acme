@@ -4,10 +4,13 @@ server of the inventory."""
 
 from __future__ import annotations
 
+import functools
 import re
 import shlex
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +24,17 @@ INFRA = Path(__file__).resolve().parent.parent
 
 # Ansible renders strings with Jinja; an undefined name is an error there too.
 _jinja = jinja2.Environment(undefined=jinja2.StrictUndefined, autoescape=False)
+
+
+@functools.cache
+def committed_inventory() -> str:
+    """The inventory as committed, for Ansible's runs here: a copy without
+    the files Git ignores (each environment's vault.yml, encrypted with a
+    password the tests have not, and host_vars/*/local.yml, which a
+    machine may hold), so the tests read what the repository says."""
+    copy = Path(tempfile.mkdtemp(prefix="peal-inventory-")) / "inventory"
+    shutil.copytree(INFRA / "inventory", copy, ignore=shutil.ignore_patterns("vault.yml", "local.yml"))
+    return str(copy / "hosts.yml")
 
 
 def render(text: str, **names: Any) -> str:
@@ -109,7 +123,13 @@ def run_tasks(
     playbook = folder / "tasks.yml"
     playbook.write_text(yaml.safe_dump([play], sort_keys=False))
     ran = subprocess.run(
-        [str(Path(sys.executable).parent / "ansible-playbook"), str(playbook), *(["--check"] if check else [])],
+        [
+            str(Path(sys.executable).parent / "ansible-playbook"),
+            "--inventory",
+            committed_inventory(),
+            str(playbook),
+            *(["--check"] if check else []),
+        ],
         cwd=INFRA,
         check=False,
         capture_output=True,
@@ -129,6 +149,8 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Path:
     subprocess.run(
         [
             str(Path(sys.executable).parent / "ansible-playbook"),
+            "--inventory",
+            committed_inventory(),
             "tests/render.yml",
             "--extra-vars",
             f"render_dir={folder}",

@@ -342,8 +342,8 @@ the owner's approval.
 
 5. **Telegram** ([Telegram](#telegram)): three bots from @BotFather, one for
    each server that alerts, and two private channels.
-6. **Email**: a Resend key for the verified sending domain `mail.peal.social`,
-   which sends as `notifications@mail.peal.social` (`peal_mail_from`).
+6. **Email**: a Resend key for the verified sending domain `peal.social`,
+   which sends as `notifications@peal.social` (`peal_mail_from`).
 7. **The platforms' apps**, a set of its own for each environment
    ([The platforms' apps](#the-platforms-apps)).
 
@@ -426,6 +426,12 @@ Two bots are the least: one for both Grafanas and one for the uptime
 server. The sandbox then holds the token production's alerts depend on, so
 prefer three. `site.yml` requires both names on production and on the
 sandbox, and `uptime.yml` on the uptime server.
+
+Peal's own bots write to the owner directly instead: each bot's chat with
+you, named after its environment ("Peal - Sandbox", "Peal - Production"),
+in a Telegram folder "Peal". Press Start in the bot's chat, so it may write
+to you; the chat id is then your own user id (Telegram Web keeps it in
+local storage, `user_auth`), and steps 1, 4 and 5 do not apply.
 
 1. Create two private channels, where only admins post. A channel's id does
    not change; a group's does when Telegram upgrades it.
@@ -544,6 +550,36 @@ broken), the provider's rescue system is the way back in.
 4. Once `ssh ops@ssh.peal.social true` works again, run `site.yml` without
    the setting, which closes port 22, and close it in the provider's
    firewall.
+
+### A sandbox on a machine of your own
+
+Until the sandbox has a server of its own, it can run in a VM on a machine
+you keep: Ubuntu 24.04 or 26.04 at 4 GB of memory or more, nothing of the
+host mounted in it, its sshd forwarded to the host's loopback alone, and
+your key let in as root, once, for the bootstrap. Its settings stay off
+Git, in `inventory/host_vars/peal-sandbox/local.yml` (Git ignores
+`host_vars/*/local.yml`), which outrank the group's:
+
+```yaml
+ansible_host: 127.0.0.1 # the forwarded sshd, on the VM's host
+ansible_port: 60122
+ansible_ssh_common_args: -o ProxyJump=<the host, as your SSH config names it>
+ssh_via_tunnel: false # only the host reaches the VM's port 22
+hosting_provider: home
+hosting_location: <city>
+admin_ssh_public_keys: [ssh-ed25519 AAAA… ops]
+ssh_allow_users_extra: [<the VM manager's account in the VM>]
+```
+
+A VM manager such as Lima reaches its VM over SSH as an account of its own,
+to run it: `ssh_allow_users_extra` keeps sshd letting it in beside `ops`.
+
+SSH then never moves to the tunnel: run every playbook as for a server
+whose tunnel carries SSH, without `-e ssh_via_tunnel=false`, and leave out
+the steps that check or close it. Everything else is the sandbox's own: its
+tunnel, Access applications, buckets and credentials. A VM on an Arm host
+is Arm: a server of the other architecture takes the sandbox afresh, not
+its backups ([Architecture](#architecture)).
 
 ## Releases
 

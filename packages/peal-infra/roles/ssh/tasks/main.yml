@@ -67,6 +67,17 @@
 # Lowest-sorted drop-in: sshd keeps the first value it reads for each option.
 # Each file is validated before it replaces the live one, then the whole
 # configuration, which reports no change.
+# sshd -t, which validates each file, needs its privilege separation folder,
+# which Ubuntu 24.04 makes only while sshd runs: socket activation leaves it
+# missing on a fresh server.
+- name: Create sshd's privilege separation folder
+  ansible.builtin.file:
+    path: /run/sshd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Allow key-only logins for the admin user
   ansible.builtin.template:
     src: sshd.conf.j2

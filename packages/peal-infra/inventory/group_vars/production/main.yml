@@ -35,8 +35,8 @@ cloudflare_access_aud:
 # Production is public; Access guards Grafana, SSH and peal_access_paths.
 peal_access_everything: false
 
-# Resend's sending domain is mail.peal.social.
-peal_mail_from: Peal <notifications@mail.peal.social>
+# Resend's sending domain is peal.social.
+peal_mail_from: Peal <notifications@peal.social>
 
 # Grafana posts a heartbeat to the uptime server every few minutes, which
 # alerts when it stops (group_vars/uptime: uptime_hostname, and the external
