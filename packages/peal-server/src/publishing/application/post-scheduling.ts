@@ -25,6 +25,7 @@ import {
   moveToDraft,
   scheduledThrough,
   schedulePost,
+  asReceived,
 } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import { postingMonthOf, sameMonth } from "#publishing/domain/posting-month.ts";
@@ -221,7 +222,8 @@ export class PostScheduling extends Context.Service<
      * Moves a scheduled post, or schedules a draft on the channels it has.
      * The job for the old time is stopped and one for the new time started;
      * "publish now" is a move to the current time, which a time read a
-     * moment earlier still is (see `scheduleGrace`).
+     * moment earlier still is (see `scheduleGrace`), however long the
+     * checks then take (`asReceived`).
      */
     readonly reschedule: (
       actor: Actor,
@@ -410,11 +412,14 @@ export class PostScheduling extends Context.Service<
       const move = Effect.fn("PostScheduling.move")(function* move(
         actor: Actor,
         current: StoredPost,
-        at: Schedule
+        at: Schedule,
+        received: DateTime.Utc
       ) {
+        const now = yield* DateTime.now;
+
         const moved = scheduledThrough(
           yield* Effect.fromResult(
-            schedulePost(current.post, at, yield* DateTime.now)
+            schedulePost(current.post, asReceived(at, received, now), now)
           ),
           yield* originOf(actor),
           authorOf(actor)
@@ -480,6 +485,10 @@ export class PostScheduling extends Context.Service<
             post: Post
           ) => Effect.Effect<Option.Option<KeyUse>, DatabaseError | E>
         ) {
+          // The checks can take minutes, when a platform is slow to say
+          // what an account takes: the time asked for is judged as of now.
+          const received = yield* DateTime.now;
+
           const channels = yield* publishableOn(
             actor,
             content,
@@ -503,7 +512,7 @@ export class PostScheduling extends Context.Service<
                   authorOf(actor),
                   Option.some(via)
                 ),
-                at,
+                asReceived(at, received, now),
                 now
               )
             ).pipe(Effect.catchTag("InvalidPostTransition", Effect.die)),
@@ -643,6 +652,8 @@ export class PostScheduling extends Context.Service<
         ) {
           yield* mayPublish(actor);
 
+          const received = yield* DateTime.now;
+
           return yield* transaction(
             Effect.gen(function* retargetAndStart() {
               const current = yield* lockPost(actor, postId);
@@ -672,7 +683,7 @@ export class PostScheduling extends Context.Service<
 
               yield* posts.setTargets(postId, targets);
 
-              const post = yield* move(actor, current, at);
+              const post = yield* move(actor, current, at, received);
 
               yield* events.scheduled(post, targets);
 
@@ -685,6 +696,8 @@ export class PostScheduling extends Context.Service<
       const reschedule = Effect.fn("PostScheduling.reschedule")(
         function* reschedule(actor: Actor, postId: PostId, at: Schedule) {
           yield* mayPublish(actor);
+
+          const received = yield* DateTime.now;
 
           return yield* transaction(
             Effect.gen(function* moveAndRestart() {
@@ -704,7 +717,7 @@ export class PostScheduling extends Context.Service<
                 );
               }
 
-              const post = yield* move(actor, current, at);
+              const post = yield* move(actor, current, at, received);
 
               yield* events.scheduled(post, targets);
 

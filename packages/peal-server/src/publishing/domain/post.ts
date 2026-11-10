@@ -167,6 +167,26 @@ export const discardDraft = (post: Post): Transition =>
 export const scheduleGrace = Duration.minutes(1);
 
 /**
+ * The schedule a request asked for at `received`, once its checks are done
+ * at `now`: a time that was not past when it was asked is not past because
+ * the platforms were slow to say what their accounts take, and becomes
+ * `now`. One that was past then stays as it is, for `schedulePost` to
+ * refuse.
+ */
+export const asReceived = (
+  schedule: Schedule,
+  received: DateTime.Utc,
+  now: DateTime.Utc
+): Schedule =>
+  DateTime.isLessThan(schedule.at, now) &&
+  !DateTime.isLessThan(
+    schedule.at,
+    DateTime.subtractDuration(received, scheduleGrace)
+  )
+    ? new Schedule({ at: now, timeZone: schedule.timeZone })
+    : schedule;
+
+/**
  * Schedules a draft, or moves a scheduled post to another time. Either way the
  * post gets a new revision, which the job for its previous time does not
  * publish. A time up to `scheduleGrace` before `now` is scheduled at `now`.

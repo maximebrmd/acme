@@ -1,7 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Option } from "effect";
+import { Effect, Layer, Option } from "effect";
 import { SqlClient } from "effect/sql";
+import { TestClock } from "effect/testing";
 
+import { AttachableMedia } from "#publishing/application/attachable-media.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
 import { newId } from "#shared/application/ids.ts";
@@ -17,8 +19,18 @@ import {
   storedPost,
   utc,
 } from "#test/publishing/infrastructure/harness.ts";
-import { connect, onPostsServerAt } from "#test/publishing/posts-server.ts";
-import { actorIn, contentOf } from "#test/publishing/support.ts";
+import {
+  attachableImage,
+  connect,
+  onPostsServerAt,
+  postsServerWith,
+} from "#test/publishing/posts-server.ts";
+import {
+  actorIn,
+  attachableMedia,
+  contentOf,
+  mediaFile,
+} from "#test/publishing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 // Creating and scheduling a post in one call, now or at an instant, and
@@ -245,6 +257,72 @@ describe("PostScheduling.send", () => {
             "cancelled"
           );
         })
+      ),
+    timeout
+  );
+});
+
+// A server whose checks take two minutes: the media a post shows is slow
+// to read, as an account's rules are when its platform is.
+const SlowChecksTest = postsServerWith(
+  Layer.effect(
+    AttachableMedia,
+    Effect.gen(function* SlowMedia() {
+      const media = yield* AttachableMedia;
+
+      return AttachableMedia.of({
+        lookUp: (actor, mediaIds) =>
+          TestClock.adjust("2 minutes").pipe(
+            Effect.andThen(media.lookUp(actor, mediaIds))
+          ),
+      });
+    })
+  ).pipe(Layer.provide(attachableMedia([mediaFile(attachableImage)])))
+);
+
+describe("PostScheduling.send, when its checks are slow", () => {
+  it.effect(
+    "publishes now a post whose checks took longer than a time may be past",
+    () =>
+      setTime(start).pipe(
+        Effect.andThen(
+          Effect.gen(function* slow() {
+            const scheduling = yield* PostScheduling;
+            const workspaceId = yield* freshWorkspace;
+            const channel = yield* connect(workspaceId, "mastodon");
+
+            const sent = yield* scheduling.send(actorIn(workspaceId), {
+              ...request(channel, "A synthetic post, checked slowly."),
+              content: contentOf("A synthetic post, checked slowly.", {
+                media: [attachableImage],
+              }),
+            });
+
+            assert.strictEqual(sent.post.status._tag, "scheduled");
+
+            // It goes out once checked, not at the time it was asked.
+            if (sent.post.status._tag === "scheduled") {
+              assert.deepStrictEqual(
+                sent.post.status.schedule.at,
+                utc("2026-06-15T07:02:00Z")
+              );
+            }
+
+            // A time that was past when it was asked still is.
+            const past = yield* scheduling
+              .send(
+                actorIn(workspaceId),
+                request(channel, "A synthetic post, too late.", {
+                  at: "2026-06-15T06:00:00Z",
+                })
+              )
+              .pipe(Effect.flip);
+
+            assert.strictEqual(past._tag, "ScheduleInPast");
+
+            yield* eventually("the post finished", isFinished(sent.post.id));
+          }).pipe(Effect.provide(SlowChecksTest))
+        )
       ),
     timeout
   );
