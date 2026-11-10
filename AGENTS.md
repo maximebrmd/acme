@@ -2057,6 +2057,9 @@ self-hoster needs only Postgres and an S3-compatible store:
   prices (`scripts/stripe.ts`): a new workspace is on the free plan, so a
   journey stays within three channels, two members and one workspace per
   account, or tests the refusal (`upgrade-prompt.e2e.ts`). No test pays.
+  So the functions to cancel and withdraw are on
+  (`contract-functions.e2e.ts`): a journey there sends requests no
+  contract answers, and reads their acknowledgement in Mailpit.
 - No platform can be connected in a run, so a test that needs a channel
   inserts a synthetic one with `seedChannel` (`tests/support/channels.ts`).
   Update it when `channels.channels` changes. Publish nothing, and cancel any
