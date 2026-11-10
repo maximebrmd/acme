@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * Why staff may not do this to this account:
  *
@@ -22,7 +24,7 @@ export type StaffRefusal = typeof StaffRefusalSchema.Type;
 /** The account exists, and this action does not apply to it. */
 export class StaffActionRefused extends Schema.TaggedError<StaffActionRefused>()(
   "StaffActionRefused",
-  { reason: StaffRefusalSchema },
+  { ...errorEnvelope, reason: StaffRefusalSchema },
   {
     description:
       "The action does not apply to this account: staff acting on themselves, impersonating other staff, an address already confirmed, a ban that would end in the past, or acting as a banned account.",

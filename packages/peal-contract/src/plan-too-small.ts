@@ -2,6 +2,7 @@ import { Schema } from "effect";
 
 import { PaidPlanSchema } from "./billing-plans.ts";
 import { ExcessSchema } from "./billing.ts";
+import { errorEnvelope } from "./error-envelope.ts";
 
 /**
  * The plan ordered does not hold what the workspace has: an order never
@@ -10,6 +11,7 @@ import { ExcessSchema } from "./billing.ts";
 export class PlanTooSmall extends Schema.TaggedError<PlanTooSmall>()(
   "PlanTooSmall",
   {
+    ...errorEnvelope,
     // What the workspace holds beyond the plan ordered: what to remove
     // first.
     over: Schema.Array(ExcessSchema),

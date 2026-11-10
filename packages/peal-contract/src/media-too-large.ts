@@ -1,9 +1,12 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /** The declared file is larger than Peal stores for its kind. */
 export class MediaTooLarge extends Schema.TaggedError<MediaTooLarge>()(
   "MediaTooLarge",
   {
+    ...errorEnvelope,
     byteSize: Schema.Int,
     kind: Schema.Literals(["image", "video"]),
     maxByteSize: Schema.Int,

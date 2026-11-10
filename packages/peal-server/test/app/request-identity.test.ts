@@ -2,11 +2,8 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect, Layer, References } from "effect";
 import { HttpRouter, HttpServerResponse } from "effect/http";
 
-import {
-  requestIdAttribute,
-  requestIdHeader,
-  RequestIdentityLive,
-} from "#app/request-identity.ts";
+import { ApiAnswersLive } from "#app/answers.ts";
+import { requestIdAttribute, requestIdHeader } from "#app/request-identity.ts";
 
 // Three routes: one answers with what its log lines are annotated with, one
 // refuses the caller, one breaks.
@@ -31,7 +28,7 @@ const Routes = HttpRouter.use((router) =>
 );
 
 const serving = () =>
-  HttpRouter.toWebHandler(Layer.mergeAll(Routes, RequestIdentityLive), {
+  HttpRouter.toWebHandler(Layer.mergeAll(Routes, ApiAnswersLive), {
     disableLogger: true,
   });
 

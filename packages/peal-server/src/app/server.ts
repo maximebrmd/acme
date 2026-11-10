@@ -12,13 +12,13 @@ import {
   AnalyticsLive,
   PlatformMetricsReaderLive,
 } from "#analytics/container.ts";
+import { ApiAnswersLive } from "#app/answers.ts";
 import { ClientErrorsLive } from "#app/client-errors/live.ts";
 import { ClusterLive } from "#app/cluster.ts";
 import { ContractRequestsLive } from "#app/contract-requests/live.ts";
 import { CronsLive } from "#app/crons.ts";
 import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
-import { RequestIdentityLive } from "#app/request-identity.ts";
 import { countRequests } from "#app/request-metrics.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
@@ -127,7 +127,7 @@ export const RoutesLive = Layer.mergeAll(
   ApiLive,
   AuthRoutesLive,
   McpLive,
-  RequestIdentityLive
+  ApiAnswersLive
 );
 
 // Billing, which reads the checkouts the workspace context's Stripe plugin

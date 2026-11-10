@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { errorEnvelope } from "./error-envelope.ts";
+
 /**
  * What was chosen to stay in a workspace over its plan does not bring it
  * back within the plan, or cannot stay alone.
@@ -7,6 +9,7 @@ import { Schema } from "effect";
 export class ReductionRefused extends Schema.TaggedError<ReductionRefused>()(
   "ReductionRefused",
   {
+    ...errorEnvelope,
     reason: Schema.Literals([
       "tooManyChannels",
       "tooManyMembers",

@@ -398,7 +398,19 @@ export type { Staff } from "./current-staff.ts";
 
 export { CurrentPrincipal } from "./current-principal.ts";
 
-export { Forbidden } from "./forbidden.ts";
+export { errorEnvelope } from "./error-envelope.ts";
+
+export { Forbidden, ForbiddenReasonSchema } from "./forbidden.ts";
+
+export type { ForbiddenReason } from "./forbidden.ts";
+
+export {
+  InvalidRequest,
+  maxRequestIssues,
+  RequestIssueSchema,
+} from "./invalid-request.ts";
+
+export type { RequestIssue } from "./invalid-request.ts";
 
 export { InvalidDateRange } from "./invalid-date-range.ts";
 
