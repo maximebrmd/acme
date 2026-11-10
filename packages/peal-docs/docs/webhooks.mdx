@@ -101,12 +101,13 @@ Event types and their fields are a public contract. Peal adds event types, and f
 
 A post goes out on each of its channels separately, so `post.published`, `post.failed` and `post.unconfirmed` name one channel each: a post on three channels brings three events. These fields say which:
 
-| Field       | Type           | What it holds                                                                           |
-| ----------- | -------------- | --------------------------------------------------------------------------------------- |
-| `targetId`  | string         | The post on that channel: the target's id, as the API's `targets` list it               |
-| `channelId` | string         | The channel                                                                             |
-| `platform`  | string or null | The channel's platform, such as `mastodon`; null once the channel was disconnected      |
-| `round`     | integer        | How many times the post was sent there: 1, and one more for each time it was sent again |
+| Field       | Type           | What it holds                                                                                                                                                                                                                                                          |
+| ----------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `targetId`  | string         | The post on that channel: the target's id, as the API's `targets` list it                                                                                                                                                                                              |
+| `channelId` | string         | The channel                                                                                                                                                                                                                                                            |
+| `platform`  | string or null | The channel's platform, such as `mastodon`; null once the channel was disconnected                                                                                                                                                                                     |
+| `round`     | integer        | How many times the post was sent there: 1, and one more for each time it was sent again                                                                                                                                                                                |
+| `parts`     | object         | For a post of several parts, a [thread](/scheduling#threads): `count`, how many parts it has there (1 for a post alone), and `live`, how many of them are live. Parts go out in order, so a post that failed or is unconfirmed stopped at the part after the last live |
 
 Every event's `data` has `workspaceId`, the workspace it happened in.
 
