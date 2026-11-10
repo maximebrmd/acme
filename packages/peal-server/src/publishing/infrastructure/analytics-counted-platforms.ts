@@ -15,6 +15,8 @@ export const AnalyticsCountedPlatforms = Layer.effect(
 
     return CountedPlatforms.of({
       includes: coverage.counts,
+      numbers: coverage.numbers,
+      numbersOn: coverage.numbersOn,
       onChannel: coverage.countsChannel,
     });
   })

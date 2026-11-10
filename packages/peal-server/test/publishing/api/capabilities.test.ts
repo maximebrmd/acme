@@ -16,6 +16,7 @@ import {
 import type { MediaContentType, Member } from "peal-contract";
 import * as ContractText from "peal-contract/post-text";
 
+import { noNumbers, numbersOf } from "#analytics/domain/analytics-numbers.ts";
 import { countsChannel } from "#analytics/domain/counted-platforms.ts";
 import { platformCapabilitiesView } from "#publishing/api/capabilities-view.ts";
 import { CapabilitiesHandlers } from "#publishing/api/capabilities.ts";
@@ -140,6 +141,11 @@ const clientWith = (
                     CountedPlatforms,
                     CountedPlatforms.of({
                       includes: (platform) => platform === "mastodon",
+                      numbers: (platform) =>
+                        platform === "mastodon"
+                          ? numbersOf(platform, Option.none())
+                          : noNumbers,
+                      numbersOn: numbersOf,
                       onChannel: (platform, connection) =>
                         platform === "mastodon" ||
                         countsChannel(platform, connection),
@@ -189,7 +195,11 @@ describe("the platforms' capabilities endpoint", () => {
         maxLinks: null,
         maxMentions: null,
       });
-      assert.deepStrictEqual(bluesky?.analytics, { perPost: false });
+      assert.deepStrictEqual(bluesky?.analytics, {
+        accountNumbers: [],
+        perPost: false,
+        postCounts: [],
+      });
       assert.deepStrictEqual(bluesky?.options, { constraints: [], fields: [] });
     })
   );
@@ -463,8 +473,11 @@ describe("a channel's capabilities endpoint", () => {
       });
 
       assert.deepStrictEqual(described.account, { _tag: "unrestricted" });
+      // Which numbers exist on the channel: its posts' and its account's.
       assert.deepStrictEqual(described.capabilities.analytics, {
+        accountNumbers: ["followers", "following", "posts"],
         perPost: true,
+        postCounts: ["likes", "reposts", "replies", "quotes"],
       });
     })
   );
@@ -481,13 +494,26 @@ describe("a channel's capabilities endpoint", () => {
             client.capabilities.channel({ params: { channelId, workspaceId } })
         );
 
-        assert.deepStrictEqual(page?.capabilities.analytics, { perPost: true });
+        assert.deepStrictEqual(page?.capabilities.analytics, {
+          accountNumbers: ["followers", "views", "reach"],
+          perPost: true,
+          postCounts: [
+            "likes",
+            "reposts",
+            "replies",
+            "impressions",
+            "clicks",
+            "reach",
+          ],
+        });
         assert.deepStrictEqual(
           page?.capabilities.lookups.map(({ name }) => name),
           ["linkedinOrganizations"]
         );
         assert.deepStrictEqual(profile?.capabilities.analytics, {
+          accountNumbers: [],
           perPost: false,
+          postCounts: [],
         });
         assert.deepStrictEqual(profile?.capabilities.lookups, []);
         // The options are the platform's, whichever way in.

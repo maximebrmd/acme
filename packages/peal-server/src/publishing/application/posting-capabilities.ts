@@ -63,7 +63,7 @@ export class PostingCapabilities extends Context.Service<
         function* platforms(actor: Actor) {
           yield* Effect.fromResult(authorize(actor, "channel:read"));
 
-          return everyCapabilities(counted.includes);
+          return everyCapabilities(counted.includes, counted.numbers);
         }
       );
 
@@ -90,7 +90,8 @@ export class PostingCapabilities extends Context.Service<
             capabilities: capabilitiesOf(
               found.platform,
               counted.onChannel(found.platform, connection),
-              connection
+              connection,
+              counted.numbersOn(found.platform, connection)
             ),
             channelId: found.channelId,
           };

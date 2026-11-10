@@ -326,6 +326,7 @@ export type {
 } from "./billing-plans.ts";
 
 export {
+  accountNumberNames,
   AccountRestrictionSchema,
   AccountStandingSchema,
   AccountUnreadReasonSchema,
@@ -336,6 +337,7 @@ export {
   MediaFormatSchema,
   OptionConstraintSchema,
   PlatformCapabilitiesSchema,
+  postCountNames,
   TextCapabilitiesSchema,
   TextLimitSchema,
 } from "./capabilities.ts";
