@@ -106,10 +106,16 @@ Chaque commande fait ce que votre rôle y permet, comme l’application web : un
 
 ```sh
 peal channels list
+peal channels capabilities [<channel-id>] [--json]
+peal channels lookup <channel-id> [<lookup>] [--region <country>] [--language <tag>] [--limit <n>] [--cursor <cursor>] [--json]
 peal channels tiktok <channel-id>
 ```
 
 `peal channels list` liste les canaux de l’espace de travail avec leurs identifiants, que les brouillons prennent, et si chacun publie ou est à reconnecter. Connecter un canal se fait dans l’application web.
+
+`peal channels capabilities` montre [ce qu’un canal accepte](/api-overview#capabilities) : comment son texte est compté et limité, les médias qu’il accepte avec les limites de chaque type de fichier, les options de sa plateforme (que règle `peal drafts save --options`) et ce que le compte lui-même restreint, lu sur la plateforme à ce moment-là. Sans canal, la commande résume chaque plateforme en une ligne.
+
+`peal channels lookup` demande à la plateforme d’un canal les données du compte auxquelles ses options se rapportent : sans recherche, la commande liste celles du canal ; avec une recherche, elle la lance, comme `peal channels lookup <channel-id> youtubeVideoCategories --region FR` pour les catégories où une vidéo YouTube peut être classée en France. Une recherche paginée se termine par le `--cursor` qui lit sa page suivante. Elle ne change rien. Avec `--json`, les deux commandes affichent la réponse du serveur en JSON, pour les scripts.
 
 `peal channels tiktok` lit les réglages d’un canal TikTok sur TikTok, comme TikTok le demande avant une publication : sous quel nom il publie, les audiences qu’une publication peut choisir (son `privacyLevel`, sans valeur par défaut), les interactions que le compte a désactivées, qui restent désactivées, et sa vidéo la plus longue, ou pourquoi il ne peut pas publier aujourd’hui. Publier sur TikTok vaut acceptation de sa confirmation d’utilisation de la musique, et de sa politique sur le contenu de marque pour un contenu de marque.
 

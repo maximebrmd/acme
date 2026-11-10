@@ -888,6 +888,54 @@ and no socket, for tests.
   an engine that runs no job, so scheduling through it fails. Only
   `test/app/cluster.test.ts` runs a SQL runner.
 
+### Capabilities and lookups
+
+- Clients ask what a channel takes rather than learn each platform:
+  `GET …/platforms/capabilities` and `GET …/channels/:channelId/capabilities`
+  (`PostingCapabilities`, channel:read, API keys and read-only OAuth clients
+  included) answer `capabilitiesOf`
+  (`#publishing/domain/platform-capabilities.ts`): `platformRules` with
+  Peal's own ceilings, the options field by field, the rules between them,
+  the lookups, and whether analytics counts posts there (`CountedPlatforms`,
+  which `AnalyticsCoverage` backs). The description has a version
+  (`capabilitiesVersion`): add fields, platforms, lookups and restrictions
+  under it, and raise it only when a field changes meaning or leaves.
+- Nothing in a description is written twice. A field's type and values come
+  from its schema (`describeFields`), `required` from what `problems()`
+  misses in options with nothing chosen, and the rest (`maxLength`,
+  `ifLeftOut`, `forbiddenCharacters`, `pattern`, `lookup`) from the options
+  class's static `notes`, built on the constants `problems()` uses; rules
+  between two options are its static `constraints`. A new option gets its
+  entry in `notes`, typed by the class's fields;
+  `test/publishing/domain/platform-capabilities.test.ts` fails on a field
+  left undescribed, and `test/publishing/api/capabilities.test.ts` keeps the
+  figures equal to `peal-contract/post-text` and the fields to the
+  contract's options.
+- What an account narrows is an `AccountRestriction`, read by
+  `AccountStandings` when the channel is described (TikTok's
+  `creatorRestrictions`, which say beforehand what `creatorViolationsOn`
+  refuses: change both together). A platform that cannot be asked answers
+  `unread` with the reason, never an error.
+- A lookup is account data an option refers to
+  (`#publishing/domain/lookup.ts`): a name prefixed by its platform, an input
+  struct of optional fields with its `notes`, a `LookupQuery` and a
+  `LookupResult` member (`items` and `nextCursor`), and one adapter in
+  `platforms/platform-lookups-live.ts`, whose registry does not compile
+  without it. `ChannelLookups` checks channel:read, the platform and the
+  input before the platform is asked. The contract copies the names, one
+  flat `LookupInputSchema` holding every lookup's fields, and the result
+  union (`test/publishing/api/lookups.test.ts` keeps them equal). An option
+  filled by a lookup names it in its `notes`.
+- Lookup adapters call the platform through `PlatformCredentials.withToken`
+  and `publicHttpClient`, not the channel's gate: a member waits for the
+  answer, and a gate may hold a long upload. They fail with `TokenRejected`
+  only for the platform's own refusal of the token, `RateLimited`,
+  `PlatformUnavailable`, or `LookupInputRejected` when the platform refused
+  what the input asked (a cursor it never gave); they never change anything
+  on the platform. Test them against the loopback fakes.
+- `GET …/channels/:id/tiktok-creator` stays, for the composer; the
+  `tiktokCreator` lookup answers the same view.
+
 ### Media
 
 - Clients upload straight to the store with presigned PUTs, so files never
@@ -1286,6 +1334,12 @@ and no socket, for tests.
   more personal data than the task needs. Refusals are `ToolRefused`,
   with a message the user can act on (`refusals.ts`). The account's own
   data (its export, its applications) has no tool.
+- `get_channel_capabilities` and `run_channel_lookup`
+  (`capabilities-tools.ts`) answer the views of the capabilities and lookups
+  endpoints; they read, and are open world, as they may ask the platform.
+  The CLI's are `peal channels capabilities` and `peal channels lookup`
+  (`--json` prints the answer as the API sends it). Describe a new lookup in
+  `run_channel_lookup`'s description and the docs' lookups table.
 - What the web app's composer sends, the CLI and the tools send too: a
   draft's per-channel `options` (`create_draft`, `update_draft`, `peal
   drafts save --options`), and TikTok's creator before a TikTok post

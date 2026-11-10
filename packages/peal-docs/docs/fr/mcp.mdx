@@ -78,6 +78,13 @@ Ces outils lisent, et ne changent rien :
 | `list_invitations`   | Les invitations en attente, pour qui peut inviter ; les invitations au rôle de propriétaire, pour les propriétaires seuls                                                                                    |
 | `server_health`      | Si le serveur Peal tourne et joint sa base de données                                                                                                                                                        |
 
+Deux autres lisent [ce qu’un canal accepte](/api-overview#capabilities), pour qu’un client n’ait pas à connaître les règles de chaque plateforme. Ils ne changent rien, et peuvent interroger la plateforme du canal, hors de Peal (`openWorldHint`) :
+
+| Outil                      | Ce qu’il répond                                                                                                                                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get_channel_capabilities` | Comment le texte d’un canal est compté et limité, les médias qu’il accepte, les options de sa plateforme champ par champ, ses recherches, si Peal lit les compteurs de ses publications, et ce que le compte lui-même restreint |
+| `run_channel_lookup`       | Une [recherche](/api-overview#lookups) d’un canal : les données du compte auxquelles ses options se rapportent, comme les catégories où une vidéo YouTube peut être classée, une page à la fois                                 |
+
 Ces outils changent quelque chose. Chacun indique au client, par les annotations d’outils de MCP, s’il détruit ou écrase (`destructiveHint`), si l’appeler de nouveau ne change rien de plus (`idempotentHint`), et si son effet sort de Peal (`openWorldHint`), pour qu’un client puisse vous demander avant de l’appeler :
 
 | Outil               | Ce qu’il fait                                                                                                                                                                                                | Détruit ou écrase | Rappelé, ne change rien de plus | Hors de Peal |

@@ -106,10 +106,16 @@ Each command does what your role allows there, as the web app does: a viewer rea
 
 ```sh
 peal channels list
+peal channels capabilities [<channel-id>] [--json]
+peal channels lookup <channel-id> [<lookup>] [--region <country>] [--language <tag>] [--limit <n>] [--cursor <cursor>] [--json]
 peal channels tiktok <channel-id>
 ```
 
 `peal channels list` lists the workspace's channels with their ids, which drafts take, and whether each one posts or must be reconnected. Connecting a channel is for the web app.
+
+`peal channels capabilities` shows [what a channel takes](/api-overview#capabilities): how its text is counted and limited, the media it takes with each file type's limits, its platform's options (which `peal drafts save --options` sets) and what the account itself restricts, read from the platform at that moment. Without a channel, it sums up every platform on a line each.
+
+`peal channels lookup` asks a channel's platform for account data its options refer to: without a lookup, it lists those the channel has; with one, it runs it, such as `peal channels lookup <channel-id> youtubeVideoCategories --region FR` for the categories a YouTube video can be filed under in France. A paged lookup ends with the `--cursor` that reads its next page. It changes nothing. With `--json`, both commands print the server's answer as JSON, for scripts.
 
 `peal channels tiktok` reads a TikTok channel's settings from TikTok, as TikTok asks before a post: who it posts as, the audiences a post may choose (its `privacyLevel`, with no default), the interactions the account turned off, which stay off, and its longest video, or why it cannot post today. Posting to TikTok means agreeing to its Music Usage Confirmation, and to its Branded Content Policy for branded content.
 
