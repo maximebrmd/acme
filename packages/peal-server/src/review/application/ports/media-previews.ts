@@ -3,10 +3,13 @@ import type { Effect, Option } from "effect";
 
 import type { MediaAssetId, WorkspaceId } from "#shared/domain/ids.ts";
 
-/** An image or a video, as a page shows it. */
+/** What kind of file a post shows: a PDF is the one document. */
+export type MediaPreviewKind = "document" | "image" | "video";
+
+/** An image, a video or a document, as a page shows or links it. */
 export interface MediaPreview {
   readonly contentType: string;
-  readonly kind: "image" | "video";
+  readonly kind: MediaPreviewKind;
   /** Where the file is read from, for a while. Never logged. */
   readonly url: string;
 }

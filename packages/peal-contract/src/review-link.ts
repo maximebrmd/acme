@@ -8,6 +8,7 @@ import {
 
 import { ApprovalNotPending } from "./approval-not-pending.ts";
 import { CommentInvalid } from "./comment-invalid.ts";
+import { MediaKindSchema } from "./media.ts";
 import { PlatformSchema } from "./platform.ts";
 import { PostScheduleSchema } from "./posts.ts";
 import { ReviewAccessDenied } from "./review-access-denied.ts";
@@ -39,13 +40,13 @@ export const ReviewedChannelSchema = Schema.Struct({
 export type ReviewedChannel = typeof ReviewedChannelSchema.Type;
 
 /**
- * An image or a video a post shows. `url` reads the file from the media
- * store for two hours; it is null, with `kind`, for a file that cannot be
- * shown.
+ * An image, a video or a document (a PDF, on LinkedIn) a post shows. `url`
+ * reads the file from the media store for two hours; it is null, with
+ * `kind`, for a file that cannot be shown. A document has no alt text.
  */
 export const ReviewedMediaSchema = Schema.Struct({
   altText: Schema.String,
-  kind: Schema.NullOr(Schema.Literals(["image", "video"])),
+  kind: Schema.NullOr(MediaKindSchema),
   mediaId: Schema.String,
   url: Schema.NullOr(Schema.String),
 }).annotate({ identifier: "ReviewedMedia" });

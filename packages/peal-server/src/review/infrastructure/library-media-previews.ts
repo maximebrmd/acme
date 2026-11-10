@@ -24,16 +24,12 @@ export const LibraryMediaPreviews = Layer.effect(
           described: media.describe(workspaceId, mediaId),
           url: media.publicUrl(workspaceId, mediaId, previewLifetime),
         }).pipe(
-          // A document has no preview yet: the page says the file cannot
-          // be shown.
           Effect.map(({ described, url }) =>
-            described.kind === "document"
-              ? Option.none()
-              : Option.some({
-                  contentType: described.contentType,
-                  kind: described.kind,
-                  url,
-                })
+            Option.some({
+              contentType: described.contentType,
+              kind: described.kind,
+              url,
+            })
           ),
           Effect.catchTags({
             MediaNotPublishable: () => Effect.succeedNone,

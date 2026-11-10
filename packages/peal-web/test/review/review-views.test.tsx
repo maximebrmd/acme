@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
+import { PlatformSchema } from "peal-contract";
 import type { ApprovalRequest, ReviewComment } from "peal-contract";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -170,6 +171,12 @@ const previews = (
         url: "https://media.example.test/m1",
       },
       { altText: "", kind: null, mediaId: "m2", url: null },
+      {
+        altText: "",
+        kind: "document",
+        mediaId: "m3",
+        url: "https://media.example.test/m3",
+      },
     ]}
   />
 );
@@ -198,6 +205,48 @@ describe(ChannelPreviewsView, () => {
     expect(html).toContain("Alt text: A red bicycle");
     expect(html).toContain("This file cannot be shown.");
     expect(html).toContain("No alt text.");
+  });
+
+  it("links a PDF document, which has no alt text to check", async () => {
+    const html = await render("en", previews);
+
+    expect(html).toContain("A PDF document, shown page by page on LinkedIn.");
+    expect(html).toMatch(
+      /<a href="https:\/\/media\.example\.test\/m3"[^>]*rel="noreferrer noopener"[^>]*>Open the document in a new tab<\/a>/u
+    );
+    // Two files could have alt text: the image has it, the other is gone.
+    expect(html.match(/No alt text\./gu)).toHaveLength(1);
+
+    await expect(render("fr", previews)).resolves.toContain(
+      "Ouvrir le document dans un nouvel onglet"
+    );
+  });
+
+  it("names every platform a post goes to", async () => {
+    const html = await render(
+      "en",
+      <ChannelPreviewsView
+        channels={PlatformSchema.literals.map((platform, index) => ({
+          channelId: `0190f3a0-0000-7000-8000-00000000c1${String(index).padStart(2, "0")}`,
+          handle: `synthetic-${platform}`,
+          platform,
+          text: "Launch day",
+        }))}
+        media={[]}
+      />
+    );
+
+    for (const name of [
+      "Pinterest",
+      "Google Business Profile",
+      "LinkedIn",
+      "YouTube",
+    ]) {
+      expect(html).toContain(name);
+    }
+
+    // No platform falls back to its id.
+    expect(html).not.toContain(">googleBusiness<");
   });
 });
 

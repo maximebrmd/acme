@@ -14,10 +14,10 @@ export interface PreviewedChannel {
   readonly text: string;
 }
 
-/** An image or a video the post shows. */
+/** An image, a video or a document the post shows. */
 export interface PreviewedMedia {
   readonly altText: string;
-  readonly kind: "image" | "video" | null;
+  readonly kind: "document" | "image" | "video" | null;
   readonly mediaId: string;
   /** Where the file is read from; none for a file that cannot be shown. */
   readonly url: string | null;
@@ -61,11 +61,28 @@ const MediaView = ({ media }: { readonly media: PreviewedMedia }) => {
           <track kind="captions" />
         </video>
       ) : null}
-      <figcaption className="text-muted-foreground text-xs">
-        {media.altText === ""
-          ? t("preview.noAltText")
-          : t("preview.altText", { text: media.altText })}
-      </figcaption>
+      {media.url !== null && media.kind === "document" ? (
+        // A PDF, which only LinkedIn shows: opened beside the page, from the
+        // same address that works two hours.
+        <div className="bg-muted flex aspect-video flex-col items-center justify-center gap-2 rounded-lg p-4 text-center text-sm">
+          <p>{t("preview.document")}</p>
+          <a
+            href={media.url}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-primary underline underline-offset-4"
+          >
+            {t("preview.openDocument")}
+          </a>
+        </div>
+      ) : null}
+      {media.kind === "document" ? null : (
+        <figcaption className="text-muted-foreground text-xs">
+          {media.altText === ""
+            ? t("preview.noAltText")
+            : t("preview.altText", { text: media.altText })}
+        </figcaption>
+      )}
     </figure>
   );
 };
