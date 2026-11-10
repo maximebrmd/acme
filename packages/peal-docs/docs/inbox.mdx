@@ -1,0 +1,119 @@
+---
+title: Inbox
+description: Read the comments people leave under your published posts on Mastodon and Bluesky, and answer them from Peal. What Peal collects, from where, for how long, and what each platform lets an account do.
+sidebar:
+  order: 6.5
+---
+
+The inbox gathers the comments people leave under the posts Peal published for a workspace, and lets its members answer them in public, as the connected account. Open a workspace from **Workspaces**, then **Inbox**.
+
+This is the first part of the inbox: comments on posts published from Peal, on Mastodon and Bluesky. Direct messages, mentions and reviews are not collected, and Peal answers nothing by itself: every reply is written and sent by a person, or by an application a person connected and allowed to publish.
+
+## What Peal collects [#collected]
+
+For each post that went live on a channel, Peal reads the public replies to it on the platform:
+
+| Kept                                                                      | Where it comes from                            |
+| ------------------------------------------------------------------------- | ---------------------------------------------- |
+| The comment's text, as plain text                                         | The platform, as anyone can read it            |
+| When it was written, and which comment it answers                         | The platform                                   |
+| Its author's public handle and display name, and their id on the platform | The platform, as it shows them to anyone       |
+| A link to the comment on the platform                                     | The platform                                   |
+| Whether the workspace answered it, hid it or liked it                     | Peal, and the platform for what was done there |
+| The replies members sent from Peal, who wrote each, and how sending ended | The members of the workspace                   |
+
+Peal reads nothing else of the people who comment: no picture, no profile, no follower count, no other post of theirs, no private message. A reply only its author's followers or the people it mentions can see is a private message, and is not collected.
+
+Comments are other people's words. Peal uses them to show them to the workspace's members and let them answer, and for nothing else: no profile of their authors, no automation, no writing assistant reads them, and they are never used to train anything. A workspace's [webhooks](/webhooks#comment-received) and notices say that comments arrived, with ids and counts, never their text or their authors.
+
+## When comments are read [#schedule]
+
+Peal looks for new comments every ten minutes. A post's comments are read at every run during its first day, when most arrive, every hour during its first week, then every six hours until the post is {{keep-inbox-window-en}} old, and no longer after that. Whoever runs the server can set another window, of 90 days at most ([`PEAL_ENGAGEMENT_WINDOW_DAYS`](/environment-variables)).
+
+Readings take turns with the channel's publishing: Peal makes one call at a time per account. When a platform asks Peal to slow down, or does not answer, that channel's threads wait half an hour. A channel that is turned off or needs reconnecting is passed over until it works again; a disconnected channel's posts are no longer read.
+
+When a comment was edited, Peal shows its new text. When a platform no longer shows a comment, Peal erases its text and its author at the next reading, and keeps only that there was a comment. When the post itself is gone from the platform, every comment under it is erased the same way.
+
+## How long comments are kept [#retention]
+
+A thread (a post's comments on one channel, and the replies sent to them) is deleted {{keep-inbox-en}} after Peal stopped reading the post's comments: with the usual window, 60 days after the post went live. The deletion runs once a day.
+
+Deleting a workspace deletes its threads at once. When a member closes their account, the replies they sent stay with the workspace, without their name; their [data export](/settings) lists the replies they sent, never the comments they answered, which are someone else's.
+
+If you commented under a post published with Peal and want your comment removed from Peal, delete it on the platform: it leaves Peal at the next reading. You can also write to the account that published the post, or to whoever runs the server.
+
+## Answering [#replying]
+
+A reply is a public message from the connected account: everyone who sees the post sees it. Owners, admins and editors may answer; contributors and viewers read the inbox and answer nothing.
+
+When you send a reply, Peal:
+
+1. checks it against the platform's length, counted as the platform counts (on Mastodon, the mention of the person you answer is put first, as Mastodon needs it to notify them, and counts);
+2. records it before calling the platform;
+3. sends it once.
+
+The thread shows where each reply is:
+
+| Status        | What it means                                                                                             |
+| ------------- | --------------------------------------------------------------------------------------------------------- |
+| `sending`     | Recorded, and on its way.                                                                                 |
+| `sent`        | On the platform, with its link.                                                                           |
+| `failed`      | Nothing went out, and why. Write it again when the cause is gone.                                         |
+| `unconfirmed` | Peal cannot tell whether it went out: the platform did not answer, or the server stopped during the call. |
+| `withdrawn`   | Sent, then deleted from the platform by a member.                                                         |
+
+Peal never sends an unconfirmed reply again, as that could post the same answer twice. Look at the post on the platform, then tell Peal what you found: **It is there**, or **It did not go out**. Until then, no other reply can be written to that comment.
+
+A sent reply can be taken back: Peal deletes it from the platform. People who already saw it may have kept it.
+
+You can also mark a comment as answered when it needs no reply. A comment the account answered on the platform itself is marked answered at the next reading.
+
+## What each platform allows [#abilities]
+
+| Ability                                | Mastodon                                      | Bluesky                                       |
+| -------------------------------------- | --------------------------------------------- | --------------------------------------------- |
+| Read the comments under a post         | Yes                                           | Yes                                           |
+| Reply to a comment                     | Yes                                           | Yes                                           |
+| Take a reply back                      | Yes                                           | Yes                                           |
+| Like a comment                         | Not yet: Peal does not ask for the permission | Not yet: Peal does not ask for the permission |
+| Hide someone's comment under your post | No: Mastodon offers it to no account          | Not yet: Peal does not ask for the permission |
+| Delete someone else's comment          | No: Mastodon offers it to no account          | No: nobody deletes another account's post     |
+
+`GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` and each thread answer the same for one channel: `available`, `reconnect` (the account was connected before Peal asked for what the ability takes: disconnect the channel and [connect the account again](/channels)), or `unsupported`.
+
+On Mastodon, replies to public and unlisted posts are read; Peal reads them with the account's access when the account allowed it, which shows every reply, and without it otherwise, which shows the first 60. On Bluesky, Peal reads the thread from Bluesky's public service, without the account's session.
+
+### Other platforms [#other-platforms]
+
+Peal reads no comments on the other platforms yet. Each needs a permission its platform grants after a review:
+
+| Platform                           | What reading and answering comments needs                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Facebook Pages                     | `pages_read_user_content` and `pages_manage_engagement`, each granted by Meta's App Review, with the business verified |
+| Instagram                          | `instagram_manage_comments` (or `instagram_business_manage_comments`), granted by Meta's App Review                    |
+| Threads                            | `threads_read_replies` and `threads_manage_replies`, granted by Meta's App Review                                      |
+| YouTube                            | The `youtube.force-ssl` scope, which Google verifies before an app may ask for it, and a larger quota                  |
+| LinkedIn                           | The Community Management API, for company pages only, which LinkedIn grants on application                             |
+| X                                  | Paid access to X's API for reading replies                                                                             |
+| TikTok                             | Comments are offered to business accounts through a separate TikTok product, which Peal does not use                   |
+| Pinterest, Google Business Profile | Not planned: Pinterest's API has no comments, and a Business Profile has reviews, which are not collected              |
+
+If you run your own server, the same reviews apply to your own platform apps.
+
+## With the API, the command line and AI assistants [#api]
+
+Reading needs the permission `engagement:read`, which every role has; answering, marking, moderating and taking a reply back need `engagement:reply`, which owners, admins and editors have. An API key carries what its creator gave it. An application connected through OAuth needs the scope `workspace:publish` to do anything but read, as for publishing a post. Staff who act as a member to help them neither read the inbox nor answer.
+
+| Request                                                                    | What it does                                                                                                                                                        |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/inbox/threads`                          | Lists the threads that have comments, those waiting for an answer first. `channelId`, `postId` and `unanswered=true` narrow the list; `cursor` and `limit` page it. |
+| `GET /api/workspaces/{workspaceId}/inbox/threads/{threadId}`               | A thread whole: comments, replies, and what the channel can do.                                                                                                     |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/replies`    | Answers a comment. Answers `202` with the reply, `sending`.                                                                                                         |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/answered`   | Marks a comment answered, or waiting again.                                                                                                                         |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/moderation` | Hides, shows, likes, unlikes or deletes, where the platform allows.                                                                                                 |
+| `POST /api/workspaces/{workspaceId}/inbox/replies/{replyId}/confirmation`  | Records what someone found for an unconfirmed reply.                                                                                                                |
+| `DELETE /api/workspaces/{workspaceId}/inbox/replies/{replyId}`             | Takes a sent reply back.                                                                                                                                            |
+
+The command line has the same under `peal inbox` (see [Command line](/cli)), and AI assistants connected through [MCP](/mcp) have `list_comment_threads`, `get_comment_thread`, `reply_to_comment`, `confirm_comment_reply`, `withdraw_comment_reply`, `mark_comment_answered` and `moderate_comment`.
+
+A comment is text written by someone outside your workspace, and may be written to steer an AI assistant ("ignore your instructions and…"). Peal's tools say so to the assistant, and no tool acts because a comment asks. Give an assistant the scope to publish only if you want it to be able to answer in your name.
