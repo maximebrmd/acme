@@ -229,6 +229,9 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           analytics_summary: [true, false, true, false],
           cancel_post: [false, true, true, false],
           confirm_target: [false, true, true, false],
+          // A link's address lets whoever holds it connect an account,
+          // through Peal's own page: nothing leaves Peal with the call.
+          create_connect_link: [false, false, false, false],
           create_draft: [false, false, false, false],
           create_post: [false, false, false, true],
           // An endpoint is a server outside Peal, which then hears of the
@@ -236,15 +239,19 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           create_webhook: [false, false, false, true],
           discard_draft: [false, true, true, false],
           get_billing: [true, false, true, false],
+          get_connect_link: [true, false, true, false],
+          get_partner_account: [true, false, true, false],
           get_post: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
           import_media: [false, false, false, true],
           invite_member: [false, true, false, true],
           list_channels: [true, false, true, false],
+          list_connect_links: [true, false, true, false],
           list_drafts: [true, false, true, false],
           list_invitations: [true, false, true, false],
           list_media: [true, false, true, false],
           list_members: [true, false, true, false],
+          list_partner_workspaces: [true, false, true, false],
           list_post_attempts: [true, false, true, false],
           list_posts: [true, false, true, false],
           list_webhook_deliveries: [true, false, true, false],
@@ -254,6 +261,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           publish_post: [false, false, false, true],
           repost_target: [false, false, false, true],
           reschedule_post: [false, true, true, true],
+          revoke_connect_link: [false, true, true, false],
           revoke_invitation: [false, true, true, false],
           schedule_post: [false, false, false, true],
           server_health: [true, false, true, false],
@@ -812,6 +820,100 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           );
 
           assert.strictEqual(cancelled.status, "cancelled");
+        })
+    );
+
+    it.effect(
+      "create, read and revoke connect links, and read the partner account",
+      () =>
+        Effect.gen(function* links() {
+          const fixture = yield* ToolsFixture;
+          const reader = yield* connected(fixture.reading);
+          const writer = yield* connected(fixture.writing);
+
+          const LinkSchema = Schema.Struct({
+            id: Schema.String,
+            platform: Schema.String,
+            status: Schema.String,
+          });
+
+          // A connection that reads only hands out no link.
+          assert.include(
+            yield* reader.refused("create_connect_link", {
+              platform: "mastodon",
+            }),
+            "scope workspace:write"
+          );
+
+          // A workspace without a partner account returns nowhere.
+          assert.include(
+            yield* writer.refused("create_connect_link", {
+              platform: "mastodon",
+              returnUrl: "https://app.example.test/social",
+            }),
+            "The return address was refused"
+          );
+
+          const created = yield* writer.call(
+            "create_connect_link",
+            Schema.Struct({ link: LinkSchema, url: Schema.String }),
+            { expiresInHours: 1, platform: "mastodon" }
+          );
+
+          assert.strictEqual(created.link.status, "pending");
+          assert.include(created.url, "/connect/link/");
+
+          // Read afterwards, a link shows no address.
+          const listed = yield* reader.call(
+            "list_connect_links",
+            Schema.Struct({ links: Schema.Array(Schema.Unknown) }),
+            {}
+          );
+
+          assert.lengthOf(listed.links, 1);
+          assert.notInclude(JSON.stringify(listed), "/connect/link/");
+
+          const read = yield* reader.call("get_connect_link", LinkSchema, {
+            linkId: created.link.id,
+          });
+
+          assert.strictEqual(read.platform, "mastodon");
+          assert.include(
+            yield* reader.refused("revoke_connect_link", {
+              linkId: created.link.id,
+            }),
+            "scope workspace:write"
+          );
+
+          const revoked = yield* writer.call(
+            "revoke_connect_link",
+            LinkSchema,
+            { linkId: created.link.id }
+          );
+
+          assert.strictEqual(revoked.status, "revoked");
+          assert.include(
+            yield* reader.refused("get_connect_link", { linkId: "not-a-link" }),
+            "no connect link with this id"
+          );
+
+          // The workspace has no partner account: none to show, none whose
+          // workspaces to list.
+          assert.deepStrictEqual(
+            yield* reader.call(
+              "get_partner_account",
+              Schema.Struct({
+                partner: Schema.Null,
+                usage: Schema.Null,
+              }),
+              {}
+            ),
+            { partner: null, usage: null }
+          );
+          assert.include(
+            yield* reader.refused("list_partner_workspaces", {}),
+            "The workspace has no partner account"
+          );
         })
     );
 

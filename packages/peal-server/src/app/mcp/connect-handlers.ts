@@ -1,0 +1,164 @@
+import { DateTime, Effect, Option, Redacted } from "effect";
+import { CurrentMember } from "peal-contract";
+
+import { ConnectTools } from "#app/mcp/connect-tools.ts";
+import { notAllowed, refuse } from "#app/mcp/refusals.ts";
+import { toConnectLinkView } from "#channels/api/connect-link-view.ts";
+import { ConnectLinks } from "#channels/application/connect-links.ts";
+import { actorOf } from "#shared/api/actor.ts";
+import {
+  customerWorkspacePageView,
+  partnerUsageView,
+  partnerView,
+} from "#workspace/api/partner-view.ts";
+import { PartnerAccounts } from "#workspace/application/partner-accounts.ts";
+import { PartnerWorkspaces } from "#workspace/application/partner-workspaces.ts";
+
+const noLink = () => refuse("The workspace has no connect link with this id.");
+
+const noPartner = () =>
+  refuse(
+    "The workspace has no partner account. An owner or an admin opens one in the web app's settings, where the server lets them; otherwise the people who run the server do."
+  );
+
+/**
+ * What the connect tools do, through the channels context's connect links
+ * and the workspace context's partner accounts.
+ */
+export const ConnectToolsLive = ConnectTools.toLayer(
+  Effect.gen(function* connectTools() {
+    const links = yield* ConnectLinks;
+    const accounts = yield* PartnerAccounts;
+    const workspaces = yield* PartnerWorkspaces;
+
+    const actor = CurrentMember.pipe(Effect.map(actorOf));
+
+    return ConnectTools.of({
+      create_connect_link: (asked) =>
+        Effect.gen(function* create() {
+          const created = yield* links
+            .create(yield* actor, {
+              channelId: Option.fromUndefinedOr(asked.channelId),
+              connection: Option.fromUndefinedOr(asked.connection),
+              expiresInHours: Option.fromUndefinedOr(asked.expiresInHours),
+              locale: Option.fromUndefinedOr(asked.locale),
+              platform: asked.platform,
+              returnUrl: Option.fromUndefinedOr(asked.returnUrl),
+            })
+            .pipe(
+              Effect.catchTags({
+                ChannelNotFound: () =>
+                  refuse(
+                    "The workspace has no channel with this id on this platform: list_channels shows them."
+                  ),
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("connect accounts"),
+                PlatformNotConnectable: ({ platform }) =>
+                  refuse(
+                    `This server cannot connect ${platform} accounts: its operator has not set the platform's app, or Peal has no sign-in for it.`
+                  ),
+                ReturnUrlNotAllowed: () =>
+                  refuse(
+                    "The return address was refused: it must be HTTPS, on an origin the workspace's partner account registered (get_partner_account lists them). A workspace without a partner account takes none: create the link without it."
+                  ),
+                TooManyConnectLinks: ({ allowed }) =>
+                  refuse(
+                    `The workspace has ${String(allowed)} connect links waiting, the most it may: revoke some first.`
+                  ),
+              })
+            );
+
+          return {
+            link: toConnectLinkView(created.link, yield* DateTime.now),
+            url: Redacted.value(created.url),
+          };
+        }),
+      get_connect_link: ({ linkId }) =>
+        Effect.gen(function* get() {
+          const link = yield* links.get(yield* actor, linkId).pipe(
+            Effect.catchTags({
+              ConnectLinkNotFound: noLink,
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read connect links"),
+            })
+          );
+
+          return toConnectLinkView(link, yield* DateTime.now);
+        }),
+      get_partner_account: () =>
+        Effect.gen(function* partner() {
+          const member = yield* actor;
+
+          const { partner: account } = yield* accounts.standing(member).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read the partner account"),
+            })
+          );
+
+          if (Option.isNone(account)) {
+            return { partner: null, usage: null };
+          }
+
+          // Closed between the two reads: it then holds nothing.
+          const usage = yield* workspaces.usageFor(member).pipe(
+            Effect.map(Option.some),
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read the partner account"),
+              PartnerNotFound: () => Effect.succeedNone,
+            })
+          );
+
+          return {
+            partner: partnerView(account.value),
+            usage: Option.getOrNull(usage.pipe(Option.map(partnerUsageView))),
+          };
+        }),
+      list_connect_links: () =>
+        Effect.gen(function* list() {
+          const found = yield* links.list(yield* actor).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("read connect links"),
+            })
+          );
+
+          const now = yield* DateTime.now;
+
+          return { links: found.map((link) => toConnectLinkView(link, now)) };
+        }),
+      list_partner_workspaces: ({ before, externalId, limit, name }) =>
+        Effect.gen(function* owned() {
+          const page = yield* workspaces
+            .listFor(yield* actor, {
+              before: Option.fromUndefinedOr(before),
+              externalId: Option.fromUndefinedOr(externalId),
+              limit: Option.fromUndefinedOr(limit),
+              name: Option.fromUndefinedOr(name),
+            })
+            .pipe(
+              Effect.catchTags({
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("read the partner account"),
+                PartnerNotFound: noPartner,
+              })
+            );
+
+          return customerWorkspacePageView(page);
+        }),
+      revoke_connect_link: ({ linkId }) =>
+        Effect.gen(function* revoke() {
+          const link = yield* links.revoke(yield* actor, linkId).pipe(
+            Effect.catchTags({
+              ConnectLinkNotFound: noLink,
+              DatabaseError: Effect.die,
+              MissingPermission: notAllowed("revoke connect links"),
+            })
+          );
+
+          return toConnectLinkView(link, yield* DateTime.now);
+        }),
+    });
+  })
+);
