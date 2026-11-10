@@ -3,7 +3,7 @@ import { CurrentMember, defaultDraftPageSize } from "peal-contract";
 import type { ChannelOptions as ChannelOptionsInput } from "peal-contract";
 
 import { PostTools } from "#app/mcp/posts-tools.ts";
-import { notAllowed, refuse } from "#app/mcp/refusals.ts";
+import { notAllowed, planRefusal, refuse } from "#app/mcp/refusals.ts";
 import {
   channelIdsFrom,
   contentFrom,
@@ -28,6 +28,7 @@ import { actorOf } from "#shared/api/actor.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 // What the use cases' refusals tell the user, through their MCP client.
 
@@ -61,19 +62,6 @@ const inPast = () =>
 const invalidTimeZone = ({ timeZone }: { readonly timeZone: string }) =>
   refuse(
     `"${timeZone}" is not an IANA time zone, such as Europe/Paris or America/New_York: offsets and abbreviations are not taken. Nothing was scheduled.`
-  );
-
-const planLimit = ({
-  allowed,
-  limit,
-}: {
-  readonly allowed: number;
-  readonly limit: string;
-}) =>
-  refuse(
-    limit === "channels"
-      ? `The workspace has more channels connected than its plan allows (${String(allowed)}), so nothing is scheduled until the user disconnects some or changes plan, in the web app.`
-      : `The workspace's plan allows ${String(allowed)} posts a month, and that month is full: nothing was scheduled. The user changes plan in the web app, or the post goes out another month.`
   );
 
 const unknownChannels = ({
@@ -121,6 +109,7 @@ export const PostToolsLive = PostTools.toLayer(
     const followUp = yield* PostFollowUp;
     const queries = yield* PostQueries;
     const scheduling = yield* PostScheduling;
+    const refusedByPlan = yield* planRefusal;
     const tiktok = yield* TikTokCreatorInfo;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
@@ -171,6 +160,18 @@ export const PostToolsLive = PostTools.toLayer(
         )
       )
     );
+
+    // The plan has no room for the post, or the workspace holds more than
+    // it allows: what it allows and holds, and the way out.
+    const planLimit = (reached: PlanLimitReached) =>
+      actor.pipe(
+        Effect.flatMap(({ workspaceId }) =>
+          refusedByPlan(
+            workspaceId,
+            "Nothing was scheduled or published."
+          )(reached)
+        )
+      );
 
     // What keeps a new post from being scheduled.
     const newPostFailures = {

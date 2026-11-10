@@ -2,7 +2,7 @@ import { Effect, Option, Schema } from "effect";
 import { CurrentMember, defaultMediaPageSize } from "peal-contract";
 
 import { MediaTools } from "#app/mcp/media-tools.ts";
-import { notAllowed, refuse } from "#app/mcp/refusals.ts";
+import { notAllowed, planRefusal, refuse } from "#app/mcp/refusals.ts";
 import { itemView } from "#media/api/media-view.ts";
 import { MediaLibrary } from "#media/application/media-library.ts";
 import type { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
@@ -39,14 +39,17 @@ const unreachable = {
 export const MediaToolsLive = MediaTools.toLayer(
   Effect.gen(function* mediaTools() {
     const library = yield* MediaLibrary;
+    const refusedByPlan = yield* planRefusal;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
     return MediaTools.of({
       import_media: ({ altText, url }) =>
         Effect.gen(function* importing() {
+          const importer = yield* actor;
+
           const imported = yield* library
-            .importMedia(yield* actor, {
+            .importMedia(importer, {
               altText: Option.fromUndefinedOr(altText),
               url,
             })
@@ -76,10 +79,10 @@ export const MediaToolsLive = MediaTools.toLayer(
                     `The ${kind} is too large: ${megabytes(byteSize)} or more, where Peal stores ${megabytes(maxByteSize)} at most for ${kind === "image" ? "an image" : "a video"}. Nothing was stored.`
                   ),
                 MissingPermission: notAllowed("add media"),
-                PlanLimitReached: ({ allowed }) =>
-                  refuse(
-                    `The workspace's plan has no room for this file: it stores ${megabytes(allowed)} of media at most. The user frees room by deleting media, or changes plan, in the web app.`
-                  ),
+                PlanLimitReached: refusedByPlan(
+                  importer.workspaceId,
+                  "Nothing was stored."
+                ),
                 UnsupportedMediaType: ({ contentType }) =>
                   refuse(
                     `The address did not answer with a file Peal stores (its host calls it ${contentType}): JPEG, PNG, GIF and WebP images, MP4 and QuickTime videos. A link to a page that shows the picture is not the picture: ask for the file's own address.`

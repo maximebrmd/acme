@@ -86,13 +86,21 @@ export const planRefusalText = (
 
 /**
  * Refuses a tool the workspace's plan has no room for, with the way out
- * (`planRefusalText`). Built with the toolkit, as its use cases are.
+ * (`planRefusalText`), after `nothing`, what the call left undone, when the
+ * tool says it. Built with the toolkit, as its use cases are.
  */
 export const planRefusal = UpgradePaths.use((paths) =>
   Effect.succeed(
-    (workspaceId: WorkspaceId) => (reached: PlanLimitReached) =>
-      paths
-        .from(workspaceId, reached.limit, reached.needed)
-        .pipe(Effect.flatMap((path) => refuse(planRefusalText(reached, path))))
+    (workspaceId: WorkspaceId, nothing = "") =>
+      (reached: PlanLimitReached) =>
+        paths
+          .from(workspaceId, reached.limit, reached.needed)
+          .pipe(
+            Effect.flatMap((path) =>
+              refuse(
+                `${nothing === "" ? "" : `${nothing} `}${planRefusalText(reached, path)}`
+              )
+            )
+          )
   )
 );
