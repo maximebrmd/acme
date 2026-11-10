@@ -20,6 +20,21 @@ const contentTools: ReadonlySet<string> = new Set(
 /** Where the MCP endpoint answers, under PUBLIC_URL. */
 export const mcpPath = "/api/mcp";
 
+/** The version the MCP server gives of itself. */
+export const mcpServerVersion = "0.1.0";
+
+// The revisions of the protocol the endpoint speaks, newest first.
+const protocols = [
+  McpProtocol.v2026_07_28,
+  McpProtocol.v2025_11_25,
+  McpProtocol.v2025_06_18,
+] as const;
+
+/** Those revisions, by their dates, as the server card lists them. */
+export const mcpProtocolVersions: readonly string[] = protocols.map(
+  ({ protocolVersion }) => protocolVersion
+);
+
 /**
  * The MCP endpoint, over Streamable HTTP at /api/mcp. Every request needs
  * a credential: an OAuth access token issued for it, which MCP clients
@@ -44,13 +59,9 @@ export const McpLive = McpServer.layerHttp({
     "Peal schedules social media posts for teams. These tools act in one workspace: the one the user picked when they connected, or the one the connection's API key belongs to; call whoami to see which, and what this connection may do there. Posting: list_channels answers where a post can go, list_media and import_media what it can show, create_draft saves a post for the user to review, and schedule_post, publish_post and create_post put one out, at a time or now. What goes out is public on the platforms and cannot be taken back from Peal: schedule or publish only what the user asked for, on the channels they named, and prefer a draft when unsure. Those tools need the scope workspace:publish, which the user grants when they connect (an API key needs the permission post:schedule); without it, drafts and media still work. A refused post lists every violation at once. After publishing, get_post says how it went on each channel; ask the user before reposting, confirming or inviting.",
   name: "Peal",
   path: mcpPath,
-  protocols: [
-    McpProtocol.v2026_07_28,
-    McpProtocol.v2025_11_25,
-    McpProtocol.v2025_06_18,
-  ],
+  protocols: [...protocols],
   registrations: McpServer.toolkit(PealTools).pipe(
     Layer.provide(PealToolsLive)
   ),
-  version: "0.1.0",
+  version: mcpServerVersion,
 }).pipe(Layer.provide(mcpAuthentication(contentTools)));

@@ -18,6 +18,7 @@ import { ClientErrorsLive } from "#app/client-errors/live.ts";
 import { ClusterLive } from "#app/cluster.ts";
 import { ContractRequestsLive } from "#app/contract-requests/live.ts";
 import { CronsLive } from "#app/crons.ts";
+import { DiscoveryLive } from "#app/discovery/live.ts";
 import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { countRequests } from "#app/request-metrics.ts";
@@ -121,13 +122,15 @@ const ApiLive = HttpApiBuilder.layer(Api, {
 );
 
 /**
- * Every route the server answers: the HTTP API, Better Auth's, and the MCP
- * endpoint, each answer with its request id.
+ * Every route the server answers: the HTTP API, Better Auth's, the MCP
+ * endpoint and the documents that say where they are, each answer with its
+ * request id.
  */
 export const RoutesLive = Layer.mergeAll(
   ApiLive,
   AuthRoutesLive,
   McpLive,
+  DiscoveryLive,
   ApiAnswersLive
 );
 
