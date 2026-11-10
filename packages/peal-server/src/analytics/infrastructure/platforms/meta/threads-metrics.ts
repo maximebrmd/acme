@@ -81,20 +81,33 @@ export const threadsMetrics = Effect.fn("ThreadsMetrics.make")(
 
       const count = (name: string) => insightOf(found.body, name);
 
-      const read: PostRead = {
-        _tag: "read",
-        reading: {
-          _tag: "counted",
-          metrics: new PostMetrics({
-            impressions: count("views"),
-            likes: Option.getOrElse(count("likes"), () => 0),
-            quotes: count("quotes"),
-            replies: Option.getOrElse(count("replies"), () => 0),
-            reposts: Option.getOrElse(count("reposts"), () => 0),
+      // A metric Threads left out gives none: the post is not counted this
+      // time, rather than counted as zero.
+      const read: PostRead = Option.match(
+        Option.all({
+          likes: count("likes"),
+          replies: count("replies"),
+          reposts: count("reposts"),
+        }),
+        {
+          onNone: (): PostRead => ({
+            _tag: "read",
+            reading: { _tag: "failed", targetId: post.targetId },
           }),
-          targetId: post.targetId,
-        },
-      };
+          onSome: (counts): PostRead => ({
+            _tag: "read",
+            reading: {
+              _tag: "counted",
+              metrics: new PostMetrics({
+                ...counts,
+                impressions: count("views"),
+                quotes: count("quotes"),
+              }),
+              targetId: post.targetId,
+            },
+          }),
+        }
+      );
 
       return read;
     });

@@ -133,22 +133,34 @@ export const facebookMetrics = Effect.fn("FacebookMetrics.make")(
           ? insightOf(insights.body, name)
           : Option.none<number>();
 
-      const read: PostRead = {
-        _tag: "read",
-        reading: {
-          _tag: "counted",
-          metrics: new PostMetrics({
-            clicks: insight("post_clicks"),
-            impressions: insight("post_media_view"),
-            likes: reactions.body.summary?.total_count ?? 0,
-            // A Page's post has no quotes.
-            quotes: Option.none(),
-            replies: comments.body.summary?.total_count ?? 0,
-            reposts: found.body.shares?.count ?? 0,
-          }),
-          targetId: post.targetId,
-        },
-      };
+      const likes = reactions.body.summary?.total_count;
+      const replies = comments.body.summary?.total_count;
+
+      // A summary without its count gives none: the post is not counted
+      // this time, rather than counted as zero. A post nobody shared has
+      // no `shares` at all, which is a count of none.
+      const read: PostRead =
+        likes === undefined || replies === undefined
+          ? {
+              _tag: "read",
+              reading: { _tag: "failed", targetId: post.targetId },
+            }
+          : {
+              _tag: "read",
+              reading: {
+                _tag: "counted",
+                metrics: new PostMetrics({
+                  clicks: insight("post_clicks"),
+                  impressions: insight("post_media_view"),
+                  likes,
+                  // A Page's post has no quotes.
+                  quotes: Option.none(),
+                  replies,
+                  reposts: found.body.shares?.count ?? 0,
+                }),
+                targetId: post.targetId,
+              },
+            };
 
       return read;
     });

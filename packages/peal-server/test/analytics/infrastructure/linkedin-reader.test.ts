@@ -204,6 +204,63 @@ describe("reading counts on a LinkedIn page", () => {
       })
   );
 
+  it.live(
+    "keeps a count LinkedIn left out as none, never as zero, and counts nothing past what Peal stores",
+    () =>
+      Effect.gen(function* partial() {
+        const server = yield* fakeStatistics(new Set());
+        const posts = [share, video].map(toRead);
+        const [first, second] = posts.map(({ targetId }) => targetId);
+
+        assert(first !== undefined && second !== undefined);
+
+        server.next(
+          json({
+            elements: [
+              {
+                organizationalEntity: pageUrn,
+                share,
+                // No reach, no clicks: LinkedIn gave none for this post.
+                totalShareStatistics: {
+                  commentCount: 2,
+                  impressionCount: 40,
+                  likeCount: 3,
+                  shareCount: 1,
+                },
+              },
+              {
+                organizationalEntity: pageUrn,
+                totalShareStatistics: { ...statistics, likeCount: 2 ** 40 },
+                ugcPost: video,
+              },
+            ],
+          })
+        );
+
+        const { batch } = yield* reading(posts, page, server.url);
+
+        assert.deepStrictEqual(
+          batch._tag === "Success" ? batch.success.readings : undefined,
+          [
+            {
+              _tag: "counted",
+              metrics: new PostMetrics({
+                clicks: Option.none(),
+                impressions: Option.some(40),
+                likes: 3,
+                quotes: Option.none(),
+                reach: Option.none(),
+                replies: 2,
+                reposts: 1,
+              }),
+              targetId: first,
+            },
+            { _tag: "failed", targetId: second },
+          ]
+        );
+      })
+  );
+
   it.live("reads nothing on a member's profile, without asking LinkedIn", () =>
     Effect.gen(function* member() {
       const server = yield* fakeStatistics(new Set());

@@ -399,6 +399,26 @@ describe("reading counts on X", () => {
       }).pipe(Effect.scoped)
   );
 
+  it.live("counts nothing X gave no like, reply or repost count for", () =>
+    Effect.gen(function* partial() {
+      const server = yield* fakePosts(new Map());
+      const post = toRead(idOf(0), 0);
+
+      server.script([
+        json({
+          data: [{ id: idOf(0), public_metrics: { impression_count: 10 } }],
+        }),
+      ]);
+
+      const { batch } = yield* reading(server.url, [post]);
+
+      assert.deepStrictEqual(
+        batch._tag === "Success" ? batch.success.readings : undefined,
+        [{ _tag: "failed", targetId: post.targetId }]
+      );
+    }).pipe(Effect.scoped)
+  );
+
   it.live(
     "halts rather than refuse the token on a 401 that is not X's own",
     () =>

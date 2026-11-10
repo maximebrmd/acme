@@ -68,15 +68,28 @@ const PostsSchema = Schema.Struct({
 
 const postsOf = HttpClientResponse.schemaBodyJson(PostsSchema);
 
-const metricsOf = (metrics: typeof PublicMetricsSchema.Type) =>
-  new PostMetrics({
-    impressions: Option.fromUndefinedOr(metrics.impression_count),
-    likes: metrics.like_count ?? 0,
-    quotes: Option.fromUndefinedOr(metrics.quote_count),
-    replies: metrics.reply_count ?? 0,
-    reposts: metrics.repost_count ?? metrics.retweet_count ?? 0,
-    saves: Option.fromUndefinedOr(metrics.bookmark_count),
-  });
+// The counts X gave. None when it left out a like, reply or repost count:
+// the post is then not counted this time, rather than counted as zero.
+const metricsOf = (
+  metrics: typeof PublicMetricsSchema.Type
+): Option.Option<PostMetrics> =>
+  Option.all({
+    likes: Option.fromUndefinedOr(metrics.like_count),
+    replies: Option.fromUndefinedOr(metrics.reply_count),
+    reposts: Option.fromUndefinedOr(
+      metrics.repost_count ?? metrics.retweet_count
+    ),
+  }).pipe(
+    Option.map(
+      (counts) =>
+        new PostMetrics({
+          ...counts,
+          impressions: Option.fromUndefinedOr(metrics.impression_count),
+          quotes: Option.fromUndefinedOr(metrics.quote_count),
+          saves: Option.fromUndefinedOr(metrics.bookmark_count),
+        })
+    )
+  );
 
 type Call =
   | { readonly _tag: "read"; readonly readings: readonly PostReading[] }
@@ -167,13 +180,21 @@ export const xMetrics = Effect.fn("XMetrics.make")(function* xMetrics(
           readings: posts.map((post): PostReading => {
             const metrics = byId.get(post.platformPostId)?.public_metrics;
 
-            return metrics === undefined
-              ? missing(post)
-              : {
-                  _tag: "counted",
-                  metrics: metricsOf(metrics),
-                  targetId: post.targetId,
-                };
+            if (metrics === undefined) {
+              return missing(post);
+            }
+
+            return Option.match(metricsOf(metrics), {
+              onNone: (): PostReading => ({
+                _tag: "failed",
+                targetId: post.targetId,
+              }),
+              onSome: (counted): PostReading => ({
+                _tag: "counted",
+                metrics: counted,
+                targetId: post.targetId,
+              }),
+            });
           }),
         };
       },
