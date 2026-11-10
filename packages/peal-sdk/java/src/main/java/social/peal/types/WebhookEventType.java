@@ -11,6 +11,9 @@ public final class WebhookEventType {
 
     public static final WebhookEventType POST_FAILED = new WebhookEventType(Value.POST_FAILED, "post.failed");
 
+    public static final WebhookEventType COMMENT_RECEIVED =
+            new WebhookEventType(Value.COMMENT_RECEIVED, "comment.received");
+
     public static final WebhookEventType POST_PUBLISHED = new WebhookEventType(Value.POST_PUBLISHED, "post.published");
 
     public static final WebhookEventType POST_APPROVAL_REQUESTED =
@@ -26,6 +29,9 @@ public final class WebhookEventType {
 
     public static final WebhookEventType CHANNEL_CONNECTED =
             new WebhookEventType(Value.CHANNEL_CONNECTED, "channel.connected");
+
+    public static final WebhookEventType COMMENT_REPLIED =
+            new WebhookEventType(Value.COMMENT_REPLIED, "comment.replied");
 
     public static final WebhookEventType WEBHOOK_TEST = new WebhookEventType(Value.WEBHOOK_TEST, "webhook.test");
 
@@ -80,6 +86,8 @@ public final class WebhookEventType {
                 return visitor.visitMediaFailed();
             case POST_FAILED:
                 return visitor.visitPostFailed();
+            case COMMENT_RECEIVED:
+                return visitor.visitCommentReceived();
             case POST_PUBLISHED:
                 return visitor.visitPostPublished();
             case POST_APPROVAL_REQUESTED:
@@ -92,6 +100,8 @@ public final class WebhookEventType {
                 return visitor.visitPostApproved();
             case CHANNEL_CONNECTED:
                 return visitor.visitChannelConnected();
+            case COMMENT_REPLIED:
+                return visitor.visitCommentReplied();
             case WEBHOOK_TEST:
                 return visitor.visitWebhookTest();
             case CHANNEL_DISCONNECTED:
@@ -119,6 +129,8 @@ public final class WebhookEventType {
                 return MEDIA_FAILED;
             case "post.failed":
                 return POST_FAILED;
+            case "comment.received":
+                return COMMENT_RECEIVED;
             case "post.published":
                 return POST_PUBLISHED;
             case "post.approval_requested":
@@ -131,6 +143,8 @@ public final class WebhookEventType {
                 return POST_APPROVED;
             case "channel.connected":
                 return CHANNEL_CONNECTED;
+            case "comment.replied":
+                return COMMENT_REPLIED;
             case "webhook.test":
                 return WEBHOOK_TEST;
             case "channel.disconnected":
@@ -179,6 +193,10 @@ public final class WebhookEventType {
 
         MEDIA_FAILED,
 
+        COMMENT_RECEIVED,
+
+        COMMENT_REPLIED,
+
         WEBHOOK_TEST,
 
         UNKNOWN
@@ -212,6 +230,10 @@ public final class WebhookEventType {
         T visitMediaReady();
 
         T visitMediaFailed();
+
+        T visitCommentReceived();
+
+        T visitCommentReplied();
 
         T visitWebhookTest();
 

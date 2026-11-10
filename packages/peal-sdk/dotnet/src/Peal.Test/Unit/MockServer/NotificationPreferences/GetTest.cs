@@ -15,6 +15,7 @@ public class GetTest : BaseMockServerTest
             {
               "email": {
                 "channelReconnect": true,
+                "comments": true,
                 "postFailed": true,
                 "postPublished": true,
                 "postReview": true,
@@ -49,6 +50,7 @@ public class GetTest : BaseMockServerTest
             {
               "email": {
                 "channelReconnect": true,
+                "comments": true,
                 "postFailed": true,
                 "postPublished": true,
                 "postReview": true,

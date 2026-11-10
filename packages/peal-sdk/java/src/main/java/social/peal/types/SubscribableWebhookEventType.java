@@ -13,6 +13,9 @@ public final class SubscribableWebhookEventType {
     public static final SubscribableWebhookEventType POST_FAILED =
             new SubscribableWebhookEventType(Value.POST_FAILED, "post.failed");
 
+    public static final SubscribableWebhookEventType COMMENT_RECEIVED =
+            new SubscribableWebhookEventType(Value.COMMENT_RECEIVED, "comment.received");
+
     public static final SubscribableWebhookEventType POST_PUBLISHED =
             new SubscribableWebhookEventType(Value.POST_PUBLISHED, "post.published");
 
@@ -30,6 +33,9 @@ public final class SubscribableWebhookEventType {
 
     public static final SubscribableWebhookEventType CHANNEL_CONNECTED =
             new SubscribableWebhookEventType(Value.CHANNEL_CONNECTED, "channel.connected");
+
+    public static final SubscribableWebhookEventType COMMENT_REPLIED =
+            new SubscribableWebhookEventType(Value.COMMENT_REPLIED, "comment.replied");
 
     public static final SubscribableWebhookEventType CHANNEL_DISCONNECTED =
             new SubscribableWebhookEventType(Value.CHANNEL_DISCONNECTED, "channel.disconnected");
@@ -86,6 +92,8 @@ public final class SubscribableWebhookEventType {
                 return visitor.visitMediaFailed();
             case POST_FAILED:
                 return visitor.visitPostFailed();
+            case COMMENT_RECEIVED:
+                return visitor.visitCommentReceived();
             case POST_PUBLISHED:
                 return visitor.visitPostPublished();
             case POST_APPROVAL_REQUESTED:
@@ -98,6 +106,8 @@ public final class SubscribableWebhookEventType {
                 return visitor.visitPostApproved();
             case CHANNEL_CONNECTED:
                 return visitor.visitChannelConnected();
+            case COMMENT_REPLIED:
+                return visitor.visitCommentReplied();
             case CHANNEL_DISCONNECTED:
                 return visitor.visitChannelDisconnected();
             case CHANNEL_RECONNECT_NEEDED:
@@ -123,6 +133,8 @@ public final class SubscribableWebhookEventType {
                 return MEDIA_FAILED;
             case "post.failed":
                 return POST_FAILED;
+            case "comment.received":
+                return COMMENT_RECEIVED;
             case "post.published":
                 return POST_PUBLISHED;
             case "post.approval_requested":
@@ -135,6 +147,8 @@ public final class SubscribableWebhookEventType {
                 return POST_APPROVED;
             case "channel.connected":
                 return CHANNEL_CONNECTED;
+            case "comment.replied":
+                return COMMENT_REPLIED;
             case "channel.disconnected":
                 return CHANNEL_DISCONNECTED;
             case "channel.reconnect_needed":
@@ -181,6 +195,10 @@ public final class SubscribableWebhookEventType {
 
         MEDIA_FAILED,
 
+        COMMENT_RECEIVED,
+
+        COMMENT_REPLIED,
+
         UNKNOWN
     }
 
@@ -212,6 +230,10 @@ public final class SubscribableWebhookEventType {
         T visitMediaReady();
 
         T visitMediaFailed();
+
+        T visitCommentReceived();
+
+        T visitCommentReplied();
 
         T visitUnknown(String unknownType);
     }

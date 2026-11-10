@@ -18,6 +18,8 @@ WebhookEventType = typing.Union[
         "channel.reconnect_needed",
         "media.ready",
         "media.failed",
+        "comment.received",
+        "comment.replied",
         "webhook.test",
     ],
     typing.Any,

@@ -205,6 +205,17 @@
       },
       "default": "./dist/cjs/api/resources/webhooks/exports.js"
     },
+    "./inbox": {
+      "import": {
+        "types": "./dist/esm/api/resources/inbox/exports.d.mts",
+        "default": "./dist/esm/api/resources/inbox/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/inbox/exports.d.ts",
+        "default": "./dist/cjs/api/resources/inbox/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/inbox/exports.js"
+    },
     "./review": {
       "import": {
         "types": "./dist/esm/api/resources/review/exports.d.mts",

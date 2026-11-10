@@ -14,6 +14,12 @@ class NotificationPreferencesChangeEmail extends JsonSerializableType
     public ?bool $channelReconnect;
 
     /**
+     * @var ?bool $comments
+     */
+    #[JsonProperty('comments')]
+    public ?bool $comments;
+
+    /**
      * @var ?bool $postFailed
      */
     #[JsonProperty('postFailed')]
@@ -40,6 +46,7 @@ class NotificationPreferencesChangeEmail extends JsonSerializableType
     /**
      * @param array{
      *   channelReconnect?: ?bool,
+     *   comments?: ?bool,
      *   postFailed?: ?bool,
      *   postPublished?: ?bool,
      *   postReview?: ?bool,
@@ -50,6 +57,7 @@ class NotificationPreferencesChangeEmail extends JsonSerializableType
         array $values = [],
     ) {
         $this->channelReconnect = $values['channelReconnect'] ?? null;
+        $this->comments = $values['comments'] ?? null;
         $this->postFailed = $values['postFailed'] ?? null;
         $this->postPublished = $values['postPublished'] ?? null;
         $this->postReview = $values['postReview'] ?? null;

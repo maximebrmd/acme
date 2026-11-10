@@ -71,6 +71,18 @@ pub enum NoticeEvent {
     },
 
     #[non_exhaustive]
+    CommentsReceived {
+        #[serde(default)]
+        count: i64,
+        #[serde(rename = "postId")]
+        #[serde(default)]
+        post_id: String,
+        #[serde(rename = "threadId")]
+        #[serde(default)]
+        thread_id: String,
+    },
+
+    #[non_exhaustive]
     ChannelReconnectRequired { channel: NoticeChannel },
 
     #[non_exhaustive]
@@ -191,6 +203,14 @@ impl NoticeEvent {
 
     pub fn post_commented(by: ReviewParty, post_id: String) -> Self {
         Self::PostCommented { by, post_id }
+    }
+
+    pub fn comments_received(count: i64, post_id: String, thread_id: String) -> Self {
+        Self::CommentsReceived {
+            count,
+            post_id,
+            thread_id,
+        }
     }
 
     pub fn channel_reconnect_required(channel: NoticeChannel) -> Self {

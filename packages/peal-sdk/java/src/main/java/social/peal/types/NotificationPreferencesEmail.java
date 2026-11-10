@@ -20,6 +20,8 @@ import social.peal.core.ObjectMappers;
 public final class NotificationPreferencesEmail {
     private final boolean channelReconnect;
 
+    private final boolean comments;
+
     private final boolean postFailed;
 
     private final boolean postPublished;
@@ -32,12 +34,14 @@ public final class NotificationPreferencesEmail {
 
     private NotificationPreferencesEmail(
             boolean channelReconnect,
+            boolean comments,
             boolean postFailed,
             boolean postPublished,
             boolean postReview,
             boolean postUnconfirmed,
             Map<String, Object> additionalProperties) {
         this.channelReconnect = channelReconnect;
+        this.comments = comments;
         this.postFailed = postFailed;
         this.postPublished = postPublished;
         this.postReview = postReview;
@@ -48,6 +52,11 @@ public final class NotificationPreferencesEmail {
     @JsonProperty("channelReconnect")
     public boolean getChannelReconnect() {
         return channelReconnect;
+    }
+
+    @JsonProperty("comments")
+    public boolean getComments() {
+        return comments;
     }
 
     @JsonProperty("postFailed")
@@ -83,6 +92,7 @@ public final class NotificationPreferencesEmail {
 
     private boolean equalTo(NotificationPreferencesEmail other) {
         return channelReconnect == other.channelReconnect
+                && comments == other.comments
                 && postFailed == other.postFailed
                 && postPublished == other.postPublished
                 && postReview == other.postReview
@@ -92,7 +102,12 @@ public final class NotificationPreferencesEmail {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.channelReconnect, this.postFailed, this.postPublished, this.postReview, this.postUnconfirmed);
+                this.channelReconnect,
+                this.comments,
+                this.postFailed,
+                this.postPublished,
+                this.postReview,
+                this.postUnconfirmed);
     }
 
     @java.lang.Override
@@ -105,9 +120,13 @@ public final class NotificationPreferencesEmail {
     }
 
     public interface ChannelReconnectStage {
-        PostFailedStage channelReconnect(boolean channelReconnect);
+        CommentsStage channelReconnect(boolean channelReconnect);
 
         Builder from(NotificationPreferencesEmail other);
+    }
+
+    public interface CommentsStage {
+        PostFailedStage comments(boolean comments);
     }
 
     public interface PostFailedStage {
@@ -137,12 +156,15 @@ public final class NotificationPreferencesEmail {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
             implements ChannelReconnectStage,
+                    CommentsStage,
                     PostFailedStage,
                     PostPublishedStage,
                     PostReviewStage,
                     PostUnconfirmedStage,
                     _FinalStage {
         private boolean channelReconnect;
+
+        private boolean comments;
 
         private boolean postFailed;
 
@@ -159,6 +181,7 @@ public final class NotificationPreferencesEmail {
         @java.lang.Override
         public Builder from(NotificationPreferencesEmail other) {
             channelReconnect(other.getChannelReconnect());
+            comments(other.getComments());
             postFailed(other.getPostFailed());
             postPublished(other.getPostPublished());
             postReview(other.getPostReview());
@@ -168,8 +191,15 @@ public final class NotificationPreferencesEmail {
 
         @java.lang.Override
         @JsonSetter("channelReconnect")
-        public PostFailedStage channelReconnect(boolean channelReconnect) {
+        public CommentsStage channelReconnect(boolean channelReconnect) {
             this.channelReconnect = channelReconnect;
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("comments")
+        public PostFailedStage comments(boolean comments) {
+            this.comments = comments;
             return this;
         }
 
@@ -204,12 +234,19 @@ public final class NotificationPreferencesEmail {
         @java.lang.Override
         public NotificationPreferencesEmail build() {
             return new NotificationPreferencesEmail(
-                    channelReconnect, postFailed, postPublished, postReview, postUnconfirmed, additionalProperties);
+                    channelReconnect,
+                    comments,
+                    postFailed,
+                    postPublished,
+                    postReview,
+                    postUnconfirmed,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelReconnect")
+                    || key.equalsIgnoreCase("comments")
                     || key.equalsIgnoreCase("postFailed")
                     || key.equalsIgnoreCase("postPublished")
                     || key.equalsIgnoreCase("postReview")

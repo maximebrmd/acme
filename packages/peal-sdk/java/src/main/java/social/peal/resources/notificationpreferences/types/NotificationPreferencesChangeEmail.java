@@ -22,6 +22,8 @@ import social.peal.core.ObjectMappers;
 public final class NotificationPreferencesChangeEmail {
     private final Optional<Boolean> channelReconnect;
 
+    private final Optional<Boolean> comments;
+
     private final Optional<Boolean> postFailed;
 
     private final Optional<Boolean> postPublished;
@@ -34,12 +36,14 @@ public final class NotificationPreferencesChangeEmail {
 
     private NotificationPreferencesChangeEmail(
             Optional<Boolean> channelReconnect,
+            Optional<Boolean> comments,
             Optional<Boolean> postFailed,
             Optional<Boolean> postPublished,
             Optional<Boolean> postReview,
             Optional<Boolean> postUnconfirmed,
             Map<String, Object> additionalProperties) {
         this.channelReconnect = channelReconnect;
+        this.comments = comments;
         this.postFailed = postFailed;
         this.postPublished = postPublished;
         this.postReview = postReview;
@@ -50,6 +54,11 @@ public final class NotificationPreferencesChangeEmail {
     @JsonProperty("channelReconnect")
     public Optional<Boolean> getChannelReconnect() {
         return channelReconnect;
+    }
+
+    @JsonProperty("comments")
+    public Optional<Boolean> getComments() {
+        return comments;
     }
 
     @JsonProperty("postFailed")
@@ -86,6 +95,7 @@ public final class NotificationPreferencesChangeEmail {
 
     private boolean equalTo(NotificationPreferencesChangeEmail other) {
         return channelReconnect.equals(other.channelReconnect)
+                && comments.equals(other.comments)
                 && postFailed.equals(other.postFailed)
                 && postPublished.equals(other.postPublished)
                 && postReview.equals(other.postReview)
@@ -95,7 +105,12 @@ public final class NotificationPreferencesChangeEmail {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.channelReconnect, this.postFailed, this.postPublished, this.postReview, this.postUnconfirmed);
+                this.channelReconnect,
+                this.comments,
+                this.postFailed,
+                this.postPublished,
+                this.postReview,
+                this.postUnconfirmed);
     }
 
     @java.lang.Override
@@ -111,6 +126,8 @@ public final class NotificationPreferencesChangeEmail {
     public static final class Builder {
         private Optional<Boolean> channelReconnect = Optional.empty();
 
+        private Optional<Boolean> comments = Optional.empty();
+
         private Optional<Boolean> postFailed = Optional.empty();
 
         private Optional<Boolean> postPublished = Optional.empty();
@@ -125,6 +142,7 @@ public final class NotificationPreferencesChangeEmail {
 
         public Builder from(NotificationPreferencesChangeEmail other) {
             channelReconnect(other.getChannelReconnect());
+            comments(other.getComments());
             postFailed(other.getPostFailed());
             postPublished(other.getPostPublished());
             postReview(other.getPostReview());
@@ -140,6 +158,17 @@ public final class NotificationPreferencesChangeEmail {
 
         public Builder channelReconnect(Boolean channelReconnect) {
             this.channelReconnect = Optional.ofNullable(channelReconnect);
+            return this;
+        }
+
+        @JsonSetter(value = "comments", nulls = Nulls.SKIP)
+        public Builder comments(Optional<Boolean> comments) {
+            this.comments = comments;
+            return this;
+        }
+
+        public Builder comments(Boolean comments) {
+            this.comments = Optional.ofNullable(comments);
             return this;
         }
 
@@ -189,12 +218,19 @@ public final class NotificationPreferencesChangeEmail {
 
         public NotificationPreferencesChangeEmail build() {
             return new NotificationPreferencesChangeEmail(
-                    channelReconnect, postFailed, postPublished, postReview, postUnconfirmed, additionalProperties);
+                    channelReconnect,
+                    comments,
+                    postFailed,
+                    postPublished,
+                    postReview,
+                    postUnconfirmed,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelReconnect")
+                    || key.equalsIgnoreCase("comments")
                     || key.equalsIgnoreCase("postFailed")
                     || key.equalsIgnoreCase("postPublished")
                     || key.equalsIgnoreCase("postReview")

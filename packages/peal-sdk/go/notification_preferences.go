@@ -113,14 +113,16 @@ func (n *NotificationPreferences) String() string {
 
 var (
 	notificationPreferencesEmailFieldChannelReconnect = big.NewInt(1 << 0)
-	notificationPreferencesEmailFieldPostFailed       = big.NewInt(1 << 1)
-	notificationPreferencesEmailFieldPostPublished    = big.NewInt(1 << 2)
-	notificationPreferencesEmailFieldPostReview       = big.NewInt(1 << 3)
-	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 4)
+	notificationPreferencesEmailFieldComments         = big.NewInt(1 << 1)
+	notificationPreferencesEmailFieldPostFailed       = big.NewInt(1 << 2)
+	notificationPreferencesEmailFieldPostPublished    = big.NewInt(1 << 3)
+	notificationPreferencesEmailFieldPostReview       = big.NewInt(1 << 4)
+	notificationPreferencesEmailFieldPostUnconfirmed  = big.NewInt(1 << 5)
 )
 
 type NotificationPreferencesEmail struct {
 	ChannelReconnect bool `json:"channelReconnect" url:"channelReconnect"`
+	Comments         bool `json:"comments" url:"comments"`
 	PostFailed       bool `json:"postFailed" url:"postFailed"`
 	PostPublished    bool `json:"postPublished" url:"postPublished"`
 	PostReview       bool `json:"postReview" url:"postReview"`
@@ -138,6 +140,13 @@ func (n *NotificationPreferencesEmail) GetChannelReconnect() bool {
 		return false
 	}
 	return n.ChannelReconnect
+}
+
+func (n *NotificationPreferencesEmail) GetComments() bool {
+	if n == nil {
+		return false
+	}
+	return n.Comments
 }
 
 func (n *NotificationPreferencesEmail) GetPostFailed() bool {
@@ -189,6 +198,13 @@ func (n *NotificationPreferencesEmail) require(field *big.Int) {
 func (n *NotificationPreferencesEmail) SetChannelReconnect(channelReconnect bool) {
 	n.ChannelReconnect = channelReconnect
 	n.require(notificationPreferencesEmailFieldChannelReconnect)
+}
+
+// SetComments sets the Comments field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesEmail) SetComments(comments bool) {
+	n.Comments = comments
+	n.require(notificationPreferencesEmailFieldComments)
 }
 
 // SetPostFailed sets the PostFailed field and marks it as non-optional;
@@ -263,14 +279,16 @@ func (n *NotificationPreferencesEmail) String() string {
 
 var (
 	notificationPreferencesChangeEmailFieldChannelReconnect = big.NewInt(1 << 0)
-	notificationPreferencesChangeEmailFieldPostFailed       = big.NewInt(1 << 1)
-	notificationPreferencesChangeEmailFieldPostPublished    = big.NewInt(1 << 2)
-	notificationPreferencesChangeEmailFieldPostReview       = big.NewInt(1 << 3)
-	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 4)
+	notificationPreferencesChangeEmailFieldComments         = big.NewInt(1 << 1)
+	notificationPreferencesChangeEmailFieldPostFailed       = big.NewInt(1 << 2)
+	notificationPreferencesChangeEmailFieldPostPublished    = big.NewInt(1 << 3)
+	notificationPreferencesChangeEmailFieldPostReview       = big.NewInt(1 << 4)
+	notificationPreferencesChangeEmailFieldPostUnconfirmed  = big.NewInt(1 << 5)
 )
 
 type NotificationPreferencesChangeEmail struct {
 	ChannelReconnect *bool `json:"channelReconnect,omitempty" url:"channelReconnect,omitempty"`
+	Comments         *bool `json:"comments,omitempty" url:"comments,omitempty"`
 	PostFailed       *bool `json:"postFailed,omitempty" url:"postFailed,omitempty"`
 	PostPublished    *bool `json:"postPublished,omitempty" url:"postPublished,omitempty"`
 	PostReview       *bool `json:"postReview,omitempty" url:"postReview,omitempty"`
@@ -288,6 +306,13 @@ func (n *NotificationPreferencesChangeEmail) GetChannelReconnect() *bool {
 		return nil
 	}
 	return n.ChannelReconnect
+}
+
+func (n *NotificationPreferencesChangeEmail) GetComments() *bool {
+	if n == nil {
+		return nil
+	}
+	return n.Comments
 }
 
 func (n *NotificationPreferencesChangeEmail) GetPostFailed() *bool {
@@ -339,6 +364,13 @@ func (n *NotificationPreferencesChangeEmail) require(field *big.Int) {
 func (n *NotificationPreferencesChangeEmail) SetChannelReconnect(channelReconnect *bool) {
 	n.ChannelReconnect = channelReconnect
 	n.require(notificationPreferencesChangeEmailFieldChannelReconnect)
+}
+
+// SetComments sets the Comments field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NotificationPreferencesChangeEmail) SetComments(comments *bool) {
+	n.Comments = comments
+	n.require(notificationPreferencesChangeEmailFieldComments)
 }
 
 // SetPostFailed sets the PostFailed field and marks it as non-optional;

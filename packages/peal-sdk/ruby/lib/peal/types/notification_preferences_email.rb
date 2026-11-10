@@ -7,6 +7,8 @@ module Peal
     class NotificationPreferencesEmail < Internal::Types::Model
       field :channel_reconnect, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "channelReconnect"
 
+      field :comments, -> { Internal::Types::Boolean }, optional: false, nullable: false
+
       field :post_failed, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "postFailed"
 
       field :post_published, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "postPublished"
