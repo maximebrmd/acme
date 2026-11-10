@@ -1,12 +1,14 @@
 import { Schema } from "effect";
 
+import { ByteCountSchema } from "./int64.ts";
+
 /** The declared file is larger than Peal stores for its kind. */
 export class MediaTooLarge extends Schema.TaggedError<MediaTooLarge>()(
   "MediaTooLarge",
   {
-    byteSize: Schema.Int,
+    byteSize: ByteCountSchema,
     kind: Schema.Literals(["image", "video", "document"]),
-    maxByteSize: Schema.Int,
+    maxByteSize: ByteCountSchema,
   },
   {
     description:

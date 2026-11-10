@@ -10,6 +10,7 @@ import {
 import { AltTextTooLong } from "./alt-text-too-long.ts";
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
+import { ByteCountSchema } from "./int64.ts";
 import { MediaImportBusy } from "./media-import-busy.ts";
 import { MediaInUse } from "./media-in-use.ts";
 import { MediaNotFound } from "./media-not-found.ts";
@@ -54,7 +55,7 @@ const PixelsSchema = Schema.Int.check(Schema.isGreaterThan(0));
 export const MediaSchema = Schema.Struct({
   // What it shows, for people who cannot see it.
   altText: Schema.NullOr(Schema.String),
-  byteSize: Schema.Int,
+  byteSize: ByteCountSchema,
   // The video codec, as ffprobe names it (h264, hevc…), once probed.
   codec: Schema.NullOr(Schema.String),
   contentType: MediaContentTypeSchema,
@@ -92,7 +93,7 @@ export type SignedRequest = typeof SignedRequestSchema.Type;
 
 /** One part of a file uploaded in parts, with its exact size. */
 export const UploadPartSchema = Schema.Struct({
-  byteSize: Schema.Int,
+  byteSize: ByteCountSchema,
   partNumber: Schema.Int,
   request: SignedRequestSchema,
 }).annotate({ identifier: "UploadPart" });
@@ -126,7 +127,7 @@ export const NewUploadSchema = Schema.Struct({
   // What it shows, for people who cannot see it. It can also be written
   // later.
   altText: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  byteSize: Schema.Int.check(Schema.isGreaterThan(0)),
+  byteSize: ByteCountSchema.check(Schema.isGreaterThan(0)),
   contentType: Schema.String,
 }).annotate({ identifier: "NewUpload" });
 

@@ -13,6 +13,7 @@ import { ConnectedAppSchema } from "./connected-apps.ts";
 import { DeletionIncomplete } from "./deletion-incomplete.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
+import { ByteCountSchema } from "./int64.ts";
 import { LastOwner } from "./last-owner.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { NoticeEventSchema } from "./notices.ts";
@@ -249,7 +250,7 @@ const ExportedAboutSchema = Schema.Struct({
 
 const ExportedMediaSchema = Schema.Struct({
   altText: nullable(Schema.String),
-  byteSize: Schema.Int,
+  byteSize: ByteCountSchema,
   contentType: Schema.String,
   createdAt: instant,
   // A link that downloads the file for 7 days; null for a file never

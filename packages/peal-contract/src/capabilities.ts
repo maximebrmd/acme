@@ -5,6 +5,7 @@ import { Authentication } from "./authentication.ts";
 import { ChannelNotFound } from "./channel-not-found.ts";
 import { FieldDescriptionSchema } from "./field-description.ts";
 import { Forbidden } from "./forbidden.ts";
+import { ByteCountSchema } from "./int64.ts";
 import { LookupDescriptionSchema } from "./lookups.ts";
 import { MediaContentTypeSchema, MediaKindSchema } from "./media.ts";
 import { PlatformSchema } from "./platform.ts";
@@ -24,14 +25,6 @@ import { WorkspaceAccess } from "./workspace-access.ts";
  * under the same version, so clients skip what they do not know.
  */
 export const capabilitiesVersion = 1;
-
-// Sizes in bytes pass 2^31 (YouTube takes 256 GiB): 64-bit in every client.
-const ByteCountSchema = Schema.Int.check(
-  Schema.makeFilter((bytes: number) => bytes >= 0, {
-    expected: "a count of bytes",
-    toJsonSchema: () => ({ format: "int64", minimum: 0 }),
-  })
-);
 
 /** A limit on a post's text: at most `maximum`, counted in `unit`. */
 export const TextLimitSchema = Schema.Struct({

@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import { ByteCountSchema } from "./int64.ts";
 import { MediaContentTypeSchema } from "./media.ts";
 import { PlatformSchema } from "./platform.ts";
 import { TextUnitSchema } from "./post-text.ts";
@@ -81,14 +82,14 @@ export const ContentViolationSchema = Schema.Union([
   // The file is larger than the platform takes, in bytes.
   Schema.TaggedStruct("mediaTooLarge", {
     ...onMedia,
-    byteSize: Schema.Int,
-    maximum: Schema.Int,
+    byteSize: ByteCountSchema,
+    maximum: ByteCountSchema,
   }),
   // The file is smaller than the platform takes, in bytes.
   Schema.TaggedStruct("mediaTooSmall", {
     ...onMedia,
-    byteSize: Schema.Int,
-    minimum: Schema.Int,
+    byteSize: ByteCountSchema,
+    minimum: ByteCountSchema,
   }),
   // The video lasts longer than the platform takes, in milliseconds.
   Schema.TaggedStruct("videoTooLong", {

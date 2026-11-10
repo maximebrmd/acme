@@ -9,10 +9,11 @@ import {
   PlanSchema,
 } from "./billing-plans.ts";
 import { Forbidden } from "./forbidden.ts";
+import { ByteCountSchema, Int64Schema } from "./int64.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 // Null for no limit.
-const allowance = Schema.NullOr(Schema.Int);
+const allowance = Schema.NullOr(Int64Schema);
 
 /**
  * What a plan allows a workspace, limit by limit; null for no limit.
@@ -94,7 +95,7 @@ export const UsageSchema = Schema.Struct({
   assistantRequests: PeriodUsageSchema,
   channels: Schema.Int,
   // Bytes of media stored, uploads in progress included.
-  mediaStorage: Schema.Int,
+  mediaStorage: ByteCountSchema,
   members: Schema.Int,
   // Going out this month (UTC).
   scheduledPosts: PeriodUsageSchema,
@@ -147,9 +148,9 @@ export type HeldLimit = typeof HeldLimitSchema.Type;
 
 /** A workspace holds `used` of something its plan allows `allowed` of. */
 export const ExcessSchema = Schema.Struct({
-  allowed: Schema.Int,
+  allowed: Int64Schema,
   limit: HeldLimitSchema,
-  used: Schema.Int,
+  used: Int64Schema,
 }).annotate({ identifier: "Excess" });
 
 export type Excess = typeof ExcessSchema.Type;
