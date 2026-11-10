@@ -446,8 +446,10 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "legalRetention",
     data: {
-      en: "Who answered, which authority asked, on what legal basis, about which account or workspace, and how many records were returned, never the data handed over",
-      fr: "Qui a répondu, quelle autorité demandait, sur quel fondement juridique, au sujet de quel compte ou espace de travail, et combien de données ont été renvoyées, jamais les données remises",
+      // A point for counsel: whether, and when, Article 15 has the person
+      // told of a request about them. Until then no export lists one.
+      en: "Who answered, which authority asked, on what legal basis, about which account or workspace, and how many records were returned, never the data handed over. A copy of your data does not say whether an authority asked about you: the law can forbid telling you",
+      fr: "Qui a répondu, quelle autorité demandait, sur quel fondement juridique, au sujet de quel compte ou espace de travail, et combien de données ont été renvoyées, jamais les données remises. Une copie de vos données ne dit pas si une autorité a fait une demande vous concernant : la loi peut interdire de vous le dire",
     },
     id: "legalDisclosures",
     legalBasis: {

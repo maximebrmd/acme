@@ -554,7 +554,10 @@ and no socket, for tests.
   platform options and whether YouTube kept the video private, and the
   export lists what staff did to the account (action, time, reason, and
   for changes made as it the operation, workspace and object ids),
-  without who did it. Sessions staff opened to impersonate
+  without who did it, and never a legal request answered about it
+  (`legalDisclosure`): telling the person can be forbidden, so nothing the
+  user sees says one was made, until counsel says when Article 15 requires
+  it. Sessions staff opened to impersonate
   the user are left out, as Better Auth's own list leaves them out: their
   browser and address are staff's. Each media file the store holds comes
   with a link that downloads it for 7 days (`downloadUrl`), and each export
