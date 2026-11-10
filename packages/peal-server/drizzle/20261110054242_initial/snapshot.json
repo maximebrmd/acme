@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "df3ca63d-d407-4fc3-b88e-8b806b1c8c71",
+  "id": "d315868f-5960-4c59-ab3c-6e6e8aa010d4",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -433,6 +433,26 @@
         "n|rel|channels.connect_choices",
         "n|type|channels.connect_choices",
         "n|rel|channels.connect_choices_pkey"
+      ],
+      "reads": [
+        "n|sch|channels"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "channels",
+        "connect_links"
+      ],
+      "writes": [
+        "s|tbl|channels.connect_links",
+        "n|tbl|channels.connect_links",
+        "e|tbl|channels.connect_links",
+        "n|rel|channels.connect_links",
+        "n|type|channels.connect_links",
+        "n|rel|channels.connect_links_pkey",
+        "n|rel|channels.connect_links_token"
       ],
       "reads": [
         "n|sch|channels"
@@ -1877,6 +1897,67 @@
         "n|tbl|channels.connect_choices",
         "n|sch|channels",
         "n|col|channels.connect_choices.granted_by"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "channels",
+        "connect_links",
+        "connect_links_workspace"
+      ],
+      "writes": [
+        "s|idx|channels.connect_links_workspace",
+        "n|idx|channels.connect_links_workspace",
+        "e|idx|channels.connect_links_workspace",
+        "n|rel|channels.connect_links_workspace"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_links",
+        "n|sch|channels",
+        "n|col|channels.connect_links.workspace_id",
+        "n|col|channels.connect_links.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "channels",
+        "connect_links",
+        "connect_links_expires_at"
+      ],
+      "writes": [
+        "s|idx|channels.connect_links_expires_at",
+        "n|idx|channels.connect_links_expires_at",
+        "e|idx|channels.connect_links_expires_at",
+        "n|rel|channels.connect_links_expires_at"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_links",
+        "n|sch|channels",
+        "n|col|channels.connect_links.expires_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "channels",
+        "connect_links",
+        "connect_links_created_by"
+      ],
+      "writes": [
+        "s|idx|channels.connect_links_created_by",
+        "n|idx|channels.connect_links_created_by",
+        "e|idx|channels.connect_links_created_by",
+        "n|rel|channels.connect_links_created_by"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_links",
+        "n|sch|channels",
+        "n|col|channels.connect_links.created_by"
       ]
     },
     {
@@ -3838,6 +3919,12 @@
     {
       "schema": "channels",
       "name": "connect_choices",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "channels",
+      "name": "connect_links",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -5967,6 +6054,240 @@
     {
       "schema": "channels",
       "table": "connect_choices",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "browser_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "channel_ids",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connection",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "created_by",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "ended_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "expires_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "failed_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "failure_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "locale",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "platform",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "return_url",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "starts",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "token_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
@@ -12402,6 +12723,76 @@
       "entityType": "indexes"
     },
     {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_expires_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "expires_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_created_by",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "created_by",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"created_by\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "legal",
       "table": "connections",
       "name": "connections_at",
@@ -14419,6 +14810,16 @@
     },
     {
       "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "channels",
       "table": "data_deletions",
       "name": "data_deletions_pkey",
       "columns": [
@@ -14812,6 +15213,17 @@
     },
     {
       "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_token",
+      "nameExplicit": true,
+      "columns": [
+        "token_digest"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "channels",
       "table": "data_deletions",
       "name": "data_deletions_request_digest",
       "nameExplicit": true,
@@ -15067,6 +15479,27 @@
       "table": "channels",
       "name": "channels_token_key",
       "value": "split_part(\"access_token\", '.', 1) = \"token_key_id\" AND (\"refresh_token\" IS NULL OR split_part(\"refresh_token\", '.', 1) = \"token_key_id\")",
+      "entityType": "checks"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_status",
+      "value": "\"status\" IN ('pending', 'completed', 'revoked')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_ended",
+      "value": "(\"status\" = 'pending') = (\"ended_at\" IS NULL)",
+      "entityType": "checks"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_links",
+      "name": "connect_links_starts",
+      "value": "\"starts\" >= 0",
       "entityType": "checks"
     },
     {

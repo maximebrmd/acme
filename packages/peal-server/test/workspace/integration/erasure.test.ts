@@ -111,6 +111,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM channels.connect_attempts WHERE workspace_id = ${id}`,
   "channels.connect_choices": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.connect_choices WHERE workspace_id = ${id}`,
+  "channels.connect_links": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM channels.connect_links WHERE workspace_id = ${id}`,
   "media.media_assets": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM media.media_assets WHERE workspace_id = ${id}`,
   "notifications.notices": (sql, id) =>
@@ -193,6 +195,9 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM channels.connect_attempts WHERE started_by = ${`user:${id}`}`,
   "channels.connect_choices": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.connect_choices WHERE started_by = ${`user:${id}`}`,
+  // The links they created stay their workspaces', without them.
+  "channels.connect_links": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM channels.connect_links WHERE created_by = ${`user:${id}`}`,
   "notifications.notices": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE user_id = ${id}`,
   "notifications.notification_preferences": (sql, id) =>
@@ -386,6 +391,10 @@ const fill = Effect.fn("fill")(function* fill(
 
   yield* sql`INSERT INTO webhooks.deliveries (id, endpoint_id, event_id, workspace_id, event_type, status, attempts, created_at)
     VALUES (${uuid7()}, ${endpointId}, ${eventId}, ${workspaceId}, 'webhook.test', 'pending', 0, now())`;
+
+  // A connect link the person created, not yet used.
+  yield* sql`INSERT INTO channels.connect_links (id, workspace_id, platform, channel_ids, token_digest, created_by, starts, status, created_at, expires_at)
+    VALUES (${uuid7()}, ${workspaceId}, 'mastodon', '{}', ${randomUUID()}, ${`user:${person.id}`}, 0, 'pending', now(), now() + interval '7 days')`;
 
   // A partner account, with a key the person created, a creation's
   // idempotency key and a day's count.

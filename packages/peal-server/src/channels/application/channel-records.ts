@@ -19,8 +19,9 @@ export class ChannelRecords extends Context.Service<
     ) => Effect.Effect<readonly ChannelRecord[], DatabaseError>;
     /**
      * Deletes the workspace's channels, their encrypted tokens (with the
-     * Facebook user a Page's rests on, `granted_by`), and the connections
-     * and account choices in progress: nothing posts there any more.
+     * Facebook user a Page's rests on, `granted_by`), the connections and
+     * account choices in progress, and its connect links: nothing posts
+     * there any more, and no link opens it.
      */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
@@ -28,7 +29,8 @@ export class ChannelRecords extends Context.Service<
     /**
      * Deletes the connections and account choices the user started, in
      * every workspace, with the tokens a choice holds. The channels they
-     * connected belong to their workspaces, and stay.
+     * connected belong to their workspaces, and stay, as the connect links
+     * they created do, without them.
      */
     readonly eraseUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
   }

@@ -20,6 +20,8 @@ import {
   Authentication,
   BillingNotEnabled,
   ClientErrorIntake,
+  ConnectLinkIntake,
+  ConnectLinkNotFound,
   ContractRequestIntake,
   ContractRequestNotFound,
   CurrentPrincipal,
@@ -194,6 +196,14 @@ const signedInGroupsLive = (
     HttpApiBuilder.group(Api, "workspaces", (handlers) =>
       handlers.handleAll({ delete: () => refusing })
     ),
+    HttpApiBuilder.group(Api, "connectLinks", (handlers) =>
+      handlers.handleAll({
+        create: () => refusing,
+        get: () => refusing,
+        list: () => refusing,
+        revoke: () => refusing,
+      })
+    ),
     HttpApiBuilder.group(Api, "partner", (handlers) =>
       handlers.handleAll({
         account: () => refusing,
@@ -325,6 +335,28 @@ const ClientErrorsLive = HttpApiBuilder.group(Api, "clientErrors", (handlers) =>
   )
 );
 
+// No link opens anything here: the hosted pages are the web app's.
+const noLink = Effect.fail(new ConnectLinkNotFound());
+
+const HostedConnectLive = HttpApiBuilder.group(
+  Api,
+  "hostedConnect",
+  (handlers) =>
+    handlers.handleAll({
+      choose: () => noLink,
+      complete: () => noLink,
+      open: () => noLink,
+      start: () => noLink,
+    })
+).pipe(
+  Layer.provideMerge(
+    Layer.succeed(
+      ConnectLinkIntake,
+      ConnectLinkIntake.of((httpEffect) => httpEffect)
+    )
+  )
+);
+
 const notConfigured = Effect.fail(new MetaAppNotConfigured());
 
 const DataDeletionLive = HttpApiBuilder.group(Api, "dataDeletion", (handlers) =>
@@ -369,6 +401,7 @@ export const inMemoryServer = (
                 Layer.provide(StaffLive),
                 Layer.provide(LegalLive),
                 Layer.provide(ClientErrorsLive),
+                Layer.provide(HostedConnectLive),
                 Layer.provide(ContractRequestsLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(

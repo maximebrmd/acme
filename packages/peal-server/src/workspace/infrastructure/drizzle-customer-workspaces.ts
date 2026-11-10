@@ -362,6 +362,18 @@ export const DrizzleCustomerWorkspaces = Layer.effect(
             workspaces: yield* Effect.all(rows.map((row) => toWorkspace(row))),
           };
         }),
+      nameOf: (workspaceId) =>
+        db
+          .select({ name: organization.name })
+          .from(organization)
+          .where(eq(organization.id, workspaceId))
+          .limit(1)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map(([row]) =>
+              Option.fromUndefinedOr(row).pipe(Option.map(({ name }) => name))
+            )
+          ),
       ofPartner: (partnerId, workspaceId) =>
         owned()
           .where(

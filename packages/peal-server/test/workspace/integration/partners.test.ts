@@ -67,6 +67,34 @@ const OverviewSchema = Schema.Struct({
   usage: UsageSchema,
 });
 
+const LinkSchema = Schema.Struct({
+  channelIds: Schema.Array(Schema.String),
+  failure: Schema.NullOr(Schema.String),
+  id: Schema.String,
+  status: Schema.String,
+});
+
+const CreatedLinkSchema = Schema.Struct({
+  link: LinkSchema,
+  url: Schema.String,
+});
+
+const HostedSchema = Schema.Struct({
+  host: Schema.Struct({
+    logoUrl: Schema.NullOr(Schema.String),
+    name: Schema.String,
+  }),
+  input: Schema.String,
+  platform: Schema.String,
+  returnTo: Schema.NullOr(Schema.String),
+  status: Schema.String,
+});
+
+const HostedFailureSchema = Schema.Struct({
+  _tag: Schema.Literal("HostedConnectFailed"),
+  reason: Schema.String,
+});
+
 const CountSchema = Schema.Array(Schema.Struct({ rows: Schema.Number }));
 
 const bearer = (key: string) => ({ authorization: `Bearer ${key}` });
@@ -862,6 +890,214 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
           });
 
           assert.strictEqual(after.status, 401);
+        })
+    );
+
+    it.effect(
+      "hand a customer a hosted link, which returns only where the partner said",
+      () =>
+        Effect.gen(function* links() {
+          const app = yield* TestApp;
+          const { home, owner } = yield* partnerOf("links");
+          const { key } = yield* keyOf(owner, home);
+          const customer = yield* customerOf(key, "Linked customer", "cus_l1");
+          const base = `/api/workspaces/${customer.id}/connect-links`;
+
+          yield* app.request(`/api/workspaces/${home}/partner`, {
+            body: {
+              logoUrl: "https://cdn.example.test/logo.png",
+              returnOrigins: ["https://app.example.test"],
+            },
+            headers: { cookie: owner.cookies },
+            method: "PATCH",
+          });
+
+          // Anywhere but an origin the partner registered is refused.
+          for (const returnUrl of [
+            "https://evil.example.test/social",
+            "https://app.example.test.evil.example/social",
+            "http://app.example.test/social",
+          ]) {
+            const refused = yield* app.request(base, {
+              body: { platform: "mastodon", returnUrl },
+              headers: bearer(key),
+            });
+
+            assert.strictEqual(refused.status, 422, returnUrl);
+            assert.deepStrictEqual(refused.body, {
+              _tag: "ReturnUrlNotAllowed",
+            });
+          }
+
+          const created = yield* app.request(base, {
+            body: {
+              locale: "fr",
+              platform: "mastodon",
+              returnUrl: "https://app.example.test/social",
+            },
+            headers: bearer(key),
+          });
+
+          assert.strictEqual(created.status, 201);
+
+          const { link, url } = yield* bodyOf(CreatedLinkSchema, created);
+          const prefix = "http://localhost:3001/fr/connect/link/";
+
+          assert.isTrue(url.startsWith(prefix));
+          assert.strictEqual(link.status, "pending");
+
+          const token = url.slice(prefix.length);
+          const hosted = `/api/connect-links/${token}`;
+
+          // Whoever holds the address opens it, without any credential,
+          // and reads who asks: the partner, not Peal's workspace.
+          const opened = yield* app.request(hosted);
+
+          assert.strictEqual(opened.status, 200);
+          assert.deepStrictEqual(yield* bodyOf(HostedSchema, opened), {
+            host: {
+              logoUrl: "https://cdn.example.test/logo.png",
+              name: "links Suite",
+            },
+            input: "instance",
+            platform: "mastodon",
+            returnTo: `https://app.example.test/social?peal_link=${link.id}&peal_status=cancelled`,
+            status: "pending",
+          });
+
+          // A token that opens nothing, whatever it looks like.
+          const guessed = yield* app.request(`/api/connect-links/${link.id}`);
+
+          assert.strictEqual(guessed.status, 404);
+
+          // Its steps come from the web app's own pages only.
+          const foreign = yield* app.request(`${hosted}/start`, {
+            body: { instance: "social.example" },
+            headers: { origin: "https://evil.example.test" },
+          });
+
+          assert.strictEqual(foreign.status, 403);
+
+          // A server Peal may not call: told to the page, kept on the
+          // link, which stays usable.
+          const started = yield* app.request(`${hosted}/start`, {
+            body: { instance: "localhost" },
+          });
+
+          assert.strictEqual(started.status, 422);
+
+          const { reason } = yield* bodyOf(HostedFailureSchema, started);
+
+          const read = yield* bodyOf(
+            LinkSchema,
+            yield* app.request(`${base}/${link.id}`, { headers: bearer(key) })
+          );
+
+          assert.deepStrictEqual(read, {
+            channelIds: [],
+            failure: reason,
+            id: link.id,
+            status: "pending",
+          });
+
+          // A callback without the browser that started completes nothing.
+          const completed = yield* app.request(`${hosted}/complete`, {
+            body: { code: "synthetic-code", state: "synthetic-state" },
+          });
+
+          assert.strictEqual(completed.status, 422);
+          assert.strictEqual(
+            (yield* bodyOf(HostedFailureSchema, completed)).reason,
+            "invalidState"
+          );
+
+          // Another partner's key, and anyone without one, read no link.
+          const other = yield* partnerOf("otherlinks");
+          const otherKey = (yield* keyOf(other.owner, other.home)).key;
+
+          for (const headers of [bearer(otherKey), {}]) {
+            const reply = yield* app.request(`${base}/${link.id}`, { headers });
+
+            assert.include([401, 404], reply.status);
+          }
+
+          // Taken back, it opens as revoked, and starts nothing.
+          const revoked = yield* app.request(`${base}/${link.id}`, {
+            headers: bearer(key),
+            method: "DELETE",
+          });
+
+          assert.strictEqual(
+            (yield* bodyOf(LinkSchema, revoked)).status,
+            "revoked"
+          );
+          assert.strictEqual(
+            (yield* bodyOf(HostedSchema, yield* app.request(hosted))).status,
+            "revoked"
+          );
+
+          const afterRevoke = yield* app.request(`${hosted}/start`, {
+            body: { instance: "localhost" },
+          });
+
+          assert.strictEqual(
+            (yield* bodyOf(HostedFailureSchema, afterRevoke)).reason,
+            "linkRevoked"
+          );
+
+          // Offboarded, the workspace's links open nothing at all.
+          yield* app.request(`/api/partner/workspaces/${customer.id}`, {
+            headers: bearer(key),
+            method: "DELETE",
+          });
+
+          assert.strictEqual((yield* app.request(hosted)).status, 404);
+        })
+    );
+
+    it.effect(
+      "leave an ordinary workspace's links without a return address",
+      () =>
+        Effect.gen(function* ordinary() {
+          const app = yield* TestApp;
+          const member = yield* signedUpUnconfirmed("ordinary");
+          const workspaceId = yield* workspaceOf(member, "Ordinary links");
+          const base = `/api/workspaces/${workspaceId}/connect-links`;
+
+          const refused = yield* app.request(base, {
+            body: {
+              platform: "mastodon",
+              returnUrl: "https://app.example.test/social",
+            },
+            headers: { cookie: member.cookies },
+          });
+
+          assert.strictEqual(refused.status, 422);
+
+          const created = yield* app.request(base, {
+            body: { expiresInHours: 1, platform: "mastodon" },
+            headers: { cookie: member.cookies },
+          });
+
+          assert.strictEqual(created.status, 201);
+
+          const { url } = yield* bodyOf(CreatedLinkSchema, created);
+
+          const opened = yield* bodyOf(
+            HostedSchema,
+            yield* app.request(
+              `/api/connect-links/${url.slice(url.lastIndexOf("/") + 1)}`
+            )
+          );
+
+          // Under the workspace's own name, and back to nowhere.
+          assert.deepStrictEqual(opened, {
+            host: { logoUrl: null, name: "Ordinary links" },
+            input: "instance",
+            platform: "mastodon",
+            returnTo: null,
+            status: "pending",
+          });
         })
     );
 

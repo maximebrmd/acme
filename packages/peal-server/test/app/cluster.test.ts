@@ -21,6 +21,7 @@ import { PurgeContractRecords } from "#billing/application/purge-contract-record
 import { ReceiveContractRequest } from "#billing/application/receive-contract-request.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
+import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
 import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
@@ -114,6 +115,10 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     PurgeLegalRecords,
     PurgeLegalRecords.of({ purge: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    PurgeConnectLinks,
+    PurgeConnectLinks.of({ run: Effect.succeed(0) })
   ),
   Layer.succeed(
     MeterPartnerUsage,

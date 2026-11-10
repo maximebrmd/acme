@@ -10,10 +10,12 @@ import { CaptchaApi } from "./captcha.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
 import { ClientErrorsApi } from "./client-errors.ts";
+import { ConnectLinksApi } from "./connect-links.ts";
 import { ConnectedAppsApi } from "./connected-apps.ts";
 import { ContractRequestsDeskApi } from "./contract-requests-desk.ts";
 import { ContractRequestsApi } from "./contract-requests.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
+import { HostedConnectApi } from "./hosted-connect.ts";
 import { InvitationsApi } from "./invitations.ts";
 import { LegalApi } from "./legal.ts";
 import { MediaApi } from "./media.ts";
@@ -830,6 +832,59 @@ export type {
 
 export { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
 
+export { ConnectLinkIntake } from "./connect-link-intake.ts";
+
+export { ConnectLinkNotFound } from "./connect-link-not-found.ts";
+
+export {
+  ConnectLinkLocaleSchema,
+  connectLinkRetentionDays,
+  ConnectLinksApi,
+  ConnectLinkSchema,
+  ConnectLinkStatusSchema,
+  CreatedConnectLinkSchema,
+  defaultConnectLinkHours,
+  maxConnectLinkHours,
+  maxConnectLinkStarts,
+  maxPendingConnectLinks,
+  maxReturnUrlLength,
+  minConnectLinkHours,
+  NewConnectLinkSchema,
+} from "./connect-links.ts";
+
+export type {
+  ConnectLink,
+  ConnectLinkStatus,
+  CreatedConnectLink,
+  NewConnectLink,
+} from "./connect-links.ts";
+
+export {
+  connectLinkCookie,
+  HostedAuthorizationSchema,
+  HostedChannelSchema,
+  HostedConnectApi,
+  HostedLinkInputSchema,
+  HostedLinkSchema,
+  HostedOutcomeSchema,
+  HostedStartSchema,
+} from "./hosted-connect.ts";
+
+export type { HostedLink, HostedOutcome } from "./hosted-connect.ts";
+
+export {
+  HostedConnectFailed,
+  HostedConnectFailureSchema,
+} from "./hosted-connect-failed.ts";
+
+export type { HostedConnectFailure } from "./hosted-connect-failed.ts";
+
+export { ReturnUrlNotAllowed } from "./return-url-not-allowed.ts";
+
+export { TooManyConnectAttempts } from "./too-many-connect-attempts.ts";
+
+export { TooManyConnectLinks } from "./too-many-connect-links.ts";
+
 export { ExternalIdTaken } from "./external-id-taken.ts";
 
 export { PartnerAccountsClosed } from "./partner-accounts-closed.ts";
@@ -928,6 +983,8 @@ export class Api extends HttpApi.make("peal")
   .add(WebhooksApi)
   .add(PartnerApi)
   .add(PartnerAccountApi)
+  .add(ConnectLinksApi)
+  .add(HostedConnectApi)
   .add(StaffApi)
   .add(LegalApi)
   .add(ClientErrorsApi)

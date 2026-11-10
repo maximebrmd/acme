@@ -223,6 +223,30 @@ CREATE TABLE "channels"."connect_choices" (
 	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "channels"."connect_links" (
+	"browser_digest" text,
+	"channel_id" uuid,
+	"channel_ids" uuid[] NOT NULL,
+	"connection" text,
+	"created_at" timestamp with time zone NOT NULL,
+	"created_by" text,
+	"ended_at" timestamp with time zone,
+	"expires_at" timestamp with time zone NOT NULL,
+	"failed_at" timestamp with time zone,
+	"failure_reason" text,
+	"id" uuid PRIMARY KEY,
+	"locale" text,
+	"platform" text NOT NULL,
+	"return_url" text,
+	"starts" integer NOT NULL,
+	"status" text NOT NULL,
+	"token_digest" text NOT NULL CONSTRAINT "connect_links_token" UNIQUE,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "connect_links_status" CHECK ("status" IN ('pending', 'completed', 'revoked')),
+	CONSTRAINT "connect_links_ended" CHECK (("status" = 'pending') = ("ended_at" IS NULL)),
+	CONSTRAINT "connect_links_starts" CHECK ("starts" >= 0)
+);
+--> statement-breakpoint
 CREATE TABLE "channels"."data_deletions" (
 	"app" text NOT NULL,
 	"channels_deleted" integer NOT NULL,
@@ -849,6 +873,9 @@ CREATE INDEX "channels_granted_by" ON "channels"."channels" ("granted_by") WHERE
 CREATE INDEX "connect_attempts_expires_at" ON "channels"."connect_attempts" ("expires_at");--> statement-breakpoint
 CREATE INDEX "connect_choices_expires_at" ON "channels"."connect_choices" ("expires_at");--> statement-breakpoint
 CREATE INDEX "connect_choices_granted_by" ON "channels"."connect_choices" ("granted_by") WHERE "granted_by" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "connect_links_workspace" ON "channels"."connect_links" ("workspace_id","id");--> statement-breakpoint
+CREATE INDEX "connect_links_expires_at" ON "channels"."connect_links" ("expires_at");--> statement-breakpoint
+CREATE INDEX "connect_links_created_by" ON "channels"."connect_links" ("created_by") WHERE "created_by" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "connections_at" ON "legal"."connections" ("at");--> statement-breakpoint
 CREATE INDEX "connections_user" ON "legal"."connections" ("user_id","at");--> statement-breakpoint
 CREATE INDEX "connections_workspace" ON "legal"."connections" ("workspace_id","at");--> statement-breakpoint

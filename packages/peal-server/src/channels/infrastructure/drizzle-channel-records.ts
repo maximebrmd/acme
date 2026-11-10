@@ -6,7 +6,12 @@ import { userStarter } from "#channels/domain/connect-attempt.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { channels, connectAttempts, connectChoices } from "./schema.ts";
+import {
+  channels,
+  connectAttempts,
+  connectChoices,
+  connectLinks,
+} from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -30,6 +35,13 @@ export const DrizzleChannelRecords = Layer.effect(
             .delete(connectChoices)
             .where(eq(connectChoices.startedBy, starter))
             .pipe(Effect.mapError(failed));
+
+          // The links they created stay their workspaces', without them.
+          yield* db
+            .update(connectLinks)
+            .set({ createdBy: null })
+            .where(eq(connectLinks.createdBy, starter))
+            .pipe(Effect.mapError(failed));
         }
       ),
       eraseWorkspace: Effect.fn("ChannelRecords.eraseWorkspace")(
@@ -43,6 +55,12 @@ export const DrizzleChannelRecords = Layer.effect(
           yield* db
             .delete(connectChoices)
             .where(eq(connectChoices.workspaceId, workspaceId))
+            .pipe(Effect.mapError(failed));
+
+          // Its links open nothing more.
+          yield* db
+            .delete(connectLinks)
+            .where(eq(connectLinks.workspaceId, workspaceId))
             .pipe(Effect.mapError(failed));
 
           yield* db

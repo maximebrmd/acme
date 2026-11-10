@@ -88,6 +88,10 @@ export class CustomerWorkspaces extends Context.Service<
     readonly save: (
       workspace: CustomerWorkspace
     ) => Effect.Effect<boolean, DatabaseError | ExternalIdTaken>;
+    /** What any workspace is called, a partner's or not; none once gone. */
+    readonly nameOf: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<Option.Option<string>, DatabaseError>;
     /** The partner that owns the workspace, if one does. */
     readonly ownerOf: (
       workspaceId: WorkspaceId

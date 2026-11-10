@@ -2,6 +2,8 @@ import { Context, Effect, Layer, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { Partner } from "#workspace/domain/partner.ts";
+import { allowsReturnTo } from "#workspace/domain/return-origin.ts";
 
 import { CustomerWorkspaces } from "./customer-workspaces.ts";
 import type { WorkspaceOwner } from "./customer-workspaces.ts";
@@ -16,11 +18,18 @@ export interface PlanPool {
   readonly others: readonly WorkspaceId[];
 }
 
+/** How a workspace's hosted pages name who asks. */
+export interface Presentation {
+  readonly logoUrl: Option.Option<string>;
+  readonly name: string;
+}
+
 /**
  * Whose a workspace is, for the contexts that follow from it: billing,
  * which gives a workspace a partner owns its partner's plan; the channels
- * context, which counts a partner's channels together; the webhooks, which
- * tell the partner what happens in its workspaces. Reads only, and no
+ * context, which counts a partner's channels together and shows the
+ * partner on its hosted pages; the webhooks, which tell the partner what
+ * happens in its workspaces. Reads only, and no
  * permission check: callers act for a request that passed its own.
  */
 export class PartnerOwnership extends Context.Service<
@@ -40,6 +49,24 @@ export class PartnerOwnership extends Context.Service<
     readonly poolOf: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<Option.Option<PlanPool>, DatabaseError>;
+    /**
+     * Who a hosted page of the workspace says asks: its partner, the one
+     * that owns it or whose home workspace it is, by the name and logo its
+     * customers know; any other workspace by its own name. None once the
+     * workspace is gone.
+     */
+    readonly presentedAs: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<Option.Option<Presentation>, DatabaseError>;
+    /**
+     * Whether a hosted page of the workspace may send a browser to this
+     * address: its origin is one the workspace's partner registered,
+     * exactly. Never for a workspace without a partner.
+     */
+    readonly allowsReturnTo: (
+      workspaceId: WorkspaceId,
+      returnUrl: string
+    ) => Effect.Effect<boolean, DatabaseError>;
     /** Whether the workspace is a partner account's home workspace. */
     readonly isHome: (
       workspaceId: WorkspaceId
@@ -91,6 +118,37 @@ export class PartnerOwnership extends Context.Service<
         });
       });
 
+      // The partner account behind a workspace: the one that owns it, or
+      // whose home workspace it is.
+      const partnerOf = Effect.fn("PartnerOwnership.partnerOf")(
+        function* partnerOf(workspaceId: WorkspaceId) {
+          const owner = yield* workspaces.ownerOf(workspaceId);
+
+          return Option.isSome(owner)
+            ? yield* partners.get(owner.value.partnerId)
+            : yield* partners.ofWorkspace(workspaceId);
+        }
+      );
+
+      const presentedAs = Effect.fn("PartnerOwnership.presentedAs")(
+        function* presentedAs(workspaceId: WorkspaceId) {
+          const partner = yield* partnerOf(workspaceId);
+
+          if (Option.isSome(partner)) {
+            const { logoUrl, name }: Partner = partner.value;
+
+            return Option.some<Presentation>({ logoUrl, name });
+          }
+
+          return (yield* workspaces.nameOf(workspaceId)).pipe(
+            Option.map((name): Presentation => ({
+              logoUrl: Option.none(),
+              name,
+            }))
+          );
+        }
+      );
+
       const ensureDeletable = Effect.fn("PartnerOwnership.ensureDeletable")(
         function* ensureDeletable(workspaceIds: readonly WorkspaceId[]) {
           yield* Effect.forEach(
@@ -119,11 +177,20 @@ export class PartnerOwnership extends Context.Service<
       );
 
       return PartnerOwnership.of({
+        allowsReturnTo: (workspaceId, returnUrl) =>
+          partnerOf(workspaceId).pipe(
+            Effect.map(
+              Option.exists(({ returnOrigins }) =>
+                allowsReturnTo(returnOrigins, returnUrl)
+              )
+            )
+          ),
         ensureDeletable,
         isHome: (workspaceId) =>
           partners.ofWorkspace(workspaceId).pipe(Effect.map(Option.isSome)),
         ownerOf: (workspaceId) => workspaces.ownerOf(workspaceId),
         poolOf,
+        presentedAs,
       });
     })
   );
@@ -132,10 +199,12 @@ export class PartnerOwnership extends Context.Service<
   static readonly layerNone = Layer.succeed(
     PartnerOwnership,
     PartnerOwnership.of({
+      allowsReturnTo: () => Effect.succeed(false),
       ensureDeletable: () => Effect.void,
       isHome: () => Effect.succeed(false),
       ownerOf: () => Effect.succeedNone,
       poolOf: () => Effect.succeedNone,
+      presentedAs: () => Effect.succeedNone,
     })
   );
 }

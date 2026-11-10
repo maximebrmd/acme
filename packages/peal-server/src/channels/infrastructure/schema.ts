@@ -215,3 +215,64 @@ export const mastodonApps = channelsSchema.table(
   },
   (table) => [primaryKey({ columns: [table.instance, table.redirectUri] })]
 );
+
+/**
+ * The links workspaces hand to whoever owns a social account, to connect
+ * it on a hosted page without a Peal account.
+ *
+ * - `token_digest` is the SHA-256, in hex, of the token in the link's
+ *   address, which is not stored: whoever reads this table opens no link.
+ * - `browser_digest` is the SHA-256 of the nonce the browser that last
+ *   started the link's sign-in keeps in a cookie; null before a start, and
+ *   once the link is over.
+ * - `status` is `pending`, `completed` (with `channel_ids`, what it
+ *   connected) or `revoked`, since `ended_at`. A pending link past
+ *   `expires_at` is expired.
+ * - `created_by` names who created it, as attempts name their starter
+ *   (`user:<id>`, `apiKey:<id>`); null once that member's account closed.
+ * - `failure_reason` and `failed_at` say how its last sign-in failed.
+ * - `return_url` is where its page sends people back: an address on an
+ *   origin the workspace's partner registered.
+ */
+export const connectLinks = channelsSchema.table(
+  "connect_links",
+  {
+    browserDigest: text("browser_digest"),
+    channelId: uuid("channel_id"),
+    channelIds: uuid("channel_ids").array().notNull(),
+    connection: text("connection"),
+    createdAt: instant("created_at").notNull(),
+    createdBy: text("created_by"),
+    endedAt: instant("ended_at"),
+    expiresAt: instant("expires_at").notNull(),
+    failedAt: instant("failed_at"),
+    failureReason: text("failure_reason"),
+    id: uuid("id").primaryKey(),
+    locale: text("locale"),
+    platform: text("platform").notNull(),
+    returnUrl: text("return_url"),
+    starts: integer("starts").notNull(),
+    status: text("status").notNull(),
+    tokenDigest: text("token_digest").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    unique("connect_links_token").on(table.tokenDigest),
+    // A workspace's links, newest first: ids are UUIDv7s.
+    index("connect_links_workspace").on(table.workspaceId, table.id),
+    // The retention's scan.
+    index("connect_links_expires_at").on(table.expiresAt),
+    index("connect_links_created_by")
+      .on(table.createdBy)
+      .where(sql`${table.createdBy} IS NOT NULL`),
+    check(
+      "connect_links_status",
+      sql`${table.status} IN ('pending', 'completed', 'revoked')`
+    ),
+    check(
+      "connect_links_ended",
+      sql`(${table.status} = 'pending') = (${table.endedAt} IS NULL)`
+    ),
+    check("connect_links_starts", sql`${table.starts} >= 0`),
+  ]
+);

@@ -14,6 +14,7 @@ import {
 } from "#analytics/container.ts";
 import { ClientErrorsLive } from "#app/client-errors/live.ts";
 import { ClusterLive } from "#app/cluster.ts";
+import { HostedConnectLive } from "#app/connect-links/live.ts";
 import { ContractRequestsLive } from "#app/contract-requests/live.ts";
 import { CronsLive } from "#app/crons.ts";
 import { McpLive } from "#app/mcp/server.ts";
@@ -34,6 +35,7 @@ import {
   ChannelOAuthApiLive,
   ChannelsApiLive,
   ChannelsLive,
+  ConnectLinksApiLive,
   DataDeletionApiLive,
   TokenCipherLive,
 } from "#channels/container.ts";
@@ -91,6 +93,7 @@ import {
 // StaffAccess middleware that WorkspaceApiLive provides.
 const WorkspaceGroupsLive = Layer.mergeAll(
   ChannelsApiLive,
+  ConnectLinksApiLive,
   PostsApiLive,
   MediaApiLive,
   NoticesApiLive,
@@ -113,6 +116,7 @@ const ApiLive = HttpApiBuilder.layer(Api, {
     SystemHandlers,
     ClientErrorsLive,
     ContractRequestsLive,
+    HostedConnectLive,
     ChannelOAuthApiLive,
     DataDeletionApiLive,
     WorkspaceGroupsLive,
