@@ -91,11 +91,11 @@ describe(ComposerErrors, () => {
           failure={
             new PlanLimitReached({
               allowed: 30,
-              limit: "scheduledPosts",
-              used: 30,
               billingUrl: "https://peal.example/app/w/billing",
+              limit: "scheduledPosts",
               plan: "free",
               planWithRoom: "starter",
+              used: 30,
             })
           }
         />

@@ -128,6 +128,7 @@ const render = async (
         interval="month"
         pending={null}
         step={{ _tag: "idle" }}
+        tooSmall={null}
         termsUrl="https://site.example.test/terms"
         onBack={ignore}
         onCancel={ignore}

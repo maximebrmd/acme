@@ -53,11 +53,11 @@ describe(failureOf, () => {
       failureOf(
         new PlanLimitReached({
           allowed: 500_000_000,
-          limit: "mediaStorage",
-          used: 480_000_000,
           billingUrl: "https://peal.example/app/w/billing",
+          limit: "mediaStorage",
           plan: "free",
           planWithRoom: "starter",
+          used: 480_000_000,
         })
       )
     ).toStrictEqual(

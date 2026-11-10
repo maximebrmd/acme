@@ -25,11 +25,11 @@ describe(failureOf, () => {
     [
       new PlanLimitReached({
         allowed: 3,
-        limit: "channels",
-        used: 3,
         billingUrl: "https://peal.example/app/w/billing",
+        limit: "channels",
         plan: "free",
         planWithRoom: "starter",
+        used: 3,
       }),
       "planLimit",
     ],

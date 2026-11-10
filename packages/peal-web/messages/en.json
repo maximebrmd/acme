@@ -158,7 +158,8 @@
       "MISSING_RESPONSE": "Complete the check above first.",
       "VERIFICATION_FAILED": "The check did not go through. Try it again.",
       "TOO_MANY_REQUESTS": "Too many attempts. Wait a minute, then try again.",
-      "UNKNOWN": "Something went wrong. Try again."
+      "UNKNOWN": "Something went wrong. Try again.",
+      "FREE_WORKSPACE_LIMIT_REACHED": "Your account already owns a workspace on the free plan. Another needs that one on a paid plan."
     }
   },
   "SignInPage": {
@@ -858,7 +859,8 @@
       "SubscriptionCancelled": "The {plan} subscription of {workspace} is cancelled: it ends on {endsAt, date, long}, and nothing more is charged.",
       "SubscriptionWithdrawn": "Your withdrawal from the {plan} subscription of {workspace} was received on {withdrawnAt, date, long} at {withdrawnAt, time, short}: it has ended, and {refunded} is refunded within 14 days.",
       "SubscriptionStarted": "{workspace} is subscribed to {plan} since {startedAt, date, long}, for {price} {interval, select, month {a month} other {a year}}, VAT included. As a consumer you may withdraw within 14 days.",
-      "TrialStarted": "{workspace} is trying {plan} until {endsAt, date, long}: nothing is charged."
+      "TrialStarted": "{workspace} is trying {plan} until {endsAt, date, long}: nothing is charged.",
+      "TrialEndingOver": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan. It holds more than the free plan allows ({over}): from that day nothing is scheduled or published until it is back within it."
     },
     "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} other {{reason}}}",
     "open": "{page, select, post {Open the post} billing {Open billing} other {Open the channels}}",
@@ -903,7 +905,9 @@
       "loadFailed": "Your preferences could not be loaded.",
       "reload": "Try again"
     },
-    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}"
+    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
+    "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
+    "excessStorage": "{used} of media, {allowed} allowed"
   },
   "Billing": {
     "open": "Billing",
@@ -946,7 +950,7 @@
       "allowance": "{limit, select, channels {{count, plural, one {# channel} other {# channels}}} members {{count, plural, one {# member} other {# members}}} scheduledPosts {{count, plural, one {# post a month} other {# posts a month}}} assistantRequests {{count, plural, one {# assistant request a day} other {# assistant requests a day}}} other {{count}}}",
       "unlimited": "{limit, select, channels {Unlimited channels} members {Unlimited members} scheduledPosts {Unlimited posts} assistantRequests {Unlimited assistant requests} mediaStorage {Unlimited media} other {Unlimited}}",
       "yours": "Your plan",
-      "inPortal": "To move to a smaller plan, use the billing portal.",
+      "inPortal": "Moving to a smaller plan needs the workspace to fit it first: its channels, members and media.",
       "askAdmin": "Owners and admins of the workspace order and cancel its plan.",
       "storage": "{size} of media",
       "order": "Order with obligation to pay",
@@ -963,7 +967,8 @@
       "nothingToCancel": "The subscription is already cancelled.",
       "trialUsed": "This workspace or your account already had its trial: order a plan instead.",
       "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the subscription.",
-      "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the subscription."
+      "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the subscription.",
+      "planTooSmall": "This plan does not hold what the workspace has."
     },
     "limitReached": "{limit, select, channels {The workspace’s plan allows no more channels. Move to a larger plan, or disconnect a channel first.} members {The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, cancel a post, or move to a larger plan.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} mediaStorage {The workspace’s plan has no room for this file. Delete media, or move to a larger plan.} other {The workspace’s plan allows no more of this.}}",
     "prices": {
@@ -1009,6 +1014,62 @@
       "done": "The subscription has ended, and {refund} is refunded within 14 days. An acknowledgement with its date and time was emailed to you."
     },
     "keep": "Keep the subscription"
+  },
+  "Upgrade": {
+    "title": "{limit, select, channels {This plan has no room for another channel} members {This plan has no room for another member} scheduledPosts {This plan has no room for another post that month} assistantRequests {The writing assistant’s requests for today are used} mediaStorage {This plan has no room for this file} freeWorkspace {One free workspace per account} other {The plan’s limit is reached}}",
+    "reached": "{limit, select, channels {The {plan} plan of {workspace} allows {allowed, plural, one {# channel} other {# channels}}, and it has {used, number}.} members {The {plan} plan of {workspace} allows {allowed, plural, one {# member} other {# members}}, pending invitations included, and it has {used, number}.} scheduledPosts {The {plan} plan of {workspace} allows {allowed, plural, one {# post} other {# posts}} going out in a month, and that month has {used, number}.} assistantRequests {The {plan} plan of {workspace} allows {allowed, plural, one {# request} other {# requests}} to the writing assistant a day, and today’s are used. They start again at midnight UTC.} other {The {plan} plan of {workspace} allows no more of this.}}",
+    "reachedStorage": "The {plan} plan of {workspace} allows {allowed} of media, and it stores {used}, uploads in progress included.",
+    "freeWorkspace": "Your account already owns a workspace on the free plan: {workspace}. Each account has one; another needs that one on a paid plan.",
+    "freeWorkspaceTrial": "Your account already owns a workspace in its trial, which ends on the free plan: {workspace}. Each account has one free workspace; another needs that one on a paid plan.",
+    "offer": "The {plan} plan has room:",
+    "trial": "{workspace} is in its trial: ordering starts the paid plan, and ends the trial once it is paid for. Nothing is charged for the trial.",
+    "comeBack": "Payment is by card, on Stripe’s checkout. You then come back to this page; the plan changes as soon as Stripe confirms the payment, usually within seconds.",
+    "largest": "{workspace} is on the largest plan. For more, write to us: we make an offer for larger needs.",
+    "largestOperator": "{workspace} is on the largest plan. For more, write to the people who run this server.",
+    "contact": "Write to us",
+    "orRemove": "{limit, select, channels {Or disconnect a channel to make room.} members {Or remove a member, or revoke a pending invitation, to make room.} scheduledPosts {Or pick another month, or cancel a post of that month.} assistantRequests {Or ask again tomorrow.} mediaStorage {Or delete media to make room.} other {}}",
+    "askManagers": "Owners and admins of {workspace} order its plan: {names}.",
+    "askSomeone": "An owner or an admin of the workspace orders its plan: ask one of them.",
+    "close": "Not now",
+    "tooSmall": "This plan does not hold what the workspace has. Remove these first, or order a larger plan:",
+    "excess": "{limit, select, channels {{used, number} channels, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
+    "excessStorage": "{used} of media, {allowed} allowed"
+  },
+  "OverPlan": {
+    "title": "{workspace} holds more than its plan allows",
+    "description": "Its plan is now {plan}. Nothing was deleted, but the workspace must come back within its plan before it does anything else.",
+    "excess": "{limit, select, channels {{used, number} channels connected, {allowed, number} allowed} members {{used, number} members, {allowed, number} allowed} other {}}",
+    "excessStorage": "{used} of media stored, {allowed} allowed: uploads are refused until media is deleted or the plan is larger",
+    "posts": "{count, plural, =0 {Until then, nothing is scheduled or published.} one {Until then, nothing is scheduled or published. The post scheduled this month fails at its time, with “plan limit” as its reason; it keeps its text and channels, and can be posted again from its page once the workspace is within its plan.} other {Until then, nothing is scheduled or published. The # posts scheduled this month each fail at their time, with “plan limit” as their reason; they keep their text and channels, and can be posted again from their page once the workspace is within its plan.}}",
+    "upgradeTitle": "Move to a plan that holds everything",
+    "noPlan": "No plan holds this much. Choose what stays below, or write to us for an offer.",
+    "chooseTitle": "Or choose what stays",
+    "chooseDescription": "Everything else is disconnected or removed at once, in one step that cannot be undone.",
+    "channels": "Channels that stay connected ({kept, number} of {allowed, number})",
+    "channelsNote": "The others are disconnected: their tokens are deleted, and the platforms that allow it are asked to forget Peal. Posts scheduled on them fail at their time.",
+    "members": "Members who stay ({kept, number} of {allowed, number})",
+    "membersNote": "The others are removed from the workspace, and pending invitations are revoked. What they wrote stays. You stay.",
+    "you": "you",
+    "role": "{role, select, owner {owner} admin {admin} editor {editor} contributor {contributor} viewer {viewer} other {{role}}}",
+    "confirm": "I understand that {channels, plural, =0 {no channel is} one {# channel is} other {# channels are}} disconnected and {members, plural, =0 {no member is} one {# member is} other {# members are}} removed, for good.",
+    "apply": "Keep these, remove the rest",
+    "applying": "Removing…",
+    "tooMany": "Keep at most what the plan allows.",
+    "done": "The workspace is back within its plan.",
+    "others": "Owners and admins of {workspace} can order a larger plan or choose what stays: {names}.",
+    "othersUnknown": "An owner or an admin of the workspace can order a larger plan or choose what stays.",
+    "billing": "Open billing",
+    "loadFailed": "The channels and members could not be loaded.",
+    "errors": {
+      "forbidden": "Only owners and admins, in their own session, choose what stays.",
+      "tooManyChannels": "More channels are kept than the plan allows.",
+      "tooManyMembers": "More members are kept than the plan allows.",
+      "unknownChannel": "A channel kept is no longer connected. Reload the page.",
+      "unknownMember": "Someone kept is no longer a member. Reload the page.",
+      "selfRequired": "You must stay among the members.",
+      "ownerRequired": "Only an owner removes an owner.",
+      "generic": "That did not work. Try again in a moment."
+    }
   },
   "Captcha": {
     "label": "Check that you are a person"
