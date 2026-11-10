@@ -3,10 +3,12 @@ import { Context, Effect, Layer, Option } from "effect";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import { planClosure } from "#workspace/domain/account-closure.ts";
 import type {
   ErasureEntry,
   ErasureEntryId,
 } from "#workspace/domain/erasure-ledger.ts";
+import { LastOwner } from "#workspace/domain/last-owner.ts";
 
 import { AccountStore } from "./account-store.ts";
 import { ContextRecords } from "./context-records.ts";
@@ -26,7 +28,10 @@ export interface ReplayedEntry {
 /** An entry that could not be applied, and why. */
 export interface FailedEntry {
   readonly id: ErasureEntryId;
-  /** The tag of what refused: a post going out, Stripe still billing. */
+  /**
+   * The tag of what refused: a post going out, Stripe still billing, or a
+   * workspace the account would leave without a member or an owner.
+   */
   readonly reason: string;
 }
 
@@ -109,6 +114,28 @@ export class ReplayErasures extends Context.Service<
 
           if (Option.isNone(account)) {
             return false;
+          }
+
+          // As closing the account checked: besides the workspaces it
+          // deleted then, the restore may have made the account the only
+          // member, or the only owner, of one others had joined since.
+          // Erasing it would leave that workspace to nobody, its posts
+          // still going out: refused, for whoever restores to decide.
+          const others = (yield* store.standings(userId)).filter(
+            ({ workspaceId }) => !restored.includes(workspaceId)
+          );
+
+          const plan = yield* Effect.fromResult(planClosure(others));
+
+          if (plan.deleted.length > 0) {
+            return yield* new LastOwner({
+              workspaces: others
+                .filter(({ workspaceId }) => plan.deleted.includes(workspaceId))
+                .map(({ workspaceId, workspaceName }) => ({
+                  id: workspaceId,
+                  name: workspaceName,
+                })),
+            });
           }
 
           // Read before anything goes, as closing the account reads it.
@@ -207,6 +234,7 @@ export class ReplayErasures extends Context.Service<
               Effect.map((done) => ({ done, failed: null })),
               Effect.catchTags({
                 BillingUnavailable: ({ _tag }) => refused(entry, _tag),
+                LastOwner: ({ _tag }) => refused(entry, _tag),
                 WorkspaceBusy: ({ _tag }) => refused(entry, _tag),
                 WorkspaceSubscribed: ({ _tag }) => refused(entry, _tag),
               })

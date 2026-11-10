@@ -153,7 +153,12 @@ answers (step 5) and before the stack starts (step 7):
    - `refused`: the deletion could not be applied, with why
      (`WorkspaceBusy`: a post marked as publishing, see step 6;
      `WorkspaceSubscribed` or `BillingUnavailable`: Stripe still bills it,
-     or did not answer). The command then exits with an error. Keep the
+     or did not answer; `LastOwner`: the restore made the account the only
+     member, or the only owner, of a workspace others had joined before it
+     closed, so erasing it would leave that workspace to nobody: tell the
+     owner, who decides what becomes of the workspace, as its other
+     members' joining was lost with the restore). The command then exits
+     with an error. Keep the
      stack stopped, fix the cause and run it again: it is safe to repeat,
      and what is gone stays gone.
 

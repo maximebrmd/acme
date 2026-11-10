@@ -6,7 +6,7 @@
 import { randomUUID } from "node:crypto";
 
 import { assert, layer } from "@effect/vitest";
-import { ConfigProvider, Effect, Layer, Schema } from "effect";
+import { ConfigProvider, DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { ErasureReplayServicesLive } from "#app/server.ts";
@@ -282,6 +282,66 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
           }
 
           yield* ledger.expire((yield* ledger.entries).at(-1)?.at ?? unseen.at);
+        })
+    );
+
+    it.effect(
+      "leaves alone, and reports, an account the restore made the only member of a workspace others had joined",
+      () =>
+        Effect.gen(function* soleAgain() {
+          const app = yield* TestApp;
+          const sql = yield* SqlClient.SqlClient;
+          const replays = yield* ReplayErasures;
+          const ledger = yield* ErasureLedger;
+          const dee = yield* signedUp("replay-dee");
+          const eve = yield* signedUp("replay-eve");
+          const loft = yield* workspaceOf(dee, "Loft");
+
+          // The backup: Dee alone in Loft.
+          yield* sql`CREATE TABLE ${sql(aside("dee_user"))} AS SELECT * FROM auth."user" WHERE id = ${dee.id}`;
+          yield* sql`CREATE TABLE ${sql(aside("dee_account"))} AS SELECT * FROM auth.account WHERE user_id = ${dee.id}`;
+          yield* sql`CREATE TABLE ${sql(aside("dee_member"))} AS SELECT * FROM auth.member WHERE user_id = ${dee.id}`;
+
+          // Since then, Eve joined as an owner, and Dee closed her account,
+          // leaving Loft to Eve.
+          yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${loft}, ${eve.id}, 'owner', now())`;
+
+          assert.strictEqual(
+            (yield* app.request("/api/me", {
+              body: { password },
+              headers: { cookie: dee.cookies },
+              method: "DELETE",
+            })).status,
+            204
+          );
+
+          // The restore: Dee is back, and Eve never joined.
+          yield* sql`DELETE FROM auth.member WHERE organization_id = ${loft}`;
+          yield* sql`INSERT INTO auth."user" SELECT * FROM ${sql(aside("dee_user"))}`;
+          yield* sql`INSERT INTO auth.account SELECT * FROM ${sql(aside("dee_account"))}`;
+          yield* sql`INSERT INTO auth.member SELECT * FROM ${sql(aside("dee_member"))}`;
+
+          const report = yield* replays.replay({ applyUnconfirmed: false });
+
+          // Erasing her would leave Loft with nobody, its posts still
+          // going out: the entry is refused, for whoever restores to see.
+          assert.deepStrictEqual(
+            report.failed.map(({ reason }) => reason),
+            ["LastOwner"]
+          );
+          assert.deepStrictEqual(report.erased, []);
+          assert.deepStrictEqual(
+            yield* sql`SELECT count(*)::int AS count FROM auth.member WHERE organization_id = ${loft} AND user_id = ${dee.id}`,
+            [{ count: 1 }]
+          );
+
+          for (const table of ["dee_user", "dee_account", "dee_member"]) {
+            yield* sql`DROP TABLE ${sql(aside(table))}`;
+          }
+
+          yield* ledger.expire(
+            DateTime.add(yield* DateTime.now, { minutes: 1 })
+          );
         })
     );
   }
