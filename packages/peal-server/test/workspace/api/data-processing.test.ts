@@ -12,12 +12,14 @@ import {
 import { activityRetention } from "#activity/domain/activity-retention.ts";
 import { contractRetention } from "#billing/domain/contract-retention.ts";
 import { trialMemory } from "#billing/domain/trial-memory.ts";
+import { linkRetention } from "#channels/domain/connect-link.ts";
 import { legalRetention } from "#legal/domain/legal-retention.ts";
 import { downloadLifetime } from "#media/infrastructure/drizzle-media-records.ts";
 import { idempotencyKeyLifetime } from "#publishing/domain/idempotency.ts";
 import { auditRetention } from "#staff/domain/audit-retention.ts";
 import { deliveryRetention } from "#webhooks/domain/delivery-policy.ts";
 import { erasureLedgerRetention } from "#workspace/domain/erasure-ledger.ts";
+import { creationKeyLifetime } from "#workspace/domain/idempotency.ts";
 
 const categoryOf = (id: string) =>
   processingRegister.find((category) => category.id === id);
@@ -118,6 +120,51 @@ describe("the data processing registry", () => {
       expect.stringContaining("5 years from its receipt"),
       expect.stringContaining("5 ans à compter de sa réception"),
     ]);
+  });
+
+  it("keeps a connect link as long as its purge does, and says so of connected accounts", () => {
+    expect(Duration.days(retentionPeriods.connectLinks.days)).toStrictEqual(
+      linkRetention
+    );
+
+    const channels = categoryOf("channels");
+
+    expect(channels?.data.en).toContain("connect links");
+    expect([channels?.retention.en, channels?.retention.fr]).toStrictEqual([
+      expect.stringContaining(
+        "30 days after it was used, revoked or expired, then deleted within a day"
+      ),
+      expect.stringContaining(
+        "30 jours après avoir été utilisé, révoqué ou expiré, puis supprimé dans la journée"
+      ),
+    ]);
+  });
+
+  it("says what a partner account keeps, and for how long", () => {
+    const partners = categoryOf("partners");
+
+    // What the partner gives of its own customers is there by name.
+    expect(partners?.data.en).toContain(
+      "the identifier the partner gives each"
+    );
+    expect(partners?.data.en).toContain("never the keys themselves");
+    // A key that makes a workspace is kept as the keys that make posts are.
+    expect(
+      Duration.hours(retentionPeriods.idempotencyKeys.hours)
+    ).toStrictEqual(creationKeyLifetime);
+    expect([partners?.retention.en, partners?.retention.fr]).toStrictEqual([
+      expect.stringContaining("24 hours"),
+      expect.stringContaining("24 heures"),
+    ]);
+  });
+
+  it("says of the content that its fingerprints are kept, and of the activity log whose requests it holds", () => {
+    expect(categoryOf("content")?.data.en).toContain(
+      "a fingerprint of what each channel receives"
+    );
+    expect(categoryOf("activity")?.source.en).toContain(
+      "partner keys and connect links"
+    );
   });
 
   it("promises no deletion the software does not make", () => {

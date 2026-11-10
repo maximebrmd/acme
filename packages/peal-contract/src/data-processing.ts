@@ -36,7 +36,10 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  * - `webhookDeliveries`: a webhook endpoint's delivery log
  *   (`webhooks/domain/delivery-policy.ts`);
  * - `idempotencyKeys`: the keys of the requests that make a post in one
- *   call (`publishing/domain/idempotency.ts`);
+ *   call (`publishing/domain/idempotency.ts`), and of those that make a
+ *   partner's workspace (`workspace/domain/idempotency.ts`);
+ * - `connectLinks`: a connect link, once it is over
+ *   (`channels/domain/connect-link.ts`);
  * - `erasureLedger`: the record of deletions kept outside the database
  *   (`workspace/domain/erasure-ledger.ts`), a little longer than `backups`;
  * - `exportLinks`: the links an export gives to media files;
@@ -50,6 +53,7 @@ export const retentionPeriods = {
   backups: { weeks: 5 },
   banPastEnd: { months: 12 },
   banRecords: { years: 5 },
+  connectLinks: { days: 30 },
   contracts: { years: 5 },
   erasureLedger: { days: 42 },
   exportLinks: { days: 7 },
@@ -145,8 +149,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The posts, media and schedules of your workspaces, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts; for a post made in one call with an idempotency key, a digest of that key and of its request, never either",
-      fr: "Les publications, médias et planifications de vos espaces de travail, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre",
+      en: "The posts, media and schedules of your workspaces, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts; for a post made in one call with an idempotency key, a digest of that key and of its request, never either; and, for each channel a post goes to, a fingerprint of what each channel receives (a digest of its text and media), which keeps the same post from going out twice by mistake",
+      fr: "Les publications, médias et planifications de vos espaces de travail, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre ; et, pour chaque canal où part une publication, une empreinte de ce que le canal reçoit (un condensé de son texte et de ses médias), qui évite qu’une même publication parte deux fois par erreur",
     },
     id: "content",
     legalBasis: contract,
@@ -171,8 +175,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The social media accounts you connect, their identifiers on each platform, and the access tokens the platforms issue, stored encrypted",
-      fr: "Les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme, et les jetons d’accès que les plateformes délivrent, stockés chiffrés",
+      en: "The social media accounts you connect, their identifiers on each platform, and the access tokens the platforms issue, stored encrypted; the connect links a workspace hands out so that an account’s owner connects it without an account on the service: who created each, when it expires, whether it was used and what it connected, how its last sign-in failed, and digests of its address and of the browser that started its sign-in, never either",
+      fr: "Les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme, et les jetons d’accès que les plateformes délivrent, stockés chiffrés ; les liens de connexion qu’un espace de travail remet pour que le titulaire d’un compte le connecte sans compte sur le service : qui a créé chacun, quand il expire, s’il a servi et ce qu’il a connecté, comment sa dernière connexion a échoué, et des empreintes de son adresse et du navigateur qui a commencé sa connexion, jamais l’une ni l’autre",
     },
     id: "channels",
     legalBasis: contract,
@@ -186,12 +190,12 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Publier sur les comptes que vous connectez, et y lire les chiffres de vos publications",
     },
     retention: {
-      en: "Until the account is disconnected or its workspace is deleted",
-      fr: "Jusqu’à la déconnexion du compte ou la suppression de son espace de travail",
+      en: `Until the account is disconnected or its workspace is deleted. A connect link: ${p.connectLinks.days} days after it was used, revoked or expired, then deleted within a day, or until its workspace is deleted`,
+      fr: `Jusqu’à la déconnexion du compte ou la suppression de son espace de travail. Un lien de connexion : ${p.connectLinks.days} jours après avoir été utilisé, révoqué ou expiré, puis supprimé dans la journée, ou jusqu’à la suppression de son espace de travail`,
     },
     source: {
-      en: "The platform, when you connect the account",
-      fr: "La plateforme, lorsque vous connectez le compte",
+      en: "The platform, when you connect the account, or when its owner connects it through a connect link; the members and the keys that create connect links",
+      fr: "La plateforme, lorsque vous connectez le compte, ou lorsque son titulaire le connecte par un lien de connexion ; les membres et les clés qui créent les liens de connexion",
     },
   },
   {
@@ -275,8 +279,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "For each request that asks to change something in a workspace, done, refused or failed: its time, the operation, the identifiers it names, the member or the API key that asked, how they authenticated, the API key or the application it came through and its name then, whether the operator’s staff acted as the member, the status answered and the error’s code; never what the request or its answer carried, an IP address or a browser",
-      fr: "Pour chaque requête qui demande une modification dans un espace de travail, faite, refusée ou échouée : sa date, l’opération, les identifiants visés, le membre ou la clé d’API à son origine, leur mode d’authentification, la clé d’API ou l’application utilisée et son nom à ce moment-là, si l’équipe de l’exploitant agissait au nom du membre, le code de réponse et le code de l’erreur ; jamais le contenu de la requête ou de sa réponse, une adresse IP ou un navigateur",
+      en: "For each request that asks to change something in a workspace, done, refused or failed: its time, the operation, the identifiers it names, the member or the key that asked (an API key, a partner key, or a connect link, never whoever opened it), how they authenticated, the key or the application it came through and its name then, whether the operator’s staff acted as the member, the status answered and the error’s code; never what the request or its answer carried, an IP address or a browser",
+      fr: "Pour chaque requête qui demande une modification dans un espace de travail, faite, refusée ou échouée : sa date, l’opération, les identifiants visés, le membre ou la clé à son origine (une clé d’API, une clé partenaire, ou un lien de connexion, jamais la personne qui l’a ouvert), leur mode d’authentification, la clé ou l’application utilisée et son nom à ce moment-là, si l’équipe de l’exploitant agissait au nom du membre, le code de réponse et le code de l’erreur ; jamais le contenu de la requête ou de sa réponse, une adresse IP ou un navigateur",
     },
     id: "activity",
     legalBasis: {
@@ -297,8 +301,34 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: `${p.activityLog.days} jours à compter de chaque requête, puis suppression dans la journée, ou jusqu’à la suppression de l’espace de travail. La fermeture d’un compte le retire aussitôt des journaux des espaces de travail qui restent : ce qu’il a modifié y demeure, sans son auteur`,
     },
     source: {
-      en: "Your use of the service, and that of the API keys and applications acting in your workspaces",
-      fr: "Votre utilisation du service, et celle des clés d’API et des applications qui agissent dans vos espaces de travail",
+      en: "Your use of the service, and that of the API keys, partner keys and connect links, and of the applications, acting in your workspaces",
+      fr: "Votre utilisation du service, et celle des clés d’API, des clés partenaires et des liens de connexion, et des applications, qui agissent dans vos espaces de travail",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "For a workspace that opened a partner account, to use the service for its own customers: the account’s name, the address of its logo and the origins its pages may return to; its keys, with their names, what each may do and the member who created it, and a digest of each, never the keys themselves; the workspaces it owns for its customers, with the name and the identifier the partner gives each; each day’s count of those workspaces and of their connected accounts; and, for a workspace created with an idempotency key, a digest of that key and of its request, never either",
+      fr: "Pour un espace de travail qui a ouvert un compte partenaire, afin d’utiliser le service pour ses propres clients : le nom du compte, l’adresse de son logo et les origines vers lesquelles ses pages peuvent renvoyer ; ses clés, avec leur nom, ce que chacune permet et le membre qui l’a créée, et une empreinte de chacune, jamais les clés elles-mêmes ; les espaces de travail qu’il possède pour ses clients, avec le nom et l’identifiant que le partenaire donne à chacun ; le décompte quotidien de ces espaces de travail et de leurs comptes connectés ; et, pour un espace de travail créé avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre",
+    },
+    id: "partners",
+    legalBasis: contract,
+    name: {
+      en: "Partner accounts",
+      fr: "Comptes partenaires",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Let a product use the service for its own customers: a workspace for each, and pages in the product’s name where they connect their accounts",
+      fr: "Permettre à un produit d’utiliser le service pour ses propres clients : un espace de travail pour chacun, et des pages au nom du produit où ils connectent leurs comptes",
+    },
+    retention: {
+      en: `The account, its keys and its daily counts: until the account is closed or its workspace is deleted; a key, until it is revoked. A customer’s workspace and everything it holds: until the partner deletes it. Closing the account of the member who created a key removes them from it at once. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
+      fr: `Le compte, ses clés et ses décomptes quotidiens : jusqu’à la fermeture du compte ou la suppression de son espace de travail ; une clé, jusqu’à sa révocation. L’espace de travail d’un client et tout ce qu’il contient : jusqu’à sa suppression par le partenaire. La fermeture du compte du membre qui a créé une clé l’en retire aussitôt. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
+    },
+    source: {
+      en: "The owners and admins of the workspace, for the account and its keys; the partner’s own systems, through those keys, for its customers’ workspaces",
+      fr: "Les propriétaires et administrateurs de l’espace de travail, pour le compte et ses clés ; les systèmes du partenaire, au moyen de ces clés, pour les espaces de travail de ses clients",
     },
   },
   {
