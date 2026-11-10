@@ -391,6 +391,8 @@ Chaque réponse à une clé ou à un jeton compté dit où il en est, dans les e
 | `RateLimit`        | `"default";r=412;t=23` | Ce qui reste : `r` requêtes, pendant encore `t` secondes, après quoi le compte repart de zéro. |
 | `Retry-After`      | `23`                   | Sur un 429 seulement : combien de secondes attendre.                                           |
 
+Un 429 `platform_rate_limited` est autre chose : une plateforme a demandé à Peal de ralentir, comme une [recherche](/api-overview) peut le constater, et ce compte n’y est pour rien. Les pages hébergées des liens de connexion et des liens de relecture, qui ne prennent aucune clé, ont leurs propres limites par adresse.
+
 Passé la limite, la requête répond 429 `too_many_requests`, et rien n’a été fait :
 
 ```http
