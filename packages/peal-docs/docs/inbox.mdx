@@ -83,7 +83,7 @@ You can also mark a comment as answered when it needs no reply. A comment the ac
 | Hide someone's comment under your post | No: Mastodon offers it to no account          | Not yet: Peal does not ask for the permission |
 | Delete someone else's comment          | No: Mastodon offers it to no account          | No: nobody deletes another account's post     |
 
-`GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` and each thread answer the same for one channel: `available`, `reconnect` (the account was connected before Peal asked for what the ability takes: disconnect the channel and [connect the account again](/channels)), or `unsupported`.
+`GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` and each thread answer the same for one channel: `available`, `reconnect` (the account was connected before Peal asked for what the ability takes: [connect the account again](/channels), without disconnecting it, and the channel stays with its history), or `unsupported`.
 
 On Mastodon, replies to public and unlisted posts are read; Peal reads them with the account's access when the account allowed it, which shows every reply, and without it otherwise, which shows the first 60, twenty replies deep at most. On Bluesky, Peal reads the thread from Bluesky's public service, without the account's session.
 

@@ -11,6 +11,7 @@ import {
   AnalyticsApiLive,
   analyticsCollection,
   AnalyticsLive,
+  AnalyticsRecordsLive,
   PlatformMetricsReaderLive,
 } from "#analytics/container.ts";
 import { ApiAnswersLive } from "#app/answers.ts";
@@ -192,6 +193,8 @@ const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
   // A connect link's connections go to the workspace's activity log.
   Layer.provide(ConnectLinkJournalLive),
+  // A channel gone or back is told to analytics, in its transaction.
+  Layer.provide(AnalyticsRecordsLive),
   Layer.provideMerge(WebhooksContextLive),
   Layer.provideMerge(NoticesLive),
   Layer.provideMerge(

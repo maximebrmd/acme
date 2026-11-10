@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "347aa32c-ac69-45b8-876f-89c75bf5f4a0",
+  "id": "443de95e-817a-460b-9f2a-e02b5ec83537",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -5916,6 +5916,19 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_channels",
+      "name": "account_ref",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,

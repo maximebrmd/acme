@@ -96,6 +96,7 @@ CREATE TABLE "analytics"."paid_reads" (
 );
 --> statement-breakpoint
 CREATE TABLE "analytics"."tracked_channels" (
+	"account_ref" text,
 	"channel_id" uuid PRIMARY KEY,
 	"gone_at" timestamp with time zone,
 	"last_collected_at" timestamp with time zone,

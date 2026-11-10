@@ -33,12 +33,17 @@ export const retentionOf = (platform: Platform): Duration.Duration =>
   platformCaps[platform] ?? keptFor;
 
 /**
- * How long the posts of a channel that left its workspace are kept after
- * it did: platforms ask that what an account allowed be
- * deleted once it withdraws (YouTube's developer policies give 30 days).
- * The account's own days go at once, with the channel.
+ * How long the numbers of a channel that left its workspace are kept after
+ * it did, its account's days and its posts' counts alike: platforms ask
+ * that what an account allowed be deleted once it withdraws, and the
+ * strictest Peal reads gives 7 calendar days (YouTube's developer
+ * policies, III.D.2: a revocation "through the API Client's own
+ * mechanism", which disconnecting a channel is; 30 days are for one made
+ * on Google's own page). One figure for every platform. Until then they
+ * are no longer read nor reported, and the same account connected again
+ * to the workspace takes them back.
  */
-export const disconnectedKeptFor = Duration.days(30);
+export const disconnectedKeptFor = Duration.days(7);
 
 /**
  * How long the count of the reads a platform bills is kept: past the

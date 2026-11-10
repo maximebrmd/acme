@@ -140,6 +140,10 @@ export const paidReads = analytics.table(
 export const trackedChannels = analytics.table(
   "tracked_channels",
   {
+    // The SHA-256 of the platform and the account's id on it, kept only
+    // while the channel is gone, so the same account connected again
+    // within that time takes its numbers back. Null otherwise.
+    accountRef: text("account_ref"),
     channelId: uuid("channel_id").primaryKey(),
     goneAt: instant("gone_at"),
     lastCollectedAt: instant("last_collected_at"),

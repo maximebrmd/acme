@@ -127,7 +127,8 @@
   that day, and the views and reach the platform counted for a day, which
   a later read revises. A platform that puts a read off is asked again an
   hour later, behind the others; `paused` waits a day, `unsupported` a
-  week; a channel gone is marked (`gone_at`) and its days deleted. It stops
+  week; a channel found gone is marked (`gone_at`), if its disconnection
+  did not mark it already. It stops
   40 minutes after its scheduled time, and sets
   `peal.analytics.accounts.duration`, `.left` and `.unfinished`, which an
   alert rule watches. Account readers live in
@@ -138,10 +139,24 @@
   and account days past `retentionOf(platform)`
   (`analytics/domain/analytics-retention.ts`: two years, less where a
   platform's terms cap it, as LinkedIn's, Pinterest's and Google's do),
-  the posts of a channel gone 30 days, and billed reads past 35 days. The
+  the days and the posts of a channel gone `disconnectedKeptFor` (7 days,
+  the strictest a platform asks: YouTube's developer policies, III.D.2,
+  for a revocation made in the client), and billed reads past 35 days. The
   registry (`retentionPeriods.analytics*`), the privacy policy and the
   docs say the same: change them together. It takes its instant, and its
   Postgres test runs in 1975, before every other suite's rows.
+- A channel leaves analytics when it leaves its workspace, not when a
+  collection finds out: the channels context tells
+  `AnalyticsRecords.channelGone` in the transaction that deletes the
+  channel (`analyticsChannelEvents`). The row is made if the channel was
+  never followed, so its posts are purged with it; it is no longer read,
+  and the reports leave its account out (`gone_at IS NULL`). A platform's
+  data deletion request erases its numbers at once (`erase`). The same
+  account connected to the workspace again within the week takes them
+  back under its new channel (`channelBack`, matched by `account_ref`,
+  the SHA-256 of the platform and the account's id, kept only while the
+  channel is gone). A new place that deletes a channel tells
+  `ChannelEvents.disconnected`, or its numbers stay.
 - The dashboard (`AnalyticsQueries.dashboard`, put together by the pure
   `dashboardOf`) answers a range beside the one before it
   (`previousRange`), by channel and by platform, with followers

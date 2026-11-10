@@ -57,8 +57,8 @@ export const SqlExpiredAnalytics = Layer.effect(
         RETURNING 1
       `;
 
-      // A channel that left its workspace: its posts go a month after,
-      // then the channel's own row.
+      // A channel that left its workspace: its posts go `disconnectedKeptFor`
+      // after, then the channel's own row, and its account's days with it.
       const goneBefore = iso(cutoffs.disconnectedBefore);
 
       const gone = yield* sql`

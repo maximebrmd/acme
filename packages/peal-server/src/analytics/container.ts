@@ -88,3 +88,8 @@ export const AnalyticsCronsLive = Layer.mergeAll(
 export const PlatformMetricsReaderLive = PlatformReaders.pipe(
   Layer.provide(SqlPaidReads)
 );
+
+// A workspace's analytics as a whole, alone: for the channels context,
+// which tells it of a channel gone or back in the transaction that deletes
+// or saves the channel. Needs `Drizzle` and `SqlClient` only.
+export { DrizzleAnalyticsRecords as AnalyticsRecordsLive } from "#analytics/infrastructure/drizzle-analytics-records.ts";

@@ -26,6 +26,7 @@ const decodeDeletion = Schema.decodeUnknownEffect(DataDeletion);
 const decodeRemoved = Schema.decodeUnknownEffect(
   Schema.Array(
     Schema.Struct({
+      accountId: Schema.String,
       id: ChannelIdSchema,
       platform: PlatformSchema,
       workspaceId: WorkspaceIdSchema,
@@ -113,6 +114,7 @@ export const DrizzleDataDeletions = Layer.effect(
         .delete(channels)
         .where(userChannels(signedIn, request.userId))
         .returning({
+          accountId: channels.accountId,
           id: channels.id,
           platform: channels.platform,
           workspaceId: channels.workspaceId,
@@ -125,7 +127,7 @@ export const DrizzleDataDeletions = Layer.effect(
 
       // Disconnected, as by a member: the workspace's followers hear it.
       yield* Effect.all(
-        removed.map((channel) => events.disconnected(channel)),
+        removed.map((channel) => events.disconnected(channel, "dataDeletion")),
         { discard: true }
       );
 

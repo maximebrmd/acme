@@ -201,7 +201,9 @@ layer(StoreTest, { excludeTestServices: true })("the accounts' store", (it) => {
             afterwards.some((channel) => channel.channelId === channelId)
           );
 
-          assert.deepStrictEqual(yield* daysOf(channelId), []);
+          // Its days stay until the retention job takes them, a week
+          // after it left, or the same account takes them back.
+          assert.lengthOf(yield* daysOf(channelId), 2);
         }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
       })
   );

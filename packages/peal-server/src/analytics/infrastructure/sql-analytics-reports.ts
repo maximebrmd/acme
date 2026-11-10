@@ -361,6 +361,7 @@ export const SqlAnalyticsReports = Layer.effect(
           SELECT channel_id AS "channelId", platform
           FROM analytics.tracked_channels
           WHERE workspace_id = ${workspaceId}
+            AND gone_at IS NULL
           ORDER BY channel_id
         `.pipe(Effect.mapError(failed));
 
@@ -378,6 +379,7 @@ export const SqlAnalyticsReports = Layer.effect(
           FROM analytics.account_snapshots s
           JOIN analytics.tracked_channels c ON c.channel_id = s.channel_id
           WHERE c.workspace_id = ${asked.workspaceId}
+            AND c.gone_at IS NULL
             AND (${channel}::uuid IS NULL OR c.channel_id = ${channel}::uuid)
             AND (
               (s.day >= ${asked.from}::date AND s.day <= ${asked.to}::date)
@@ -456,6 +458,7 @@ export const SqlAnalyticsReports = Layer.effect(
           FROM analytics.account_snapshots s
           JOIN analytics.tracked_channels c ON c.channel_id = s.channel_id
           WHERE c.workspace_id = ${asked.workspaceId}
+            AND c.gone_at IS NULL
             AND s.day >= ${asked.from}::date
             AND s.day <= ${asked.to}::date
             AND (

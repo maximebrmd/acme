@@ -83,7 +83,7 @@ Vous pouvez aussi marquer un commentaire comme traité quand il n’appelle pas 
 | Masquer le commentaire de quelqu’un sous votre publication | Non : Mastodon ne l’offre à aucun compte        | Pas encore : Peal ne demande pas l’autorisation             |
 | Supprimer le commentaire de quelqu’un d’autre              | Non : Mastodon ne l’offre à aucun compte        | Non : personne ne supprime la publication d’un autre compte |
 
-`GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` et chaque fil répondent la même chose pour un canal : `available`, `reconnect` (le compte a été connecté avant que Peal ne demande ce que la possibilité exige : déconnectez le canal et [connectez de nouveau le compte](/channels)), ou `unsupported`.
+`GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` et chaque fil répondent la même chose pour un canal : `available`, `reconnect` (le compte a été connecté avant que Peal ne demande ce que la possibilité exige : [connectez de nouveau le compte](/channels), sans le déconnecter, et le canal reste avec son historique), ou `unsupported`.
 
 Sur Mastodon, les réponses aux publications publiques et non listées sont lues ; Peal les lit avec l’accès du compte quand celui-ci l’a permis, ce qui montre toutes les réponses, et sans lui sinon, ce qui montre les 60 premières, sur vingt niveaux de réponses au plus. Sur Bluesky, Peal lit le fil depuis le service public de Bluesky, sans la session du compte.
 

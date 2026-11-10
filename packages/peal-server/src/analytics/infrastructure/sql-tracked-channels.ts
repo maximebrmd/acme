@@ -271,16 +271,13 @@ export const SqlTrackedChannels = Layer.effect(
         return;
       }
 
-      // One statement: the channels are marked gone, and their days go.
+      // Marked gone from when they were first found so, which a
+      // disconnection already recorded (AnalyticsRecords.channelGone):
+      // the retention job deletes their days and posts from that moment.
       yield* sql`
-        WITH gone AS (
-          UPDATE analytics.tracked_channels
-          SET gone_at = ${iso(at)}::timestamptz
-          WHERE channel_id = ANY(string_to_array(${channelIds.join(",")}, ',')::uuid[])
-          RETURNING channel_id
-        )
-        DELETE FROM analytics.account_snapshots AS snapshot
-        USING gone WHERE snapshot.channel_id = gone.channel_id
+        UPDATE analytics.tracked_channels
+        SET gone_at = coalesce(gone_at, ${iso(at)}::timestamptz)
+        WHERE channel_id = ANY(string_to_array(${channelIds.join(",")}, ',')::uuid[])
       `.pipe(Effect.mapError(failed));
     });
 
