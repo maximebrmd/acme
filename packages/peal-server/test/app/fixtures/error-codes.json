@@ -15,6 +15,16 @@
     "tag": "ApiKeyNotFound"
   },
   {
+    "code": "approval_changed",
+    "status": 409,
+    "tag": "ApprovalChanged"
+  },
+  {
+    "code": "approval_not_pending",
+    "status": 409,
+    "tag": "ApprovalNotPending"
+  },
+  {
     "code": "assistant_failed",
     "status": 502,
     "tag": "AssistantFailed"
@@ -68,6 +78,16 @@
     "code": "client_error_too_large",
     "status": 413,
     "tag": "ClientErrorTooLarge"
+  },
+  {
+    "code": "comment_invalid",
+    "status": 422,
+    "tag": "CommentInvalid"
+  },
+  {
+    "code": "comment_not_found",
+    "status": 404,
+    "tag": "CommentNotFound"
   },
   {
     "code": "connect_failed",
@@ -185,6 +205,16 @@
     "tag": "LastOwner"
   },
   {
+    "code": "lookup_input_invalid",
+    "status": 422,
+    "tag": "LookupInputInvalid"
+  },
+  {
+    "code": "lookup_not_found",
+    "status": 404,
+    "tag": "LookupNotFound"
+  },
+  {
     "code": "media_import_busy",
     "status": 429,
     "tag": "MediaImportBusy"
@@ -285,6 +315,11 @@
     "tag": "PlanTooSmall"
   },
   {
+    "code": "platform_rate_limited",
+    "status": 429,
+    "tag": "PlatformRateLimited"
+  },
+  {
     "code": "platform_unreachable",
     "status": 502,
     "tag": "PlatformUnreachable"
@@ -300,6 +335,11 @@
     "tag": "PostNotFound"
   },
   {
+    "code": "post_not_reviewable",
+    "status": 409,
+    "tag": "PostNotReviewable"
+  },
+  {
     "code": "post_status_conflict",
     "status": 409,
     "tag": "PostStatusConflict"
@@ -313,6 +353,31 @@
     "code": "return_url_not_allowed",
     "status": 422,
     "tag": "ReturnUrlNotAllowed"
+  },
+  {
+    "code": "review_access_denied",
+    "status": 403,
+    "tag": "ReviewAccessDenied"
+  },
+  {
+    "code": "review_captcha_required",
+    "status": 403,
+    "tag": "ReviewCaptchaRequired"
+  },
+  {
+    "code": "review_link_closed",
+    "status": 410,
+    "tag": "ReviewLinkClosed"
+  },
+  {
+    "code": "review_link_not_found",
+    "status": 404,
+    "tag": "ReviewLinkNotFound"
+  },
+  {
+    "code": "review_request_too_large",
+    "status": 413,
+    "tag": "ReviewRequestTooLarge"
   },
   {
     "code": "schedule_in_past",
@@ -373,6 +438,16 @@
     "code": "too_many_requests",
     "status": 429,
     "tag": "TooManyRequests"
+  },
+  {
+    "code": "too_many_review_links",
+    "status": 409,
+    "tag": "TooManyReviewLinks"
+  },
+  {
+    "code": "too_many_review_requests",
+    "status": 429,
+    "tag": "TooManyReviewRequests"
   },
   {
     "code": "too_many_webhook_endpoints",
@@ -468,6 +543,11 @@
     "code": "workspace_not_found",
     "status": 404,
     "tag": "WorkspaceNotFound"
+  },
+  {
+    "code": "workspace_over_plan",
+    "status": 409,
+    "tag": "WorkspaceOverPlan"
   },
   {
     "code": "workspace_subscribed",

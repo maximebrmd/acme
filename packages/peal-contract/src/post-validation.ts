@@ -6,6 +6,7 @@ import {
   PlanSchema,
 } from "./billing-plans.ts";
 import { DuplicateOnChannelSchema } from "./duplicate-post.ts";
+import { Int64Schema } from "./int64.ts";
 import { PlatformSchema } from "./platform.ts";
 import { ContentViolationSchema } from "./post-content-invalid.ts";
 import { TextUnitSchema } from "./post-text.ts";
@@ -67,12 +68,12 @@ export type ScheduleCheck = typeof ScheduleCheckSchema.Type;
  * tells it.
  */
 export const PlanShortfallSchema = Schema.Struct({
-  allowed: Schema.Int,
+  allowed: Int64Schema,
   billingUrl: Schema.String,
   limit: PlanLimitSchema,
   plan: PlanSchema,
   planWithRoom: Schema.NullOr(PaidPlanSchema),
-  used: Schema.Int,
+  used: Int64Schema,
 }).annotate({ identifier: "PlanShortfall" });
 
 export type PlanShortfall = typeof PlanShortfallSchema.Type;

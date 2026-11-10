@@ -1,6 +1,7 @@
 import { Context } from "effect";
 import { Tool } from "effect/ai";
 
+import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { ConnectTools } from "#app/mcp/connect-tools.ts";
 import { ToolAreaSchema } from "#app/mcp/discovery-tools.ts";
 import type { ToolArea } from "#app/mcp/discovery-tools.ts";
@@ -8,6 +9,7 @@ import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
+import { ReviewTools } from "#app/mcp/review-tools.ts";
 import { BasicTools } from "#app/mcp/tools.ts";
 import { WebhookTools } from "#app/mcp/webhooks-tools.ts";
 import type { WorkspaceScope } from "#workspace/domain/oauth-grant.ts";
@@ -28,11 +30,13 @@ interface ListedTool {
  */
 export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
   account: Object.values(BasicTools.tools),
+  channels: Object.values(CapabilityTools.tools),
   connect: Object.values(ConnectTools.tools),
   media: Object.values(MediaTools.tools),
   people: Object.values(PeopleTools.tools),
   posts: Object.values(PostTools.tools),
   reports: Object.values(ReportTools.tools),
+  review: Object.values(ReviewTools.tools),
   webhooks: Object.values(WebhookTools.tools),
 };
 
@@ -44,12 +48,14 @@ export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
  * connection that lacks the scope.
  */
 export const publishingTools: ReadonlySet<string> = new Set([
+  "approve_post",
   "cancel_post",
   "confirm_target",
   "create_post",
   "create_posts",
   "publish_post",
   "repost_target",
+  "request_changes",
   "reschedule_post",
   "schedule_post",
   "unschedule_post",

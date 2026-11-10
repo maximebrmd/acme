@@ -270,8 +270,8 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           discard_draft: [false, true, true, false],
           find_tools: [true, false, true, false],
           get_billing: [true, false, true, false],
-          get_connect_link: [true, false, true, false],
           get_channel_capabilities: [true, false, true, true],
+          get_connect_link: [true, false, true, false],
           get_partner_account: [true, false, true, false],
           get_post: [true, false, true, false],
           get_post_review: [true, false, true, false],
@@ -416,7 +416,14 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           const postId = "0190f3a0-0000-7000-8000-00000000c0de";
 
+          const decision = {
+            approvalId: postId,
+            postId,
+            subjectHash: "5a".repeat(32),
+          };
+
           const bogus = {
+            approve_post: decision,
             cancel_post: { postId },
             confirm_target: {
               confirmation: { _tag: "notPublished" },
@@ -439,6 +446,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             },
             publish_post: { postId },
             repost_target: { postId, targetId: postId },
+            request_changes: { ...decision, comment: "Never read." },
             reschedule_post: {
               at: "2030-01-01T10:00:00Z",
               postId,
