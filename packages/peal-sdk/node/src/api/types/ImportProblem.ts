@@ -3,6 +3,7 @@
 export const ImportProblem = {
         Empty: "empty",
         UnterminatedQuote: "unterminatedQuote",
+        StrayQuote: "strayQuote",
         UnknownColumn: "unknownColumn",
         RepeatedColumn: "repeatedColumn",
         MissingColumn: "missingColumn",

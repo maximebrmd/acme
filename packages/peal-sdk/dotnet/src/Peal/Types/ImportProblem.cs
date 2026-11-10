@@ -12,6 +12,8 @@ public readonly record struct ImportProblem : IStringEnum
 
     public static readonly ImportProblem UnterminatedQuote = new(Values.UnterminatedQuote);
 
+    public static readonly ImportProblem StrayQuote = new(Values.StrayQuote);
+
     public static readonly ImportProblem UnknownColumn = new(Values.UnknownColumn);
 
     public static readonly ImportProblem RepeatedColumn = new(Values.RepeatedColumn);
@@ -119,6 +121,8 @@ public readonly record struct ImportProblem : IStringEnum
         public const string Empty = "empty";
 
         public const string UnterminatedQuote = "unterminatedQuote";
+
+        public const string StrayQuote = "strayQuote";
 
         public const string UnknownColumn = "unknownColumn";
 

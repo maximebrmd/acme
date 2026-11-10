@@ -30897,6 +30897,13 @@ func TestEnumImportProblem(t *testing.T) {
 		assert.Equal(t, ImportProblem("unterminatedQuote"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_strayQuote", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewImportProblemFromString("strayQuote")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, ImportProblem("strayQuote"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_unknownColumn", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewImportProblemFromString("unknownColumn")

@@ -439,6 +439,7 @@ module Peal
     autoload :ImportProblem, ::File.join(__dir__, "peal/types/import_problem")
     autoload :ImportRowResultCreated, ::File.join(__dir__, "peal/types/import_row_result_created")
     autoload :ImportRowResultRefused, ::File.join(__dir__, "peal/types/import_row_result_refused")
+    autoload :ImportRowResultUnreadableCells, ::File.join(__dir__, "peal/types/import_row_result_unreadable_cells")
     autoload :ImportRowResultUnreadable, ::File.join(__dir__, "peal/types/import_row_result_unreadable")
     autoload :ImportRowResultValid, ::File.join(__dir__, "peal/types/import_row_result_valid")
     autoload :ImportRowResult, ::File.join(__dir__, "peal/types/import_row_result")

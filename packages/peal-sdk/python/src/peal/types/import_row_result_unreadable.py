@@ -5,9 +5,11 @@ import typing
 import pydantic
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from .import_cell_problem import ImportCellProblem
+from .import_row_result_unreadable_cells import ImportRowResultUnreadableCells
 
 
 class ImportRowResultUnreadable(UniversalBaseModel):
+    cells: typing.Optional[ImportRowResultUnreadableCells] = None
     problems: typing.List[ImportCellProblem]
     row: int
 

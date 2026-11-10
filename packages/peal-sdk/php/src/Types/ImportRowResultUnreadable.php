@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class ImportRowResultUnreadable extends JsonSerializableType
 {
     /**
+     * @var ?ImportRowResultUnreadableCells $cells
+     */
+    #[JsonProperty('cells')]
+    public ?ImportRowResultUnreadableCells $cells;
+
+    /**
      * @var array<ImportCellProblem> $problems
      */
     #[JsonProperty('problems'), ArrayType([ImportCellProblem::class])]
@@ -24,11 +30,13 @@ class ImportRowResultUnreadable extends JsonSerializableType
      * @param array{
      *   problems: array<ImportCellProblem>,
      *   row: int,
+     *   cells?: ?ImportRowResultUnreadableCells,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->cells = $values['cells'] ?? null;
         $this->problems = $values['problems'];
         $this->row = $values['row'];
     }

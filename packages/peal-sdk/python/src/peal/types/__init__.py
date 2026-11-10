@@ -238,6 +238,7 @@ if typing.TYPE_CHECKING:
     from .import_row_result_created import ImportRowResultCreated
     from .import_row_result_refused import ImportRowResultRefused
     from .import_row_result_unreadable import ImportRowResultUnreadable
+    from .import_row_result_unreadable_cells import ImportRowResultUnreadableCells
     from .import_row_result_valid import ImportRowResultValid
     from .import_unreadable_encoded import ImportUnreadableEncoded
     from .import_unreadable_encoded_tag import ImportUnreadableEncodedTag
@@ -792,6 +793,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ImportRowResultCreated": ".import_row_result_created",
     "ImportRowResultRefused": ".import_row_result_refused",
     "ImportRowResultUnreadable": ".import_row_result_unreadable",
+    "ImportRowResultUnreadableCells": ".import_row_result_unreadable_cells",
     "ImportRowResultValid": ".import_row_result_valid",
     "ImportRowResult_Created": ".import_row_result",
     "ImportRowResult_Refused": ".import_row_result",
@@ -1364,6 +1366,7 @@ __all__ = [
     "ImportRowResultCreated",
     "ImportRowResultRefused",
     "ImportRowResultUnreadable",
+    "ImportRowResultUnreadableCells",
     "ImportRowResultValid",
     "ImportRowResult_Created",
     "ImportRowResult_Refused",

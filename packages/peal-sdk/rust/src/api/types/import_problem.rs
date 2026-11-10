@@ -5,6 +5,7 @@ pub use crate::prelude::*;
 pub enum ImportProblem {
     Empty,
     UnterminatedQuote,
+    StrayQuote,
     UnknownColumn,
     RepeatedColumn,
     MissingColumn,
@@ -19,6 +20,7 @@ impl Serialize for ImportProblem {
         match self {
             Self::Empty => serializer.serialize_str("empty"),
             Self::UnterminatedQuote => serializer.serialize_str("unterminatedQuote"),
+            Self::StrayQuote => serializer.serialize_str("strayQuote"),
             Self::UnknownColumn => serializer.serialize_str("unknownColumn"),
             Self::RepeatedColumn => serializer.serialize_str("repeatedColumn"),
             Self::MissingColumn => serializer.serialize_str("missingColumn"),
@@ -34,6 +36,7 @@ impl<'de> Deserialize<'de> for ImportProblem {
         match value.as_str() {
             "empty" => Ok(Self::Empty),
             "unterminatedQuote" => Ok(Self::UnterminatedQuote),
+            "strayQuote" => Ok(Self::StrayQuote),
             "unknownColumn" => Ok(Self::UnknownColumn),
             "repeatedColumn" => Ok(Self::RepeatedColumn),
             "missingColumn" => Ok(Self::MissingColumn),
@@ -48,6 +51,7 @@ impl fmt::Display for ImportProblem {
         match self {
             Self::Empty => write!(f, "empty"),
             Self::UnterminatedQuote => write!(f, "unterminatedQuote"),
+            Self::StrayQuote => write!(f, "strayQuote"),
             Self::UnknownColumn => write!(f, "unknownColumn"),
             Self::RepeatedColumn => write!(f, "repeatedColumn"),
             Self::MissingColumn => write!(f, "missingColumn"),

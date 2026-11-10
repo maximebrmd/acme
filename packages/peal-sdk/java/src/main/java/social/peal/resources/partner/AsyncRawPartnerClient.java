@@ -27,6 +27,7 @@ import social.peal.core.PealClientHttpResponse;
 import social.peal.core.QueryStringMapper;
 import social.peal.core.RequestOptions;
 import social.peal.core.RetryInterceptor;
+import social.peal.errors.BadRequestError;
 import social.peal.errors.ConflictError;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.InternalServerError;
@@ -152,14 +153,14 @@ public class AsyncRawPartnerClient {
     }
 
     /**
-     * Lists the workspaces the partner owns, newest first, each with the number of channels connected in it, 50 a page unless <code>limit</code> (at most 100) says otherwise. <code>externalId</code> finds the one workspace with that external id, exactly; <code>name</code> those whose name holds the text, whatever its case. <code>total</code> counts what the filters find; pass the page's <code>next</code> as <code>before</code> for the next page. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     * Lists the workspaces the partner owns, newest first, each with the number of channels connected in it, 50 a page unless <code>limit</code> (at most 100) says otherwise. <code>externalId</code> finds the one workspace with that external id, exactly; <code>name</code> those whose name holds the text, whatever its case. <code>total</code> counts what the filters find; pass the page's <code>next</code> as <code>before</code> for the next page, as it is: it is a position in the list, which stays good when workspaces before it are offboarded, and anything else is refused (400). Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
      */
     public CompletableFuture<PealClientHttpResponse<CustomerWorkspacePage>> listWorkspaces() {
         return listWorkspaces(ListWorkspacesPartnerRequest.builder().build());
     }
 
     /**
-     * Lists the workspaces the partner owns, newest first, each with the number of channels connected in it, 50 a page unless <code>limit</code> (at most 100) says otherwise. <code>externalId</code> finds the one workspace with that external id, exactly; <code>name</code> those whose name holds the text, whatever its case. <code>total</code> counts what the filters find; pass the page's <code>next</code> as <code>before</code> for the next page. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     * Lists the workspaces the partner owns, newest first, each with the number of channels connected in it, 50 a page unless <code>limit</code> (at most 100) says otherwise. <code>externalId</code> finds the one workspace with that external id, exactly; <code>name</code> those whose name holds the text, whatever its case. <code>total</code> counts what the filters find; pass the page's <code>next</code> as <code>before</code> for the next page, as it is: it is a position in the list, which stays good when workspaces before it are offboarded, and anything else is refused (400). Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
      */
     public CompletableFuture<PealClientHttpResponse<CustomerWorkspacePage>> listWorkspaces(
             RequestOptions requestOptions) {
@@ -167,7 +168,7 @@ public class AsyncRawPartnerClient {
     }
 
     /**
-     * Lists the workspaces the partner owns, newest first, each with the number of channels connected in it, 50 a page unless <code>limit</code> (at most 100) says otherwise. <code>externalId</code> finds the one workspace with that external id, exactly; <code>name</code> those whose name holds the text, whatever its case. <code>total</code> counts what the filters find; pass the page's <code>next</code> as <code>before</code> for the next page. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     * Lists the workspaces the partner owns, newest first, each with the number of channels connected in it, 50 a page unless <code>limit</code> (at most 100) says otherwise. <code>externalId</code> finds the one workspace with that external id, exactly; <code>name</code> those whose name holds the text, whatever its case. <code>total</code> counts what the filters find; pass the page's <code>next</code> as <code>before</code> for the next page, as it is: it is a position in the list, which stays good when workspaces before it are offboarded, and anything else is refused (400). Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
      */
     public CompletableFuture<PealClientHttpResponse<CustomerWorkspacePage>> listWorkspaces(
             ListWorkspacesPartnerRequest request) {
@@ -175,7 +176,7 @@ public class AsyncRawPartnerClient {
     }
 
     /**
-     * Lists the workspaces the partner owns, newest first, each with the number of channels connected in it, 50 a page unless <code>limit</code> (at most 100) says otherwise. <code>externalId</code> finds the one workspace with that external id, exactly; <code>name</code> those whose name holds the text, whatever its case. <code>total</code> counts what the filters find; pass the page's <code>next</code> as <code>before</code> for the next page. Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
+     * Lists the workspaces the partner owns, newest first, each with the number of channels connected in it, 50 a page unless <code>limit</code> (at most 100) says otherwise. <code>externalId</code> finds the one workspace with that external id, exactly; <code>name</code> those whose name holds the text, whatever its case. <code>total</code> counts what the filters find; pass the page's <code>next</code> as <code>before</code> for the next page, as it is: it is a position in the list, which stays good when workspaces before it are offboarded, and anything else is refused (400). Needs the scope workspaces:read. Takes a partner key (<code>Authorization: Bearer peal_partner_…</code>): any other credential answers 403.
      */
     public CompletableFuture<PealClientHttpResponse<CustomerWorkspacePage>> listWorkspaces(
             ListWorkspacesPartnerRequest request, RequestOptions requestOptions) {
@@ -237,6 +238,11 @@ public class AsyncRawPartnerClient {
                     }
                     try {
                         switch (response.code()) {
+                            case 400:
+                                future.completeExceptionally(new BadRequestError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
                             case 401:
                                 future.completeExceptionally(new UnauthorizedError(
                                         ObjectMappers.JSON_MAPPER.readValue(

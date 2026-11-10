@@ -9,6 +9,7 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .import_cell_problem import ImportCellProblem
+from .import_row_result_unreadable_cells import ImportRowResultUnreadableCells
 from .post import Post
 from .post_refusal import PostRefusal
 
@@ -68,6 +69,7 @@ class ImportRowResult_Unreadable(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["unreadable"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "unreadable"
+    cells: typing.Optional[ImportRowResultUnreadableCells] = None
     problems: typing.List[ImportCellProblem]
     row: int
 

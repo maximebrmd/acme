@@ -3,6 +3,14 @@
 import * as Peal from "../index.js";
 
 export interface ImportRowResultUnreadable {
+    cells?: ImportRowResultUnreadable.Cells | undefined;
     problems: Peal.ImportCellProblem[];
     row: number;
+}
+
+export namespace ImportRowResultUnreadable {
+    export interface Cells {
+        expected: number;
+        found: number;
+    }
 }

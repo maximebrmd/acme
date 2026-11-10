@@ -3,6 +3,8 @@
 import typing
 
 ImportProblem = typing.Union[
-    typing.Literal["empty", "unterminatedQuote", "unknownColumn", "repeatedColumn", "missingColumn", "tooManyRows"],
+    typing.Literal[
+        "empty", "unterminatedQuote", "strayQuote", "unknownColumn", "repeatedColumn", "missingColumn", "tooManyRows"
+    ],
     typing.Any,
 ]

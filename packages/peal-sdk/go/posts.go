@@ -7553,19 +7553,28 @@ func (i *ImportRowResultRefused) String() string {
 }
 
 var (
-	importRowResultUnreadableFieldProblems = big.NewInt(1 << 0)
-	importRowResultUnreadableFieldRow      = big.NewInt(1 << 1)
+	importRowResultUnreadableFieldCells    = big.NewInt(1 << 0)
+	importRowResultUnreadableFieldProblems = big.NewInt(1 << 1)
+	importRowResultUnreadableFieldRow      = big.NewInt(1 << 2)
 )
 
 type ImportRowResultUnreadable struct {
-	Problems []*ImportCellProblem `json:"problems" url:"problems"`
-	Row      int                  `json:"row" url:"row"`
+	Cells    *ImportRowResultUnreadableCells `json:"cells,omitempty" url:"cells,omitempty"`
+	Problems []*ImportCellProblem            `json:"problems" url:"problems"`
+	Row      int                             `json:"row" url:"row"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (i *ImportRowResultUnreadable) GetCells() *ImportRowResultUnreadableCells {
+	if i == nil {
+		return nil
+	}
+	return i.Cells
 }
 
 func (i *ImportRowResultUnreadable) GetProblems() []*ImportCellProblem {
@@ -7596,6 +7605,13 @@ func (i *ImportRowResultUnreadable) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	i.explicitFields = next
+}
+
+// SetCells sets the Cells field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportRowResultUnreadable) SetCells(cells *ImportRowResultUnreadableCells) {
+	i.Cells = cells
+	i.require(importRowResultUnreadableFieldCells)
 }
 
 // SetProblems sets the Problems field and marks it as non-optional;
@@ -7640,6 +7656,108 @@ func (i *ImportRowResultUnreadable) MarshalJSON() ([]byte, error) {
 }
 
 func (i *ImportRowResultUnreadable) String() string {
+	if i == nil {
+		return "<nil>"
+	}
+	if len(i.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(i.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(i); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", i)
+}
+
+var (
+	importRowResultUnreadableCellsFieldExpected = big.NewInt(1 << 0)
+	importRowResultUnreadableCellsFieldFound    = big.NewInt(1 << 1)
+)
+
+type ImportRowResultUnreadableCells struct {
+	Expected int `json:"expected" url:"expected"`
+	Found    int `json:"found" url:"found"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (i *ImportRowResultUnreadableCells) GetExpected() int {
+	if i == nil {
+		return 0
+	}
+	return i.Expected
+}
+
+func (i *ImportRowResultUnreadableCells) GetFound() int {
+	if i == nil {
+		return 0
+	}
+	return i.Found
+}
+
+func (i *ImportRowResultUnreadableCells) GetExtraProperties() map[string]interface{} {
+	if i == nil {
+		return nil
+	}
+	return i.extraProperties
+}
+
+func (i *ImportRowResultUnreadableCells) require(field *big.Int) {
+	next := new(big.Int)
+	if i.explicitFields != nil {
+		next.Set(i.explicitFields)
+	}
+	next.Or(next, field)
+	i.explicitFields = next
+}
+
+// SetExpected sets the Expected field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportRowResultUnreadableCells) SetExpected(expected int) {
+	i.Expected = expected
+	i.require(importRowResultUnreadableCellsFieldExpected)
+}
+
+// SetFound sets the Found field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (i *ImportRowResultUnreadableCells) SetFound(found int) {
+	i.Found = found
+	i.require(importRowResultUnreadableCellsFieldFound)
+}
+
+func (i *ImportRowResultUnreadableCells) UnmarshalJSON(data []byte) error {
+	type unmarshaler ImportRowResultUnreadableCells
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*i = ImportRowResultUnreadableCells(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *i)
+	if err != nil {
+		return err
+	}
+	i.extraProperties = extraProperties
+	i.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (i *ImportRowResultUnreadableCells) MarshalJSON() ([]byte, error) {
+	type embed ImportRowResultUnreadableCells
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*i),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, i.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (i *ImportRowResultUnreadableCells) String() string {
 	if i == nil {
 		return "<nil>"
 	}

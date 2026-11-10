@@ -4690,6 +4690,7 @@ type ImportProblem string
 const (
 	ImportProblemEmpty             ImportProblem = "empty"
 	ImportProblemUnterminatedQuote ImportProblem = "unterminatedQuote"
+	ImportProblemStrayQuote        ImportProblem = "strayQuote"
 	ImportProblemUnknownColumn     ImportProblem = "unknownColumn"
 	ImportProblemRepeatedColumn    ImportProblem = "repeatedColumn"
 	ImportProblemMissingColumn     ImportProblem = "missingColumn"
@@ -4702,6 +4703,8 @@ func NewImportProblemFromString(s string) (ImportProblem, error) {
 		return ImportProblemEmpty, nil
 	case "unterminatedQuote":
 		return ImportProblemUnterminatedQuote, nil
+	case "strayQuote":
+		return ImportProblemStrayQuote, nil
 	case "unknownColumn":
 		return ImportProblemUnknownColumn, nil
 	case "repeatedColumn":

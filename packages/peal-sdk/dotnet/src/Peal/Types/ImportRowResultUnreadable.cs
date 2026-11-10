@@ -11,6 +11,9 @@ public record ImportRowResultUnreadable : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("cells")]
+    public ImportRowResultUnreadableCells? Cells { get; set; }
+
     [JsonPropertyName("problems")]
     public IEnumerable<ImportCellProblem> Problems { get; set; } = new List<ImportCellProblem>();
 

@@ -13754,6 +13754,14 @@ func TestSettersMarkExplicitImportRowResultRefused(t *testing.T) {
 }
 
 func TestSettersImportRowResultUnreadable(t *testing.T) {
+	t.Run("SetCells", func(t *testing.T) {
+		obj := &ImportRowResultUnreadable{}
+		var fernTestValueCells *ImportRowResultUnreadableCells
+		obj.SetCells(fernTestValueCells)
+		assert.Equal(t, fernTestValueCells, obj.Cells)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetProblems", func(t *testing.T) {
 		obj := &ImportRowResultUnreadable{}
 		var fernTestValueProblems []*ImportCellProblem
@@ -13773,6 +13781,39 @@ func TestSettersImportRowResultUnreadable(t *testing.T) {
 }
 
 func TestGettersImportRowResultUnreadable(t *testing.T) {
+	t.Run("GetCells", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ImportRowResultUnreadable{}
+		var expected *ImportRowResultUnreadableCells
+		obj.Cells = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetCells(), "getter should return the property value")
+	})
+
+	t.Run("GetCells_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ImportRowResultUnreadable{}
+		obj.Cells = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetCells(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetCells_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ImportRowResultUnreadable
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetCells() // Should return zero value
+	})
+
 	t.Run("GetProblems", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -13832,6 +13873,37 @@ func TestGettersImportRowResultUnreadable(t *testing.T) {
 }
 
 func TestSettersMarkExplicitImportRowResultUnreadable(t *testing.T) {
+	t.Run("SetCells_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ImportRowResultUnreadable{}
+		var fernTestValueCells *ImportRowResultUnreadableCells
+
+		// Act
+		obj.SetCells(fernTestValueCells)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetProblems_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -13871,6 +13943,139 @@ func TestSettersMarkExplicitImportRowResultUnreadable(t *testing.T) {
 
 		// Act
 		obj.SetRow(fernTestValueRow)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersImportRowResultUnreadableCells(t *testing.T) {
+	t.Run("SetExpected", func(t *testing.T) {
+		obj := &ImportRowResultUnreadableCells{}
+		var fernTestValueExpected int
+		obj.SetExpected(fernTestValueExpected)
+		assert.Equal(t, fernTestValueExpected, obj.Expected)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetFound", func(t *testing.T) {
+		obj := &ImportRowResultUnreadableCells{}
+		var fernTestValueFound int
+		obj.SetFound(fernTestValueFound)
+		assert.Equal(t, fernTestValueFound, obj.Found)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersImportRowResultUnreadableCells(t *testing.T) {
+	t.Run("GetExpected", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ImportRowResultUnreadableCells{}
+		var expected int
+		obj.Expected = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetExpected(), "getter should return the property value")
+	})
+
+	t.Run("GetExpected_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ImportRowResultUnreadableCells
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetExpected() // Should return zero value
+	})
+
+	t.Run("GetFound", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ImportRowResultUnreadableCells{}
+		var expected int
+		obj.Found = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetFound(), "getter should return the property value")
+	})
+
+	t.Run("GetFound_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ImportRowResultUnreadableCells
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetFound() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitImportRowResultUnreadableCells(t *testing.T) {
+	t.Run("SetExpected_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ImportRowResultUnreadableCells{}
+		var fernTestValueExpected int
+
+		// Act
+		obj.SetExpected(fernTestValueExpected)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetFound_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ImportRowResultUnreadableCells{}
+		var fernTestValueFound int
+
+		// Act
+		obj.SetFound(fernTestValueFound)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -23523,6 +23728,39 @@ func TestJSONMarshalingImportRowResultUnreadable(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingImportRowResultUnreadableCells(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ImportRowResultUnreadableCells{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled ImportRowResultUnreadableCells
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj ImportRowResultUnreadableCells
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj ImportRowResultUnreadableCells
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingImportRowResultValid(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -25533,6 +25771,22 @@ func TestStringImportRowResultUnreadable(t *testing.T) {
 	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *ImportRowResultUnreadable
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringImportRowResultUnreadableCells(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &ImportRowResultUnreadableCells{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ImportRowResultUnreadableCells
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
 	})
@@ -27645,6 +27899,29 @@ func TestExtraPropertiesImportRowResultUnreadable(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *ImportRowResultUnreadable
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesImportRowResultUnreadableCells(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &ImportRowResultUnreadableCells{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ImportRowResultUnreadableCells
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

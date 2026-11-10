@@ -32,6 +32,8 @@ pub enum ImportRowResult {
     #[serde(rename = "unreadable")]
     #[non_exhaustive]
     Unreadable {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        cells: Option<ImportRowResultUnreadableCells>,
         #[serde(default)]
         problems: Vec<ImportCellProblem>,
         #[serde(default)]
@@ -63,7 +65,23 @@ impl ImportRowResult {
     }
 
     pub fn unreadable(problems: Vec<ImportCellProblem>, row: i64) -> Self {
-        Self::Unreadable { problems, row }
+        Self::Unreadable {
+            cells: None,
+            problems,
+            row,
+        }
+    }
+
+    pub fn unreadable_with_cells(
+        cells: ImportRowResultUnreadableCells,
+        problems: Vec<ImportCellProblem>,
+        row: i64,
+    ) -> Self {
+        Self::Unreadable {
+            cells: Some(cells),
+            problems,
+            row,
+        }
     }
 
     pub fn unknown(value: serde_json::Value) -> Self {

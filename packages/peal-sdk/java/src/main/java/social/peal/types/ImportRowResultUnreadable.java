@@ -16,11 +16,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ImportRowResultUnreadable.Builder.class)
 public final class ImportRowResultUnreadable {
+    private final Optional<ImportRowResultUnreadableCells> cells;
+
     private final List<ImportCellProblem> problems;
 
     private final int row;
@@ -28,10 +31,19 @@ public final class ImportRowResultUnreadable {
     private final Map<String, Object> additionalProperties;
 
     private ImportRowResultUnreadable(
-            List<ImportCellProblem> problems, int row, Map<String, Object> additionalProperties) {
+            Optional<ImportRowResultUnreadableCells> cells,
+            List<ImportCellProblem> problems,
+            int row,
+            Map<String, Object> additionalProperties) {
+        this.cells = cells;
         this.problems = problems;
         this.row = row;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("cells")
+    public Optional<ImportRowResultUnreadableCells> getCells() {
+        return cells;
     }
 
     @JsonProperty("problems")
@@ -56,12 +68,12 @@ public final class ImportRowResultUnreadable {
     }
 
     private boolean equalTo(ImportRowResultUnreadable other) {
-        return problems.equals(other.problems) && row == other.row;
+        return cells.equals(other.cells) && problems.equals(other.problems) && row == other.row;
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.problems, this.row);
+        return Objects.hash(this.cells, this.problems, this.row);
     }
 
     @java.lang.Override
@@ -86,6 +98,10 @@ public final class ImportRowResultUnreadable {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage cells(Optional<ImportRowResultUnreadableCells> cells);
+
+        _FinalStage cells(ImportRowResultUnreadableCells cells);
+
         _FinalStage problems(List<ImportCellProblem> problems);
 
         _FinalStage addProblems(ImportCellProblem problems);
@@ -99,12 +115,15 @@ public final class ImportRowResultUnreadable {
 
         private List<ImportCellProblem> problems = new ArrayList<>();
 
+        private Optional<ImportRowResultUnreadableCells> cells = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(ImportRowResultUnreadable other) {
+            cells(other.getCells());
             problems(other.getProblems());
             row(other.getRow());
             return this;
@@ -142,13 +161,26 @@ public final class ImportRowResultUnreadable {
         }
 
         @java.lang.Override
+        public _FinalStage cells(ImportRowResultUnreadableCells cells) {
+            this.cells = Optional.ofNullable(cells);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "cells", nulls = Nulls.SKIP)
+        public _FinalStage cells(Optional<ImportRowResultUnreadableCells> cells) {
+            this.cells = cells;
+            return this;
+        }
+
+        @java.lang.Override
         public ImportRowResultUnreadable build() {
-            return new ImportRowResultUnreadable(problems, row, additionalProperties);
+            return new ImportRowResultUnreadable(cells, problems, row, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("problems") || key.equalsIgnoreCase("row")) {
+            if (key.equalsIgnoreCase("cells") || key.equalsIgnoreCase("problems") || key.equalsIgnoreCase("row")) {
                 return;
             }
             this.additionalProperties.put(key, value);

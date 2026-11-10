@@ -11,6 +11,8 @@ public final class ImportProblem {
 
     public static final ImportProblem UNKNOWN_COLUMN = new ImportProblem(Value.UNKNOWN_COLUMN, "unknownColumn");
 
+    public static final ImportProblem STRAY_QUOTE = new ImportProblem(Value.STRAY_QUOTE, "strayQuote");
+
     public static final ImportProblem MISSING_COLUMN = new ImportProblem(Value.MISSING_COLUMN, "missingColumn");
 
     public static final ImportProblem TOO_MANY_ROWS = new ImportProblem(Value.TOO_MANY_ROWS, "tooManyRows");
@@ -56,6 +58,8 @@ public final class ImportProblem {
                 return visitor.visitEmpty();
             case UNKNOWN_COLUMN:
                 return visitor.visitUnknownColumn();
+            case STRAY_QUOTE:
+                return visitor.visitStrayQuote();
             case MISSING_COLUMN:
                 return visitor.visitMissingColumn();
             case TOO_MANY_ROWS:
@@ -77,6 +81,8 @@ public final class ImportProblem {
                 return EMPTY;
             case "unknownColumn":
                 return UNKNOWN_COLUMN;
+            case "strayQuote":
+                return STRAY_QUOTE;
             case "missingColumn":
                 return MISSING_COLUMN;
             case "tooManyRows":
@@ -95,6 +101,8 @@ public final class ImportProblem {
 
         UNTERMINATED_QUOTE,
 
+        STRAY_QUOTE,
+
         UNKNOWN_COLUMN,
 
         REPEATED_COLUMN,
@@ -110,6 +118,8 @@ public final class ImportProblem {
         T visitEmpty();
 
         T visitUnterminatedQuote();
+
+        T visitStrayQuote();
 
         T visitUnknownColumn();
 

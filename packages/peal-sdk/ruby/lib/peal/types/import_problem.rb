@@ -9,6 +9,7 @@ module Peal
 
       EMPTY = "empty"
       UNTERMINATED_QUOTE = "unterminatedQuote"
+      STRAY_QUOTE = "strayQuote"
       UNKNOWN_COLUMN = "unknownColumn"
       REPEATED_COLUMN = "repeatedColumn"
       MISSING_COLUMN = "missingColumn"
