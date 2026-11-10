@@ -2,6 +2,7 @@ import { Layer } from "effect";
 import { FetchHttpClient } from "effect/http";
 
 import { AdConnections } from "#ads/application/ad-connections.ts";
+import { AdOversight } from "#ads/application/ad-oversight.ts";
 import { AdReports } from "#ads/application/ad-reports.ts";
 import { BoostFollowUp } from "#ads/application/boost-follow-up.ts";
 import { BoostOperations } from "#ads/application/boost-operations.ts";
@@ -43,6 +44,7 @@ export const adsWith = <ROut, E, R, GOut, GE, GR>(
     AdConnections.layer,
     SpendAuthorizations.layer,
     AdReports.layer,
+    AdOversight.layer,
     Boosts.layer,
     SyncAdAccounts.layer,
     PurgeAdData.layer

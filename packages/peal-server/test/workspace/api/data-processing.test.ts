@@ -1,15 +1,20 @@
-// The registry of what Peal does with personal data states each retention
-// period once; each must be the figure the rule that enforces it uses.
 import { describe, expect, it } from "@effect/vitest";
 import { Duration } from "effect";
+// The registry of what Peal does with personal data states each retention
+// period once; each must be the figure the rule that enforces it uses.
 import {
   activityRetentionDays,
+  adInsightRetentionDays,
   legalDisclosureYears,
   processingRegister,
   retentionPeriods,
 } from "peal-contract";
 
 import { activityRetention } from "#activity/domain/activity-retention.ts";
+import {
+  auditRetention as adAuditRetention,
+  insightRetention,
+} from "#ads/domain/insight-retention.ts";
 import { contractRetention } from "#billing/domain/contract-retention.ts";
 import { trialMemory } from "#billing/domain/trial-memory.ts";
 import { linkRetention } from "#channels/domain/connect-link.ts";
@@ -82,6 +87,17 @@ describe("the data processing registry", () => {
     expect(
       Duration.days(retentionPeriods.webhookDeliveries.days)
     ).toStrictEqual(deliveryRetention);
+  });
+
+  it("keeps the days of ads' numbers and the ads audit trail as long as their purge does", () => {
+    expect(Duration.days(retentionPeriods.adInsights.days)).toStrictEqual(
+      insightRetention
+    );
+    expect(Duration.days(retentionPeriods.adAuditTrail.days)).toStrictEqual(
+      adAuditRetention
+    );
+    // The API's description of the daily numbers says the same.
+    expect(adInsightRetentionDays).toBe(retentionPeriods.adInsights.days);
   });
 
   it("keeps a workspace's activity log as long as its purge does", () => {

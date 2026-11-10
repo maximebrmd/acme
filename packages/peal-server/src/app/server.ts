@@ -309,7 +309,14 @@ const ErasedContextsLive = Layer.mergeAll(
 // context, and each workspace's plan, channels and posts from billing, the
 // channels context and publishing.
 const StaffContextLive = StaffLive.pipe(
-  Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, PublishingContextLive))
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      PublishingContextLive,
+      // Its ad accounts and boosts, as metadata.
+      AdsRoutesContextLive
+    )
+  )
 );
 
 // Legal requests, for staff holding the legal role, as the workspace

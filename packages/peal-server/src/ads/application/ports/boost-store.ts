@@ -100,6 +100,10 @@ export class BoostStore extends Context.Service<
     readonly openOn: (
       accountIds: readonly AdAccountId[]
     ) => Effect.Effect<number, DatabaseError>;
+    /** How many of the workspace's boosts stand in each state. */
+    readonly countsByState: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<Readonly<Record<string, number>>, DatabaseError>;
     /** At most `limit` boosts whose end date passed and that have not ended. */
     readonly dueToEnd: (
       now: DateTime.Utc,

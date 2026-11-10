@@ -341,6 +341,21 @@ export const DrizzleBoostStore = Layer.effect(
               }))
             )
           ),
+      countsByState: (workspaceId) =>
+        db
+          .select({
+            count: sql<number>`count(*)::int`,
+            state: boosts.state,
+          })
+          .from(boosts)
+          .where(eq(boosts.workspaceId, workspaceId))
+          .groupBy(boosts.state)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) =>
+              Object.fromEntries(rows.map(({ count, state }) => [state, count]))
+            )
+          ),
       dueToEnd: (now, limit) =>
         db
           .select()
