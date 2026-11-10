@@ -153,6 +153,8 @@ export const ReviewHandlers = HttpApiBuilder.group(
             })
             .pipe(
               Effect.catchTags({
+                // A link that approves is made in person.
+                ApprovalNeedsPerson: forbidden,
                 DatabaseError: Effect.die,
                 MissingPermission: forbidden,
                 PostNotReviewable: ({ status }) =>

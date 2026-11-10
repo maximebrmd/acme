@@ -203,7 +203,7 @@ peal approvals policy
 peal approvals policy --set always
 peal review show <post-id>
 peal review comment <post-id> --text "Très bien." --reply-to <comment-id>
-peal review link <post-id> --access approve --hours 48
+peal review link <post-id> --access comment --hours 48
 peal review links <post-id>
 peal review revoke <link-id>
 ```
@@ -212,7 +212,7 @@ peal review revoke <link-id>
 - La ligne de commande est une application : sous la politique qui retient les publications des applications, ce qu’elle programme attend, et elle n’approuve que ce qu’un membre a demandé dans l’application web.
 - `peal approvals policy` montre quelles publications attendent ; `--set never`, `contributorsAndApplications` ou `always` le change, pour les propriétaires et les administrateurs.
 - `peal review show` affiche les approbations d’une publication et ses commentaires, fil par fil. Ce que les personnes invitées ont tapé est affiché comme du texte, les caractères de contrôle remplacés.
-- `peal review link` crée un lien de relecture (`--access view`, `comment`, par défaut, ou `approve` ; `--hours`, 14 jours sinon) et affiche son adresse, une seule fois. `links` liste les liens d’une publication sans leur adresse, et `revoke` en termine un.
+- `peal review link` crée un lien de relecture (`--access view` ou `comment`, par défaut ; `--hours`, 14 jours sinon) et affiche son adresse, une seule fois. Un lien qui permet d’approuver se crée dans l’application web seulement : la ligne de commande est une application, et approuverait ainsi ses propres publications. `links` liste les liens d’une publication sans leur adresse, et `revoke` en termine un.
 
 ## Sortie pour les scripts [#json]
 

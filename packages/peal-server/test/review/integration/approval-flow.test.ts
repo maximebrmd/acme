@@ -4,8 +4,11 @@ import { Effect, Option } from "effect";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { ApprovalNeedsPerson } from "#review/application/approval-needs-person.ts";
+import { LinkAccessDenied } from "#review/application/link-access-denied.ts";
 import { ApprovalStore } from "#review/application/ports/approval-store.ts";
 import { PostReview } from "#review/application/post-review.ts";
+import { ReviewLinks } from "#review/application/review-links.ts";
+import { VisitorReview } from "#review/application/visitor-review.ts";
 import { ApprovalNotPending } from "#review/domain/approval-not-pending.ts";
 import { reviewerOf } from "#review/domain/reviewer.ts";
 import { newId } from "#shared/application/ids.ts";
@@ -31,6 +34,7 @@ import {
   onReviewServerAt,
   throughClient,
   Told,
+  visitor,
   withPolicy,
 } from "#test/review/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
@@ -367,6 +371,62 @@ describe("a workspace where contributors and applications wait", () => {
             yield* Effect.flip(review.approve(client, again.post.id)),
             new ApprovalNeedsPerson({ postId: again.post.id })
           );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "gives no application a link that approves, so none approves its own post through one",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* ownLink() {
+          const scheduling = yield* PostScheduling;
+          const links = yield* ReviewLinks;
+          const visitors = yield* VisitorReview;
+          const { channelId, editor, workspaceId } = yield* team;
+          const client = throughClient(yield* freshUser, workspaceId);
+          const key = apiKeyIn(workspaceId);
+
+          yield* withPolicy(workspaceId, "contributorsAndApplications");
+
+          const { post } = yield* scheduling.schedule(key, {
+            channelIds: [channelId] as const,
+            content: contentOf("A synthetic post its application would pass."),
+            schedule: at8,
+          });
+
+          const approving = {
+            access: "approve" as const,
+            lifetime: Option.none(),
+          };
+
+          for (const application of [key, client]) {
+            assert.deepStrictEqual(
+              yield* Effect.flip(links.create(application, post.id, approving)),
+              new ApprovalNeedsPerson({ postId: post.id })
+            );
+          }
+
+          // An application still shows a post, and takes comments on it.
+          const shown = yield* links.create(key, post.id, {
+            access: "comment",
+            lifetime: Option.none(),
+          });
+
+          assert.deepStrictEqual(
+            yield* Effect.flip(visitors.approve(shown.token, visitor())),
+            new LinkAccessDenied({ needed: "approve" })
+          );
+
+          // A link a person made approves what an application asked for.
+          const { token } = yield* links.create(editor, post.id, approving);
+
+          assert.deepStrictEqual(yield* visitors.approve(token, visitor()), {
+            late: false,
+          });
+          assert.strictEqual(yield* statusOf(post.id), "scheduled");
         })
       ),
     timeout

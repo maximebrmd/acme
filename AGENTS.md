@@ -1959,7 +1959,11 @@ and no socket, for tests.
 - `review.approval_requests` is the record of who approved what: a decided
   row never changes. An application approves only what a member asked for
   in person (`takesApplicationApproval`), or the policy that holds
-  applications would hold nothing.
+  applications would hold nothing. No route lets an application approve
+  its own post: `ReviewLinks.create` refuses it a link that approves
+  (`ApprovalNeedsPerson`; the command line offers view and comment only),
+  and a link that names no member approves nothing an application asked
+  for.
 - Review links: 256 random bits (`LinkTokens`), of which only the SHA-256
   is stored; the address is `PUBLIC_URL/review#<token>`, so the token
   reaches no server's address logs, and clients send it in the

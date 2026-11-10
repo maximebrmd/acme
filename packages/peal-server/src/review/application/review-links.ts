@@ -1,7 +1,10 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 import type { Duration } from "effect";
 
-import { isImpersonated } from "#review/domain/approval-policy.ts";
+import {
+  isApplication,
+  isImpersonated,
+} from "#review/domain/approval-policy.ts";
 import { ReviewLinkIdSchema } from "#review/domain/review-ids.ts";
 import type { ReviewLinkId } from "#review/domain/review-ids.ts";
 import {
@@ -19,6 +22,7 @@ import { authorize } from "#shared/domain/authorize.ts";
 import type { PostId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import { ApprovalNeedsPerson } from "./approval-needs-person.ts";
 import { LinkAddresses } from "./ports/link-addresses.ts";
 import { LinkStore } from "./ports/link-store.ts";
 import { LinkTokens } from "./ports/link-tokens.ts";
@@ -55,7 +59,10 @@ const mayManage = (actor: Actor) =>
  * The links that show a post to people without an account. Making and
  * revoking one need post:approve, since a link may let its holders approve,
  * and never work for staff acting as a member: a link outlives them, and
- * reaches outside Peal. Listing a post's links needs post:read, and shows
+ * reaches outside Peal. A link that lets its holders approve is made in
+ * person only, never through an API key or an OAuth client
+ * (ApprovalNeedsPerson): whoever holds a link's address approves with it,
+ * and an application would approve the posts it scheduled. Listing a post's links needs post:read, and shows
  * no token: a link's address is told once, when it is made.
  *
  * A link is made for a post that may still change or go out (a draft, one
@@ -71,6 +78,7 @@ export class ReviewLinks extends Context.Service<
       request: LinkRequest
     ) => Effect.Effect<
       CreatedLink,
+      | ApprovalNeedsPerson
       | DatabaseError
       | MissingPermission
       | PostNotReviewable
@@ -122,6 +130,12 @@ export class ReviewLinks extends Context.Service<
         { access, lifetime }: LinkRequest
       ) {
         yield* mayManage(actor);
+
+        // An application's link never approves: it would hand the
+        // application the approval of its own posts.
+        if (access === "approve" && isApplication(actor)) {
+          return yield* new ApprovalNeedsPerson({ postId });
+        }
 
         const post = yield* postOf(actor, postId);
 

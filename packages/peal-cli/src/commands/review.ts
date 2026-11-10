@@ -1,6 +1,6 @@
 import { Console, Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
-import { maxReviewLinkHours, ReviewLinkAccessSchema } from "peal-contract";
+import { maxReviewLinkHours } from "peal-contract";
 import type {
   ApprovalRequest,
   ReviewComment,
@@ -205,9 +205,9 @@ const links = Command.make(
 const link = Command.make(
   "link",
   {
-    access: Flag.Literals("access", ReviewLinkAccessSchema.literals).pipe(
+    access: Flag.Literals("access", ["view", "comment"]).pipe(
       Flag.withDescription(
-        "What the link lets whoever opens it do: view, comment or approve."
+        "What the link lets whoever opens it do: view or comment. A link that lets them approve is made in the web app only."
       ),
       Flag.withDefault("comment")
     ),
@@ -258,7 +258,7 @@ const link = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Make a link that shows a post to someone without an account, and print its address, once. Needs the right to approve posts."
+    "Make a link that shows a post to someone without an account, and print its address, once. Needs the right to approve posts. A link that approves is made in the web app only: the command line is an application, and would approve its own posts with one."
   )
 );
 

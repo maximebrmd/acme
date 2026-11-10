@@ -437,7 +437,7 @@ export class ReviewApi extends HttpApiGroup.make("review")
       success: CreatedReviewLinkSchema.pipe(HttpApiSchema.status(201)),
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works ${defaultReviewLinkHours / 24} days unless \`expiresInHours\` says otherwise (${maxReviewLinkHours / 24} days at most), until it is revoked, or the post is published, cancelled or deleted. A post has ${maxReviewLinksPerPost} working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member.`,
+        description: `Makes a link that shows a draft, a post that waits for an approval or a scheduled post to whoever holds it, without an account: the post as each channel will receive it, and nothing else of the workspace. It lets them view, comment, or approve, and works ${defaultReviewLinkHours / 24} days unless \`expiresInHours\` says otherwise (${maxReviewLinkHours / 24} days at most), until it is revoked, or the post is published, cancelled or deleted. A post has ${maxReviewLinksPerPost} working links at most. The answer holds the link's address, which is not shown again. Needs post:approve, and is refused to staff acting as a member. A link that lets its holders approve is made in the web app only: an API key or an OAuth client is refused one, as it would approve its own posts with it.`,
         summary: "Create a review link",
       })
     ),

@@ -215,6 +215,7 @@ export class VisitorReview extends Context.Service<
               locale: visitor.locale,
             }))
           ),
+          link,
           post,
         };
       });
@@ -237,12 +238,19 @@ export class VisitorReview extends Context.Service<
         token: string,
         visitor: VisitorIdentity
       ) {
-        const { by, post } = yield* admitted(token, visitor, "approve");
+        const { by, link, post } = yield* admitted(token, visitor, "approve");
 
-        // A visitor is a person: the link's holder, under the name given.
+        // A visitor is a person, the link's holder under the name given,
+        // when a person made the link. No application makes one that
+        // approves: one that names no member approves nothing an
+        // application asked for.
         const { late } = yield* desk
-          .approve(by, post, false)
-          .pipe(Effect.catchTag("ApprovalNeedsPerson", Effect.die));
+          .approve(by, post, Option.isNone(link.createdBy))
+          .pipe(
+            Effect.catchTag("ApprovalNeedsPerson", () =>
+              Effect.fail(new LinkAccessDenied({ needed: "approve" }))
+            )
+          );
 
         return { late };
       });

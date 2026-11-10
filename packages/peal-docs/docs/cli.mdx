@@ -203,7 +203,7 @@ peal approvals policy
 peal approvals policy --set always
 peal review show <post-id>
 peal review comment <post-id> --text "Looks good." --reply-to <comment-id>
-peal review link <post-id> --access approve --hours 48
+peal review link <post-id> --access comment --hours 48
 peal review links <post-id>
 peal review revoke <link-id>
 ```
@@ -212,7 +212,7 @@ peal review revoke <link-id>
 - The command line is an application: under the policy that holds applications' posts, what it schedules waits, and it approves only what a member asked for in the web app.
 - `peal approvals policy` shows which posts wait; `--set never`, `contributorsAndApplications` or `always` changes it, for owners and admins.
 - `peal review show` prints a post's approvals and its comments, thread by thread. What reviewers typed is printed as text, with control characters replaced.
-- `peal review link` creates a review link (`--access view`, `comment`, the default, or `approve`; `--hours`, 14 days unless given) and prints its address, once. `links` lists a post's links without their addresses, and `revoke` ends one.
+- `peal review link` creates a review link (`--access view` or `comment`, the default; `--hours`, 14 days unless given) and prints its address, once. A link that lets its holders approve is created in the web app only: the command line is an application, and would approve its own posts with one. `links` lists a post's links without their addresses, and `revoke` ends one.
 
 ## Output for scripts [#json]
 

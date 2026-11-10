@@ -204,14 +204,14 @@ describe("peal review", () => {
         "link",
         draftId,
         "--access",
-        "approve",
+        "view",
         "--hours",
         "48",
         ...inStudio,
       ]);
 
       assert.include(made, "https://peal.example.test/review#synthetic-token");
-      assert.include(made, "lets whoever opens it approve");
+      assert.include(made, "lets whoever opens it see the post");
       assert.include(made, "It is not shown again");
 
       const id = /Review link (?<id>\S+)/u.exec(made)?.groups?.["id"];
@@ -224,8 +224,21 @@ describe("peal review", () => {
       ]);
 
       assert.include(listed, id ?? "missing");
-      assert.include(listed, "approve");
+      assert.include(listed, "view");
       assert.notInclude(listed, "synthetic-token");
+
+      // A link that approves is made in the web app only.
+      assert.include(
+        yield* session.refused([
+          "review",
+          "link",
+          draftId,
+          "--access",
+          "approve",
+          ...inStudio,
+        ]),
+        "approve"
+      );
 
       assert.include(
         yield* session.printed(["review", "revoke", id ?? "", ...inStudio]),
@@ -241,7 +254,7 @@ describe("peal review", () => {
         "The workspace has no such review link"
       );
       assert.deepStrictEqual(yield* changes(session.studio), [
-        `link:${draftId}:approve:48`,
+        `link:${draftId}:view:48`,
         `revoke:${id ?? ""}`,
       ]);
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
