@@ -108,6 +108,16 @@ const encodeCursor = (cursor: ThreadCursor): string =>
 
 const decodeThreadId = Schema.decodeUnknownOption(ThreadIdSchema);
 
+// The last millisecond of the year 9999: past it, an instant has no ISO
+// text the database reads, and no thread was ever commented then.
+const latestInstant = 253_402_300_799_999;
+
+// A cursor's instant, if it is one a page can have ended at.
+const instantOf = (millis: string): Option.Option<DateTime.Utc> =>
+  /^\d{1,15}$/u.test(millis) && Number(millis) <= latestInstant
+    ? DateTime.make(Number(millis))
+    : Option.none();
+
 /** The cursor a client sent back, if it is one this server made. */
 export const cursorOf = (text: string): Option.Option<ThreadCursor> => {
   const [waiting = "", millis = "", id = ""] = text.split("_");
@@ -117,9 +127,7 @@ export const cursorOf = (text: string): Option.Option<ThreadCursor> => {
   }
 
   return Option.all({
-    lastCommentAt: /^\d{1,16}$/u.test(millis)
-      ? DateTime.make(Number(millis))
-      : Option.none(),
+    lastCommentAt: instantOf(millis),
     threadId: decodeThreadId(id),
   }).pipe(Option.map((found) => ({ ...found, waiting: waiting === "1" })));
 };
