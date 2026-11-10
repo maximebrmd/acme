@@ -8,6 +8,12 @@ import type { DateTime } from "effect";
 
 /** A channel of a workspace, without its tokens. */
 export interface ChannelRecord {
+  /**
+   * The way in it came through, on a platform that has several (a LinkedIn
+   * profile or page, Instagram's two logins); null elsewhere, and on a
+   * channel connected before its platform had a second way in.
+   */
+  readonly connection: string | null;
   readonly createdAt: DateTime.Utc;
   readonly displayName: string | null;
   readonly handle: string;
@@ -65,6 +71,8 @@ export interface MediaRecord {
   readonly durationMs: number | null;
   readonly height: number | null;
   readonly id: string;
+  /** A document's pages, as the probe counted them; null for other files. */
+  readonly pageCount: number | null;
   readonly status: string;
   readonly width: number | null;
 }

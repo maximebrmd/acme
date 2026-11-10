@@ -552,6 +552,9 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           platform: "youtube",
         });
 
+        // The way in a channel came through is kept, and copied.
+        yield* sql`UPDATE channels.channels SET connection = 'linkedinPage', platform = 'linkedin' WHERE id = ${channelId}`;
+
         const options = {
           madeForKids: false,
           platform: "youtube",
@@ -654,8 +657,13 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         const [own] = exported.workspaces;
 
         assert.deepStrictEqual(
-          own?.channels.map(({ handle }) => handle).toSorted(),
-          ["@atelier@social.example", "Atelier videos"]
+          own?.channels
+            .map(({ connection, handle }) => [handle, connection])
+            .toSorted(),
+          [
+            ["@atelier@social.example", "linkedinPage"],
+            ["Atelier videos", null],
+          ]
         );
         assert.deepStrictEqual(
           own?.posts
@@ -716,7 +724,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
 
         // Once the store holds the file, the copy links to it, as the
         // user provided it.
-        yield* sql`UPDATE media.media_assets SET status = 'uploaded', probe_state = 'pending' WHERE workspace_id = ${atelier}`;
+        yield* sql`UPDATE media.media_assets SET status = 'uploaded', probe_state = 'pending', page_count = 12 WHERE workspace_id = ${atelier}`;
 
         const withFile = yield* decodeExport(
           (yield* app.request("/api/me/export", {
@@ -724,9 +732,14 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           })).body
         );
 
-        const link =
-          withFile.workspaces.find(({ id }) => id === atelier)?.media[0]
-            ?.downloadUrl ?? "";
+        const [file] =
+          withFile.workspaces.find(({ id }) => id === atelier)?.media ?? [];
+
+        const link = file?.downloadUrl ?? "";
+
+        // What the probe counted of a document goes with it.
+        assert.strictEqual(file?.pageCount, 12);
+        assert.isNull(own?.media[0]?.pageCount);
 
         const downloaded = yield* Effect.promise(async () => {
           const response = await fetch(link);

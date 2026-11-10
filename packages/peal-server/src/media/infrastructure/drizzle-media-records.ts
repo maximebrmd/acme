@@ -67,6 +67,7 @@ export const DrizzleMediaRecords = Layer.effect(
               durationMs: mediaAssets.durationMs,
               height: mediaAssets.height,
               id: mediaAssets.id,
+              pageCount: mediaAssets.pageCount,
               status: mediaAssets.status,
               storageKey: mediaAssets.storageKey,
               width: mediaAssets.width,

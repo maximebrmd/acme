@@ -80,6 +80,9 @@ const ExportedNoticeSchema = Schema.Struct({
 });
 
 const ExportedChannelSchema = Schema.Struct({
+  // The way in it came through, on a platform that has several (a LinkedIn
+  // profile or page, Instagram's two logins); null elsewhere.
+  connection: nullable(Schema.String),
   createdAt: instant,
   displayName: nullable(Schema.String),
   handle: Schema.String,
@@ -173,6 +176,8 @@ const ExportedMediaSchema = Schema.Struct({
   durationMs: nullable(Schema.Int),
   height: nullable(Schema.Int),
   id: Schema.String,
+  // A document's pages; null for an image or a video.
+  pageCount: nullable(Schema.Int),
   status: Schema.String,
   width: nullable(Schema.Int),
 });
