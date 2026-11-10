@@ -21,13 +21,14 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * A post that went live on a channel, which analytics reads back: the
  * platform's id for it, when it went live, the counts read last, and when
  * it is read next (`next_collection_at`), or since when it is not
- * (`ended_at`, `end_reason`). Quotes and impressions are null where the
- * platform does not give them.
+ * (`ended_at`, `end_reason`). Quotes, impressions, clicks, reach and saves
+ * are null where the platform does not give them.
  */
 export const trackedPosts = analytics.table(
   "tracked_posts",
   {
     channelId: uuid("channel_id").notNull(),
+    clicks: integer("clicks"),
     endReason: text("end_reason"),
     endedAt: instant("ended_at"),
     impressions: integer("impressions"),
@@ -39,8 +40,10 @@ export const trackedPosts = analytics.table(
     postId: uuid("post_id").notNull(),
     publishedAt: instant("published_at").notNull(),
     quotes: integer("quotes"),
+    reach: integer("reach"),
     replies: integer("replies"),
     reposts: integer("reposts"),
+    saves: integer("saves"),
     targetId: uuid("target_id").primaryKey(),
     workspaceId: uuid("workspace_id").notNull(),
   },
@@ -70,12 +73,15 @@ export const trackedPosts = analytics.table(
 export const metricSnapshots = analytics.table(
   "metric_snapshots",
   {
+    clicks: integer("clicks"),
     collectedAt: instant("collected_at").notNull(),
     impressions: integer("impressions"),
     likes: integer("likes").notNull(),
     quotes: integer("quotes"),
+    reach: integer("reach"),
     replies: integer("replies").notNull(),
     reposts: integer("reposts").notNull(),
+    saves: integer("saves"),
     targetId: uuid("target_id")
       .notNull()
       .references(() => trackedPosts.targetId, { onDelete: "cascade" }),
@@ -84,7 +90,7 @@ export const metricSnapshots = analytics.table(
     primaryKey({ columns: [table.targetId, table.collectedAt] }),
     check(
       "metric_snapshots_counts",
-      sql`${table.likes} >= 0 AND ${table.reposts} >= 0 AND ${table.replies} >= 0 AND coalesce(${table.quotes}, 0) >= 0 AND coalesce(${table.impressions}, 0) >= 0`
+      sql`${table.likes} >= 0 AND ${table.reposts} >= 0 AND ${table.replies} >= 0 AND coalesce(${table.quotes}, 0) >= 0 AND coalesce(${table.impressions}, 0) >= 0 AND coalesce(${table.clicks}, 0) >= 0 AND coalesce(${table.reach}, 0) >= 0 AND coalesce(${table.saves}, 0) >= 0`
     ),
   ]
 );

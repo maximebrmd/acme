@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "bec6f946-b52a-46ee-8490-39c9dce167e5",
+  "id": "5bc7bc50-9f33-4398-b5cc-f2fe8cf72320",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -4136,6 +4136,19 @@
     {
       "schema": "analytics",
       "table": "metric_snapshots",
+      "name": "clicks",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
       "name": "collected_at",
       "type": "timestamp with time zone",
       "typeSchema": null,
@@ -4188,6 +4201,19 @@
     {
       "schema": "analytics",
       "table": "metric_snapshots",
+      "name": "reach",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
       "name": "replies",
       "type": "integer",
       "typeSchema": null,
@@ -4214,6 +4240,19 @@
     {
       "schema": "analytics",
       "table": "metric_snapshots",
+      "name": "saves",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
       "name": "target_id",
       "type": "uuid",
       "typeSchema": null,
@@ -4231,6 +4270,19 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "clicks",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -4383,6 +4435,19 @@
     {
       "schema": "analytics",
       "table": "tracked_posts",
+      "name": "reach",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
       "name": "replies",
       "type": "integer",
       "typeSchema": null,
@@ -4397,6 +4462,19 @@
       "schema": "analytics",
       "table": "tracked_posts",
       "name": "reposts",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "saves",
       "type": "integer",
       "typeSchema": null,
       "notNull": false,
@@ -15227,7 +15305,7 @@
       "schema": "analytics",
       "table": "metric_snapshots",
       "name": "metric_snapshots_counts",
-      "value": "\"likes\" >= 0 AND \"reposts\" >= 0 AND \"replies\" >= 0 AND coalesce(\"quotes\", 0) >= 0 AND coalesce(\"impressions\", 0) >= 0",
+      "value": "\"likes\" >= 0 AND \"reposts\" >= 0 AND \"replies\" >= 0 AND coalesce(\"quotes\", 0) >= 0 AND coalesce(\"impressions\", 0) >= 0 AND coalesce(\"clicks\", 0) >= 0 AND coalesce(\"reach\", 0) >= 0 AND coalesce(\"saves\", 0) >= 0",
       "entityType": "checks"
     },
     {

@@ -7,6 +7,7 @@ import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { AnalyticsReports } from "#analytics/application/analytics-reports.ts";
 import { TrackedPosts } from "#analytics/application/tracked-posts.ts";
 import type { DueChannel } from "#analytics/application/tracked-posts.ts";
+import { PostMetrics } from "#analytics/domain/post-metrics.ts";
 import { dayStarts, reportRange } from "#analytics/domain/report-range.ts";
 import {
   endCollection,
@@ -120,6 +121,87 @@ layer(StoreTest)("the analytics store", (it) => {
         ]);
       }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
     })
+  );
+
+  it.effect(
+    "keeps the counts only some platforms give, and none where they give none",
+    () =>
+      Effect.gen(function* extras() {
+        const workspaceId = yield* freshWorkspace;
+        const tracked = yield* TrackedPosts;
+
+        const publication = yield* publicationOf(
+          workspaceId,
+          yield* newChannelId,
+          "2041-03-05T10:20:00.000Z"
+        );
+
+        const post = trackPublication(publication);
+
+        const counted = new PostMetrics({
+          clicks: Option.some(4),
+          impressions: Option.some(90),
+          likes: 3,
+          quotes: Option.none(),
+          reach: Option.some(70),
+          replies: 0,
+          reposts: 1,
+          saves: Option.some(2),
+        });
+
+        yield* Effect.gen(function* checks() {
+          yield* tracked.track([post]);
+
+          yield* tracked.saveReading(
+            recordReading(
+              post,
+              countsOf(1, 0, 0),
+              utc("2041-03-05T11:07:01.000Z"),
+              utc("2041-03-05T11:07:00.000Z")
+            )
+          );
+
+          const read = recordReading(
+            post,
+            counted,
+            utc("2041-03-05T12:07:01.000Z"),
+            utc("2041-03-05T12:07:00.000Z")
+          );
+
+          yield* tracked.saveReading(read);
+
+          const [history] = yield* AnalyticsReports.use((reports) =>
+            reports.history(workspaceId, publication.postId)
+          );
+
+          assert.deepStrictEqual(history?.post.latest, Option.some(counted));
+          assert.deepStrictEqual(
+            history?.snapshots.map(({ metrics }) => metrics),
+            [countsOf(1, 0, 0), counted]
+          );
+          // Unknown is none, never zero.
+          assert.deepStrictEqual(
+            history?.snapshots[0]?.metrics.clicks,
+            Option.none()
+          );
+
+          const [exported] = yield* AnalyticsRecords.use((records) =>
+            records.exportWorkspace(workspaceId)
+          );
+
+          assert.deepStrictEqual(
+            exported?.snapshots.map(({ clicks, reach, saves }) => ({
+              clicks,
+              reach,
+              saves,
+            })),
+            [
+              { clicks: null, reach: null, saves: null },
+              { clicks: 4, reach: 70, saves: 2 },
+            ]
+          );
+        }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+      })
   );
 
   // A collection run lists a workspace's publications, the workspace is
@@ -460,12 +542,15 @@ layer(StoreTest)("the analytics store", (it) => {
                 publishedAt: publication.publishedAt,
                 snapshots: [
                   {
+                    clicks: null,
                     collectedAt: utc("2041-04-02T11:07:01.000Z"),
                     impressions: null,
                     likes: 5,
                     quotes: null,
+                    reach: null,
                     replies: 1,
                     reposts: 2,
+                    saves: null,
                   },
                 ],
                 targetId: publication.targetId,

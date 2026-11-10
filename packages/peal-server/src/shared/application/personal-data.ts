@@ -106,12 +106,15 @@ export interface WebhookRecord {
 
 /** A post's counts on a channel as analytics read them at one moment. */
 export interface MetricsSnapshotRecord {
+  readonly clicks: number | null;
   readonly collectedAt: DateTime.Utc;
   readonly impressions: number | null;
   readonly likes: number;
   readonly quotes: number | null;
+  readonly reach: number | null;
   readonly replies: number;
   readonly reposts: number;
+  readonly saves: number | null;
 }
 
 /**

@@ -48,14 +48,19 @@ export const countedPlatforms = [
  * Pinterest's reactions), reposts (Mastodon's boosts, Pinterest's saves),
  * replies, and quotes and impressions where the platform gives them, null
  * otherwise. Neither Mastodon nor Bluesky tells
- * impressions; Mastodon counts quotes from 4.5.
+ * impressions; Mastodon counts quotes from 4.5. Clicks, reach (the accounts
+ * that saw the post) and saves (bookmarks) are null on every platform that
+ * does not tell them: null is unknown, never zero.
  */
 export const PostMetricsSchema = Schema.Struct({
+  clicks: Schema.NullOr(CountSchema),
   impressions: Schema.NullOr(CountSchema),
   likes: CountSchema,
   quotes: Schema.NullOr(CountSchema),
+  reach: Schema.NullOr(CountSchema),
   replies: CountSchema,
   reposts: CountSchema,
+  saves: Schema.NullOr(CountSchema),
 }).annotate({ identifier: "PostMetrics" });
 
 export type PostMetrics = typeof PostMetricsSchema.Type;

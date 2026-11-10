@@ -68,11 +68,14 @@ type SnapshotRow = typeof metricSnapshots.$inferSelect;
 
 const snapshotOf = (snapshot: SnapshotRow) =>
   decodeMetrics({
+    clicks: snapshot.clicks,
     impressions: snapshot.impressions,
     likes: snapshot.likes,
     quotes: snapshot.quotes,
+    reach: snapshot.reach,
     replies: snapshot.replies,
     reposts: snapshot.reposts,
+    saves: snapshot.saves,
   }).pipe(
     Effect.orDie,
     Effect.map((metrics) => ({

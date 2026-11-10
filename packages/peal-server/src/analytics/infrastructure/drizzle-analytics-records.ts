@@ -48,12 +48,15 @@ export const DrizzleAnalyticsRecords = Layer.effect(
         // list of their ids would pass the parameters one query takes.
         const snapshots = yield* db
           .select({
+            clicks: metricSnapshots.clicks,
             collectedAt: metricSnapshots.collectedAt,
             impressions: metricSnapshots.impressions,
             likes: metricSnapshots.likes,
             quotes: metricSnapshots.quotes,
+            reach: metricSnapshots.reach,
             replies: metricSnapshots.replies,
             reposts: metricSnapshots.reposts,
+            saves: metricSnapshots.saves,
             targetId: metricSnapshots.targetId,
           })
           .from(metricSnapshots)

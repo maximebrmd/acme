@@ -53,11 +53,14 @@ export const trackedPostOf = (row: TrackedRow) =>
       row.likes === null
         ? Option.none()
         : Option.some({
+            clicks: row.clicks,
             impressions: row.impressions,
             likes: row.likes,
             quotes: row.quotes,
+            reach: row.reach,
             replies: row.replies,
             reposts: row.reposts,
+            saves: row.saves,
           }),
     permalink: Option.fromNullOr(row.permalink),
     platformPostId: row.platformPostId,
@@ -83,18 +86,24 @@ const scheduleColumns = (collection: Collection) =>
 const latestColumns = (post: TrackedPost) =>
   Option.match(post.latest, {
     onNone: () => ({
+      clicks: null,
       impressions: null,
       likes: null,
       quotes: null,
+      reach: null,
       replies: null,
       reposts: null,
+      saves: null,
     }),
     onSome: (metrics) => ({
+      clicks: Option.getOrNull(metrics.clicks),
       impressions: Option.getOrNull(metrics.impressions),
       likes: metrics.likes,
       quotes: Option.getOrNull(metrics.quotes),
+      reach: Option.getOrNull(metrics.reach),
       replies: metrics.replies,
       reposts: metrics.reposts,
+      saves: Option.getOrNull(metrics.saves),
     }),
   });
 
@@ -166,6 +175,7 @@ const readingsOf = (posts: readonly TrackedPost[]) =>
       const schedule = scheduleColumns(post.collection);
 
       return Effect.succeed({
+        clicks: Option.getOrNull(latest.clicks),
         collected_at: date(collectedAt),
         end_reason: schedule.endReason,
         ended_at: schedule.endedAt,
@@ -173,8 +183,10 @@ const readingsOf = (posts: readonly TrackedPost[]) =>
         likes: latest.likes,
         next_collection_at: schedule.nextCollectionAt,
         quotes: Option.getOrNull(latest.quotes),
+        reach: Option.getOrNull(latest.reach),
         replies: latest.replies,
         reposts: latest.reposts,
+        saves: Option.getOrNull(latest.saves),
         target_id: post.targetId,
       });
     },
@@ -397,7 +409,10 @@ export const DrizzleTrackedPosts = Layer.effect(
               reposts integer,
               replies integer,
               quotes integer,
-              impressions integer
+              impressions integer,
+              clicks integer,
+              reach integer,
+              saves integer
             )
           ), saved AS (
             UPDATE analytics.tracked_posts AS post
@@ -409,16 +424,21 @@ export const DrizzleTrackedPosts = Layer.effect(
                 reposts = reading.reposts,
                 replies = reading.replies,
                 quotes = reading.quotes,
-                impressions = reading.impressions
+                impressions = reading.impressions,
+                clicks = reading.clicks,
+                reach = reading.reach,
+                saves = reading.saves
             FROM reading
             WHERE post.target_id = reading.target_id
             RETURNING post.target_id
           )
           INSERT INTO analytics.metric_snapshots
-            (target_id, collected_at, likes, reposts, replies, quotes, impressions)
+            (target_id, collected_at, likes, reposts, replies, quotes,
+             impressions, clicks, reach, saves)
           SELECT reading.target_id, reading.collected_at, reading.likes,
                  reading.reposts, reading.replies, reading.quotes,
-                 reading.impressions
+                 reading.impressions, reading.clicks, reading.reach,
+                 reading.saves
           FROM reading
           JOIN saved ON saved.target_id = reading.target_id
           ON CONFLICT DO NOTHING

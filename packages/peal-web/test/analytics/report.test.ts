@@ -95,11 +95,14 @@ describe(engagementOf, () => {
   it("adds likes, reposts, replies and quotes, not impressions", () => {
     expect(
       engagementOf({
+        clicks: null,
         impressions: 900,
         likes: 3,
         quotes: null,
+        reach: null,
         replies: 2,
         reposts: 1,
+        saves: null,
       })
     ).toBe(6);
   });
@@ -112,11 +115,14 @@ describe(readingRows, () => {
         {
           collectedAt: DateTime.makeUnsafe("2026-11-09T10:07:00.000Z"),
           metrics: {
+            clicks: null,
             impressions: null,
             likes: 3,
             quotes: null,
+            reach: null,
             replies: 0,
             reposts: 1,
+            saves: null,
           },
         },
       ])

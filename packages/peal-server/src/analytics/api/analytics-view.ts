@@ -38,12 +38,16 @@ export const dateFrom = (day: CalendarDay) => {
   return decodeDate({ day: date, month, year });
 };
 
-const metricsView = (metrics: PostMetrics): MetricsView => ({
+/** What clients see of a post's counts. */
+export const metricsView = (metrics: PostMetrics): MetricsView => ({
+  clicks: Option.getOrNull(metrics.clicks),
   impressions: Option.getOrNull(metrics.impressions),
   likes: metrics.likes,
   quotes: Option.getOrNull(metrics.quotes),
+  reach: Option.getOrNull(metrics.reach),
   replies: metrics.replies,
   reposts: metrics.reposts,
+  saves: Option.getOrNull(metrics.saves),
 });
 
 const totalsView = (totals: CountTotals) => ({

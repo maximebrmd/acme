@@ -356,7 +356,8 @@ const ExportedUsageSchema = Schema.Struct({
 });
 
 // A post analytics followed on a channel, and each reading of its counts.
-// Quotes and impressions are null where the platform gives none.
+// Quotes, impressions, clicks, reach and saves are null where the platform
+// gives none.
 const ExportedAnalyticsSchema = Schema.Struct({
   channelId: Schema.String,
   permalink: nullable(Schema.String),
@@ -364,12 +365,15 @@ const ExportedAnalyticsSchema = Schema.Struct({
   publishedAt: instant,
   snapshots: Schema.Array(
     Schema.Struct({
+      clicks: nullable(Schema.Int),
       collectedAt: instant,
       impressions: nullable(Schema.Int),
       likes: Schema.Int,
       quotes: nullable(Schema.Int),
+      reach: nullable(Schema.Int),
       replies: Schema.Int,
       reposts: Schema.Int,
+      saves: nullable(Schema.Int),
     })
   ),
   targetId: Schema.String,

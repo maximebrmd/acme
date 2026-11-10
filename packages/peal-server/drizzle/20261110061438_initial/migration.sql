@@ -28,19 +28,23 @@ CREATE TABLE "analytics"."erased_workspaces" (
 );
 --> statement-breakpoint
 CREATE TABLE "analytics"."metric_snapshots" (
+	"clicks" integer,
 	"collected_at" timestamp with time zone,
 	"impressions" integer,
 	"likes" integer NOT NULL,
 	"quotes" integer,
+	"reach" integer,
 	"replies" integer NOT NULL,
 	"reposts" integer NOT NULL,
+	"saves" integer,
 	"target_id" uuid,
 	CONSTRAINT "metric_snapshots_pkey" PRIMARY KEY("target_id","collected_at"),
-	CONSTRAINT "metric_snapshots_counts" CHECK ("likes" >= 0 AND "reposts" >= 0 AND "replies" >= 0 AND coalesce("quotes", 0) >= 0 AND coalesce("impressions", 0) >= 0)
+	CONSTRAINT "metric_snapshots_counts" CHECK ("likes" >= 0 AND "reposts" >= 0 AND "replies" >= 0 AND coalesce("quotes", 0) >= 0 AND coalesce("impressions", 0) >= 0 AND coalesce("clicks", 0) >= 0 AND coalesce("reach", 0) >= 0 AND coalesce("saves", 0) >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "analytics"."tracked_posts" (
 	"channel_id" uuid NOT NULL,
+	"clicks" integer,
 	"end_reason" text,
 	"ended_at" timestamp with time zone,
 	"impressions" integer,
@@ -52,8 +56,10 @@ CREATE TABLE "analytics"."tracked_posts" (
 	"post_id" uuid NOT NULL,
 	"published_at" timestamp with time zone NOT NULL,
 	"quotes" integer,
+	"reach" integer,
 	"replies" integer,
 	"reposts" integer,
+	"saves" integer,
 	"target_id" uuid PRIMARY KEY,
 	"workspace_id" uuid NOT NULL,
 	CONSTRAINT "tracked_posts_collection" CHECK (("next_collection_at" IS NULL) <> ("ended_at" IS NULL))
