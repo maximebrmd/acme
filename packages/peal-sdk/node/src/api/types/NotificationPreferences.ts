@@ -8,6 +8,7 @@ export interface NotificationPreferences {
 export namespace NotificationPreferences {
     export interface Email {
         channelReconnect: boolean;
+        comments: boolean;
         postFailed: boolean;
         postPublished: boolean;
         postReview: boolean;

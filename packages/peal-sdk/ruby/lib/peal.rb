@@ -118,6 +118,15 @@ require_relative "peal/webhooks/types/rotate_secret_webhooks_request"
 require_relative "peal/webhooks/types/send_test_webhooks_request"
 require_relative "peal/webhooks/types/list_deliveries_webhooks_request"
 require_relative "peal/webhooks/types/redeliver_webhooks_request"
+require_relative "peal/inbox/client"
+require_relative "peal/inbox/types/list_threads_inbox_request"
+require_relative "peal/inbox/types/get_thread_inbox_request"
+require_relative "peal/inbox/types/get_abilities_inbox_request"
+require_relative "peal/inbox/types/new_inbox_reply"
+require_relative "peal/inbox/types/set_answered_inbox_request"
+require_relative "peal/inbox/types/moderate_inbox_request"
+require_relative "peal/inbox/types/confirm_reply_inbox_request"
+require_relative "peal/inbox/types/withdraw_reply_inbox_request"
 require_relative "peal/review/client"
 require_relative "peal/review/types/settings_review_request"
 require_relative "peal/review/types/update_settings_review_request"
@@ -136,6 +145,12 @@ module Peal
   module NotificationPreferences
     module Types
       autoload :NotificationPreferencesChangeEmail, ::File.join(__dir__, "peal/notification_preferences/types/notification_preferences_change_email")
+    end
+  end
+
+  module Inbox
+    module Types
+      autoload :ListThreadsInboxRequestUnanswered, ::File.join(__dir__, "peal/inbox/types/list_threads_inbox_request_unanswered")
     end
   end
 
@@ -373,6 +388,28 @@ module Peal
     autoload :ForbiddenEncoded, ::File.join(__dir__, "peal/types/forbidden_encoded")
     autoload :IdempotencyKeyReusedEncodedTag, ::File.join(__dir__, "peal/types/idempotency_key_reused_encoded_tag")
     autoload :IdempotencyKeyReusedEncoded, ::File.join(__dir__, "peal/types/idempotency_key_reused_encoded")
+    autoload :InboxAbilityStanding, ::File.join(__dir__, "peal/types/inbox_ability_standing")
+    autoload :InboxAbilities, ::File.join(__dir__, "peal/types/inbox_abilities")
+    autoload :InboxActionFailedEncodedTag, ::File.join(__dir__, "peal/types/inbox_action_failed_encoded_tag")
+    autoload :InboxActionFailedEncoded, ::File.join(__dir__, "peal/types/inbox_action_failed_encoded")
+    autoload :InboxActionUnavailableEncodedStanding, ::File.join(__dir__, "peal/types/inbox_action_unavailable_encoded_standing")
+    autoload :InboxActionUnavailableEncoded, ::File.join(__dir__, "peal/types/inbox_action_unavailable_encoded")
+    autoload :InboxAuthor, ::File.join(__dir__, "peal/types/inbox_author")
+    autoload :InboxCollectionEnd, ::File.join(__dir__, "peal/types/inbox_collection_end")
+    autoload :InboxCommentState, ::File.join(__dir__, "peal/types/inbox_comment_state")
+    autoload :InboxComment, ::File.join(__dir__, "peal/types/inbox_comment")
+    autoload :InboxCommentGoneEncodedTag, ::File.join(__dir__, "peal/types/inbox_comment_gone_encoded_tag")
+    autoload :InboxCommentGoneEncoded, ::File.join(__dir__, "peal/types/inbox_comment_gone_encoded")
+    autoload :InboxCommentNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_comment_not_found_encoded")
+    autoload :InboxModerationAction, ::File.join(__dir__, "peal/types/inbox_moderation_action")
+    autoload :InboxReplyReason, ::File.join(__dir__, "peal/types/inbox_reply_reason")
+    autoload :InboxReplyStatus, ::File.join(__dir__, "peal/types/inbox_reply_status")
+    autoload :InboxReply, ::File.join(__dir__, "peal/types/inbox_reply")
+    autoload :InboxReplyNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_reply_not_found_encoded")
+    autoload :InboxThread, ::File.join(__dir__, "peal/types/inbox_thread")
+    autoload :InboxThreadDetail, ::File.join(__dir__, "peal/types/inbox_thread_detail")
+    autoload :InboxThreadNotFoundEncoded, ::File.join(__dir__, "peal/types/inbox_thread_not_found_encoded")
+    autoload :InboxThreadPage, ::File.join(__dir__, "peal/types/inbox_thread_page")
     autoload :InvalidDateRangeEncodedTag, ::File.join(__dir__, "peal/types/invalid_date_range_encoded_tag")
     autoload :InvalidDateRangeEncoded, ::File.join(__dir__, "peal/types/invalid_date_range_encoded")
     autoload :InvalidTimeRangeEncodedTag, ::File.join(__dir__, "peal/types/invalid_time_range_encoded_tag")
@@ -427,6 +464,7 @@ module Peal
     autoload :NoticeChannel, ::File.join(__dir__, "peal/types/notice_channel")
     autoload :NoticeEventChannelReconnectRequired, ::File.join(__dir__, "peal/types/notice_event_channel_reconnect_required")
     autoload :NoticeEventChannelReconnectSoon, ::File.join(__dir__, "peal/types/notice_event_channel_reconnect_soon")
+    autoload :NoticeEventCommentsReceived, ::File.join(__dir__, "peal/types/notice_event_comments_received")
     autoload :NoticeEventPostApprovalRequested, ::File.join(__dir__, "peal/types/notice_event_post_approval_requested")
     autoload :ReviewParty, ::File.join(__dir__, "peal/types/review_party")
     autoload :NoticeEventPostApproved, ::File.join(__dir__, "peal/types/notice_event_post_approved")
@@ -476,6 +514,12 @@ module Peal
     autoload :UploadTarget, ::File.join(__dir__, "peal/types/upload_target")
     autoload :PreparedUpload, ::File.join(__dir__, "peal/types/prepared_upload")
     autoload :PublicationAttempt, ::File.join(__dir__, "peal/types/publication_attempt")
+    autoload :ReplyInvalidEncodedTag, ::File.join(__dir__, "peal/types/reply_invalid_encoded_tag")
+    autoload :ReplyInvalidEncodedReason, ::File.join(__dir__, "peal/types/reply_invalid_encoded_reason")
+    autoload :ReplyInvalidEncoded, ::File.join(__dir__, "peal/types/reply_invalid_encoded")
+    autoload :ReplyPendingEncoded, ::File.join(__dir__, "peal/types/reply_pending_encoded")
+    autoload :ReplyStatusConflictEncodedTag, ::File.join(__dir__, "peal/types/reply_status_conflict_encoded_tag")
+    autoload :ReplyStatusConflictEncoded, ::File.join(__dir__, "peal/types/reply_status_conflict_encoded")
     autoload :ReviewSettings, ::File.join(__dir__, "peal/types/review_settings")
     autoload :Role, ::File.join(__dir__, "peal/types/role")
     autoload :ScheduleInPastEncoded, ::File.join(__dir__, "peal/types/schedule_in_past_encoded")

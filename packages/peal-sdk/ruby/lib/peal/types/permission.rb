@@ -18,6 +18,8 @@ module Peal
       CHANNEL_READ = "channel:read"
       CHANNEL_CONNECT = "channel:connect"
       CHANNEL_DISCONNECT = "channel:disconnect"
+      ENGAGEMENT_READ = "engagement:read"
+      ENGAGEMENT_REPLY = "engagement:reply"
       INVITATION_CREATE = "invitation:create"
       INVITATION_CANCEL = "invitation:cancel"
       MEDIA_READ = "media:read"

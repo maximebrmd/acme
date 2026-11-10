@@ -19,6 +19,7 @@
 //! - **capabilities**
 //! - **lookups**
 //! - **webhooks**
+//! - **inbox**
 //! - **review**
 
 use crate::{ApiError, ClientConfig};
@@ -29,6 +30,7 @@ pub mod assistant;
 pub mod billing;
 pub mod capabilities;
 pub mod channels;
+pub mod inbox;
 pub mod invitations;
 pub mod lookups;
 pub mod media;
@@ -60,6 +62,7 @@ pub struct PealClient {
     pub capabilities: CapabilitiesClient,
     pub lookups: LookupsClient,
     pub webhooks: WebhooksClient,
+    pub inbox: InboxClient,
     pub review: ReviewClient,
 }
 
@@ -84,6 +87,7 @@ impl PealClient {
             capabilities: CapabilitiesClient::new(config.clone())?,
             lookups: LookupsClient::new(config.clone())?,
             webhooks: WebhooksClient::new(config.clone())?,
+            inbox: InboxClient::new(config.clone())?,
             review: ReviewClient::new(config.clone())?,
         })
     }
@@ -95,6 +99,7 @@ pub use assistant::AssistantClient;
 pub use billing::BillingClient;
 pub use capabilities::CapabilitiesClient;
 pub use channels::ChannelsClient;
+pub use inbox::InboxClient;
 pub use invitations::InvitationsClient;
 pub use lookups::LookupsClient;
 pub use media::MediaClient;

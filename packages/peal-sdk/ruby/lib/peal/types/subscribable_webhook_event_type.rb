@@ -21,6 +21,8 @@ module Peal
       CHANNEL_RECONNECT_NEEDED = "channel.reconnect_needed"
       MEDIA_READY = "media.ready"
       MEDIA_FAILED = "media.failed"
+      COMMENT_RECEIVED = "comment.received"
+      COMMENT_REPLIED = "comment.replied"
     end
   end
 end

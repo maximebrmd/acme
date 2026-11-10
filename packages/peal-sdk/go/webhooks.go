@@ -381,6 +381,8 @@ const (
 	SubscribableWebhookEventTypeChannelReconnectNeeded SubscribableWebhookEventType = "channel.reconnect_needed"
 	SubscribableWebhookEventTypeMediaReady             SubscribableWebhookEventType = "media.ready"
 	SubscribableWebhookEventTypeMediaFailed            SubscribableWebhookEventType = "media.failed"
+	SubscribableWebhookEventTypeCommentReceived        SubscribableWebhookEventType = "comment.received"
+	SubscribableWebhookEventTypeCommentReplied         SubscribableWebhookEventType = "comment.replied"
 )
 
 func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEventType, error) {
@@ -413,6 +415,10 @@ func NewSubscribableWebhookEventTypeFromString(s string) (SubscribableWebhookEve
 		return SubscribableWebhookEventTypeMediaReady, nil
 	case "media.failed":
 		return SubscribableWebhookEventTypeMediaFailed, nil
+	case "comment.received":
+		return SubscribableWebhookEventTypeCommentReceived, nil
+	case "comment.replied":
+		return SubscribableWebhookEventTypeCommentReplied, nil
 	}
 	var t SubscribableWebhookEventType
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -1333,6 +1339,8 @@ const (
 	WebhookEventTypeChannelReconnectNeeded WebhookEventType = "channel.reconnect_needed"
 	WebhookEventTypeMediaReady             WebhookEventType = "media.ready"
 	WebhookEventTypeMediaFailed            WebhookEventType = "media.failed"
+	WebhookEventTypeCommentReceived        WebhookEventType = "comment.received"
+	WebhookEventTypeCommentReplied         WebhookEventType = "comment.replied"
 	WebhookEventTypeWebhookTest            WebhookEventType = "webhook.test"
 )
 
@@ -1366,6 +1374,10 @@ func NewWebhookEventTypeFromString(s string) (WebhookEventType, error) {
 		return WebhookEventTypeMediaReady, nil
 	case "media.failed":
 		return WebhookEventTypeMediaFailed, nil
+	case "comment.received":
+		return WebhookEventTypeCommentReceived, nil
+	case "comment.replied":
+		return WebhookEventTypeCommentReplied, nil
 	case "webhook.test":
 		return WebhookEventTypeWebhookTest, nil
 	}

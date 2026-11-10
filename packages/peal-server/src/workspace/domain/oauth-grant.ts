@@ -13,7 +13,8 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
  *   handles media and the rest, and nothing it does reaches a platform.
  * - `workspace:publish`: what the user's role allows of what puts posts
  *   out, and reading: scheduling, moving, publishing and reposting, and
- *   taking a post back, cancelling it or confirming how it went.
+ *   taking a post back, cancelling it or confirming how it went; and
+ *   answering the comments under them, as the account, in public.
  *
  * Publishing is a grant of its own, which the consent page shows on its own
  * line: a token issued for `workspace:write` before it existed publishes
@@ -63,9 +64,11 @@ const reads = (permission: Permission): boolean => permission.endsWith(":read");
 
 /**
  * The permissions that decide what goes out to the platforms, and when:
- * only `workspace:publish` leaves them to an OAuth client.
+ * only `workspace:publish` leaves them to an OAuth client. A reply to a
+ * comment is a public message from the account, as a post is.
  */
 export const publishingPermissions: ReadonlySet<Permission> = new Set([
+  "engagement:reply",
   "post:schedule",
   "post:approve",
   "post:publish",

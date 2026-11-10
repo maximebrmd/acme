@@ -10,6 +10,7 @@ import (
 	capabilities "github.com/peal-social/peal/packages/peal-sdk/go/capabilities"
 	channels "github.com/peal-social/peal/packages/peal-sdk/go/channels"
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
+	inbox "github.com/peal-social/peal/packages/peal-sdk/go/inbox"
 	internal "github.com/peal-social/peal/packages/peal-sdk/go/internal"
 	invitations "github.com/peal-social/peal/packages/peal-sdk/go/invitations"
 	lookups "github.com/peal-social/peal/packages/peal-sdk/go/lookups"
@@ -44,6 +45,7 @@ type Client struct {
 	Capabilities            *capabilities.Client
 	Lookups                 *lookups.Client
 	Webhooks                *webhooks.Client
+	Inbox                   *inbox.Client
 	Review                  *review.Client
 
 	options *core.RequestOptions
@@ -71,6 +73,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Capabilities:            capabilities.NewClient(options),
 		Lookups:                 lookups.NewClient(options),
 		Webhooks:                webhooks.NewClient(options),
+		Inbox:                   inbox.NewClient(options),
 		Review:                  review.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,

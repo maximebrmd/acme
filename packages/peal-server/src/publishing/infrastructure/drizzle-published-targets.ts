@@ -11,6 +11,7 @@ import {
   ChannelIdSchema,
   PostIdSchema,
   PostTargetIdSchema,
+  UserIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
@@ -20,6 +21,7 @@ import { posts, postTargets } from "./schema.ts";
 
 // A published target's row, as the domain would have written it.
 const PublishedRowSchema = Schema.Struct({
+  authorId: Schema.OptionFromNullOr(UserIdSchema),
   channelId: ChannelIdSchema,
   permalink: Schema.OptionFromNullOr(Schema.String),
   platformPostId: PlatformPostIdSchema,
@@ -47,6 +49,7 @@ export const DrizzlePublishedTargets = Layer.effect(
 
       const rows = yield* db
         .select({
+          authorId: posts.authorId,
           channelId: postTargets.channelId,
           permalink: postTargets.permalink,
           platformPostId: postTargets.platformPostId,

@@ -18,6 +18,8 @@ pub enum SubscribableWebhookEventType {
     ChannelReconnectNeeded,
     MediaReady,
     MediaFailed,
+    CommentReceived,
+    CommentReplied,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -40,6 +42,8 @@ impl Serialize for SubscribableWebhookEventType {
             Self::ChannelReconnectNeeded => serializer.serialize_str("channel.reconnect_needed"),
             Self::MediaReady => serializer.serialize_str("media.ready"),
             Self::MediaFailed => serializer.serialize_str("media.failed"),
+            Self::CommentReceived => serializer.serialize_str("comment.received"),
+            Self::CommentReplied => serializer.serialize_str("comment.replied"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -63,6 +67,8 @@ impl<'de> Deserialize<'de> for SubscribableWebhookEventType {
             "channel.reconnect_needed" => Ok(Self::ChannelReconnectNeeded),
             "media.ready" => Ok(Self::MediaReady),
             "media.failed" => Ok(Self::MediaFailed),
+            "comment.received" => Ok(Self::CommentReceived),
+            "comment.replied" => Ok(Self::CommentReplied),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -85,6 +91,8 @@ impl fmt::Display for SubscribableWebhookEventType {
             Self::ChannelReconnectNeeded => write!(f, "channel.reconnect_needed"),
             Self::MediaReady => write!(f, "media.ready"),
             Self::MediaFailed => write!(f, "media.failed"),
+            Self::CommentReceived => write!(f, "comment.received"),
+            Self::CommentReplied => write!(f, "comment.replied"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

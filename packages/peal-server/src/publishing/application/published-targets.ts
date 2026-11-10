@@ -6,12 +6,15 @@ import type {
   ChannelId,
   PostId,
   PostTargetId,
+  UserId,
   WorkspaceId,
 } from "#shared/domain/ids.ts";
 import type { PlatformPostId } from "#shared/domain/publish-result.ts";
 
 /** A post that went live on a channel, with the id the platform gave it. */
 export interface PublishedTarget {
+  /** The member who wrote the post; none for an API key's. */
+  readonly authorId: Option.Option<UserId>;
   readonly channelId: ChannelId;
   readonly permalink: Option.Option<string>;
   readonly platformPostId: PlatformPostId;

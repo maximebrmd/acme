@@ -184,21 +184,22 @@ The server follows DDD and Clean Architecture. Each bounded context in
 `packages/peal-server/src/` has four layers, plus a `container.ts` that wires
 them:
 
-| Context         | Holds                                                                       |
-| --------------- | --------------------------------------------------------------------------- |
-| `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters |
-| `channels`      | connected accounts, connect flows, encrypted tokens and their renewal       |
-| `media`         | uploads, storage, probing, alt text, files handed to platforms              |
-| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth                       |
-| `notifications` | account emails, in-app notices, their emails, notification preferences      |
-| `assistant`     | the writing assistant: prompts, language models, the daily quota            |
-| `shared`        | the kernel the others build on                                              |
-| `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
-| `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
-| `staff`         | the staff console: what staff read and do, and the audit log of it          |
-| `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log   |
-| `legal`         | what French law has a host keep, and the legal requests that read it        |
-| `review`        | approval policies, requests and decisions, review links, comments           |
+| Context         | Holds                                                                             |
+| --------------- | --------------------------------------------------------------------------------- |
+| `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters       |
+| `channels`      | connected accounts, connect flows, encrypted tokens and their renewal             |
+| `media`         | uploads, storage, probing, alt text, files handed to platforms                    |
+| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth                             |
+| `notifications` | account emails, in-app notices, their emails, notification preferences            |
+| `assistant`     | the writing assistant: prompts, language models, the daily quota                  |
+| `shared`        | the kernel the others build on                                                    |
+| `analytics`     | the posts it follows, snapshots of their counts, the hourly collection            |
+| `billing`       | plans, subscriptions, entitlements, the billing page's usage                      |
+| `staff`         | the staff console: what staff read and do, and the audit log of it                |
+| `engagement`    | the inbox: comments under published posts, replies sent to them, their collection |
+| `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log         |
+| `legal`         | what French law has a host keep, and the legal requests that read it              |
+| `review`        | approval policies, requests and decisions, review links, comments                 |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -603,7 +604,8 @@ and no socket, for tests.
   `workspace:write` (what the role allows, but what puts posts out) or
   `workspace:publish` (reading, and `publishingPermissions`: post:schedule,
   post:approve, post:publish, so scheduling, moving, publishing, reposting,
-  cancelling, unscheduling and confirming). Publishing is a grant of its
+  cancelling, unscheduling and confirming, and `engagement:reply`:
+  answering comments). Publishing is a grant of its
   own: the consent page lets the person leave it out, a token issued before
   it existed publishes nothing, and `scopeFor` names the scope a permission
   takes. Never fold it back into `workspace:write`.
@@ -2136,6 +2138,111 @@ and no socket, for tests.
   `test/review/support.ts` (the real gate and stores over
   `posts-server.ts`).
 
+### Engagement (the inbox)
+
+- The context is `engagement`; the product, the API group and the pages
+  say "inbox" (`/api/workspaces/:workspaceId/inbox`, `peal inbox`,
+  `…/inbox`), as "notices" already names a user's notifications. This
+  slice is comments on posts Peal published; direct messages, mentions and
+  reviews will build on it. Nothing here answers by itself: no automation,
+  and no assistant prompt ever reads a comment.
+- A `Thread` is the comments under one published target; a `Comment` is
+  what its platform gave (its id there, the comment it answers, its
+  author's id, handle and display name, plain text, when); a `Reply` is
+  what a member sent. Comments are other people's personal data: read
+  nothing more of an author, use comments only to show and answer them,
+  and never put a comment's text or author in a log, a trace, a notice, a
+  webhook event or the cluster tables. `forgetComment` erases text and
+  author once the platform no longer shows a comment (a complete read
+  that misses it, or a post gone), which a table check enforces.
+- Retention: comments are read for `defaultWindow` (30 days,
+  `PEAL_ENGAGEMENT_WINDOW_DAYS`, 90 at most) after a post went live, and a
+  thread is deleted `keptAfterCollection` (30 days) after its collection
+  ended (`engagement.retention` cron, `PurgeEngagement`). The contract
+  copies both (`inboxWindowDays`, `inboxRetentionDays`), the registry
+  states them (`inbox` in `peal-contract/data-processing`), and the
+  privacy policy's table and the docs' Inbox page follow: change them
+  together. Erasing a workspace deletes its threads and records it in
+  `engagement.erased_workspaces` under the following lock, as analytics
+  does; a closed account leaves its replies without an author
+  (`EngagementRecords.forgetUser`), and its export lists the replies it
+  sent, never the comments.
+- `CollectComments` runs on the `engagement.collect-comments` cron, every
+  ten minutes: it follows publishing's `PublishedTargets` (`FollowedPosts`)
+  as analytics does, then reads the threads due, the channels that waited
+  longest first, 10 threads a call (`CommentSource`, through the channel's
+  gate: `ReadComments`), 30 threads a channel a run, 8 channels at once
+  (`PEAL_ENGAGEMENT_CONCURRENCY`), and starts no read 8 minutes after the
+  run's time. A thread is read every run for a day, hourly for a week,
+  then every six hours (`collection-schedule.ts`). A platform that is down
+  or slows a channel postpones its threads half an hour, so they never
+  hold the queue's front. A run sets `peal.engagement.collection.duration`
+  and `.left`, counts `.unfinished`, and Grafana alerts on it
+  (`peal-comments-behind`). `reconcile` is the one place that decides what
+  a read changes; a comment by the channel's own account is not kept, and
+  marks the comment it answers as answered.
+- A reply follows publishing's contract. `EngagementReplies.reply` checks
+  the permission, the comment, the channel's ability and the platform's
+  length (`ReplyLimits`, on publishing's `textOverflowOn`; on Mastodon
+  `outgoingText` puts the mention first), refuses while another reply to
+  the comment is `sending` or `unconfirmed`, then saves the row in
+  `engagement.replies`, which is the journal, with the start of
+  `SendReplyV1` in one transaction. `SendReply` commits `attempted_at`
+  before the call; a run that finds it set never sends: it calls
+  `ReplySender.resume`, which looks the reply up by a key every run
+  derives (Bluesky's record key from the reply's time and id; Mastodon's
+  Idempotency-Key, the reply's id, for 50 minutes) and answers
+  `unconfirmed` when it cannot tell. An unconfirmed reply is settled by a
+  person (`confirm`). `SendReplyV1` (payload `replyId`, activity `send`) is
+  persisted contract.
+- Acting needs `engagement:reply`, which is in `publishingPermissions` (an
+  OAuth client needs `workspace:publish`) and in
+  `withheldWhileImpersonating`, with `engagement:read`: staff neither read
+  nor answer comments. The approval policy does not apply to replies: an
+  approval covers a post's content before it goes out, and a reply is a
+  short answer to a live thread that the same roles may publish at once.
+  Writes of the `inbox` group and the inbox tools that change something
+  go through the ConnectionJournal, as a reply is content.
+- What a channel can do is `abilitiesOf(platform, scopes)`
+  (`engagement-abilities.ts`): `available`, `reconnect` (only for the
+  abilities in `askedAtSignIn`, whose scopes the sign-ins ask for) or
+  `unsupported`. Mastodon: read, reply, withdraw; a favourite takes
+  `write:favourites`; nobody hides or deletes another account's reply.
+  Bluesky: read (public AppView, no session), reply, withdraw; a like and a
+  hidden reply (the post's thread gate, written keeping its `allow`) take
+  `repo:app.bsky.feed.like` and `repo:app.bsky.feed.threadgate`. Those
+  three scopes are not asked at sign-in yet: add one to its authorizer and
+  to `askedAtSignIn` together. Use cases check the ability before any
+  call; actions that set a state (`ReplySender.moderate`, `withdraw`) are
+  safe to ask twice, and a failure changes nothing in Peal.
+- A platform joins by implementing `EngagementPlatform`
+  (`infrastructure/platforms/engagement-platform.ts`) and entering
+  `engagedPlatforms`, `abilitiesOf` and the registry in
+  `platform-engagement.ts`, which does not compile without it; the
+  contract's `inboxPlatforms` and the docs' table follow. Facebook Pages
+  need `pages_read_user_content` and `pages_manage_engagement` (App
+  Review), Instagram `instagram_manage_comments`, YouTube the
+  `youtube.force-ssl` scope (Google verification): none is asked today.
+  Platform events will name threads to read through `CommentSource`: what
+  a platform pushes is an id to fetch, never content to trust.
+- Adapters reach platforms through `publicHttpClient` and `ChannelAccess`
+  only, fail with `TokenRejected` only for the platform's own refusal, and
+  are tested against loopback servers
+  (`test/engagement/infrastructure/*-engagement.test.ts`). Bluesky's
+  session, DPoP sender, record keys and facets are in
+  `#shared/infrastructure/platforms/bluesky/`, for publishing and
+  engagement both. Mastodon's HTML becomes plain text (`html-text.ts`):
+  clients render a comment as text, never as markup.
+- The workspace is told through `EngagementOutcomes`, in the transaction
+  that records the fact: `comment.received` once per comment and
+  `comment.replied` for a reply sent (ids only), and the `CommentsReceived`
+  notice once per thread and UTC day (key `comments:<thread>:<day>`), to
+  the post's author and the members with `engagement:reply` who follow
+  every post, emailed only to those who turned `comments` on.
+- Test use cases on the in-memory world (`test/engagement/fakes/world.ts`),
+  the store on Postgres at instants no other suite uses (2043; the purge
+  in 2031), deleting the workspace's rows after.
+
 ### MCP endpoint
 
 - `src/app/mcp/` serves effect/ai's `McpServer.layerHttp` at `/api/mcp`
@@ -2197,7 +2304,7 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`; the
+  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`, `engagement`; the
   workspace context's are Better Auth's, in `auth`). Effect creates its
   `cluster_*` tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then

@@ -53,6 +53,7 @@ describe(ResolveMember, () => {
       assert.deepStrictEqual(actor.permissions, [
         "analytics:read",
         "channel:read",
+        "engagement:read",
         "media:read",
         "post:read",
       ]);

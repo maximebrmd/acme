@@ -50,6 +50,7 @@ public partial class PealClient : IPealClient
         Capabilities = new CapabilitiesClient(_client);
         Lookups = new LookupsClient(_client);
         Webhooks = new WebhooksClient(_client);
+        Inbox = new InboxClient(_client);
         Review = new ReviewClient(_client);
     }
 
@@ -86,6 +87,8 @@ public partial class PealClient : IPealClient
     public ILookupsClient Lookups { get; }
 
     public IWebhooksClient Webhooks { get; }
+
+    public IInboxClient Inbox { get; }
 
     public IReviewClient Review { get; }
 }

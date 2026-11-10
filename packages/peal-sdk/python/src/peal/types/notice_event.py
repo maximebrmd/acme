@@ -142,6 +142,24 @@ class NoticeEvent_PostCommented(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_CommentsReceived(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["CommentsReceived"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "CommentsReceived"
+    count: int
+    post_id: typing_extensions.Annotated[str, FieldMetadata(alias="postId"), pydantic.Field(alias="postId")]
+    thread_id: typing_extensions.Annotated[str, FieldMetadata(alias="threadId"), pydantic.Field(alias="threadId")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 class NoticeEvent_ChannelReconnectRequired(UniversalBaseModel):
     type: typing_extensions.Annotated[
         typing.Literal["ChannelReconnectRequired"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
@@ -297,6 +315,7 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_PostApproved,
         NoticeEvent_PostChangesRequested,
         NoticeEvent_PostCommented,
+        NoticeEvent_CommentsReceived,
         NoticeEvent_ChannelReconnectRequired,
         NoticeEvent_ChannelReconnectSoon,
         NoticeEvent_SubscriptionStarted,

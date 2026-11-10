@@ -15,6 +15,27 @@ import type {
   MetricsReadFailure,
 } from "#analytics/application/metrics-reader.ts";
 import {
+  CommentsBatchSchema,
+  CommentSource,
+  CommentsReadFailureSchema,
+  CommentsRequestSchema,
+} from "#engagement/application/ports/comment-source.ts";
+import type {
+  CommentsBatch,
+  CommentsReadFailure,
+} from "#engagement/application/ports/comment-source.ts";
+import {
+  ActionOutcomeSchema,
+  ModerationRequestSchema,
+  ReplySender,
+  SendOutcomeSchema,
+  SendRequestSchema,
+} from "#engagement/application/ports/reply-sender.ts";
+import type {
+  ActionOutcome,
+  SendOutcome,
+} from "#engagement/application/ports/reply-sender.ts";
+import {
   PlatformPublisher,
   PublishRequestSchema,
 } from "#publishing/application/platform-publisher.ts";
@@ -41,6 +62,10 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
  * analytics, so reads take turns with publishing and share its rate limits;
  * each is bounded in time, and holds a publish back by one read at most.
  * `ReadAccount` reads the account's own numbers the same way, once a day.
+ * `ReadComments` reads the comments under some of its posts the same way,
+ * and `SendReply`, `ResumeReply`, `WithdrawReply` and `ModerateComment` act
+ * on them as the account, for engagement: their payloads are ids, and the
+ * text of a reply stays in engagement's tables.
  */
 export const ChannelGate = Entity.make("ChannelGate", [
   Rpc.make("Publish", {
@@ -63,6 +88,27 @@ export const ChannelGate = Entity.make("ChannelGate", [
     payload: { request: AccountRequestSchema },
     success: AccountReadingSchema,
   }),
+  Rpc.make("ReadComments", {
+    error: CommentsReadFailureSchema,
+    payload: { request: CommentsRequestSchema },
+    success: CommentsBatchSchema,
+  }),
+  Rpc.make("SendReply", {
+    payload: { request: SendRequestSchema },
+    success: SendOutcomeSchema,
+  }),
+  Rpc.make("ResumeReply", {
+    payload: { request: SendRequestSchema },
+    success: SendOutcomeSchema,
+  }),
+  Rpc.make("WithdrawReply", {
+    payload: { request: SendRequestSchema },
+    success: ActionOutcomeSchema,
+  }),
+  Rpc.make("ModerateComment", {
+    payload: { request: ModerationRequestSchema },
+    success: ActionOutcomeSchema,
+  }),
 ]);
 
 /**
@@ -74,12 +120,19 @@ export const ChannelGateLive = ChannelGate.toLayer(
   Effect.gen(function* ChannelGateLive() {
     const platforms = yield* PlatformPublisher;
     const metrics = yield* MetricsReader;
+    const comments = yield* CommentSource;
+    const replies = yield* ReplySender;
 
     return ChannelGate.of({
+      ModerateComment: ({ payload }) => replies.moderate(payload.request),
       Publish: ({ payload }) => platforms.publish(payload.request),
       ReadAccount: ({ payload }) => metrics.account(payload.request),
+      ReadComments: ({ payload }) => comments.read(payload.request),
       ReadMetrics: ({ payload }) => metrics.read(payload.request),
       Resume: ({ payload }) => platforms.resume(payload.request),
+      ResumeReply: ({ payload }) => replies.resume(payload.request),
+      SendReply: ({ payload }) => replies.send(payload.request),
+      WithdrawReply: ({ payload }) => replies.withdraw(payload.request),
     });
   }),
   { disableFatalDefects: true, maxIdleTime: Duration.minutes(10) }
@@ -95,6 +148,31 @@ export const UnreadMetrics = Layer.succeed(
     account: () => Effect.fail(new PlatformUnavailable()),
     read: () => Effect.fail(new PlatformUnavailable()),
   })
+);
+
+/**
+ * For gates that neither read comments nor answer them, as in tests of
+ * publishing: every read answers that the platform is unavailable, and
+ * nothing is sent.
+ */
+export const UnreadComments = Layer.mergeAll(
+  Layer.succeed(
+    CommentSource,
+    CommentSource.of({ read: () => Effect.fail(new PlatformUnavailable()) })
+  ),
+  Layer.succeed(
+    ReplySender,
+    ReplySender.of({
+      moderate: () =>
+        Effect.succeed({ _tag: "failed", reason: "platformUnavailable" }),
+      resume: () =>
+        Effect.succeed({ _tag: "unconfirmed", reason: "interrupted" }),
+      send: () =>
+        Effect.succeed({ _tag: "failed", reason: "platformUnavailable" }),
+      withdraw: () =>
+        Effect.succeed({ _tag: "failed", reason: "platformUnavailable" }),
+    })
+  )
 );
 
 // The gate did not take the call, so it was not sent: worth a few quick
@@ -214,6 +292,143 @@ export const GatedMetricsReader = Layer.effect(
         gated(gateFor(request.channelId).ReadAccount({ request })),
       read: (request): Effect.Effect<MetricsBatch, MetricsReadFailure> =>
         gated(gateFor(request.channelId).ReadMetrics({ request })),
+    });
+  })
+);
+
+// The gate did not take the read, or a bug broke it: it read nothing, and
+// the next collection tries again.
+const noComments = (): Effect.Effect<never, CommentsReadFailure> =>
+  Effect.fail(new PlatformUnavailable());
+
+/**
+ * The CommentSource engagement collects with: each read goes through its
+ * channel's gate, after the calls already waiting there. Provide
+ * ChannelGateLive, with the real readers, beside it.
+ */
+export const GatedCommentSource = Layer.effect(
+  CommentSource,
+  Effect.gen(function* GatedCommentSource() {
+    const gateFor = yield* ChannelGate.client;
+
+    return CommentSource.of({
+      read: (request): Effect.Effect<CommentsBatch, CommentsReadFailure> =>
+        gateFor(request.channelId)
+          .ReadComments({ request })
+          .pipe(
+            Effect.retry({
+              schedule: notTakenRetry,
+              times: 4,
+              while: (error) =>
+                error._tag === "MailboxFull" ||
+                error._tag === "EntityNotAssignedToRunner",
+            }),
+            Effect.catchTags({
+              AlreadyProcessingMessage: noComments,
+              EntityNotAssignedToRunner: noComments,
+              MailboxFull: noComments,
+              PersistenceError: noComments,
+            }),
+            Effect.catchDefect((cause) =>
+              Effect.logError(
+                "A comments read failed in its adapter",
+                cause
+              ).pipe(Effect.andThen(noComments()))
+            )
+          ),
+    });
+  })
+);
+
+// The gate did not take the reply, so it was not sent.
+const replyNotSent = () =>
+  Effect.succeed<SendOutcome>({
+    _tag: "failed",
+    reason: "platformUnavailable",
+  });
+
+// A call that may have reached the platform before the gate lost it.
+const replyUnknown = (
+  reason: "adapterFailure" | "interrupted" | "noResponse"
+) => Effect.succeed<SendOutcome>({ _tag: "unconfirmed", reason });
+
+// An action the gate did not take, or lost: asking again is safe.
+const notDone = () =>
+  Effect.succeed<ActionOutcome>({
+    _tag: "failed",
+    reason: "platformUnavailable",
+  });
+
+/**
+ * The ReplySender engagement acts with: each call goes through its
+ * channel's gate, in turn with the channel's publishing. A reply the gate
+ * did not take was not sent; one it lost during the call, or whose adapter
+ * broke, may have gone out, and is never sent again for that. Provide
+ * ChannelGateLive, with the real senders, beside it.
+ */
+export const GatedReplySender = Layer.effect(
+  ReplySender,
+  Effect.gen(function* GatedReplySender() {
+    const gateFor = yield* ChannelGate.client;
+
+    type SendCall = ReturnType<ReturnType<typeof gateFor>["SendReply"]>;
+
+    type ActionCall = ReturnType<ReturnType<typeof gateFor>["WithdrawReply"]>;
+
+    const sending = (
+      call: SendCall,
+      notTaken: () => Effect.Effect<SendOutcome>
+    ) =>
+      call.pipe(
+        Effect.retry({
+          schedule: notTakenRetry,
+          times: 4,
+          while: (error) =>
+            error._tag === "MailboxFull" ||
+            error._tag === "EntityNotAssignedToRunner",
+        }),
+        Effect.catchTags({
+          AlreadyProcessingMessage: () => replyUnknown("noResponse"),
+          EntityNotAssignedToRunner: notTaken,
+          MailboxFull: notTaken,
+          PersistenceError: notTaken,
+        }),
+        Effect.catchDefect((cause) =>
+          Effect.logError("A reply failed in its adapter", cause).pipe(
+            Effect.andThen(replyUnknown("adapterFailure"))
+          )
+        )
+      );
+
+    const acting = (call: ActionCall) =>
+      call.pipe(
+        Effect.catchTags({
+          AlreadyProcessingMessage: notDone,
+          EntityNotAssignedToRunner: notDone,
+          MailboxFull: notDone,
+          PersistenceError: notDone,
+        }),
+        Effect.catchDefect((cause) =>
+          Effect.logError("A comment action failed in its adapter", cause).pipe(
+            Effect.andThen(notDone())
+          )
+        )
+      );
+
+    return ReplySender.of({
+      moderate: (request) =>
+        acting(gateFor(request.channelId).ModerateComment({ request })),
+      resume: (request) =>
+        sending(gateFor(request.channelId).ResumeReply({ request }), () =>
+          replyUnknown("interrupted")
+        ),
+      send: (request) =>
+        sending(
+          gateFor(request.channelId).SendReply({ request }),
+          replyNotSent
+        ),
+      withdraw: (request) =>
+        acting(gateFor(request.channelId).WithdrawReply({ request })),
     });
   })
 );

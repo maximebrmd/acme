@@ -34,6 +34,15 @@ import type {
 } from "#shared/domain/publish-result.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
+import { sessionOf } from "#shared/infrastructure/platforms/bluesky/bluesky-session.ts";
+import type { BlueskySession } from "#shared/infrastructure/platforms/bluesky/bluesky-session.ts";
+import { dpopSender } from "#shared/infrastructure/platforms/bluesky/dpop.ts";
+import type { BlueskyHttp } from "#shared/infrastructure/platforms/bluesky/dpop.ts";
+import {
+  FacetSchema,
+  facetsOf,
+} from "#shared/infrastructure/platforms/bluesky/facets.ts";
+import { recordKeyOf } from "#shared/infrastructure/platforms/bluesky/record-key.ts";
 import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
 import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
 
@@ -43,12 +52,6 @@ import {
   recordRefusal,
   XrpcErrorSchema,
 } from "./bluesky-refusal.ts";
-import { sessionOf } from "./bluesky-session.ts";
-import type { BlueskySession } from "./bluesky-session.ts";
-import { dpopSender } from "./dpop.ts";
-import type { BlueskyHttp } from "./dpop.ts";
-import { FacetSchema, facetsOf } from "./facets.ts";
-import { recordKeyOf } from "./record-key.ts";
 
 export interface BlueskyClientOptions {
   /** For calls to the PDS and the video service. */

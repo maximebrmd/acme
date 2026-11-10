@@ -15,6 +15,8 @@ export const SubscribableWebhookEventType = {
         ChannelDisconnected: "channel.disconnected",
         ChannelReconnectNeeded: "channel.reconnect_needed",
         MediaReady: "media.ready",
-        MediaFailed: "media.failed"
+        MediaFailed: "media.failed",
+        CommentReceived: "comment.received",
+        CommentReplied: "comment.replied"
     } as const;
 export type SubscribableWebhookEventType = typeof SubscribableWebhookEventType[keyof typeof SubscribableWebhookEventType];

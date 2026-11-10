@@ -29,6 +29,13 @@ export const english: EmailCatalog = {
       "You receive this email because you manage the channels of {workspaceName} on Peal. Choose which notifications you receive by email in your notification preferences.",
     subject: "Reconnect {handle} on {platform} by {expiresAt}",
   },
+  commentsReceived: {
+    action: "Read the comments",
+    body: "A post of {workspaceName} received new comments ({count}) where it was published.",
+    ignore:
+      "You receive this email because you wrote this post in {workspaceName} on Peal, or answer comments there, and chose to hear about new comments by email. Choose which notifications you receive by email in your notification preferences.",
+    subject: "New comments on a post",
+  },
   contractNumber:
     "Contract number: {reference}. Give it in Cancel your contract or Withdraw from contract here, at the foot of every page, and your request is applied at once, without signing in.",
   contractRequest: {

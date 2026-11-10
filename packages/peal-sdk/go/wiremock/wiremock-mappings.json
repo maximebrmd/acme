@@ -1455,7 +1455,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true\n  },\n  \"everyPost\": true\n}",
+        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"comments\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true\n  },\n  \"everyPost\": true\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1487,7 +1487,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true\n  },\n  \"everyPost\": true\n}",
+        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"comments\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true\n  },\n  \"everyPost\": true\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -2425,6 +2425,315 @@
       }
     },
     {
+      "id": "30a7ed12-3d1a-4621-b531-4fc2bb7eed70",
+      "name": "List the inbox's threads - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/threads",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"channelId\": \"channelId\",\n      \"collectionEnded\": \"window\",\n      \"comments\": 1,\n      \"id\": \"id\",\n      \"lastCollectedAt\": \"lastCollectedAt\",\n      \"lastCommentAt\": \"lastCommentAt\",\n      \"permalink\": \"permalink\",\n      \"postId\": \"postId\",\n      \"publishedAt\": \"publishedAt\",\n      \"targetId\": \"targetId\",\n      \"unanswered\": 1\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "30a7ed12-3d1a-4621-b531-4fc2bb7eed70",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "8f2f9721-e1c3-40ea-b834-611856638452",
+      "name": "Get a thread - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/threads/{threadId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "threadId": {
+            "equalTo": "threadId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"abilities\": {\n    \"delete\": \"available\",\n    \"hide\": \"available\",\n    \"like\": \"available\",\n    \"read\": \"available\",\n    \"reply\": \"available\",\n    \"withdraw\": \"available\"\n  },\n  \"comments\": [\n    {\n      \"author\": {\n        \"displayName\": null,\n        \"handle\": \"handle\",\n        \"platformId\": \"platformId\"\n      },\n      \"id\": \"id\",\n      \"liked\": true,\n      \"parentId\": \"parentId\",\n      \"permalink\": \"permalink\",\n      \"receivedAt\": \"receivedAt\",\n      \"state\": \"new\",\n      \"text\": \"text\",\n      \"threadId\": \"threadId\",\n      \"writtenAt\": \"writtenAt\"\n    }\n  ],\n  \"platform\": \"x\",\n  \"replies\": [\n    {\n      \"authorId\": \"authorId\",\n      \"commentId\": \"commentId\",\n      \"createdAt\": \"createdAt\",\n      \"id\": \"id\",\n      \"permalink\": \"permalink\",\n      \"reason\": \"channelUnavailable\",\n      \"settledAt\": \"settledAt\",\n      \"status\": \"sending\",\n      \"text\": \"text\",\n      \"threadId\": \"threadId\"\n    }\n  ],\n  \"thread\": {\n    \"channelId\": \"channelId\",\n    \"collectionEnded\": \"window\",\n    \"comments\": 1,\n    \"id\": \"id\",\n    \"lastCollectedAt\": \"lastCollectedAt\",\n    \"lastCommentAt\": \"lastCommentAt\",\n    \"permalink\": \"permalink\",\n    \"postId\": \"postId\",\n    \"publishedAt\": \"publishedAt\",\n    \"targetId\": \"targetId\",\n    \"unanswered\": 1\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "8f2f9721-e1c3-40ea-b834-611856638452",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "6bb2bd19-cf19-4e42-a8f7-63ed3a40fbce",
+      "name": "Get a channel's inbox abilities - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "channelId": {
+            "equalTo": "channelId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"delete\": \"available\",\n  \"hide\": \"available\",\n  \"like\": \"available\",\n  \"read\": \"available\",\n  \"reply\": \"available\",\n  \"withdraw\": \"available\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6bb2bd19-cf19-4e42-a8f7-63ed3a40fbce",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "b440d983-f47c-4d78-87c2-b8aca6099741",
+      "name": "Reply to a comment - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/comments/{commentId}/replies",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "commentId": {
+            "equalTo": "commentId"
+          }
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"commentId\": \"commentId\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"permalink\": \"permalink\",\n  \"reason\": \"channelUnavailable\",\n  \"settledAt\": \"settledAt\",\n  \"status\": \"sending\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "b440d983-f47c-4d78-87c2-b8aca6099741",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "da324544-2a8f-4af3-9b0d-836f530e4ef5",
+      "name": "Mark a comment answered - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/comments/{commentId}/answered",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "commentId": {
+            "equalTo": "commentId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"author\": {\n    \"displayName\": \"displayName\",\n    \"handle\": \"handle\",\n    \"platformId\": \"platformId\"\n  },\n  \"id\": \"id\",\n  \"liked\": true,\n  \"parentId\": \"parentId\",\n  \"permalink\": \"permalink\",\n  \"receivedAt\": \"receivedAt\",\n  \"state\": \"new\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\",\n  \"writtenAt\": \"writtenAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "da324544-2a8f-4af3-9b0d-836f530e4ef5",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "a1571b83-ee94-4e7c-8b86-f5c2c15fcc4b",
+      "name": "Moderate a comment - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/comments/{commentId}/moderation",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "commentId": {
+            "equalTo": "commentId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"author\": {\n    \"displayName\": \"displayName\",\n    \"handle\": \"handle\",\n    \"platformId\": \"platformId\"\n  },\n  \"id\": \"id\",\n  \"liked\": true,\n  \"parentId\": \"parentId\",\n  \"permalink\": \"permalink\",\n  \"receivedAt\": \"receivedAt\",\n  \"state\": \"new\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\",\n  \"writtenAt\": \"writtenAt\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "a1571b83-ee94-4e7c-8b86-f5c2c15fcc4b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "5f4cbd18-ebc2-4d95-a049-fcfd02e6405d",
+      "name": "Confirm an unconfirmed reply - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/replies/{replyId}/confirmation",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "replyId": {
+            "equalTo": "replyId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"commentId\": \"commentId\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"permalink\": \"permalink\",\n  \"reason\": \"channelUnavailable\",\n  \"settledAt\": \"settledAt\",\n  \"status\": \"sending\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "5f4cbd18-ebc2-4d95-a049-fcfd02e6405d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "44b751c8-1509-415d-a403-b0e231ff393d",
+      "name": "Withdraw a reply - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/inbox/replies/{replyId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "replyId": {
+            "equalTo": "replyId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"authorId\": \"authorId\",\n  \"commentId\": \"commentId\",\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"permalink\": \"permalink\",\n  \"reason\": \"channelUnavailable\",\n  \"settledAt\": \"settledAt\",\n  \"status\": \"sending\",\n  \"text\": \"text\",\n  \"threadId\": \"threadId\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "44b751c8-1509-415d-a403-b0e231ff393d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "6be34caa-af85-4f41-99ea-50a0dc99a489",
       "name": "Get the review settings - default",
       "request": {
@@ -2849,6 +3158,6 @@
     }
   ],
   "meta": {
-    "total": 76
+    "total": 84
   }
 }

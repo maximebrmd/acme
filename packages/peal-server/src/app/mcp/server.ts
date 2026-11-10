@@ -2,20 +2,22 @@ import { Context, Layer } from "effect";
 import { McpProtocol, McpServer, Tool } from "effect/ai";
 
 import { PealToolsLive } from "#app/mcp/handlers.ts";
+import { InboxTools } from "#app/mcp/inbox-tools.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReviewTools } from "#app/mcp/review-tools.ts";
 import { PealTools } from "#app/mcp/tools.ts";
 import { mcpAuthentication } from "#workspace/container.ts";
 
-// The tools that create, change or delete posts and media, or decide on a
-// post's approval: the law has Peal keep the connection of each call a
+// The tools that create, change or delete posts and media, decide on a
+// post's approval, or answer and moderate comments in public: the law has Peal keep the connection of each call a
 // year, as it keeps the API's writes to them.
 const contentTools: ReadonlySet<string> = new Set(
   [
     ...Object.values(PostTools.tools),
     ...Object.values(MediaTools.tools),
     ...Object.values(ReviewTools.tools),
+    ...Object.values(InboxTools.tools),
   ]
     .values()
     .filter((tool) => !Context.get(tool.annotations, Tool.Readonly))

@@ -12,6 +12,7 @@ class NotificationPreferencesEmail(UniversalBaseModel):
     channel_reconnect: typing_extensions.Annotated[
         bool, FieldMetadata(alias="channelReconnect"), pydantic.Field(alias="channelReconnect")
     ]
+    comments: bool
     post_failed: typing_extensions.Annotated[
         bool, FieldMetadata(alias="postFailed"), pydantic.Field(alias="postFailed")
     ]

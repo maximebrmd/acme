@@ -77,6 +77,8 @@ import {
   playlistPage,
   videoCategories,
 } from "./studio-capabilities.ts";
+import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
+import type { InboxState } from "./studio-inbox.ts";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
@@ -109,6 +111,8 @@ const everything: readonly Permission[] = [
   "analytics:read",
   "billing:read",
   "channel:read",
+  "engagement:read",
+  "engagement:reply",
   "invitation:create",
   "invitation:cancel",
   "media:read",
@@ -128,6 +132,7 @@ const everything: readonly Permission[] = [
 const reading: readonly Permission[] = [
   "analytics:read",
   "channel:read",
+  "engagement:read",
   "media:read",
   "post:read",
 ];
@@ -498,6 +503,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
   notificationPreferences: {
     email: {
       channelReconnect: true,
+      comments: false,
       postFailed: true,
       postPublished: false,
       postReview: true,
@@ -505,6 +511,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     },
     everyPost: false,
   },
+  replies: [],
   review: { approvals: [], comments: [] },
   sessions: [],
   signInMethods: [],
@@ -705,6 +712,7 @@ export interface StudioState {
 }
 
 export interface Studio {
+  readonly inbox: Ref.Ref<InboxState>;
   readonly me: Me;
   readonly state: Ref.Ref<StudioState>;
   /** What happens while the server answers an export, as a test sets it. */
@@ -713,6 +721,7 @@ export interface Studio {
 
 export const makeStudio = (me: Me = studioMe) =>
   Effect.all({
+    inbox: makeInbox,
     state: Ref.make<StudioState>({
       approvals: [approval],
       changes: [],
@@ -2599,6 +2608,7 @@ export const studioGroupsLive = (studio: Studio) =>
           }),
       })
     ),
+    studioInboxLive(studio.inbox),
     HttpApiBuilder.group(Api, "tiktok", (handlers) =>
       handlers.handleAll({
         creator: ({ params }) =>

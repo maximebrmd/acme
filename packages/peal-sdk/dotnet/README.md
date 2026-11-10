@@ -234,25 +234,25 @@ This SDK uses forward-compatible enums that can handle unknown values gracefully
 using Peal;
 
 // Using a built-in value
-var accountUnreadReason = AccountUnreadReason.Disabled;
+var listThreadsInboxRequestUnanswered = ListThreadsInboxRequestUnanswered.True;
 
 // Using a custom value
-var customAccountUnreadReason = AccountUnreadReason.FromCustom("custom-value");
+var customListThreadsInboxRequestUnanswered = ListThreadsInboxRequestUnanswered.FromCustom("custom-value");
 
 // Using in a switch statement
-switch (accountUnreadReason.Value)
+switch (listThreadsInboxRequestUnanswered.Value)
 {
-    case AccountUnreadReason.Values.Disabled:
-        Console.WriteLine("Disabled");
+    case ListThreadsInboxRequestUnanswered.Values.True:
+        Console.WriteLine("True");
         break;
     default:
-        Console.WriteLine($"Unknown value: {accountUnreadReason.Value}");
+        Console.WriteLine($"Unknown value: {listThreadsInboxRequestUnanswered.Value}");
         break;
 }
 
 // Explicit casting
-string accountUnreadReasonString = (string)AccountUnreadReason.Disabled;
-AccountUnreadReason accountUnreadReasonFromString = (AccountUnreadReason)"disabled";
+string listThreadsInboxRequestUnansweredString = (string)ListThreadsInboxRequestUnanswered.True;
+ListThreadsInboxRequestUnanswered listThreadsInboxRequestUnansweredFromString = (ListThreadsInboxRequestUnanswered)"true";
 ```
 
 ## Contributing

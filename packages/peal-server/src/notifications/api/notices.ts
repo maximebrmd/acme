@@ -73,6 +73,12 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       channel: channelView(channel),
       expiresAt,
     }),
+    CommentsReceived: ({ count, postId, threadId }): NoticeEventView => ({
+      _tag: "CommentsReceived",
+      count,
+      postId,
+      threadId,
+    }),
     PostApprovalRequested: ({ postId, scheduledAt }): NoticeEventView => ({
       _tag: "PostApprovalRequested",
       postId,

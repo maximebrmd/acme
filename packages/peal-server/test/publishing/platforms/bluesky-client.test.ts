@@ -9,12 +9,12 @@ import {
   Schema,
 } from "effect";
 
-import { recordKeyOf } from "#publishing/infrastructure/platforms/bluesky/record-key.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
+import { recordKeyOf } from "#shared/infrastructure/platforms/bluesky/record-key.ts";
 import {
   blueskyDid,
   fakeBluesky,

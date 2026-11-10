@@ -62,7 +62,11 @@ public final class Permission {
 
     public static final Permission WEBHOOK_MANAGE = new Permission(Value.WEBHOOK_MANAGE, "webhook:manage");
 
+    public static final Permission ENGAGEMENT_REPLY = new Permission(Value.ENGAGEMENT_REPLY, "engagement:reply");
+
     public static final Permission POST_DELETE = new Permission(Value.POST_DELETE, "post:delete");
+
+    public static final Permission ENGAGEMENT_READ = new Permission(Value.ENGAGEMENT_READ, "engagement:read");
 
     public static final Permission ORGANIZATION_DELETE =
             new Permission(Value.ORGANIZATION_DELETE, "organization:delete");
@@ -154,8 +158,12 @@ public final class Permission {
                 return visitor.visitMediaRead();
             case WEBHOOK_MANAGE:
                 return visitor.visitWebhookManage();
+            case ENGAGEMENT_REPLY:
+                return visitor.visitEngagementReply();
             case POST_DELETE:
                 return visitor.visitPostDelete();
+            case ENGAGEMENT_READ:
+                return visitor.visitEngagementRead();
             case ORGANIZATION_DELETE:
                 return visitor.visitOrganizationDelete();
             case POST_SCHEDULE:
@@ -223,8 +231,12 @@ public final class Permission {
                 return MEDIA_READ;
             case "webhook:manage":
                 return WEBHOOK_MANAGE;
+            case "engagement:reply":
+                return ENGAGEMENT_REPLY;
             case "post:delete":
                 return POST_DELETE;
+            case "engagement:read":
+                return ENGAGEMENT_READ;
             case "organization:delete":
                 return ORGANIZATION_DELETE;
             case "post:schedule":
@@ -256,6 +268,10 @@ public final class Permission {
         CHANNEL_CONNECT,
 
         CHANNEL_DISCONNECT,
+
+        ENGAGEMENT_READ,
+
+        ENGAGEMENT_REPLY,
 
         INVITATION_CREATE,
 
@@ -320,6 +336,10 @@ public final class Permission {
         T visitChannelConnect();
 
         T visitChannelDisconnect();
+
+        T visitEngagementRead();
+
+        T visitEngagementReply();
 
         T visitInvitationCreate();
 

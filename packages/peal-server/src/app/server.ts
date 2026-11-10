@@ -38,6 +38,13 @@ import {
   TokenCipherLive,
 } from "#channels/container.ts";
 import {
+  engagementLive,
+  InboxApiLive,
+  EngagementRecordsLive,
+  EngagementWorkersLive,
+  PlatformEngagementLive,
+} from "#engagement/container.ts";
+import {
   LegalApiLive,
   LegalLive,
   LegalRequestsLive,
@@ -52,7 +59,10 @@ import {
 } from "#notifications/container.ts";
 import {
   CapabilitiesApiLive,
+  GatedCommentSource,
   GatedMetricsReader,
+  GatedReplySender,
+  UnreadComments,
   LookupsApiLive,
   MediaInPostsLive,
   PostsApiLive,
@@ -113,6 +123,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   LegalApiLive,
   ReviewApiLive,
   WebhooksApiLive,
+  InboxApiLive,
   ContractRequestsDeskApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
@@ -210,6 +221,26 @@ const ReviewContextLive = ReviewLive.pipe(
   )
 );
 
+// Engagement: the comments under the posts publishing lists, read and
+// answered on the channels of the channels context, and told through the
+// notices and the webhooks. `gated` is how it reaches the platforms.
+const engagementOver = <E, R>(
+  gated: Layer.Layer<Layer.Success<typeof UnreadComments>, E, R>
+) =>
+  engagementLive(gated).pipe(
+    Layer.provide(
+      Layer.mergeAll(ChannelsWithNoticesLive, PublishingContextLive)
+    )
+  );
+
+// As the server runs it: through the channels' gates.
+const EngagementContextLive = engagementOver(
+  Layer.merge(GatedCommentSource, GatedReplySender)
+);
+
+// As AppLive runs it, without workers: nothing is read or sent.
+const EngagementWithoutPlatformsLive = engagementOver(UnreadComments);
+
 // The assistant, whose daily quota is the workspace plan's.
 const AssistantContextLive = AssistantLive.pipe(
   Layer.provideMerge(BillingContextsLive)
@@ -226,6 +257,7 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       MediaContextLive,
       AssistantContextLive,
       AnalyticsLive,
+      EngagementRecordsLive,
       StaffRecordsLive,
       ReviewGateContextLive
     )
@@ -239,6 +271,7 @@ const ErasedContextsLive = Layer.mergeAll(
   MediaContextLive,
   AssistantContextLive,
   AnalyticsLive,
+  EngagementRecordsLive,
   StaffRecordsLive,
   ReviewGateContextLive
 );
@@ -315,6 +348,7 @@ const ServicesLive = Layer.mergeAll(
   SettingsContextLive,
   BillingContextLive,
   AnalyticsLive,
+  EngagementWithoutPlatformsLive,
   StaffContextLive,
   LegalRequestsContextLive,
   ReviewGateContextLive,
@@ -353,10 +387,12 @@ const HttpServerLive = Layer.unwrap(
 );
 
 // The durable jobs: workflows, cluster entities and crons. The channels'
-// gates publish, and read analytics' counts with the platforms' readers.
+// gates publish, read analytics' counts with the platforms' readers, and
+// read and answer comments with engagement's.
 const WorkersLive = Layer.mergeAll(
-  publishingWorkersReading(PlatformMetricsReaderLive),
+  publishingWorkersReading(PlatformMetricsReaderLive, PlatformEngagementLive),
   NotificationsWorkersLive,
+  EngagementWorkersLive,
   WebhooksWorkersLive,
   CronsLive
 );
@@ -381,6 +417,7 @@ const ContextsLive = Layer.mergeAll(
   SettingsContextLive,
   BillingContextLive,
   AnalyticsContextLive,
+  EngagementContextLive,
   StaffContextLive,
   LegalRequestsContextLive,
   ReviewGateContextLive,

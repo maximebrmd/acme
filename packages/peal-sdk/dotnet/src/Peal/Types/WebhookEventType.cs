@@ -40,6 +40,10 @@ public readonly record struct WebhookEventType : IStringEnum
 
     public static readonly WebhookEventType MediaFailed = new(Values.MediaFailed);
 
+    public static readonly WebhookEventType CommentReceived = new(Values.CommentReceived);
+
+    public static readonly WebhookEventType CommentReplied = new(Values.CommentReplied);
+
     public static readonly WebhookEventType WebhookTest = new(Values.WebhookTest);
 
     public WebhookEventType(string value)
@@ -165,6 +169,10 @@ public readonly record struct WebhookEventType : IStringEnum
         public const string MediaReady = "media.ready";
 
         public const string MediaFailed = "media.failed";
+
+        public const string CommentReceived = "comment.received";
+
+        public const string CommentReplied = "comment.replied";
 
         public const string WebhookTest = "webhook.test";
     }

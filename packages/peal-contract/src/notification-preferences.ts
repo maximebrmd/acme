@@ -13,6 +13,8 @@ export const NotificationPreferencesSchema = Schema.Struct({
   email: Schema.Struct({
     // A channel to reconnect, now or soon.
     channelReconnect: Schema.Boolean,
+    // New comments under the posts that went live.
+    comments: Schema.Boolean,
     postFailed: Schema.Boolean,
     postPublished: Schema.Boolean,
     // Comments on posts, and approvals asked for and decided.
@@ -31,6 +33,7 @@ export const NotificationPreferencesChangeSchema = Schema.Struct({
   email: Schema.optionalKey(
     Schema.Struct({
       channelReconnect: Schema.optionalKey(Schema.Boolean),
+      comments: Schema.optionalKey(Schema.Boolean),
       postFailed: Schema.optionalKey(Schema.Boolean),
       postPublished: Schema.optionalKey(Schema.Boolean),
       postReview: Schema.optionalKey(Schema.Boolean),

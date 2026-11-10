@@ -25,6 +25,8 @@ import { SendBillingReminders } from "#billing/application/send-billing-reminder
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
+import { CollectComments } from "#engagement/application/collect-comments.ts";
+import { PurgeEngagement } from "#engagement/application/purge-engagement.ts";
 import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
@@ -158,6 +160,24 @@ const ChannelJobsTest = Layer.mergeAll(
           skipped: 0,
         }),
     })
+  ),
+  Layer.succeed(
+    CollectComments,
+    CollectComments.of({
+      run: () =>
+        Effect.succeed({
+          discovered: 0,
+          ended: 0,
+          left: 0,
+          postponed: 0,
+          read: 0,
+          received: 0,
+        }),
+    })
+  ),
+  Layer.succeed(
+    PurgeEngagement,
+    PurgeEngagement.of({ purge: Effect.succeed(0) })
   ),
   Layer.succeed(
     RefreshChannelTokens,

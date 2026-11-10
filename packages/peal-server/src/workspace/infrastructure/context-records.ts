@@ -5,6 +5,7 @@ import { UsageRecords } from "#assistant/application/ports/usage-records.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
 import type { WorkspaceStillBilled } from "#billing/application/workspace-still-billed.ts";
 import { ChannelRecords } from "#channels/application/channel-records.ts";
+import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { LegalRecords } from "#legal/application/legal-records.ts";
 import { MediaRecords } from "#media/application/media-records.ts";
 import { NoticeRecords } from "#notifications/application/notice-records.ts";
@@ -42,7 +43,7 @@ const billingRefusals = (workspaceId: WorkspaceId) => ({
 /**
  * ContextRecords through each context's own records: publishing's posts,
  * the channels, the media library, the notices, the assistant's usage,
- * analytics' posts followed, billing's subscriptions, the webhooks, the
+ * analytics' posts followed, engagement's threads, billing's subscriptions, the webhooks, the
  * staff audit log, the legal records, and the reviews of posts.
  */
 export const ContextRecordsLive = Layer.effect(
@@ -59,6 +60,7 @@ export const ContextRecordsLive = Layer.effect(
     const legal = yield* LegalRecords;
     const reviews = yield* ReviewRecords;
     const webhooks = yield* WebhookRecords;
+    const engagement = yield* EngagementRecords;
     const pseudonyms = yield* Pseudonyms;
 
     return ContextRecords.of({
@@ -68,6 +70,7 @@ export const ContextRecordsLive = Layer.effect(
 
           yield* notices.eraseUser(userId);
           yield* posts.forgetAuthor(userId);
+          yield* engagement.forgetUser(userId);
           yield* reviews.forgetUser(userId);
           yield* channels.eraseUser(userId);
           yield* staff.forgetUser(userId, pseudonym);
@@ -84,6 +87,7 @@ export const ContextRecordsLive = Layer.effect(
 
           yield* reviews.eraseWorkspace(workspaceId);
           yield* analytics.eraseWorkspace(workspaceId);
+          yield* engagement.eraseWorkspace(workspaceId);
           yield* channels.eraseWorkspace(workspaceId);
           yield* media.eraseWorkspace(workspaceId);
           yield* notices.eraseWorkspace(workspaceId);
@@ -103,15 +107,24 @@ export const ContextRecordsLive = Layer.effect(
         Effect.all({
           contracts: billing.exportUser(userId),
           legalHold: legal.exportUser(userId),
+          replies: engagement.exportUser(userId),
           review: reviews.exportUser(userId),
           staffActions: staff.exportUser(userId),
           user: notices.exportUser(userId),
         }).pipe(
           Effect.map(
-            ({ contracts, legalHold, review, staffActions, user }) => ({
+            ({
+              contracts,
+              legalHold,
+              replies,
+              review,
+              staffActions,
+              user,
+            }) => ({
               ...user,
               contracts,
               legalHold,
+              replies,
               review,
               staffActions,
             })

@@ -22,6 +22,7 @@ const preferencesOf = (row: Row) =>
   new NotificationPreferences({
     email: {
       channelReconnect: row.emailChannelReconnect,
+      comments: row.emailComments,
       postFailed: row.emailPostFailed,
       postPublished: row.emailPostPublished,
       postReview: row.emailPostReview,
@@ -53,6 +54,10 @@ export const DrizzlePreferenceStore = Layer.effect(
             set.emailChannelReconnect = email.channelReconnect;
           }
 
+          if (email.comments !== undefined) {
+            set.emailComments = email.comments;
+          }
+
           if (email.postFailed !== undefined) {
             set.emailPostFailed = email.postFailed;
           }
@@ -77,6 +82,7 @@ export const DrizzlePreferenceStore = Layer.effect(
             .insert(notificationPreferences)
             .values({
               emailChannelReconnect: first.email.channelReconnect,
+              emailComments: first.email.comments,
               emailPostFailed: first.email.postFailed,
               emailPostPublished: first.email.postPublished,
               emailPostReview: first.email.postReview,

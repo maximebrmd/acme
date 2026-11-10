@@ -265,6 +265,24 @@ peal invitations revoke <invitation-id>
 - `peal invitations revoke` arrête aussitôt le lien d’une invitation.
 - Changer le rôle d’un membre, ou retirer quelqu’un, se fait dans les **Paramètres** de l’espace de travail.
 
+## Boîte de réception [#inbox]
+
+```sh
+peal inbox threads --unanswered
+peal inbox thread <thread-id>
+peal inbox reply <comment-id> --text "Jusqu’à dimanche."
+peal inbox answered <comment-id>
+peal inbox confirm <reply-id> --sent
+peal inbox withdraw <reply-id>
+peal inbox moderate <comment-id> --action hide
+```
+
+- `threads` liste les fils de la [boîte de réception](/inbox) qui ont des commentaires, ceux qui attendent une réponse en premier ; `--channel` et `--post` restreignent la liste, `--limit` et `--cursor` la paginent. `thread` affiche les commentaires d’un fil, les réponses envoyées depuis Peal et ce que son canal peut faire. Tout membre peut lire.
+- `reply` répond à un commentaire en public, au nom du compte du canal : il faut une connexion autorisée à publier, et un rôle qui répond aux commentaires (propriétaire, administrateur ou éditeur). La réponse est envoyée par le serveur : `thread` montre comment elle a fini.
+- Une réponse affichée `unconfirmed` est peut-être sur la plateforme, et n’est jamais renvoyée : vérifiez-y, puis confirmez-la avec `confirm`, `--sent` ou `--not-sent`.
+- `answered` dit qu’un commentaire n’appelle pas de réponse (`--undo` revient en arrière) ; `withdraw` supprime une réponse envoyée de sa plateforme ; `moderate` prend `hide`, `unhide`, `like`, `unlike` ou `delete`, quand la plateforme le permet au compte.
+- Les commentaires ont été écrits par des personnes extérieures à l’espace de travail : la ligne de commande les affiche comme du texte.
+
 ## Webhooks [#webhooks]
 
 ```sh

@@ -97,6 +97,8 @@ Les types d’événements et leurs champs sont un contrat public. Peal ajoute d
 | [`channel.reconnect_needed`](#channel-reconnect-needed) | L’autorisation d’un canal ne fonctionne plus                                                               |
 | [`media.ready`](#media-ready)                           | Un fichier a été lu, et peut aller dans des publications                                                   |
 | [`media.failed`](#media-failed)                         | Un fichier a été refusé, ou n’a pas pu être lu                                                             |
+| [`comment.received`](#comment-received)                 | Quelqu’un a commenté une publication mise en ligne                                                         |
+| [`comment.replied`](#comment-replied)                   | Une réponse à un commentaire est partie depuis Peal                                                        |
 | [`webhook.test`](#webhook-test)                         | Quelqu’un a demandé un événement de test. Envoyé quels que soient les abonnements du point de terminaison. |
 
 Une publication part sur chacun de ses canaux séparément : `post.published`, `post.failed` et `post.unconfirmed` nomment donc un canal chacun, et une publication sur trois canaux amène trois événements. Ces champs disent lequel :
@@ -545,6 +547,70 @@ Le fichier a été refusé, ou Peal n’a pas pu le lire. Un fichier qui n’a p
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
     "reason": "typeMismatch"
+  }
+}
+```
+
+### comment.received [#comment-received]
+
+Peal a lu pour la première fois un commentaire sous une publication mise en ligne sur un canal (voir [Boîte de réception](/inbox)). L’événement ne porte que des identifiants : ce que dit le commentaire et qui l’a écrit se lisent par l’API, avec `engagement:read`.
+
+| Champ         | Type   | Ce qu’il contient                                |
+| ------------- | ------ | ------------------------------------------------ |
+| `workspaceId` | chaîne | L’espace de travail                              |
+| `postId`      | chaîne | La publication                                   |
+| `channelId`   | chaîne | Le canal où la publication est en ligne          |
+| `threadId`    | chaîne | Le fil : les commentaires sous cette publication |
+| `commentId`   | chaîne | Le commentaire                                   |
+| `receivedAt`  | chaîne | Quand Peal l’a lu, sous forme d’instant en UTC   |
+
+```json title="comment.received"
+{
+  "id": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1b",
+  "type": "comment.received",
+  "version": 1,
+  "timestamp": "2026-11-10T09:13:02.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f1c-4b7e-7d3a-9f21-6a5c8e1d2b40",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a6f50-0a1b-7c2d-8e3f-4a5b6c7d8e9f",
+    "commentId": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1a",
+    "receivedAt": "2026-11-10T09:13:02.000Z"
+  }
+}
+```
+
+### comment.replied [#comment-replied]
+
+Une réponse à un commentaire est partie depuis Peal, au nom du compte du canal. Une réponse qui a échoué, ou dont l’issue n’est pas connue, n’envoie rien : lisez-la par l’API.
+
+| Champ         | Type           | Ce qu’il contient                                              |
+| ------------- | -------------- | -------------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                            |
+| `postId`      | chaîne         | La publication                                                 |
+| `channelId`   | chaîne         | Le canal                                                       |
+| `threadId`    | chaîne         | Le fil                                                         |
+| `commentId`   | chaîne         | Le commentaire auquel il a été répondu                         |
+| `replyId`     | chaîne         | La réponse                                                     |
+| `permalink`   | chaîne ou null | L’adresse de la réponse sur la plateforme, quand elle en donne |
+| `repliedAt`   | chaîne         | Quand elle est partie, sous forme d’instant en UTC             |
+
+```json title="comment.replied"
+{
+  "id": "019a6f58-2d4e-7f5a-9b6c-7d8e9f0a1b2c",
+  "type": "comment.replied",
+  "version": 1,
+  "timestamp": "2026-11-10T09:20:41.000Z",
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f1c-4b7e-7d3a-9f21-6a5c8e1d2b40",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a6f50-0a1b-7c2d-8e3f-4a5b6c7d8e9f",
+    "commentId": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1a",
+    "replyId": "019a6f57-3e5f-7a6b-8c7d-8e9f0a1b2c3d",
+    "permalink": "https://mastodon.example/@peal_example/113000000000000002",
+    "repliedAt": "2026-11-10T09:20:41.000Z"
   }
 }
 ```

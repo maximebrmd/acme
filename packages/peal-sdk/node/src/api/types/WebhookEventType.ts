@@ -16,6 +16,8 @@ export const WebhookEventType = {
         ChannelReconnectNeeded: "channel.reconnect_needed",
         MediaReady: "media.ready",
         MediaFailed: "media.failed",
+        CommentReceived: "comment.received",
+        CommentReplied: "comment.replied",
         WebhookTest: "webhook.test"
     } as const;
 export type WebhookEventType = typeof WebhookEventType[keyof typeof WebhookEventType];

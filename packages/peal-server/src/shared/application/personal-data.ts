@@ -167,6 +167,22 @@ export interface AccountSnapshotRecord {
   readonly views: number | null;
 }
 
+/**
+ * A reply a member sent from Peal to a comment under one of the
+ * workspace's posts: what they wrote, when, and how sending ended. The
+ * comment it answers is someone else's, and is not exported.
+ */
+export interface SentReplyRecord {
+  readonly channelId: string;
+  readonly createdAt: DateTime.Utc;
+  readonly id: string;
+  readonly permalink: string | null;
+  readonly postId: string;
+  readonly status: string;
+  readonly text: string;
+  readonly workspaceId: string;
+}
+
 /** A comment on a post, as the review context keeps it. */
 export interface ReviewCommentRecord {
   /** member, apiKey or visitor. */
@@ -347,6 +363,12 @@ export type NoticeEventRecord =
       readonly postId: string;
     }
   | {
+      readonly _tag: "CommentsReceived";
+      readonly count: number;
+      readonly postId: string;
+      readonly threadId: string;
+    }
+  | {
       readonly _tag: "PostCommented";
       readonly by: string;
       readonly postId: string;
@@ -433,6 +455,7 @@ export interface NoticeRecord {
 export interface PreferencesRecord {
   readonly email: {
     readonly channelReconnect: boolean;
+    readonly comments: boolean;
     readonly postFailed: boolean;
     readonly postPublished: boolean;
     readonly postReview: boolean;

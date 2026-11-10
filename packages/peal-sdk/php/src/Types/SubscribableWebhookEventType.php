@@ -18,4 +18,6 @@ enum SubscribableWebhookEventType: string
     case ChannelReconnectNeeded = "channel.reconnect_needed";
     case MediaReady = "media.ready";
     case MediaFailed = "media.failed";
+    case CommentReceived = "comment.received";
+    case CommentReplied = "comment.replied";
 }

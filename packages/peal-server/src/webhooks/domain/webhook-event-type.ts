@@ -19,6 +19,8 @@ export const SubscribableEventTypeSchema = Schema.Literals([
   "channel.reconnect_needed",
   "media.ready",
   "media.failed",
+  "comment.received",
+  "comment.replied",
 ]);
 
 export type SubscribableEventType = typeof SubscribableEventTypeSchema.Type;

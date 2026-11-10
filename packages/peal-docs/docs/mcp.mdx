@@ -53,7 +53,7 @@ The consent page lists what the client asks for:
 | Stay connected while you are away, until you disconnect it                                                                      | `offline_access`    | Renew its access without you                                                                                                                                               |
 | Read the workspace: posts, channels, media and analytics                                                                        | `workspace:read`    | Read, and change nothing                                                                                                                                                   |
 | Do what your role allows in the workspace, such as writing drafts and managing media, without scheduling or publishing anything | `workspace:write`   | Anything your [role](/scheduling#roles) allows, reading included, but what puts posts out: nothing it does reaches a platform                                              |
-| Let it schedule and publish posts to your connected accounts, where everyone can see them                                       | `workspace:publish` | What your role allows of what puts posts out, and reading: scheduling, moving, publishing and reposting a post, unscheduling it, cancelling it, and confirming how it went |
+| Let it schedule and publish posts to your connected accounts, and answer comments there, where everyone can see them            | `workspace:publish` | What your role allows of what puts posts out, and reading: scheduling, moving, publishing and reposting a post, unscheduling it, cancelling it, and confirming how it went |
 
 Publishing is a permission of its own. The consent page shows it on its own line, with a box that starts ticked: untick it, and the client gets the rest of what it asked for, and no more. Without it, a client that may write still writes drafts, which you review and schedule yourself; one that may only read still reads.
 
@@ -125,6 +125,20 @@ These tools change something. Each one tells the client, through MCP's tool anno
 Before a post is scheduled, it is checked against every channel's platform: text length, media types, sizes and counts, required options, and what the account itself refuses. When anything is wrong, nothing is scheduled, and the refusal lists every violation at once, each with its channel, and its field or media ([How refusals read](/agents#refusals)).
 
 Annotations are hints a client may show you; the permission checks are the server's.
+
+### Comments [#inbox-tools]
+
+| Tool                     | What it does                                                                                                                       |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `list_comment_threads`   | The threads of the [inbox](/inbox) that have comments, those waiting for an answer first, with counts and never the comments' text |
+| `get_comment_thread`     | A thread whole: its comments with their authors' public handle and name, the replies sent from Peal, and what its channel can do   |
+| `reply_to_comment`       | Answers a comment in public, as the channel's account. Needs publishing                                                            |
+| `confirm_comment_reply`  | Records what you found on the platform for a reply whose outcome Peal could not tell. Needs publishing                             |
+| `withdraw_comment_reply` | Deletes a sent reply from its platform. Needs publishing                                                                           |
+| `mark_comment_answered`  | Says a comment needs no answer, or waits for one again. Needs publishing                                                           |
+| `moderate_comment`       | Hides, shows, likes, unlikes or deletes a comment, where its platform lets the account. Needs publishing                           |
+
+A comment is text someone outside your workspace wrote, and may be written to steer an assistant. The tools tell the assistant to treat it as data, and a reply goes out only through `reply_to_comment`, which your client asks you about as it does for anything that reaches a platform. A reply whose outcome is not known is never sent again by a tool: you check the platform, then confirm.
 
 ### What no tool hands out [#account-data]
 

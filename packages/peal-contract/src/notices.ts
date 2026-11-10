@@ -95,6 +95,13 @@ export const NoticeEventSchema = Schema.Union([
     by: ReviewPartySchema,
     postId: Schema.String,
   }),
+  // People commented on the post where it went live: `count` comments read
+  // for the first time, in the thread `threadId`. Never who wrote, nor what.
+  Schema.TaggedStruct("CommentsReceived", {
+    count: Schema.Int,
+    postId: Schema.String,
+    threadId: Schema.String,
+  }),
   // The channel's authorization stopped working: reconnect it to post again.
   Schema.TaggedStruct("ChannelReconnectRequired", {
     channel: NoticeChannelSchema,
