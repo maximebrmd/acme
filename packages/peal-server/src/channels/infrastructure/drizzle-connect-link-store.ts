@@ -1,8 +1,9 @@
-import { and, count, desc, eq, gt, lte, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, lt, lte, or, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { ConnectLinkStore } from "#channels/application/connect-link-store.ts";
-import { ConnectLink } from "#channels/domain/connect-link.ts";
+import { maxLinkStarts, ConnectLink } from "#channels/domain/connect-link.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -71,6 +72,7 @@ export const DrizzleConnectLinkStore = Layer.effect(
   ConnectLinkStore,
   Effect.gen(function* DrizzleConnectLinkStore() {
     const db = yield* Drizzle;
+    const client = yield* SqlClient.SqlClient;
 
     return ConnectLinkStore.of({
       byToken: (tokenDigest) =>
@@ -136,6 +138,11 @@ export const DrizzleConnectLinkStore = Layer.effect(
           )
           .limit(1)
           .pipe(Effect.mapError(failed), Effect.flatMap(one)),
+      holdWorkspace: (workspaceId) =>
+        client`SELECT pg_advisory_xact_lock(hashtext('peal-server/channels/connect-links'), hashtext(${workspaceId}))`.pipe(
+          Effect.mapError(failed),
+          Effect.asVoid
+        ),
       insert: (link, tokenDigest) =>
         db
           .insert(connectLinks)
@@ -169,6 +176,14 @@ export const DrizzleConnectLinkStore = Layer.effect(
             Effect.flatMap(Effect.forEach(toLink))
           ),
       // Over since `before`: ended then, or left pending past its time.
+      lock: (linkId) =>
+        db
+          .select()
+          .from(connectLinks)
+          .where(eq(connectLinks.id, linkId))
+          .limit(1)
+          .for("update")
+          .pipe(Effect.mapError(failed), Effect.flatMap(one)),
       purge: (before) =>
         db
           .delete(connectLinks)
@@ -192,7 +207,13 @@ export const DrizzleConnectLinkStore = Layer.effect(
             browserDigest: Option.getOrNull(link.browser),
             starts: sql`${connectLinks.starts} + 1`,
           })
-          .where(and(eq(connectLinks.id, link.id), pending))
+          .where(
+            and(
+              eq(connectLinks.id, link.id),
+              pending,
+              lt(connectLinks.starts, maxLinkStarts)
+            )
+          )
           .returning({ id: connectLinks.id })
           .pipe(
             Effect.mapError(failed),

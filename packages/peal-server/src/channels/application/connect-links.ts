@@ -34,6 +34,7 @@ import { returnAddressOf } from "#channels/domain/return-address.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import {
@@ -296,6 +297,7 @@ export class ConnectLinks extends Context.Service<
       const channels = yield* ChannelRepository;
       const authorizers = yield* PlatformAuthorizers;
       const connect = yield* ConnectChannel;
+      const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<Ids>();
 
       const found = Effect.fn("ConnectLinks.found")(function* found(
@@ -377,12 +379,6 @@ export class ConnectLinks extends Context.Service<
 
         const now = yield* DateTime.now;
 
-        if (
-          (yield* store.countWaiting(actor.workspaceId, now)) >= maxPendingLinks
-        ) {
-          return yield* new TooManyConnectLinks({ allowed: maxPendingLinks });
-        }
-
         const issued = yield* tokens.issue;
 
         const link = createLink(
@@ -403,7 +399,24 @@ export class ConnectLinks extends Context.Service<
           now
         );
 
-        yield* store.insert(link, issued.digest);
+        // Counted and made under the workspace's hold, so links made
+        // together never pass the most a workspace has waiting.
+        yield* transaction(
+          Effect.gen(function* insertIfRoom() {
+            yield* store.holdWorkspace(actor.workspaceId);
+
+            if (
+              (yield* store.countWaiting(actor.workspaceId, now)) >=
+              maxPendingLinks
+            ) {
+              return yield* new TooManyConnectLinks({
+                allowed: maxPendingLinks,
+              });
+            }
+
+            return yield* store.insert(link, issued.digest);
+          })
+        );
 
         const created: CreatedConnectLink = {
           link,
@@ -520,6 +533,13 @@ export class ConnectLinks extends Context.Service<
         function* endedMeanwhile(link: ConnectLink) {
           const current = yield* store.findIn(link.workspaceId, link.id);
 
+          // Still pending: it took no start because it has none left.
+          if (
+            Option.exists(current, ({ status }) => status._tag === "pending")
+          ) {
+            return new ConnectLinkUnusable({ reason: "exhausted" });
+          }
+
           return new ConnectLinkUnusable({
             reason: current.pipe(
               Option.map(({ status }) => status._tag),
@@ -601,6 +621,10 @@ export class ConnectLinks extends Context.Service<
             });
       });
 
+      // The link as it now stands, held until the transaction ends.
+      const held = (link: ConnectLink) =>
+        store.lock(link.id).pipe(Effect.map(Option.getOrElse(() => link)));
+
       // The link used, with what it connected. A link used or revoked
       // while its sign-in ended keeps how it stood: the account was
       // connected by a sign-in that started while it was open.
@@ -643,28 +667,34 @@ export class ConnectLinks extends Context.Service<
       ) {
         const link = yield* opened(token);
 
-        return yield* Effect.gen(function* completing() {
-          const pending = yield* heldBy(link, browser);
+        // The link is held from here to the end: a completion or a
+        // revocation that arrives meanwhile waits, then finds it used. One
+        // that fails takes nothing with it, the account it connected
+        // included.
+        return yield* transaction(
+          Effect.gen(function* completing() {
+            const pending = yield* heldBy(yield* held(link), browser);
 
-          const outcome = yield* connect.complete(
-            linkActor(pending),
-            pending.platform,
-            returned
-          );
+            const outcome = yield* connect.complete(
+              linkActor(pending),
+              pending.platform,
+              returned
+            );
 
-          if (outcome._tag === "connected") {
-            return yield* completed(pending, [outcome.channel], "complete");
-          }
+            if (outcome._tag === "connected") {
+              return yield* completed(pending, [outcome.channel], "complete");
+            }
 
-          const choice: HostedOutcome = {
-            _tag: "choose",
-            accounts: outcome.accounts,
-            expiresAt: outcome.expiresAt,
-            selection: outcome.selection,
-          };
+            const choice: HostedOutcome = {
+              _tag: "choose",
+              accounts: outcome.accounts,
+              expiresAt: outcome.expiresAt,
+              selection: outcome.selection,
+            };
 
-          return choice;
-        }).pipe(told(link));
+            return choice;
+          })
+        ).pipe(told(link));
       });
 
       const choose = Effect.fn("ConnectLinks.choose")(function* choose(
@@ -677,17 +707,19 @@ export class ConnectLinks extends Context.Service<
       ) {
         const link = yield* opened(token);
 
-        return yield* Effect.gen(function* choosing() {
-          const pending = yield* heldBy(link, browser);
+        return yield* transaction(
+          Effect.gen(function* choosing() {
+            const pending = yield* heldBy(yield* held(link), browser);
 
-          const connected = yield* connect.choose(
-            linkActor(pending),
-            pending.platform,
-            choice
-          );
+            const connected = yield* connect.choose(
+              linkActor(pending),
+              pending.platform,
+              choice
+            );
 
-          return yield* completed(pending, connected, "choose");
-        }).pipe(told(link));
+            return yield* completed(pending, connected, "choose");
+          })
+        ).pipe(told(link));
       });
 
       return ConnectLinks.of({

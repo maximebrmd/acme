@@ -1,5 +1,3 @@
-// Connect links on the test database, with a fake Mastodon instance to
-// sign in at: for the tests of their use cases and of their endpoints.
 import { Context, Effect, Layer, Option, Redacted, Ref } from "effect";
 
 import { ConnectLinkAddresses } from "#channels/application/connect-link-addresses.ts";
@@ -19,6 +17,9 @@ import {
   freshWorkspace,
   OpenOutboundGuard,
 } from "#test/channels/support.ts";
+// Connect links on the test database, with a fake Mastodon instance to
+// sign in at: for the tests of their use cases and of their endpoints.
+import { TransactionsTest } from "#test/notifications/support.ts";
 
 /** What the links told the activity log they connected, oldest first. */
 export interface LinkConnection {
@@ -64,6 +65,7 @@ export const LinksTest = ConnectLinks.layer.pipe(
   Layer.provideMerge(
     Layer.mergeAll(
       DrizzleConnectLinkStore,
+      TransactionsTest,
       RememberedConnections,
       RandomConnectLinkTokens,
       Layer.succeed(

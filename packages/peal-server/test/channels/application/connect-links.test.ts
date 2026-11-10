@@ -9,7 +9,10 @@ import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { ConnectLinks } from "#channels/application/connect-links.ts";
 import type { AuthorizationCallback } from "#channels/application/platform-authorizer.ts";
-import { maxLinkStarts } from "#channels/domain/connect-link.ts";
+import {
+  maxLinkStarts,
+  maxPendingLinks,
+} from "#channels/domain/connect-link.ts";
 import { mastodonInstance } from "#test/channels/connect-support.ts";
 import {
   LinkConnections,
@@ -38,7 +41,7 @@ const reasonOf = <A, E extends { readonly _tag: string }>(
   attempt.pipe(
     Effect.flip,
     Effect.map((failure) =>
-      "reason" in failure ? String(failure.reason) : failure._tag
+      "reason" in failure ? failure.reason : failure._tag
     )
   );
 
@@ -358,6 +361,97 @@ layer(LinksTest)("connect links", (it) => {
         );
 
         assert.strictEqual(outcome._tag, "connected");
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "connect once, whatever arrives together: two sign-ins started from one browser complete one",
+    () =>
+      Effect.gen(function* once() {
+        const instance = yield* mastodonInstance();
+        const links = yield* ConnectLinks;
+        const { link, token, workspaceId } = yield* linked();
+
+        const from = {
+          handle: Option.none(),
+          instance: Option.some(instance.url),
+        };
+
+        // Two tabs of one browser: the cookie they share holds the nonce
+        // of the second start, and each has its own sign-in to complete.
+        const first = yield* links.start(token, from);
+        const second = yield* links.start(token, from);
+
+        const outcomes = yield* Effect.all(
+          [first, second].map((started) =>
+            links
+              .complete(
+                token,
+                Option.some(second.browser),
+                callbackOf(instance.approve(started.authorizationUrl))
+              )
+              .pipe(
+                Effect.match({
+                  onFailure: (failure) =>
+                    "reason" in failure ? failure.reason : failure._tag,
+                  onSuccess: ({ _tag }) => _tag,
+                })
+              )
+          ),
+          { concurrency: "unbounded" }
+        );
+
+        assert.deepStrictEqual(outcomes.toSorted(), [
+          "connected",
+          "linkCompleted",
+        ]);
+
+        const read = yield* links.get(manager(workspaceId), link.id);
+
+        assert(read.status._tag === "completed");
+        assert.lengthOf(read.status.channelIds, 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "keep no more links waiting than a workspace may, however many are made together",
+    () =>
+      Effect.gen(function* waiting() {
+        const links = yield* ConnectLinks;
+        const workspaceId = yield* freshWorkspace;
+
+        const made = yield* Effect.all(
+          Array.from({ length: maxPendingLinks + 6 }, () =>
+            links.create(manager(workspaceId), mastodon).pipe(Effect.isSuccess)
+          ),
+          { concurrency: 12 }
+        );
+
+        assert.lengthOf(made.filter(Boolean), maxPendingLinks);
+      })
+  );
+
+  it.effect(
+    "start no more sign-ins than a link may, however many arrive together",
+    () =>
+      Effect.gen(function* capped() {
+        const instance = yield* mastodonInstance();
+        const links = yield* ConnectLinks;
+        const { token } = yield* linked();
+
+        const started = yield* Effect.all(
+          Array.from({ length: maxLinkStarts + 5 }, () =>
+            links
+              .start(token, {
+                handle: Option.none(),
+                instance: Option.some(instance.url),
+              })
+              .pipe(Effect.isSuccess)
+          ),
+          { concurrency: "unbounded" }
+        );
+
+        assert.lengthOf(started.filter(Boolean), maxLinkStarts);
       }).pipe(Effect.scoped)
   );
 

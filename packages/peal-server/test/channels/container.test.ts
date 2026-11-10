@@ -25,6 +25,7 @@ import {
   freshWorkspace,
   syntheticKeyring,
 } from "#test/channels/support.ts";
+import { TransactionsTest } from "#test/notifications/support.ts";
 import { WebhookEvents } from "#webhooks/application/webhook-events.ts";
 import { PartnerOwnership } from "#workspace/application/partner-ownership.ts";
 
@@ -55,6 +56,7 @@ const channelsWithSettings = (settings: Record<string, string>) =>
       })
     ),
     Layer.provide(Neighbours),
+    Layer.provide(TransactionsTest),
     Layer.provideMerge(DatabaseTest)
   );
 

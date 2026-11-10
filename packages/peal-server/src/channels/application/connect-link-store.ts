@@ -34,6 +34,22 @@ export class ConnectLinkStore extends Context.Service<
     readonly byToken: (
       tokenDigest: string
     ) => Effect.Effect<Option.Option<ConnectLink>, DatabaseError>;
+    /**
+     * The link as it now stands, held until the caller's transaction ends:
+     * whoever else would use it, revoke it or read it this way waits, and
+     * then finds what this transaction left. Run it in a transaction.
+     */
+    readonly lock: (
+      linkId: ConnectLinkId
+    ) => Effect.Effect<Option.Option<ConnectLink>, DatabaseError>;
+    /**
+     * Holds the workspace's links until the caller's transaction ends, so
+     * its waiting links are counted and one more made without another
+     * being made in between. Run it in a transaction.
+     */
+    readonly holdWorkspace: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<void, DatabaseError>;
     /** How many of the workspace's links still wait to be used at `now`. */
     readonly countWaiting: (
       workspaceId: WorkspaceId,
@@ -41,8 +57,10 @@ export class ConnectLinkStore extends Context.Service<
     ) => Effect.Effect<number, DatabaseError>;
     /**
      * Keeps that a browser started the link's sign-in: its nonce's digest
-     * and the count of starts. Says whether the link was still pending:
-     * one used or revoked meanwhile stays as it is.
+     * and the count of starts. Says whether the link was still pending and
+     * had starts left (`maxLinkStarts`), counted in the statement itself,
+     * so starts sent together never pass it: one used, revoked or
+     * exhausted meanwhile stays as it is.
      */
     readonly started: (
       link: ConnectLink
