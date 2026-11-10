@@ -91,6 +91,20 @@ Sous **YouTube**, choisissez **Connecter YouTube**, connectez-vous avec Google, 
 
 Le serveur Peal doit être configuré pour YouTube : sur une instance auto-hébergée, voyez [YouTube](/self-hosting#youtube). D’ici là, **Canaux** ne le propose pas.
 
+## Laisser quelqu’un d’autre connecter son compte [#connect-links]
+
+Le compte à connecter n’est pas toujours le vôtre : celui d’un client, d’un collègue. Un **lien de connexion** ouvre une page hébergée où son propriétaire se connecte chez la plateforme et connecte le compte à l’espace de travail, sans compte Peal et sans voir l’espace de travail.
+
+Les membres qui peuvent connecter des canaux, et les clés d’API avec `channel:connect`, en créent un pour une plateforme avec `POST /api/workspaces/{workspaceId}/connect-links`, avec [`peal links create`](/cli#links) ou avec l’outil [MCP](/mcp#tools) `create_connect_link`. Son adresse est affichée une seule fois ; remettez-la par un canal de confiance.
+
+- Un lien sert une fois, pendant une semaine sauf indication contraire (de 1 heure à 30 jours), et peut être révoqué. L’ouvrir ne consomme rien ; une connexion qui connecte un compte, si.
+- Quiconque détient l’adresse peut connecter un compte à lui à l’espace de travail tant que le lien attend, et rien d’autre : il ne lit aucun canal ni aucune publication.
+- Avec `channelId`, le lien reconnecte ce canal, et seule une connexion au même compte aboutit.
+- La page est en anglais ou en français, et nomme le [compte partenaire](/embedding) de l’espace de travail quand il en a un, l’espace de travail sinon.
+- Le `status` du lien dit où il en est (`pending`, `completed` avec les canaux qu’il a connectés, `revoked` ou `expired`), et [`channel.connected`](/webhooks#channel-connected) prévient votre serveur.
+
+[Intégrer Peal](/embedding#connect) dit comment un produit fait passer ses propres clients par une telle page, puis les fait revenir.
+
 ## États [#statuses]
 
 Chaque canal affiche l’un de ces états :

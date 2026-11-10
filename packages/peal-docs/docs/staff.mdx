@@ -2,7 +2,7 @@
 title: Staff console
 description: Give the people who run your server the staff role, then find accounts and workspaces, ban, sign out or act as an account, and read the audit log of every action and every change made as an account, from /admin.
 sidebar:
-  order: 16
+  order: 17
 ---
 
 The staff console is for the people who run a Peal server: it finds an account or a workspace, tells how the server is doing, and lets staff act on accounts. It lives at `/admin` on your Peal address (`/fr/admin` in French), and its API under `/api/admin`.
@@ -49,6 +49,14 @@ While acting as an account, staff see its posts and media, and can write and edi
 Staff never ban, sign out or act as themselves, and never act as other staff. No one deletes an account but its owner, from [their account settings](/settings#delete-account).
 
 Better Auth's own admin endpoints under `/api/auth/admin/` are off, so nothing staff do bypasses the audit log; only `POST /api/auth/admin/stop-impersonating` stays, which the banner calls.
+
+## Partner accounts [#partners]
+
+A partner account lets a product use Peal for its own customers, one workspace each, through the API ([Embedding Peal](/embedding)). A workspace's page says where it stands: whether it has a partner account, with how many workspaces that account owns, or whether a partner owns it, with the partner's home workspace and the id the partner gave it.
+
+**Grant a partner account** opens one for the workspace, named after it, and asks why, as every action does. The workspace's owners and admins then name it, create its keys and register where hosted pages send their customers back, under **Settings**, then **Partner**. With [`PEAL_PARTNER_SELF_SERVICE`](/environment-variables#sign-in) set to `true`, they open one themselves. The audit log records each grant with the workspace.
+
+A workspace a partner owns has no members: staff read it as any other workspace, and nobody can act as a member of it.
 
 ## Contract requests [#contract-requests]
 

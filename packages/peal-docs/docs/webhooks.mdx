@@ -30,6 +30,7 @@ An endpoint is an address, the events it wants, a description, and whether it is
 - **The events** are the [event types](#events) the endpoint subscribes to, one at least. It is sent those, and nothing else.
 - **The description**, up to 200 characters, says what the endpoint is for.
 - **On or off.** While an endpoint is off, Peal sends it nothing, its deliveries still waiting fail, and what happens meanwhile is not kept for it: turning it back on does not replay it.
+- **The scope**, over the API: `workspace`, the default, hears this workspace; `partner`, on the home workspace of a [partner account](/embedding#webhooks) only, hears every workspace the account owns too. Elsewhere `partner` answers 404 `PartnerNotFound`. It is set when the endpoint is created, and stays.
 
 ## The signing secret [#secret]
 

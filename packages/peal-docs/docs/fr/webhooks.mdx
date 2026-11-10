@@ -30,6 +30,7 @@ Un point de terminaison, c’est une adresse, les événements qu’il veut rece
 - **Les événements** sont les [types d’événements](#events) auxquels le point de terminaison est abonné, un au moins. Il reçoit ceux-là, et rien d’autre.
 - **La description**, de 200 caractères au plus, dit à quoi sert le point de terminaison.
 - **Activé ou désactivé.** Tant qu’un point de terminaison est désactivé, Peal ne lui envoie rien, ses livraisons encore en attente échouent, et ce qui se passe entre-temps n’est pas gardé pour lui : le réactiver ne le rejoue pas.
+- **La portée**, par l’API : `workspace`, par défaut, entend cet espace de travail ; `partner`, sur l’espace de travail principal d’un [compte partenaire](/embedding#webhooks) seulement, entend aussi chaque espace de travail que le compte possède. Ailleurs, `partner` répond 404 `PartnerNotFound`. Elle est fixée à la création du point de terminaison, et reste.
 
 ## Le secret de signature [#secret]
 

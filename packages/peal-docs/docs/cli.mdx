@@ -248,6 +248,31 @@ peal webhooks delete <endpoint-id>
 - `create` and `rotate-secret` print the signing secret, once: save it then. After a rotation the old secret still signs for 24 hours, beside the new one.
 - `test` sends a `webhook.test` event; `deliveries` shows how each delivery ended, newest first, and `redeliver` sends one again.
 
+## Connect links [#links]
+
+```sh
+peal links create --platform linkedin
+peal links create --platform mastodon --hours 24 --locale fr
+peal links create --platform instagram --channel <channel-id>
+peal links list
+peal links show <link-id>
+peal links revoke <link-id>
+```
+
+- `peal links create` makes a [connect link](/channels#connect-links): a hosted page where whoever owns an account of that platform connects it to the workspace, without a Peal account. It prints the link's address, once: hand it over a channel you trust. For members who may connect channels.
+- `--hours` says how long it works, from 1 to 720 (168 unless given); `--locale` the language its page opens in; `--channel` reconnects that channel instead of connecting a new account; `--return-url` where the page sends them once done, an address on an origin the workspace's partner account registered.
+- `peal links list` shows those waiting, and those used, revoked or expired in the last 30 days; `show` tells which channels a link connected, or how its last sign-in failed; `revoke` takes one back.
+
+## Partner account [#partner]
+
+```sh
+peal partner show
+peal partner keys
+peal partner workspaces --external-id cus_42
+```
+
+For the owners and admins of a workspace with a [partner account](/embedding): `show` prints what its customers see, the origins hosted pages may send them back to, and what it holds; `keys` lists its keys, never the keys themselves; `workspaces` lists the workspaces it owns, newest first, with their external ids and channels, `--external-id` finding one exactly and `--name` searching. Creating and deleting those workspaces is for the partner API, with a partner key, and creating a key for the workspace's **Settings**.
+
 ## Your data [#account]
 
 ```sh

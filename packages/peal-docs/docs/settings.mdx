@@ -37,6 +37,10 @@ The list says of each key whether it **can schedule and publish posts**: it can 
 
 Under **Webhooks**, owners and admins add the addresses Peal calls when something happens in the workspace, 10 at most: each has the events it wants, a description, and a signing secret that appears once, right after it is created or rotated. Each endpoint keeps a log of its deliveries for 30 days, from which a delivery can be sent again, and takes a test event. [Webhooks](/webhooks) lists the events, and tells how to verify a delivery. Staff acting as a member cannot change webhooks.
 
+### Partner [#partner]
+
+Under **Partner**, owners and admins manage the workspace's partner account, which lets a product of yours use Peal for its own customers: what those customers read on hosted pages (a name and a logo address), the origins those pages may send them back to, and the partner keys, each shown once, right after it is created. The page lists the newest workspaces the account owns, with their channels. Whether you can open an account yourself is the instance's choice; otherwise the page says to ask the people who run it. An account closes only once it owns no workspace. Staff acting as a member cannot change it. [Embedding Peal](/embedding) tells the whole flow.
+
 ### Delete a workspace [#delete-workspace]
 
 On **General**, owners choose **Delete this workspace…**, then type the workspace's name to confirm. Everything in it goes, for good: its channels and their authorizations, its posts, scheduled or not, and their analytics, its media library and the files in it, its notifications, its writing assistant usage, what Peal recorded of its subscriptions and of its posts on X, its members and invitations, and its API keys, which stop working at once. Nothing more is posted from it. Stripe keeps the invoices it issued.

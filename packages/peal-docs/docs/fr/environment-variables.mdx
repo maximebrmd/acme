@@ -2,7 +2,7 @@
 title: Variables d’environnement
 description: Chaque variable d’environnement que lisent le serveur Peal, l’application web et la ligne de commande, si elle est obligatoire, sa valeur par défaut et son rôle.
 sidebar:
-  order: 14
+  order: 15
 ---
 
 Le serveur, l’application web et la ligne de commande lisent de simples variables d’environnement : ils tournent sur n’importe quel hôte. Cette page liste chacune de celles qu’ils lisent. Les valeurs indiquées sont des exemples.
@@ -37,6 +37,7 @@ Le serveur tourne en mode production quand `NODE_ENV` vaut `production`, comme s
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `true`                                                 | `false` permet de se connecter avant d’avoir confirmé son adresse e-mail.                                                                                                                                                                                                                                                                                                                   |
 | `AUTH_DB_POOL_MAX`                | `5`                                                    | Combien de connexions à la base ouvre la connexion des utilisateurs, en plus des 10 du serveur.                                                                                                                                                                                                                                                                                             |
 | `MCP_DYNAMIC_REGISTRATION`        | `false`                                                | `true` laisse les clients MCP s’enregistrer eux-mêmes, ce dont la plupart ont besoin avant de se connecter. N’importe qui peut alors enregistrer un client sous n’importe quel nom ; la page de consentement indique que Peal ne l’a pas vérifié.                                                                                                                                           |
+| `PEAL_PARTNER_SELF_SERVICE`       | `false`                                                | `true` laisse les propriétaires et administrateurs de n’importe quel espace de travail lui ouvrir eux-mêmes un [compte partenaire](/embedding), dans ses paramètres. Sans valeur ou à `false`, seule l’équipe en ouvre un, depuis la [console d’administration](/staff#partners). Une autre valeur arrête le serveur.                                                                       |
 
 Better Auth lit aussi `BETTER_AUTH_TRUSTED_ORIGINS`, qui ajoute des origines comme `TRUSTED_ORIGINS`. Préférez `TRUSTED_ORIGINS`, que `media-cors` lit aussi.
 
