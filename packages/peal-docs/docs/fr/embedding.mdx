@@ -2,7 +2,7 @@
 title: Intégrer Peal
 description: Utilisez Peal dans votre propre produit. Donnez à chacun de vos clients un espace de travail par l’API, laissez-les connecter leurs comptes sociaux sur une page hébergée sans compte Peal, publiez pour eux, et apprenez ce qui s’est passé.
 sidebar:
-  order: 15
+  order: 17
 ---
 
 Un de vos produits peut publier sur les plateformes sociales pour ses propres clients à travers Peal, sans qu’aucun d’eux ait un compte Peal ni voie l’application de Peal. Vous détenez un **compte partenaire** ; chacun de vos clients est un **espace de travail** qu’il possède ; votre serveur agit dans ces espaces avec une **clé partenaire** ; vos clients connectent leurs comptes sociaux sur une **page hébergée** vers laquelle vous les envoyez ; et Peal dit à votre serveur ce qui se passe par des [webhooks](/webhooks).
@@ -36,7 +36,7 @@ Une clé partenaire commence par `peal_partner_`, et s’envoie en `Authorizatio
 | `workspaces:write`  | Les créer, les renommer, changer leur identifiant externe   |
 | `workspaces:delete` | En supprimer un, avec tout ce qu’il contient                |
 
-Dans chaque espace de travail qu’il possède, une clé partenaire détient les [permissions](/scheduling#roles) que vous avez cochées, parmi celles dont un produit a besoin pour ses clients : `channel:*`, `media:*`, `post:*`, `analytics:read`, `assistant:use`, `webhook:*`, `billing:read` et `activity:read`, qui lit le [journal d’activité](/settings#activity) de l’espace de travail : ce que votre clé a demandé d’y changer, et les comptes connectés par des liens de connexion. Elle ne détient jamais ce qui revient aux personnes : les membres, les invitations, les clés d’API, les changements de facturation.
+Dans chaque espace de travail qu’il possède, une clé partenaire détient les [permissions](/scheduling#roles) que vous avez cochées, parmi celles dont un produit a besoin pour ses clients : `channel:*`, `media:*`, `post:*`, `analytics:read`, `engagement:read` et `engagement:reply` (les [commentaires](/inbox) sous les publications d’un client, et y répondre en public au nom de son compte : ces commentaires ont été écrits par d’autres personnes, ne les donnez donc à une clé que si votre produit les montre ou y répond), `assistant:use`, `webhook:*`, `billing:read` et `activity:read`, qui lit le [journal d’activité](/settings#activity) de l’espace de travail : ce que votre clé a demandé d’y changer, et les comptes connectés par des liens de connexion. Elle ne détient jamais ce qui revient aux personnes : les membres, les invitations, les clés d’API, les changements de facturation.
 
 ### Ce qu’atteint une clé partenaire [#isolation]
 

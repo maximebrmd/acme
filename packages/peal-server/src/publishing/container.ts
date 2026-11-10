@@ -33,6 +33,7 @@ import { ChannelAccessCredentials } from "#publishing/infrastructure/channel-acc
 import {
   ChannelGateLive,
   GatedPlatformPublisher,
+  UnreadComments,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
 import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
@@ -65,8 +66,10 @@ import {
   WebhookPostEvents,
 } from "#publishing/infrastructure/webhook-post-events.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
+import { PublishTargetV2Live } from "#publishing/infrastructure/workflows/publish-parts.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
+import { XThreadsLive } from "#publishing/infrastructure/x-threads.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 // The use cases over their adapters, asking whatever ApprovalGate they are
@@ -205,6 +208,8 @@ export const PublishingLive = publishingOver(
   NamedPostOrigins,
   WebhookPostEvents
 ).pipe(
+  // The operator's X_THREADS, which scheduling reads.
+  Layer.provide(XThreadsLive),
   Layer.provideMerge(
     TikTokCreatorInfo.layer.pipe(Layer.provide(ListedWorkspaceChannels))
   ),
@@ -214,7 +219,8 @@ export const PublishingLive = publishingOver(
         Layer.provide(
           Layer.mergeAll(
             AccountStandings.layer.pipe(Layer.provide(PacedLookupsLive)),
-            AnalyticsCountedPlatforms
+            AnalyticsCountedPlatforms,
+            XThreadsLive
           )
         )
       ),
@@ -262,20 +268,43 @@ export { LookupsHandlers as LookupsApiLive } from "#publishing/api/lookups.ts";
 // the composition root brings, or none.
 type GateReaders<E, R> = Layer.Layer<Layer.Success<typeof UnreadMetrics>, E, R>;
 
+// What the gates read comments and answer them with (CommentSource,
+// ReplySender): engagement's platforms, or none.
+type GateEngagement<E, R> = Layer.Layer<
+  Layer.Success<typeof UnreadComments>,
+  E,
+  R
+>;
+
 /**
  * Registers the publishing workflows and the channel gates, which call the
  * platforms through `platforms`, and read counts for analytics with
- * `readers` (by default, none). Needs the cluster and what PublishingLive
- * provides, PublicationOutcomes included.
+ * `readers` (by default, none), and comments for engagement with
+ * `engagement` (by default, none). Needs the cluster and what
+ * PublishingLive provides, PublicationOutcomes included.
  */
-export const publishingWorkers = <E, R, E2 = never, R2 = never>(
+export const publishingWorkers = <
+  E,
+  R,
+  E2 = never,
+  R2 = never,
+  E3 = never,
+  R3 = never,
+>(
   platforms: Layer.Layer<PlatformPublisher, E, R>,
-  readers: GateReaders<E2, R2> = UnreadMetrics
+  readers: GateReaders<E2, R2> = UnreadMetrics,
+  engagement: GateEngagement<E3, R3> = UnreadComments
 ) =>
-  Layer.mergeAll(PublishPostV1Live, PublishTargetV1Live).pipe(
+  Layer.mergeAll(
+    PublishPostV1Live,
+    PublishTargetV1Live,
+    PublishTargetV2Live
+  ).pipe(
     Layer.provide(GatedPlatformPublisher),
     Layer.merge(
-      ChannelGateLive.pipe(Layer.provide(Layer.merge(platforms, readers)))
+      ChannelGateLive.pipe(
+        Layer.provide(Layer.mergeAll(platforms, readers, engagement))
+      )
     )
   );
 
@@ -289,6 +318,8 @@ export const publishingWorkers = <E, R, E2 = never, R2 = never>(
  * with Dns, the database and the PostRepository.
  */
 export const PlatformsLive = RoutedPlatformPublisher.pipe(
+  // The operator's X_THREADS: a part already scheduled is not sent either.
+  Layer.provide(XThreadsLive),
   Layer.provide(PlatformClientsLive),
   Layer.provide(
     Layer.mergeAll(
@@ -315,14 +346,26 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
  * the readers analytics' counts come from (MetricsReader), which the
  * composition root provides.
  */
-export const publishingWorkersReading = <E, R>(readers: GateReaders<E, R>) =>
-  publishingWorkers(PlatformsLive, readers);
+export const publishingWorkersReading = <E, R, E2, R2>(
+  readers: GateReaders<E, R>,
+  engagement: GateEngagement<E2, R2>
+) => publishingWorkers(PlatformsLive, readers, engagement);
 
 /**
  * The MetricsReader that sends each read through its channel's gate, for
  * analytics' collection.
  */
 export { GatedMetricsReader } from "#publishing/infrastructure/channel-gate.ts";
+
+/**
+ * The CommentSource and ReplySender that send each call through its
+ * channel's gate, for engagement.
+ */
+export {
+  GatedCommentSource,
+  GatedReplySender,
+  UnreadComments,
+} from "#publishing/infrastructure/channel-gate.ts";
 
 /** The idempotency keys' daily retention. Needs PostScheduling. */
 export { IdempotencyRetentionCron as PublishingCronsLive } from "#publishing/infrastructure/crons.ts";

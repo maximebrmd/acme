@@ -25,6 +25,10 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  *
  * - `activityLog`: a workspace's log of who changed what
  *   (`activity/domain/activity-retention.ts`);
+ * - `analytics` and the platforms' own caps (`analyticsLinkedIn`,
+ *   `analyticsPinterest`, `analyticsGoogleBusiness`), and
+ *   `analyticsDisconnected`: the figures the platforms report
+ *   (`analytics/domain/analytics-retention.ts`);
  * - `auditLog`, `banRecords`, `banPastEnd`: the staff audit log
  *   (`staff/domain/audit-retention.ts`);
  * - `legalIdentity`, `legalAccount`, `legalConnections`,
@@ -52,6 +56,11 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  */
 export const retentionPeriods = {
   activityLog: { days: 90 },
+  analytics: { days: 730 },
+  analyticsDisconnected: { days: 7 },
+  analyticsGoogleBusiness: { days: 30 },
+  analyticsLinkedIn: { days: 365 },
+  analyticsPinterest: { days: 90 },
   auditLog: { months: 12 },
   backups: { weeks: 5 },
   banPastEnd: { months: 12 },
@@ -61,6 +70,8 @@ export const retentionPeriods = {
   erasureLedger: { days: 42 },
   exportLinks: { days: 7 },
   idempotencyKeys: { hours: 24 },
+  inboxAfterCollection: { days: 30 },
+  inboxWindow: { days: 30 },
   invoices: { years: 10 },
   legalAccount: { years: 1 },
   legalConnections: { years: 1 },
@@ -153,8 +164,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The posts, media and schedules of your workspaces, what was read of each file (its type, size, dimensions, duration, or a document’s number of pages), the comments members write on posts and the approvals they ask for and decide, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts; for a post made in one call with an idempotency key, a digest of that key and of its request, never either; and, for each channel a post goes to, a fingerprint of what each channel receives (a digest of its text and media), which keeps the same post from going out twice by mistake",
-      fr: "Les publications, médias et planifications de vos espaces de travail, ce qui a été lu de chaque fichier (son type, sa taille, ses dimensions, sa durée, ou le nombre de pages d’un document), les commentaires que les membres écrivent sur les publications et les approbations qu’ils demandent et décident, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre ; et, pour chaque canal où part une publication, une empreinte de ce que le canal reçoit (un condensé de son texte et de ses médias), qui évite qu’une même publication parte deux fois par erreur",
+      en: "The posts, media and schedules of your workspaces, what was read of each file (its type, size, dimensions, duration, or a document’s number of pages), the comments members write on posts and the approvals they ask for and decide, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts and for the accounts you connected (their followers, and their views where the platform counts them, day by day); for a post made in one call with an idempotency key, a digest of that key and of its request, never either; and, for each channel a post goes to, a fingerprint of what each channel receives (a digest of its text and media), which keeps the same post from going out twice by mistake",
+      fr: "Les publications, médias et planifications de vos espaces de travail, ce qui a été lu de chaque fichier (son type, sa taille, ses dimensions, sa durée, ou le nombre de pages d’un document), les commentaires que les membres écrivent sur les publications et les approbations qu’ils demandent et décident, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications et pour les comptes que vous avez connectés (leurs abonnés, et leurs vues quand la plateforme les compte, jour par jour) ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre ; et, pour chaque canal où part une publication, une empreinte de ce que le canal reçoit (un condensé de son texte et de ses médias), qui évite qu’une même publication parte deux fois par erreur",
     },
     id: "content",
     legalBasis: contract,
@@ -168,12 +179,12 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Planifier et mettre en ligne vos publications, et montrer leurs résultats",
     },
     retention: {
-      en: `Drafts and media files: until a member deletes them, or the workspace is deleted. Posts that were scheduled, published or cancelled, their publication history and their figures: until the workspace is deleted. The posts you wrote or scheduled in a workspace you share stay with it when you close your account, without your name. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
-      fr: `Brouillons et fichiers média : jusqu’à leur suppression par un membre, ou celle de l’espace de travail. Publications programmées, mises en ligne ou annulées, leur historique de mise en ligne et leurs chiffres : jusqu’à la suppression de l’espace de travail. Les publications que vous avez écrites ou programmées dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
+      en: `Drafts and media files: until a member deletes them, or the workspace is deleted. Posts that were scheduled, published or cancelled, and their publication history: until the workspace is deleted. The figures the platforms report for posts and accounts: ${p.analytics.days / 365} years, or less where a platform’s terms allow less (LinkedIn ${p.analyticsLinkedIn.days / 365} year, Pinterest ${p.analyticsPinterest.days} days, Google Business Profile ${p.analyticsGoogleBusiness.days} days); the figures of a disconnected account and of its posts: ${p.analyticsDisconnected.days} days after it is disconnected, unless the workspace connects the same account again before; all of them earlier with the workspace. The posts you wrote or scheduled in a workspace you share stay with it when you close your account, without your name. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
+      fr: `Brouillons et fichiers média : jusqu’à leur suppression par un membre, ou celle de l’espace de travail. Publications programmées, mises en ligne ou annulées, et leur historique de mise en ligne : jusqu’à la suppression de l’espace de travail. Les chiffres que les plateformes communiquent pour les publications et les comptes : ${p.analytics.days / 365} ans, ou moins quand les conditions d’une plateforme l’imposent (LinkedIn ${p.analyticsLinkedIn.days / 365} an, Pinterest ${p.analyticsPinterest.days} jours, Google Business Profile ${p.analyticsGoogleBusiness.days} jours) ; les chiffres d’un compte déconnecté et de ses publications : ${p.analyticsDisconnected.days} jours après sa déconnexion, sauf si l’espace de travail reconnecte le même compte entre-temps ; tous plus tôt avec l’espace de travail. Les publications que vous avez écrites ou programmées dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
     },
     source: {
-      en: "You and the other members of your workspaces; the platforms you connected, for the figures",
-      fr: "Vous et les autres membres de vos espaces de travail ; les plateformes que vous avez connectées, pour les chiffres",
+      en: "You and the other members of your workspaces; the platforms you connected, for the figures of your posts and accounts",
+      fr: "Vous et les autres membres de vos espaces de travail ; les plateformes que vous avez connectées, pour les chiffres de vos publications et de vos comptes",
     },
   },
   {
@@ -278,6 +289,35 @@ export const processingRegister: readonly ProcessingCategory[] = [
     source: {
       en: "The owners and admins of your workspaces, for the endpoints; the service, from what happens to posts, channels and media; the receiving server, for its answers",
       fr: "Les propriétaires et administrateurs de vos espaces de travail, pour les points de terminaison ; le service, d’après ce qui arrive aux publications, aux canaux et aux médias ; le serveur destinataire, pour ses réponses",
+    },
+  },
+  {
+    applies: "always",
+    data: {
+      en: "The comments people leave in public under a workspace’s published posts, on the platforms Peal reads them on: for each, its author’s public handle, display name and identifier on the platform, its text, when it was written and what it answers, and nothing else of its author; whether the workspace answered it; and the replies members send from Peal, with who wrote each and how sending ended",
+      fr: "Les commentaires laissés en public sous les publications mises en ligne d’un espace de travail, sur les plateformes où Peal les lit : pour chacun, l’identifiant public, le nom affiché et l’identifiant sur la plateforme de son auteur, son texte, sa date et ce à quoi il répond, et rien d’autre de son auteur ; si l’espace de travail y a répondu ; et les réponses que les membres envoient depuis Peal, avec leur auteur et l’issue de l’envoi",
+    },
+    id: "inbox",
+    legalBasis: {
+      en: "For members, performance of a contract (GDPR Article 6(1)(b)). For the people who commented, who are not users of the service, legitimate interests (GDPR Article 6(1)(f)): the workspace’s interest in reading and answering what is said in public under its own posts; the service processes their comments for the workspace, and for nothing else",
+      fr: "Pour les membres, exécution d’un contrat (RGPD, article 6, paragraphe 1, point b). Pour les personnes qui ont commenté, qui ne sont pas utilisatrices du service, intérêts légitimes (RGPD, article 6, paragraphe 1, point f) : l’intérêt de l’espace de travail à lire ce qui est dit en public sous ses propres publications et à y répondre ; le service traite leurs commentaires pour l’espace de travail, et pour rien d’autre",
+    },
+    name: {
+      en: "Comments under published posts, and replies to them",
+      fr: "Commentaires sous les publications mises en ligne, et réponses",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Show a workspace’s members the comments its posts receive and let them answer in public, as the connected account. Comments are used for nothing else: no profile of their authors, no advertising, no automated decision, no training of models",
+      fr: "Montrer aux membres d’un espace de travail les commentaires que reçoivent ses publications et leur permettre d’y répondre en public, au nom du compte connecté. Les commentaires ne servent à rien d’autre : ni profil de leurs auteurs, ni publicité, ni décision automatisée, ni entraînement de modèles",
+    },
+    retention: {
+      en: `Comments are read for ${p.inboxWindow.days} days after a post went live, unless the operator set another period (90 days at most). A post’s comments and the replies sent to them: ${p.inboxAfterCollection.days} days after that, then deleted within a day; earlier with the workspace. A comment its platform no longer shows loses its text and its author at the next read. Closing an account removes it as the author of the replies it sent, which stay with their workspace`,
+      fr: `Les commentaires sont lus pendant ${p.inboxWindow.days} jours après la mise en ligne d’une publication, sauf autre durée fixée par l’exploitant (90 jours au plus). Les commentaires d’une publication et les réponses envoyées : ${p.inboxAfterCollection.days} jours de plus, puis supprimés dans la journée ; plus tôt avec l’espace de travail. Un commentaire que sa plateforme ne montre plus perd son texte et son auteur à la lecture suivante. La fermeture d’un compte le retire comme auteur des réponses qu’il a envoyées, qui restent à leur espace de travail`,
+    },
+    source: {
+      en: "The platforms, for the comments, which their authors published there; the members of your workspaces, for the replies",
+      fr: "Les plateformes, pour les commentaires, que leurs auteurs y ont publiés ; les membres de vos espaces de travail, pour les réponses",
     },
   },
   {

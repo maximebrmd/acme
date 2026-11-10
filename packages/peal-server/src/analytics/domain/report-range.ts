@@ -69,3 +69,30 @@ export const dayStarts = (range: ReportRange): readonly DateTime.Utc[] =>
   [...reportDays(range), addDays(range.to, 1)].map((date) =>
     DateTime.toUtc(fromWallClock(date, midnight, range.timeZone))
   );
+
+/** The range of the same number of days that ends the day before `range`. */
+export const previousRange = (range: ReportRange): ReportRange => {
+  const days = daysBetween(range.from, range.to) + 1;
+
+  return new ReportRange({
+    from: addDays(range.from, -days),
+    timeZone: range.timeZone,
+    to: addDays(range.from, -1),
+  });
+};
+
+/**
+ * The last `days` days of `timeZone`'s calendar, `today` included, if the
+ * calendar Peal keeps goes that far back.
+ */
+export const lastDays = (
+  today: LocalDate,
+  days: number,
+  timeZone: ReportRange["timeZone"]
+): Result.Result<ReportRange, InvalidReportRange> => {
+  const from = addDays(today, 1 - days);
+
+  return isLocalDate(from)
+    ? reportRange({ from, timeZone, to: today })
+    : Result.fail(new InvalidReportRange({ days }));
+};

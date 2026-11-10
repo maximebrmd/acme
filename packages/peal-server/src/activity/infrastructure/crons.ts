@@ -25,11 +25,13 @@ export const RequestCountsCron = ClusterCron.make({
 });
 
 /**
- * Every day at 04:37 UTC: ends the activity logs' retention. A failed run
- * is logged and the next day's catches up.
+ * Every day at 04:47 UTC: ends the activity logs' retention. A failed run
+ * is logged and the next day's catches up. Not at minute 37, when the
+ * collection of accounts' numbers starts every hour: a collection starts
+ * on a minute of its own (`test/app/cron-schedules.test.ts`).
  */
 export const ActivityRetentionCron = ClusterCron.make({
-  cron: Cron.parseUnsafe("37 4 * * *", "UTC"),
+  cron: Cron.parseUnsafe("47 4 * * *", "UTC"),
   execute: ActivityLog.use((log) => log.purge).pipe(
     Effect.tap((events) =>
       Effect.logInfo("Purged expired activity events").pipe(

@@ -135,7 +135,10 @@ const Attempts = ({
   return (
     <ol className="flex flex-col gap-1 text-sm">
       {attempts.map((attempt) => (
-        <li key={`${attempt.round}-${attempt.attempt}`}>
+        <li key={`${attempt.round}-${attempt.part}-${attempt.attempt}`}>
+          {attempt.part > 0
+            ? t("attemptPart", { position: attempt.part + 1 })
+            : null}
           {t("attempt", {
             at: at(attempt.startedAt),
             attempt: attempt.attempt,
@@ -151,6 +154,71 @@ const Attempts = ({
         </li>
       ))}
     </ol>
+  );
+};
+
+// Where a post of several parts is on a channel: each part, live or not
+// sent, with its address when the platform gave one. Parts go out in order,
+// so those not live are the ones after the last that is.
+const TargetParts = ({
+  platform,
+  repostable,
+  target,
+}: {
+  readonly platform: string;
+  readonly repostable: boolean;
+  readonly target: PostTarget;
+}) => {
+  const t = useTranslations("PostDetail");
+  const { count, live } = target.parts;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <h4 className="text-sm font-medium">{t("partsTitle")}</h4>
+      <p className="text-sm">{t("partsLive", { count, live: live.length })}</p>
+      <ol className="flex flex-col gap-1 text-sm">
+        {Array.from({ length: count }, (_, index) => {
+          const position = index + 1;
+          const part = live.find((found) => found.index === index);
+
+          if (part === undefined) {
+            return (
+              <li key={position} className="text-muted-foreground">
+                {t("partNotSent", { position })}
+              </li>
+            );
+          }
+
+          return (
+            <li key={position}>
+              {part.permalink === null ? (
+                t("partLive", { position })
+              ) : (
+                <a
+                  href={part.permalink}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="underline underline-offset-4"
+                >
+                  {t("partLink", { platform, position })}
+                </a>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      {repostable && live.length > 0 ? (
+        <p className="text-muted-foreground text-sm">{t("partsRest")}</p>
+      ) : null}
+      {target.failureReason === "partsNotSent" ? (
+        <p className="text-muted-foreground text-sm">
+          {t("partsStopped", { platform })}
+        </p>
+      ) : null}
+      {target.status === "published" ? (
+        <p className="text-muted-foreground text-sm">{t("partsCounts")}</p>
+      ) : null}
+    </div>
   );
 };
 
@@ -312,8 +380,10 @@ export const TargetView = ({
 
   const reasonOf = (reason: string) => tNotices("reason", { reason });
 
+  // A thread Peal has no post to send the rest under takes no repost.
   const repostable =
-    target.status === "failed" || target.status === "unconfirmed";
+    target.status === "unconfirmed" ||
+    (target.status === "failed" && target.failureReason !== "partsNotSent");
 
   return (
     <li>
@@ -344,6 +414,13 @@ export const TargetView = ({
               <p className="text-muted-foreground text-sm">
                 {t("rounds", { count: target.round })}
               </p>
+            ) : null}
+            {target.parts.count > 1 ? (
+              <TargetParts
+                platform={platform}
+                repostable={repostable}
+                target={target}
+              />
             ) : null}
             <h4 className="text-sm font-medium">{t("attemptsTitle")}</h4>
             {attempts === undefined ? null : <Attempts attempts={attempts} />}
@@ -462,6 +539,27 @@ export const PostDetailView = ({
             <p className="text-muted-foreground text-xs">
               {t("media", { count: post.content.media.length })}
             </p>
+            {(post.content.followUps ?? []).length === 0 ? null : (
+              <ol className="flex flex-col gap-2">
+                {(post.content.followUps ?? []).map((part, index) => (
+                  <li
+                    // Parts have no id: their place names them.
+                    key={`part-${String(index + 2)}`}
+                    className="flex flex-col gap-1 border-l-2 pl-3"
+                  >
+                    <p className="text-sm font-medium">
+                      {t("partText", { position: index + 2 })}
+                    </p>
+                    <p className="text-sm whitespace-pre-wrap">
+                      {part.text.trim() === "" ? t("noText") : part.text}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {t("media", { count: part.media.length })}
+                    </p>
+                  </li>
+                ))}
+              </ol>
+            )}
           </section>
           <section
             aria-labelledby="post-channels"

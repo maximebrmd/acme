@@ -6,8 +6,14 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 /** What is told of a channel that is gone: enough to name it. */
 export type DisconnectedChannel = Pick<
   Channel,
-  "id" | "platform" | "workspaceId"
+  "accountId" | "id" | "platform" | "workspaceId"
 >;
+
+/**
+ * Why a channel is gone: a member disconnected it, or its platform asked
+ * for the account's data to be deleted (DataDeletions).
+ */
+export type DisconnectionCause = "dataDeletion" | "member";
 
 /**
  * Hears that a workspace's channel was connected or disconnected, for
@@ -30,7 +36,8 @@ export class ChannelEvents extends Context.Service<
       reconnected: boolean
     ) => Effect.Effect<void, DatabaseError>;
     readonly disconnected: (
-      channel: DisconnectedChannel
+      channel: DisconnectedChannel,
+      cause: DisconnectionCause
     ) => Effect.Effect<void, DatabaseError>;
   }
 >()("peal-server/channels/application/ChannelEvents") {

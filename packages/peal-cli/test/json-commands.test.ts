@@ -1,13 +1,26 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
+import {
+  AnalyticsDashboardSchema,
+  ChannelSeriesSchema,
+  InboxAbilitiesSchema,
+  InboxThreadDetailSchema,
+} from "peal-contract";
 
 import { runWith } from "#cli.ts";
 
 import { filesLayer, signedIn } from "./signed-in.ts";
 import {
+  inboxChannelId,
+  inboxThreadId,
+  unconfirmedReplyId,
+  waitingCommentId,
+} from "./studio-inbox.ts";
+import {
   failedTargetId,
   finishedId,
   hookId,
+  mastodonId,
   readyMediaId,
   scheduledId,
   shopId,
@@ -114,6 +127,63 @@ describe("--json on what an agent reads", () => {
         url: "http://localhost:3000",
       });
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
+    "prints the dashboard, a channel's days and the inbox as the contract encodes them",
+    () =>
+      Effect.gen(function* depth() {
+        const session = yield* signedIn();
+
+        const json = (...args: readonly string[]) =>
+          session
+            .printed([...args, "--json", ...inStudio])
+            .pipe(Effect.map(parsed));
+
+        assert.hasAllKeys(
+          yield* json("analytics", "dashboard", "--days", "7"),
+          Object.keys(AnalyticsDashboardSchema.fields)
+        );
+        assert.hasAllKeys(
+          yield* json("analytics", "channel", mastodonId),
+          Object.keys(ChannelSeriesSchema.fields)
+        );
+
+        assert.hasAllKeys(yield* json("inbox", "threads"), [
+          "items",
+          "nextCursor",
+        ]);
+
+        // A thread whole: comments are data, printed as the server holds
+        // them, for the agent to treat as such.
+        const thread = yield* json("inbox", "thread", inboxThreadId);
+
+        assert.hasAllKeys(thread, Object.keys(InboxThreadDetailSchema.fields));
+        assert.hasAllKeys(
+          yield* json("inbox", "abilities", inboxChannelId),
+          Object.keys(InboxAbilitiesSchema.fields)
+        );
+
+        // What changes something answers what the API answered.
+        assert.deepInclude(yield* json("inbox", "answered", waitingCommentId), {
+          id: waitingCommentId,
+          state: "answered",
+        });
+        assert.deepInclude(
+          yield* json("inbox", "confirm", unconfirmedReplyId, "--not-sent"),
+          { id: unconfirmedReplyId, status: "failed" }
+        );
+        assert.deepInclude(
+          yield* json(
+            "inbox",
+            "reply",
+            waitingCommentId,
+            "--text",
+            "Thank you, synthetic reader."
+          ),
+          { commentId: waitingCommentId, status: "sending" }
+        );
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
   it.effect("prints null for an answer without a body", () =>

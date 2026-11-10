@@ -50,6 +50,15 @@ export const FailureReasonSchema = Schema.Literals([
   // a trial or a smaller plan. Nothing was sent; the member can make room
   // or move to a larger plan, then post it again.
   "planLimit",
+  // Some parts of the post are live, and those after them cannot be sent
+  // from Peal: it has no post to reply to, as the part before them was
+  // found by hand, which gives no id, or is gone from the platform. No
+  // repost is offered: every round would stop at the same part.
+  "partsNotSent",
+  // The platform does not let this server's app post the parts after the
+  // first as replies (X's self-serve access): the first parts are live,
+  // and no repost can send the rest from this server.
+  "repliesNotAllowed",
 ]);
 
 export type FailureReason = typeof FailureReasonSchema.Type;

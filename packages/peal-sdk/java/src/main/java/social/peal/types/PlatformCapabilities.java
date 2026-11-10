@@ -5,6 +5,7 @@ package social.peal.types;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,13 +17,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
+import social.peal.core.Nullable;
+import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = PlatformCapabilities.Builder.class)
 public final class PlatformCapabilities {
     private final PlatformCapabilitiesAnalytics analytics;
+
+    private final Optional<FollowUpCapabilities> followUps;
 
     private final List<LookupDescription> lookups;
 
@@ -40,6 +46,7 @@ public final class PlatformCapabilities {
 
     private PlatformCapabilities(
             PlatformCapabilitiesAnalytics analytics,
+            Optional<FollowUpCapabilities> followUps,
             List<LookupDescription> lookups,
             MediaCapabilities media,
             PlatformCapabilitiesOptions options,
@@ -48,6 +55,7 @@ public final class PlatformCapabilities {
             int version,
             Map<String, Object> additionalProperties) {
         this.analytics = analytics;
+        this.followUps = followUps;
         this.lookups = lookups;
         this.media = media;
         this.options = options;
@@ -60,6 +68,14 @@ public final class PlatformCapabilities {
     @JsonProperty("analytics")
     public PlatformCapabilitiesAnalytics getAnalytics() {
         return analytics;
+    }
+
+    @JsonIgnore
+    public Optional<FollowUpCapabilities> getFollowUps() {
+        if (followUps == null) {
+            return Optional.empty();
+        }
+        return followUps;
     }
 
     @JsonProperty("lookups")
@@ -92,6 +108,12 @@ public final class PlatformCapabilities {
         return version;
     }
 
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("followUps")
+    private Optional<FollowUpCapabilities> _getFollowUps() {
+        return followUps;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -105,6 +127,7 @@ public final class PlatformCapabilities {
 
     private boolean equalTo(PlatformCapabilities other) {
         return analytics.equals(other.analytics)
+                && followUps.equals(other.followUps)
                 && lookups.equals(other.lookups)
                 && media.equals(other.media)
                 && options.equals(other.options)
@@ -116,7 +139,14 @@ public final class PlatformCapabilities {
     @java.lang.Override
     public int hashCode() {
         return Objects.hash(
-                this.analytics, this.lookups, this.media, this.options, this.platform, this.text, this.version);
+                this.analytics,
+                this.followUps,
+                this.lookups,
+                this.media,
+                this.options,
+                this.platform,
+                this.text,
+                this.version);
     }
 
     @java.lang.Override
@@ -161,6 +191,12 @@ public final class PlatformCapabilities {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage followUps(Optional<FollowUpCapabilities> followUps);
+
+        _FinalStage followUps(FollowUpCapabilities followUps);
+
+        _FinalStage followUps(Nullable<FollowUpCapabilities> followUps);
+
         _FinalStage lookups(List<LookupDescription> lookups);
 
         _FinalStage addLookups(LookupDescription lookups);
@@ -185,6 +221,8 @@ public final class PlatformCapabilities {
 
         private List<LookupDescription> lookups = new ArrayList<>();
 
+        private Optional<FollowUpCapabilities> followUps = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -192,6 +230,7 @@ public final class PlatformCapabilities {
         @java.lang.Override
         public Builder from(PlatformCapabilities other) {
             analytics(other.getAnalytics());
+            followUps(other.getFollowUps());
             lookups(other.getLookups());
             media(other.getMedia());
             options(other.getOptions());
@@ -268,14 +307,40 @@ public final class PlatformCapabilities {
         }
 
         @java.lang.Override
+        public _FinalStage followUps(Nullable<FollowUpCapabilities> followUps) {
+            if (followUps.isNull()) {
+                this.followUps = null;
+            } else if (followUps.isEmpty()) {
+                this.followUps = Optional.empty();
+            } else {
+                this.followUps = Optional.of(followUps.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage followUps(FollowUpCapabilities followUps) {
+            this.followUps = Optional.ofNullable(followUps);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "followUps", nulls = Nulls.SKIP)
+        public _FinalStage followUps(Optional<FollowUpCapabilities> followUps) {
+            this.followUps = followUps;
+            return this;
+        }
+
+        @java.lang.Override
         public PlatformCapabilities build() {
             return new PlatformCapabilities(
-                    analytics, lookups, media, options, platform, text, version, additionalProperties);
+                    analytics, followUps, lookups, media, options, platform, text, version, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("analytics")
+                    || key.equalsIgnoreCase("followUps")
                     || key.equalsIgnoreCase("lookups")
                     || key.equalsIgnoreCase("media")
                     || key.equalsIgnoreCase("options")

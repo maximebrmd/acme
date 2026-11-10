@@ -14,6 +14,9 @@ public record ReviewedChannel : IJsonOnDeserialized
     [JsonPropertyName("channelId")]
     public required string ChannelId { get; set; }
 
+    [JsonPropertyName("followUps")]
+    public IEnumerable<ReviewedPart> FollowUps { get; set; } = new List<ReviewedPart>();
+
     [JsonPropertyName("handle")]
     public string? Handle { get; set; }
 

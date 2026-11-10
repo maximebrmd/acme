@@ -32,6 +32,10 @@ public readonly record struct Permission : IStringEnum
 
     public static readonly Permission ChannelDisconnect = new(Values.ChannelDisconnect);
 
+    public static readonly Permission EngagementRead = new(Values.EngagementRead);
+
+    public static readonly Permission EngagementReply = new(Values.EngagementReply);
+
     public static readonly Permission InvitationCreate = new(Values.InvitationCreate);
 
     public static readonly Permission InvitationCancel = new(Values.InvitationCancel);
@@ -192,6 +196,10 @@ public readonly record struct Permission : IStringEnum
         public const string ChannelConnect = "channel:connect";
 
         public const string ChannelDisconnect = "channel:disconnect";
+
+        public const string EngagementRead = "engagement:read";
+
+        public const string EngagementReply = "engagement:reply";
 
         public const string InvitationCreate = "invitation:create";
 

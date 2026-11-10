@@ -27,7 +27,12 @@ const limited = (
 };
 
 // What a channel would receive, counted as its platform counts it.
-const countsOf = (preview: ChannelPreview): string => {
+const countsOf = (
+  preview: Pick<
+    ChannelPreview,
+    "hashtags" | "links" | "media" | "mentions" | "textCounts"
+  >
+): string => {
   const counts = [
     ...preview.textCounts.map(
       ({ length, maximum, unit }) =>
@@ -46,18 +51,27 @@ const countsOf = (preview: ChannelPreview): string => {
 
 /**
  * The channels a checked post would go to, one per line: the channel, with
- * its platform, and its text and media against the platform's limits.
+ * its platform, and its text and media against the platform's limits, then
+ * a line for each part that follows it there.
  */
 export const previewLines = (
   validation: PostValidation,
   names: ReadonlyMap<string, string>
 ): string[] =>
   columns(
-    validation.channels.map((preview) => [
-      names.has(preview.channelId)
-        ? `  ${named(names, preview.channelId)}`
-        : `  ${preview.channelId} (${preview.platform})`,
-      countsOf(preview),
+    validation.channels.flatMap((preview) => [
+      [
+        names.has(preview.channelId)
+          ? `  ${named(names, preview.channelId)}`
+          : `  ${preview.channelId} (${preview.platform})`,
+        countsOf(preview),
+      ],
+      // The parts after the first, numbered as people count them: the
+      // post itself is part 1.
+      ...preview.parts.map((part) => [
+        `    part ${String(part.part + 1)}`,
+        countsOf(part),
+      ]),
     ])
   );
 

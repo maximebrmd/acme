@@ -14,6 +14,9 @@ public record NotificationPreferencesChangeEmail : IJsonOnDeserialized
     [JsonPropertyName("channelReconnect")]
     public bool? ChannelReconnect { get; set; }
 
+    [JsonPropertyName("comments")]
+    public bool? Comments { get; set; }
+
     [JsonPropertyName("postFailed")]
     public bool? PostFailed { get; set; }
 

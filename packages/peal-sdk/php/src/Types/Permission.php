@@ -16,6 +16,8 @@ enum Permission: string
     case ChannelRead = "channel:read";
     case ChannelConnect = "channel:connect";
     case ChannelDisconnect = "channel:disconnect";
+    case EngagementRead = "engagement:read";
+    case EngagementReply = "engagement:reply";
     case InvitationCreate = "invitation:create";
     case InvitationCancel = "invitation:cancel";
     case MediaRead = "media:read";

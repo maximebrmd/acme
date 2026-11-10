@@ -9,7 +9,7 @@ import { missingScope } from "./missing-scope.ts";
 
 /** What each scope lets an application do, as the consent page says it. */
 export const scopeGrants: Readonly<Record<WorkspaceScope, string>> = {
-  "workspace:publish": "schedule and publish posts",
+  "workspace:publish": "schedule and publish posts, and answer comments",
   "workspace:read": "read the workspace",
   "workspace:write": "write drafts and change the workspace",
 };

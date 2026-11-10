@@ -14,6 +14,7 @@ import social.peal.resources.billing.BillingClient;
 import social.peal.resources.capabilities.CapabilitiesClient;
 import social.peal.resources.channels.ChannelsClient;
 import social.peal.resources.connectlinks.ConnectLinksClient;
+import social.peal.resources.inbox.InboxClient;
 import social.peal.resources.invitations.InvitationsClient;
 import social.peal.resources.lookups.LookupsClient;
 import social.peal.resources.media.MediaClient;
@@ -66,6 +67,8 @@ public class PealClient implements AutoCloseable {
 
     protected final Supplier<WebhooksClient> webhooksClient;
 
+    protected final Supplier<InboxClient> inboxClient;
+
     protected final Supplier<ActivityClient> activityClient;
 
     protected final Supplier<PartnerClient> partnerClient;
@@ -95,6 +98,7 @@ public class PealClient implements AutoCloseable {
         this.capabilitiesClient = Suppliers.memoize(() -> new CapabilitiesClient(clientOptions));
         this.lookupsClient = Suppliers.memoize(() -> new LookupsClient(clientOptions));
         this.webhooksClient = Suppliers.memoize(() -> new WebhooksClient(clientOptions));
+        this.inboxClient = Suppliers.memoize(() -> new InboxClient(clientOptions));
         this.activityClient = Suppliers.memoize(() -> new ActivityClient(clientOptions));
         this.partnerClient = Suppliers.memoize(() -> new PartnerClient(clientOptions));
         this.partnerAccountClient = Suppliers.memoize(() -> new PartnerAccountClient(clientOptions));
@@ -168,6 +172,10 @@ public class PealClient implements AutoCloseable {
 
     public WebhooksClient webhooks() {
         return this.webhooksClient.get();
+    }
+
+    public InboxClient inbox() {
+        return this.inboxClient.get();
     }
 
     public ActivityClient activity() {

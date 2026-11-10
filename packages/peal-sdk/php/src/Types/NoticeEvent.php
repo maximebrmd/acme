@@ -16,6 +16,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'PostApproved'
      *   |'PostChangesRequested'
      *   |'PostCommented'
+     *   |'CommentsReceived'
      *   |'ChannelReconnectRequired'
      *   |'ChannelReconnectSoon'
      *   |'SubscriptionStarted'
@@ -38,6 +39,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventPostApproved
      *   |NoticeEventPostChangesRequested
      *   |NoticeEventPostCommented
+     *   |NoticeEventCommentsReceived
      *   |NoticeEventChannelReconnectRequired
      *   |NoticeEventChannelReconnectSoon
      *   |NoticeEventSubscriptionStarted
@@ -61,6 +63,7 @@ class NoticeEvent extends JsonSerializableType
      *   |'PostApproved'
      *   |'PostChangesRequested'
      *   |'PostCommented'
+     *   |'CommentsReceived'
      *   |'ChannelReconnectRequired'
      *   |'ChannelReconnectSoon'
      *   |'SubscriptionStarted'
@@ -79,6 +82,7 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventPostApproved
      *   |NoticeEventPostChangesRequested
      *   |NoticeEventPostCommented
+     *   |NoticeEventCommentsReceived
      *   |NoticeEventChannelReconnectRequired
      *   |NoticeEventChannelReconnectSoon
      *   |NoticeEventSubscriptionStarted
@@ -179,6 +183,18 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'PostCommented',
             'value' => $postCommented,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventCommentsReceived $commentsReceived
+     * @return NoticeEvent
+     */
+    public static function commentsReceived(NoticeEventCommentsReceived $commentsReceived): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'CommentsReceived',
+            'value' => $commentsReceived,
         ]);
     }
 
@@ -435,6 +451,28 @@ class NoticeEvent extends JsonSerializableType
     /**
      * @return bool
      */
+    public function isCommentsReceived(): bool
+    {
+        return $this->value instanceof NoticeEventCommentsReceived && $this->type === 'CommentsReceived';
+    }
+
+    /**
+     * @return NoticeEventCommentsReceived
+     */
+    public function asCommentsReceived(): NoticeEventCommentsReceived
+    {
+        if (!($this->value instanceof NoticeEventCommentsReceived && $this->type === 'CommentsReceived')) {
+            throw new Exception(
+                "Expected CommentsReceived; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
     public function isChannelReconnectRequired(): bool
     {
         return $this->value instanceof NoticeEventChannelReconnectRequired && $this->type === 'ChannelReconnectRequired';
@@ -656,6 +694,10 @@ class NoticeEvent extends JsonSerializableType
                 $value = $this->asPostCommented()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'CommentsReceived':
+                $value = $this->asCommentsReceived()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'ChannelReconnectRequired':
                 $value = $this->asChannelReconnectRequired()->jsonSerialize();
                 $result = array_merge($value, $result);
@@ -744,6 +786,9 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'PostCommented':
                 $args['value'] = NoticeEventPostCommented::jsonDeserialize($data);
+                break;
+            case 'CommentsReceived':
+                $args['value'] = NoticeEventCommentsReceived::jsonDeserialize($data);
                 break;
             case 'ChannelReconnectRequired':
                 $args['value'] = NoticeEventChannelReconnectRequired::jsonDeserialize($data);

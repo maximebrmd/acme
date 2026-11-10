@@ -43,6 +43,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   const billing = await getTranslations("Billing");
   const analytics = await getTranslations("Analytics");
   const review = await getTranslations("Review");
+  const inbox = await getTranslations("Inbox");
 
   return (
     <div className="flex flex-col gap-8">
@@ -103,6 +104,17 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                     >
                       {review("approvals.nav")}
                     </Link>
+                    {workspace.permissions.includes("engagement:read") ? (
+                      <Link
+                        href={`/app/${workspace.id}/inbox`}
+                        aria-label={inbox("openLabel", {
+                          workspace: workspace.name,
+                        })}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {inbox("open")}
+                      </Link>
+                    ) : null}
                     <Link
                       href={`/app/${workspace.id}/channels`}
                       className="underline-offset-4 hover:underline"

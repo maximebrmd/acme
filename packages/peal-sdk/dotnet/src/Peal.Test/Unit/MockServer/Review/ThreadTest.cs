@@ -65,6 +65,44 @@ public class ThreadTest : BaseMockServerTest
               "channels": [
                 {
                   "channelId": "channelId",
+                  "followUps": [
+                    {
+                      "delaySeconds": 1,
+                      "media": [
+                        {
+                          "altText": "altText",
+                          "kind": "image",
+                          "mediaId": "mediaId",
+                          "url": "url"
+                        },
+                        {
+                          "altText": "altText",
+                          "kind": "image",
+                          "mediaId": "mediaId",
+                          "url": "url"
+                        }
+                      ],
+                      "text": "text"
+                    },
+                    {
+                      "delaySeconds": 1,
+                      "media": [
+                        {
+                          "altText": "altText",
+                          "kind": "image",
+                          "mediaId": "mediaId",
+                          "url": "url"
+                        },
+                        {
+                          "altText": "altText",
+                          "kind": "image",
+                          "mediaId": "mediaId",
+                          "url": "url"
+                        }
+                      ],
+                      "text": "text"
+                    }
+                  ],
                   "handle": "handle",
                   "options": {
                     "platform": "youtube",
@@ -84,6 +122,44 @@ public class ThreadTest : BaseMockServerTest
                 },
                 {
                   "channelId": "channelId",
+                  "followUps": [
+                    {
+                      "delaySeconds": 1,
+                      "media": [
+                        {
+                          "altText": "altText",
+                          "kind": "image",
+                          "mediaId": "mediaId",
+                          "url": "url"
+                        },
+                        {
+                          "altText": "altText",
+                          "kind": "image",
+                          "mediaId": "mediaId",
+                          "url": "url"
+                        }
+                      ],
+                      "text": "text"
+                    },
+                    {
+                      "delaySeconds": 1,
+                      "media": [
+                        {
+                          "altText": "altText",
+                          "kind": "image",
+                          "mediaId": "mediaId",
+                          "url": "url"
+                        },
+                        {
+                          "altText": "altText",
+                          "kind": "image",
+                          "mediaId": "mediaId",
+                          "url": "url"
+                        }
+                      ],
+                      "text": "text"
+                    }
+                  ],
                   "handle": "handle",
                   "options": {
                     "platform": "youtube",
@@ -237,6 +313,18 @@ public class ThreadTest : BaseMockServerTest
               "channels": [
                 {
                   "channelId": "channelId",
+                  "followUps": [
+                    {
+                      "delaySeconds": 1,
+                      "media": [
+                        {
+                          "altText": "altText",
+                          "mediaId": "mediaId"
+                        }
+                      ],
+                      "text": "text"
+                    }
+                  ],
                   "handle": "handle",
                   "options": {
                     "platform": "youtube"

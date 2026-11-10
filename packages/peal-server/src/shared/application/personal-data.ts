@@ -36,6 +36,23 @@ export interface PostOriginRecord {
 export interface PostRecord {
   /** How it was created; null on a post from before this was kept. */
   readonly createdVia: PostOriginRecord | null;
+  /**
+   * The parts that follow its first, in order: a thread, or comments,
+   * depending on the platform. None on a post of one part.
+   */
+  readonly followUps: readonly {
+    /** The seconds it waits after the part before it went out. */
+    readonly delaySeconds: number;
+    readonly media: readonly {
+      readonly altText: string | null;
+      readonly mediaId: string;
+    }[];
+    readonly text: string;
+    readonly textOverrides: readonly {
+      readonly channelId: string;
+      readonly text: string;
+    }[];
+  }[];
   readonly id: string;
   readonly media: readonly {
     readonly altText: string | null;
@@ -52,6 +69,8 @@ export interface PostRecord {
     readonly keptPrivate: boolean;
     /** What the post set on that channel's platform, as stored: plain JSON. */
     readonly options: unknown;
+    /** How many of the post's parts are live there. */
+    readonly partsLive: number;
     readonly permalink: string | null;
     readonly status: string;
   }[];
@@ -122,12 +141,15 @@ export interface ActivityRecord {
 
 /** A post's counts on a channel as analytics read them at one moment. */
 export interface MetricsSnapshotRecord {
+  readonly clicks: number | null;
   readonly collectedAt: DateTime.Utc;
   readonly impressions: number | null;
   readonly likes: number;
   readonly quotes: number | null;
+  readonly reach: number | null;
   readonly replies: number;
   readonly reposts: number;
+  readonly saves: number | null;
 }
 
 /**
@@ -142,6 +164,39 @@ export interface AnalyticsRecord {
   readonly publishedAt: DateTime.Utc;
   readonly snapshots: readonly MetricsSnapshotRecord[];
   readonly targetId: string;
+}
+
+/**
+ * A channel's account on one UTC day, as analytics read it: its followers,
+ * the accounts it follows and its posts, and the views and reach its
+ * platform counted. Each is null where the platform gives none.
+ */
+export interface AccountSnapshotRecord {
+  readonly channelId: string;
+  /** The UTC day, as YYYY-MM-DD. */
+  readonly day: string;
+  readonly followers: number | null;
+  readonly following: number | null;
+  readonly platform: string;
+  readonly posts: number | null;
+  readonly reach: number | null;
+  readonly views: number | null;
+}
+
+/**
+ * A reply a member sent from Peal to a comment under one of the
+ * workspace's posts: what they wrote, when, and how sending ended. The
+ * comment it answers is someone else's, and is not exported.
+ */
+export interface SentReplyRecord {
+  readonly channelId: string;
+  readonly createdAt: DateTime.Utc;
+  readonly id: string;
+  readonly permalink: string | null;
+  readonly postId: string;
+  readonly status: string;
+  readonly text: string;
+  readonly workspaceId: string;
 }
 
 /** A comment on a post, as the review context keeps it. */
@@ -324,6 +379,12 @@ export type NoticeEventRecord =
       readonly postId: string;
     }
   | {
+      readonly _tag: "CommentsReceived";
+      readonly count: number;
+      readonly postId: string;
+      readonly threadId: string;
+    }
+  | {
       readonly _tag: "PostCommented";
       readonly by: string;
       readonly postId: string;
@@ -410,6 +471,7 @@ export interface NoticeRecord {
 export interface PreferencesRecord {
   readonly email: {
     readonly channelReconnect: boolean;
+    readonly comments: boolean;
     readonly postFailed: boolean;
     readonly postPublished: boolean;
     readonly postReview: boolean;

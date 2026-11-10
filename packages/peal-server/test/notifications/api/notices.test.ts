@@ -318,6 +318,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
       assert.deepStrictEqual(yield* client.notificationPreferences.get(), {
         email: {
           channelReconnect: true,
+          comments: false,
           postFailed: true,
           postPublished: false,
           postReview: true,
@@ -337,6 +338,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
         {
           email: {
             channelReconnect: true,
+            comments: false,
             postFailed: false,
             postPublished: true,
             postReview: true,

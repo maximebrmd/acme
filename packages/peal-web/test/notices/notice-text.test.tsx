@@ -151,6 +151,30 @@ describe(useNoticeText, () => {
     );
   });
 
+  it("counts the comments read under a post, and opens their thread", async () => {
+    const threadId = "00000000-0000-7000-8000-0000000000c1";
+
+    const event = (count: number): NoticeEvent => ({
+      _tag: "CommentsReceived",
+      count,
+      postId,
+      threadId,
+    });
+
+    await expect(render("en", event(1))).resolves.toContain(
+      `1 new comment under a post of Studio Nord. | Open the comments | /app/${workspaceId}/inbox/${threadId}`
+    );
+    await expect(render("en", event(3))).resolves.toContain(
+      "3 new comments under a post of Studio Nord."
+    );
+    await expect(render("fr", event(1))).resolves.toContain(
+      "1 nouveau commentaire sous une publication de Studio Nord. | Ouvrir les commentaires"
+    );
+    await expect(render("fr", event(12))).resolves.toContain(
+      "12 nouveaux commentaires sous une publication de Studio Nord."
+    );
+  });
+
   it("says why a webhook endpoint was turned off, and opens the webhooks", async () => {
     const failing: NoticeEvent = {
       _tag: "WebhookEndpointDisabled",

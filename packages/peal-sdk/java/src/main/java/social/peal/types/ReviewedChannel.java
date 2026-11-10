@@ -12,7 +12,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,6 +28,8 @@ import social.peal.core.ObjectMappers;
 public final class ReviewedChannel {
     private final String channelId;
 
+    private final List<ReviewedPart> followUps;
+
     private final Optional<String> handle;
 
     private final Optional<TargetOptions> options;
@@ -38,12 +42,14 @@ public final class ReviewedChannel {
 
     private ReviewedChannel(
             String channelId,
+            List<ReviewedPart> followUps,
             Optional<String> handle,
             Optional<TargetOptions> options,
             Optional<Platform> platform,
             String text,
             Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.followUps = followUps;
         this.handle = handle;
         this.options = options;
         this.platform = platform;
@@ -54,6 +60,11 @@ public final class ReviewedChannel {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("followUps")
+    public List<ReviewedPart> getFollowUps() {
+        return followUps;
     }
 
     @JsonIgnore
@@ -116,6 +127,7 @@ public final class ReviewedChannel {
 
     private boolean equalTo(ReviewedChannel other) {
         return channelId.equals(other.channelId)
+                && followUps.equals(other.followUps)
                 && handle.equals(other.handle)
                 && options.equals(other.options)
                 && platform.equals(other.platform)
@@ -124,7 +136,7 @@ public final class ReviewedChannel {
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelId, this.handle, this.options, this.platform, this.text);
+        return Objects.hash(this.channelId, this.followUps, this.handle, this.options, this.platform, this.text);
     }
 
     @java.lang.Override
@@ -152,6 +164,12 @@ public final class ReviewedChannel {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage followUps(List<ReviewedPart> followUps);
+
+        _FinalStage addFollowUps(ReviewedPart followUps);
+
+        _FinalStage addAllFollowUps(List<ReviewedPart> followUps);
 
         _FinalStage handle(Optional<String> handle);
 
@@ -184,6 +202,8 @@ public final class ReviewedChannel {
 
         private Optional<String> handle = Optional.empty();
 
+        private List<ReviewedPart> followUps = new ArrayList<>();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -191,6 +211,7 @@ public final class ReviewedChannel {
         @java.lang.Override
         public Builder from(ReviewedChannel other) {
             channelId(other.getChannelId());
+            followUps(other.getFollowUps());
             handle(other.getHandle());
             options(other.getOptions());
             platform(other.getPlatform());
@@ -288,13 +309,38 @@ public final class ReviewedChannel {
         }
 
         @java.lang.Override
+        public _FinalStage addAllFollowUps(List<ReviewedPart> followUps) {
+            if (followUps != null) {
+                this.followUps.addAll(followUps);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addFollowUps(ReviewedPart followUps) {
+            this.followUps.add(followUps);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "followUps", nulls = Nulls.SKIP)
+        public _FinalStage followUps(List<ReviewedPart> followUps) {
+            this.followUps.clear();
+            if (followUps != null) {
+                this.followUps.addAll(followUps);
+            }
+            return this;
+        }
+
+        @java.lang.Override
         public ReviewedChannel build() {
-            return new ReviewedChannel(channelId, handle, options, platform, text, additionalProperties);
+            return new ReviewedChannel(channelId, followUps, handle, options, platform, text, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
+                    || key.equalsIgnoreCase("followUps")
                     || key.equalsIgnoreCase("handle")
                     || key.equalsIgnoreCase("options")
                     || key.equalsIgnoreCase("platform")

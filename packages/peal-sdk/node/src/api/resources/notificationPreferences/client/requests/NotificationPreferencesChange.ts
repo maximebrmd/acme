@@ -12,6 +12,7 @@ export interface NotificationPreferencesChange {
 export namespace NotificationPreferencesChange {
     export interface Email {
         channelReconnect?: boolean | undefined;
+        comments?: boolean | undefined;
         postFailed?: boolean | undefined;
         postPublished?: boolean | undefined;
         postReview?: boolean | undefined;

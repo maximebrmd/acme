@@ -41,6 +41,135 @@ const freshWorkspace = newId(WorkspaceIdSchema);
 
 describe("the validate endpoint", () => {
   it.effect(
+    "checks every part of a thread, and shows each as its channel would receive it",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* validatesParts() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connect(workspaceId, "mastodon");
+          const linkedin = yield* connect(workspaceId, "linkedin");
+          const params = { workspaceId };
+
+          const viewer = yield* clientAs(
+            memberOf(workspaceId, permissionsFor("viewer"))
+          );
+
+          const thread = (second: string): PostContent => ({
+            followUps: [
+              {
+                delaySeconds: 60,
+                media: [],
+                overrides: [{ channelId: mastodon, text: second }],
+                text: "A second part, for the others.",
+              },
+              {
+                delaySeconds: 0,
+                media: [{ altText: "", mediaId: "not-a-media" }],
+                overrides: [],
+                text: "A third part #three",
+              },
+            ],
+            media: [],
+            overrides: [],
+            text: "A synthetic first part",
+          });
+
+          const checked = yield* viewer.posts.validate({
+            params,
+            payload: {
+              channelIds: [mastodon, linkedin],
+              content: thread("b".repeat(501)),
+              when: { _tag: "now" },
+            },
+          });
+
+          assert.isFalse(checked.valid);
+          // A file a later part shows is looked for like the first's.
+          assert.deepStrictEqual(checked.unknownMedia, ["not-a-media"]);
+
+          const [onMastodon, onLinkedin] = checked.channels;
+
+          // The first part where it always was, the parts after it beside
+          // it, each with the text the channel has and its own counts.
+          assert.isDefined(onMastodon);
+          assert.strictEqual(onMastodon.text, "A synthetic first part");
+          assert.deepStrictEqual(onMastodon.parts, [
+            {
+              hashtags: { count: 0, maximum: null },
+              links: { count: 0, maximum: null },
+              media: { count: 0, maximum: 4 },
+              mentions: { count: 0, maximum: null },
+              part: 1,
+              text: "b".repeat(501),
+              textCounts: [{ length: 501, maximum: 500, unit: "codePoints" }],
+            },
+            {
+              hashtags: { count: 1, maximum: null },
+              links: { count: 0, maximum: null },
+              media: { count: 0, maximum: 4 },
+              mentions: { count: 0, maximum: null },
+              part: 2,
+              text: "A third part #three",
+              textCounts: [{ length: 19, maximum: 500, unit: "codePoints" }],
+            },
+          ]);
+          // What refuses a part names it, as scheduling does.
+          assert.deepStrictEqual(onMastodon.violations, [
+            {
+              _tag: "textTooLong",
+              channelId: mastodon,
+              length: 501,
+              maximum: 500,
+              part: 1,
+              platform: "mastodon",
+              unit: "codePoints",
+            },
+          ]);
+
+          // A platform that takes a post alone refuses the parts.
+          assert.deepStrictEqual(
+            onLinkedin?.violations.map(({ _tag }) => _tag),
+            ["tooManyParts"]
+          );
+          assert.lengthOf(onLinkedin?.parts ?? [], 2);
+          assert.strictEqual(
+            onLinkedin?.parts[0]?.text,
+            "A second part, for the others."
+          );
+
+          // A thread that fits is valid, and a post alone has no parts.
+          const fine = yield* viewer.posts.validate({
+            params,
+            payload: {
+              channelIds: [mastodon],
+              content: {
+                followUps: [
+                  { delaySeconds: 0, media: [], overrides: [], text: "Two" },
+                ],
+                media: [],
+                overrides: [],
+                text: "One",
+              },
+              when: { _tag: "now" },
+            },
+          });
+
+          assert.isTrue(fine.valid);
+          assert.lengthOf(fine.channels[0]?.parts ?? [], 1);
+
+          const alone = yield* viewer.posts.validate({
+            params,
+            payload: { channelIds: [mastodon], content: text("Alone") },
+          });
+
+          assert.deepStrictEqual(alone.channels[0]?.parts, []);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "answers 200 with what would refuse the post, and makes nothing",
     () =>
       onPostsServerAt(
@@ -72,6 +201,7 @@ describe("the validate endpoint", () => {
                 links: { count: 0, maximum: null },
                 media: { count: 0, maximum: 4 },
                 mentions: { count: 0, maximum: null },
+                parts: [],
                 platform: "mastodon",
                 text: "A synthetic post #one",
                 textCounts: [{ length: 21, maximum: 500, unit: "codePoints" }],

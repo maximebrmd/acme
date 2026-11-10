@@ -122,5 +122,84 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.isNull(inPerson[0]?.headers.get("ratelimit"));
         })
     );
+
+    it.effect(
+      "counts the inbox, the numbers and their exports with the rest, and answers a refused export as an error, not a file",
+      () =>
+        Effect.gen(function* limitedDepth() {
+          const app = yield* TestApp;
+          const owner = yield* signedUpUnconfirmed("limit-depth");
+          const workspaceId = yield* workspaceOf(owner, "Depth limits");
+          const base = `/api/workspaces/${workspaceId}`;
+          const days = "days=7&timeZone=Europe%2FParis";
+          const unknown = "0190f3a0-0000-7000-8000-00000000c0de";
+
+          const { key } = yield* apiKeyOf(owner, workspaceId, [
+            "analytics:read",
+            "engagement:read",
+            "engagement:reply",
+          ]);
+
+          const headers = { authorization: `Bearer ${key}` };
+          const exported = `${base}/analytics/export?kind=posts&${days}`;
+
+          const replies = yield* Effect.forEach(
+            [
+              { path: `${base}/inbox/threads` },
+              { path: `${base}/analytics/dashboard?${days}` },
+              { path: exported },
+              {
+                body: { text: "Thank you." },
+                path: `${base}/inbox/comments/${unknown}/replies`,
+              },
+              { path: `${base}/analytics/export?kind=accounts&${days}` },
+              // Past the five of this minute.
+              { path: exported },
+              { path: `${base}/inbox/threads` },
+            ],
+            (request) => app.request(request.path, { ...request, headers }),
+            { concurrency: 1 }
+          );
+
+          const remaining = replies.map((reply) =>
+            Number(
+              left.exec(reply.headers.get("ratelimit") ?? "")?.groups?.[
+                "remaining"
+              ]
+            )
+          );
+
+          // The window may turn while the test runs (see above).
+          if (remaining.join(",") !== "4,3,2,1,0,0,0") {
+            assert.include(remaining, 4);
+
+            return;
+          }
+
+          assert.deepStrictEqual(
+            replies.map(({ status }) => status),
+            [200, 200, 200, 404, 200, 429, 429]
+          );
+
+          // A file while there is room, with what is left in its headers.
+          assert.include(replies[2]?.headers.get("content-type"), "text/csv");
+          assert.strictEqual(
+            replies[2]?.headers.get("ratelimit-policy"),
+            '"default";q=5;w=60'
+          );
+
+          // Past the limit, the export is the API's error like any other:
+          // nothing was read, and nothing streamed.
+          const refused = replies.at(5);
+
+          assert.include(
+            refused?.headers.get("content-type"),
+            "application/json"
+          );
+          assert.isAtLeast(Number(refused?.headers.get("retry-after")), 1);
+          Schema.decodeUnknownSync(RefusalSchema)(refused?.body);
+          Schema.decodeUnknownSync(RefusalSchema)(replies[6]?.body);
+        })
+    );
   }
 );

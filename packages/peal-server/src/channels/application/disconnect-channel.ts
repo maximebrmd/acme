@@ -61,7 +61,7 @@ export class DisconnectChannel extends Context.Service<
             .remove(channel.workspaceId, channel.id)
             .pipe(
               Effect.tap((removed) =>
-                removed ? events.disconnected(channel) : Effect.void
+                removed ? events.disconnected(channel, "member") : Effect.void
               )
             )
         );

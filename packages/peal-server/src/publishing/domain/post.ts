@@ -367,8 +367,9 @@ export const startPublishing = (
 /**
  * How a post ended, from its settled targets: unconfirmed as soon as one
  * channel may have it live (the user has to check), published when every
- * channel has it, partially when some do, cancelled when every target was
- * cancelled, failed otherwise.
+ * channel has it whole, partially when some do or when a channel has some
+ * of its parts only, cancelled when every target was cancelled, failed
+ * otherwise.
  */
 export const outcomeOf = (targets: readonly PostTarget[]): PostOutcome => {
   const statuses = targets.map((target) => target.status._tag);
@@ -380,6 +381,11 @@ export const outcomeOf = (targets: readonly PostTarget[]): PostOutcome => {
 
   if (published > 0) {
     return published === statuses.length ? "published" : "partiallyPublished";
+  }
+
+  // Nothing is whole anywhere, and some parts are live somewhere.
+  if (targets.some((target) => target.liveParts.length > 0)) {
+    return "partiallyPublished";
   }
 
   return statuses.every((status) => status === "cancelled")

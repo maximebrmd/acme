@@ -1,12 +1,20 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Context, DateTime, Duration, Effect, Layer, Schema } from "effect";
+import {
+  Context,
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Option,
+  Schema,
+} from "effect";
 
-import { recordKeyOf } from "#publishing/infrastructure/platforms/bluesky/record-key.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
+import { recordKeyOf } from "#shared/infrastructure/platforms/bluesky/record-key.ts";
 import {
   blueskyDid,
   fakeBluesky,
@@ -98,6 +106,12 @@ const proofOf = (jwt: string) =>
     Buffer.from(jwt.split(".")[1] ?? "", "base64url").toString()
   );
 
+// A record as a reply names it.
+const refOf = (record: { readonly cid: string; readonly rkey: string }) => ({
+  cid: record.cid,
+  uri: `at://${blueskyDid}/app.bsky.feed.post/${record.rkey}`,
+});
+
 describe("publishing on Bluesky", () => {
   it.live("creates the post under a record key chosen from the attempt", () =>
     Effect.gen(function* postsText() {
@@ -164,6 +178,89 @@ describe("publishing on Bluesky", () => {
         });
         assert.lengthOf(network.records(), 1);
       }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "sends a later part as a reply that names the thread's root and its parent",
+    () =>
+      Effect.gen(function* repliesInThread() {
+        const { client, network } = yield* onBluesky();
+
+        const first = yield* client.publish(
+          yield* outgoing({ accountId: blueskyDid, text: "A first part" })
+        );
+
+        assert(first._tag === "published");
+
+        const second = yield* client.publish(
+          yield* outgoing({
+            accountId: blueskyDid,
+            idempotencyKey: "0b5e4f2a9c7d4e1f8a3b6c5d2e1f0a9b",
+            part: 1,
+            replyTo: Option.some({
+              parent: first.platformPostId,
+              root: first.platformPostId,
+            }),
+            text: "A second part",
+          })
+        );
+
+        assert(second._tag === "published");
+
+        yield* client.publish(
+          yield* outgoing({
+            accountId: blueskyDid,
+            idempotencyKey: "7d1c2b3a4f5e6d7c8b9a0f1e2d3c4b5a",
+            part: 2,
+            replyTo: Option.some({
+              parent: second.platformPostId,
+              root: first.platformPostId,
+            }),
+            text: "A third part",
+          })
+        );
+
+        const [root, middle, last] = network.records();
+
+        assert(root !== undefined && middle !== undefined);
+
+        assert.isUndefined(root.value["reply"]);
+        assert.deepStrictEqual(middle.value["reply"], {
+          parent: refOf(root),
+          root: refOf(root),
+        });
+        assert.deepStrictEqual(last?.value["reply"], {
+          parent: refOf(middle),
+          root: refOf(root),
+        });
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("sends no reply to a part that is no longer there", () =>
+    Effect.gen(function* parentGone() {
+      const { client, network } = yield* onBluesky();
+
+      const gone = PlatformPostIdSchema.make(
+        `at://${blueskyDid}/app.bsky.feed.post/3kabcdefghijk`
+      );
+
+      const result = yield* client
+        .publish(
+          yield* outgoing({
+            accountId: blueskyDid,
+            part: 1,
+            replyTo: Option.some({ parent: gone, root: gone }),
+            text: "A second part",
+          })
+        )
+        .pipe(Effect.flip);
+
+      assert.deepStrictEqual(
+        result,
+        new BadRequest({ code: "replyTargetGone" })
+      );
+      assert.lengthOf(creates(network), 0);
+    }).pipe(Effect.scoped)
   );
 
   it.live("uploads images and embeds them with their descriptions", () =>

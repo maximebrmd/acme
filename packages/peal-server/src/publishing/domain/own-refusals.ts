@@ -12,9 +12,15 @@ export const ownRefusalCodes = {
   channelDisconnected: "channelDisconnected",
   // A MediaRejected: the media was deleted, or is no longer ready.
   mediaRemoved: "mediaUnavailable",
+  // A BadRequest: a part after the first on a platform that takes a post
+  // alone. Scheduling refuses it: this is the router's last check.
+  partsNotSupported: "partsNotSupported",
   // A BadRequest: the workspace's plan has no room for the post when it is
   // due, as after a trial or on a smaller plan.
   planLimit: "planLimit",
+  // A BadRequest: a part after the first has no post to reply to, as Peal
+  // knows no id for the part before it, or for the first.
+  replyTargetUnknown: "replyTargetUnknown",
 } as const;
 
 /**
@@ -27,6 +33,13 @@ export const platformRefusalCodes = {
   // app until it approves it (TikTok: private posts from an app it has not
   // audited).
   appNotAudited: "appNotAudited",
+  // A BadRequest: the platform does not let this server's app post a later
+  // part as a reply (X, on self-serve access, takes a reply only from an
+  // account the post's author mentioned or quoted).
+  repliesNotAllowed: "repliesNotAllowed",
+  // A BadRequest: the post a later part answers is gone from the platform
+  // (Bluesky: its record no longer exists).
+  replyTargetGone: "replyTargetGone",
 } as const;
 
 /**

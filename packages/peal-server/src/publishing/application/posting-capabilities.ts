@@ -18,6 +18,7 @@ import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { AccountStandings } from "./account-standings.ts";
 import { ChannelConnections } from "./channel-connections.ts";
 import { CountedPlatforms } from "./counted-platforms.ts";
+import { CurrentThreadedPlatforms } from "./threaded-platforms.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
 import { WorkspaceChannels } from "./workspace-channels.ts";
 
@@ -58,12 +59,17 @@ export class PostingCapabilities extends Context.Service<
       const standings = yield* AccountStandings;
       const counted = yield* CountedPlatforms;
       const connections = yield* ChannelConnections;
+      const threaded = yield* CurrentThreadedPlatforms;
 
       const platforms = Effect.fn("PostingCapabilities.platforms")(
         function* platforms(actor: Actor) {
           yield* Effect.fromResult(authorize(actor, "channel:read"));
 
-          return everyCapabilities(counted.includes);
+          return everyCapabilities(
+            counted.includes,
+            counted.numbers,
+            threaded.takesParts
+          );
         }
       );
 
@@ -90,7 +96,9 @@ export class PostingCapabilities extends Context.Service<
             capabilities: capabilitiesOf(
               found.platform,
               counted.onChannel(found.platform, connection),
-              connection
+              connection,
+              counted.numbersOn(found.platform, connection),
+              threaded.takesParts(found.platform)
             ),
             channelId: found.channelId,
           };

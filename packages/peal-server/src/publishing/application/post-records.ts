@@ -61,6 +61,24 @@ export class PostRecords extends Context.Service<
       const scheduler = yield* PublicationScheduler;
       const { transaction } = yield* TransactionRunner;
 
+      // The rounds of the workspace's posts that are publishing, under
+      // their locks; refused while a call to a platform is in flight for
+      // one, as its outcome is not known yet. A post that only waits, as
+      // between two parts of a thread (a day at most each) or before
+      // another try, has none: it is erased, and what it had left to send
+      // is never sent.
+      const goingOut = Effect.fn("PostRecords.goingOut")(function* goingOut(
+        workspaceId: WorkspaceId
+      ) {
+        const rounds = yield* store.lockRounds(workspaceId);
+
+        if (rounds.some(({ inFlight }) => inFlight)) {
+          return yield* new PostsPublishing({ workspaceId });
+        }
+
+        return rounds;
+      });
+
       const eraseWorkspace = Effect.fn("PostRecords.eraseWorkspace")(
         function* eraseWorkspace(workspaceId: WorkspaceId) {
           yield* transaction(
@@ -69,20 +87,23 @@ export class PostRecords extends Context.Service<
               // claims its post before this reads it, which then reads as
               // publishing, or after this commits, and finds it gone.
               const standings = yield* store.lockAll(workspaceId);
+              const rounds = yield* goingOut(workspaceId);
 
-              if (standings.some(({ status }) => status === "publishing")) {
-                yield* new PostsPublishing({ workspaceId });
+              // A stop is part of the transaction, as a start is: the jobs
+              // that sleep until a post's time, and those that wait
+              // between two parts of one, or before trying a part again.
+              for (const { execution, status } of standings) {
+                if (
+                  (status === "scheduled" || status === "publishing") &&
+                  Option.isSome(execution)
+                ) {
+                  yield* scheduler.cancel(execution.value);
+                }
               }
 
-              // A stop is part of the transaction, as a start is.
-              yield* Effect.forEach(
-                standings,
-                ({ execution, status }) =>
-                  status === "scheduled" && Option.isSome(execution)
-                    ? scheduler.cancel(execution.value)
-                    : Effect.void,
-                { discard: true }
-              );
+              for (const { round, targetId } of rounds) {
+                yield* scheduler.cancelRound({ round, targetId });
+              }
 
               yield* store.deleteAll(workspaceId);
             })
@@ -92,11 +113,11 @@ export class PostRecords extends Context.Service<
 
       const ensureErasable = Effect.fn("PostRecords.ensureErasable")(
         function* ensureErasable(workspaceId: WorkspaceId) {
-          const standings = yield* transaction(store.lockAll(workspaceId));
-
-          if (standings.some(({ status }) => status === "publishing")) {
-            yield* new PostsPublishing({ workspaceId });
-          }
+          yield* transaction(
+            store
+              .lockAll(workspaceId)
+              .pipe(Effect.andThen(goingOut(workspaceId)))
+          );
         }
       );
 

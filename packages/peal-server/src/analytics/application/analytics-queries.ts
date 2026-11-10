@@ -1,8 +1,14 @@
-import { Context, Effect, Layer, Option } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Stream } from "effect";
 
+import { utcDayFrom } from "#analytics/domain/account-metrics.ts";
+import { followerChange } from "#analytics/domain/account-series.ts";
+import type { FollowersRead } from "#analytics/domain/account-series.ts";
+import { keptSince } from "#analytics/domain/analytics-retention.ts";
 import type { InvalidReportRange } from "#analytics/domain/invalid-report-range.ts";
 import {
   dayStarts,
+  lastDays,
+  previousRange,
   reportDays,
   reportRange,
 } from "#analytics/domain/report-range.ts";
@@ -11,14 +17,22 @@ import type { TrackedPost } from "#analytics/domain/tracked-post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
-import type { PostId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { localDateOf } from "#shared/domain/wall-clock.ts";
 import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
+import { dashboardOf, followersOf, totalsOf } from "./analytics-dashboard.ts";
+import type { ChannelSeries, Dashboard } from "./analytics-dashboard.ts";
 import { AnalyticsReports } from "./analytics-reports.ts";
 import type {
+  AccountDayRow,
+  ChannelCounts,
   ChannelTotals,
+  DayGains,
+  FollowedChannel,
   CountTotals,
+  ExportedPost,
   PostHistory,
 } from "./analytics-reports.ts";
 
@@ -79,6 +93,58 @@ const totalOf = (channels: readonly ChannelTotals[]): CountTotals => {
   return sum;
 };
 
+/**
+ * The days asked for: the last 7, 30 or 90 ending today in the zone, or
+ * from one day to another.
+ */
+export type RangeAsked = Pick<ReportRange, "timeZone"> &
+  (
+    | { readonly _tag: "last"; readonly days: number }
+    | {
+        readonly _tag: "between";
+        readonly from: LocalDate;
+        readonly to: LocalDate;
+      }
+  );
+
+// What a channel's series is put together from.
+interface ChannelRows {
+  readonly accountDays: readonly AccountDayRow[];
+  readonly channels: readonly FollowedChannel[];
+  readonly counts: readonly ChannelCounts[];
+  readonly gains: readonly DayGains[];
+}
+
+// What a channel that does not exist has: nothing.
+const nothingRead: ChannelRows = {
+  accountDays: [],
+  channels: [],
+  counts: [],
+  gains: [],
+};
+
+// When a range starts and ends, and when each of its days does.
+const spanOf = (range: ReportRange) => {
+  const starts = dayStarts(range);
+  const [start] = starts;
+  const end = starts.at(-1);
+
+  return start === undefined || end === undefined
+    ? Effect.die("A range covers at least one day")
+    : Effect.succeed({ end, start, starts });
+};
+
+const daysOf = (range: ReportRange) =>
+  reportDays(range).map((date) => ({ date, day: utcDayFrom(date) }));
+
+/** A row of an export: a post of the range, or a day of an account. */
+export type ExportRow =
+  | { readonly _tag: "post"; readonly row: ExportedPost }
+  | { readonly _tag: "accountDay"; readonly row: AccountDayRow };
+
+/** How many rows an export reads from the store at a time. */
+export const exportPage = 500;
+
 /** Reading a workspace's analytics. Needs analytics:read. */
 export class AnalyticsQueries extends Context.Service<
   AnalyticsQueries,
@@ -102,6 +168,42 @@ export class AnalyticsQueries extends Context.Service<
     ) => Effect.Effect<
       AnalyticsSummary,
       DatabaseError | InvalidReportRange | MissingPermission
+    >;
+    /**
+     * The workspace's analytics over a range beside the range before it,
+     * with the `top` posts people did the most with.
+     */
+    readonly dashboard: (
+      actor: Actor,
+      asked: RangeAsked,
+      top: number
+    ) => Effect.Effect<
+      Dashboard,
+      DatabaseError | InvalidReportRange | MissingPermission
+    >;
+    /**
+     * One channel's numbers day by day. A channel that is not the
+     * workspace's, or that Peal read nothing of, has days without numbers.
+     */
+    readonly channel: (
+      actor: Actor,
+      channelId: Option.Option<ChannelId>,
+      asked: RangeAsked
+    ) => Effect.Effect<
+      ChannelSeries,
+      DatabaseError | InvalidReportRange | MissingPermission
+    >;
+    /**
+     * The rows of an export, read a page at a time as they are taken, so
+     * however many there are, a page is all that is held.
+     */
+    readonly exportRows: (
+      actor: Actor,
+      kind: "accounts" | "posts",
+      asked: RangeAsked
+    ) => Effect.Effect<
+      Stream.Stream<ExportRow, DatabaseError>,
+      InvalidReportRange | MissingPermission
     >;
   }
 >()("peal-server/analytics/application/AnalyticsQueries") {
@@ -154,7 +256,222 @@ export class AnalyticsQueries extends Context.Service<
         return found;
       });
 
-      return AnalyticsQueries.of({ post, summary });
+      // The range asked for, checked, today being the clock's.
+      const rangeOf = Effect.fn("AnalyticsQueries.range")(function* rangeOf(
+        asked: RangeAsked
+      ) {
+        if (asked._tag === "between") {
+          return yield* Effect.fromResult(reportRange(asked));
+        }
+
+        const today = localDateOf(yield* DateTime.now, asked.timeZone);
+
+        return yield* Effect.fromResult(
+          lastDays(today, asked.days, asked.timeZone)
+        );
+      });
+
+      const dashboard = Effect.fn("AnalyticsQueries.dashboard")(
+        function* dashboard(actor: Actor, asked: RangeAsked, top: number) {
+          yield* Effect.fromResult(authorize(actor, "analytics:read"));
+
+          const range = yield* rangeOf(asked);
+          const previous = previousRange(range);
+          const span = yield* spanOf(range);
+          const before = yield* spanOf(previous);
+          const now = yield* DateTime.now;
+          const { workspaceId } = actor;
+          const channelId = Option.none<ChannelId>();
+          const posts = { channelId, workspaceId };
+
+          const found = yield* Effect.all({
+            accountDays: reports.accountDays({
+              channelId,
+              from: utcDayFrom(previous.from),
+              to: utcDayFrom(range.to),
+              workspaceId,
+            }),
+            channels: reports.channels(workspaceId),
+            counts: reports.counts({ ...posts, ...span }),
+            gains: reports.gains(workspaceId, span.starts, channelId),
+            previousCounts: reports.counts({ ...posts, ...before }),
+            topPosts: reports.top({ ...posts, ...span }, top),
+          });
+
+          return dashboardOf({
+            ...found,
+            platforms: new Map(
+              found.channels.map((channel) => [
+                channel.channelId,
+                channel.platform,
+              ])
+            ),
+            previous,
+            previousKeptOn: (platform) =>
+              keptSince(platform, before.start, now),
+            previousSpan: {
+              from: utcDayFrom(previous.from),
+              to: utcDayFrom(previous.to),
+            },
+            range,
+            rangeDays: daysOf(range),
+          });
+        }
+      );
+
+      const channel = Effect.fn("AnalyticsQueries.channel")(function* channel(
+        actor: Actor,
+        asked: Option.Option<ChannelId>,
+        days: RangeAsked
+      ) {
+        yield* Effect.fromResult(authorize(actor, "analytics:read"));
+
+        const range = yield* rangeOf(days);
+
+        const span = yield* spanOf(range);
+        const { workspaceId } = actor;
+        const from = utcDayFrom(range.from);
+        const to = utcDayFrom(range.to);
+
+        // An id that is no channel's names none: nothing was read of it.
+        const found: ChannelRows = Option.isNone(asked)
+          ? nothingRead
+          : yield* Effect.all({
+              accountDays: reports.accountDays({
+                channelId: asked,
+                from,
+                to,
+                workspaceId,
+              }),
+              channels: reports.channels(workspaceId),
+              counts: reports.counts({
+                channelId: asked,
+                workspaceId,
+                ...span,
+              }),
+              gains: reports.gains(workspaceId, span.starts, asked),
+            });
+
+        const followers = followersOf(found.accountDays);
+
+        const byDay = new Map(found.accountDays.map((row) => [row.day, row]));
+        const gains = new Map(found.gains.map((day) => [day.day, day]));
+        const none = Option.none<number>();
+
+        const series: ChannelSeries = {
+          days: daysOf(range).map(({ date, day }, index) => ({
+            date,
+            followers: byDay.get(day)?.followers ?? none,
+            following: byDay.get(day)?.following ?? none,
+            likes: gains.get(index)?.likes ?? 0,
+            posts: byDay.get(day)?.posts ?? none,
+            quotes: gains.get(index)?.quotes ?? 0,
+            reach: byDay.get(day)?.reach ?? none,
+            replies: gains.get(index)?.replies ?? 0,
+            reposts: gains.get(index)?.reposts ?? 0,
+            views: byDay.get(day)?.views ?? none,
+          })),
+          followers: followerChange(
+            asked.pipe(
+              Option.flatMapNullishOr((channelId) => followers.get(channelId)),
+              Option.getOrElse((): readonly FollowersRead[] => [])
+            ),
+            from,
+            to
+          ),
+          platform: asked.pipe(
+            Option.flatMapNullishOr(
+              (channelId) =>
+                found.channels.find(
+                  (followed) => followed.channelId === channelId
+                )?.platform
+            )
+          ),
+          range,
+          totals: totalsOf(found.counts),
+        };
+
+        return series;
+      });
+
+      const exportRows = Effect.fn("AnalyticsQueries.exportRows")(
+        function* exportRows(
+          actor: Actor,
+          kind: "accounts" | "posts",
+          asked: RangeAsked
+        ) {
+          yield* Effect.fromResult(authorize(actor, "analytics:read"));
+
+          const range = yield* rangeOf(asked);
+          const { workspaceId } = actor;
+          const channelId = Option.none<ChannelId>();
+
+          if (kind === "posts") {
+            const span = yield* spanOf(range);
+            const posts = { channelId, workspaceId, ...span };
+
+            const rows: Stream.Stream<ExportRow, DatabaseError> =
+              Stream.paginate(
+                Option.none<Pick<TrackedPost, "publishedAt" | "targetId">>(),
+                (after) =>
+                  reports.postsPage(posts, after, exportPage).pipe(
+                    Effect.map((page) => {
+                      const last = page.at(-1)?.post;
+
+                      const next =
+                        page.length < exportPage || last === undefined
+                          ? Option.none()
+                          : Option.some(Option.some(last));
+
+                      return [
+                        page.map((row): ExportRow => ({ _tag: "post", row })),
+                        next,
+                      ] as const;
+                    })
+                  )
+              );
+
+            return rows;
+          }
+
+          const days = {
+            channelId,
+            from: utcDayFrom(range.from),
+            to: utcDayFrom(range.to),
+            workspaceId,
+          };
+
+          const rows: Stream.Stream<ExportRow, DatabaseError> = Stream.paginate(
+            Option.none<Pick<AccountDayRow, "channelId" | "day">>(),
+            (after) =>
+              reports.accountDaysPage(days, after, exportPage).pipe(
+                Effect.map((page) => {
+                  const last = page.at(-1);
+
+                  const next =
+                    page.length < exportPage || last === undefined
+                      ? Option.none()
+                      : Option.some(Option.some(last));
+
+                  return [
+                    page.map((row): ExportRow => ({ _tag: "accountDay", row })),
+                    next,
+                  ] as const;
+                })
+              )
+          );
+
+          return rows;
+        }
+      );
+
+      return AnalyticsQueries.of({
+        channel,
+        dashboard,
+        exportRows,
+        post,
+        summary,
+      });
     })
   );
 }

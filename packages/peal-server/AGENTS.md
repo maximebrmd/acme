@@ -17,6 +17,7 @@ change crosses several:
 | `analytics`          | [`src/analytics/AGENTS.md`](src/analytics/AGENTS.md)         |
 | `webhooks`           | [`src/webhooks/AGENTS.md`](src/webhooks/AGENTS.md)           |
 | `review`             | [`src/review/AGENTS.md`](src/review/AGENTS.md)               |
+| `engagement`         | [`src/engagement/AGENTS.md`](src/engagement/AGENTS.md)       |
 | `activity`           | [`src/activity/AGENTS.md`](src/activity/AGENTS.md)           |
 | the MCP endpoint     | [`src/app/mcp/AGENTS.md`](src/app/mcp/AGENTS.md)             |
 
@@ -28,22 +29,23 @@ The server follows DDD and Clean Architecture. Each bounded context in
 `packages/peal-server/src/` has four layers, plus a `container.ts` that wires
 them:
 
-| Context         | Holds                                                                       |
-| --------------- | --------------------------------------------------------------------------- |
-| `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters |
-| `channels`      | connected accounts, connect flows, encrypted tokens and their renewal       |
-| `media`         | uploads, storage, probing, alt text, files handed to platforms              |
-| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth, partner accounts     |
-| `notifications` | account emails, in-app notices, their emails, notification preferences      |
-| `assistant`     | the writing assistant: prompts, language models, the daily quota            |
-| `shared`        | the kernel the others build on                                              |
-| `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
-| `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
-| `staff`         | the staff console: what staff read and do, and the audit log of it          |
-| `activity`      | each workspace's activity log, and the requests counted for the rate limit  |
-| `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log   |
-| `legal`         | what French law has a host keep, and the legal requests that read it        |
-| `review`        | approval policies, requests and decisions, review links, comments           |
+| Context         | Holds                                                                             |
+| --------------- | --------------------------------------------------------------------------------- |
+| `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters       |
+| `channels`      | connected accounts, connect flows, encrypted tokens and their renewal             |
+| `media`         | uploads, storage, probing, alt text, files handed to platforms                    |
+| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth, partner accounts           |
+| `notifications` | account emails, in-app notices, their emails, notification preferences            |
+| `assistant`     | the writing assistant: prompts, language models, the daily quota                  |
+| `shared`        | the kernel the others build on                                                    |
+| `analytics`     | the posts it follows, snapshots of their counts, the hourly collection            |
+| `billing`       | plans, subscriptions, entitlements, the billing page's usage                      |
+| `staff`         | the staff console: what staff read and do, and the audit log of it                |
+| `engagement`    | the inbox: comments under published posts, replies sent to them, their collection |
+| `activity`      | each workspace's activity log, and the requests counted for the rate limit        |
+| `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log         |
+| `legal`         | what French law has a host keep, and the legal requests that read it              |
+| `review`        | approval policies, requests and decisions, review links, comments                 |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -245,6 +247,13 @@ and no socket, for tests.
   The runner's name comes from `HOSTNAME`, never `HOST` or `PORT`; shards are
   held with session advisory locks, storage is polled every 2 seconds, and
   shutdown waits up to 60 seconds for platform calls in flight.
+- The crons that call platforms through the gates (post counts at minute
+  7, accounts at 37, comments every ten minutes from 2, the token sweep
+  every ten from 0) never start on the same minute, and a collection
+  starts on a minute no other cron does: `test/app/cron-schedules.test.ts`
+  reads every `ClusterCron.make` in `src/` and fails otherwise. A gate
+  runs calls in the order they came, so a publish waits for one read of
+  each collection at most (`test/publishing/infrastructure/channel-gate.test.ts`).
 - Register crons in `src/app/crons.ts`. Workflow tags, payloads, idempotency
   keys, activity and clock names, result schemas and cron names are persisted
   contract: add a payload field with a decoding default or a union member,
@@ -263,7 +272,7 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`; the
+  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`, `engagement`; the
   workspace context's are Better Auth's, in `auth`). Effect creates its
   `cluster_*` tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
@@ -289,3 +298,17 @@ and no socket, for tests.
 - Every metric that says a job falls behind has an alert rule
   (`packages/peal-docker/test/alerting.test.ts`): add the rule with the
   metric.
+- Text Peal did not write is made storable before it is kept:
+  `storableText` and `storableLine` (`#shared/domain/platform-text.ts`)
+  make it well formed (Postgres takes no NUL, and no lone surrogate in
+  JSON), drop control characters, bound it by characters, and, for a name
+  or any single line, drop line breaks and the marks that reorder what is
+  around it. Clean where the text enters, before it is compared, stored or
+  put in a job's history: comments and their authors (`storableReading`),
+  what a sign-in says of an account (`storableAuthorized`), what a
+  platform answers a publishing call with (`storableResult`,
+  `storableFailure`, in the routed publisher), a file's codec, a webhook
+  receiver's answer (`excerptOf`) and what visitors type on a review page
+  (`review/domain/plain-text.ts`). A new place a platform's string is
+  kept goes through the helper, with a test that hands it a NUL and half
+  a surrogate pair.

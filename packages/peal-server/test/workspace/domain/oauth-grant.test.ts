@@ -66,6 +66,9 @@ describe(grantedPermissions, () => {
     assert.notInclude(permissions, "post:schedule");
     assert.notInclude(permissions, "post:approve");
     assert.notInclude(permissions, "post:publish");
+    // A reply to a comment is public too.
+    assert.notInclude(permissions, "engagement:reply");
+    assert.include(permissions, "engagement:read");
   });
 
   it("leaves workspace:publish reading and what puts posts out", () => {
@@ -78,6 +81,7 @@ describe(grantedPermissions, () => {
     assert.include(permissions, "post:schedule");
     assert.include(permissions, "post:publish");
     assert.include(permissions, "post:approve");
+    assert.include(permissions, "engagement:reply");
     assert.include(permissions, "channel:read");
     assert.notInclude(permissions, "post:create");
     assert.notInclude(permissions, "media:upload");

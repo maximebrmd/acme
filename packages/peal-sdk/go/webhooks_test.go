@@ -3645,6 +3645,20 @@ func TestEnumSubscribableWebhookEventType(t *testing.T) {
 		assert.Equal(t, SubscribableWebhookEventType("media.failed"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_comment_received", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("comment.received")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("comment.received"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_comment_replied", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("comment.replied")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("comment.replied"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewSubscribableWebhookEventTypeFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)
@@ -3936,6 +3950,20 @@ func TestEnumWebhookEventType(t *testing.T) {
 		val, err := NewWebhookEventTypeFromString("media.failed")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, WebhookEventType("media.failed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_comment_received", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("comment.received")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("comment.received"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_comment_replied", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("comment.replied")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("comment.replied"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_webhook_test", func(t *testing.T) {

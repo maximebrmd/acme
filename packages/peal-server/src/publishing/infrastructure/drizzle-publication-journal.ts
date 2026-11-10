@@ -46,6 +46,7 @@ const recordedAttempt = (row: AttemptRow) =>
       attempt: row.attempt,
       finishedAt: DateTime.fromDateUnsafe(row.finishedAt),
       outcome: yield* decodeOutcome(row.detail),
+      part: row.part,
       retryAfter: Option.fromNullOr(row.retryDelayMillis).pipe(
         Option.map(Duration.millis)
       ),
@@ -93,6 +94,7 @@ export const DrizzlePublicationJournal = Layer.effect(
           and(
             eq(publicationCalls.targetId, call.targetId),
             eq(publicationCalls.round, call.round),
+            eq(publicationCalls.part, call.part),
             eq(publicationCalls.attempt, call.attempt)
           )
         )
@@ -112,6 +114,7 @@ export const DrizzlePublicationJournal = Layer.effect(
           attempt: call.attempt,
           idempotencyKey: call.idempotencyKey,
           operation: "publish",
+          part: call.part,
           round: call.round,
           startedAt: date(call.startedAt),
           targetId: call.targetId,
@@ -126,7 +129,7 @@ export const DrizzlePublicationJournal = Layer.effect(
         return start;
       }
 
-      // The key, or this attempt of the round, is taken: some run began the
+      // The key, or this attempt at the part in the round, is taken: some run began the
       // call, under this key or another.
       const begun = yield* find(call);
 
@@ -152,6 +155,7 @@ export const DrizzlePublicationJournal = Layer.effect(
           .orderBy(
             asc(publicationAttempts.targetId),
             asc(publicationAttempts.round),
+            asc(publicationAttempts.part),
             asc(publicationAttempts.attempt)
           )
           .pipe(
@@ -169,6 +173,7 @@ export const DrizzlePublicationJournal = Layer.effect(
             and(
               eq(publicationAttempts.targetId, call.targetId),
               eq(publicationAttempts.round, call.round),
+              eq(publicationAttempts.part, call.part),
               lt(publicationAttempts.attempt, call.attempt)
             )
           )
@@ -214,6 +219,7 @@ export const DrizzlePublicationJournal = Layer.effect(
               detail,
               finishedAt: date(attempt.finishedAt),
               outcome: attempt.outcome._tag,
+              part: attempt.part,
               retryDelayMillis:
                 decision._tag === "retry"
                   ? Duration.toMillis(decision.delay)

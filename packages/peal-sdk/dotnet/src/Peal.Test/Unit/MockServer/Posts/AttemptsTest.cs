@@ -17,6 +17,7 @@ public class AttemptsTest : BaseMockServerTest
               {
                 "attempt": 1,
                 "finishedAt": "finishedAt",
+                "part": 1,
                 "refusalCode": "refusalCode",
                 "result": "published",
                 "retryAt": "retryAt",
@@ -27,6 +28,7 @@ public class AttemptsTest : BaseMockServerTest
               {
                 "attempt": 1,
                 "finishedAt": "finishedAt",
+                "part": 1,
                 "refusalCode": "refusalCode",
                 "result": "published",
                 "retryAt": "retryAt",
@@ -65,6 +67,7 @@ public class AttemptsTest : BaseMockServerTest
               {
                 "attempt": 1,
                 "finishedAt": "finishedAt",
+                "part": 1,
                 "refusalCode": "refusalCode",
                 "result": "published",
                 "retryAt": "retryAt",

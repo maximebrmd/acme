@@ -1,7 +1,8 @@
 import { Effect, Schema } from "effect";
 import { Flag } from "effect/cli";
 import { TargetOptionsSchema } from "peal-contract";
-import type { ChannelOptions } from "peal-contract";
+import type { ChannelOptions, PostPart } from "peal-contract";
+import { maxFollowUps, maxPartDelaySeconds } from "peal-contract/post-text";
 
 import { Refused } from "#refused.ts";
 
@@ -66,4 +67,59 @@ export const optionsOf = (given: string) =>
     const chosen: ChannelOptions = { channelId, options };
 
     return chosen;
+  });
+
+/** `--then <text>`, repeated: the parts of the post after its first. */
+export const thenFlag = (description: string) =>
+  Flag.String("then").pipe(
+    Flag.withMetavar("<text>"),
+    Flag.withDescription(description),
+    Flag.atLeast(0)
+  );
+
+/** `--then-delay <seconds>`: the wait before each part after the first. */
+export const thenDelayFlag = Flag.Int("then-delay").pipe(
+  Flag.withMetavar("<seconds>"),
+  Flag.withDescription(
+    `How long each --then part waits after the part before it went out, in seconds: 0, the default, sends them one after the other; ${String(maxPartDelaySeconds)} (a day) at most.`
+  ),
+  Flag.withDefault(0)
+);
+
+/**
+ * The parts `--then` and `--then-delay` make, in the order given: text
+ * alone, as the command line attaches media to the first part only.
+ */
+export const followUpsOf = (texts: readonly string[], delaySeconds: number) =>
+  Effect.gen(function* parts() {
+    if (
+      !Number.isInteger(delaySeconds) ||
+      delaySeconds < 0 ||
+      delaySeconds > maxPartDelaySeconds
+    ) {
+      return yield* new Refused({
+        reason: `--then-delay takes whole seconds from 0 to ${String(maxPartDelaySeconds)}, not ${String(delaySeconds)}.`,
+      });
+    }
+
+    // A wait with no part to wait before would be dropped without a word.
+    if (texts.length === 0 && delaySeconds !== 0) {
+      return yield* new Refused({
+        reason:
+          "--then-delay sets the wait before each --then part, and there is none: give the parts with --then, or leave --then-delay out.",
+      });
+    }
+
+    if (texts.length > maxFollowUps) {
+      return yield* new Refused({
+        reason: `A post has ${String(maxFollowUps)} parts after its first at most: there are ${String(texts.length)} --then.`,
+      });
+    }
+
+    return texts.map((text): PostPart => ({
+      delaySeconds,
+      media: [],
+      overrides: [],
+      text,
+    }));
   });

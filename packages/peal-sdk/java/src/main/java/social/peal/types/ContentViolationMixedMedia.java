@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -21,12 +23,16 @@ import social.peal.core.ObjectMappers;
 public final class ContentViolationMixedMedia {
     private final String channelId;
 
+    private final Optional<Integer> part;
+
     private final Platform platform;
 
     private final Map<String, Object> additionalProperties;
 
-    private ContentViolationMixedMedia(String channelId, Platform platform, Map<String, Object> additionalProperties) {
+    private ContentViolationMixedMedia(
+            String channelId, Optional<Integer> part, Platform platform, Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.part = part;
         this.platform = platform;
         this.additionalProperties = additionalProperties;
     }
@@ -34,6 +40,11 @@ public final class ContentViolationMixedMedia {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("part")
+    public Optional<Integer> getPart() {
+        return part;
     }
 
     @JsonProperty("platform")
@@ -53,12 +64,12 @@ public final class ContentViolationMixedMedia {
     }
 
     private boolean equalTo(ContentViolationMixedMedia other) {
-        return channelId.equals(other.channelId) && platform.equals(other.platform);
+        return channelId.equals(other.channelId) && part.equals(other.part) && platform.equals(other.platform);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelId, this.platform);
+        return Objects.hash(this.channelId, this.part, this.platform);
     }
 
     @java.lang.Override
@@ -86,6 +97,10 @@ public final class ContentViolationMixedMedia {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage part(Optional<Integer> part);
+
+        _FinalStage part(Integer part);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -94,6 +109,8 @@ public final class ContentViolationMixedMedia {
 
         private Platform platform;
 
+        private Optional<Integer> part = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -101,6 +118,7 @@ public final class ContentViolationMixedMedia {
         @java.lang.Override
         public Builder from(ContentViolationMixedMedia other) {
             channelId(other.getChannelId());
+            part(other.getPart());
             platform(other.getPlatform());
             return this;
         }
@@ -120,13 +138,26 @@ public final class ContentViolationMixedMedia {
         }
 
         @java.lang.Override
+        public _FinalStage part(Integer part) {
+            this.part = Optional.ofNullable(part);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "part", nulls = Nulls.SKIP)
+        public _FinalStage part(Optional<Integer> part) {
+            this.part = part;
+            return this;
+        }
+
+        @java.lang.Override
         public ContentViolationMixedMedia build() {
-            return new ContentViolationMixedMedia(channelId, platform, additionalProperties);
+            return new ContentViolationMixedMedia(channelId, part, platform, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("channelId") || key.equalsIgnoreCase("platform")) {
+            if (key.equalsIgnoreCase("channelId") || key.equalsIgnoreCase("part") || key.equalsIgnoreCase("platform")) {
                 return;
             }
             this.additionalProperties.put(key, value);

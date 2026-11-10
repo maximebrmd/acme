@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface ContentViolationOptionInvalid {
     channelId: string;
+    part?: number | undefined;
     platform: Peal.Platform;
     field: string;
 }

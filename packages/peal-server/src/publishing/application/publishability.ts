@@ -41,6 +41,7 @@ export const violationsOf = Effect.fn("Publishing.violationsOf")(
         rules.violationsOn({
           channel,
           files,
+          followUps: content.followUps.length,
           options: optionsOn(options, channel.channelId),
         }),
       { concurrency: 4 }

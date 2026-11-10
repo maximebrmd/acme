@@ -205,6 +205,7 @@ const PortsLive = Layer.mergeAll(
             Effect.as(
               workspaceIds.map((workspaceId) => ({
                 createdVia: { name: null, via: "web" },
+                followUps: [],
                 id: "019a6f10-0000-7000-8000-000000000001",
                 media: [],
                 scheduledAt: null,
@@ -233,6 +234,7 @@ const PortsLive = Layer.mergeAll(
             preferences: {
               email: {
                 channelReconnect: true,
+                comments: false,
                 postFailed: true,
                 postPublished: false,
                 postReview: true,
@@ -240,11 +242,13 @@ const PortsLive = Layer.mergeAll(
               },
               everyPost: false,
             },
+            replies: [],
             review: { approvals: [], comments: [] },
             staffActions: [],
           }),
         exportWorkspace: () =>
           Effect.succeed({
+            accountAnalytics: [],
             analytics: [],
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
             billing: {

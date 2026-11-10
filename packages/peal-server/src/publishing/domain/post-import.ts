@@ -233,6 +233,11 @@ const postOf = (
  * a line that is not blank, numbered from 1 among those; one with more or
  * fewer cells than the first line names is unreadable (`cellCount`), never
  * read by guessing. Fails when the file as a whole cannot be read.
+ *
+ * A row is a post of one part, with one text for all its channels: no
+ * column carries the parts of a thread, texts by channel or options, which
+ * a flat cell cannot hold without a syntax of its own. Those posts go
+ * through `send` or `bulk`.
  */
 export const readImport = (
   file: string

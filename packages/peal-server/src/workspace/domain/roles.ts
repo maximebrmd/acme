@@ -17,10 +17,11 @@ import type { Grant, Permission } from "#shared/domain/access.ts";
  *   log. Owners and admins alone manage members, API keys, billing and
  *   webhooks.
  * - `editor`: writes, schedules, approves and publishes posts, manages media,
- *   asks the writing assistant, and reads channels and analytics.
+ *   asks the writing assistant, reads channels and analytics, and reads
+ *   and answers the comments under the workspace's posts.
  * - `contributor`: drafts posts, uploads media and asks the writing
- *   assistant, but publishes nothing.
- * - `viewer`: reads posts, media, channels and analytics.
+ *   assistant, but publishes nothing: reads comments, and answers none.
+ * - `viewer`: reads posts, media, channels, analytics and comments.
  */
 export const RoleSchema = Schema.Literals([
   "owner",
@@ -42,6 +43,7 @@ export const roleGrants: Readonly<Record<Role, Grant>> = {
     analytics: ["read"],
     assistant: ["use"],
     channel: ["read"],
+    engagement: ["read"],
     media: ["read", "upload"],
     post: ["read", "create", "update"],
   },
@@ -49,6 +51,7 @@ export const roleGrants: Readonly<Record<Role, Grant>> = {
     analytics: ["read"],
     assistant: ["use"],
     channel: ["read"],
+    engagement: statements.engagement,
     media: ["read", "upload", "delete"],
     post: statements.post,
   },
@@ -56,6 +59,7 @@ export const roleGrants: Readonly<Record<Role, Grant>> = {
   viewer: {
     analytics: ["read"],
     channel: ["read"],
+    engagement: ["read"],
     media: ["read"],
     post: ["read"],
   },

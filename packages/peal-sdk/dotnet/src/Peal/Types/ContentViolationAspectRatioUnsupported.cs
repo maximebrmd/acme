@@ -15,6 +15,9 @@ public record ContentViolationAspectRatioUnsupported : IJsonOnDeserialized
     [JsonPropertyName("channelId")]
     public required string ChannelId { get; set; }
 
+    [JsonPropertyName("part")]
+    public int? Part { get; set; }
+
     [JsonPropertyName("platform")]
     public required Platform Platform { get; set; }
 

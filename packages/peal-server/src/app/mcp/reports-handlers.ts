@@ -1,15 +1,22 @@
 import { Effect, Option, Schema } from "effect";
 import { CurrentMember, defaultActivityPageSize } from "peal-contract";
+import type { CalendarDay } from "peal-contract";
 
 import { toEventView } from "#activity/api/activity-view.ts";
 import { ActivityLog } from "#activity/application/activity-log.ts";
 import { ActivityEventIdSchema } from "#activity/domain/activity-event-id.ts";
 import {
+  channelSeriesView,
+  dashboardView,
   dateFrom,
   summaryView,
   targetView,
 } from "#analytics/api/analytics-view.ts";
-import { AnalyticsQueries } from "#analytics/application/analytics-queries.ts";
+import {
+  AnalyticsQueries,
+  topPostCount,
+} from "#analytics/application/analytics-queries.ts";
+import type { RangeAsked } from "#analytics/application/analytics-queries.ts";
 import type { PostHistory } from "#analytics/application/analytics-reports.ts";
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
@@ -18,13 +25,14 @@ import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { authorize } from "#shared/domain/authorize.ts";
-import { PostIdSchema } from "#shared/domain/ids.ts";
+import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
 
 const decodeEventId = Schema.decodeUnknownOption(ActivityEventIdSchema);
+const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 
 const decodeTimeZone = Schema.decodeUnknownOption(TimeZoneIdSchema);
 
@@ -35,6 +43,54 @@ const invalidRange = () =>
     "The range must end on or after the day it starts, and span 366 days at most."
   );
 
+// The days a tool was asked for: `days`, or `from` and `to`.
+const rangeAsked = (asked: {
+  readonly days?: number;
+  readonly from?: CalendarDay;
+  readonly timeZone: string;
+  readonly to?: CalendarDay;
+}) =>
+  Effect.gen(function* range() {
+    const zone = decodeTimeZone(asked.timeZone);
+
+    if (Option.isNone(zone)) {
+      return yield* refuse(
+        `${asked.timeZone} is not an IANA time zone, such as Europe/Paris.`
+      );
+    }
+
+    const between = Option.all({
+      from: Option.fromUndefinedOr(asked.from).pipe(Option.flatMap(dateFrom)),
+      to: Option.fromUndefinedOr(asked.to).pipe(Option.flatMap(dateFrom)),
+    });
+
+    const dated = asked.from !== undefined || asked.to !== undefined;
+
+    if (asked.days !== undefined && !dated) {
+      const last: RangeAsked = {
+        _tag: "last",
+        days: asked.days,
+        timeZone: zone.value,
+      };
+
+      return last;
+    }
+
+    if (asked.days === undefined && Option.isSome(between)) {
+      const given: RangeAsked = {
+        _tag: "between",
+        ...between.value,
+        timeZone: zone.value,
+      };
+
+      return given;
+    }
+
+    return yield* refuse(
+      "Give `days`, or `from` and `to` together, not both: the range ends on or after the day it starts, and spans 366 days at most."
+    );
+  });
+
 /** What the report tools do, through the analytics and billing use cases. */
 export const ReportToolsLive = ReportTools.toLayer(
   Effect.gen(function* reportTools() {
@@ -44,7 +100,23 @@ export const ReportToolsLive = ReportTools.toLayer(
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
 
+    const refusals = {
+      DatabaseError: Effect.die,
+      InvalidReportRange: invalidRange,
+      MissingPermission: notAllowed("read analytics"),
+    };
+
     return ReportTools.of({
+      analytics_dashboard: (asked) =>
+        Effect.gen(function* dashboard() {
+          const range = yield* rangeAsked(asked);
+
+          const found = yield* analytics
+            .dashboard(yield* actor, range, asked.topPosts ?? topPostCount)
+            .pipe(Effect.catchTags(refusals));
+
+          return dashboardView(found);
+        }),
       analytics_summary: ({ from, timeZone, to }) =>
         Effect.gen(function* summary() {
           const zone = decodeTimeZone(timeZone);
@@ -77,6 +149,16 @@ export const ReportToolsLive = ReportTools.toLayer(
             );
 
           return summaryView(found);
+        }),
+      channel_analytics: (asked) =>
+        Effect.gen(function* channel() {
+          const range = yield* rangeAsked(asked);
+
+          const found = yield* analytics
+            .channel(yield* actor, decodeChannelId(asked.channelId), range)
+            .pipe(Effect.catchTags(refusals));
+
+          return channelSeriesView(asked.channelId, found);
         }),
       get_billing: () =>
         Effect.gen(function* getBilling() {

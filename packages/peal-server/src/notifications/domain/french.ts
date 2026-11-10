@@ -29,6 +29,13 @@ export const french: EmailCatalog = {
       "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Peal. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Reconnectez {handle} sur {platform} avant le {expiresAt}",
   },
+  commentsReceived: {
+    action: "Lire les commentaires",
+    body: "Une publication de {workspaceName} a reçu de nouveaux commentaires ({count}) là où elle a été publiée.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y répondez aux commentaires, et avez choisi d’être averti des nouveaux commentaires par e-mail. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Nouveaux commentaires sur une publication",
+  },
   contractNumber:
     "Numéro de contrat : {reference}. Indiquez-le dans Résilier votre contrat ou Renoncer au contrat ici, au pied de chaque page, et votre demande est appliquée immédiatement, sans vous connecter.",
   contractRequest: {
@@ -107,12 +114,16 @@ export const french: EmailCatalog = {
       "Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.",
     notPublished:
       "quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.",
+    partsNotSent:
+      "ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. La renvoyer depuis Peal n’est pas possible : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.",
     planLimit:
       "l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.",
     quotaExceeded:
       "l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.",
     rateLimited:
       "la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.",
+    repliesNotAllowed:
+      "sa première partie est en ligne, et la plateforme n’a pas laissé l’application de ce serveur publier les suivantes en réponse : sur X, une application en accès libre-service ne peut répondre qu’à une publication dont l’auteur a mentionné ou cité le compte. La renvoyer depuis Peal se heurterait au même refus : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.",
     tokenExpired:
       "l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.",
     unavailable: "la plateforme était injoignable.",

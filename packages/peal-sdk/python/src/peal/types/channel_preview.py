@@ -8,6 +8,7 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .content_violation import ContentViolation
 from .limited_count import LimitedCount
+from .part_preview import PartPreview
 from .platform import Platform
 from .text_count import TextCount
 
@@ -18,6 +19,7 @@ class ChannelPreview(UniversalBaseModel):
     links: LimitedCount
     media: LimitedCount
     mentions: LimitedCount
+    parts: typing.List[PartPreview]
     platform: Platform
     text: str
     text_counts: typing_extensions.Annotated[

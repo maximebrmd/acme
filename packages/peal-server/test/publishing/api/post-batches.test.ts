@@ -111,7 +111,96 @@ const TwoPostsServer = postsServerWith(
   )
 );
 
+// A post of two parts: the same opening, and the ending given.
+const thread = (
+  channel: ChannelId,
+  ending: string,
+  instant = "2026-06-16T08:00:00Z"
+): BulkPost => ({
+  ...at(channel, "What we found at low tide.", instant),
+  content: {
+    followUps: [
+      {
+        delaySeconds: 60,
+        media: [],
+        overrides: [],
+        text: ending,
+      },
+    ],
+    media: [],
+    overrides: [],
+    text: "What we found at low tide.",
+  },
+});
+
 describe("the bulk endpoint", () => {
+  it.effect(
+    "takes threads among its items: each with its parts, compared whole, and refused where a platform takes a post alone",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* bulkThreads() {
+          const workspaceId = yield* freshWorkspace;
+          const mastodon = yield* connect(workspaceId, "mastodon");
+          const linkedin = yield* connect(workspaceId, "linkedin");
+          const editor = yield* as("editor", workspaceId);
+
+          const answered = yield* editor.posts.bulk({
+            headers: {},
+            params: { workspaceId },
+            payload: {
+              posts: [
+                thread(mastodon, "The anemones."),
+                // The same opening with another ending: another post.
+                thread(mastodon, "The crabs."),
+                // The first thread again, an hour on: the same post twice.
+                thread(mastodon, "The anemones.", "2026-06-16T09:00:00Z"),
+                // LinkedIn takes a post alone.
+                thread(linkedin, "The anemones."),
+              ],
+            },
+          });
+
+          assert.deepStrictEqual(
+            answered.items.map(({ _tag, index }) => [index, _tag]),
+            [
+              [0, "created"],
+              [1, "created"],
+              [2, "refused"],
+              [3, "refused"],
+            ]
+          );
+
+          const made = yield* madeBy(answered.items, 0);
+
+          assert.deepStrictEqual(
+            made.post.content.followUps?.map(({ delaySeconds, text: said }) => [
+              said,
+              delaySeconds,
+            ]),
+            [["The anemones.", 60]]
+          );
+          assert.deepStrictEqual(
+            made.post.targets.map(({ parts }) => parts.count),
+            [2]
+          );
+
+          assert.deepInclude(refusalAt(answered.items, 2), {
+            _tag: "DuplicatePost",
+          });
+
+          const alone = refusalAt(answered.items, 3);
+
+          assert(alone?._tag === "PostContentInvalid");
+          assert.deepStrictEqual(
+            alone.violations.map(({ _tag }) => _tag),
+            ["tooManyParts"]
+          );
+        })
+      ),
+    timeout
+  );
+
   it.effect(
     "answers each post on its own, and the same request sent again with the posts it made",
     () =>

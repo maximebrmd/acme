@@ -47,7 +47,10 @@ import { ConnectChoices } from "./connect-choices.ts";
 import type { MissingTokenKey } from "./missing-token-key.ts";
 import { NoAccountsToConnect } from "./no-accounts-to-connect.ts";
 import { openOffered, sealOffered } from "./offered-accounts.ts";
-import { PlatformAuthorizers } from "./platform-authorizer.ts";
+import {
+  PlatformAuthorizers,
+  storableAuthorized,
+} from "./platform-authorizer.ts";
 import type {
   AuthorizationCallback,
   AuthorizedAccount,
@@ -747,14 +750,18 @@ export class ConnectChannel extends Context.Service<
           )
         );
 
-        const authorized = yield* authorizer.complete({
-          attempt,
-          callback: returned,
-          reconnecting: reconnected.pipe(
-            Option.map(({ accountId }) => accountId)
-          ),
-          secret,
-        });
+        // What the platform says of the accounts is cleaned before it is
+        // compared with the workspace's channels, kept or shown.
+        const authorized = storableAuthorized(
+          yield* authorizer.complete({
+            attempt,
+            callback: returned,
+            reconnecting: reconnected.pipe(
+              Option.map(({ accountId }) => accountId)
+            ),
+            secret,
+          })
+        );
 
         const reached =
           "_tag" in authorized ? authorized.accounts : [authorized];

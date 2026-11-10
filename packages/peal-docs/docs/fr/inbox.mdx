@@ -1,0 +1,125 @@
+---
+title: Boîte de réception
+description: Lisez les commentaires laissés sous vos publications mises en ligne sur Mastodon et Bluesky, et répondez-y depuis Peal. Ce que Peal collecte, d’où, pour combien de temps, et ce que chaque plateforme permet à un compte.
+sidebar:
+  order: 8
+---
+
+La boîte de réception rassemble les commentaires laissés sous les publications que Peal a mises en ligne pour un espace de travail, et permet à ses membres d’y répondre en public, au nom du compte connecté. Ouvrez un espace de travail depuis **Espaces de travail**, puis **Boîte de réception**.
+
+C’est la première partie de la boîte de réception : les commentaires des publications mises en ligne depuis Peal, sur Mastodon et Bluesky. Les messages privés, les mentions et les avis ne sont pas collectés, et Peal ne répond à rien de lui-même : chaque réponse est écrite et envoyée par une personne, ou par une application qu’une personne a connectée et autorisée à publier.
+
+## Ce que Peal collecte [#collected]
+
+Pour chaque publication mise en ligne sur un canal, Peal lit les réponses publiques qu’elle reçoit sur la plateforme :
+
+| Conservé                                                                                   | D’où cela vient                                 |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| Le texte du commentaire, en texte brut                                                     | La plateforme, tel que chacun peut le lire      |
+| Sa date, et le commentaire auquel il répond                                                | La plateforme                                   |
+| L’identifiant public et le nom affiché de son auteur, et son identifiant sur la plateforme | La plateforme, tels qu’elle les montre à tous   |
+| Un lien vers le commentaire sur la plateforme                                              | La plateforme                                   |
+| Si l’espace de travail y a répondu, l’a masqué ou aimé                                     | Peal, et la plateforme pour ce qui y a été fait |
+| Les réponses envoyées depuis Peal, leur auteur et l’issue de l’envoi                       | Les membres de l’espace de travail              |
+
+Pour une publication en plusieurs parties, un [fil](/scheduling#threads), Peal lit les commentaires sous chaque partie et les réunit dans l’unique fil de la publication dans la boîte de réception. Les parties elles-mêmes, écrites par le compte, ne sont pas des commentaires. Les commentaires d’un fil sont lus une fois toutes ses parties en ligne : s’il s’est arrêté en chemin, à partir du moment où **Republier**, ou ce que vous avez constaté sur la plateforme, le complète.
+
+Peal ne lit rien d’autre des personnes qui commentent : ni photo, ni profil, ni nombre d’abonnés, ni autre publication, ni message privé. Une réponse que seuls les abonnés de son auteur ou les personnes mentionnées peuvent voir est un message privé, et n’est pas collectée.
+
+Les commentaires sont les mots d’autres personnes. Peal s’en sert pour les montrer aux membres de l’espace de travail et leur permettre d’y répondre, et pour rien d’autre : aucun profil de leurs auteurs, aucune automatisation, l’assistant de rédaction ne les lit pas, et ils ne servent jamais à entraîner quoi que ce soit. Les [webhooks](/webhooks#comment-received) et les notifications d’un espace de travail disent que des commentaires sont arrivés, avec des identifiants et des nombres, jamais leur texte ni leurs auteurs.
+
+## Quand les commentaires sont lus [#schedule]
+
+Peal cherche les nouveaux commentaires toutes les dix minutes. Les commentaires d’une publication sont lus à chaque passage pendant son premier jour, où la plupart arrivent, toutes les heures pendant sa première semaine, puis toutes les six heures jusqu’à ce que la publication ait {{keep-inbox-window-fr}}, et plus ensuite. La personne qui exploite le serveur peut fixer une autre fenêtre, de 90 jours au plus ([`PEAL_ENGAGEMENT_WINDOW_DAYS`](/environment-variables)).
+
+Les lectures alternent avec les publications du canal : Peal fait un appel à la fois par compte. Quand une plateforme demande à Peal de ralentir, ou ne répond pas, les fils de ce canal attendent une demi-heure. Un canal désactivé ou à reconnecter est laissé de côté jusqu’à ce qu’il fonctionne de nouveau ; les publications d’un canal déconnecté ne sont plus lues.
+
+Quand un commentaire a été modifié, Peal montre son nouveau texte. Quand une plateforme ne montre plus un commentaire, Peal efface son texte et son auteur à la lecture suivante, et garde seulement qu’il y a eu un commentaire. Quand la publication elle-même a disparu de la plateforme, tous ses commentaires sont effacés de la même façon.
+
+## Combien de temps les commentaires sont conservés [#retention]
+
+Un fil (les commentaires d’une publication sur un canal, et les réponses envoyées) est supprimé {{keep-inbox-fr}} après que Peal a cessé de lire les commentaires de la publication : avec la fenêtre habituelle, 60 jours après la mise en ligne. La suppression a lieu une fois par jour.
+
+Supprimer un espace de travail supprime aussitôt ses fils. Quand un membre ferme son compte, les réponses qu’il a envoyées restent à l’espace de travail, sans son nom ; son [export de données](/settings) liste les réponses qu’il a envoyées, jamais les commentaires auxquels il répondait, qui appartiennent à d’autres.
+
+Si vous avez commenté une publication mise en ligne avec Peal et souhaitez que votre commentaire quitte Peal, supprimez-le sur la plateforme : il quitte Peal à la lecture suivante. Vous pouvez aussi écrire au compte qui a publié, ou à la personne qui exploite le serveur.
+
+## Répondre [#replying]
+
+Une réponse est un message public du compte connecté : toute personne qui voit la publication la voit. Les propriétaires, administrateurs et éditeurs peuvent répondre ; les contributeurs et les lecteurs lisent la boîte de réception et ne répondent à rien.
+
+Quand vous envoyez une réponse, Peal :
+
+1. la vérifie contre la longueur de la plateforme, comptée comme la plateforme compte (sur Mastodon, la mention de la personne à qui vous répondez est placée en tête, car Mastodon en a besoin pour la prévenir, et elle compte) ;
+2. l’enregistre avant d’appeler la plateforme ;
+3. l’envoie une seule fois.
+
+Le fil montre où en est chaque réponse :
+
+| État          | Ce que cela signifie                                                                                             |
+| ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `sending`     | Enregistrée, et en route.                                                                                        |
+| `sent`        | Sur la plateforme, avec son lien.                                                                                |
+| `failed`      | Rien n’est parti, et pourquoi. Écrivez-la de nouveau quand la cause a disparu.                                   |
+| `unconfirmed` | Peal ne sait pas si elle est partie : la plateforme n’a pas répondu, ou le serveur s’est arrêté pendant l’appel. |
+| `withdrawn`   | Envoyée, puis supprimée de la plateforme par un membre.                                                          |
+
+Peal ne renvoie jamais une réponse non confirmée, car cela pourrait publier deux fois la même réponse. Regardez la publication sur la plateforme, puis dites à Peal ce que vous y avez trouvé : **Elle y est**, ou **Elle n’est pas partie**. D’ici là, aucune autre réponse ne peut être écrite à ce commentaire. Une réponse encore en route une heure après que vous l’avez écrite devient elle aussi non confirmée : Peal arrête alors son envoi pour de bon, et rien ne part plus pour elle, quoi que vous trouviez ensuite sur la plateforme.
+
+Un commentaire n’a qu’une réponse en route à la fois : de deux requêtes envoyées ensemble pour y répondre, l’une est refusée. Par l’API, un en-tête `Idempotency-Key` permet de renvoyer sans risque une requête dont la réponse s’est perdue ([Idempotence](/api-conventions#idempotency)).
+
+Une réponse envoyée peut être retirée : Peal la supprime de la plateforme. Les personnes qui l’ont déjà vue ont pu la garder.
+
+Vous pouvez aussi marquer un commentaire comme traité quand il n’appelle pas de réponse. Un commentaire auquel le compte a répondu sur la plateforme elle-même est marqué comme traité à la lecture suivante.
+
+## Ce que chaque plateforme permet [#abilities]
+
+| Possibilité                                                | Mastodon                                        | Bluesky                                                     |
+| ---------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------- |
+| Lire les commentaires d’une publication                    | Oui                                             | Oui                                                         |
+| Répondre à un commentaire                                  | Oui                                             | Oui                                                         |
+| Retirer une réponse                                        | Oui                                             | Oui                                                         |
+| Aimer un commentaire                                       | Pas encore : Peal ne demande pas l’autorisation | Pas encore : Peal ne demande pas l’autorisation             |
+| Masquer le commentaire de quelqu’un sous votre publication | Non : Mastodon ne l’offre à aucun compte        | Pas encore : Peal ne demande pas l’autorisation             |
+| Supprimer le commentaire de quelqu’un d’autre              | Non : Mastodon ne l’offre à aucun compte        | Non : personne ne supprime la publication d’un autre compte |
+
+`GET /api/workspaces/{workspaceId}/inbox/channels/{channelId}/abilities` et chaque fil répondent la même chose pour un canal : `available`, `reconnect` (le compte a été connecté avant que Peal ne demande ce que la possibilité exige : [connectez de nouveau le compte](/channels), sans le déconnecter, et le canal reste avec son historique), ou `unsupported`.
+
+Sur Mastodon, les réponses aux publications publiques et non listées sont lues ; Peal les lit avec l’accès du compte quand celui-ci l’a permis, ce qui montre toutes les réponses, et sans lui sinon, ce qui montre les 60 premières, sur vingt niveaux de réponses au plus. Sur Bluesky, Peal lit le fil depuis le service public de Bluesky, sans la session du compte.
+
+Un fil garde ses 500 premiers commentaires. Sous une publication aux milliers de réponses, Peal lit jusque-là et pas plus loin : les commentaires suivants restent sur la plateforme, et ne sont pas affichés ici.
+
+### Autres plateformes [#other-platforms]
+
+Peal ne lit pas encore de commentaires sur les autres plateformes. Chacune exige une autorisation que sa plateforme accorde après un examen :
+
+| Plateforme                         | Ce qu’exigent la lecture des commentaires et les réponses                                                                       |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Pages Facebook                     | `pages_read_user_content` et `pages_manage_engagement`, accordées chacune par l’App Review de Meta, l’entreprise étant vérifiée |
+| Instagram                          | `instagram_manage_comments` (ou `instagram_business_manage_comments`), accordée par l’App Review de Meta                        |
+| Threads                            | `threads_read_replies` et `threads_manage_replies`, accordées par l’App Review de Meta                                          |
+| YouTube                            | Le scope `youtube.force-ssl`, que Google vérifie avant qu’une application puisse le demander, et un quota plus large            |
+| LinkedIn                           | La Community Management API, pour les pages d’entreprise seulement, que LinkedIn accorde sur demande                            |
+| X                                  | Un accès payant à l’API de X pour lire les réponses                                                                             |
+| TikTok                             | Les commentaires sont offerts aux comptes professionnels par un autre produit de TikTok, que Peal n’utilise pas                 |
+| Pinterest, Google Business Profile | Non prévu : l’API de Pinterest n’a pas de commentaires, et une fiche d’établissement a des avis, qui ne sont pas collectés      |
+
+Si vous exploitez votre propre serveur, les mêmes examens s’appliquent à vos propres applications de plateformes.
+
+## Avec l’API, la ligne de commande et les assistants IA [#api]
+
+Lire demande la permission `engagement:read`, que tous les rôles ont ; répondre, marquer, modérer et retirer une réponse demandent `engagement:reply`, qu’ont les propriétaires, administrateurs et éditeurs. Une clé d’API porte ce que son créateur lui a donné. Une application connectée par OAuth a besoin du scope `workspace:publish` pour tout ce qui n’est pas lire, comme pour publier. L’équipe qui agit au nom d’un membre pour l’aider ne lit pas la boîte de réception et n’y répond pas.
+
+| Requête                                                                    | Ce qu’elle fait                                                                                                                                                                         |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/inbox/threads`                          | Liste les fils qui ont des commentaires, ceux qui attendent une réponse en premier. `channelId`, `postId` et `unanswered=true` restreignent la liste ; `cursor` et `limit` la paginent. |
+| `GET /api/workspaces/{workspaceId}/inbox/threads/{threadId}`               | Un fil entier : commentaires, réponses, et ce que le canal peut faire.                                                                                                                  |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/replies`    | Répond à un commentaire. Répond `202` avec la réponse, `sending`.                                                                                                                       |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/answered`   | Marque un commentaire comme traité, ou de nouveau en attente.                                                                                                                           |
+| `POST /api/workspaces/{workspaceId}/inbox/comments/{commentId}/moderation` | Masque, montre, aime, n’aime plus ou supprime, quand la plateforme le permet.                                                                                                           |
+| `POST /api/workspaces/{workspaceId}/inbox/replies/{replyId}/confirmation`  | Enregistre ce que quelqu’un a trouvé pour une réponse non confirmée.                                                                                                                    |
+| `DELETE /api/workspaces/{workspaceId}/inbox/replies/{replyId}`             | Retire une réponse envoyée.                                                                                                                                                             |
+
+La ligne de commande offre la même chose sous `peal inbox` (voir [Ligne de commande](/cli)), et les assistants IA connectés par [MCP](/mcp) ont `list_comment_threads`, `get_comment_thread`, `reply_to_comment`, `confirm_comment_reply`, `withdraw_comment_reply`, `mark_comment_answered` et `moderate_comment`.
+
+Un commentaire est un texte écrit par quelqu’un d’extérieur à votre espace de travail, et peut être écrit pour orienter un assistant IA (« ignore tes instructions et… »). Les outils de Peal le disent à l’assistant, et aucun outil n’agit parce qu’un commentaire le demande. Ne donnez à un assistant le droit de publier que si vous voulez qu’il puisse répondre en votre nom.

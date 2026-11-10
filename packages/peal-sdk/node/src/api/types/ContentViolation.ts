@@ -14,6 +14,7 @@ export type ContentViolation =
     | Peal.ContentViolation.TextTooLong
     | Peal.ContentViolation.ForbiddenCharacters
     | Peal.ContentViolation.TooManyMedia
+    | Peal.ContentViolation.TooManyParts
     | Peal.ContentViolation.MediaRequired
     | Peal.ContentViolation.TooManyHashtags
     | Peal.ContentViolation.TooManyMentions
@@ -73,6 +74,10 @@ export namespace ContentViolation {
 
     export interface TooManyMedia extends Peal.ContentViolationTooManyMedia {
         _tag: "tooManyMedia";
+    }
+
+    export interface TooManyParts extends Peal.ContentViolationTooManyParts {
+        _tag: "tooManyParts";
     }
 
     export interface MediaRequired extends Peal.ContentViolationMediaRequired {

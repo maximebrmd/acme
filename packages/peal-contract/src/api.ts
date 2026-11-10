@@ -18,6 +18,7 @@ import { ContractRequestsDeskApi } from "./contract-requests-desk.ts";
 import { ContractRequestsApi } from "./contract-requests.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { HostedConnectApi } from "./hosted-connect.ts";
+import { InboxApi } from "./inbox.ts";
 import { InvitationsApi } from "./invitations.ts";
 import { LegalApi } from "./legal.ts";
 import { LookupsApi } from "./lookups.ts";
@@ -146,11 +147,24 @@ export { AltTextTooLong } from "./alt-text-too-long.ts";
 
 export {
   AnalyticsApi,
+  AnalyticsDashboardSchema,
   AnalyticsSummarySchema,
   CalendarDaySchema,
+  ChannelDashboardSchema,
+  ChannelDaySchema,
   ChannelMetricsSchema,
+  ChannelSeriesSchema,
   countedPlatforms,
+  DashboardDaySchema,
+  dashboardPeriods,
+  DashboardTotalsSchema,
   EngagementDaySchema,
+  exportColumns,
+  ExportFormatSchema,
+  ExportKindSchema,
+  FollowerChangeSchema,
+  maxTopPosts,
+  PlatformDashboardSchema,
   MetricsSnapshotSchema,
   MetricTotalsSchema,
   PostAnalyticsSchema,
@@ -160,10 +174,20 @@ export {
 } from "./analytics.ts";
 
 export type {
+  AnalyticsDashboard,
   AnalyticsSummary,
   CalendarDay,
+  ChannelDashboard,
+  ChannelDay,
   ChannelMetrics,
+  ChannelSeries,
+  DashboardDay,
+  DashboardTotals,
   EngagementDay,
+  ExportFormat,
+  ExportKind,
+  FollowerChange,
+  PlatformDashboard,
   MetricsSnapshot,
   MetricTotals,
   PostAnalytics,
@@ -328,6 +352,7 @@ export type {
 } from "./billing-plans.ts";
 
 export {
+  accountNumberNames,
   AccountRestrictionSchema,
   AccountStandingSchema,
   AccountUnreadReasonSchema,
@@ -338,6 +363,7 @@ export {
   MediaFormatSchema,
   OptionConstraintSchema,
   PlatformCapabilitiesSchema,
+  postCountNames,
   TextCapabilitiesSchema,
   TextLimitSchema,
 } from "./capabilities.ts";
@@ -691,6 +717,7 @@ export type { DuplicateOnChannel } from "./duplicate-post.ts";
 export {
   ChannelPreviewSchema,
   LimitedCountSchema,
+  PartPreviewSchema,
   PlanShortfallSchema,
   PostValidationSchema,
   ScheduleCheckSchema,
@@ -700,6 +727,7 @@ export {
 export type {
   ChannelPreview,
   LimitedCount,
+  PartPreview,
   PlanShortfall,
   PostValidation,
   ScheduleCheck,
@@ -717,6 +745,7 @@ export {
   DraftPageSchema,
   FailureReasonSchema,
   idempotencyKeyLifetimeHours,
+  LivePartSchema,
   ImportResultSchema,
   ImportRowResultSchema,
   maxDraftPageSize,
@@ -731,6 +760,7 @@ export {
   PostOriginSchema,
   PostOriginViaSchema,
   PostOutcomeSchema,
+  PostPartSchema,
   PostChannelSchema,
   PostPageSchema,
   PostScheduleSchema,
@@ -742,6 +772,7 @@ export {
   PublicationAttemptSchema,
   SchedulePostSchema,
   TargetConfirmationSchema,
+  TargetPartsSchema,
   TextOverrideSchema,
   UnconfirmedReasonSchema,
 } from "./posts.ts";
@@ -757,6 +788,7 @@ export type {
   ImportRowResult,
   PostImport,
   FailureReason,
+  LivePart,
   MediaAttachment,
   NewPost,
   Post,
@@ -766,6 +798,7 @@ export type {
   PostOriginVia,
   PostChannel,
   PostOutcome,
+  PostPart,
   PostPage,
   PostSchedule,
   PostSort,
@@ -775,6 +808,7 @@ export type {
   PublicationAttempt,
   SchedulePost,
   TargetConfirmation,
+  TargetParts,
   TextOverride,
   UnconfirmedReason,
 } from "./posts.ts";
@@ -1057,6 +1091,67 @@ export type {
 
 export { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
 
+export {
+  defaultInboxPageSize,
+  InboxAbilitiesSchema,
+  InboxAbilitySchema,
+  InboxAbilityStandingSchema,
+  InboxApi,
+  InboxAuthorSchema,
+  InboxCollectionEndSchema,
+  InboxCommentSchema,
+  InboxCommentStateSchema,
+  InboxModerationActionSchema,
+  inboxPlatforms,
+  InboxReplyReasonSchema,
+  InboxReplySchema,
+  InboxReplyStatusSchema,
+  inboxRetentionDays,
+  InboxThreadDetailSchema,
+  InboxThreadPageSchema,
+  InboxThreadSchema,
+  inboxWindowDays,
+  maxInboxPageSize,
+  maxInboxReplyLength,
+  NewInboxReplySchema,
+} from "./inbox.ts";
+
+export type {
+  InboxAbilities,
+  InboxAbility,
+  InboxAbilityStanding,
+  InboxAuthor,
+  InboxCollectionEnd,
+  InboxComment,
+  InboxCommentState,
+  InboxModerationAction,
+  InboxReply,
+  InboxReplyReason,
+  InboxReplyStatus,
+  InboxThread,
+  InboxThreadDetail,
+  InboxThreadPage,
+  NewInboxReply,
+} from "./inbox.ts";
+
+export { InboxActionFailed } from "./inbox-action-failed.ts";
+
+export { InboxActionUnavailable } from "./inbox-action-unavailable.ts";
+
+export { InboxCommentGone } from "./inbox-comment-gone.ts";
+
+export { InboxCommentNotFound } from "./inbox-comment-not-found.ts";
+
+export { InboxReplyNotFound } from "./inbox-reply-not-found.ts";
+
+export { InboxThreadNotFound } from "./inbox-thread-not-found.ts";
+
+export { ReplyInvalid } from "./reply-invalid.ts";
+
+export { ReplyPending } from "./reply-pending.ts";
+
+export { ReplyStatusConflict } from "./reply-status-conflict.ts";
+
 export { ConnectLinkIntake } from "./connect-link-intake.ts";
 
 export { ConnectLinkNotFound } from "./connect-link-not-found.ts";
@@ -1323,6 +1418,7 @@ export class Api extends HttpApi.make("peal")
   .add(CapabilitiesApi)
   .add(LookupsApi)
   .add(WebhooksApi)
+  .add(InboxApi)
   .add(ActivityApi)
   .add(PartnerApi)
   .add(PartnerAccountApi)

@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface ReviewedChannel {
     channelId: string;
+    followUps: Peal.ReviewedPart[];
     handle: string | null;
     options: Peal.TargetOptions | null;
     platform: Peal.Platform | null;

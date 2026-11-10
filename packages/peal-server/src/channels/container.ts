@@ -14,6 +14,8 @@ import { ListChannels } from "#channels/application/list-channels.ts";
 import { PurgeConnectLinks } from "#channels/application/purge-connect-links.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
+import { analyticsChannelEvents } from "#channels/infrastructure/analytics-channel-events.ts";
+import { DrizzleChannelDirectory } from "#channels/infrastructure/drizzle-channel-directory.ts";
 import { DrizzleChannelRecords } from "#channels/infrastructure/drizzle-channel-records.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
@@ -37,6 +39,11 @@ import {
   webhookChannelNotices,
 } from "#channels/infrastructure/webhook-channel-events.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
+
+// Who hears of a channel connected or gone: the workspace's webhook
+// endpoints, then the analytics context, which keeps or deletes the
+// channel's numbers. Needs WebhookEvents and AnalyticsRecords.
+const ChannelEventsLive = analyticsChannelEvents(WebhookChannelEvents);
 
 // The platforms' sign-in flows, the documents that identify Peal's
 // clients, and the check of Meta's signed requests, from the settings read
@@ -65,17 +72,18 @@ const PlatformsLive = Layer.mergeAll(
 const AdaptersLive = Layer.mergeAll(
   DrizzleChannelRecords,
   DrizzleChannelRepository,
+  DrizzleChannelDirectory,
   DrizzleConnectAttempts,
   DrizzleConnectChoices,
   DrizzleConnectLinkStore,
   RandomConnectLinkTokens,
   PublicConnectLinkAddresses,
   PartnerLinkHosts,
-  DrizzleDataDeletions.pipe(Layer.provide(WebhookChannelEvents)),
+  DrizzleDataDeletions.pipe(Layer.provide(ChannelEventsLive)),
   PublicDataDeletionLinks,
   SqlChannelLocks,
   webhookChannelNotices(NotifiedChannelNotices),
-  WebhookChannelEvents,
+  ChannelEventsLive,
   SharedChannelAllowanceLive,
   PlatformsLive
 ).pipe(Layer.provideMerge(TokenCipherLive));

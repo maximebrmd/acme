@@ -7,6 +7,8 @@ import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import {
   nextOccurrences,
   RecurringSchedule,
@@ -398,6 +400,92 @@ describe("sending the same content twice", () => {
           );
 
           assert.lengthOf(sent, 4);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "compares a thread whole: the same parts twice are refused, another ending is another post",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* threads() {
+          const scheduling = yield* PostScheduling;
+          const checks = yield* PostChecks;
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const actor = actorIn(workspaceId);
+
+          const thread = (
+            at: string,
+            ...later: readonly string[]
+          ): SendPostRequest => ({
+            at: Option.some(utc(at)),
+            channelIds: [channel],
+            content: new PostContent({
+              followUps: later.map(
+                (text) =>
+                  new PostPart({
+                    delaySeconds: 0,
+                    media: [],
+                    overrides: [],
+                    text,
+                  })
+              ),
+              media: [],
+              overrides: [],
+              text: "What we found at low tide.",
+            }),
+            idempotency: Option.none(),
+            timeZone: paris,
+          });
+
+          const original = yield* scheduling.send(
+            actor,
+            thread("2026-06-16T08:00:00Z", "The anemones.", "The crabs.")
+          );
+
+          // The same opening alone, and the same opening with another
+          // ending, are other posts.
+          yield* scheduling.send(actor, thread("2026-06-16T08:10:00Z"));
+          yield* scheduling.send(
+            actor,
+            thread("2026-06-16T08:20:00Z", "The anemones.", "The gulls.")
+          );
+
+          // The same thread an hour later is the mistake the guard is for.
+          const again = thread(
+            "2026-06-16T09:00:00Z",
+            "The anemones.",
+            "The crabs."
+          );
+
+          const refused = yield* scheduling
+            .send(actor, again)
+            .pipe(Effect.flip);
+
+          assert.strictEqual(refused._tag, "DuplicateContent");
+
+          if (refused._tag === "DuplicateContent") {
+            assert.deepStrictEqual(refused.duplicates, [
+              { channelId: channel, postId: original.post.id },
+            ]);
+          }
+
+          // A check says the same beforehand.
+          const checked = yield* checks.check(actor, {
+            channelIds: again.channelIds,
+            content: again.content,
+            when: Option.some({ at: again.at }),
+          });
+
+          assert.isFalse(isSendable(checked));
+          assert.deepStrictEqual(checked.duplicates, [
+            { channelId: channel, postId: original.post.id },
+          ]);
+
+          assert.strictEqual(yield* postsIn(workspaceId), 3);
         })
       ),
     timeout

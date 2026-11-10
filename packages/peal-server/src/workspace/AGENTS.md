@@ -236,7 +236,8 @@ The staff context follows these rules too. What the law has a host keep is in
   `workspace:write` (what the role allows, but what puts posts out) or
   `workspace:publish` (reading, and `publishingPermissions`: post:schedule,
   post:approve, post:publish, so scheduling, moving, publishing, reposting,
-  cancelling, unscheduling and confirming). Publishing is a grant of its
+  cancelling, unscheduling and confirming, and `engagement:reply`:
+  answering comments). Publishing is a grant of its
   own: the consent page lets the person leave it out, a token issued before
   it existed publishes nothing, and `scopeFor` names the scope a permission
   takes. Never fold it back into `workspace:write`.
@@ -288,7 +289,10 @@ The staff context follows these rules too. What the law has a host keep is in
   (`workspaces:read`, `:write`, `:delete`) for `/api/partner`, and the
   permissions it holds in each workspace, out of `partnerKeyPermissions`
   (`workspace/domain/partner-key.ts`): never members, invitations, API keys
-  or billing changes. `Authentication` answers it as a
+  or billing changes. `engagement:read` and `engagement:reply` are among
+  them, as publishing is: a product that posts for its customers reads
+  and answers what is said under those posts, in a workspace that has no
+  member to do it. `Authentication` answers it as a
   `PartnerKeyPrincipal`; `WorkspaceAccess` lets it into a workspace its
   partner owns and answers 404 for every other, the home workspace
   included (`PartnerOwnership.ownerOf`). `/api/me` and the groups for

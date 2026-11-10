@@ -103,13 +103,32 @@ const ExportedPostOriginSchema = Schema.Struct({
   via: Schema.String,
 });
 
+const ExportedAttachmentSchema = Schema.Struct({
+  altText: nullable(Schema.String),
+  mediaId: Schema.String,
+});
+
+const ExportedOverrideSchema = Schema.Struct({
+  channelId: Schema.String,
+  text: Schema.String,
+});
+
 const ExportedPostSchema = Schema.Struct({
   // How it was created; null on a post from before this was kept.
   createdVia: nullable(ExportedPostOriginSchema),
-  id: Schema.String,
-  media: Schema.Array(
-    Schema.Struct({ altText: nullable(Schema.String), mediaId: Schema.String })
+  // The parts that follow its first, in order (a thread, or comments,
+  // depending on the platform), each with the seconds it waits after the
+  // part before it. Empty on a post of one part.
+  followUps: Schema.Array(
+    Schema.Struct({
+      delaySeconds: Schema.Int,
+      media: Schema.Array(ExportedAttachmentSchema),
+      text: Schema.String,
+      textOverrides: Schema.Array(ExportedOverrideSchema),
+    })
   ),
+  id: Schema.String,
+  media: Schema.Array(ExportedAttachmentSchema),
   scheduledAt: nullable(instant),
   // How it was last scheduled; null on a draft, or when it was not kept.
   scheduledVia: nullable(ExportedPostOriginSchema),
@@ -122,14 +141,14 @@ const ExportedPostSchema = Schema.Struct({
       keptPrivate: Schema.Boolean,
       // What the post set on that channel's platform, null when nothing.
       options: nullable(TargetOptionsSchema),
+      // How many of the post's parts are live there.
+      partsLive: Schema.Int,
       permalink: nullable(Schema.String),
       status: Schema.String,
     })
   ),
   text: Schema.String,
-  textOverrides: Schema.Array(
-    Schema.Struct({ channelId: Schema.String, text: Schema.String })
-  ),
+  textOverrides: Schema.Array(ExportedOverrideSchema),
   timeZone: nullable(Schema.String),
 });
 
@@ -372,7 +391,8 @@ const ExportedUsageSchema = Schema.Struct({
 });
 
 // A post analytics followed on a channel, and each reading of its counts.
-// Quotes and impressions are null where the platform gives none.
+// Quotes, impressions, clicks, reach and saves are null where the platform
+// gives none.
 const ExportedAnalyticsSchema = Schema.Struct({
   channelId: Schema.String,
   permalink: nullable(Schema.String),
@@ -380,12 +400,15 @@ const ExportedAnalyticsSchema = Schema.Struct({
   publishedAt: instant,
   snapshots: Schema.Array(
     Schema.Struct({
+      clicks: nullable(Schema.Int),
       collectedAt: instant,
       impressions: nullable(Schema.Int),
       likes: Schema.Int,
       quotes: nullable(Schema.Int),
+      reach: nullable(Schema.Int),
       replies: Schema.Int,
       reposts: Schema.Int,
+      saves: nullable(Schema.Int),
     })
   ),
   targetId: Schema.String,
@@ -454,6 +477,20 @@ const ExportedUserReviewSchema = Schema.Struct({
   ),
 });
 
+// A reply the user sent from Peal to a comment under a post: what they
+// wrote, when, and how sending ended. The comment is someone else's, and
+// is not part of the export.
+const ExportedReplySchema = Schema.Struct({
+  channelId: Schema.String,
+  createdAt: instant,
+  id: Schema.String,
+  permalink: nullable(Schema.String),
+  postId: Schema.String,
+  status: Schema.String,
+  text: Schema.String,
+  ...inWorkspace,
+});
+
 // A webhook endpoint: where the workspace is told what happens in it,
 // without the secret that signs what it is sent.
 const ExportedWebhookSchema = Schema.Struct({
@@ -465,7 +502,23 @@ const ExportedWebhookSchema = Schema.Struct({
   url: Schema.String,
 });
 
+// A channel's account on one UTC day: its followers, the accounts it
+// follows and its posts as read that day, and the views and reach its
+// platform counted. Each is null where the platform gives none.
+const ExportedAccountDaySchema = Schema.Struct({
+  channelId: Schema.String,
+  // A UTC day, as YYYY-MM-DD.
+  day: Schema.String,
+  followers: nullable(Schema.Int),
+  following: nullable(Schema.Int),
+  platform: Schema.String,
+  posts: nullable(Schema.Int),
+  reach: nullable(Schema.Int),
+  views: nullable(Schema.Int),
+});
+
 const ExportedWorkspaceSchema = Schema.Struct({
+  accountAnalytics: Schema.Array(ExportedAccountDaySchema),
   analytics: Schema.Array(ExportedAnalyticsSchema),
   apiKeys: Schema.Array(ApiKeySchema),
   assistantUsage: Schema.Array(ExportedUsageSchema),
@@ -518,6 +571,8 @@ export const AccountExportSchema = Schema.Struct({
   memberships: Schema.Array(ExportedMembershipSchema),
   notices: Schema.Array(ExportedNoticeSchema),
   notificationPreferences: NotificationPreferencesSchema,
+  // The replies the user sent to comments under posts, in any workspace.
+  replies: Schema.Array(ExportedReplySchema),
   // The comments the user wrote on posts, the approvals they asked for and
   // those they decided, in any workspace.
   review: ExportedUserReviewSchema,

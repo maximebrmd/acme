@@ -11,11 +11,14 @@ const metrics: readonly Metric[] = [
   "replies",
   "quotes",
   "impressions",
+  "reach",
+  "clicks",
+  "saves",
 ];
 
 /**
- * A post's counts, each named: quotes and impressions only where the
- * platform gives them.
+ * A post's counts, each named: quotes, impressions, reach, clicks and
+ * saves only where the platform gives them.
  */
 export const MetricList = ({ counts }: { readonly counts: PostMetrics }) => {
   const t = useTranslations("Analytics");

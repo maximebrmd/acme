@@ -1,18 +1,30 @@
 import { Option, Schema } from "effect";
 import type {
+  AnalyticsDashboard as DashboardView,
   AnalyticsSummary as SummaryView,
   CalendarDay,
+  ChannelSeries as ChannelSeriesView,
+  DashboardTotals as DashboardTotalsView,
+  FollowerChange as FollowersView,
   PostMetrics as MetricsView,
   TargetMetrics,
 } from "peal-contract";
 
+import type {
+  ChannelSeries,
+  Comparison,
+  Dashboard,
+  DashboardTotals,
+} from "#analytics/application/analytics-dashboard.ts";
 import type { AnalyticsSummary } from "#analytics/application/analytics-queries.ts";
 import type {
   CountTotals,
   PostHistory,
 } from "#analytics/application/analytics-reports.ts";
+import type { FollowerChange } from "#analytics/domain/account-series.ts";
 import { engagementOf } from "#analytics/domain/post-metrics.ts";
 import type { PostMetrics } from "#analytics/domain/post-metrics.ts";
+import type { TrackedPost } from "#analytics/domain/tracked-post.ts";
 import { LocalDateSchema } from "#shared/domain/wall-clock.ts";
 import type { LocalDate } from "#shared/domain/wall-clock.ts";
 
@@ -38,12 +50,16 @@ export const dateFrom = (day: CalendarDay) => {
   return decodeDate({ day: date, month, year });
 };
 
-const metricsView = (metrics: PostMetrics): MetricsView => ({
+/** What clients see of a post's counts. */
+export const metricsView = (metrics: PostMetrics): MetricsView => ({
+  clicks: Option.getOrNull(metrics.clicks),
   impressions: Option.getOrNull(metrics.impressions),
   likes: metrics.likes,
   quotes: Option.getOrNull(metrics.quotes),
+  reach: Option.getOrNull(metrics.reach),
   replies: metrics.replies,
   reposts: metrics.reposts,
+  saves: Option.getOrNull(metrics.saves),
 });
 
 const totalsView = (totals: CountTotals) => ({
@@ -73,20 +89,8 @@ export const targetView = ({
   targetId: post.targetId,
 });
 
-/** What clients see of a summary. */
-export const summaryView = (summary: AnalyticsSummary): SummaryView => ({
-  channels: summary.channels.map((channel) => ({
-    ...totalsView(channel),
-    channelId: channel.channelId,
-  })),
-  days: summary.days.map(({ date, ...gains }) => ({
-    ...gains,
-    date: dayView(date),
-  })),
-  from: dayView(summary.range.from),
-  timeZone: summary.range.timeZone,
-  to: dayView(summary.range.to),
-  topPosts: summary.topPosts.flatMap((post) =>
+const topPostsView = (posts: readonly TrackedPost[]) =>
+  posts.flatMap((post) =>
     Option.match(post.latest, {
       onNone: () => [],
       onSome: (metrics) => [
@@ -101,6 +105,105 @@ export const summaryView = (summary: AnalyticsSummary): SummaryView => ({
         },
       ],
     })
-  ),
+  );
+
+/** What clients see of a summary. */
+export const summaryView = (summary: AnalyticsSummary): SummaryView => ({
+  channels: summary.channels.map((channel) => ({
+    ...totalsView(channel),
+    channelId: channel.channelId,
+  })),
+  days: summary.days.map(({ date, ...gains }) => ({
+    ...gains,
+    date: dayView(date),
+  })),
+  from: dayView(summary.range.from),
+  timeZone: summary.range.timeZone,
+  to: dayView(summary.range.to),
+  topPosts: topPostsView(summary.topPosts),
   totals: totalsView(summary.totals),
+});
+
+const followersView = (change: FollowerChange): FollowersView => ({
+  current: Option.getOrNull(change.current),
+  gained: Option.getOrNull(change.gained),
+});
+
+const dashboardTotalsView = (totals: DashboardTotals): DashboardTotalsView => ({
+  clicks: Option.getOrNull(totals.clicks),
+  engagement: totals.engagement,
+  impressions: Option.getOrNull(totals.impressions),
+  likes: totals.likes,
+  posts: totals.posts,
+  quotes: Option.getOrNull(totals.quotes),
+  reach: Option.getOrNull(totals.reach),
+  replies: totals.replies,
+  reposts: totals.reposts,
+  saves: Option.getOrNull(totals.saves),
+});
+
+const comparisonView = (comparison: Comparison) => ({
+  followers: followersView(comparison.followers),
+  previousFollowers: followersView(comparison.previousFollowers),
+  previousKept: comparison.previousKept,
+  previousTotals: dashboardTotalsView(comparison.previousTotals),
+  totals: dashboardTotalsView(comparison.totals),
+});
+
+/** What clients see of a dashboard. */
+export const dashboardView = (dashboard: Dashboard): DashboardView => ({
+  ...comparisonView(dashboard),
+  channels: dashboard.channels.map((channel) => ({
+    ...comparisonView(channel),
+    channelId: channel.channelId,
+    platform: Option.getOrNull(channel.platform),
+  })),
+  days: dashboard.days.map((day) => ({
+    date: dayView(day.date),
+    followers: Option.getOrNull(day.followers),
+    likes: day.likes,
+    quotes: day.quotes,
+    reach: Option.getOrNull(day.reach),
+    replies: day.replies,
+    reposts: day.reposts,
+    views: Option.getOrNull(day.views),
+  })),
+  from: dayView(dashboard.range.from),
+  platforms: dashboard.platforms.map((platform) => ({
+    ...comparisonView(platform),
+    platform: platform.platform,
+  })),
+  previous: {
+    from: dayView(dashboard.previous.from),
+    to: dayView(dashboard.previous.to),
+  },
+  timeZone: dashboard.range.timeZone,
+  to: dayView(dashboard.range.to),
+  topPosts: topPostsView(dashboard.topPosts),
+});
+
+/** What clients see of a channel's numbers over time. */
+export const channelSeriesView = (
+  channelId: string,
+  series: ChannelSeries
+): ChannelSeriesView => ({
+  channelId,
+  days: series.days.map((day) => ({
+    date: dayView(day.date),
+    followers: Option.getOrNull(day.followers),
+    following: Option.getOrNull(day.following),
+    likes: day.likes,
+    posts: Option.getOrNull(day.posts),
+    quotes: day.quotes,
+    reach: Option.getOrNull(day.reach),
+    replies: day.replies,
+    reposts: day.reposts,
+    views: Option.getOrNull(day.views),
+  })),
+  followers: followersView(series.followers),
+  from: dayView(series.range.from),
+  platform: Option.getOrNull(series.platform),
+  timeZone: series.range.timeZone,
+  to: dayView(series.range.to),
+  totals: dashboardTotalsView(series.totals),
 });

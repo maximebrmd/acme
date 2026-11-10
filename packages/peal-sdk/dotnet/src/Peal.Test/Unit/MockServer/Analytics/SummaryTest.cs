@@ -58,11 +58,14 @@ public class SummaryTest : BaseMockServerTest
                   "channelId": "channelId",
                   "engagement": 1,
                   "metrics": {
+                    "clicks": 1,
                     "impressions": 1,
                     "likes": 1,
                     "quotes": 1,
+                    "reach": 1,
                     "replies": 1,
-                    "reposts": 1
+                    "reposts": 1,
+                    "saves": 1
                   },
                   "permalink": "permalink",
                   "postId": "postId",
@@ -73,11 +76,14 @@ public class SummaryTest : BaseMockServerTest
                   "channelId": "channelId",
                   "engagement": 1,
                   "metrics": {
+                    "clicks": 1,
                     "impressions": 1,
                     "likes": 1,
                     "quotes": 1,
+                    "reach": 1,
                     "replies": 1,
-                    "reposts": 1
+                    "reposts": 1,
+                    "saves": 1
                   },
                   "permalink": "permalink",
                   "postId": "postId",

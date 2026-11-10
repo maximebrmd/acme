@@ -16,12 +16,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = PostContent.Builder.class)
 public final class PostContent {
+    private final Optional<List<PostPart>> followUps;
+
     private final List<MediaAttachment> media;
 
     private final List<TextOverride> overrides;
@@ -31,14 +34,21 @@ public final class PostContent {
     private final Map<String, Object> additionalProperties;
 
     private PostContent(
+            Optional<List<PostPart>> followUps,
             List<MediaAttachment> media,
             List<TextOverride> overrides,
             String text,
             Map<String, Object> additionalProperties) {
+        this.followUps = followUps;
         this.media = media;
         this.overrides = overrides;
         this.text = text;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("followUps")
+    public Optional<List<PostPart>> getFollowUps() {
+        return followUps;
     }
 
     @JsonProperty("media")
@@ -68,12 +78,15 @@ public final class PostContent {
     }
 
     private boolean equalTo(PostContent other) {
-        return media.equals(other.media) && overrides.equals(other.overrides) && text.equals(other.text);
+        return followUps.equals(other.followUps)
+                && media.equals(other.media)
+                && overrides.equals(other.overrides)
+                && text.equals(other.text);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.media, this.overrides, this.text);
+        return Objects.hash(this.followUps, this.media, this.overrides, this.text);
     }
 
     @java.lang.Override
@@ -98,6 +111,10 @@ public final class PostContent {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        _FinalStage followUps(Optional<List<PostPart>> followUps);
+
+        _FinalStage followUps(List<PostPart> followUps);
+
         _FinalStage media(List<MediaAttachment> media);
 
         _FinalStage addMedia(MediaAttachment media);
@@ -119,12 +136,15 @@ public final class PostContent {
 
         private List<MediaAttachment> media = new ArrayList<>();
 
+        private Optional<List<PostPart>> followUps = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
 
         @java.lang.Override
         public Builder from(PostContent other) {
+            followUps(other.getFollowUps());
             media(other.getMedia());
             overrides(other.getOverrides());
             text(other.getText());
@@ -187,13 +207,29 @@ public final class PostContent {
         }
 
         @java.lang.Override
+        public _FinalStage followUps(List<PostPart> followUps) {
+            this.followUps = Optional.ofNullable(followUps);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "followUps", nulls = Nulls.SKIP)
+        public _FinalStage followUps(Optional<List<PostPart>> followUps) {
+            this.followUps = followUps;
+            return this;
+        }
+
+        @java.lang.Override
         public PostContent build() {
-            return new PostContent(media, overrides, text, additionalProperties);
+            return new PostContent(followUps, media, overrides, text, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("media") || key.equalsIgnoreCase("overrides") || key.equalsIgnoreCase("text")) {
+            if (key.equalsIgnoreCase("followUps")
+                    || key.equalsIgnoreCase("media")
+                    || key.equalsIgnoreCase("overrides")
+                    || key.equalsIgnoreCase("text")) {
                 return;
             }
             this.additionalProperties.put(key, value);

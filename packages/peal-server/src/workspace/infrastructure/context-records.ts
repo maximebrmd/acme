@@ -6,6 +6,7 @@ import { UsageRecords } from "#assistant/application/ports/usage-records.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
 import type { WorkspaceStillBilled } from "#billing/application/workspace-still-billed.ts";
 import { ChannelRecords } from "#channels/application/channel-records.ts";
+import { EngagementRecords } from "#engagement/application/engagement-records.ts";
 import { LegalRecords } from "#legal/application/legal-records.ts";
 import { MediaRecords } from "#media/application/media-records.ts";
 import { NoticeRecords } from "#notifications/application/notice-records.ts";
@@ -43,9 +44,9 @@ const billingRefusals = (workspaceId: WorkspaceId) => ({
 /**
  * ContextRecords through each context's own records: publishing's posts,
  * the channels, the media library, the notices, the assistant's usage,
- * analytics' posts followed, billing's subscriptions, the webhooks, the
- * activity logs, the staff audit log, the legal records, and the reviews
- * of posts.
+ * analytics' posts followed, engagement's threads, billing's
+ * subscriptions, the webhooks, the activity logs, the staff audit log, the
+ * legal records, and the reviews of posts.
  */
 export const ContextRecordsLive = Layer.effect(
   ContextRecords,
@@ -62,6 +63,7 @@ export const ContextRecordsLive = Layer.effect(
     const reviews = yield* ReviewRecords;
     const webhooks = yield* WebhookRecords;
     const activity = yield* ActivityRecords;
+    const engagement = yield* EngagementRecords;
     const pseudonyms = yield* Pseudonyms;
 
     return ContextRecords.of({
@@ -71,6 +73,7 @@ export const ContextRecordsLive = Layer.effect(
 
           yield* notices.eraseUser(userId);
           yield* posts.forgetAuthor(userId);
+          yield* engagement.forgetUser(userId);
           yield* reviews.forgetUser(userId);
           yield* channels.eraseUser(userId);
           yield* activity.forgetUser(userId);
@@ -88,6 +91,7 @@ export const ContextRecordsLive = Layer.effect(
 
           yield* reviews.eraseWorkspace(workspaceId);
           yield* analytics.eraseWorkspace(workspaceId);
+          yield* engagement.eraseWorkspace(workspaceId);
           yield* channels.eraseWorkspace(workspaceId);
           yield* media.eraseWorkspace(workspaceId);
           yield* notices.eraseWorkspace(workspaceId);
@@ -109,6 +113,7 @@ export const ContextRecordsLive = Layer.effect(
           activity: activity.exportUser(userId),
           contracts: billing.exportUser(userId),
           legalHold: legal.exportUser(userId),
+          replies: engagement.exportUser(userId),
           review: reviews.exportUser(userId),
           staffActions: staff.exportUser(userId),
           user: notices.exportUser(userId),
@@ -118,12 +123,14 @@ export const ContextRecordsLive = Layer.effect(
             activity: exported.activity,
             contracts: exported.contracts,
             legalHold: exported.legalHold,
+            replies: exported.replies,
             review: exported.review,
             staffActions: exported.staffActions,
           }))
         ),
       exportWorkspace: (workspaceId) =>
         Effect.all({
+          accountAnalytics: analytics.exportAccounts(workspaceId),
           analytics: analytics.exportWorkspace(workspaceId),
           assistantUsage: usage.exportWorkspace(workspaceId),
           billing: billing.exportWorkspace(workspaceId),

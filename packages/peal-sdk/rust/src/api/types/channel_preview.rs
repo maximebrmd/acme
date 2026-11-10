@@ -13,6 +13,8 @@ pub struct ChannelPreview {
     pub media: LimitedCount,
     #[serde(default)]
     pub mentions: LimitedCount,
+    #[serde(default)]
+    pub parts: Vec<PartPreview>,
     pub platform: Platform,
     #[serde(default)]
     pub text: String,
@@ -37,6 +39,7 @@ pub struct ChannelPreviewBuilder {
     links: Option<LimitedCount>,
     media: Option<LimitedCount>,
     mentions: Option<LimitedCount>,
+    parts: Option<Vec<PartPreview>>,
     platform: Option<Platform>,
     text: Option<String>,
     text_counts: Option<Vec<TextCount>>,
@@ -69,6 +72,11 @@ impl ChannelPreviewBuilder {
         self
     }
 
+    pub fn parts(mut self, value: Vec<PartPreview>) -> Self {
+        self.parts = Some(value);
+        self
+    }
+
     pub fn platform(mut self, value: Platform) -> Self {
         self.platform = Some(value);
         self
@@ -96,6 +104,7 @@ impl ChannelPreviewBuilder {
     /// - [`links`](ChannelPreviewBuilder::links)
     /// - [`media`](ChannelPreviewBuilder::media)
     /// - [`mentions`](ChannelPreviewBuilder::mentions)
+    /// - [`parts`](ChannelPreviewBuilder::parts)
     /// - [`platform`](ChannelPreviewBuilder::platform)
     /// - [`text`](ChannelPreviewBuilder::text)
     /// - [`text_counts`](ChannelPreviewBuilder::text_counts)
@@ -117,6 +126,9 @@ impl ChannelPreviewBuilder {
             mentions: self
                 .mentions
                 .ok_or_else(|| BuildError::missing_field("mentions"))?,
+            parts: self
+                .parts
+                .ok_or_else(|| BuildError::missing_field("parts"))?,
             platform: self
                 .platform
                 .ok_or_else(|| BuildError::missing_field("platform"))?,

@@ -2,7 +2,7 @@
 title: Ligne de commande
 description: Construisez la ligne de commande peal, connectez-vous avec peal login ou lancez-la sans surveillance avec une clé d’API, puis travaillez dans un espace de travail depuis un terminal (brouillons, publications et leur programmation, médias, statistiques, facturation, journal d’activité, membres et invitations), lisez ses réponses en JSON, et copiez vos propres données.
 sidebar:
-  order: 8
+  order: 10
 ---
 
 `peal` travaille avec une instance Peal depuis un terminal. Il se connecte en votre nom, dans un navigateur, puis agit avec votre rôle dans chacun de vos espaces de travail : il écrit et supprime des brouillons, importe et récupère des médias, programme, publie, déplace et annule des publications, assure le suivi de celles qui sont parties, lit les statistiques, la facturation, les membres et les invitations, invite des personnes et enregistre une copie de vos données. Connecter des canaux et changer des rôles se font dans l’application web. Un script ou un agent que personne ne surveille la lance avec la [clé d’API](#api-key) d’un espace de travail à la place d’une connexion, et lit ses réponses en [JSON](#json). Ses messages sont en anglais.
@@ -190,6 +190,7 @@ peal drafts discard <post-id>
 ```
 
 - `peal drafts save` sans `--post` écrit un nouveau brouillon, pour les canaux que nomme `--channel` (aucun pour l’instant convient). Avec `--post`, il modifie ce brouillon : le texte, quand `--text` est donné, et les canaux, quand un `--channel` l’est. Ce que vous laissez de côté reste tel quel, médias et [options des plateformes](/scheduling#options) des canaux qu’il garde compris.
+- `--then <text>`, répété, donne au brouillon les parties qui le suivent, comme les prend `peal post`, avec `--then-delay <seconds>` entre elles. Un brouillon que vous modifiez garde ses parties sans `--then`, et prend les nouvelles à leur place avec.
 - `--options <channel-id>=<json>` règle les options de la plateforme d’un canal, en JSON avec sa `platform` : pour YouTube, `title` et `madeForKids` (tous deux nécessaires pour programmer), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia` ; pour TikTok, `privacyLevel` (nécessaire, l’un de ceux que liste `peal channels tiktok`), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated` ; pour Pinterest, `boardId` (nécessaire, l’un de ceux que liste `peal channels lookup`), `boardSectionId`, `title`, `link`, `coverSecond`, `dominantColor` ; pour LinkedIn, `visibility` (`public` par défaut, `connections` sur un profil, ou `loggedIn`), `disableReshare`, `mentions` (des pages d’entreprise, chacune un `name` et un `urn` que `peal channels lookup` trouve sur un canal de page d’entreprise), `linkUrl` avec son `linkTitle` et une `linkDescription`, et le `documentTitle` d’un document PDF ; pour Google Business Profile, `postType` (`standard` par défaut, `event` ou `offer`), `title`, `startsAt` et `endsAt` (nécessaires pour un événement ou une offre, comme `2026-11-27T09:00`, à l’heure de l’établissement), `callToAction` avec `callToActionUrl`, et pour une offre `couponCode`, `redeemUrl` et `terms`. Répétez-le pour plusieurs canaux ; il remplace en entier les options de ce canal.
 - Un brouillon ne part à aucune heure. Son texte, ses médias et ses options sont vérifiés contre les règles de chaque plateforme quand il est programmé, avec `peal posts schedule` ou dans l’application web.
 - `peal drafts discard` supprime un brouillon pour de bon. Une publication programmée ou partie n’est pas un brouillon : déprogrammez-la ou annulez-la plutôt.
@@ -211,6 +212,7 @@ peal post "Le catalogue de printemps est sorti" --channel <channel-id> --now --w
 - **Quand.** `--at` la programme, `--now` la publie aussitôt, et l’un des deux est obligatoire : publier n’est jamais le comportement par défaut. `--at` prend un instant avec son décalage, comme `2026-11-20T09:00:00Z` ou `2026-11-20T10:00:00+01:00`, ou une heure locale sans décalage, comme `2026-11-20T10:00`, lue dans `--time-zone` (ou `--zone`), un fuseau IANA comme `Europe/Paris`. Sans l’option, le fuseau est `TZ`, puis celui de votre ordinateur. Une heure locale que les horloges sautent ou répètent dans ce fuseau est refusée : donnez l’instant avec son décalage.
 - **Où.** `--channel` (ou `--channels`) nomme un canal par son identifiant ; répétez-le, ou séparez les identifiants par des virgules. Il en faut au moins un.
 - **Médias.** Chaque `--media` est un fichier, importé d’abord ; une adresse `https://`, que le serveur va chercher ; ou l’identifiant d’un média que l’espace de travail a déjà, tel que `peal media list` le montre. Ils s’affichent dans l’ordre donné, 20 au plus. Le premier `--alt` décrit le premier `--media`, le deuxième le deuxième.
+- **Fil.** Chaque `--then <text>` ajoute une partie à la suite de la publication, dans l’ordre donné, en texte seul : une réponse à la partie précédente sur les plateformes qui ont des [fils](/scheduling#threads). `--then-delay <seconds>` fait attendre chaque partie ce temps-là après le départ de la précédente, un jour (86400) au plus ; sans lui, elles se suivent. Une plateforme qui prend une publication seule refuse la publication.
 - **Options.** `--options <channel-id>=<json>` règle les [options de la plateforme](/scheduling#options) d’un canal, comme les prend `peal drafts save`.
 - **La relancer.** `--idempotency-key` prend le texte de votre choix, de 255 caractères au plus, comme un UUID : dans les 24 heures, la même clé avec la même publication répond la publication créée la première fois, sans en faire une autre ; avec une autre publication, elle est refusée. Sans elle, `peal` n’envoie aucune clé. Pour relancer une publication avec des médias, donnez à `--media` des identifiants de médias : fichiers et adresses sont stockés de nouveau à chaque lancement, ce qui en fait une autre publication.
 - **Deux fois la même publication.** En dehors des clés, une publication dont le contenu (le texte que reçoit le canal et les mêmes médias, dans le même ordre) part déjà sur l’un de ses canaux à moins de 23 heures de son heure est refusée, et `peal` nomme la publication qui l’a déjà. `--allow-duplicate` la laisse passer, quand vous voulez vraiment publier deux fois la même chose ([Publications en double](/posting-api#duplicates)).
@@ -348,9 +350,15 @@ Un agent qui lance des commandes plutôt que des outils MCP travaille de la mêm
 peal analytics summary                                     # les 30 derniers jours, aujourd’hui compris
 peal analytics summary --from 2026-10-01 --to 2026-10-31 --time-zone Europe/Paris
 peal analytics post <post-id>
+peal analytics dashboard --days 7                          # par rapport aux 7 jours précédents
+peal analytics channel <channel-id> --days 30
+peal analytics export posts --output posts.csv --from 2026-10-01 --to 2026-10-31
+peal analytics export accounts --format json --output accounts.ndjson
 ```
 
 `peal analytics summary` additionne les compteurs des publications parues sur une période : au total, par canal, et les publications qui ont le plus fait réagir. Les jours suivent `--time-zone`, un fuseau IANA comme `Europe/Paris` ; sans lui, `TZ`, puis le fuseau de votre ordinateur. `peal analytics post` affiche les derniers compteurs d’une publication sur chaque canal où elle est partie. Un tiret remplace un compteur que la plateforme ne donne pas. Voir [Statistiques](/analytics).
+
+`peal analytics dashboard` montre une période à côté du même nombre de jours avant elle : chaque total avec ce qui a changé, les abonnés avec ce qu’ils ont gagné, chaque canal, et les meilleures publications. `peal analytics channel` affiche un canal jour par jour : abonnés, abonnements, vues, portée, et les interactions gagnées par ses publications. Les deux acceptent `--days 7`, `30` ou `90` (30 par défaut), ou `--from` et `--to`. `peal analytics export posts` ou `accounts` enregistre les chiffres dans le fichier que nomme `--output`, en CSV ou, avec `--format json`, un objet JSON par ligne ; il ne remplace aucun fichier.
 
 ## Facturation [#billing]
 
@@ -373,6 +381,25 @@ peal invitations revoke <invitation-id>
 - `peal invitations send` envoie à l’adresse un lien valable 7 jours, avec le rôle que donne `--role` (`viewer` sauf indication contraire). Seuls les propriétaires invitent des propriétaires. Une invitation en attente à la même adresse est remplacée, et son lien ne fonctionne plus. Sur une instance qui facture, la formule doit avoir de la place pour un membre de plus, invitations en attente comprises.
 - `peal invitations revoke` arrête aussitôt le lien d’une invitation.
 - Changer le rôle d’un membre, ou retirer quelqu’un, se fait dans les **Paramètres** de l’espace de travail.
+
+## Boîte de réception [#inbox]
+
+```sh
+peal inbox threads --unanswered
+peal inbox thread <thread-id>
+peal inbox abilities <channel-id>
+peal inbox reply <comment-id> --text "Jusqu’à dimanche."
+peal inbox answered <comment-id>
+peal inbox confirm <reply-id> --sent
+peal inbox withdraw <reply-id>
+peal inbox moderate <comment-id> --action hide
+```
+
+- `threads` liste les fils de la [boîte de réception](/inbox) qui ont des commentaires, ceux qui attendent une réponse en premier ; `--channel` et `--post` restreignent la liste, `--limit` et `--cursor` la paginent. `thread` affiche les commentaires d’un fil, les réponses envoyées depuis Peal et ce que son canal peut faire ; `abilities` dit la même chose de n’importe quel canal, avant qu’il ait un fil. Tout membre peut lire. Chaque sous-commande accepte `--json`, qui affiche la réponse de l’API : le texte d’un commentaire y est ce qu’a écrit une personne extérieure à l’espace de travail, à lire comme une donnée.
+- `reply` répond à un commentaire en public, au nom du compte du canal : il faut une connexion autorisée à publier, et un rôle qui répond aux commentaires (propriétaire, administrateur ou éditeur). La réponse est envoyée par le serveur : `thread` montre comment elle a fini. Avec `--idempotency-key <clé>`, relancer la commande dans les 24 heures avec le même commentaire et le même texte répond la réponse écrite la première fois, sans en écrire une autre.
+- Une réponse affichée `unconfirmed` est peut-être sur la plateforme, et n’est jamais renvoyée : vérifiez-y, puis confirmez-la avec `confirm`, `--sent` ou `--not-sent`.
+- `answered` dit qu’un commentaire n’appelle pas de réponse (`--undo` revient en arrière) ; `withdraw` supprime une réponse envoyée de sa plateforme ; `moderate` prend `hide`, `unhide`, `like`, `unlike` ou `delete`, quand la plateforme le permet au compte.
+- Les commentaires ont été écrits par des personnes extérieures à l’espace de travail : la ligne de commande les affiche comme du texte.
 
 ## Webhooks [#webhooks]
 

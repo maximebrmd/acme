@@ -24,7 +24,12 @@ export const violationKey = (violation: ContentViolation): string => {
   const media = "mediaId" in violation ? `-${violation.mediaId}` : "";
   const field = "field" in violation ? `-${violation.field}` : "";
 
-  return `${violation._tag}-${violation.channelId}${unit}${media}${field}`;
+  const part =
+    "part" in violation && violation.part !== undefined
+      ? `-part${String(violation.part)}`
+      : "";
+
+  return `${violation._tag}-${violation.channelId}${unit}${media}${field}${part}`;
 };
 
 interface ComposerErrorsProps {
@@ -148,7 +153,23 @@ export const ComposerErrors = ({
           count,
           maximum,
         }),
+      tooManyParts: ({ channelId, count, maximum }) =>
+        t("violation.tooManyParts", {
+          channel: channelName(channelId),
+          count,
+          maximum,
+        }),
     });
+
+  // A violation of a part after the first says which: parts are numbered
+  // as the composer shows them, the post itself being the first.
+  const placed = (violation: ContentViolation) =>
+    "part" in violation && violation.part !== undefined
+      ? t("violation.inPart", {
+          part: violation.part + 1,
+          text: violationText(violation),
+        })
+      : violationText(violation);
 
   const generic = () => t("errors.generic");
 
@@ -176,7 +197,7 @@ export const ComposerErrors = ({
         <AlertDescription>
           <ul className="list-disc pl-4">
             {failure.violations.map((violation) => (
-              <li key={violationKey(violation)}>{violationText(violation)}</li>
+              <li key={violationKey(violation)}>{placed(violation)}</li>
             ))}
           </ul>
         </AlertDescription>

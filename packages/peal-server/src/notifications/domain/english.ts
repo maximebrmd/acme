@@ -29,6 +29,13 @@ export const english: EmailCatalog = {
       "You receive this email because you manage the channels of {workspaceName} on Peal. Choose which notifications you receive by email in your notification preferences.",
     subject: "Reconnect {handle} on {platform} by {expiresAt}",
   },
+  commentsReceived: {
+    action: "Read the comments",
+    body: "A post of {workspaceName} received new comments ({count}) where it was published.",
+    ignore:
+      "You receive this email because you wrote this post in {workspaceName} on Peal, or answer comments there, and chose to hear about new comments by email. Choose which notifications you receive by email in your notification preferences.",
+    subject: "New comments on a post",
+  },
   contractNumber:
     "Contract number: {reference}. Give it in Cancel your contract or Withdraw from contract here, at the foot of every page, and your request is applied at once, without signing in.",
   contractRequest: {
@@ -105,12 +112,16 @@ export const english: EmailCatalog = {
     missed:
       "Peal was unavailable at the scheduled time, and the post came too late to send.",
     notPublished: "someone checked the platform and did not find it.",
+    partsNotSent:
+      "its first parts are live, and Peal cannot send the parts after them: it has no post to reply to, as the part before them was found by hand or is gone from the platform. Sending it again from Peal is not possible: post the rest on the platform, as replies to the last part that is live.",
     planLimit:
       "the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.",
     quotaExceeded:
       "the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.",
     rateLimited:
       "the platform kept turning requests away, and Peal stopped trying.",
+    repliesNotAllowed:
+      "its first part is live, and the platform did not let this server's app post the parts after it as replies: on X, an app on self-serve access may reply only to a post whose author mentioned or quoted the account. Sending it again from Peal would meet the same refusal: post the rest on the platform, as replies to the last part that is live.",
     tokenExpired:
       "the account’s authorization stopped working. Reconnect it, then post again.",
     unavailable: "the platform could not be reached.",

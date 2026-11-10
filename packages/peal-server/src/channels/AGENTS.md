@@ -241,7 +241,13 @@
   rule reports. A refresh answered so leaves the channel's token alone.
 - A platform's data deletion request disconnects channels as a member does:
   `DrizzleDataDeletions` tells `ChannelEvents.disconnected` in its
-  transaction, once per signed request. `channel.reconnect_needed` is
+  transaction, once per signed request. `ChannelEvents` is heard by the
+  workspace's webhook endpoints, then by analytics
+  (`analyticsChannelEvents`), which keeps a gone channel's numbers a week
+  for the same account to take back, and erases them at once for a data
+  deletion (`DisconnectionCause`). To gain a permission, members connect
+  the account again without disconnecting: the channel and its history
+  stay. `channel.reconnect_needed` is
   published for a week after a channel enters `refreshNeeded` (`toldFor`),
   not each time the daily check tells it: its key is purged with its event.
 - A token refresh run that stops at its budget makes the next one start

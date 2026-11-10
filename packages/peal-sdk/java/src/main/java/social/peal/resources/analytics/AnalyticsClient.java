@@ -3,11 +3,17 @@
  */
 package social.peal.resources.analytics;
 
+import java.io.InputStream;
 import social.peal.core.ClientOptions;
 import social.peal.core.RequestOptions;
+import social.peal.resources.analytics.requests.ChannelAnalyticsRequest;
+import social.peal.resources.analytics.requests.DashboardAnalyticsRequest;
+import social.peal.resources.analytics.requests.ExportAnalyticsRequest;
 import social.peal.resources.analytics.requests.PostAnalyticsRequest;
 import social.peal.resources.analytics.requests.SummaryAnalyticsRequest;
+import social.peal.types.AnalyticsDashboard;
 import social.peal.types.AnalyticsSummary;
+import social.peal.types.ChannelSeries;
 import social.peal.types.PostAnalytics;
 
 public class AnalyticsClient {
@@ -40,6 +46,52 @@ public class AnalyticsClient {
     public AnalyticsSummary summary(
             String workspaceId, SummaryAnalyticsRequest request, RequestOptions requestOptions) {
         return this.rawClient.summary(workspaceId, request, requestOptions).body();
+    }
+
+    /**
+     * Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the <code>topPosts</code> (5 unless said, 25 at most) with the most engagement. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+     */
+    public AnalyticsDashboard dashboard(String workspaceId, DashboardAnalyticsRequest request) {
+        return this.rawClient.dashboard(workspaceId, request).body();
+    }
+
+    /**
+     * Answers a workspace's analytics over a range in one call: the totals of the posts published in it and of those published in the range before, of the same length, so a client shows the trend; followers at the end of each and their change; the same by channel and by platform; each day's gains, followers and account views; and the <code>topPosts</code> (5 unless said, 25 at most) with the most engagement. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Followers are kept from the day a channel is connected, read once a day; a number a platform does not give is null, never zero. Needs analytics:read.
+     */
+    public AnalyticsDashboard dashboard(
+            String workspaceId, DashboardAnalyticsRequest request, RequestOptions requestOptions) {
+        return this.rawClient.dashboard(workspaceId, request, requestOptions).body();
+    }
+
+    /**
+     * Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+     */
+    public ChannelSeries channel(String workspaceId, String channelId, ChannelAnalyticsRequest request) {
+        return this.rawClient.channel(workspaceId, channelId, request).body();
+    }
+
+    /**
+     * Answers one channel's numbers day by day: its followers, the accounts it follows and its posts as read each UTC day, the views and reach its platform counted, and what its posts published in the range gained. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. A channel Peal has read nothing of answers days without numbers. Needs analytics:read.
+     */
+    public ChannelSeries channel(
+            String workspaceId, String channelId, ChannelAnalyticsRequest request, RequestOptions requestOptions) {
+        return this.rawClient
+                .channel(workspaceId, channelId, request, requestOptions)
+                .body();
+    }
+
+    /**
+     * Streams the workspace's analytics as a file: <code>kind=posts</code> lists each post published in the range on each channel with its latest counts, <code>kind=accounts</code> each channel's account day by day. <code>format=csv</code> (the default) writes a header line then one line a row, as RFC 4180; <code>format=json</code> writes one JSON object a line (<code>application/x-ndjson</code>). A number a platform does not give is empty in CSV and null in JSON. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Needs analytics:read.
+     */
+    public InputStream export(String workspaceId, ExportAnalyticsRequest request) {
+        return this.rawClient.export(workspaceId, request).body();
+    }
+
+    /**
+     * Streams the workspace's analytics as a file: <code>kind=posts</code> lists each post published in the range on each channel with its latest counts, <code>kind=accounts</code> each channel's account day by day. <code>format=csv</code> (the default) writes a header line then one line a row, as RFC 4180; <code>format=json</code> writes one JSON object a line (<code>application/x-ndjson</code>). A number a platform does not give is empty in CSV and null in JSON. The range is <code>days</code> (7, 30 or 90: that many days ending today in <code>timeZone</code>), or <code>from</code> and <code>to</code>, both included and at most 366 days; <code>timeZone</code> is an IANA zone such as Europe/Paris. Needs analytics:read.
+     */
+    public InputStream export(String workspaceId, ExportAnalyticsRequest request, RequestOptions requestOptions) {
+        return this.rawClient.export(workspaceId, request, requestOptions).body();
     }
 
     /**

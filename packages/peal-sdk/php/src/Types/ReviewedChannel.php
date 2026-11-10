@@ -4,6 +4,7 @@ namespace Peal\Types;
 
 use Peal\Core\Json\JsonSerializableType;
 use Peal\Core\Json\JsonProperty;
+use Peal\Core\Types\ArrayType;
 
 class ReviewedChannel extends JsonSerializableType
 {
@@ -12,6 +13,12 @@ class ReviewedChannel extends JsonSerializableType
      */
     #[JsonProperty('channelId')]
     public string $channelId;
+
+    /**
+     * @var array<ReviewedPart> $followUps
+     */
+    #[JsonProperty('followUps'), ArrayType([ReviewedPart::class])]
+    public array $followUps;
 
     /**
      * @var ?string $handle
@@ -40,6 +47,7 @@ class ReviewedChannel extends JsonSerializableType
     /**
      * @param array{
      *   channelId: string,
+     *   followUps: array<ReviewedPart>,
      *   text: string,
      *   handle?: ?string,
      *   options?: ?TargetOptions,
@@ -50,6 +58,7 @@ class ReviewedChannel extends JsonSerializableType
         array $values,
     ) {
         $this->channelId = $values['channelId'];
+        $this->followUps = $values['followUps'];
         $this->handle = $values['handle'] ?? null;
         $this->options = $values['options'] ?? null;
         $this->platform = $values['platform'] ?? null;

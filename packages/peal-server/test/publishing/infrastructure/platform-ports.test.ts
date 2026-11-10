@@ -52,6 +52,7 @@ const refusingAccess = (failure: AccessFailure) =>
               ? Effect.die("Reading an account never calls the platform")
               : Effect.fail(failure),
           withToken: () => Effect.fail(failure),
+          workspaceOf: () => Effect.succeed(Option.none()),
         })
       )
     )
@@ -86,6 +87,7 @@ const grantingAccess = ChannelAccessCredentials.pipe(
       ChannelAccess.of({
         account: () => Effect.succeed(account),
         withToken: withOneToken,
+        workspaceOf: () => Effect.succeed(Option.none()),
       })
     )
   )

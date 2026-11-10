@@ -309,6 +309,102 @@ groups:
                     type: gt
                     params: [1.5]
 
+      - uid: peal-accounts-collection-behind
+        title: The collection of accounts' numbers falls behind
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Two or more of the last three hourly collections of accounts' followers stopped at their budget with channels still due (peal.analytics.accounts.unfinished). Followers are read later than once a day, and a day may be missed. Raise PEAL_ANALYTICS_CONCURRENCY if platforms answer, or read the server's warnings for the one that does not.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A run an hour: three in the window.
+              expr: sum(increase(peal_analytics_accounts_unfinished_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [1.5]
+
+      - uid: peal-comments-behind
+        title: The comments collection falls behind
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Three or more of the last six collections of comments stopped at their budget with threads still due (peal.engagement.collection.unfinished). Comments reach the inbox later than their schedule says. Raise PEAL_ENGAGEMENT_CONCURRENCY if platforms answer, or read the server's warnings for the one that does not.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A run every 10 minutes: six in the window.
+              expr: sum(increase(peal_engagement_collection_unfinished_total[1h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [2.5]
+
+      - uid: peal-comments-thread-failing
+        title: A thread's comments keep failing to be kept
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: Six or more reads of comments could not be kept in three hours (peal.engagement.collection.thread_failures), as one thread that fails at every try, half an hour apart, would. Its comments do not reach the inbox; the other threads are read. The server's warnings name the thread by id, and whether the database refused what it holds or a fault broke on it.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 10800
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # A thread that fails is tried again half an hour later.
+              expr: sum(increase(peal_engagement_collection_thread_failures_total[3h])) or vector(0)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [5.5]
+
       - uid: peal-uploads-waiting
         title: Uploads to platforms wait for a slot
         condition: B

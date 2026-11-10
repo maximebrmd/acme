@@ -32,6 +32,7 @@ describe(permissionsFor, () => {
       "analytics:read",
       "assistant:use",
       "channel:read",
+      "engagement:read",
       "media:read",
       "media:upload",
       "post:read",
@@ -50,9 +51,21 @@ describe(permissionsFor, () => {
     expect(permissionsFor("viewer")).toStrictEqual([
       "analytics:read",
       "channel:read",
+      "engagement:read",
       "media:read",
       "post:read",
     ]);
+  });
+
+  it("lets those who publish answer comments, and the others only read them", () => {
+    for (const role of ["owner", "admin", "editor"]) {
+      expect(permissionsFor(role)).toContain("engagement:reply");
+    }
+
+    for (const role of ["contributor", "viewer"]) {
+      expect(permissionsFor(role)).toContain("engagement:read");
+      expect(permissionsFor(role)).not.toContain("engagement:reply");
+    }
   });
 
   it("merges the roles of a comma-separated role", () => {

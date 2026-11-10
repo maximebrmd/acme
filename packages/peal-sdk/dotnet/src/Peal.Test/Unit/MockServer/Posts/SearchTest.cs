@@ -28,6 +28,56 @@ public class SearchTest : BaseMockServerTest
                 {
                   "authorId": "authorId",
                   "content": {
+                    "followUps": [
+                      {
+                        "delaySeconds": 86400,
+                        "media": [
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          },
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          }
+                        ],
+                        "overrides": [
+                          {
+                            "channelId": "channelId",
+                            "text": "x"
+                          },
+                          {
+                            "channelId": "channelId",
+                            "text": "x"
+                          }
+                        ],
+                        "text": "text"
+                      },
+                      {
+                        "delaySeconds": 86400,
+                        "media": [
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          },
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          }
+                        ],
+                        "overrides": [
+                          {
+                            "channelId": "channelId",
+                            "text": "x"
+                          },
+                          {
+                            "channelId": "channelId",
+                            "text": "x"
+                          }
+                        ],
+                        "text": "text"
+                      }
+                    ],
                     "media": [
                       {
                         "altText": "altText",
@@ -87,6 +137,23 @@ public class SearchTest : BaseMockServerTest
                         ],
                         "title": "title"
                       },
+                      "parts": {
+                        "count": 1,
+                        "live": [
+                          {
+                            "index": 1,
+                            "permalink": "permalink",
+                            "platformPostId": "platformPostId",
+                            "publishedAt": "publishedAt"
+                          },
+                          {
+                            "index": 1,
+                            "permalink": "permalink",
+                            "platformPostId": "platformPostId",
+                            "publishedAt": "publishedAt"
+                          }
+                        ]
+                      },
                       "permalink": "permalink",
                       "publishedAt": "publishedAt",
                       "round": 1,
@@ -110,6 +177,23 @@ public class SearchTest : BaseMockServerTest
                           "tags"
                         ],
                         "title": "title"
+                      },
+                      "parts": {
+                        "count": 1,
+                        "live": [
+                          {
+                            "index": 1,
+                            "permalink": "permalink",
+                            "platformPostId": "platformPostId",
+                            "publishedAt": "publishedAt"
+                          },
+                          {
+                            "index": 1,
+                            "permalink": "permalink",
+                            "platformPostId": "platformPostId",
+                            "publishedAt": "publishedAt"
+                          }
+                        ]
                       },
                       "permalink": "permalink",
                       "publishedAt": "publishedAt",
@@ -122,6 +206,56 @@ public class SearchTest : BaseMockServerTest
                 {
                   "authorId": "authorId",
                   "content": {
+                    "followUps": [
+                      {
+                        "delaySeconds": 86400,
+                        "media": [
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          },
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          }
+                        ],
+                        "overrides": [
+                          {
+                            "channelId": "channelId",
+                            "text": "x"
+                          },
+                          {
+                            "channelId": "channelId",
+                            "text": "x"
+                          }
+                        ],
+                        "text": "text"
+                      },
+                      {
+                        "delaySeconds": 86400,
+                        "media": [
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          },
+                          {
+                            "altText": "altText",
+                            "mediaId": "mediaId"
+                          }
+                        ],
+                        "overrides": [
+                          {
+                            "channelId": "channelId",
+                            "text": "x"
+                          },
+                          {
+                            "channelId": "channelId",
+                            "text": "x"
+                          }
+                        ],
+                        "text": "text"
+                      }
+                    ],
                     "media": [
                       {
                         "altText": "altText",
@@ -181,6 +315,23 @@ public class SearchTest : BaseMockServerTest
                         ],
                         "title": "title"
                       },
+                      "parts": {
+                        "count": 1,
+                        "live": [
+                          {
+                            "index": 1,
+                            "permalink": "permalink",
+                            "platformPostId": "platformPostId",
+                            "publishedAt": "publishedAt"
+                          },
+                          {
+                            "index": 1,
+                            "permalink": "permalink",
+                            "platformPostId": "platformPostId",
+                            "publishedAt": "publishedAt"
+                          }
+                        ]
+                      },
                       "permalink": "permalink",
                       "publishedAt": "publishedAt",
                       "round": 1,
@@ -204,6 +355,23 @@ public class SearchTest : BaseMockServerTest
                           "tags"
                         ],
                         "title": "title"
+                      },
+                      "parts": {
+                        "count": 1,
+                        "live": [
+                          {
+                            "index": 1,
+                            "permalink": "permalink",
+                            "platformPostId": "platformPostId",
+                            "publishedAt": "publishedAt"
+                          },
+                          {
+                            "index": 1,
+                            "permalink": "permalink",
+                            "platformPostId": "platformPostId",
+                            "publishedAt": "publishedAt"
+                          }
+                        ]
                       },
                       "permalink": "permalink",
                       "publishedAt": "publishedAt",
@@ -285,6 +453,15 @@ public class SearchTest : BaseMockServerTest
                     {
                       "channelId": "channelId",
                       "id": "id",
+                      "parts": {
+                        "count": 1,
+                        "live": [
+                          {
+                            "index": 1,
+                            "publishedAt": "publishedAt"
+                          }
+                        ]
+                      },
                       "round": 1,
                       "status": "pending"
                     }

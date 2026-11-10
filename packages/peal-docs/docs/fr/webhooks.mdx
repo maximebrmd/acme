@@ -2,7 +2,7 @@
 title: Webhooks
 description: Faites prévenir votre propre serveur par Peal de ce qui se passe dans un espace de travail, sans l’interroger en boucle. Les points de terminaison et leur secret de signature, chaque événement avec son schéma et un exemple, comment les livraisons sont signées, retentées et journalisées, et comment les vérifier.
 sidebar:
-  order: 14
+  order: 16
 ---
 
 Un webhook est une requête que Peal envoie à une adresse à vous quand il se passe quelque chose dans un espace de travail : une publication est partie ou a échoué, un canal doit être reconnecté, un fichier est prêt. Un produit qui publie par l’[API](/api-overview), ou une automatisation, l’apprend aussitôt, sans redemander sans cesse.
@@ -73,7 +73,7 @@ L’ordre des champs dans le corps ne fait pas partie du contrat.
 
 ### Ce qu’un corps ne contient jamais [#thin]
 
-Les corps portent des identifiants, des états, des codes, des instants et des liens permanents. Ils ne portent jamais ce que dit une publication, ni ses images ou vidéos.
+Les corps portent des identifiants, des états, des codes, des instants et des liens permanents. Ils ne portent jamais ce que dit une publication, dans aucune de ses parties, ni ses images ou vidéos ; ni ce que dit un commentaire ou la réponse qui lui est faite, ni qui a écrit un commentaire.
 
 Le point de terminaison est un tiers pour les personnes qui ont écrit la publication : une adresse que quelqu’un a choisie, et dont Peal ne peut rien vérifier d’autre que son caractère public. Garder les corps légers garde le contenu d’un espace de travail derrière des identifiants d’API et leurs permissions, où chaque lecture est vérifiée. Quand votre serveur a besoin de la publication, il la lit par l’API avec une clé à lui : `GET /api/workspaces/{workspaceId}/posts/{postId}`.
 
@@ -99,16 +99,19 @@ Les types d’événements et leurs champs sont un contrat public. Peal ajoute d
 | [`channel.reconnect_needed`](#channel-reconnect-needed) | L’autorisation d’un canal ne fonctionne plus                                                               |
 | [`media.ready`](#media-ready)                           | Un fichier a été lu, et peut aller dans des publications                                                   |
 | [`media.failed`](#media-failed)                         | Un fichier a été refusé, ou n’a pas pu être lu                                                             |
+| [`comment.received`](#comment-received)                 | Quelqu’un a commenté une publication mise en ligne                                                         |
+| [`comment.replied`](#comment-replied)                   | Une réponse à un commentaire est partie depuis Peal                                                        |
 | [`webhook.test`](#webhook-test)                         | Quelqu’un a demandé un événement de test. Envoyé quels que soient les abonnements du point de terminaison. |
 
 Une publication part sur chacun de ses canaux séparément : `post.published`, `post.failed` et `post.unconfirmed` nomment donc un canal chacun, et une publication sur trois canaux amène trois événements. Ces champs disent lequel :
 
-| Champ       | Type           | Ce qu’il contient                                                                                    |
-| ----------- | -------------- | ---------------------------------------------------------------------------------------------------- |
-| `targetId`  | chaîne         | La publication sur ce canal : l’identifiant de la cible, comme les listent les `targets` de l’API    |
-| `channelId` | chaîne         | Le canal                                                                                             |
-| `platform`  | chaîne ou null | La plateforme du canal, comme `mastodon` ; null une fois le canal déconnecté                         |
-| `round`     | entier         | Combien de fois la publication y a été envoyée : 1, et un de plus chaque fois qu’elle a été renvoyée |
+| Champ       | Type           | Ce qu’il contient                                                                                                                                                                                                                                                                                                                  |
+| ----------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `targetId`  | chaîne         | La publication sur ce canal : l’identifiant de la cible, comme les listent les `targets` de l’API                                                                                                                                                                                                                                  |
+| `channelId` | chaîne         | Le canal                                                                                                                                                                                                                                                                                                                           |
+| `platform`  | chaîne ou null | La plateforme du canal, comme `mastodon` ; null une fois le canal déconnecté                                                                                                                                                                                                                                                       |
+| `round`     | entier         | Combien de fois la publication y a été envoyée : 1, et un de plus chaque fois qu’elle a été renvoyée                                                                                                                                                                                                                               |
+| `parts`     | objet          | Pour une publication en plusieurs parties, un [fil](/scheduling#threads) : `count`, le nombre de parties qu’elle y a (1 pour une publication seule), et `live`, combien sont en ligne. Les parties partent dans l’ordre : une publication qui a échoué ou reste à vérifier s’est arrêtée à la partie qui suit la dernière en ligne |
 
 Le `data` de chaque événement contient `workspaceId`, l’espace de travail où il s’est produit.
 
@@ -225,22 +228,24 @@ La publication n’est pas partie sur le canal.
 | `failedAt`    | chaîne         | Le moment où elle a échoué, en instant UTC                 |
 | `reason`      | chaîne         | Pourquoi, l’un des codes ci-dessous                        |
 
-| `reason`              | Ce qui s’est passé                                                                                                                                                    |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contentRejected`     | La plateforme a refusé le texte ou le format de la publication.                                                                                                       |
-| `channelDisconnected` | Le canal a été déconnecté de l’espace de travail avant le départ de la publication. Rien n’a été envoyé.                                                              |
-| `channelDisabled`     | Le canal a été désactivé avant le départ de la publication. Rien n’a été envoyé.                                                                                      |
-| `mediaRemoved`        | L’une de ses images ou vidéos a été supprimée, ou n’était plus prête, avant le départ de la publication. Rien n’a été envoyé.                                         |
-| `mediaRejected`       | La plateforme a refusé l’une de ses images ou vidéos.                                                                                                                 |
-| `missed`              | Le serveur était arrêté à l’heure prévue, et la publication est arrivée trop tard pour partir à son retour.                                                           |
-| `notPublished`        | Un membre a vérifié une publication non confirmée sur la plateforme et ne l’a pas trouvée.                                                                            |
-| `rateLimited`         | La plateforme a limité Peal jusqu’à ce que l’envoi abandonne.                                                                                                         |
-| `tokenExpired`        | La plateforme a refusé l’autorisation du canal : le canal doit être reconnecté.                                                                                       |
-| `unavailable`         | La plateforme était injoignable. Rien n’a été envoyé.                                                                                                                 |
-| `appNotAudited`       | La plateforme n’accepte que certaines publications de l’application du serveur tant qu’elle ne l’a pas approuvée. Rien n’a été envoyé.                                |
-| `quotaExceeded`       | Une allocation quotidienne de mises en ligne sur la plateforme est restée épuisée jusqu’à ce que l’envoi abandonne.                                                   |
-| `appBillingLimit`     | La plateforme a refusé l’application du serveur tant que son opérateur ne l’a pas réglée. Rien n’a été envoyé.                                                        |
-| `planLimit`           | L’abonnement de l’espace de travail n’avait pas de place pour la publication à son heure : trop de canaux, ou les publications du mois épuisées. Rien n’a été envoyé. |
+| `reason`              | Ce qui s’est passé                                                                                                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contentRejected`     | La plateforme a refusé le texte ou le format de la publication.                                                                                                                  |
+| `channelDisconnected` | Le canal a été déconnecté de l’espace de travail avant le départ de la publication. Rien n’a été envoyé.                                                                         |
+| `channelDisabled`     | Le canal a été désactivé avant le départ de la publication. Rien n’a été envoyé.                                                                                                 |
+| `mediaRemoved`        | L’une de ses images ou vidéos a été supprimée, ou n’était plus prête, avant le départ de la publication. Rien n’a été envoyé.                                                    |
+| `mediaRejected`       | La plateforme a refusé l’une de ses images ou vidéos.                                                                                                                            |
+| `missed`              | Le serveur était arrêté à l’heure prévue, et la publication est arrivée trop tard pour partir à son retour.                                                                      |
+| `notPublished`        | Un membre a vérifié une publication non confirmée sur la plateforme et ne l’a pas trouvée.                                                                                       |
+| `rateLimited`         | La plateforme a limité Peal jusqu’à ce que l’envoi abandonne.                                                                                                                    |
+| `tokenExpired`        | La plateforme a refusé l’autorisation du canal : le canal doit être reconnecté.                                                                                                  |
+| `unavailable`         | La plateforme était injoignable. Rien n’a été envoyé.                                                                                                                            |
+| `appNotAudited`       | La plateforme n’accepte que certaines publications de l’application du serveur tant qu’elle ne l’a pas approuvée. Rien n’a été envoyé.                                           |
+| `quotaExceeded`       | Une allocation quotidienne de mises en ligne sur la plateforme est restée épuisée jusqu’à ce que l’envoi abandonne.                                                              |
+| `appBillingLimit`     | La plateforme a refusé l’application du serveur tant que son opérateur ne l’a pas réglée. Rien n’a été envoyé.                                                                   |
+| `planLimit`           | L’abonnement de l’espace de travail n’avait pas de place pour la publication à son heure : trop de canaux, ou les publications du mois épuisées. Rien n’a été envoyé.            |
+| `partsNotSent`        | Des parties de la publication sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre. Elle ne peut pas être republiée.         |
+| `repliesNotAllowed`   | Les premières parties sont en ligne, et X n’a pas laissé l’application de ce serveur publier la suite en réponse ([Fils](/scheduling#threads)). Elle ne peut pas être republiée. |
 
 [Notifications](/notifications#events) dit que faire dans chaque cas.
 
@@ -559,6 +564,72 @@ Le fichier a été refusé, ou Peal n’a pas pu le lire. Un fichier qui n’a p
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
     "reason": "typeMismatch"
+  }
+}
+```
+
+### comment.received [#comment-received]
+
+Peal a lu pour la première fois un commentaire sous une publication mise en ligne sur un canal (voir [Boîte de réception](/inbox)). L’événement ne porte que des identifiants : ce que dit le commentaire et qui l’a écrit se lisent par l’API, avec `engagement:read`.
+
+| Champ         | Type   | Ce qu’il contient                                |
+| ------------- | ------ | ------------------------------------------------ |
+| `workspaceId` | chaîne | L’espace de travail                              |
+| `postId`      | chaîne | La publication                                   |
+| `channelId`   | chaîne | Le canal où la publication est en ligne          |
+| `threadId`    | chaîne | Le fil : les commentaires sous cette publication |
+| `commentId`   | chaîne | Le commentaire                                   |
+| `receivedAt`  | chaîne | Quand Peal l’a lu, sous forme d’instant en UTC   |
+
+```json title="comment.received"
+{
+  "id": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1b",
+  "type": "comment.received",
+  "version": 1,
+  "timestamp": "2026-11-10T09:13:02.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f1c-4b7e-7d3a-9f21-6a5c8e1d2b40",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a6f50-0a1b-7c2d-8e3f-4a5b6c7d8e9f",
+    "commentId": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1a",
+    "receivedAt": "2026-11-10T09:13:02.000Z"
+  }
+}
+```
+
+### comment.replied [#comment-replied]
+
+Une réponse à un commentaire est partie depuis Peal, au nom du compte du canal. Une réponse qui a échoué, ou dont l’issue n’est pas connue, n’envoie rien : lisez-la par l’API.
+
+| Champ         | Type           | Ce qu’il contient                                              |
+| ------------- | -------------- | -------------------------------------------------------------- |
+| `workspaceId` | chaîne         | L’espace de travail                                            |
+| `postId`      | chaîne         | La publication                                                 |
+| `channelId`   | chaîne         | Le canal                                                       |
+| `threadId`    | chaîne         | Le fil                                                         |
+| `commentId`   | chaîne         | Le commentaire auquel il a été répondu                         |
+| `replyId`     | chaîne         | La réponse                                                     |
+| `permalink`   | chaîne ou null | L’adresse de la réponse sur la plateforme, quand elle en donne |
+| `repliedAt`   | chaîne         | Quand elle est partie, sous forme d’instant en UTC             |
+
+```json title="comment.replied"
+{
+  "id": "019a6f58-2d4e-7f5a-9b6c-7d8e9f0a1b2c",
+  "type": "comment.replied",
+  "version": 1,
+  "timestamp": "2026-11-10T09:20:41.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f1c-4b7e-7d3a-9f21-6a5c8e1d2b40",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a6f50-0a1b-7c2d-8e3f-4a5b6c7d8e9f",
+    "commentId": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1a",
+    "replyId": "019a6f57-3e5f-7a6b-8c7d-8e9f0a1b2c3d",
+    "permalink": "https://mastodon.example/@peal_example/113000000000000002",
+    "repliedAt": "2026-11-10T09:20:41.000Z"
   }
 }
 ```

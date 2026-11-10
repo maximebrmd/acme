@@ -1,8 +1,18 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option } from "effect";
+import { DateTime, Effect, Layer, Option, Result } from "effect";
 import { SqlClient } from "effect/sql";
+import { TestClock } from "effect/testing";
 
+import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PublishedTargets } from "#publishing/application/published-targets.ts";
+import {
+  confirmPublished,
+  recordLivePart,
+  settleTarget,
+  startTarget,
+} from "#publishing/domain/post-target.ts";
+import type { PostTarget } from "#publishing/domain/post-target.ts";
+import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublishedTargets } from "#publishing/infrastructure/drizzle-published-targets.ts";
 import { newId } from "#shared/application/ids.ts";
 import {
@@ -11,14 +21,16 @@ import {
   PostTargetIdSchema,
 } from "#shared/domain/ids.ts";
 import type { PostId, PostTargetId } from "#shared/domain/ids.ts";
+import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
 
 // The targets publishing lists for analytics, in Postgres. The rows are a
 // workspace's own, at instants no other suite uses, and deleted after.
 
-const ListingTest = DrizzlePublishedTargets.pipe(
-  Layer.provideMerge(DatabaseTest)
-);
+const ListingTest = Layer.mergeAll(
+  DrizzlePublishedTargets,
+  DrizzlePostRepository
+).pipe(Layer.provideMerge(DatabaseTest));
 
 const utc = (iso: string) => DateTime.makeUnsafe(iso);
 
@@ -48,7 +60,15 @@ const insertPost = Effect.fn("test.insertPost")(function* insertPost(
     const targetChannel =
       index === 0 ? channelId : yield* newId(ChannelIdSchema);
 
-    yield* sql`INSERT INTO publishing.post_targets (id, post_id, channel_id, status, finished_at, platform_post_id, permalink) VALUES (${targetId}, ${postId}, ${targetChannel}, ${target.status}, ${target.finishedAt === null ? null : utc(target.finishedAt).pipe(DateTime.toDateUtc)}, ${target.platformPostId}, ${target.platformPostId === null ? null : `https://mastodon.test/@alice/${target.platformPostId}`})`;
+    const finishedAt =
+      target.finishedAt === null
+        ? null
+        : utc(target.finishedAt).pipe(DateTime.toDateUtc);
+
+    // A published target is listed from when it went live.
+    const listedAt = target.status === "published" ? finishedAt : null;
+
+    yield* sql`INSERT INTO publishing.post_targets (id, post_id, channel_id, status, finished_at, listed_at, platform_post_id, permalink) VALUES (${targetId}, ${postId}, ${targetChannel}, ${target.status}, ${finishedAt}, ${listedAt}, ${target.platformPostId}, ${target.platformPostId === null ? null : `https://mastodon.test/@alice/${target.platformPostId}`})`;
 
     ids.push(targetId);
   }
@@ -109,6 +129,7 @@ layer(ListingTest)("the published targets", (it) => {
           ]
         );
         assert.deepStrictEqual(own[1], {
+          authorId: own[1]?.authorId,
           channelId,
           permalink: Option.some(
             "https://mastodon.test/@alice/110000000000000002"
@@ -182,5 +203,226 @@ layer(ListingTest)("the published targets", (it) => {
         );
       }).pipe(Effect.ensuring(deletePost(postId)));
     })
+  );
+
+  it.effect(
+    "list a post of several parts as its first part, from when a member confirmed its last",
+    () =>
+      Effect.gen(function* confirmedLate() {
+        const { ids, postId } = yield* insertPost([
+          { finishedAt: null, platformPostId: null, status: "pending" },
+        ]);
+
+        yield* Effect.gen(function* checks() {
+          const posts = yield* PostRepository;
+          const published = yield* PublishedTargets;
+          const [targetId] = ids;
+
+          const stored = (yield* posts.targets(postId)).find(
+            ({ id }) => id === targetId
+          );
+
+          assert.isDefined(stored);
+
+          // The first part went live, and the second left without an
+          // answer: the target is unconfirmed, its first part kept. That
+          // was years ago, as far as those who follow publications go.
+          const attemptedAt = utc("2019-02-03T10:00:00.000Z");
+
+          const started = Result.getOrThrow(startTarget(stored, attemptedAt));
+
+          const first = Result.getOrThrow(
+            recordLivePart(started, {
+              index: 0,
+              permalink: Option.some("https://mastodon.test/@alice/1101"),
+              platformPostId: Option.some(PlatformPostIdSchema.make("1101")),
+              publishedAt: attemptedAt,
+              round: 1,
+            })
+          );
+
+          const unconfirmed = Result.getOrThrow(
+            settleTarget(
+              first,
+              { _tag: "unconfirmed", attemptedAt, reason: "noResponse" },
+              attemptedAt
+            )
+          );
+
+          assert.isTrue(yield* posts.updateTarget(started, stored));
+          assert.isTrue(yield* posts.updateTarget(unconfirmed, started));
+
+          const since = (at: DateTime.Utc) =>
+            published
+              .from({ publishedAt: at, targetId: Option.none() }, 100)
+              .pipe(
+                Effect.map((found) =>
+                  found.filter((listed) => listed.targetId === targetId)
+                )
+              );
+
+          // Not live as a whole yet: nothing to follow.
+          assert.deepStrictEqual(yield* since(attemptedAt), []);
+
+          // A member finds the second part on the platform, now. The post
+          // went live when it was attempted, and those that follow
+          // publications are well past that instant.
+          const confirmedAt = yield* TestClock.withLive(DateTime.now);
+
+          const confirmed = Result.getOrThrow(
+            confirmPublished(unconfirmed, {
+              now: confirmedAt,
+              parts: 2,
+              permalink: Option.none(),
+              platformPostId: Option.none(),
+            })
+          );
+
+          assert(confirmed.status._tag === "published");
+          assert.deepStrictEqual(confirmed.status.publishedAt, attemptedAt);
+          assert.isTrue(
+            yield* TestClock.withLive(
+              posts.updateTarget(confirmed, unconfirmed)
+            )
+          );
+
+          // Listed from when Peal knew, as its first part: a follower
+          // that reads on from a minute ago finds it.
+          const [listed] = yield* since(
+            DateTime.subtractDuration(confirmedAt, "1 minute")
+          );
+
+          assert.isDefined(listed);
+          assert.strictEqual(listed.platformPostId, "1101");
+          assert.deepStrictEqual(
+            listed.permalink,
+            Option.some("https://mastodon.test/@alice/1101")
+          );
+          assert.isTrue(
+            DateTime.isGreaterThanOrEqualTo(listed.publishedAt, confirmedAt)
+          );
+
+          // Read back, the post still went live when it was attempted.
+          const kept = (yield* posts.targets(postId)).find(
+            ({ id }) => id === targetId
+          );
+
+          assert(kept?.status._tag === "published");
+          assert.deepStrictEqual(kept.status.publishedAt, attemptedAt);
+        }).pipe(Effect.ensuring(deletePost(postId)));
+      })
+  );
+
+  it.effect(
+    "list a post of several parts once, as its first part, and not one that stopped midway",
+    () =>
+      Effect.gen(function* threads() {
+        const { ids, postId } = yield* insertPost([
+          { finishedAt: null, platformPostId: null, status: "pending" },
+          { finishedAt: null, platformPostId: null, status: "pending" },
+        ]);
+
+        yield* Effect.gen(function* checks() {
+          const posts = yield* PostRepository;
+          const published = yield* PublishedTargets;
+          const sentAt = utc("2045-02-04T10:00:00.000Z");
+          const stored = yield* posts.targets(postId);
+
+          const partsLive = (target: PostTarget, count: number) => {
+            let sending = Result.getOrThrow(startTarget(target, sentAt));
+
+            for (let index = 0; index < count; index += 1) {
+              sending = Result.getOrThrow(
+                recordLivePart(sending, {
+                  index,
+                  permalink: Option.some(
+                    `https://mastodon.test/@alice/${String(1201 + index)}`
+                  ),
+                  platformPostId: Option.some(
+                    PlatformPostIdSchema.make(String(1201 + index))
+                  ),
+                  publishedAt: sentAt,
+                  round: 1,
+                })
+              );
+            }
+
+            return sending;
+          };
+
+          const [whole, stopped] = ids.map((id) =>
+            stored.find((target) => target.id === id)
+          );
+
+          assert.isDefined(whole);
+          assert.isDefined(stopped);
+
+          // Three parts, all live: the platform's answer names the last.
+          const sent = partsLive(whole, 3);
+
+          yield* posts.updateTarget(
+            Result.getOrThrow(startTarget(whole, sentAt)),
+            whole
+          );
+          yield* posts.updateTarget(
+            Result.getOrThrow(
+              settleTarget(
+                sent,
+                {
+                  _tag: "published",
+                  platformPostId: PlatformPostIdSchema.make("1203"),
+                },
+                sentAt
+              )
+            ),
+            sent
+          );
+
+          // Two parts live, then the third refused: its first parts are on
+          // the platform, and the target is not published.
+          const midway = partsLive(stopped, 2);
+
+          yield* posts.updateTarget(
+            Result.getOrThrow(startTarget(stopped, sentAt)),
+            stopped
+          );
+          yield* posts.updateTarget(
+            Result.getOrThrow(
+              settleTarget(
+                midway,
+                { _tag: "failed", reason: "contentRejected" },
+                sentAt
+              )
+            ),
+            midway
+          );
+
+          const listed = (yield* published.from(
+            { publishedAt: sentAt, targetId: Option.none() },
+            100
+          )).filter(({ targetId }) => ids.includes(targetId));
+
+          // One row for the post on its channel, whatever its parts: what
+          // analytics counts, and bills on X, and the inbox reads under.
+          assert.deepStrictEqual(
+            listed.map(
+              ({ permalink, platformPostId, publishedAt, targetId }) => ({
+                permalink,
+                platformPostId,
+                publishedAt,
+                targetId,
+              })
+            ),
+            [
+              {
+                permalink: Option.some("https://mastodon.test/@alice/1201"),
+                platformPostId: "1201",
+                publishedAt: sentAt,
+                targetId: whole.id,
+              },
+            ]
+          );
+        }).pipe(Effect.ensuring(deletePost(postId)));
+      })
   );
 });

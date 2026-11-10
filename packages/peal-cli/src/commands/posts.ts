@@ -66,22 +66,33 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   mediaRemoved: "one of its images or videos was deleted before it went out",
   missed: "Peal was down at its time, and it came too late to send",
   notPublished: "someone checked the platform and did not find it",
+  partsNotSent:
+    "its first parts are live and Peal cannot send the parts after them, as it has no post to reply to (the part before them was found by hand, or is gone): it cannot be reposted, so post the rest on the platform",
   planLimit:
     "the workspace's plan had no room for it when it was due: disconnect channels or move to a larger plan, then post it again",
   quotaExceeded:
     "the platform's daily upload allowance stayed spent: post it again after it resets",
   rateLimited: "the platform kept limiting Peal, which stopped trying",
+  repliesNotAllowed:
+    "its first parts are live and X did not let this server's app post the rest as replies (self-serve access replies only where the post's author mentioned or quoted the account): it cannot be reposted, so post the rest on X",
   tokenExpired: "the account's authorization stopped working: reconnect it",
   unavailable: "the platform could not be reached",
 };
 
+// How many of a post's parts are live on the channel, for a post of
+// several: a repost sends from the part after them.
+const partsDetail = ({ parts }: PostTarget): string =>
+  parts.count > 1
+    ? `; ${String(parts.live.length)} of ${String(parts.count)} parts live`
+    : "";
+
 const targetDetail = (target: PostTarget): string => {
   if (target.status === "failed" && target.failureReason !== null) {
-    return `failed: ${target.failureReason} (${failureReasons[target.failureReason]})`;
+    return `failed: ${target.failureReason} (${failureReasons[target.failureReason]})${partsDetail(target)}`;
   }
 
   if (target.status === "unconfirmed" && target.unconfirmedReason !== null) {
-    return `unconfirmed: ${target.unconfirmedReason}`;
+    return `unconfirmed: ${target.unconfirmedReason}${partsDetail(target)}`;
   }
 
   if (target.status === "published") {
@@ -91,11 +102,11 @@ const targetDetail = (target: PostTarget): string => {
         : "published";
 
     return target.permalink === null
-      ? published
-      : `${published} at ${target.permalink}`;
+      ? `${published}${partsDetail(target)}`
+      : `${published} at ${target.permalink}${partsDetail(target)}`;
   }
 
-  return target.status;
+  return `${target.status}${partsDetail(target)}`;
 };
 
 // How a finished post ended across its channels.

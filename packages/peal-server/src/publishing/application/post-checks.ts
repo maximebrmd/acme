@@ -9,6 +9,7 @@ import {
   duplicateRange,
 } from "#publishing/domain/duplicate-window.ts";
 import type { Duplicate } from "#publishing/domain/duplicate-window.ts";
+import { shownMedia } from "#publishing/domain/post-content.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { scheduleGrace } from "#publishing/domain/post.ts";
 import { postingMonthOf } from "#publishing/domain/posting-month.ts";
@@ -188,7 +189,8 @@ export class PostChecks extends Context.Service<
         const known = new Set(channels.map(({ channelId }) => channelId));
         const unknownChannels = requested.filter((id) => !known.has(id));
 
-        const mediaIds = content.media.map(({ mediaId }) => mediaId);
+        // Every file the post shows, in any of its parts.
+        const mediaIds = shownMedia(content).map(({ mediaId }) => mediaId);
 
         const attached =
           mediaIds.length === 0

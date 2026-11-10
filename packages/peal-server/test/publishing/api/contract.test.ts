@@ -43,6 +43,10 @@ import {
   maxMediaPerPost,
   PostContent,
 } from "#publishing/domain/post-content.ts";
+import {
+  maxFollowUps,
+  maxPartDelaySeconds,
+} from "#publishing/domain/post-part.ts";
 import { maxPostTextLength } from "#publishing/domain/post-text.ts";
 import {
   optionsPlatforms,
@@ -218,6 +222,13 @@ const violations: Record<ContractViolation["_tag"], ContentViolation> = {
     maximum: 20,
     platform: "instagram",
   },
+  tooManyParts: {
+    _tag: "tooManyParts",
+    channelId,
+    count: 3,
+    maximum: 1,
+    platform: "youtube",
+  },
   tooManyPixels: {
     _tag: "tooManyPixels",
     channelId,
@@ -275,6 +286,7 @@ const contractTags: Record<ContentViolation["_tag"], true> = {
   tooManyLinks: true,
   tooManyMedia: true,
   tooManyMentions: true,
+  tooManyParts: true,
   tooManyPixels: true,
   tooManyVideos: true,
   videoTooLong: true,
@@ -290,6 +302,11 @@ describe("the contract's post text rules", () => {
     expect(ContractText.maxPostTextLength).toBe(maxPostTextLength);
     expect(ContractText.maxAltTextLength).toBe(maxAltTextLength);
     expect(ContractText.maxMediaPerPost).toBe(maxMediaPerPost);
+  });
+
+  it("hold the server's bounds on a post's parts", () => {
+    expect(ContractText.maxFollowUps).toBe(maxFollowUps);
+    expect(ContractText.maxPartDelaySeconds).toBe(maxPartDelaySeconds);
   });
 
   it.each(texts)("count %j as the server does", (text) => {

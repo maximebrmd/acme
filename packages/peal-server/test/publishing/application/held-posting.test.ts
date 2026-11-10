@@ -8,6 +8,8 @@ import { PostEvents } from "#publishing/application/post-events.ts";
 import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import { newId } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
@@ -66,6 +68,84 @@ const at8 = (
 });
 
 describe("posting in one call behind an ApprovalGate", () => {
+  it.effect(
+    "holds a thread whole: every part kept, no job, and compared with the others that wait by all its parts",
+    () =>
+      onGatedServer(
+        Effect.gen(function* holdsThreads() {
+          const scheduling = yield* PostScheduling;
+          const checks = yield* PostChecks;
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const editor = actorIn(workspaceId);
+
+          const thread = (ending: string) =>
+            at8(channel, "What we found at low tide.", {
+              content: new PostContent({
+                followUps: [
+                  new PostPart({
+                    delaySeconds: 60,
+                    media: [],
+                    overrides: [],
+                    text: ending,
+                  }),
+                ],
+                media: [],
+                overrides: [],
+                text: "What we found at low tide.",
+              }),
+            });
+
+          const held = yield* scheduling.send(editor, thread("The anemones."));
+
+          assert.strictEqual(held.post.status._tag, "awaitingApproval");
+          assert.deepStrictEqual(
+            held.post.content.followUps.map(({ text }) => text),
+            ["The anemones."]
+          );
+          // Nothing of it goes out while it waits: no job, no part live.
+          assert.deepStrictEqual(
+            (yield* storedPost(held.post.id)).execution,
+            Option.none()
+          );
+          assert.deepStrictEqual(
+            held.targets.map(({ liveParts, status }) => [
+              status._tag,
+              liveParts.length,
+            ]),
+            [["pending", 0]]
+          );
+
+          // The same thread asked for again would go out twice once both
+          // are approved; another ending is another post, and waits too.
+          const twice = yield* scheduling
+            .send(editor, thread("The anemones."))
+            .pipe(Effect.flip);
+
+          assert.strictEqual(twice._tag, "DuplicateContent");
+          assert.strictEqual(
+            (yield* scheduling.send(editor, thread("The crabs."))).post.status
+              ._tag,
+            "awaitingApproval"
+          );
+
+          // A check says a thread would wait, and previews every part.
+          const checked = yield* checks.check(editor, {
+            channelIds: [channel],
+            content: thread("The gulls.").content,
+            when: Option.some({ at: Option.none() }),
+          });
+
+          assert.isTrue(checked.awaitsApproval);
+          assert.deepStrictEqual(
+            checked.channels.map(({ parts }) => parts.map(({ text }) => text)),
+            [["The gulls."]]
+          );
+        })
+      ),
+    timeout
+  );
+
   it.effect(
     "holds each post of a batch, without a job, and refuses the same content held twice",
     () =>

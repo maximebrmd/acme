@@ -106,6 +106,10 @@ const brokenRule = (violation: ContentViolation): string =>
       `${String(count)} images and videos, and the platform takes ${String(maximum)}`,
     tooManyMentions: ({ count, maximum }) =>
       `${String(count)} mentions, and the platform takes ${String(maximum)}`,
+    tooManyParts: ({ count, maximum }) =>
+      maximum === 1
+        ? "the platform takes a post alone, with no part after it"
+        : `${String(count)} parts, and the platform takes ${String(maximum)}`,
     tooManyPixels: ({ height, maximum, width }) =>
       `it is ${String(width)}×${String(height)}, and the platform takes ${String(maximum)} pixels in all`,
     tooManyVideos: ({ count, maximum }) =>
@@ -122,6 +126,9 @@ const placeOf = (violation: ContentViolation): string =>
   [
     "channelId" in violation
       ? `channel ${violation.channelId}${"platform" in violation ? ` (${violation.platform})` : ""}`
+      : [],
+    "part" in violation && violation.part !== undefined
+      ? `part ${String(violation.part + 1)}`
       : [],
     "field" in violation ? `option ${violation.field}` : [],
     "mediaId" in violation ? `media ${violation.mediaId}` : [],
@@ -249,6 +256,32 @@ const reasonOf =
           "This idempotency key was sent in the last 24 hours with another post: nothing was made. Send this one under a new --idempotency-key."
         ),
       ImportUnreadable: (unreadable) => refused(unreadableImport(unreadable)),
+      InboxActionFailed: ({ reason }) =>
+        refused(
+          `The platform did not do it (${reason}), and nothing changed in Peal: asking again is safe.`
+        ),
+      InboxActionUnavailable: ({ ability, standing }) =>
+        refused(
+          standing === "reconnect"
+            ? `This channel may not ${ability} yet: disconnect it and connect the account again, which asks for what it takes, or the channel was disconnected or turned off. Nothing was asked of the platform.`
+            : `This channel's platform does not let the account ${ability} here. Nothing was asked of it.`
+        ),
+      InboxCommentGone: () =>
+        refused(
+          "The comment is no longer on its platform: it can be neither answered nor moderated."
+        ),
+      InboxCommentNotFound: () =>
+        refused(
+          "The workspace has no such comment: peal inbox thread shows a thread's."
+        ),
+      InboxReplyNotFound: () =>
+        refused(
+          "The workspace has no such reply: peal inbox thread shows a thread's."
+        ),
+      InboxThreadNotFound: () =>
+        refused(
+          "The workspace has no such thread: peal inbox threads lists them."
+        ),
       InvalidDateRange: () =>
         refused(
           "The range must end on or after the day it starts, and span 366 days at most."
@@ -325,6 +358,20 @@ const reasonOf =
         ),
       PostStatusConflict: ({ status }) =>
         refused(`The post is ${status}, which does not allow this.`),
+      ReplyInvalid: ({ length, maximum, reason, unit }) =>
+        refused(
+          reason === "empty" || length === null || maximum === null
+            ? "The reply says nothing: nothing was sent."
+            : `The reply is too long for its platform: ${String(length)} ${unit ?? "characters"}, where it takes ${String(maximum)} (on Mastodon, the mention of the person answered counts). Nothing was sent.`
+        ),
+      ReplyPending: ({ replyId }) =>
+        refused(
+          `A reply to this comment is on its way, or may have gone out (${replyId}): nothing more was sent. If it is unconfirmed, check the platform, then run peal inbox confirm.`
+        ),
+      ReplyStatusConflict: ({ status }) =>
+        refused(
+          `The reply is ${status}, which does not allow this: only an unconfirmed reply is confirmed, and only a sent one is withdrawn.`
+        ),
       ReturnUrlNotAllowed: () =>
         refused(
           "The return address was refused: it must be HTTPS, on an origin the workspace's partner account registered (peal partner show lists them). A workspace without a partner account takes none."

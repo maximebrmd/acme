@@ -255,13 +255,20 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
 
         assert.strictEqual(misnamed.status, 400);
 
-        // Not while a post is going out.
+        // Not while a post is going out: a call to its platform was begun,
+        // and has not ended.
         const publishing = yield* seedPost(
           workspaceId,
           channelId,
           "A synthetic post going out.",
           "publishing"
         );
+
+        yield* sql`
+          INSERT INTO publishing.publication_calls
+            (idempotency_key, operation, attempt, round, part, started_at, target_id)
+          SELECT 'synthetic-call-' || id, 'publish', 1, 1, 0, now(), id
+          FROM publishing.post_targets WHERE post_id = ${publishing}`;
 
         const busy = yield* app.request(path, {
           body: { name: "Harbour" },
@@ -276,7 +283,13 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           targets: 2,
         });
 
-        yield* sql`UPDATE publishing.posts SET status = 'finished' WHERE id = ${publishing}`;
+        // The call ended. The post is still publishing, as one that
+        // waits between two parts of a thread is: that keeps nothing.
+        yield* sql`
+          UPDATE publishing.publication_calls SET finished_at = now()
+          WHERE target_id IN (
+            SELECT id FROM publishing.post_targets WHERE post_id = ${publishing}
+          )`;
 
         const deleted = yield* app.request(path, {
           body: { name: " Harbour " },

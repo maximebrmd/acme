@@ -1,4 +1,4 @@
-import { DateTime, Effect, Layer, Option, Ref } from "effect";
+import { DateTime, Effect, Layer, Option, Ref, Stream } from "effect";
 import { HttpRouter } from "effect/http";
 import { HttpApiBuilder, HttpApiError, HttpApiSchema } from "effect/http-api";
 import {
@@ -107,11 +107,27 @@ import {
   playlistPage,
   videoCategories,
 } from "./studio-capabilities.ts";
+import { makeInbox, studioInboxLive } from "./studio-inbox.ts";
+import type { InboxState } from "./studio-inbox.ts";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
 // invitations, and the account's own data. Handlers check the member's
 // permissions as the server does, and record the changes they make.
+
+// The totals the analytics dashboard answers with.
+const dashboardTotals = {
+  clicks: null,
+  engagement: 20,
+  impressions: null,
+  likes: 12,
+  posts: 1,
+  quotes: 1,
+  reach: null,
+  replies: 3,
+  reposts: 4,
+  saves: null,
+};
 
 const at = (iso: string) => DateTime.makeUnsafe(iso);
 
@@ -127,6 +143,8 @@ const everything: readonly Permission[] = [
   "billing:read",
   "channel:read",
   "channel:connect",
+  "engagement:read",
+  "engagement:reply",
   "invitation:create",
   "invitation:cancel",
   "media:read",
@@ -147,6 +165,7 @@ const everything: readonly Permission[] = [
 const reading: readonly Permission[] = [
   "analytics:read",
   "channel:read",
+  "engagement:read",
   "media:read",
   "post:read",
 ];
@@ -292,6 +311,7 @@ const pendingOn = (id: string, channelId: string): PostTarget => ({
   failureReason: null,
   id,
   options: null,
+  parts: { count: 1, live: [] },
   permalink: null,
   publishedAt: null,
   round: 1,
@@ -382,6 +402,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 1,
     finishedAt: at("2026-11-08T09:00:02Z"),
+    part: 0,
     refusalCode: "429",
     result: "rateLimited",
     retryAt: at("2026-11-08T09:05:00Z"),
@@ -392,6 +413,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 2,
     finishedAt: at("2026-11-08T09:05:02Z"),
+    part: 0,
     refusalCode: "429",
     result: "rateLimited",
     retryAt: null,
@@ -541,6 +563,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
   notificationPreferences: {
     email: {
       channelReconnect: true,
+      comments: false,
       postFailed: true,
       postPublished: false,
       postReview: true,
@@ -548,6 +571,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
     },
     everyPost: false,
   },
+  replies: [],
   review: { approvals: [], comments: [] },
   sessions: [],
   signInMethods: [],
@@ -896,6 +920,7 @@ const inPerson = CurrentPrincipal.pipe(
 );
 
 export interface Studio {
+  readonly inbox: Ref.Ref<InboxState>;
   /** The API keys the server takes, beside the user's access token. */
   readonly keys: readonly StudioKey[];
   readonly me: Me;
@@ -909,6 +934,7 @@ export const makeStudio = (
   keys: readonly StudioKey[] = []
 ) =>
   Effect.all({
+    inbox: makeInbox,
     state: Ref.make<StudioState>({
       approvals: [approval],
       changes: [],
@@ -1564,43 +1590,53 @@ const scheduleCheck = (payload: Pick<NewPost, "when">) => {
   );
 };
 
-// What a post would be on one channel, counted as its platform counts it.
-const previewOn = (
+// A part's text on a channel and what it holds, counted as its platform
+// counts it.
+const countsOn = (
   channel: Channel,
-  postContent: PostContent,
-  options: readonly ChannelOptions[]
-): ChannelPreview => {
+  part: Pick<PostContent, "media" | "overrides" | "text">
+) => {
   const rules = platformRules[channel.platform];
 
   const text =
-    postContent.overrides.find(({ channelId }) => channelId === channel.id)
-      ?.text ?? postContent.text;
+    part.overrides.find(({ channelId }) => channelId === channel.id)?.text ??
+    part.text;
 
   return {
-    channelId: channel.id,
     hashtags: {
       count: countHashtags(text),
       maximum: rules.maxHashtags ?? null,
     },
     links: { count: countLinks(text), maximum: rules.maxLinks ?? null },
-    media: {
-      count: postContent.media.length,
-      maximum: rules.maxMedia ?? null,
-    },
+    media: { count: part.media.length, maximum: rules.maxMedia ?? null },
     mentions: {
       count: countMentions(text),
       maximum: rules.maxMentions ?? null,
     },
-    platform: channel.platform,
     text,
     textCounts: rules.textLimits.map(({ maximum, unit }) => ({
       length: measureText(text, unit),
       maximum,
       unit,
     })),
-    violations: violationsOf([channel.id], postContent, options),
   };
 };
+
+// What a post would be on one channel: its first part, then the others.
+const previewOn = (
+  channel: Channel,
+  postContent: PostContent,
+  options: readonly ChannelOptions[]
+): ChannelPreview => ({
+  ...countsOn(channel, postContent),
+  channelId: channel.id,
+  parts: (postContent.followUps ?? []).map((part, index) => ({
+    ...countsOn(channel, part),
+    part: index + 1,
+  })),
+  platform: channel.platform,
+  violations: violationsOf([channel.id], postContent, options),
+});
 
 const unknownMediaOf = (studio: Studio, postContent: PostContent) =>
   checkMedia(studio, postContent).pipe(
@@ -2655,6 +2691,104 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     HttpApiBuilder.group(Api, "analytics", (handlers) =>
       handlers.handleAll({
+        channel: ({ params, query }) =>
+          Effect.gen(function* channel() {
+            yield* allowed("analytics:read");
+            yield* record(
+              studio,
+              `channel:${params.channelId}:${String(query.days)}:${query.timeZone}`
+            );
+
+            return {
+              channelId: params.channelId,
+              days: [
+                {
+                  date: "2026-11-08",
+                  followers: 320,
+                  following: 41,
+                  likes: 12,
+                  posts: 77,
+                  quotes: 1,
+                  reach: null,
+                  replies: 3,
+                  reposts: 4,
+                  views: null,
+                },
+                {
+                  date: "2026-11-09",
+                  followers: null,
+                  following: null,
+                  likes: 0,
+                  posts: null,
+                  quotes: 0,
+                  reach: null,
+                  replies: 0,
+                  reposts: 0,
+                  views: null,
+                },
+              ],
+              followers: { current: 320, gained: 12 },
+              from: "2026-11-08",
+              platform: "mastodon" as const,
+              timeZone: query.timeZone,
+              to: "2026-11-09",
+              totals: dashboardTotals,
+            };
+          }),
+        dashboard: ({ query }) =>
+          Effect.gen(function* dashboard() {
+            yield* allowed("analytics:read");
+            yield* record(
+              studio,
+              `dashboard:${String(query.days)}:${String(query.from)}:${String(query.to)}:${query.timeZone}`
+            );
+
+            const numbers = {
+              followers: { current: 320, gained: 12 },
+              previousFollowers: { current: 308, gained: -2 },
+              // As on a Pinterest channel: the 90 days before 90 days are
+              // gone in part.
+              previousKept: query.days !== 90,
+              previousTotals: { ...dashboardTotals, engagement: 10, likes: 6 },
+              totals: dashboardTotals,
+            };
+
+            return {
+              ...numbers,
+              channels: [
+                {
+                  ...numbers,
+                  channelId: mastodonId,
+                  platform: "mastodon" as const,
+                },
+              ],
+              days: [],
+              from: query.from ?? "2026-11-03",
+              platforms: [{ ...numbers, platform: "mastodon" as const }],
+              previous: { from: "2026-10-27", to: "2026-11-02" },
+              timeZone: query.timeZone,
+              to: query.to ?? "2026-11-09",
+              topPosts: [],
+            };
+          }),
+        export: ({ query }) =>
+          Effect.gen(function* exporting() {
+            yield* allowed("analytics:read");
+            yield* record(
+              studio,
+              `export:${query.kind}:${query.format ?? "csv"}:${String(query.days)}`
+            );
+
+            const rows = Stream.make(
+              "date,channelId,platform,followers\r\n",
+              `2026-11-08,${mastodonId},mastodon,320\r\n`
+            ).pipe(Stream.encodeText);
+
+            // Over 90 days, the server fails after the first rows.
+            return query.days === 90
+              ? Stream.concat(rows, Stream.die("synthetic failure midway"))
+              : rows;
+          }),
         post: ({ params }) =>
           allowed("analytics:read").pipe(
             Effect.as({
@@ -2667,11 +2801,14 @@ export const studioGroupsLive = (studio: Studio) =>
                         collecting: true,
                         lastCollectedAt: at("2026-11-09T07:07:00Z"),
                         latest: {
+                          clicks: null,
                           impressions: null,
                           likes: 12,
                           quotes: 1,
+                          reach: null,
                           replies: 3,
                           reposts: 4,
+                          saves: null,
                         },
                         permalink: "https://social.example.test/@studio/1",
                         publishedAt: at("2026-11-08T09:00:05Z"),
@@ -2711,11 +2848,14 @@ export const studioGroupsLive = (studio: Studio) =>
                   channelId: mastodonId,
                   engagement: 20,
                   metrics: {
+                    clicks: null,
                     impressions: null,
                     likes: 12,
                     quotes: 1,
+                    reach: null,
                     replies: 3,
                     reposts: 4,
+                    saves: null,
                   },
                   permalink: "https://social.example.test/@studio/1",
                   postId: finishedId,
@@ -3351,6 +3491,7 @@ export const studioGroupsLive = (studio: Studio) =>
               ),
               channels: post.targets.map(({ channelId }) => ({
                 channelId,
+                followUps: [],
                 handle: "@studio@social.example.test",
                 options:
                   post.targets.find((target) => target.channelId === channelId)
@@ -3601,6 +3742,7 @@ export const studioGroupsLive = (studio: Studio) =>
           }),
       })
     ),
+    studioInboxLive(studio.inbox),
     HttpApiBuilder.group(Api, "activity", (handlers) =>
       handlers.handleAll({
         list: ({ params, query }) =>

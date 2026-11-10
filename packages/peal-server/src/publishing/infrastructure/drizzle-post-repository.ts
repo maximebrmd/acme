@@ -23,6 +23,8 @@ import type {
 } from "#publishing/application/post-repository.ts";
 import { ExecutionIdSchema } from "#publishing/application/publication-scheduler.ts";
 import type { ExecutionId } from "#publishing/application/publication-scheduler.ts";
+import { LivePartSchema } from "#publishing/domain/live-part.ts";
+import type { LivePart } from "#publishing/domain/live-part.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
@@ -91,6 +93,7 @@ const toStored = (row: PostRow) =>
       },
       authorId: Option.fromNullOr(row.authorId),
       content: {
+        followUps: row.followUps,
         media: row.media,
         overrides: row.textOverrides,
         text: row.text,
@@ -120,15 +123,29 @@ const targetStatusOf = (row: TargetRow) => {
   return row.keptPrivate ? { ...status, keptPrivate: true } : status;
 };
 
-const toTarget = (row: TargetRow) =>
+// The parts that went live, as their column holds them: JSON.
+const LivePartsJson = Schema.toCodecJson(Schema.Array(LivePartSchema));
+
+const decodeLiveParts = Schema.decodeUnknownEffect(LivePartsJson);
+
+const encodeLiveParts = Schema.encodeSync(LivePartsJson);
+
+const decodeTargetRow = (row: TargetRow, liveParts: readonly LivePart[]) =>
   decodeTarget({
     channelId: row.channelId,
     id: row.id,
+    liveParts,
     options: Option.fromNullOr(row.options),
     postId: row.postId,
     round: row.round,
     status: targetStatusOf(row),
-  }).pipe(Effect.orDie);
+  });
+
+const toTarget = (row: TargetRow) =>
+  decodeLiveParts(row.liveParts).pipe(
+    Effect.flatMap((liveParts) => decodeTargetRow(row, liveParts)),
+    Effect.orDie
+  );
 
 const scheduleColumns = (schedule: Option.Option<Schedule>) =>
   Option.match(schedule, {
@@ -141,6 +158,15 @@ const scheduleColumns = (schedule: Option.Option<Schedule>) =>
 
 // What the post says, as its columns hold it.
 const contentColumns = ({ content }: Post) => ({
+  followUps: content.followUps.map((part) => ({
+    delaySeconds: part.delaySeconds,
+    media: part.media.map(({ altText, mediaId }) => ({ altText, mediaId })),
+    overrides: part.overrides.map(({ channelId, text }) => ({
+      channelId,
+      text,
+    })),
+    text: part.text,
+  })),
   media: content.media.map(({ altText, mediaId }) => ({ altText, mediaId })),
   text: content.text,
   textOverrides: content.overrides.map(({ channelId, text }) => ({
@@ -209,6 +235,7 @@ const targetColumns = (status: PostTargetStatus) => {
     failureReason: null,
     finishedAt: null,
     keptPrivate: false,
+    listedAt: null,
     permalink: null,
     platformPostId: null,
     startedAt: null,
@@ -232,6 +259,9 @@ const targetColumns = (status: PostTargetStatus) => {
       ...cleared,
       finishedAt: date(publishedAt),
       keptPrivate: keptPrivate === true,
+      // Listed for the contexts that follow publications from when it
+      // went live; `listedFrom` says when a member confirmed it instead.
+      listedAt: date(publishedAt),
       permalink: Option.getOrNull(permalink),
       platformPostId: Option.getOrNull(platformPostId),
     }),
@@ -246,6 +276,29 @@ const targetColumns = (status: PostTargetStatus) => {
       unconfirmedReason: reason,
     }),
   });
+};
+
+/**
+ * When a target that becomes `next` is listed among the publications from:
+ * when it went live, but for one a member confirmed by hand, which went
+ * live when it was attempted, hours or days before anyone knew. Those that
+ * follow publications (analytics, the inbox) read on from the latest they
+ * know, so such a target is listed from `now`, when Peal learnt of it.
+ */
+const listedFrom = (
+  next: PostTarget,
+  current: PostTarget,
+  now: DateTime.Utc
+): Date | null => {
+  if (next.status._tag !== "published") {
+    return null;
+  }
+
+  return date(
+    current.status._tag === "unconfirmed"
+      ? DateTime.max(next.status.publishedAt, now)
+      : next.status.publishedAt
+  );
 };
 
 const targetFrom = (rows: readonly TargetRow[]) => {
@@ -273,6 +326,7 @@ const targetRow = (target: PostTarget) => ({
   ...targetColumns(target.status),
   channelId: target.channelId,
   id: target.id,
+  liveParts: encodeLiveParts(target.liveParts),
   options: optionsColumn(target),
   postId: target.postId,
   round: target.round,
@@ -298,10 +352,14 @@ const withTargets = (
 
 const statusName = (status: PostStatus | PostTargetStatus) => status._tag;
 
-// What a post's `media` column holds for one attachment, to find the posts
-// that show it.
+// What a post's `media` column holds for one attachment, and its
+// `follow_ups` for a part that shows it, to find the posts that show it in
+// any part.
 const showingMedia = (mediaId: MediaAssetId) =>
-  sql`${posts.media} @> ${JSON.stringify([{ mediaId }])}::jsonb`;
+  or(
+    sql`${posts.media} @> ${JSON.stringify([{ mediaId }])}::jsonb`,
+    sql`${posts.followUps} @> ${JSON.stringify([{ media: [{ mediaId }] }])}::jsonb`
+  );
 
 /** Posts and targets in the publishing schema, through Drizzle. */
 export const DrizzlePostRepository = Layer.effect(
@@ -623,21 +681,30 @@ export const DrizzlePostRepository = Layer.effect(
             Effect.map((rows) => rows.length === 1)
           ),
       updateTarget: (next, current) =>
-        db
-          .update(postTargets)
-          .set({ ...targetColumns(next.status), round: next.round })
-          .where(
-            and(
-              eq(postTargets.id, current.id),
-              eq(postTargets.round, current.round),
-              eq(postTargets.status, statusName(current.status))
-            )
+        DateTime.now.pipe(
+          Effect.flatMap((now) =>
+            db
+              .update(postTargets)
+              .set({
+                ...targetColumns(next.status),
+                listedAt: listedFrom(next, current, now),
+                liveParts: encodeLiveParts(next.liveParts),
+                round: next.round,
+              })
+              .where(
+                and(
+                  eq(postTargets.id, current.id),
+                  eq(postTargets.round, current.round),
+                  eq(postTargets.status, statusName(current.status))
+                )
+              )
+              .returning({ id: postTargets.id })
+              .pipe(
+                Effect.mapError(failed),
+                Effect.map((rows) => rows.length === 1)
+              )
           )
-          .returning({ id: postTargets.id })
-          .pipe(
-            Effect.mapError(failed),
-            Effect.map((rows) => rows.length === 1)
-          ),
+        ),
     });
   })
 );

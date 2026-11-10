@@ -30,7 +30,9 @@ import { PostStatusSchema } from "./post-status.ts";
 import { PostTargetStatusSchema } from "./post-target-status.ts";
 import {
   maxAltTextLength,
+  maxFollowUps,
   maxMediaPerPost,
+  maxPartDelaySeconds,
   maxPostTextLength,
 } from "./post-text.ts";
 import { PostValidationSchema } from "./post-validation.ts";
@@ -80,25 +82,57 @@ export const TextOverrideSchema = Schema.Struct({
 
 export type TextOverride = typeof TextOverrideSchema.Type;
 
+// The media one part shows, in order: each file once.
+const PartMediaSchema = Schema.Array(MediaAttachmentSchema).check(
+  Schema.isMaxLength(maxMediaPerPost),
+  uniqueBy(
+    (attachment: MediaAttachment) => attachment.mediaId,
+    "each media attached once"
+  )
+);
+
+// The text one part has instead on some channels.
+const PartOverridesSchema = Schema.Array(TextOverrideSchema).check(
+  uniqueBy(
+    (override: TextOverride) => override.channelId,
+    "one text per channel"
+  )
+);
+
+/**
+ * A part of a post that follows its first: its text, the media it shows,
+ * the text it has instead on some channels, and how many seconds it waits
+ * after the part before it went out (0: at once; a day at most). On a
+ * platform with threads it goes out as a reply to the part before it; on
+ * one that takes comments, as a comment under the post
+ * (`followUps` in the platform's capabilities).
+ */
+export const PostPartSchema = Schema.Struct({
+  delaySeconds: Schema.Int.check(
+    Schema.isBetween({ maximum: maxPartDelaySeconds, minimum: 0 })
+  ),
+  media: PartMediaSchema,
+  overrides: PartOverridesSchema,
+  text: PostTextSchema,
+}).annotate({ identifier: "PostPart" });
+
+export type PostPart = typeof PostPartSchema.Type;
+
 /**
  * What a post says: plain text, with mentions and hashtags written as text;
  * the media it shows, in order; and the text it has instead on some of its
- * channels.
+ * channels. That is its first part, and all of most posts. `followUps` are
+ * the parts after it, in order, a thread or comments depending on the
+ * platform, `maxFollowUps` at most: left out, there are none, and
+ * Peal always answers it. A post with parts is refused when it is
+ * scheduled on a platform that takes a post alone (`tooManyParts`).
  */
 export const PostContentSchema = Schema.Struct({
-  media: Schema.Array(MediaAttachmentSchema).check(
-    Schema.isMaxLength(maxMediaPerPost),
-    uniqueBy(
-      (attachment: MediaAttachment) => attachment.mediaId,
-      "each media attached once"
-    )
+  followUps: Schema.optionalKey(
+    Schema.Array(PostPartSchema).check(Schema.isMaxLength(maxFollowUps))
   ),
-  overrides: Schema.Array(TextOverrideSchema).check(
-    uniqueBy(
-      (override: TextOverride) => override.channelId,
-      "one text per channel"
-    )
-  ),
+  media: PartMediaSchema,
+  overrides: PartOverridesSchema,
   text: PostTextSchema,
 }).annotate({ identifier: "PostContent" });
 
@@ -148,6 +182,8 @@ export const FailureReasonSchema = Schema.Literals([
   "quotaExceeded",
   "appBillingLimit",
   "planLimit",
+  "partsNotSent",
+  "repliesNotAllowed",
 ]).annotate({ identifier: "FailureReason" });
 
 export type FailureReason = typeof FailureReasonSchema.Type;
@@ -167,6 +203,36 @@ export const UnconfirmedReasonSchema = Schema.Literals([
 
 export type UnconfirmedReason = typeof UnconfirmedReasonSchema.Type;
 
+/**
+ * A part of a post that is live on a channel: its place in the post, from
+ * 0, the platform's id for it and its address, when known (a part a member
+ * confirmed by hand has none unless they gave them), and when it went out.
+ */
+export const LivePartSchema = Schema.Struct({
+  index: Schema.Int,
+  permalink: Schema.NullOr(Schema.String),
+  platformPostId: Schema.NullOr(Schema.String),
+  publishedAt: Schema.DateTimeUtc,
+}).annotate({ identifier: "LivePart" });
+
+export type LivePart = typeof LivePartSchema.Type;
+
+/**
+ * Where a post's parts are on a channel: how many it has there (`count`, 1
+ * for a post alone) and those that are live, in order. Parts go out in
+ * order, and nothing is sent after one that failed, was cancelled or has no
+ * confirmed outcome: on a target that is not published, the part that
+ * stopped is the one after the last live. A repost sends from that part,
+ * never one that is live; a target failed as `partsNotSent` takes none, as
+ * Peal has no post to send the rest under.
+ */
+export const TargetPartsSchema = Schema.Struct({
+  count: Schema.Int,
+  live: Schema.Array(LivePartSchema),
+}).annotate({ identifier: "TargetParts" });
+
+export type TargetParts = typeof TargetPartsSchema.Type;
+
 /** A post on one of its channels. */
 export const PostTargetSchema = Schema.Struct({
   channelId: Schema.String,
@@ -179,8 +245,10 @@ export const PostTargetSchema = Schema.Struct({
   // What it says that only its channel's platform knows, such as a YouTube
   // title; null on platforms that take none, or while a draft has none yet.
   options: Schema.NullOr(TargetOptionsSchema),
+  // Its parts on the channel, and those that are live.
+  parts: TargetPartsSchema,
   // Its address on the platform, when the platform gave one, or the member
-  // who confirmed it.
+  // who confirmed it: its first part's, once the target is published.
   permalink: Schema.NullOr(Schema.String),
   // When it went live, once it has.
   publishedAt: Schema.NullOr(Schema.DateTimeUtc),
@@ -544,6 +612,8 @@ export const AttemptResultSchema = Schema.Literals([
   "quotaExceeded",
   "appBillingLimit",
   "planLimit",
+  "partsNotSent",
+  "repliesNotAllowed",
 ]).annotate({ identifier: "AttemptResult" });
 
 export type AttemptResult = typeof AttemptResultSchema.Type;
@@ -553,6 +623,8 @@ export const PublicationAttemptSchema = Schema.Struct({
   // Its number in its round, from 1.
   attempt: Schema.Int,
   finishedAt: Schema.DateTimeUtc,
+  // The place of the part it sent: 0 for the post itself.
+  part: Schema.Int,
   // The code behind a refusal, for support and for programs that tell
   // refusals apart more finely than `result` does: the platform's own
   // error code as it gave it (`duplicate`, `190`, `quotaExceeded`), or
@@ -879,7 +951,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.",
+          "Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. A post of several parts goes on from the part after the last that is live; one failed as `partsNotSent` is refused (TargetStatusConflict), as Peal has no post to send the rest under: a part found by hand has no id, or the part to reply to is gone. Needs post:schedule.",
         summary: "Repost on a channel",
       })
     ),

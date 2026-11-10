@@ -256,6 +256,10 @@ describe("a post's webhook events", () => {
           assert.strictEqual(failed.data.reason, "mediaRejected");
           assert.strictEqual(failed.data.platform, "bluesky");
           assert.strictEqual(failed.data.round, 1);
+          // How many of the post's parts are live there: one post, whole
+          // or not at all.
+          assert.deepStrictEqual(failed.data.parts, { count: 1, live: 0 });
+          assert.deepStrictEqual(published.data.parts, { count: 1, live: 1 });
           assert.strictEqual(published.data.channelId, live);
           assert.strictEqual(
             published.data.targetId,

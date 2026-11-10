@@ -165,6 +165,36 @@
     "tag": "ImportUnreadable"
   },
   {
+    "code": "inbox_action_failed",
+    "status": 502,
+    "tag": "InboxActionFailed"
+  },
+  {
+    "code": "inbox_action_unavailable",
+    "status": 409,
+    "tag": "InboxActionUnavailable"
+  },
+  {
+    "code": "inbox_comment_gone",
+    "status": 409,
+    "tag": "InboxCommentGone"
+  },
+  {
+    "code": "inbox_comment_not_found",
+    "status": 404,
+    "tag": "InboxCommentNotFound"
+  },
+  {
+    "code": "inbox_reply_not_found",
+    "status": 404,
+    "tag": "InboxReplyNotFound"
+  },
+  {
+    "code": "inbox_thread_not_found",
+    "status": 404,
+    "tag": "InboxThreadNotFound"
+  },
+  {
     "code": "incorrect_password",
     "status": 400,
     "tag": "IncorrectPassword"
@@ -348,6 +378,21 @@
     "code": "reduction_refused",
     "status": 409,
     "tag": "ReductionRefused"
+  },
+  {
+    "code": "reply_invalid",
+    "status": 422,
+    "tag": "ReplyInvalid"
+  },
+  {
+    "code": "reply_pending",
+    "status": 409,
+    "tag": "ReplyPending"
+  },
+  {
+    "code": "reply_status_conflict",
+    "status": 409,
+    "tag": "ReplyStatusConflict"
   },
   {
     "code": "return_url_not_allowed",

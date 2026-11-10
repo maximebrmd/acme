@@ -1,4 +1,5 @@
-import { Effect, Option, Schema } from "effect";
+import { Effect, Option, Schema, Stream } from "effect";
+import { HttpServerResponse } from "effect/http";
 import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
@@ -6,24 +7,69 @@ import {
   InvalidDateRange,
   InvalidTimeZone,
 } from "peal-contract";
+import type { CalendarDay } from "peal-contract";
 
-import { AnalyticsQueries } from "#analytics/application/analytics-queries.ts";
+import {
+  AnalyticsQueries,
+  topPostCount,
+} from "#analytics/application/analytics-queries.ts";
+import type { RangeAsked } from "#analytics/application/analytics-queries.ts";
 import type { PostHistory } from "#analytics/application/analytics-reports.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import { forbidden } from "#shared/api/forbidden.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { authorize } from "#shared/domain/authorize.ts";
-import { PostIdSchema } from "#shared/domain/ids.ts";
+import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
-import { dateFrom, summaryView, targetView } from "./analytics-view.ts";
+import { contentTypes, headerOf, lineOf } from "./analytics-export.ts";
+import {
+  channelSeriesView,
+  dashboardView,
+  dateFrom,
+  summaryView,
+  targetView,
+} from "./analytics-view.ts";
 
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
+
+const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 
 const decodeTimeZone = Schema.decodeUnknownOption(TimeZoneIdSchema);
 
 const noHistory: readonly PostHistory[] = [];
+
+// The days a request asks for: `days`, or `from` and `to`, never both
+// nor neither.
+const rangeAsked = (query: {
+  readonly days?: number;
+  readonly from?: CalendarDay;
+  readonly timeZone: string;
+  readonly to?: CalendarDay;
+}): Effect.Effect<RangeAsked, InvalidDateRange | InvalidTimeZone> =>
+  Effect.gen(function* asked() {
+    const timeZone = decodeTimeZone(query.timeZone);
+
+    if (Option.isNone(timeZone)) {
+      return yield* new InvalidTimeZone({ timeZone: query.timeZone });
+    }
+
+    const between = Option.all({
+      from: Option.fromUndefinedOr(query.from).pipe(Option.flatMap(dateFrom)),
+      to: Option.fromUndefinedOr(query.to).pipe(Option.flatMap(dateFrom)),
+    });
+
+    if (query.days !== undefined) {
+      return query.from === undefined && query.to === undefined
+        ? { _tag: "last", days: query.days, timeZone: timeZone.value }
+        : yield* new InvalidDateRange();
+    }
+
+    return Option.isSome(between)
+      ? { _tag: "between", ...between.value, timeZone: timeZone.value }
+      : yield* new InvalidDateRange();
+  });
 
 export const AnalyticsHandlers = HttpApiBuilder.group(
   Api,
@@ -31,7 +77,63 @@ export const AnalyticsHandlers = HttpApiBuilder.group(
   Effect.fn(function* analyticsHandlers(handlers) {
     const queries = yield* AnalyticsQueries;
 
+    const refusals = {
+      DatabaseError: Effect.die,
+      InvalidReportRange: () => Effect.fail(new InvalidDateRange()),
+      MissingPermission: forbidden,
+    };
+
     return handlers.handleAll({
+      channel: ({ params, query }) =>
+        Effect.gen(function* channel() {
+          const actor = actorOf(yield* CurrentMember);
+          const asked = yield* rangeAsked(query);
+
+          const series = yield* queries
+            .channel(actor, decodeChannelId(params.channelId), asked)
+            .pipe(Effect.catchTags(refusals));
+
+          return channelSeriesView(params.channelId, series);
+        }),
+      dashboard: ({ query }) =>
+        Effect.gen(function* dashboard() {
+          const actor = actorOf(yield* CurrentMember);
+          const asked = yield* rangeAsked(query);
+
+          const found = yield* queries
+            .dashboard(actor, asked, query.topPosts ?? topPostCount)
+            .pipe(Effect.catchTags(refusals));
+
+          return dashboardView(found);
+        }),
+      export: ({ query }) =>
+        Effect.gen(function* exporting() {
+          const actor = actorOf(yield* CurrentMember);
+          const asked = yield* rangeAsked(query);
+          const format = query.format ?? "csv";
+
+          const rows = yield* queries.exportRows(actor, query.kind, asked).pipe(
+            Effect.catchTags({
+              InvalidReportRange: refusals.InvalidReportRange,
+              MissingPermission: refusals.MissingPermission,
+            })
+          );
+
+          // A line a row, as the rows are read: a page of them is all the
+          // server holds, however long the file.
+          const lines = Stream.concat(
+            Stream.make(headerOf(query.kind, format)),
+            rows.pipe(Stream.map((row) => lineOf(query.kind, format, row)))
+          ).pipe(Stream.encodeText, Stream.orDie);
+
+          return HttpServerResponse.stream(lines, {
+            contentType: contentTypes[format],
+            headers: {
+              "cache-control": "no-store",
+              "content-disposition": `attachment; filename="peal-analytics-${query.kind}.${format === "csv" ? "csv" : "ndjson"}"`,
+            },
+          });
+        }),
       post: ({ params }) =>
         Effect.gen(function* post() {
           const actor = actorOf(yield* CurrentMember);

@@ -11,6 +11,7 @@ import {
   AnalyticsApiLive,
   analyticsCollection,
   AnalyticsLive,
+  AnalyticsRecordsLive,
   PlatformMetricsReaderLive,
 } from "#analytics/container.ts";
 import { ApiAnswersLive } from "#app/answers.ts";
@@ -44,6 +45,13 @@ import {
   TokenCipherLive,
 } from "#channels/container.ts";
 import {
+  engagementLive,
+  InboxApiLive,
+  EngagementRecordsLive,
+  EngagementWorkersLive,
+  PlatformEngagementLive,
+} from "#engagement/container.ts";
+import {
   LegalApiLive,
   LegalLive,
   LegalRequestsLive,
@@ -58,7 +66,10 @@ import {
 } from "#notifications/container.ts";
 import {
   CapabilitiesApiLive,
+  GatedCommentSource,
   GatedMetricsReader,
+  GatedReplySender,
+  UnreadComments,
   LookupsApiLive,
   MediaInPostsLive,
   PostsApiLive,
@@ -123,6 +134,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   ReviewApiLive,
   WebhooksApiLive,
   ActivityApiLive,
+  InboxApiLive,
   ContractRequestsDeskApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
@@ -181,6 +193,8 @@ const WebhooksContextLive = WebhooksLive.pipe(Layer.provide(TokenCipherLive));
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
   // A connect link's connections go to the workspace's activity log.
   Layer.provide(ConnectLinkJournalLive),
+  // A channel gone or back is told to analytics, in its transaction.
+  Layer.provide(AnalyticsRecordsLive),
   Layer.provideMerge(WebhooksContextLive),
   Layer.provideMerge(NoticesLive),
   Layer.provideMerge(
@@ -239,6 +253,26 @@ const ReviewContextLive = ReviewLive.pipe(
   )
 );
 
+// Engagement: the comments under the posts publishing lists, read and
+// answered on the channels of the channels context, and told through the
+// notices and the webhooks. `gated` is how it reaches the platforms.
+const engagementOver = <E, R>(
+  gated: Layer.Layer<Layer.Success<typeof UnreadComments>, E, R>
+) =>
+  engagementLive(gated).pipe(
+    Layer.provide(
+      Layer.mergeAll(ChannelsWithNoticesLive, PublishingContextLive)
+    )
+  );
+
+// As the server runs it: through the channels' gates.
+const EngagementContextLive = engagementOver(
+  Layer.merge(GatedCommentSource, GatedReplySender)
+);
+
+// As AppLive runs it, without workers: nothing is read or sent.
+const EngagementWithoutPlatformsLive = engagementOver(UnreadComments);
+
 // The assistant, whose daily quota is the workspace plan's.
 const AssistantContextLive = AssistantLive.pipe(
   Layer.provideMerge(BillingContextsLive)
@@ -255,6 +289,7 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       MediaContextLive,
       AssistantContextLive,
       AnalyticsLive,
+      EngagementRecordsLive,
       StaffRecordsLive,
       ReviewGateContextLive
     )
@@ -268,6 +303,7 @@ const ErasedContextsLive = Layer.mergeAll(
   MediaContextLive,
   AssistantContextLive,
   AnalyticsLive,
+  EngagementRecordsLive,
   StaffRecordsLive,
   ReviewGateContextLive
 );
@@ -344,6 +380,7 @@ const ServicesLive = Layer.mergeAll(
   SettingsContextLive,
   BillingContextLive,
   AnalyticsLive,
+  EngagementWithoutPlatformsLive,
   StaffContextLive,
   LegalRequestsContextLive,
   ReviewGateContextLive,
@@ -382,20 +419,26 @@ const HttpServerLive = Layer.unwrap(
 );
 
 // The durable jobs: workflows, cluster entities and crons. The channels'
-// gates publish, and read analytics' counts with the platforms' readers.
+// gates publish, read analytics' counts with the platforms' readers, and
+// read and answer comments with engagement's.
 const WorkersLive = Layer.mergeAll(
-  publishingWorkersReading(PlatformMetricsReaderLive),
+  publishingWorkersReading(PlatformMetricsReaderLive, PlatformEngagementLive),
   NotificationsWorkersLive,
+  EngagementWorkersLive,
   WebhooksWorkersLive,
   CronsLive
 );
 
-// Analytics follows the posts publishing lists, and reads their counts
-// through the channels' gates.
+// Analytics follows the posts publishing lists and the channels the
+// channels context lists, and reads their numbers through the channels'
+// gates.
 const AnalyticsContextLive = Layer.merge(
   AnalyticsLive,
   analyticsCollection(GatedMetricsReader)
-).pipe(Layer.provide(PublishingContextLive));
+).pipe(
+  Layer.provide(PublishingContextLive),
+  Layer.provide(ChannelsWithNoticesLive)
+);
 
 // The contexts' use cases and adapters, which handlers and workers share.
 const ContextsLive = Layer.mergeAll(
@@ -406,6 +449,7 @@ const ContextsLive = Layer.mergeAll(
   SettingsContextLive,
   BillingContextLive,
   AnalyticsContextLive,
+  EngagementContextLive,
   StaffContextLive,
   LegalRequestsContextLive,
   ReviewGateContextLive,

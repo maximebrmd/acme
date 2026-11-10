@@ -14,6 +14,12 @@ class ContentViolationEmpty extends JsonSerializableType
     public string $channelId;
 
     /**
+     * @var ?int $part
+     */
+    #[JsonProperty('part')]
+    public ?int $part;
+
+    /**
      * @var value-of<Platform> $platform
      */
     #[JsonProperty('platform')]
@@ -23,12 +29,14 @@ class ContentViolationEmpty extends JsonSerializableType
      * @param array{
      *   channelId: string,
      *   platform: value-of<Platform>,
+     *   part?: ?int,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->channelId = $values['channelId'];
+        $this->part = $values['part'] ?? null;
         $this->platform = $values['platform'];
     }
 

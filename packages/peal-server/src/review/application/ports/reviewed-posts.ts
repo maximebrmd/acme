@@ -16,9 +16,28 @@ import type { TimeZoneId } from "#shared/domain/time-zone.ts";
 /** A channel's options as plain values, as the contract describes them. */
 export type ShownOptions = Readonly<Record<string, Schema.Json>>;
 
+/** An image or a video a post shows. */
+export interface ReviewedMedia {
+  readonly altText: string;
+  readonly mediaId: MediaAssetId;
+}
+
+/** A part of a post after its first, on one channel. */
+export interface ReviewedPart {
+  readonly delaySeconds: number;
+  readonly media: readonly ReviewedMedia[];
+  readonly text: string;
+}
+
 /** A post on one of its channels, as the channel will receive it. */
 export interface ReviewedChannel {
   readonly channelId: ChannelId;
+  /**
+   * The parts that follow the post there, in order, as the channel will
+   * receive them: each with its text on the channel, its files, and the
+   * seconds it waits after the part before it. An approval covers them.
+   */
+  readonly followUps: readonly ReviewedPart[];
   /** The account's name on its platform; none once it was disconnected. */
   readonly handle: Option.Option<string>;
   /**
@@ -31,12 +50,6 @@ export interface ReviewedChannel {
   readonly platform: Option.Option<Platform>;
   /** The text the post has there: its own, or the channel's. */
   readonly text: string;
-}
-
-/** An image or a video a post shows. */
-export interface ReviewedMedia {
-  readonly altText: string;
-  readonly mediaId: MediaAssetId;
 }
 
 /**

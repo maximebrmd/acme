@@ -2,7 +2,7 @@
 title: Webhooks
 description: Have Peal tell your own server what happens in a workspace, without polling. Endpoints and their signing secret, every event with its schema and an example, how deliveries are signed, retried and logged, and how to verify them.
 sidebar:
-  order: 14
+  order: 16
 ---
 
 A webhook is a request Peal sends to an address of yours when something happens in a workspace: a post went out or failed, a channel must be reconnected, a file is ready. A product that publishes through the [API](/api-overview), or an automation, learns it at once, without asking again and again.
@@ -73,7 +73,7 @@ The order of the fields in the body is not part of the contract.
 
 ### What a payload never holds [#thin]
 
-Payloads carry ids, states, codes, instants and permalinks. They never carry what a post says, nor its images or videos.
+Payloads carry ids, states, codes, instants and permalinks. They never carry what a post says, in any of its parts, nor its images or videos; nor what a comment or a reply to it says, nor who wrote a comment.
 
 The endpoint is a third party to the people who wrote the post: an address someone chose, which Peal cannot check beyond its being public. Keeping payloads thin keeps a workspace's content behind API credentials and their permissions, where each read is checked. When your server needs the post, it reads it through the API with a key of its own: `GET /api/workspaces/{workspaceId}/posts/{postId}`.
 
@@ -99,16 +99,19 @@ Event types and their fields are a public contract. Peal adds event types, and f
 | [`channel.reconnect_needed`](#channel-reconnect-needed) | A channel's authorization stopped working                                 |
 | [`media.ready`](#media-ready)                           | A file was read, and can go in posts                                      |
 | [`media.failed`](#media-failed)                         | A file was refused, or could not be read                                  |
+| [`comment.received`](#comment-received)                 | Someone commented under a post that went live                             |
+| [`comment.replied`](#comment-replied)                   | A reply to a comment went out from Peal                                   |
 | [`webhook.test`](#webhook-test)                         | Someone asked for a test event. Sent whatever the endpoint subscribes to. |
 
 A post goes out on each of its channels separately, so `post.published`, `post.failed` and `post.unconfirmed` name one channel each: a post on three channels brings three events. These fields say which:
 
-| Field       | Type           | What it holds                                                                           |
-| ----------- | -------------- | --------------------------------------------------------------------------------------- |
-| `targetId`  | string         | The post on that channel: the target's id, as the API's `targets` list it               |
-| `channelId` | string         | The channel                                                                             |
-| `platform`  | string or null | The channel's platform, such as `mastodon`; null once the channel was disconnected      |
-| `round`     | integer        | How many times the post was sent there: 1, and one more for each time it was sent again |
+| Field       | Type           | What it holds                                                                                                                                                                                                                                                          |
+| ----------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `targetId`  | string         | The post on that channel: the target's id, as the API's `targets` list it                                                                                                                                                                                              |
+| `channelId` | string         | The channel                                                                                                                                                                                                                                                            |
+| `platform`  | string or null | The channel's platform, such as `mastodon`; null once the channel was disconnected                                                                                                                                                                                     |
+| `round`     | integer        | How many times the post was sent there: 1, and one more for each time it was sent again                                                                                                                                                                                |
+| `parts`     | object         | For a post of several parts, a [thread](/scheduling#threads): `count`, how many parts it has there (1 for a post alone), and `live`, how many of them are live. Parts go out in order, so a post that failed or is unconfirmed stopped at the part after the last live |
 
 Every event's `data` has `workspaceId`, the workspace it happened in.
 
@@ -225,22 +228,24 @@ The post did not go out on the channel.
 | `failedAt`    | string         | When it failed, as an instant in UTC                           |
 | `reason`      | string         | Why, one of the codes below                                    |
 
-| `reason`              | What happened                                                                                                                     |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `contentRejected`     | The platform refused the post's text or format.                                                                                   |
-| `channelDisconnected` | The channel was disconnected from the workspace before the post went out. Nothing was sent.                                       |
-| `channelDisabled`     | The channel was turned off before the post went out. Nothing was sent.                                                            |
-| `mediaRemoved`        | One of its images or videos was deleted, or was no longer ready, before the post went out. Nothing was sent.                      |
-| `mediaRejected`       | The platform refused one of its images or videos.                                                                                 |
-| `missed`              | The server was down at the scheduled time, and the post was too late to send when it came back.                                   |
-| `notPublished`        | A member checked an unconfirmed post on the platform and did not find it.                                                         |
-| `rateLimited`         | The platform kept limiting Peal until the attempt gave up.                                                                        |
-| `tokenExpired`        | The platform refused the channel's authorization: the channel must be reconnected.                                                |
-| `unavailable`         | The platform could not be reached. Nothing was sent.                                                                              |
-| `appNotAudited`       | The platform takes only some posts from the server's app until it approves it. Nothing was sent.                                  |
-| `quotaExceeded`       | A daily allowance of uploads on the platform stayed used up until the attempt gave up.                                            |
-| `appBillingLimit`     | The platform refused the server's app until its operator pays for it. Nothing was sent.                                           |
-| `planLimit`           | The workspace's plan had no room for the post when it was due: too many channels, or the month's posts used up. Nothing was sent. |
+| `reason`              | What happened                                                                                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contentRejected`     | The platform refused the post's text or format.                                                                                                 |
+| `channelDisconnected` | The channel was disconnected from the workspace before the post went out. Nothing was sent.                                                     |
+| `channelDisabled`     | The channel was turned off before the post went out. Nothing was sent.                                                                          |
+| `mediaRemoved`        | One of its images or videos was deleted, or was no longer ready, before the post went out. Nothing was sent.                                    |
+| `mediaRejected`       | The platform refused one of its images or videos.                                                                                               |
+| `missed`              | The server was down at the scheduled time, and the post was too late to send when it came back.                                                 |
+| `notPublished`        | A member checked an unconfirmed post on the platform and did not find it.                                                                       |
+| `rateLimited`         | The platform kept limiting Peal until the attempt gave up.                                                                                      |
+| `tokenExpired`        | The platform refused the channel's authorization: the channel must be reconnected.                                                              |
+| `unavailable`         | The platform could not be reached. Nothing was sent.                                                                                            |
+| `appNotAudited`       | The platform takes only some posts from the server's app until it approves it. Nothing was sent.                                                |
+| `quotaExceeded`       | A daily allowance of uploads on the platform stayed used up until the attempt gave up.                                                          |
+| `appBillingLimit`     | The platform refused the server's app until its operator pays for it. Nothing was sent.                                                         |
+| `planLimit`           | The workspace's plan had no room for the post when it was due: too many channels, or the month's posts used up. Nothing was sent.               |
+| `partsNotSent`        | Some parts of the post are live, and Peal cannot send those after them: it has no post to reply to. It cannot be reposted.                      |
+| `repliesNotAllowed`   | The first parts are live, and X did not let this server's app post the rest as replies ([Threads](/scheduling#threads)). It cannot be reposted. |
 
 [Notifications](/notifications#events) tells what to do about each.
 
@@ -559,6 +564,72 @@ The file was refused, or Peal could not read it. A file that could not be read s
     "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
     "mediaId": "019a6f21-0d5c-7a90-8e3b-4f5a6b7c8d9e",
     "reason": "typeMismatch"
+  }
+}
+```
+
+### comment.received [#comment-received]
+
+Peal read a comment for the first time under a post that went live on a channel (see [Inbox](/inbox)). The event carries ids only: what the comment says and who wrote it are read through the API, with `engagement:read`.
+
+| Field         | Type   | What it holds                            |
+| ------------- | ------ | ---------------------------------------- |
+| `workspaceId` | string | The workspace                            |
+| `postId`      | string | The post                                 |
+| `channelId`   | string | The channel the post went live on        |
+| `threadId`    | string | The thread: the comments under that post |
+| `commentId`   | string | The comment                              |
+| `receivedAt`  | string | When Peal read it, as an instant in UTC  |
+
+```json title="comment.received"
+{
+  "id": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1b",
+  "type": "comment.received",
+  "version": 1,
+  "timestamp": "2026-11-10T09:13:02.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f1c-4b7e-7d3a-9f21-6a5c8e1d2b40",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a6f50-0a1b-7c2d-8e3f-4a5b6c7d8e9f",
+    "commentId": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1a",
+    "receivedAt": "2026-11-10T09:13:02.000Z"
+  }
+}
+```
+
+### comment.replied [#comment-replied]
+
+A reply to a comment went out from Peal, as the channel's account. A reply that failed, or whose outcome is not known, sends nothing: read it through the API.
+
+| Field         | Type           | What it holds                                         |
+| ------------- | -------------- | ----------------------------------------------------- |
+| `workspaceId` | string         | The workspace                                         |
+| `postId`      | string         | The post                                              |
+| `channelId`   | string         | The channel                                           |
+| `threadId`    | string         | The thread                                            |
+| `commentId`   | string         | The comment that was answered                         |
+| `replyId`     | string         | The reply                                             |
+| `permalink`   | string or null | The reply's address on the platform, when it gave one |
+| `repliedAt`   | string         | When it went out, as an instant in UTC                |
+
+```json title="comment.replied"
+{
+  "id": "019a6f58-2d4e-7f5a-9b6c-7d8e9f0a1b2c",
+  "type": "comment.replied",
+  "version": 1,
+  "timestamp": "2026-11-10T09:20:41.000Z",
+  "workspaceExternalId": null,
+  "data": {
+    "workspaceId": "7b1f6c1e-2d4a-4f0b-9c3e-5a8d2e6f1b90",
+    "postId": "019a6f1c-4b7e-7d3a-9f21-6a5c8e1d2b40",
+    "channelId": "019a6e02-9c1d-7b55-8a10-3e4f5a6b7c8d",
+    "threadId": "019a6f50-0a1b-7c2d-8e3f-4a5b6c7d8e9f",
+    "commentId": "019a6f52-1c3d-7e4f-8a5b-6c7d8e9f0a1a",
+    "replyId": "019a6f57-3e5f-7a6b-8c7d-8e9f0a1b2c3d",
+    "permalink": "https://mastodon.example/@peal_example/113000000000000002",
+    "repliedAt": "2026-11-10T09:20:41.000Z"
   }
 }
 ```

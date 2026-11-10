@@ -962,6 +962,8 @@ const (
 	AttemptResultQuotaExceeded       AttemptResult = "quotaExceeded"
 	AttemptResultAppBillingLimit     AttemptResult = "appBillingLimit"
 	AttemptResultPlanLimit           AttemptResult = "planLimit"
+	AttemptResultPartsNotSent        AttemptResult = "partsNotSent"
+	AttemptResultRepliesNotAllowed   AttemptResult = "repliesNotAllowed"
 )
 
 func NewAttemptResultFromString(s string) (AttemptResult, error) {
@@ -994,6 +996,10 @@ func NewAttemptResultFromString(s string) (AttemptResult, error) {
 		return AttemptResultAppBillingLimit, nil
 	case "planLimit":
 		return AttemptResultPlanLimit, nil
+	case "partsNotSent":
+		return AttemptResultPartsNotSent, nil
+	case "repliesNotAllowed":
+		return AttemptResultRepliesNotAllowed, nil
 	}
 	var t AttemptResult
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -1741,10 +1747,11 @@ var (
 	channelPreviewFieldLinks      = big.NewInt(1 << 2)
 	channelPreviewFieldMedia      = big.NewInt(1 << 3)
 	channelPreviewFieldMentions   = big.NewInt(1 << 4)
-	channelPreviewFieldPlatform   = big.NewInt(1 << 5)
-	channelPreviewFieldText       = big.NewInt(1 << 6)
-	channelPreviewFieldTextCounts = big.NewInt(1 << 7)
-	channelPreviewFieldViolations = big.NewInt(1 << 8)
+	channelPreviewFieldParts      = big.NewInt(1 << 5)
+	channelPreviewFieldPlatform   = big.NewInt(1 << 6)
+	channelPreviewFieldText       = big.NewInt(1 << 7)
+	channelPreviewFieldTextCounts = big.NewInt(1 << 8)
+	channelPreviewFieldViolations = big.NewInt(1 << 9)
 )
 
 type ChannelPreview struct {
@@ -1753,6 +1760,7 @@ type ChannelPreview struct {
 	Links      *LimitedCount       `json:"links" url:"links"`
 	Media      *LimitedCount       `json:"media" url:"media"`
 	Mentions   *LimitedCount       `json:"mentions" url:"mentions"`
+	Parts      []*PartPreview      `json:"parts" url:"parts"`
 	Platform   Platform            `json:"platform" url:"platform"`
 	Text       string              `json:"text" url:"text"`
 	TextCounts []*TextCount        `json:"textCounts" url:"textCounts"`
@@ -1798,6 +1806,13 @@ func (c *ChannelPreview) GetMentions() *LimitedCount {
 		return nil
 	}
 	return c.Mentions
+}
+
+func (c *ChannelPreview) GetParts() []*PartPreview {
+	if c == nil {
+		return nil
+	}
+	return c.Parts
 }
 
 func (c *ChannelPreview) GetPlatform() Platform {
@@ -1877,6 +1892,13 @@ func (c *ChannelPreview) SetMedia(media *LimitedCount) {
 func (c *ChannelPreview) SetMentions(mentions *LimitedCount) {
 	c.Mentions = mentions
 	c.require(channelPreviewFieldMentions)
+}
+
+// SetParts sets the Parts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelPreview) SetParts(parts []*PartPreview) {
+	c.Parts = parts
+	c.require(channelPreviewFieldParts)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -1962,6 +1984,7 @@ type ContentViolation struct {
 	TextTooLong             *ContentViolationTextTooLong
 	ForbiddenCharacters     *ContentViolationForbiddenCharacters
 	TooManyMedia            *ContentViolationTooManyMedia
+	TooManyParts            *ContentViolationTooManyParts
 	MediaRequired           *ContentViolationMediaRequired
 	TooManyHashtags         *ContentViolationTooManyHashtags
 	TooManyMentions         *ContentViolationTooManyMentions
@@ -2063,6 +2086,13 @@ func (c *ContentViolation) GetTooManyMedia() *ContentViolationTooManyMedia {
 		return nil
 	}
 	return c.TooManyMedia
+}
+
+func (c *ContentViolation) GetTooManyParts() *ContentViolationTooManyParts {
+	if c == nil {
+		return nil
+	}
+	return c.TooManyParts
 }
 
 func (c *ContentViolation) GetMediaRequired() *ContentViolationMediaRequired {
@@ -2248,6 +2278,12 @@ func (c *ContentViolation) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		c.TooManyMedia = value
+	case "tooManyParts":
+		value := new(ContentViolationTooManyParts)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		c.TooManyParts = value
 	case "mediaRequired":
 		value := new(ContentViolationMediaRequired)
 		if err := json.Unmarshal(data, &value); err != nil {
@@ -2380,6 +2416,9 @@ func (c ContentViolation) MarshalJSON() ([]byte, error) {
 	if c.TooManyMedia != nil {
 		return internal.MarshalJSONWithExtraProperty(c.TooManyMedia, "_tag", "tooManyMedia")
 	}
+	if c.TooManyParts != nil {
+		return internal.MarshalJSONWithExtraProperty(c.TooManyParts, "_tag", "tooManyParts")
+	}
 	if c.MediaRequired != nil {
 		return internal.MarshalJSONWithExtraProperty(c.MediaRequired, "_tag", "mediaRequired")
 	}
@@ -2443,6 +2482,7 @@ type ContentViolationVisitor interface {
 	VisitTextTooLong(*ContentViolationTextTooLong) error
 	VisitForbiddenCharacters(*ContentViolationForbiddenCharacters) error
 	VisitTooManyMedia(*ContentViolationTooManyMedia) error
+	VisitTooManyParts(*ContentViolationTooManyParts) error
 	VisitMediaRequired(*ContentViolationMediaRequired) error
 	VisitTooManyHashtags(*ContentViolationTooManyHashtags) error
 	VisitTooManyMentions(*ContentViolationTooManyMentions) error
@@ -2493,6 +2533,9 @@ func (c *ContentViolation) Accept(visitor ContentViolationVisitor) error {
 	}
 	if c.TooManyMedia != nil {
 		return visitor.VisitTooManyMedia(c.TooManyMedia)
+	}
+	if c.TooManyParts != nil {
+		return visitor.VisitTooManyParts(c.TooManyParts)
 	}
 	if c.MediaRequired != nil {
 		return visitor.VisitMediaRequired(c.MediaRequired)
@@ -2580,6 +2623,9 @@ func (c *ContentViolation) validate() error {
 	if c.TooManyMedia != nil {
 		fields = append(fields, "tooManyMedia")
 	}
+	if c.TooManyParts != nil {
+		fields = append(fields, "tooManyParts")
+	}
 	if c.MediaRequired != nil {
 		fields = append(fields, "mediaRequired")
 	}
@@ -2653,14 +2699,16 @@ func (c *ContentViolation) validate() error {
 
 var (
 	contentViolationAltTextTooLongFieldChannelID = big.NewInt(1 << 0)
-	contentViolationAltTextTooLongFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationAltTextTooLongFieldMediaID   = big.NewInt(1 << 2)
-	contentViolationAltTextTooLongFieldLength    = big.NewInt(1 << 3)
-	contentViolationAltTextTooLongFieldMaximum   = big.NewInt(1 << 4)
+	contentViolationAltTextTooLongFieldPart      = big.NewInt(1 << 1)
+	contentViolationAltTextTooLongFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationAltTextTooLongFieldMediaID   = big.NewInt(1 << 3)
+	contentViolationAltTextTooLongFieldLength    = big.NewInt(1 << 4)
+	contentViolationAltTextTooLongFieldMaximum   = big.NewInt(1 << 5)
 )
 
 type ContentViolationAltTextTooLong struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	MediaID   string   `json:"mediaId" url:"mediaId"`
 	Length    int      `json:"length" url:"length"`
@@ -2678,6 +2726,13 @@ func (c *ContentViolationAltTextTooLong) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationAltTextTooLong) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationAltTextTooLong) GetPlatform() Platform {
@@ -2729,6 +2784,13 @@ func (c *ContentViolationAltTextTooLong) require(field *big.Int) {
 func (c *ContentViolationAltTextTooLong) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationAltTextTooLongFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationAltTextTooLong) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationAltTextTooLongFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -2803,16 +2865,18 @@ func (c *ContentViolationAltTextTooLong) String() string {
 
 var (
 	contentViolationAspectRatioUnsupportedFieldChannelID = big.NewInt(1 << 0)
-	contentViolationAspectRatioUnsupportedFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationAspectRatioUnsupportedFieldMediaID   = big.NewInt(1 << 2)
-	contentViolationAspectRatioUnsupportedFieldHeight    = big.NewInt(1 << 3)
-	contentViolationAspectRatioUnsupportedFieldWidth     = big.NewInt(1 << 4)
-	contentViolationAspectRatioUnsupportedFieldMaximum   = big.NewInt(1 << 5)
-	contentViolationAspectRatioUnsupportedFieldMinimum   = big.NewInt(1 << 6)
+	contentViolationAspectRatioUnsupportedFieldPart      = big.NewInt(1 << 1)
+	contentViolationAspectRatioUnsupportedFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationAspectRatioUnsupportedFieldMediaID   = big.NewInt(1 << 3)
+	contentViolationAspectRatioUnsupportedFieldHeight    = big.NewInt(1 << 4)
+	contentViolationAspectRatioUnsupportedFieldWidth     = big.NewInt(1 << 5)
+	contentViolationAspectRatioUnsupportedFieldMaximum   = big.NewInt(1 << 6)
+	contentViolationAspectRatioUnsupportedFieldMinimum   = big.NewInt(1 << 7)
 )
 
 type ContentViolationAspectRatioUnsupported struct {
 	ChannelID string                                         `json:"channelId" url:"channelId"`
+	Part      *int                                           `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform                                       `json:"platform" url:"platform"`
 	MediaID   string                                         `json:"mediaId" url:"mediaId"`
 	Height    int                                            `json:"height" url:"height"`
@@ -2832,6 +2896,13 @@ func (c *ContentViolationAspectRatioUnsupported) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationAspectRatioUnsupported) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationAspectRatioUnsupported) GetPlatform() Platform {
@@ -2897,6 +2968,13 @@ func (c *ContentViolationAspectRatioUnsupported) require(field *big.Int) {
 func (c *ContentViolationAspectRatioUnsupported) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationAspectRatioUnsupportedFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationAspectRatioUnsupported) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationAspectRatioUnsupportedFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -3109,11 +3187,13 @@ func (c *ContentViolationAspectRatioUnsupportedMinimum) Accept(visitor ContentVi
 
 var (
 	contentViolationEmptyFieldChannelID = big.NewInt(1 << 0)
-	contentViolationEmptyFieldPlatform  = big.NewInt(1 << 1)
+	contentViolationEmptyFieldPart      = big.NewInt(1 << 1)
+	contentViolationEmptyFieldPlatform  = big.NewInt(1 << 2)
 )
 
 type ContentViolationEmpty struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3128,6 +3208,13 @@ func (c *ContentViolationEmpty) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationEmpty) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationEmpty) GetPlatform() Platform {
@@ -3158,6 +3245,13 @@ func (c *ContentViolationEmpty) require(field *big.Int) {
 func (c *ContentViolationEmpty) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationEmptyFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationEmpty) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationEmptyFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -3211,12 +3305,14 @@ func (c *ContentViolationEmpty) String() string {
 
 var (
 	contentViolationForbiddenCharactersFieldChannelID  = big.NewInt(1 << 0)
-	contentViolationForbiddenCharactersFieldPlatform   = big.NewInt(1 << 1)
-	contentViolationForbiddenCharactersFieldCharacters = big.NewInt(1 << 2)
+	contentViolationForbiddenCharactersFieldPart       = big.NewInt(1 << 1)
+	contentViolationForbiddenCharactersFieldPlatform   = big.NewInt(1 << 2)
+	contentViolationForbiddenCharactersFieldCharacters = big.NewInt(1 << 3)
 )
 
 type ContentViolationForbiddenCharacters struct {
 	ChannelID  string   `json:"channelId" url:"channelId"`
+	Part       *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform   Platform `json:"platform" url:"platform"`
 	Characters []string `json:"characters" url:"characters"`
 
@@ -3232,6 +3328,13 @@ func (c *ContentViolationForbiddenCharacters) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationForbiddenCharacters) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationForbiddenCharacters) GetPlatform() Platform {
@@ -3269,6 +3372,13 @@ func (c *ContentViolationForbiddenCharacters) require(field *big.Int) {
 func (c *ContentViolationForbiddenCharacters) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationForbiddenCharactersFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationForbiddenCharacters) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationForbiddenCharactersFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -3329,11 +3439,13 @@ func (c *ContentViolationForbiddenCharacters) String() string {
 
 var (
 	contentViolationMediaRequiredFieldChannelID = big.NewInt(1 << 0)
-	contentViolationMediaRequiredFieldPlatform  = big.NewInt(1 << 1)
+	contentViolationMediaRequiredFieldPart      = big.NewInt(1 << 1)
+	contentViolationMediaRequiredFieldPlatform  = big.NewInt(1 << 2)
 )
 
 type ContentViolationMediaRequired struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3348,6 +3460,13 @@ func (c *ContentViolationMediaRequired) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationMediaRequired) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationMediaRequired) GetPlatform() Platform {
@@ -3378,6 +3497,13 @@ func (c *ContentViolationMediaRequired) require(field *big.Int) {
 func (c *ContentViolationMediaRequired) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationMediaRequiredFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationMediaRequired) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationMediaRequiredFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -3431,14 +3557,16 @@ func (c *ContentViolationMediaRequired) String() string {
 
 var (
 	contentViolationMediaTooLargeFieldChannelID = big.NewInt(1 << 0)
-	contentViolationMediaTooLargeFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationMediaTooLargeFieldMediaID   = big.NewInt(1 << 2)
-	contentViolationMediaTooLargeFieldByteSize  = big.NewInt(1 << 3)
-	contentViolationMediaTooLargeFieldMaximum   = big.NewInt(1 << 4)
+	contentViolationMediaTooLargeFieldPart      = big.NewInt(1 << 1)
+	contentViolationMediaTooLargeFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationMediaTooLargeFieldMediaID   = big.NewInt(1 << 3)
+	contentViolationMediaTooLargeFieldByteSize  = big.NewInt(1 << 4)
+	contentViolationMediaTooLargeFieldMaximum   = big.NewInt(1 << 5)
 )
 
 type ContentViolationMediaTooLarge struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	MediaID   string   `json:"mediaId" url:"mediaId"`
 	ByteSize  int64    `json:"byteSize" url:"byteSize"`
@@ -3456,6 +3584,13 @@ func (c *ContentViolationMediaTooLarge) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationMediaTooLarge) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationMediaTooLarge) GetPlatform() Platform {
@@ -3507,6 +3642,13 @@ func (c *ContentViolationMediaTooLarge) require(field *big.Int) {
 func (c *ContentViolationMediaTooLarge) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationMediaTooLargeFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationMediaTooLarge) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationMediaTooLargeFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -3581,14 +3723,16 @@ func (c *ContentViolationMediaTooLarge) String() string {
 
 var (
 	contentViolationMediaTooSmallFieldChannelID = big.NewInt(1 << 0)
-	contentViolationMediaTooSmallFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationMediaTooSmallFieldMediaID   = big.NewInt(1 << 2)
-	contentViolationMediaTooSmallFieldByteSize  = big.NewInt(1 << 3)
-	contentViolationMediaTooSmallFieldMinimum   = big.NewInt(1 << 4)
+	contentViolationMediaTooSmallFieldPart      = big.NewInt(1 << 1)
+	contentViolationMediaTooSmallFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationMediaTooSmallFieldMediaID   = big.NewInt(1 << 3)
+	contentViolationMediaTooSmallFieldByteSize  = big.NewInt(1 << 4)
+	contentViolationMediaTooSmallFieldMinimum   = big.NewInt(1 << 5)
 )
 
 type ContentViolationMediaTooSmall struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	MediaID   string   `json:"mediaId" url:"mediaId"`
 	ByteSize  int64    `json:"byteSize" url:"byteSize"`
@@ -3606,6 +3750,13 @@ func (c *ContentViolationMediaTooSmall) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationMediaTooSmall) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationMediaTooSmall) GetPlatform() Platform {
@@ -3657,6 +3808,13 @@ func (c *ContentViolationMediaTooSmall) require(field *big.Int) {
 func (c *ContentViolationMediaTooSmall) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationMediaTooSmallFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationMediaTooSmall) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationMediaTooSmallFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -3731,13 +3889,15 @@ func (c *ContentViolationMediaTooSmall) String() string {
 
 var (
 	contentViolationMediaTypeUnsupportedFieldChannelID   = big.NewInt(1 << 0)
-	contentViolationMediaTypeUnsupportedFieldPlatform    = big.NewInt(1 << 1)
-	contentViolationMediaTypeUnsupportedFieldMediaID     = big.NewInt(1 << 2)
-	contentViolationMediaTypeUnsupportedFieldContentType = big.NewInt(1 << 3)
+	contentViolationMediaTypeUnsupportedFieldPart        = big.NewInt(1 << 1)
+	contentViolationMediaTypeUnsupportedFieldPlatform    = big.NewInt(1 << 2)
+	contentViolationMediaTypeUnsupportedFieldMediaID     = big.NewInt(1 << 3)
+	contentViolationMediaTypeUnsupportedFieldContentType = big.NewInt(1 << 4)
 )
 
 type ContentViolationMediaTypeUnsupported struct {
 	ChannelID   string           `json:"channelId" url:"channelId"`
+	Part        *int             `json:"part,omitempty" url:"part,omitempty"`
 	Platform    Platform         `json:"platform" url:"platform"`
 	MediaID     string           `json:"mediaId" url:"mediaId"`
 	ContentType MediaContentType `json:"contentType" url:"contentType"`
@@ -3754,6 +3914,13 @@ func (c *ContentViolationMediaTypeUnsupported) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationMediaTypeUnsupported) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationMediaTypeUnsupported) GetPlatform() Platform {
@@ -3798,6 +3965,13 @@ func (c *ContentViolationMediaTypeUnsupported) require(field *big.Int) {
 func (c *ContentViolationMediaTypeUnsupported) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationMediaTypeUnsupportedFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationMediaTypeUnsupported) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationMediaTypeUnsupportedFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -3865,11 +4039,13 @@ func (c *ContentViolationMediaTypeUnsupported) String() string {
 
 var (
 	contentViolationMixedMediaFieldChannelID = big.NewInt(1 << 0)
-	contentViolationMixedMediaFieldPlatform  = big.NewInt(1 << 1)
+	contentViolationMixedMediaFieldPart      = big.NewInt(1 << 1)
+	contentViolationMixedMediaFieldPlatform  = big.NewInt(1 << 2)
 )
 
 type ContentViolationMixedMedia struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3884,6 +4060,13 @@ func (c *ContentViolationMixedMedia) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationMixedMedia) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationMixedMedia) GetPlatform() Platform {
@@ -3914,6 +4097,13 @@ func (c *ContentViolationMixedMedia) require(field *big.Int) {
 func (c *ContentViolationMixedMedia) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationMixedMediaFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationMixedMedia) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationMixedMediaFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -4034,12 +4224,14 @@ func (c *ContentViolationNoChannels) String() string {
 
 var (
 	contentViolationOptionInvalidFieldChannelID = big.NewInt(1 << 0)
-	contentViolationOptionInvalidFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationOptionInvalidFieldField     = big.NewInt(1 << 2)
+	contentViolationOptionInvalidFieldPart      = big.NewInt(1 << 1)
+	contentViolationOptionInvalidFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationOptionInvalidFieldField     = big.NewInt(1 << 3)
 )
 
 type ContentViolationOptionInvalid struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	Field     string   `json:"field" url:"field"`
 
@@ -4055,6 +4247,13 @@ func (c *ContentViolationOptionInvalid) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationOptionInvalid) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationOptionInvalid) GetPlatform() Platform {
@@ -4092,6 +4291,13 @@ func (c *ContentViolationOptionInvalid) require(field *big.Int) {
 func (c *ContentViolationOptionInvalid) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationOptionInvalidFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationOptionInvalid) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationOptionInvalidFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -4152,12 +4358,14 @@ func (c *ContentViolationOptionInvalid) String() string {
 
 var (
 	contentViolationOptionMissingFieldChannelID = big.NewInt(1 << 0)
-	contentViolationOptionMissingFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationOptionMissingFieldField     = big.NewInt(1 << 2)
+	contentViolationOptionMissingFieldPart      = big.NewInt(1 << 1)
+	contentViolationOptionMissingFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationOptionMissingFieldField     = big.NewInt(1 << 3)
 )
 
 type ContentViolationOptionMissing struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	Field     string   `json:"field" url:"field"`
 
@@ -4173,6 +4381,13 @@ func (c *ContentViolationOptionMissing) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationOptionMissing) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationOptionMissing) GetPlatform() Platform {
@@ -4210,6 +4425,13 @@ func (c *ContentViolationOptionMissing) require(field *big.Int) {
 func (c *ContentViolationOptionMissing) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationOptionMissingFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationOptionMissing) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationOptionMissingFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -4270,14 +4492,16 @@ func (c *ContentViolationOptionMissing) String() string {
 
 var (
 	contentViolationOptionTooLongFieldChannelID = big.NewInt(1 << 0)
-	contentViolationOptionTooLongFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationOptionTooLongFieldField     = big.NewInt(1 << 2)
-	contentViolationOptionTooLongFieldLength    = big.NewInt(1 << 3)
-	contentViolationOptionTooLongFieldMaximum   = big.NewInt(1 << 4)
+	contentViolationOptionTooLongFieldPart      = big.NewInt(1 << 1)
+	contentViolationOptionTooLongFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationOptionTooLongFieldField     = big.NewInt(1 << 3)
+	contentViolationOptionTooLongFieldLength    = big.NewInt(1 << 4)
+	contentViolationOptionTooLongFieldMaximum   = big.NewInt(1 << 5)
 )
 
 type ContentViolationOptionTooLong struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	Field     string   `json:"field" url:"field"`
 	Length    int      `json:"length" url:"length"`
@@ -4295,6 +4519,13 @@ func (c *ContentViolationOptionTooLong) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationOptionTooLong) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationOptionTooLong) GetPlatform() Platform {
@@ -4346,6 +4577,13 @@ func (c *ContentViolationOptionTooLong) require(field *big.Int) {
 func (c *ContentViolationOptionTooLong) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationOptionTooLongFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationOptionTooLong) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationOptionTooLongFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -4420,12 +4658,14 @@ func (c *ContentViolationOptionTooLong) String() string {
 
 var (
 	contentViolationOptionsForOtherPlatformFieldChannelID       = big.NewInt(1 << 0)
-	contentViolationOptionsForOtherPlatformFieldPlatform        = big.NewInt(1 << 1)
-	contentViolationOptionsForOtherPlatformFieldOptionsPlatform = big.NewInt(1 << 2)
+	contentViolationOptionsForOtherPlatformFieldPart            = big.NewInt(1 << 1)
+	contentViolationOptionsForOtherPlatformFieldPlatform        = big.NewInt(1 << 2)
+	contentViolationOptionsForOtherPlatformFieldOptionsPlatform = big.NewInt(1 << 3)
 )
 
 type ContentViolationOptionsForOtherPlatform struct {
 	ChannelID       string   `json:"channelId" url:"channelId"`
+	Part            *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform        Platform `json:"platform" url:"platform"`
 	OptionsPlatform Platform `json:"optionsPlatform" url:"optionsPlatform"`
 
@@ -4441,6 +4681,13 @@ func (c *ContentViolationOptionsForOtherPlatform) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationOptionsForOtherPlatform) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationOptionsForOtherPlatform) GetPlatform() Platform {
@@ -4478,6 +4725,13 @@ func (c *ContentViolationOptionsForOtherPlatform) require(field *big.Int) {
 func (c *ContentViolationOptionsForOtherPlatform) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationOptionsForOtherPlatformFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationOptionsForOtherPlatform) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationOptionsForOtherPlatformFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -4710,16 +4964,18 @@ func (c *ContentViolationOverrideWithoutChannel) String() string {
 
 var (
 	contentViolationSideOutOfRangeFieldChannelID = big.NewInt(1 << 0)
-	contentViolationSideOutOfRangeFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationSideOutOfRangeFieldMediaID   = big.NewInt(1 << 2)
-	contentViolationSideOutOfRangeFieldHeight    = big.NewInt(1 << 3)
-	contentViolationSideOutOfRangeFieldWidth     = big.NewInt(1 << 4)
-	contentViolationSideOutOfRangeFieldMaximum   = big.NewInt(1 << 5)
-	contentViolationSideOutOfRangeFieldMinimum   = big.NewInt(1 << 6)
+	contentViolationSideOutOfRangeFieldPart      = big.NewInt(1 << 1)
+	contentViolationSideOutOfRangeFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationSideOutOfRangeFieldMediaID   = big.NewInt(1 << 3)
+	contentViolationSideOutOfRangeFieldHeight    = big.NewInt(1 << 4)
+	contentViolationSideOutOfRangeFieldWidth     = big.NewInt(1 << 5)
+	contentViolationSideOutOfRangeFieldMaximum   = big.NewInt(1 << 6)
+	contentViolationSideOutOfRangeFieldMinimum   = big.NewInt(1 << 7)
 )
 
 type ContentViolationSideOutOfRange struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	MediaID   string   `json:"mediaId" url:"mediaId"`
 	Height    int      `json:"height" url:"height"`
@@ -4739,6 +4995,13 @@ func (c *ContentViolationSideOutOfRange) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationSideOutOfRange) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationSideOutOfRange) GetPlatform() Platform {
@@ -4804,6 +5067,13 @@ func (c *ContentViolationSideOutOfRange) require(field *big.Int) {
 func (c *ContentViolationSideOutOfRange) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationSideOutOfRangeFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationSideOutOfRange) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationSideOutOfRangeFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -4892,14 +5162,16 @@ func (c *ContentViolationSideOutOfRange) String() string {
 
 var (
 	contentViolationTextTooLongFieldChannelID = big.NewInt(1 << 0)
-	contentViolationTextTooLongFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationTextTooLongFieldLength    = big.NewInt(1 << 2)
-	contentViolationTextTooLongFieldMaximum   = big.NewInt(1 << 3)
-	contentViolationTextTooLongFieldUnit      = big.NewInt(1 << 4)
+	contentViolationTextTooLongFieldPart      = big.NewInt(1 << 1)
+	contentViolationTextTooLongFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationTextTooLongFieldLength    = big.NewInt(1 << 3)
+	contentViolationTextTooLongFieldMaximum   = big.NewInt(1 << 4)
+	contentViolationTextTooLongFieldUnit      = big.NewInt(1 << 5)
 )
 
 type ContentViolationTextTooLong struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	Length    int      `json:"length" url:"length"`
 	Maximum   int      `json:"maximum" url:"maximum"`
@@ -4917,6 +5189,13 @@ func (c *ContentViolationTextTooLong) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationTextTooLong) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationTextTooLong) GetPlatform() Platform {
@@ -4968,6 +5247,13 @@ func (c *ContentViolationTextTooLong) require(field *big.Int) {
 func (c *ContentViolationTextTooLong) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationTextTooLongFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTextTooLong) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationTextTooLongFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -5042,13 +5328,15 @@ func (c *ContentViolationTextTooLong) String() string {
 
 var (
 	contentViolationTooManyHashtagsFieldChannelID = big.NewInt(1 << 0)
-	contentViolationTooManyHashtagsFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationTooManyHashtagsFieldCount     = big.NewInt(1 << 2)
-	contentViolationTooManyHashtagsFieldMaximum   = big.NewInt(1 << 3)
+	contentViolationTooManyHashtagsFieldPart      = big.NewInt(1 << 1)
+	contentViolationTooManyHashtagsFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationTooManyHashtagsFieldCount     = big.NewInt(1 << 3)
+	contentViolationTooManyHashtagsFieldMaximum   = big.NewInt(1 << 4)
 )
 
 type ContentViolationTooManyHashtags struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	Count     int      `json:"count" url:"count"`
 	Maximum   int      `json:"maximum" url:"maximum"`
@@ -5065,6 +5353,13 @@ func (c *ContentViolationTooManyHashtags) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationTooManyHashtags) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationTooManyHashtags) GetPlatform() Platform {
@@ -5109,6 +5404,13 @@ func (c *ContentViolationTooManyHashtags) require(field *big.Int) {
 func (c *ContentViolationTooManyHashtags) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationTooManyHashtagsFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyHashtags) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationTooManyHashtagsFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -5176,13 +5478,15 @@ func (c *ContentViolationTooManyHashtags) String() string {
 
 var (
 	contentViolationTooManyLinksFieldChannelID = big.NewInt(1 << 0)
-	contentViolationTooManyLinksFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationTooManyLinksFieldCount     = big.NewInt(1 << 2)
-	contentViolationTooManyLinksFieldMaximum   = big.NewInt(1 << 3)
+	contentViolationTooManyLinksFieldPart      = big.NewInt(1 << 1)
+	contentViolationTooManyLinksFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationTooManyLinksFieldCount     = big.NewInt(1 << 3)
+	contentViolationTooManyLinksFieldMaximum   = big.NewInt(1 << 4)
 )
 
 type ContentViolationTooManyLinks struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	Count     int      `json:"count" url:"count"`
 	Maximum   int      `json:"maximum" url:"maximum"`
@@ -5199,6 +5503,13 @@ func (c *ContentViolationTooManyLinks) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationTooManyLinks) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationTooManyLinks) GetPlatform() Platform {
@@ -5243,6 +5554,13 @@ func (c *ContentViolationTooManyLinks) require(field *big.Int) {
 func (c *ContentViolationTooManyLinks) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationTooManyLinksFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyLinks) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationTooManyLinksFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -5310,13 +5628,15 @@ func (c *ContentViolationTooManyLinks) String() string {
 
 var (
 	contentViolationTooManyMediaFieldChannelID = big.NewInt(1 << 0)
-	contentViolationTooManyMediaFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationTooManyMediaFieldCount     = big.NewInt(1 << 2)
-	contentViolationTooManyMediaFieldMaximum   = big.NewInt(1 << 3)
+	contentViolationTooManyMediaFieldPart      = big.NewInt(1 << 1)
+	contentViolationTooManyMediaFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationTooManyMediaFieldCount     = big.NewInt(1 << 3)
+	contentViolationTooManyMediaFieldMaximum   = big.NewInt(1 << 4)
 )
 
 type ContentViolationTooManyMedia struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	Count     int      `json:"count" url:"count"`
 	Maximum   int      `json:"maximum" url:"maximum"`
@@ -5333,6 +5653,13 @@ func (c *ContentViolationTooManyMedia) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationTooManyMedia) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationTooManyMedia) GetPlatform() Platform {
@@ -5377,6 +5704,13 @@ func (c *ContentViolationTooManyMedia) require(field *big.Int) {
 func (c *ContentViolationTooManyMedia) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationTooManyMediaFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyMedia) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationTooManyMediaFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -5444,13 +5778,15 @@ func (c *ContentViolationTooManyMedia) String() string {
 
 var (
 	contentViolationTooManyMentionsFieldChannelID = big.NewInt(1 << 0)
-	contentViolationTooManyMentionsFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationTooManyMentionsFieldCount     = big.NewInt(1 << 2)
-	contentViolationTooManyMentionsFieldMaximum   = big.NewInt(1 << 3)
+	contentViolationTooManyMentionsFieldPart      = big.NewInt(1 << 1)
+	contentViolationTooManyMentionsFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationTooManyMentionsFieldCount     = big.NewInt(1 << 3)
+	contentViolationTooManyMentionsFieldMaximum   = big.NewInt(1 << 4)
 )
 
 type ContentViolationTooManyMentions struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	Count     int      `json:"count" url:"count"`
 	Maximum   int      `json:"maximum" url:"maximum"`
@@ -5467,6 +5803,13 @@ func (c *ContentViolationTooManyMentions) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationTooManyMentions) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationTooManyMentions) GetPlatform() Platform {
@@ -5511,6 +5854,13 @@ func (c *ContentViolationTooManyMentions) require(field *big.Int) {
 func (c *ContentViolationTooManyMentions) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationTooManyMentionsFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyMentions) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationTooManyMentionsFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -5577,16 +5927,168 @@ func (c *ContentViolationTooManyMentions) String() string {
 }
 
 var (
+	contentViolationTooManyPartsFieldChannelID = big.NewInt(1 << 0)
+	contentViolationTooManyPartsFieldPart      = big.NewInt(1 << 1)
+	contentViolationTooManyPartsFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationTooManyPartsFieldCount     = big.NewInt(1 << 3)
+	contentViolationTooManyPartsFieldMaximum   = big.NewInt(1 << 4)
+)
+
+type ContentViolationTooManyParts struct {
+	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
+	Platform  Platform `json:"platform" url:"platform"`
+	Count     int      `json:"count" url:"count"`
+	Maximum   int      `json:"maximum" url:"maximum"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ContentViolationTooManyParts) GetChannelID() string {
+	if c == nil {
+		return ""
+	}
+	return c.ChannelID
+}
+
+func (c *ContentViolationTooManyParts) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
+}
+
+func (c *ContentViolationTooManyParts) GetPlatform() Platform {
+	if c == nil {
+		return ""
+	}
+	return c.Platform
+}
+
+func (c *ContentViolationTooManyParts) GetCount() int {
+	if c == nil {
+		return 0
+	}
+	return c.Count
+}
+
+func (c *ContentViolationTooManyParts) GetMaximum() int {
+	if c == nil {
+		return 0
+	}
+	return c.Maximum
+}
+
+func (c *ContentViolationTooManyParts) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ContentViolationTooManyParts) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyParts) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(contentViolationTooManyPartsFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyParts) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationTooManyPartsFieldPart)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyParts) SetPlatform(platform Platform) {
+	c.Platform = platform
+	c.require(contentViolationTooManyPartsFieldPlatform)
+}
+
+// SetCount sets the Count field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyParts) SetCount(count int) {
+	c.Count = count
+	c.require(contentViolationTooManyPartsFieldCount)
+}
+
+// SetMaximum sets the Maximum field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyParts) SetMaximum(maximum int) {
+	c.Maximum = maximum
+	c.require(contentViolationTooManyPartsFieldMaximum)
+}
+
+func (c *ContentViolationTooManyParts) UnmarshalJSON(data []byte) error {
+	type unmarshaler ContentViolationTooManyParts
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ContentViolationTooManyParts(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ContentViolationTooManyParts) MarshalJSON() ([]byte, error) {
+	type embed ContentViolationTooManyParts
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ContentViolationTooManyParts) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
 	contentViolationTooManyPixelsFieldChannelID = big.NewInt(1 << 0)
-	contentViolationTooManyPixelsFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationTooManyPixelsFieldMediaID   = big.NewInt(1 << 2)
-	contentViolationTooManyPixelsFieldHeight    = big.NewInt(1 << 3)
-	contentViolationTooManyPixelsFieldWidth     = big.NewInt(1 << 4)
-	contentViolationTooManyPixelsFieldMaximum   = big.NewInt(1 << 5)
+	contentViolationTooManyPixelsFieldPart      = big.NewInt(1 << 1)
+	contentViolationTooManyPixelsFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationTooManyPixelsFieldMediaID   = big.NewInt(1 << 3)
+	contentViolationTooManyPixelsFieldHeight    = big.NewInt(1 << 4)
+	contentViolationTooManyPixelsFieldWidth     = big.NewInt(1 << 5)
+	contentViolationTooManyPixelsFieldMaximum   = big.NewInt(1 << 6)
 )
 
 type ContentViolationTooManyPixels struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	MediaID   string   `json:"mediaId" url:"mediaId"`
 	Height    int      `json:"height" url:"height"`
@@ -5605,6 +6107,13 @@ func (c *ContentViolationTooManyPixels) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationTooManyPixels) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationTooManyPixels) GetPlatform() Platform {
@@ -5663,6 +6172,13 @@ func (c *ContentViolationTooManyPixels) require(field *big.Int) {
 func (c *ContentViolationTooManyPixels) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationTooManyPixelsFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyPixels) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationTooManyPixelsFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -5744,13 +6260,15 @@ func (c *ContentViolationTooManyPixels) String() string {
 
 var (
 	contentViolationTooManyVideosFieldChannelID = big.NewInt(1 << 0)
-	contentViolationTooManyVideosFieldPlatform  = big.NewInt(1 << 1)
-	contentViolationTooManyVideosFieldCount     = big.NewInt(1 << 2)
-	contentViolationTooManyVideosFieldMaximum   = big.NewInt(1 << 3)
+	contentViolationTooManyVideosFieldPart      = big.NewInt(1 << 1)
+	contentViolationTooManyVideosFieldPlatform  = big.NewInt(1 << 2)
+	contentViolationTooManyVideosFieldCount     = big.NewInt(1 << 3)
+	contentViolationTooManyVideosFieldMaximum   = big.NewInt(1 << 4)
 )
 
 type ContentViolationTooManyVideos struct {
 	ChannelID string   `json:"channelId" url:"channelId"`
+	Part      *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform  Platform `json:"platform" url:"platform"`
 	Count     int      `json:"count" url:"count"`
 	Maximum   int      `json:"maximum" url:"maximum"`
@@ -5767,6 +6285,13 @@ func (c *ContentViolationTooManyVideos) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationTooManyVideos) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationTooManyVideos) GetPlatform() Platform {
@@ -5811,6 +6336,13 @@ func (c *ContentViolationTooManyVideos) require(field *big.Int) {
 func (c *ContentViolationTooManyVideos) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationTooManyVideosFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationTooManyVideos) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationTooManyVideosFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -5878,14 +6410,16 @@ func (c *ContentViolationTooManyVideos) String() string {
 
 var (
 	contentViolationVideoTooLongFieldChannelID  = big.NewInt(1 << 0)
-	contentViolationVideoTooLongFieldPlatform   = big.NewInt(1 << 1)
-	contentViolationVideoTooLongFieldMediaID    = big.NewInt(1 << 2)
-	contentViolationVideoTooLongFieldDurationMs = big.NewInt(1 << 3)
-	contentViolationVideoTooLongFieldMaximumMs  = big.NewInt(1 << 4)
+	contentViolationVideoTooLongFieldPart       = big.NewInt(1 << 1)
+	contentViolationVideoTooLongFieldPlatform   = big.NewInt(1 << 2)
+	contentViolationVideoTooLongFieldMediaID    = big.NewInt(1 << 3)
+	contentViolationVideoTooLongFieldDurationMs = big.NewInt(1 << 4)
+	contentViolationVideoTooLongFieldMaximumMs  = big.NewInt(1 << 5)
 )
 
 type ContentViolationVideoTooLong struct {
 	ChannelID  string   `json:"channelId" url:"channelId"`
+	Part       *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform   Platform `json:"platform" url:"platform"`
 	MediaID    string   `json:"mediaId" url:"mediaId"`
 	DurationMs int      `json:"durationMs" url:"durationMs"`
@@ -5903,6 +6437,13 @@ func (c *ContentViolationVideoTooLong) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationVideoTooLong) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationVideoTooLong) GetPlatform() Platform {
@@ -5954,6 +6495,13 @@ func (c *ContentViolationVideoTooLong) require(field *big.Int) {
 func (c *ContentViolationVideoTooLong) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationVideoTooLongFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationVideoTooLong) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationVideoTooLongFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -6028,14 +6576,16 @@ func (c *ContentViolationVideoTooLong) String() string {
 
 var (
 	contentViolationVideoTooShortFieldChannelID  = big.NewInt(1 << 0)
-	contentViolationVideoTooShortFieldPlatform   = big.NewInt(1 << 1)
-	contentViolationVideoTooShortFieldMediaID    = big.NewInt(1 << 2)
-	contentViolationVideoTooShortFieldDurationMs = big.NewInt(1 << 3)
-	contentViolationVideoTooShortFieldMinimumMs  = big.NewInt(1 << 4)
+	contentViolationVideoTooShortFieldPart       = big.NewInt(1 << 1)
+	contentViolationVideoTooShortFieldPlatform   = big.NewInt(1 << 2)
+	contentViolationVideoTooShortFieldMediaID    = big.NewInt(1 << 3)
+	contentViolationVideoTooShortFieldDurationMs = big.NewInt(1 << 4)
+	contentViolationVideoTooShortFieldMinimumMs  = big.NewInt(1 << 5)
 )
 
 type ContentViolationVideoTooShort struct {
 	ChannelID  string   `json:"channelId" url:"channelId"`
+	Part       *int     `json:"part,omitempty" url:"part,omitempty"`
 	Platform   Platform `json:"platform" url:"platform"`
 	MediaID    string   `json:"mediaId" url:"mediaId"`
 	DurationMs int      `json:"durationMs" url:"durationMs"`
@@ -6053,6 +6603,13 @@ func (c *ContentViolationVideoTooShort) GetChannelID() string {
 		return ""
 	}
 	return c.ChannelID
+}
+
+func (c *ContentViolationVideoTooShort) GetPart() *int {
+	if c == nil {
+		return nil
+	}
+	return c.Part
 }
 
 func (c *ContentViolationVideoTooShort) GetPlatform() Platform {
@@ -6104,6 +6661,13 @@ func (c *ContentViolationVideoTooShort) require(field *big.Int) {
 func (c *ContentViolationVideoTooShort) SetChannelID(channelID string) {
 	c.ChannelID = channelID
 	c.require(contentViolationVideoTooShortFieldChannelID)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ContentViolationVideoTooShort) SetPart(part *int) {
+	c.Part = part
+	c.require(contentViolationVideoTooShortFieldPart)
 }
 
 // SetPlatform sets the Platform field and marks it as non-optional;
@@ -8142,6 +8706,153 @@ func (l *LimitedCount) String() string {
 }
 
 var (
+	livePartFieldIndex          = big.NewInt(1 << 0)
+	livePartFieldPermalink      = big.NewInt(1 << 1)
+	livePartFieldPlatformPostID = big.NewInt(1 << 2)
+	livePartFieldPublishedAt    = big.NewInt(1 << 3)
+)
+
+// livePartNullableFields maps the wire names of LivePart's nullable fields (required or optional) to their field bits.
+var livePartNullableFields = map[string]*big.Int{
+	"permalink":      livePartFieldPermalink,
+	"platformPostId": livePartFieldPlatformPostID,
+}
+
+type LivePart struct {
+	Index          int     `json:"index" url:"index"`
+	Permalink      *string `json:"permalink,omitempty" url:"permalink,omitempty"`
+	PlatformPostID *string `json:"platformPostId,omitempty" url:"platformPostId,omitempty"`
+	PublishedAt    string  `json:"publishedAt" url:"publishedAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LivePart) GetIndex() int {
+	if l == nil {
+		return 0
+	}
+	return l.Index
+}
+
+func (l *LivePart) GetPermalink() *string {
+	if l == nil {
+		return nil
+	}
+	return l.Permalink
+}
+
+func (l *LivePart) GetPlatformPostID() *string {
+	if l == nil {
+		return nil
+	}
+	return l.PlatformPostID
+}
+
+func (l *LivePart) GetPublishedAt() string {
+	if l == nil {
+		return ""
+	}
+	return l.PublishedAt
+}
+
+func (l *LivePart) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LivePart) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetIndex sets the Index field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePart) SetIndex(index int) {
+	l.Index = index
+	l.require(livePartFieldIndex)
+}
+
+// SetPermalink sets the Permalink field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePart) SetPermalink(permalink *string) {
+	l.Permalink = permalink
+	l.require(livePartFieldPermalink)
+}
+
+// SetPlatformPostID sets the PlatformPostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePart) SetPlatformPostID(platformPostID *string) {
+	l.PlatformPostID = platformPostID
+	l.require(livePartFieldPlatformPostID)
+}
+
+// SetPublishedAt sets the PublishedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LivePart) SetPublishedAt(publishedAt string) {
+	l.PublishedAt = publishedAt
+	l.require(livePartFieldPublishedAt)
+}
+
+func (l *LivePart) UnmarshalJSON(data []byte) error {
+	type unmarshaler LivePart
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LivePart(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, livePartNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		l.require(presentFields)
+	}
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LivePart) MarshalJSON() ([]byte, error) {
+	type embed LivePart
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LivePart) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
+var (
 	mediaAttachmentFieldAltText = big.NewInt(1 << 0)
 	mediaAttachmentFieldMediaID = big.NewInt(1 << 1)
 )
@@ -8264,6 +8975,188 @@ func NewNonFiniteNumberFromString(s string) (NonFiniteNumber, error) {
 
 func (n NonFiniteNumber) Ptr() *NonFiniteNumber {
 	return &n
+}
+
+var (
+	partPreviewFieldHashtags   = big.NewInt(1 << 0)
+	partPreviewFieldLinks      = big.NewInt(1 << 1)
+	partPreviewFieldMedia      = big.NewInt(1 << 2)
+	partPreviewFieldMentions   = big.NewInt(1 << 3)
+	partPreviewFieldPart       = big.NewInt(1 << 4)
+	partPreviewFieldText       = big.NewInt(1 << 5)
+	partPreviewFieldTextCounts = big.NewInt(1 << 6)
+)
+
+type PartPreview struct {
+	Hashtags   *LimitedCount `json:"hashtags" url:"hashtags"`
+	Links      *LimitedCount `json:"links" url:"links"`
+	Media      *LimitedCount `json:"media" url:"media"`
+	Mentions   *LimitedCount `json:"mentions" url:"mentions"`
+	Part       int           `json:"part" url:"part"`
+	Text       string        `json:"text" url:"text"`
+	TextCounts []*TextCount  `json:"textCounts" url:"textCounts"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PartPreview) GetHashtags() *LimitedCount {
+	if p == nil {
+		return nil
+	}
+	return p.Hashtags
+}
+
+func (p *PartPreview) GetLinks() *LimitedCount {
+	if p == nil {
+		return nil
+	}
+	return p.Links
+}
+
+func (p *PartPreview) GetMedia() *LimitedCount {
+	if p == nil {
+		return nil
+	}
+	return p.Media
+}
+
+func (p *PartPreview) GetMentions() *LimitedCount {
+	if p == nil {
+		return nil
+	}
+	return p.Mentions
+}
+
+func (p *PartPreview) GetPart() int {
+	if p == nil {
+		return 0
+	}
+	return p.Part
+}
+
+func (p *PartPreview) GetText() string {
+	if p == nil {
+		return ""
+	}
+	return p.Text
+}
+
+func (p *PartPreview) GetTextCounts() []*TextCount {
+	if p == nil {
+		return nil
+	}
+	return p.TextCounts
+}
+
+func (p *PartPreview) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PartPreview) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetHashtags sets the Hashtags field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartPreview) SetHashtags(hashtags *LimitedCount) {
+	p.Hashtags = hashtags
+	p.require(partPreviewFieldHashtags)
+}
+
+// SetLinks sets the Links field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartPreview) SetLinks(links *LimitedCount) {
+	p.Links = links
+	p.require(partPreviewFieldLinks)
+}
+
+// SetMedia sets the Media field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartPreview) SetMedia(media *LimitedCount) {
+	p.Media = media
+	p.require(partPreviewFieldMedia)
+}
+
+// SetMentions sets the Mentions field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartPreview) SetMentions(mentions *LimitedCount) {
+	p.Mentions = mentions
+	p.require(partPreviewFieldMentions)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartPreview) SetPart(part int) {
+	p.Part = part
+	p.require(partPreviewFieldPart)
+}
+
+// SetText sets the Text field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartPreview) SetText(text string) {
+	p.Text = text
+	p.require(partPreviewFieldText)
+}
+
+// SetTextCounts sets the TextCounts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PartPreview) SetTextCounts(textCounts []*TextCount) {
+	p.TextCounts = textCounts
+	p.require(partPreviewFieldTextCounts)
+}
+
+func (p *PartPreview) UnmarshalJSON(data []byte) error {
+	type unmarshaler PartPreview
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PartPreview(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PartPreview) MarshalJSON() ([]byte, error) {
+	type embed PartPreview
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PartPreview) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
 }
 
 type PlanLimit string
@@ -9086,12 +9979,14 @@ func (p *PostChannel) String() string {
 }
 
 var (
-	postContentFieldMedia     = big.NewInt(1 << 0)
-	postContentFieldOverrides = big.NewInt(1 << 1)
-	postContentFieldText      = big.NewInt(1 << 2)
+	postContentFieldFollowUps = big.NewInt(1 << 0)
+	postContentFieldMedia     = big.NewInt(1 << 1)
+	postContentFieldOverrides = big.NewInt(1 << 2)
+	postContentFieldText      = big.NewInt(1 << 3)
 )
 
 type PostContent struct {
+	FollowUps []*PostPart        `json:"followUps,omitempty" url:"followUps,omitempty"`
 	Media     []*MediaAttachment `json:"media" url:"media"`
 	Overrides []*TextOverride    `json:"overrides" url:"overrides"`
 	Text      string             `json:"text" url:"text"`
@@ -9101,6 +9996,13 @@ type PostContent struct {
 
 	extraProperties map[string]interface{}
 	rawJSON         json.RawMessage
+}
+
+func (p *PostContent) GetFollowUps() []*PostPart {
+	if p == nil {
+		return nil
+	}
+	return p.FollowUps
 }
 
 func (p *PostContent) GetMedia() []*MediaAttachment {
@@ -9138,6 +10040,13 @@ func (p *PostContent) require(field *big.Int) {
 	}
 	next.Or(next, field)
 	p.explicitFields = next
+}
+
+// SetFollowUps sets the FollowUps field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostContent) SetFollowUps(followUps []*PostPart) {
+	p.FollowUps = followUps
+	p.require(postContentFieldFollowUps)
 }
 
 // SetMedia sets the Media field and marks it as non-optional;
@@ -9890,6 +10799,140 @@ func (p *PostPage) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
+var (
+	postPartFieldDelaySeconds = big.NewInt(1 << 0)
+	postPartFieldMedia        = big.NewInt(1 << 1)
+	postPartFieldOverrides    = big.NewInt(1 << 2)
+	postPartFieldText         = big.NewInt(1 << 3)
+)
+
+type PostPart struct {
+	DelaySeconds int                `json:"delaySeconds" url:"delaySeconds"`
+	Media        []*MediaAttachment `json:"media" url:"media"`
+	Overrides    []*TextOverride    `json:"overrides" url:"overrides"`
+	Text         string             `json:"text" url:"text"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PostPart) GetDelaySeconds() int {
+	if p == nil {
+		return 0
+	}
+	return p.DelaySeconds
+}
+
+func (p *PostPart) GetMedia() []*MediaAttachment {
+	if p == nil {
+		return nil
+	}
+	return p.Media
+}
+
+func (p *PostPart) GetOverrides() []*TextOverride {
+	if p == nil {
+		return nil
+	}
+	return p.Overrides
+}
+
+func (p *PostPart) GetText() string {
+	if p == nil {
+		return ""
+	}
+	return p.Text
+}
+
+func (p *PostPart) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PostPart) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetDelaySeconds sets the DelaySeconds field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostPart) SetDelaySeconds(delaySeconds int) {
+	p.DelaySeconds = delaySeconds
+	p.require(postPartFieldDelaySeconds)
+}
+
+// SetMedia sets the Media field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostPart) SetMedia(media []*MediaAttachment) {
+	p.Media = media
+	p.require(postPartFieldMedia)
+}
+
+// SetOverrides sets the Overrides field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostPart) SetOverrides(overrides []*TextOverride) {
+	p.Overrides = overrides
+	p.require(postPartFieldOverrides)
+}
+
+// SetText sets the Text field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostPart) SetText(text string) {
+	p.Text = text
+	p.require(postPartFieldText)
+}
+
+func (p *PostPart) UnmarshalJSON(data []byte) error {
+	type unmarshaler PostPart
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PostPart(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PostPart) MarshalJSON() ([]byte, error) {
+	type embed PostPart
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PostPart) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
 type PostRefusal struct {
 	Type                 string
 	PostContentInvalid   *PostContentInvalidEncoded
@@ -10276,11 +11319,12 @@ var (
 	postTargetFieldID                = big.NewInt(1 << 2)
 	postTargetFieldKeptPrivate       = big.NewInt(1 << 3)
 	postTargetFieldOptions           = big.NewInt(1 << 4)
-	postTargetFieldPermalink         = big.NewInt(1 << 5)
-	postTargetFieldPublishedAt       = big.NewInt(1 << 6)
-	postTargetFieldRound             = big.NewInt(1 << 7)
-	postTargetFieldStatus            = big.NewInt(1 << 8)
-	postTargetFieldUnconfirmedReason = big.NewInt(1 << 9)
+	postTargetFieldParts             = big.NewInt(1 << 5)
+	postTargetFieldPermalink         = big.NewInt(1 << 6)
+	postTargetFieldPublishedAt       = big.NewInt(1 << 7)
+	postTargetFieldRound             = big.NewInt(1 << 8)
+	postTargetFieldStatus            = big.NewInt(1 << 9)
+	postTargetFieldUnconfirmedReason = big.NewInt(1 << 10)
 )
 
 // postTargetNullableFields maps the wire names of PostTarget's nullable fields (required or optional) to their field bits.
@@ -10298,6 +11342,7 @@ type PostTarget struct {
 	ID                string             `json:"id" url:"id"`
 	KeptPrivate       *bool              `json:"keptPrivate,omitempty" url:"keptPrivate,omitempty"`
 	Options           *TargetOptions     `json:"options,omitempty" url:"options,omitempty"`
+	Parts             *TargetParts       `json:"parts" url:"parts"`
 	Permalink         *string            `json:"permalink,omitempty" url:"permalink,omitempty"`
 	PublishedAt       *string            `json:"publishedAt,omitempty" url:"publishedAt,omitempty"`
 	Round             int                `json:"round" url:"round"`
@@ -10344,6 +11389,13 @@ func (p *PostTarget) GetOptions() *TargetOptions {
 		return nil
 	}
 	return p.Options
+}
+
+func (p *PostTarget) GetParts() *TargetParts {
+	if p == nil {
+		return nil
+	}
+	return p.Parts
 }
 
 func (p *PostTarget) GetPermalink() *string {
@@ -10430,6 +11482,13 @@ func (p *PostTarget) SetKeptPrivate(keptPrivate *bool) {
 func (p *PostTarget) SetOptions(options *TargetOptions) {
 	p.Options = options
 	p.require(postTargetFieldOptions)
+}
+
+// SetParts sets the Parts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PostTarget) SetParts(parts *TargetParts) {
+	p.Parts = parts
+	p.require(postTargetFieldParts)
 }
 
 // SetPermalink sets the Permalink field and marks it as non-optional;
@@ -11094,12 +12153,13 @@ func (p *PostValidation) String() string {
 var (
 	publicationAttemptFieldAttempt     = big.NewInt(1 << 0)
 	publicationAttemptFieldFinishedAt  = big.NewInt(1 << 1)
-	publicationAttemptFieldRefusalCode = big.NewInt(1 << 2)
-	publicationAttemptFieldResult      = big.NewInt(1 << 3)
-	publicationAttemptFieldRetryAt     = big.NewInt(1 << 4)
-	publicationAttemptFieldRound       = big.NewInt(1 << 5)
-	publicationAttemptFieldStartedAt   = big.NewInt(1 << 6)
-	publicationAttemptFieldTargetID    = big.NewInt(1 << 7)
+	publicationAttemptFieldPart        = big.NewInt(1 << 2)
+	publicationAttemptFieldRefusalCode = big.NewInt(1 << 3)
+	publicationAttemptFieldResult      = big.NewInt(1 << 4)
+	publicationAttemptFieldRetryAt     = big.NewInt(1 << 5)
+	publicationAttemptFieldRound       = big.NewInt(1 << 6)
+	publicationAttemptFieldStartedAt   = big.NewInt(1 << 7)
+	publicationAttemptFieldTargetID    = big.NewInt(1 << 8)
 )
 
 // publicationAttemptNullableFields maps the wire names of PublicationAttempt's nullable fields (required or optional) to their field bits.
@@ -11111,6 +12171,7 @@ var publicationAttemptNullableFields = map[string]*big.Int{
 type PublicationAttempt struct {
 	Attempt     int           `json:"attempt" url:"attempt"`
 	FinishedAt  string        `json:"finishedAt" url:"finishedAt"`
+	Part        int           `json:"part" url:"part"`
 	RefusalCode *string       `json:"refusalCode,omitempty" url:"refusalCode,omitempty"`
 	Result      AttemptResult `json:"result" url:"result"`
 	RetryAt     *string       `json:"retryAt,omitempty" url:"retryAt,omitempty"`
@@ -11137,6 +12198,13 @@ func (p *PublicationAttempt) GetFinishedAt() string {
 		return ""
 	}
 	return p.FinishedAt
+}
+
+func (p *PublicationAttempt) GetPart() int {
+	if p == nil {
+		return 0
+	}
+	return p.Part
 }
 
 func (p *PublicationAttempt) GetRefusalCode() *string {
@@ -11209,6 +12277,13 @@ func (p *PublicationAttempt) SetAttempt(attempt int) {
 func (p *PublicationAttempt) SetFinishedAt(finishedAt string) {
 	p.FinishedAt = finishedAt
 	p.require(publicationAttemptFieldFinishedAt)
+}
+
+// SetPart sets the Part field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PublicationAttempt) SetPart(part int) {
+	p.Part = part
+	p.require(publicationAttemptFieldPart)
 }
 
 // SetRefusalCode sets the RefusalCode field and marks it as non-optional;
@@ -11722,6 +12797,108 @@ func (t *TargetConfirmationPublished) MarshalJSON() ([]byte, error) {
 }
 
 func (t *TargetConfirmationPublished) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+var (
+	targetPartsFieldCount = big.NewInt(1 << 0)
+	targetPartsFieldLive  = big.NewInt(1 << 1)
+)
+
+type TargetParts struct {
+	Count int         `json:"count" url:"count"`
+	Live  []*LivePart `json:"live" url:"live"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TargetParts) GetCount() int {
+	if t == nil {
+		return 0
+	}
+	return t.Count
+}
+
+func (t *TargetParts) GetLive() []*LivePart {
+	if t == nil {
+		return nil
+	}
+	return t.Live
+}
+
+func (t *TargetParts) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TargetParts) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetCount sets the Count field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TargetParts) SetCount(count int) {
+	t.Count = count
+	t.require(targetPartsFieldCount)
+}
+
+// SetLive sets the Live field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TargetParts) SetLive(live []*LivePart) {
+	t.Live = live
+	t.require(targetPartsFieldLive)
+}
+
+func (t *TargetParts) UnmarshalJSON(data []byte) error {
+	type unmarshaler TargetParts
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TargetParts(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TargetParts) MarshalJSON() ([]byte, error) {
+	type embed TargetParts
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TargetParts) String() string {
 	if t == nil {
 		return "<nil>"
 	}

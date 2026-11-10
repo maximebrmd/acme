@@ -14,6 +14,12 @@ class ContentViolationOptionsForOtherPlatform extends JsonSerializableType
     public string $channelId;
 
     /**
+     * @var ?int $part
+     */
+    #[JsonProperty('part')]
+    public ?int $part;
+
+    /**
      * @var value-of<Platform> $platform
      */
     #[JsonProperty('platform')]
@@ -30,12 +36,14 @@ class ContentViolationOptionsForOtherPlatform extends JsonSerializableType
      *   channelId: string,
      *   platform: value-of<Platform>,
      *   optionsPlatform: value-of<Platform>,
+     *   part?: ?int,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->channelId = $values['channelId'];
+        $this->part = $values['part'] ?? null;
         $this->platform = $values['platform'];
         $this->optionsPlatform = $values['optionsPlatform'];
     }

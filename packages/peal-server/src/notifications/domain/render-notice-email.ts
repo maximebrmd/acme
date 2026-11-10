@@ -136,6 +136,10 @@ const contentOf = (
         ["platform", platformName(catalog, channel)],
       ],
     }),
+    CommentsReceived: ({ count }): Content => ({
+      messages: catalog.commentsReceived,
+      values: [["count", String(count)]],
+    }),
     PostApprovalRequested: ({ scheduledAt }): Content => ({
       messages: catalog.postApprovalRequested,
       values: [["scheduledAt", instantIn(scheduledAt, locale)]],

@@ -5,6 +5,18 @@ import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 /**
+ * The numbers Peal reads somewhere, by the names clients know them: a
+ * post's counts, and an account's numbers.
+ */
+export interface CountedNumbers {
+  readonly account: readonly string[];
+  readonly post: readonly string[];
+}
+
+/** No number is read. */
+export const noCountedNumbers: CountedNumbers = { account: [], post: [] };
+
+/**
  * The platforms where Peal reads each post's counts, as the analytics
  * context knows them: a platform's capabilities say so.
  */
@@ -22,11 +34,23 @@ export class CountedPlatforms extends Context.Service<
       platform: Platform,
       connection: Option.Option<ChannelConnection>
     ) => boolean;
+    /** The numbers read on the platform, on any of its channels. */
+    readonly numbers: (platform: Platform) => CountedNumbers;
+    /** The numbers read on a channel. */
+    readonly numbersOn: (
+      platform: Platform,
+      connection: Option.Option<ChannelConnection>
+    ) => CountedNumbers;
   }
 >()("peal-server/publishing/application/CountedPlatforms") {
   /** Counts are read nowhere. */
   static readonly none = Layer.succeed(
     CountedPlatforms,
-    CountedPlatforms.of({ includes: () => false, onChannel: () => false })
+    CountedPlatforms.of({
+      includes: () => false,
+      numbers: () => noCountedNumbers,
+      numbersOn: () => noCountedNumbers,
+      onChannel: () => false,
+    })
   );
 }

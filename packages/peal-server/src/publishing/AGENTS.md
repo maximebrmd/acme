@@ -4,13 +4,88 @@ The cluster that runs these workflows, and what of them is persisted contract,
 are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
 
 - `PublishPostV1` sleeps durably until the instant, claims the post for its
-  schedule revision, runs one `PublishTargetV1` per channel, then finishes the
+  schedule revision, runs one `PublishTargetV2` per channel, then finishes the
   post. Each attempt writes and commits its journal row
-  (`publishing.publication_calls`) before calling the platform.
+  (`publishing.publication_calls`) before calling the platform. Jobs are
+  started at `postJobVersion` (2); one stored at `codeVersion` 1 keeps the
+  `PublishTargetV1` children its history may hold, which stays registered
+  until they have ended: start nothing with it.
+- A post's content is its first part (`text`, `media`, `overrides`) and
+  `followUps`, the parts after it (`PostPart`: text, media, texts by
+  channel, `delaySeconds` up to a day; 24 at most), in
+  `publishing.posts.follow_ups`. Content from before decodes as one part:
+  keep `fixtures/persisted/posts/follow-ups.json` decoding. Read parts with
+  `partsOn`, every file with `shownMedia`; an approval's subject covers
+  them, written for a post of one part as it was before.
+- `platformRules[platform].followUps` says what parts become there
+  (`thread`: X, Bluesky, Mastodon; `comment`: none yet) and how many; the
+  contract's copy and the capabilities' `followUps` follow it. Scheduling
+  checks each part as a post of the platform (violations carry `part`, its
+  place from 1) and refuses parts elsewhere (`tooManyParts`). A platform
+  joins only with an adapter that reads `OutgoingPost.replyTo`: the router
+  refuses a later part to any other (`partsNotSupported`).
+- `PublishTargetV2` (`workflows/publish-parts.ts`) sends a target part by
+  part: `claim-target` answers the parts left, then for each `delay/<part>`
+  (a durable sleep), `publish/<part>/<n>` with `retry/<part>/<n>`, and
+  `record-part/<part>`, which appends the part to `post_targets.live_parts`
+  before the next is sent. All persisted contract
+  (`fixtures/persisted/PublishTargetV2`). Each part has its own journal rows
+  (`publication_calls.part`, 0 for the post). The first part that fails, is
+  cancelled or has an unknown outcome ends the round: never send a part
+  after it. A published target is its first part's id and permalink;
+  `liveParts` stay on a failed, unconfirmed or cancelled one, which makes
+  the post `partiallyPublished`. A repost sends from `nextPartOf`, never a
+  live part; a member confirming an unconfirmed part that was not the last
+  fails the target as `partsNotSent`, as a part found by hand has no id
+  the next could reply to. `partsNotSent` (that, a parent gone from the
+  platform, `replyTargetGone`, or the router's own refusals) is never
+  reposted (`isRepostable`): every surface says the rest cannot be sent
+  from Peal, and none offers to send it again. The router gives a later part the
+  ids of the first part and of the one before it (`ReplyReference`), and
+  refuses it (`replyTargetUnknown`) when Peal has no id for one.
+- A cancel between two parts sets `cancelRequested`: the part that waits is
+  not sent, and the target settles only when its wait ends. That wait
+  never keeps the workspace from being erased (see the erasure rule below).
+- Thread adapters: Mastodon sends `in_reply_to_id` under the attempt's key;
+  X sends `reply.in_reply_to_tweet_id`, and looks a lost reply up among the
+  account's replies, taking it only when it answers the same parent;
+  Bluesky names root and parent as strong references whose `cid` it reads
+  back from the PDS, and refuses a part whose parent is gone
+  (`replyTargetGone`). Threads' `reply_to_id` needs
+  `threads_manage_replies`, which Peal does not ask for: no parts there.
+- X documents that an app on self-serve access may reply only under a post
+  whose author mentioned or quoted the replying account, and gives no code
+  for the refusal: a 403 naming a reply, on a part after the first, is
+  `repliesNotAllowed` (a failure reason of its own, never reposted). The
+  operator turns X threads off with `X_THREADS=false`
+  (`CurrentThreadedPlatforms`, read when AccountRules, the router and
+  PostingCapabilities are built): scheduling refuses parts on X
+  (`tooManyParts`, maximum 1), the router refuses a part already
+  scheduled (`partsNotSupported`), and the capabilities give X no
+  `followUps`.
+- `PublishedTargets` lists a target once it is published, a post of
+  several parts as its first part (id and permalink): one row a target,
+  whatever its parts, so analytics counts, and X bills, one post, and the
+  inbox has one thread, whose reader walks every part (the parts are the
+  account's own replies, never comments). A target stopped midway
+  (`liveParts` on a failed, unconfirmed or cancelled one) is not listed
+  until a repost or a member completes it. The listing is ordered by
+  `post_targets.listed_at`, which `listedFrom` sets: when the target went
+  live, or, for one a member confirmed by hand (published at its
+  `attemptedAt`, hours before), when they did, as followers read on from
+  the latest they know and never look back that far. The first part's
+  reply count includes the second part: say so where counts are explained.
 - A post whose outcome is unknown is marked unconfirmed, never retried blindly:
   the user checks the platform before reposting.
 - Erasing a workspace's posts (`PostRecords`) stops its scheduled jobs in the
-  same transaction, and is refused while one of its posts is publishing.
+  same transaction, and is refused only while a call to a platform is in
+  flight for one of its posts (`WorkspacePostStore.lockRounds`: a journal
+  row begun and not ended, read under the targets' locks, which a call's
+  journal row needs before it can begin). A post that is publishing but
+  only waits, between two parts of a thread or before another try, is
+  erased, and its jobs are stopped with it (`PublicationScheduler.cancel`
+  and `cancelRound`); one that wakes all the same finds its target gone
+  and ends `superseded`, sending nothing.
 - A post keeps how it was created and last scheduled (`PostAttribution`,
   `#publishing/domain/post-origin.ts`): in the web app, with an API key or
   through an OAuth application (`Actor.subject.clientId`), with the key's or
@@ -40,7 +115,7 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   that wakes for a post or target since deleted, by a member or by erasure, is
   superseded.
 - `PostFollowUp` reposts a failed or unconfirmed target, in its next round:
-  a `PublishTargetV1` with no parent (`PublicationScheduler.repost`), which
+  a `PublishTargetV2` with no parent (`PublicationScheduler.repost`), which
   reopens a finished post; the last target to settle finishes its post, in
   `recordTargetRun`, or cancelling it does when nothing is left to send. A
   repost's rate-limit deadline counts from the repost. `confirm` records
@@ -312,11 +387,18 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   everything at once (channels and media that are not the workspace's,
   violations by channel, the time, the plan's room, duplicates) with what
   each channel receives (`previewOn`). Its connection is not journaled
-  (`checksOnly` in `#workspace/api/security.ts`).
+  (`checksOnly` in `#workspace/api/security.ts`). A check reads every part
+  of a thread, as scheduling does: `checkRequestFrom` decodes `followUps`
+  with the first part, their media are looked for with it (`shownMedia`),
+  a violation of a later part names it by `part`, and each channel's
+  preview lists the later parts with their own counts (`parts`), whether
+  or not its platform takes any.
 - A post made in one call (`PostScheduling.send`: `posts.send`, bulk,
   import, `create_post`, `peal post`) is refused (`DuplicateContent`, 409
   `DuplicatePost`) when another post of the workspace sends the same content
-  (`contentOn`: the channel's text, NFC and trimmed, and its media ids) to
+  (`contentOn`: the channel's text, NFC and trimmed, and its media ids,
+  for every part of a thread in order, a post of one part reading as
+  before parts so the digests kept still match) to
   one of its channels less than `duplicateWindow` from its time: 23 hours,
   the shortest day, so a post that repeats daily passes (the contract's
   `duplicateWindowHours`, kept equal by the contract test). `allowDuplicate`
@@ -334,9 +416,16 @@ are in the server's guide, [`../../AGENTS.md`](../../AGENTS.md).
   (`maxOutcomeWait`): no transaction or lock is held while a request waits,
   and the durable job stays the only thing that publishes. A process lets
   `maxWaitingRequests` wait at once, `maxWaitingPerWorkspace` of them for
-  one workspace, and answers one more as if its time had run out. Keep the bound under what every proxy waits. In tests, never move virtual time while a
+  one workspace, and answers one more as if its time had run out. A
+  thread has its result on a channel once every part went out or one
+  ended the round: between two parts its target is `publishing`, with
+  its `liveParts`, so a wait shorter than a part's delay runs out first. Keep the bound under what every proxy waits. In tests, never move virtual time while a
   send is in flight, as a job that is starting can lose its wake-up: wait on
   a post already sent, and move time until the waiting fiber answers.
+- A CSV row is a post of one part with one text for all its channels: no
+  column carries a thread's parts, texts by channel or options (an
+  unknown column refuses the file), which go through `send` or `bulk`,
+  whose items take `followUps` like any post.
 - Several posts in one request (`PostBatches`: `posts.bulk`, 50 at most,
   `create_posts`; `posts.import`, 100 CSV rows) are each one
   `PostScheduling.send`, in its own transaction, in order, one at a time:

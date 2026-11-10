@@ -9,8 +9,11 @@ import type {
 
 import type { PostWithTargets } from "#publishing/application/post-repository.ts";
 import type { RecordedAttempt } from "#publishing/application/publication-journal.ts";
+import { partCount } from "#publishing/domain/post-content.ts";
+import type { PostContent } from "#publishing/domain/post-content.ts";
 import type { PostOrigin } from "#publishing/domain/post-origin.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
+import { livePartsOf } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import { failureReasonOf } from "#publishing/domain/publication-policy.ts";
 import type { AttemptOutcome } from "#publishing/domain/publication-policy.ts";
@@ -33,18 +36,23 @@ const scheduleOf = (status: PostStatus) =>
     scheduled: ({ schedule }) => scheduleView(schedule),
   });
 
-const targetView = ({
-  channelId,
-  id,
-  options,
-  round,
-  status,
-}: PostTarget): TargetView => {
+const targetView = (target: PostTarget, count: number): TargetView => {
+  const { channelId, id, options, round, status } = target;
+
   const view: TargetView = {
     channelId,
     failureReason: status._tag === "failed" ? status.reason : null,
     id,
     options: options.pipe(Option.map(encodeOptions), Option.getOrNull),
+    parts: {
+      count,
+      live: livePartsOf(target).map((part) => ({
+        index: part.index,
+        permalink: Option.getOrNull(part.permalink),
+        platformPostId: Option.getOrNull(part.platformPostId),
+        publishedAt: part.publishedAt,
+      })),
+    },
     permalink:
       status._tag === "published" ? Option.getOrNull(status.permalink) : null,
     publishedAt: status._tag === "published" ? status.publishedAt : null,
@@ -77,6 +85,20 @@ const originView = (origin: PostOrigin): OriginView =>
 const originOrNull = (origin: Option.Option<PostOrigin>) =>
   origin.pipe(Option.map(originView), Option.getOrNull);
 
+// What one part says, as the contract describes it.
+const saidBy = ({
+  media,
+  overrides,
+  text,
+}: Pick<PostContent, "media" | "overrides" | "text">) => ({
+  media: media.map(({ altText, mediaId }) => ({ altText, mediaId })),
+  overrides: overrides.map(({ channelId, text: override }) => ({
+    channelId,
+    text: override,
+  })),
+  text,
+});
+
 /**
  * What clients see of a post: what it says, when, where it went, and how
  * it was created and scheduled.
@@ -84,15 +106,11 @@ const originOrNull = (origin: Option.Option<PostOrigin>) =>
 export const postView = ({ post, targets }: PostWithTargets): PostView => ({
   authorId: Option.getOrNull(post.authorId),
   content: {
-    media: post.content.media.map(({ altText, mediaId }) => ({
-      altText,
-      mediaId,
+    followUps: post.content.followUps.map((part) => ({
+      delaySeconds: part.delaySeconds,
+      ...saidBy(part),
     })),
-    overrides: post.content.overrides.map(({ channelId, text }) => ({
-      channelId,
-      text,
-    })),
-    text: post.content.text,
+    ...saidBy(post.content),
   },
   createdVia: originOrNull(post.attribution.createdVia),
   id: post.id,
@@ -101,7 +119,7 @@ export const postView = ({ post, targets }: PostWithTargets): PostView => ({
   scheduledBy: Option.getOrNull(post.attribution.scheduledBy),
   scheduledVia: originOrNull(post.attribution.scheduledVia),
   status: post.status._tag,
-  targets: targets.map(targetView),
+  targets: targets.map((target) => targetView(target, partCount(post.content))),
 });
 
 // What an attempt came to, in the words the failure reasons use.
@@ -118,6 +136,7 @@ const refusalCodeOf = (outcome: AttemptOutcome): string | null =>
 export const attemptView = (attempt: RecordedAttempt): AttemptView => ({
   attempt: attempt.attempt,
   finishedAt: attempt.finishedAt,
+  part: attempt.part,
   refusalCode: refusalCodeOf(attempt.outcome),
   result: resultOf(attempt.outcome),
   retryAt: attempt.retryAfter.pipe(

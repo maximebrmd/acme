@@ -5,11 +5,17 @@ import { DateTime } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useFormatter, useTranslations } from "next-intl";
 import { countedPlatforms } from "peal-contract";
-import type { Channel, Platform, Post, PostAnalytics } from "peal-contract";
+import type {
+  Channel,
+  Platform,
+  PlatformCapabilities,
+  Post,
+  PostAnalytics,
+} from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
 
-import { postAnalytics } from "#analytics/api.ts";
+import { platformCapabilities, postAnalytics } from "#analytics/api.ts";
 import { MetricList } from "#components/analytics/metric-list.tsx";
 import { ReadingsChart } from "#components/analytics/readings-chart.tsx";
 import { InTimeZone } from "#components/notices/in-time-zone.tsx";
@@ -18,17 +24,26 @@ import { browserTimeZone } from "#posts/zoned-time.ts";
 interface PostMetricsViewProps {
   readonly analytics: PostAnalytics;
   readonly channels: readonly Channel[];
+  /**
+   * The platforms this server reads counts on, as its capabilities say
+   * (`countedOn`): X only where its operator turned X reads on. Left out,
+   * every platform Peal has a reader for.
+   */
+  readonly counted?: readonly Platform[];
   /** The channels the post went live on. */
   readonly publishedOn: readonly string[];
 }
 
-const isCountedPlatform = (platform: Platform) =>
-  countedPlatforms.some((counted) => counted === platform);
-
-// On LinkedIn, Peal reads the counts of company pages only.
-const isCounted = ({ connection, platform }: Channel) =>
-  isCountedPlatform(platform) &&
-  (platform !== "linkedin" || connection === "linkedinPage");
+/**
+ * The platforms a server reads each post's counts on, from its
+ * capabilities, in the order it lists them.
+ */
+export const countedOn = (
+  capabilities: readonly Pick<PlatformCapabilities, "analytics" | "platform">[]
+): readonly Platform[] =>
+  capabilities.flatMap(({ analytics, platform }) =>
+    analytics.perPost ? [platform] : []
+  );
 
 /**
  * What a post's channels counted: each one's latest counts, when they were
@@ -39,11 +54,17 @@ const isCounted = ({ connection, platform }: Channel) =>
 export const PostMetricsView = ({
   analytics,
   channels,
+  counted: countedHere = countedPlatforms,
   publishedOn,
 }: PostMetricsViewProps) => {
   const t = useTranslations("Analytics");
   const tPosts = useTranslations("Posts");
   const format = useFormatter();
+
+  // On LinkedIn, Peal reads the counts of company pages only.
+  const isCounted = ({ connection, platform }: Channel) =>
+    countedHere.includes(platform) &&
+    (platform !== "linkedin" || connection === "linkedinPage");
 
   // The channels the post went live on, where they are still known.
   const publishedChannels = publishedOn.map((channelId) =>
@@ -60,7 +81,7 @@ export const PostMetricsView = ({
 
   // The platforms Peal reads counts on, as the reader's language lists them.
   const counted = format.list(
-    countedPlatforms.map((platform) =>
+    countedHere.map((platform) =>
       t("post.countedName", {
         name: tPosts("platform", { platform }),
         platform,
@@ -173,6 +194,10 @@ export const PostMetrics = ({
   const result = useAtomValue(query);
   const retry = useAtomRefresh(query);
 
+  // Which platforms this server counts: its capabilities say, X included
+  // only where the operator turned its reads on.
+  const capabilities = useAtomValue(platformCapabilities(workspaceId));
+
   const body = (() => {
     if (AsyncResult.isFailure(result)) {
       return (
@@ -185,7 +210,10 @@ export const PostMetrics = ({
       );
     }
 
-    if (!AsyncResult.isSuccess(result)) {
+    // Wait for the capabilities too, so the page never names a platform
+    // as counted and then takes it back. When they cannot be read, the
+    // page says what Peal has a reader for.
+    if (!AsyncResult.isSuccess(result) || AsyncResult.isInitial(capabilities)) {
       return (
         <div aria-busy="true">
           <span className="sr-only">{t("post.loading")}</span>
@@ -199,6 +227,11 @@ export const PostMetrics = ({
         <PostMetricsView
           analytics={result.value}
           channels={channels}
+          counted={
+            AsyncResult.isSuccess(capabilities)
+              ? countedOn(capabilities.value)
+              : countedPlatforms
+          }
           publishedOn={post.targets.flatMap(({ channelId, status }) =>
             status === "published" ? [channelId] : []
           )}

@@ -5,6 +5,7 @@ import type { Member } from "peal-contract";
 import { CapabilityToolsLive } from "#app/mcp/capabilities-handlers.ts";
 import { findTools, summaryOf } from "#app/mcp/catalogue.ts";
 import { ConnectToolsLive } from "#app/mcp/connect-handlers.ts";
+import { InboxToolsLive } from "#app/mcp/inbox-handlers.ts";
 import { MediaToolsLive } from "#app/mcp/media-handlers.ts";
 import { PeopleToolsLive } from "#app/mcp/people-handlers.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
@@ -229,5 +230,6 @@ export const PealToolsLive = Layer.mergeAll(
   CapabilityToolsLive,
   ReviewToolsLive,
   WebhookToolsLive,
-  ConnectToolsLive
+  ConnectToolsLive,
+  InboxToolsLive
 );

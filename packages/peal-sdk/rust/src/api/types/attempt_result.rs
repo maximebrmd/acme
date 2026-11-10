@@ -17,6 +17,8 @@ pub enum AttemptResult {
     QuotaExceeded,
     AppBillingLimit,
     PlanLimit,
+    PartsNotSent,
+    RepliesNotAllowed,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -39,6 +41,8 @@ impl Serialize for AttemptResult {
             Self::QuotaExceeded => serializer.serialize_str("quotaExceeded"),
             Self::AppBillingLimit => serializer.serialize_str("appBillingLimit"),
             Self::PlanLimit => serializer.serialize_str("planLimit"),
+            Self::PartsNotSent => serializer.serialize_str("partsNotSent"),
+            Self::RepliesNotAllowed => serializer.serialize_str("repliesNotAllowed"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -62,6 +66,8 @@ impl<'de> Deserialize<'de> for AttemptResult {
             "quotaExceeded" => Ok(Self::QuotaExceeded),
             "appBillingLimit" => Ok(Self::AppBillingLimit),
             "planLimit" => Ok(Self::PlanLimit),
+            "partsNotSent" => Ok(Self::PartsNotSent),
+            "repliesNotAllowed" => Ok(Self::RepliesNotAllowed),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -84,6 +90,8 @@ impl fmt::Display for AttemptResult {
             Self::QuotaExceeded => write!(f, "quotaExceeded"),
             Self::AppBillingLimit => write!(f, "appBillingLimit"),
             Self::PlanLimit => write!(f, "planLimit"),
+            Self::PartsNotSent => write!(f, "partsNotSent"),
+            Self::RepliesNotAllowed => write!(f, "repliesNotAllowed"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

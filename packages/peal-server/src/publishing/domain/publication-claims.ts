@@ -78,6 +78,41 @@ export const TargetClaimSchema = Schema.Union([
 
 export type TargetClaim = typeof TargetClaimSchema.Type;
 
+/**
+ * What a target's job found when it started, once posts have parts: as
+ * `TargetClaimSchema`, and when it is claimed, the parts left to send in
+ * this round, in order, each with the wait before it.
+ */
+export const PartsClaimSchema = Schema.Union([
+  Schema.TaggedStruct("claimed", {
+    channelId: ChannelIdSchema,
+    parts: Schema.Array(
+      Schema.Struct({
+        delay: Schema.DurationFromMillis,
+        // The part's place in the post: 0 for the post itself.
+        index: Schema.Int,
+      })
+    ),
+    postId: PostIdSchema,
+    scheduledAt: Schema.DateTimeUtc,
+  }),
+  Schema.TaggedStruct("superseded", {}),
+  Schema.TaggedStruct("cancelled", {}),
+  Schema.TaggedStruct("settled", { outcome: TargetOutcomeSchema }),
+]);
+
+export type PartsClaim = typeof PartsClaimSchema.Type;
+
+/** What recording a part that went live came to. */
+export const PartRecordSchema = Schema.Union([
+  // Recorded at `at`, by this run or an earlier one.
+  Schema.TaggedStruct("recorded", { at: Schema.DateTimeUtc }),
+  // The target is no longer this round's to send.
+  Schema.TaggedStruct("superseded", {}),
+]);
+
+export type PartRecord = typeof PartRecordSchema.Type;
+
 /** What claiming a post decides, before it is saved. */
 export type PostClaimDecision =
   | { readonly _tag: "cancelled" }

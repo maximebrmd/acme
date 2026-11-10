@@ -2,7 +2,7 @@
 title: Publier par l’API
 description: Vérifiez une publication avant de l’envoyer, publiez maintenant en attendant le résultat, envoyez plusieurs publications en une requête, importez-les depuis un fichier CSV, comprenez le refus des doublons et listez les publications d’un espace de travail avec des filtres.
 sidebar:
-  order: 13
+  order: 15
 ---
 
 Un script ou un agent qui publie par l’[API HTTP](/api-overview) peut vérifier une publication avant de l’envoyer, attendre le résultat d’une publication qui part maintenant, envoyer jusqu’à 50 publications en une requête, importer des publications depuis un fichier CSV, et lister les publications de l’espace de travail avec des filtres. Cette page montre chaque requête avec un exemple. La [référence de l’API](/reference) donne tous les champs.
@@ -59,6 +59,7 @@ curl -X POST https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/validate
       "mentions": { "count": 0, "maximum": null },
       "links": { "count": 1, "maximum": null },
       "media": { "count": 0, "maximum": 4 },
+      "parts": [],
       "violations": []
     }
   ],
@@ -89,7 +90,8 @@ Chaque entrée de `channels` contient :
 - `text` : le texte que reçoit le canal, c’est-à-dire celui qui lui est propre, ou celui de la publication ;
 - `textCounts` : la longueur de ce texte, comptée comme la compte la plateforme du canal, face à chacune de ses limites. Bluesky en a deux, en graphèmes et en octets ;
 - `hashtags`, `mentions`, `links` et `media` : combien la publication en contient (`count`) et le maximum que prend la plateforme (`maximum`, null quand Peal ne lui connaît pas de limite). `links` compte les liens différents ;
-- `violations` : chaque règle de la plateforme que la publication enfreint (texte, formats, tailles, nombre et durées des médias, options), et celles du compte lui-même quand sa plateforme les donne. Elles se lisent comme dans `PostContentInvalid` ([Comment lire les refus](/agents#refusals)).
+- `parts` : les parties qui suivent la première d’un [fil](/scheduling#threads), dans l’ordre, chacune avec son rang (`part`, à partir de 1), son texte (`text`) sur le canal et les mêmes décomptes ; aucune pour une publication seule. Une plateforme qui ne prend qu’une publication seule les liste quand même, et les refuse avec `tooManyParts` ;
+- `violations` : chaque règle de la plateforme que la publication enfreint, dans n’importe laquelle de ses parties (texte, formats, tailles, nombre et durées des médias, options), et celles du compte lui-même quand sa plateforme les donne. Celle qui porte sur une partie suivante la désigne par `part`. Elles se lisent comme dans `PostContentInvalid` ([Comment lire les refus](/agents#refusals)).
 
 Une publication qui serait refusée répond 200 aussi, avec `valid` à faux :
 
@@ -104,6 +106,7 @@ Une publication qui serait refusée répond 200 aussi, avec `valid` à faux :
         { "length": 342, "maximum": 300, "unit": "graphemes" },
         { "length": 342, "maximum": 3000, "unit": "utf8Bytes" }
       ],
+      "parts": [],
       "violations": [
         {
           "_tag": "textTooLong",
@@ -177,6 +180,7 @@ curl -X POST "https://api.example.com/api/workspaces/$WORKSPACE_ID/posts/send?wa
 - La réponse est 201 dans les deux cas : la publication a été créée.
 - Quand chaque canal a son résultat avant la fin de l’attente, le `status` de la publication est `finished`, avec son `outcome`. Chaque cible est `published`, avec son `permalink`, ou `failed`, avec sa `failureReason`.
 - Quand le temps est écoulé avant, la réponse est la publication dans son état du moment, avec des cibles encore `pending` ou `publishing`. Elle continue de se publier.
+- Un [fil](/scheduling#threads) a son résultat sur un canal quand toutes ses parties y sont parties, ou que l’une a échoué : une cible reste `publishing` entre deux parties, et `parts.live` liste celles qui sont en ligne. Avec une attente entre deux parties plus longue que `wait`, le temps s’écoule avant.
 
 `GET …/posts/{postId}/outcome` attend la suite. Il prend le même `wait`, et répond la publication une fois que chaque canal a son résultat, ou dans son état du moment quand le temps est écoulé : redemandez alors.
 
@@ -271,6 +275,8 @@ Un en-tête `Idempotency-Key` permet de renvoyer toute la requête sans risque p
 | `media`           | non         | Des identifiants de médias prêts de l’espace de travail                                                                                                               |
 | `allow_duplicate` | non         | `true` ou `false` ([Publications en double](#duplicates))                                                                                                             |
 | `idempotency_key` | non         | La clé d’idempotence propre à la ligne                                                                                                                                |
+
+Une ligne est une publication seule, avec un même texte pour tous ses canaux : un [fil](/scheduling#threads), un texte propre à un canal ou les options d’une plateforme ne tiennent pas dans une cellule, et passent par `send` ou `bulk`. Un fichier qui nomme une autre colonne est refusé en entier.
 
 Les cellules suivent la RFC 4180 : une cellule qui contient une virgule, un guillemet ou un saut de ligne s’écrit entre guillemets doubles, et un guillemet à l’intérieur est doublé. Un fichier contient au plus 100 lignes sous la première, et 1 000 000 de caractères.
 

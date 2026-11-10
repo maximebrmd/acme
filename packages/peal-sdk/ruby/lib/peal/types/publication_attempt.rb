@@ -9,6 +9,8 @@ module Peal
 
       field :finished_at, -> { String }, optional: false, nullable: false, api_name: "finishedAt"
 
+      field :part, -> { Integer }, optional: false, nullable: false
+
       field :refusal_code, -> { String }, optional: false, nullable: true, api_name: "refusalCode"
 
       field :result, -> { Peal::Types::AttemptResult }, optional: false, nullable: false

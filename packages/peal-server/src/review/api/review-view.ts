@@ -149,12 +149,43 @@ export const textsOf =
 
 const shownOptions = Schema.decodeUnknownSync(TargetOptionsSchema);
 
-/** The post on each of its channels, as the channel will receive it. */
-export const channelsView = ({
-  channels,
-}: ReviewedPost): PageView["channels"] =>
-  channels.map(({ channelId, handle, options, platform, text }) => ({
+// A file as its reviewers are shown it: where it is read from when it can
+// be shown, otherwise its id and alt text alone.
+const fileView = (
+  { altText, mediaId }: ReviewedPost["media"][number],
+  shown: ShownMedia
+) => {
+  const preview = Option.fromUndefinedOr(shown.get(mediaId));
+
+  return {
+    altText,
+    kind: preview.pipe(
+      Option.map(({ kind }) => kind),
+      Option.getOrNull
+    ),
+    mediaId,
+    url: preview.pipe(
+      Option.map(({ url }) => url),
+      Option.getOrNull
+    ),
+  };
+};
+
+/**
+ * The post on each of its channels, as the channel will receive it, with
+ * the parts that follow it there.
+ */
+export const channelsView = (
+  { channels }: ReviewedPost,
+  shown: ShownMedia
+): PageView["channels"] =>
+  channels.map(({ channelId, followUps, handle, options, platform, text }) => ({
     channelId,
+    followUps: followUps.map((part) => ({
+      delaySeconds: part.delaySeconds,
+      media: part.media.map((file) => fileView(file, shown)),
+      text: part.text,
+    })),
     handle: Option.getOrNull(handle),
     // Options the contract cannot describe are a bug, never left out: an
     // approval covers them.
@@ -170,23 +201,7 @@ export const channelsView = ({
 export const mediaView = (
   { media }: ReviewedPost,
   shown: ShownMedia
-): PageView["media"] =>
-  media.map(({ altText, mediaId }) => {
-    const preview = Option.fromUndefinedOr(shown.get(mediaId));
-
-    return {
-      altText,
-      kind: preview.pipe(
-        Option.map(({ kind }) => kind),
-        Option.getOrNull
-      ),
-      mediaId,
-      url: preview.pipe(
-        Option.map(({ url }) => url),
-        Option.getOrNull
-      ),
-    };
-  });
+): PageView["media"] => media.map((file) => fileView(file, shown));
 
 /**
  * A post's review as the workspace's clients see it. `shown` is the
@@ -201,7 +216,7 @@ export const threadView = (
 
   return {
     approvals: thread.requests.map((request) => approvalView(request, context)),
-    channels: channelsView(thread.post),
+    channels: channelsView(thread.post, shown),
     comments: thread.comments.map((comment) =>
       commentView(comment, textsOf(thread.post.channels), context)
     ),
@@ -225,7 +240,7 @@ export const pageView = (page: LinkPage): PageView | undefined => {
       Option.map((request) => approvalView(request, context)),
       Option.getOrNull
     ),
-    channels: channelsView(post),
+    channels: channelsView(post, page.previews),
     comments: page.comments.map((comment) =>
       commentView(comment, textsOf(post.channels), context)
     ),

@@ -6,6 +6,7 @@ import { reading } from "#app/mcp/annotations.ts";
 import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { ConnectTools } from "#app/mcp/connect-tools.ts";
 import { FindTools } from "#app/mcp/discovery-tools.ts";
+import { InboxTools } from "#app/mcp/inbox-tools.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
@@ -123,5 +124,6 @@ export const PealTools = Toolkit.merge(
   CapabilityTools,
   ReviewTools,
   WebhookTools,
-  ConnectTools
+  ConnectTools,
+  InboxTools
 );

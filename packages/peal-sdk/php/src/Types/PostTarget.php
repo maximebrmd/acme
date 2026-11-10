@@ -38,6 +38,12 @@ class PostTarget extends JsonSerializableType
     public ?TargetOptions $options;
 
     /**
+     * @var TargetParts $parts
+     */
+    #[JsonProperty('parts')]
+    public TargetParts $parts;
+
+    /**
      * @var ?string $permalink
      */
     #[JsonProperty('permalink')]
@@ -71,6 +77,7 @@ class PostTarget extends JsonSerializableType
      * @param array{
      *   channelId: string,
      *   id: string,
+     *   parts: TargetParts,
      *   round: int,
      *   status: value-of<PostTargetStatus>,
      *   failureReason?: ?value-of<FailureReason>,
@@ -89,6 +96,7 @@ class PostTarget extends JsonSerializableType
         $this->id = $values['id'];
         $this->keptPrivate = $values['keptPrivate'] ?? null;
         $this->options = $values['options'] ?? null;
+        $this->parts = $values['parts'];
         $this->permalink = $values['permalink'] ?? null;
         $this->publishedAt = $values['publishedAt'] ?? null;
         $this->round = $values['round'];

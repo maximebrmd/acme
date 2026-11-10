@@ -43,10 +43,12 @@ const StatisticsSchema = Schema.Struct({
       Schema.Struct({
         share: Schema.optionalKey(Schema.String),
         totalShareStatistics: Schema.Struct({
+          clickCount: Schema.optionalKey(CountSchema),
           commentCount: Schema.optionalKey(CountSchema),
           impressionCount: Schema.optionalKey(CountSchema),
           likeCount: Schema.optionalKey(CountSchema),
           shareCount: Schema.optionalKey(CountSchema),
+          uniqueImpressionsCount: Schema.optionalKey(CountSchema),
         }),
         ugcPost: Schema.optionalKey(Schema.String),
       })
@@ -60,24 +62,48 @@ type Statistics = NonNullable<
 
 const statisticsOf = HttpClientResponse.schemaBodyJson(StatisticsSchema);
 
-// A count as Peal keeps it: whole, never negative, within what it stores.
-const count = (value: number | undefined) =>
-  Math.min(Math.max(Math.trunc(value ?? 0), 0), maxCount);
+// A count LinkedIn gave, as Peal keeps it: whole and never negative. None
+// where it gave none, or more than Peal stores: never a zero made up.
+const given = (value: number | undefined): Option.Option<number> =>
+  Option.fromUndefinedOr(value).pipe(
+    Option.map((found) => Math.max(Math.trunc(found), 0)),
+    Option.filter((found) => found <= maxCount)
+  );
 
-// Organic statistics: comments are replies, shares reposts. LinkedIn
-// counts no quotes, and its clicks have no place in Peal's counts yet.
-const metricsOf = (statistics: Statistics) =>
-  new PostMetrics({
-    impressions: Option.some(count(statistics.impressionCount)),
-    likes: count(statistics.likeCount),
-    quotes: Option.none(),
-    replies: count(statistics.commentCount),
-    reposts: count(statistics.shareCount),
-  });
+// Organic statistics: comments are replies, shares reposts, unique
+// impressions the reach. LinkedIn counts no quotes. A share's statistics
+// that leave out a like, comment or share count give none of it: zero,
+// as LinkedIn says of a share it does not return. None when one is past
+// what Peal stores: the post is then not counted this time.
+const metricsOf = (statistics: Statistics): Option.Option<PostMetrics> =>
+  Option.all({
+    likes: given(statistics.likeCount ?? 0),
+    replies: given(statistics.commentCount ?? 0),
+    reposts: given(statistics.shareCount ?? 0),
+  }).pipe(
+    Option.map(
+      (counts) =>
+        new PostMetrics({
+          ...counts,
+          clicks: given(statistics.clickCount),
+          impressions: given(statistics.impressionCount),
+          quotes: Option.none(),
+          reach: given(statistics.uniqueImpressionsCount),
+        })
+    )
+  );
 
 // "Shares that are not returned can be assumed to have counts of 0 for
 // all statistics."
-const nothingYet = metricsOf({});
+const nothingYet = new PostMetrics({
+  clicks: Option.some(0),
+  impressions: Option.some(0),
+  likes: 0,
+  quotes: Option.none(),
+  reach: Option.some(0),
+  replies: 0,
+  reposts: 0,
+});
 
 // A Rest.li 2.0 list of URNs: its parentheses and commas as they are, each
 // URN percent-encoded.
@@ -206,12 +232,19 @@ export const linkedinMetrics = Effect.fn("LinkedInMetrics.make")(
 
             const statistics = byUrn.get(urn);
 
-            return {
-              _tag: "counted",
-              metrics:
-                statistics === undefined ? nothingYet : metricsOf(statistics),
-              targetId,
-            };
+            const metrics =
+              statistics === undefined
+                ? Option.some(nothingYet)
+                : metricsOf(statistics);
+
+            return Option.match(metrics, {
+              onNone: (): PostReading => ({ _tag: "failed", targetId }),
+              onSome: (counted): PostReading => ({
+                _tag: "counted",
+                metrics: counted,
+                targetId,
+              }),
+            });
           }),
         };
 

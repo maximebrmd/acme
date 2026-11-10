@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Context, DateTime, Duration, Effect, Layer } from "effect";
+import { Context, DateTime, Duration, Effect, Layer, Option } from "effect";
 
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
@@ -88,6 +88,40 @@ describe("publishing on Mastodon", () => {
         post.idempotencyKey
       );
       assert.strictEqual(headerOf(call, "authorization"), "Bearer token-1");
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("sends a later part as a reply to the part before it", () =>
+    Effect.gen(function* repliesInThread() {
+      const { accountId, client, instance } = yield* onInstance();
+
+      const first = yield* client.publish(
+        yield* outgoing({ accountId, text: "A first part" })
+      );
+
+      assert(first._tag === "published");
+
+      const second = yield* client.publish(
+        yield* outgoing({
+          accountId,
+          idempotencyKey: "0b5e4f2a9c7d4e1f8a3b6c5d2e1f0a9b",
+          part: 1,
+          replyTo: Option.some({
+            parent: first.platformPostId,
+            root: first.platformPostId,
+          }),
+          text: "A second part",
+        })
+      );
+
+      assert.strictEqual(second._tag, "published");
+      assert.deepStrictEqual(
+        instance.statuses().map(({ inReplyToId, text }) => [text, inReplyToId]),
+        [
+          ["A first part", null],
+          ["A second part", first.platformPostId],
+        ]
+      );
     }).pipe(Effect.scoped)
   );
 

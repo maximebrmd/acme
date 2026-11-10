@@ -5,8 +5,26 @@ import { FetchHttpClient } from "effect/http";
 
 import { ChannelUnreadable } from "#analytics/application/channel-unreadable.ts";
 import { MetricsReader } from "#analytics/application/metrics-reader.ts";
-import type { MetricsRequest } from "#analytics/application/metrics-reader.ts";
+import type {
+  AccountRequest,
+  MetricsRequest,
+} from "#analytics/application/metrics-reader.ts";
 import { isCounted } from "#analytics/domain/counted-platforms.ts";
+import type { AccountReader } from "#analytics/infrastructure/platforms/accounts/account-read.ts";
+import {
+  linkedinAccounts,
+  pinterestAccounts,
+} from "#analytics/infrastructure/platforms/accounts/insight-accounts.ts";
+import { metaAccounts } from "#analytics/infrastructure/platforms/accounts/meta-accounts.ts";
+import {
+  blueskyAccounts,
+  mastodonAccounts,
+} from "#analytics/infrastructure/platforms/accounts/public-accounts.ts";
+import {
+  tiktokAccounts,
+  xAccounts,
+  youtubeAccounts,
+} from "#analytics/infrastructure/platforms/accounts/token-accounts.ts";
 import { blueskyMetrics } from "#analytics/infrastructure/platforms/bluesky/bluesky-metrics.ts";
 import {
   databaseDown,
@@ -16,10 +34,14 @@ import {
 import { instagramMetrics } from "#analytics/infrastructure/platforms/instagram/instagram-metrics.ts";
 import { linkedinMetrics } from "#analytics/infrastructure/platforms/linkedin/linkedin-metrics.ts";
 import { mastodonMetrics } from "#analytics/infrastructure/platforms/mastodon/mastodon-metrics.ts";
+import { facebookMetrics } from "#analytics/infrastructure/platforms/meta/facebook-metrics.ts";
+import { threadsMetrics } from "#analytics/infrastructure/platforms/meta/threads-metrics.ts";
 import { pinterestMetrics } from "#analytics/infrastructure/platforms/pinterest/pinterest-metrics.ts";
 import { tiktokMetrics } from "#analytics/infrastructure/platforms/tiktok/tiktok-metrics.ts";
+import { xMetrics } from "#analytics/infrastructure/platforms/x/x-metrics.ts";
 import { youtubeMetrics } from "#analytics/infrastructure/platforms/youtube/youtube-metrics.ts";
 import { ChannelAccess } from "#channels/application/channel-access.ts";
+import type { Platform } from "#shared/domain/platform.ts";
 import { linkedinVersionConfig } from "#shared/infrastructure/platforms/linkedin-version.ts";
 import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
@@ -28,6 +50,7 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 import { pinterestHostsConfig } from "#shared/infrastructure/platforms/pinterest-api.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
+import { xAnalyticsConfig } from "#shared/infrastructure/platforms/x-analytics.ts";
 
 /** Where the platforms' counts are read. */
 export interface MetricsReaderSettings {
@@ -50,6 +73,10 @@ export interface MetricsReaderSettings {
   readonly pinterestApi: URL;
   /** TikTok's API. */
   readonly tiktokApi: URL;
+  /** X's API. */
+  readonly xApi: URL;
+  /** Whether the operator turned X reads, which X bills, on. */
+  readonly xReads: boolean;
   /** The YouTube Data API. */
   readonly youtubeApi: URL;
 }
@@ -59,7 +86,8 @@ export interface MetricsReaderSettings {
  * found through the channels context (ChannelAccess), which says who it
  * posts as, what it allowed, and whether it still works. Every request
  * goes through the public HTTP client, so the outbound guard checks the
- * servers users chose. Needs an HttpClient, the OutboundGuard and Mac.
+ * servers users chose. Needs an HttpClient, the OutboundGuard, Mac, and
+ * PaidReads for the platform that bills reads.
  */
 export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
   Layer.effect(
@@ -102,6 +130,23 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
         http,
       });
 
+      const facebook = yield* facebookMetrics({
+        hosts: settings.metaHosts,
+        http,
+        metaAppSecret: settings.metaAppSecret,
+      });
+
+      const threads = yield* threadsMetrics({
+        hosts: settings.metaHosts,
+        http,
+      });
+
+      const x = yield* xMetrics({
+        api: settings.xApi,
+        enabled: settings.xReads,
+        http,
+      });
+
       const read = Effect.fn("MetricsReader.read")(function* read(
         request: MetricsRequest
       ) {
@@ -113,7 +158,7 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
           })
         );
 
-        if (!isCounted(account.platform)) {
+        if (!isCounted(account.platform, { x: settings.xReads })) {
           return yield* new ChannelUnreadable({ reason: "unsupported" });
         }
 
@@ -137,6 +182,18 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
           return yield* youtube.read(account, request.posts);
         }
 
+        if (account.platform === "facebook") {
+          return yield* facebook.read(account, request.posts);
+        }
+
+        if (account.platform === "threads") {
+          return yield* threads.read(account, request.posts);
+        }
+
+        if (account.platform === "x") {
+          return yield* x.read(account, request);
+        }
+
         if (account.platform === "pinterest") {
           return yield* pinterest.read(account, request.posts);
         }
@@ -144,7 +201,63 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
         return yield* bluesky.read(request.posts);
       });
 
-      return MetricsReader.of({ read });
+      const meta = yield* metaAccounts({
+        hosts: settings.metaHosts,
+        http,
+        metaAppSecret: settings.metaAppSecret,
+      });
+
+      const xAccount = yield* xAccounts({
+        api: settings.xApi,
+        enabled: settings.xReads,
+        http,
+      });
+
+      // Each platform's account reader; Google Business Profile has none:
+      // Google's policy keeps its numbers 30 days at most and unaggregated.
+      const accountReaders: Partial<Record<Platform, AccountReader>> = {
+        bluesky: blueskyAccounts({ appView: settings.blueskyAppView, http }),
+        facebook: meta.facebook,
+        instagram: meta.instagram,
+        linkedin: yield* linkedinAccounts({
+          api: settings.linkedinApi,
+          http,
+          version: settings.linkedinVersion,
+        }),
+        mastodon: mastodonAccounts({ http, scheme: settings.mastodonScheme }),
+        pinterest: yield* pinterestAccounts({
+          api: settings.pinterestApi,
+          http,
+        }),
+        threads: meta.threads,
+        tiktok: yield* tiktokAccounts({ api: settings.tiktokApi, http }),
+        youtube: yield* youtubeAccounts({ api: settings.youtubeApi, http }),
+      };
+
+      const account = Effect.fn("MetricsReader.account")(function* account(
+        request: AccountRequest
+      ) {
+        const owner = yield* access.account(request.channelId).pipe(
+          Effect.catchTags({
+            ChannelUnusable: unusable,
+            DatabaseError: databaseDown,
+            TokenExpired: needsReconnect,
+          })
+        );
+
+        const reader =
+          owner.platform === "x"
+            ? xAccount(request.workspaceId)
+            : accountReaders[owner.platform];
+
+        if (reader === undefined) {
+          return yield* new ChannelUnreadable({ reason: "unsupported" });
+        }
+
+        return yield* reader(owner);
+      });
+
+      return MetricsReader.of({ account, read });
     })
   );
 
@@ -169,6 +282,8 @@ export const PlatformMetricsReaderLive = Layer.unwrap(
       metaHosts,
       pinterestApi: pinterest.api,
       tiktokApi: tiktokHosts.api,
+      xApi: new URL("https://api.x.com"),
+      xReads: yield* xAnalyticsConfig,
       youtubeApi: new URL("https://www.googleapis.com"),
     });
   })

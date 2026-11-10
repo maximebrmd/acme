@@ -3,7 +3,7 @@ import { DateTime, Duration, Schema } from "effect";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 
-import { textOn } from "./post-content.ts";
+import { partsOn } from "./post-content.ts";
 import type { PostContent } from "./post-content.ts";
 
 /**
@@ -27,12 +27,27 @@ export const duplicateRange = (at: DateTime.Utc) => ({
  * spaces around it and in one Unicode form, and its media, in order. Alt
  * text and options are left out: the same video under another title is
  * the same video.
+ *
+ * A post of several parts is all of them, in order, each read the same
+ * way: two threads that open alike and go on differently are two posts,
+ * and so are a thread and its first part alone. The waits between parts
+ * are left out, as the time a post goes out is. A post of one part reads
+ * as it did before posts had parts, so the digests kept of earlier posts
+ * (`post_targets.content_digest`) still match.
  */
-export const contentOn = (content: PostContent, channelId: ChannelId): string =>
-  JSON.stringify({
-    media: content.media.map(({ mediaId }) => mediaId),
-    text: textOn(content, channelId).normalize("NFC").trim(),
-  });
+export const contentOn = (
+  content: PostContent,
+  channelId: ChannelId
+): string => {
+  const [first, ...later] = partsOn(content, channelId).map((part) => ({
+    media: part.media.map(({ mediaId }) => mediaId),
+    text: part.text.normalize("NFC").trim(),
+  }));
+
+  return JSON.stringify(
+    later.length === 0 ? first : { ...first, parts: later }
+  );
+};
 
 /** A channel that already has the content, and the post that sends it. */
 export const DuplicateSchema = Schema.Struct({

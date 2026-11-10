@@ -6,16 +6,27 @@ import type {
   ChannelId,
   PostId,
   PostTargetId,
+  UserId,
   WorkspaceId,
 } from "#shared/domain/ids.ts";
 import type { PlatformPostId } from "#shared/domain/publish-result.ts";
 
-/** A post that went live on a channel, with the id the platform gave it. */
+/**
+ * A post that went live on a channel, with the id the platform gave it: a
+ * post of several parts once all of them are live, as its first part.
+ */
 export interface PublishedTarget {
+  /** The member who wrote the post; none for an API key's. */
+  readonly authorId: Option.Option<UserId>;
   readonly channelId: ChannelId;
   readonly permalink: Option.Option<string>;
   readonly platformPostId: PlatformPostId;
   readonly postId: PostId;
+  /**
+   * When Peal knew it live, which the listing is ordered by: when it went
+   * out, or, for a post whose last part a member confirmed by hand, when
+   * they did.
+   */
   readonly publishedAt: DateTime.Utc;
   readonly targetId: PostTargetId;
   readonly workspaceId: WorkspaceId;
@@ -32,9 +43,12 @@ export interface PublishedCursor {
 
 /**
  * The posts that went live, in the order they did (when, then target id),
- * for the contexts that follow them, such as analytics. A target the member
- * confirmed by hand has no platform post id, so nothing can read it back:
- * it is not listed.
+ * for the contexts that follow them: analytics and the inbox. A target a
+ * member confirmed by hand has no platform post id unless it is a post of
+ * several parts whose first went out before: without one nothing can read
+ * it back, and it is not listed. A target some of whose parts are live and
+ * that failed, was cancelled or waits to be checked is not published: it
+ * is listed once a repost, or a member, completes it.
  */
 export class PublishedTargets extends Context.Service<
   PublishedTargets,

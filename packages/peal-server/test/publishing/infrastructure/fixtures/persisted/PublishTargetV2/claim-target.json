@@ -1,0 +1,23 @@
+[
+  {
+    "_tag": "claimed",
+    "channelId": "019eca14-7980-76b6-8170-13a950e6215b",
+    "parts": [{ "delay": 0, "index": 0 }],
+    "postId": "019eca14-7980-76b6-8170-13a950e62159",
+    "scheduledAt": "2026-06-15T08:00:00.000Z"
+  },
+  {
+    "_tag": "claimed",
+    "channelId": "019eca14-7980-76b6-8170-13a950e6215b",
+    "parts": [
+      { "delay": 0, "index": 1 },
+      { "delay": 300000, "index": 2 },
+      { "delay": 86400000, "index": 3 }
+    ],
+    "postId": "019eca14-7980-76b6-8170-13a950e62159",
+    "scheduledAt": "2026-06-15T08:00:00.000Z"
+  },
+  { "_tag": "superseded" },
+  { "_tag": "cancelled" },
+  { "_tag": "settled", "outcome": "unconfirmed" }
+]

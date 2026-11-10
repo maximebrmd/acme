@@ -153,6 +153,9 @@ services:
       TIKTOK_CLIENT_SECRET:
       X_CLIENT_ID:
       X_CLIENT_SECRET:
+      X_ANALYTICS:
+      X_ANALYTICS_DAILY_READS:
+      X_THREADS:
       GOOGLE_BUSINESS_CLIENT_ID:
       GOOGLE_BUSINESS_CLIENT_SECRET:
       YOUTUBE_CLIENT_ID:
@@ -197,6 +200,8 @@ services:
       PEAL_ANALYTICS_CONCURRENCY:
       PEAL_API_REQUESTS_PER_MINUTE:
       PEAL_DOCS_URL:
+      PEAL_ENGAGEMENT_CONCURRENCY:
+      PEAL_ENGAGEMENT_WINDOW_DAYS:
       PEAL_LEGAL_RETENTION:
       # What the operator declares about its processing, for each user's
       # export: the file PEAL_PRIVACY_DECLARATION names, mounted below.

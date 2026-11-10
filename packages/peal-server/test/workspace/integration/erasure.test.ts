@@ -49,6 +49,7 @@ const schemas = [
   "auth",
   "billing",
   "channels",
+  "engagement",
   "legal",
   "media",
   "notifications",
@@ -65,8 +66,14 @@ const workspaceRows = {
   // The log of who changed what in it.
   "activity.events": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM activity.events WHERE workspace_id = ${id}`,
+  "analytics.account_snapshots": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM analytics.account_snapshots s JOIN analytics.tracked_channels c ON c.channel_id = s.channel_id WHERE c.workspace_id = ${id}`,
   "analytics.metric_snapshots": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM analytics.metric_snapshots s JOIN analytics.tracked_posts t ON t.target_id = s.target_id WHERE t.workspace_id = ${id}`,
+  "analytics.paid_reads": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM analytics.paid_reads WHERE workspace_id = ${id}`,
+  "analytics.tracked_channels": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM analytics.tracked_channels WHERE workspace_id = ${id}`,
   "analytics.tracked_posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM analytics.tracked_posts WHERE workspace_id = ${id}`,
   "assistant.daily_usage": (sql, id) =>
@@ -117,6 +124,14 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM channels.connect_choices WHERE workspace_id = ${id}`,
   "channels.connect_links": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.connect_links WHERE workspace_id = ${id}`,
+  // What other people wrote under the workspace's posts goes with it, as
+  // do the replies sent to them.
+  "engagement.comments": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.comments WHERE workspace_id = ${id}`,
+  "engagement.replies": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.replies WHERE workspace_id = ${id}`,
+  "engagement.threads": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.threads WHERE workspace_id = ${id}`,
   "media.media_assets": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM media.media_assets WHERE workspace_id = ${id}`,
   "notifications.notices": (sql, id) =>
@@ -217,6 +232,12 @@ const userRows = {
   // The links they created stay their workspaces', without them.
   "channels.connect_links": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.connect_links WHERE created_by = ${`user:${id}`}`,
+  // The replies they sent, and the threads of the posts they wrote, stay
+  // with the workspace, without them.
+  "engagement.replies": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.replies WHERE author_id = ${id}`,
+  "engagement.threads": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM engagement.threads WHERE author_id = ${id}`,
   "notifications.notices": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE user_id = ${id}`,
   "notifications.notification_preferences": (sql, id) =>
@@ -282,6 +303,8 @@ const kept = {
   "channels.data_deletions":
     "the codes and counts of Meta's deletion requests, which name nobody",
   "channels.mastodon_apps": "Peal's own app on each Mastodon instance",
+  "engagement.erased_workspaces":
+    "the ids of erased workspaces, so their posts' comments are never read after",
   "legal.disclosures":
     "what staff handed over on legal requests, and on what grounds, kept 5 years",
   "notifications.sent_notices":
@@ -394,6 +417,16 @@ const fill = Effect.fn("fill")(function* fill(
     VALUES (${uuid7()}, ${workspaceId}, ${postId}, 'synthetic', ${person.id}, 'member', now(), now(), 'Europe/Paris', 'approved', now(), 'member', ${person.id})`;
 
   yield* seedTrackedPost(workspaceId, channelId, postId);
+
+  // The channel's account, followed and read for a day.
+  yield* sql`INSERT INTO analytics.tracked_channels (channel_id, workspace_id, platform, next_collection_at)
+    VALUES (${channelId}, ${workspaceId}, 'mastodon', now())`;
+  yield* sql`INSERT INTO analytics.account_snapshots (channel_id, day, collected_at, followers)
+    VALUES (${channelId}, current_date, now(), 12)`;
+
+  // A post read on a platform that bills reads, counted for the day.
+  yield* sql`INSERT INTO analytics.paid_reads (workspace_id, platform, day, resource)
+    VALUES (${workspaceId}, 'x', current_date, '1800000000000000001')`;
   yield* seedUsage(workspaceId, 2);
   yield* seedSubscription(workspaceId, "canceled");
 
@@ -429,6 +462,20 @@ const fill = Effect.fn("fill")(function* fill(
   yield* seedOAuthGrant(person.id, workspaceId, "Synthetic erasure client");
   yield* seedConnectChoice(workspaceId, person.id);
   yield* seedNotice(person.id, workspaceId, "@erasure@social.example");
+
+  // A thread under a post the person wrote, with someone's comment and
+  // the reply the person sent to it.
+  const threadId = uuid7();
+  const commentId = uuid7();
+
+  yield* sql`INSERT INTO engagement.threads (id, workspace_id, channel_id, target_id, post_id, platform_post_id, published_at, next_collection_at, author_id, comment_count, unanswered_count, last_comment_at)
+    VALUES (${threadId}, ${workspaceId}, ${uuid7()}, ${uuid7()}, ${uuid7()}, '113000000000000001', now(), now(), ${person.id}, 1, 0, now())`;
+
+  yield* sql`INSERT INTO engagement.comments (id, thread_id, workspace_id, channel_id, platform_comment_id, author_platform_id, author_handle, author_display_name, text, written_at, received_at, state)
+    VALUES (${commentId}, ${threadId}, ${workspaceId}, ${uuid7()}, '113000000000000002', '7001', 'reader@social.example', 'A synthetic reader', 'A synthetic comment', now(), now(), 'answered')`;
+
+  yield* sql`INSERT INTO engagement.replies (id, thread_id, comment_id, workspace_id, channel_id, author_id, text, created_at, status, settled_at)
+    VALUES (${uuid7()}, ${threadId}, ${commentId}, ${workspaceId}, ${uuid7()}, ${person.id}, 'A synthetic reply', now(), 'sent', now())`;
 
   // A webhook endpoint, with an event on its way to it.
   const endpointId = uuid7();

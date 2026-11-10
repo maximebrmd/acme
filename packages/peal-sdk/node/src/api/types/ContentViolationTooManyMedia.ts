@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface ContentViolationTooManyMedia {
     channelId: string;
+    part?: number | undefined;
     platform: Peal.Platform;
     count: number;
     maximum: number;

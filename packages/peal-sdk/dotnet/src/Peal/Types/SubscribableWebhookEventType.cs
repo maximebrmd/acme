@@ -50,6 +50,12 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
 
     public static readonly SubscribableWebhookEventType MediaFailed = new(Values.MediaFailed);
 
+    public static readonly SubscribableWebhookEventType CommentReceived = new(
+        Values.CommentReceived
+    );
+
+    public static readonly SubscribableWebhookEventType CommentReplied = new(Values.CommentReplied);
+
     public SubscribableWebhookEventType(string value)
     {
         Value = value;
@@ -174,5 +180,9 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
         public const string MediaReady = "media.ready";
 
         public const string MediaFailed = "media.failed";
+
+        public const string CommentReceived = "comment.received";
+
+        public const string CommentReplied = "comment.replied";
     }
 }

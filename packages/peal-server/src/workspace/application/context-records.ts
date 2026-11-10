@@ -3,6 +3,7 @@ import type { DateTime, Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
+  AccountSnapshotRecord,
   ActivityRecord,
   AnalyticsRecord,
   AuthoredPostRecord,
@@ -17,6 +18,7 @@ import type {
   PostRecord,
   PreferencesRecord,
   ReviewRecord,
+  SentReplyRecord,
   StaffActionRecord,
   UsageRecord,
   UserReviewRecord,
@@ -46,6 +48,8 @@ export interface ErasedWorkspace {
 
 /** What the other contexts keep in a workspace. */
 export interface WorkspaceContent {
+  /** Its channels' accounts, day by day. */
+  readonly accountAnalytics: readonly AccountSnapshotRecord[];
   readonly analytics: readonly AnalyticsRecord[];
   readonly assistantUsage: readonly UsageRecord[];
   readonly billing: BillingRecord;
@@ -74,6 +78,11 @@ export interface UserContent {
   readonly legalHold: LegalHoldRecord | null;
   readonly notices: readonly NoticeRecord[];
   readonly preferences: PreferencesRecord;
+  /**
+   * The replies they sent from Peal to comments under posts, in any
+   * workspace; never the comments, which other people wrote.
+   */
+  readonly replies: readonly SentReplyRecord[];
   /** What they wrote and decided in the reviews of posts. */
   readonly review: UserReviewRecord;
   /** What staff did to their account, from the audit log. */
@@ -82,7 +91,8 @@ export interface UserContent {
 
 /**
  * The data the other contexts keep about workspaces and users: channels,
- * posts and their authors, media, analytics, assistant usage, billing,
+ * posts and their authors, media, analytics, the comments under posts and
+ * the replies sent to them, assistant usage, billing,
  * webhooks, the activity logs, notices and preferences, the staff audit log, and what the law has Peal
  * keep (`#legal`). Erasures run in the caller's transaction, except the media
  * files, which the store holds outside the database: remove them once the

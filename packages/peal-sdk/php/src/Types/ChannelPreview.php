@@ -39,6 +39,12 @@ class ChannelPreview extends JsonSerializableType
     public LimitedCount $mentions;
 
     /**
+     * @var array<PartPreview> $parts
+     */
+    #[JsonProperty('parts'), ArrayType([PartPreview::class])]
+    public array $parts;
+
+    /**
      * @var value-of<Platform> $platform
      */
     #[JsonProperty('platform')]
@@ -69,6 +75,7 @@ class ChannelPreview extends JsonSerializableType
      *   links: LimitedCount,
      *   media: LimitedCount,
      *   mentions: LimitedCount,
+     *   parts: array<PartPreview>,
      *   platform: value-of<Platform>,
      *   text: string,
      *   textCounts: array<TextCount>,
@@ -83,6 +90,7 @@ class ChannelPreview extends JsonSerializableType
         $this->links = $values['links'];
         $this->media = $values['media'];
         $this->mentions = $values['mentions'];
+        $this->parts = $values['parts'];
         $this->platform = $values['platform'];
         $this->text = $values['text'];
         $this->textCounts = $values['textCounts'];

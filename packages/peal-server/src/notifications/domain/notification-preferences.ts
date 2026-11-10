@@ -13,6 +13,8 @@ export class NotificationPreferences extends Schema.Class<NotificationPreference
 )({
   email: Schema.Struct({
     channelReconnect: Schema.Boolean,
+    // New comments under the posts that went live.
+    comments: Schema.Boolean,
     postFailed: Schema.Boolean,
     postPublished: Schema.Boolean,
     // Comments on posts, and approvals asked for and decided.
@@ -26,12 +28,13 @@ export class NotificationPreferences extends Schema.Class<NotificationPreference
 /**
  * Until a user chooses: email for what needs them (a post that failed or may
  * not have gone out, a channel to reconnect, a post to approve or what its
- * review brought), and not for posts that went out as planned; and only the
- * posts they wrote.
+ * review brought), and not for posts that went out as planned nor for the
+ * comments they receive, which the app shows; and only the posts they wrote.
  */
 export const defaultPreferences = new NotificationPreferences({
   email: {
     channelReconnect: true,
+    comments: false,
     postFailed: true,
     postPublished: false,
     postReview: true,
@@ -56,6 +59,7 @@ export const changePreferences = (
   return new NotificationPreferences({
     email: {
       channelReconnect: asked.channelReconnect ?? email.channelReconnect,
+      comments: asked.comments ?? email.comments,
       postFailed: asked.postFailed ?? email.postFailed,
       postPublished: asked.postPublished ?? email.postPublished,
       postReview: asked.postReview ?? email.postReview,

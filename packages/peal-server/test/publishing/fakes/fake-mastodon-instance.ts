@@ -28,6 +28,8 @@ export interface FakeMedia {
 export interface FakeStatus {
   readonly id: string;
   readonly idempotencyKey: string | null;
+  /** The status it replies to, when it was sent as a reply. */
+  readonly inReplyToId: string | null;
   readonly mediaIds: readonly string[];
   readonly text: string;
 }
@@ -53,6 +55,7 @@ export interface FakeMastodonOptions {
 }
 
 const StatusBodySchema = Schema.Struct({
+  in_reply_to_id: Schema.optionalKey(Schema.String),
   media_ids: Schema.Array(Schema.String),
   status: Schema.String,
 });
@@ -101,6 +104,7 @@ export const fakeMastodonInstance = Effect.fnUntraced(
       const status: FakeStatus = {
         id: String(110_000_000 + statuses.length + 1),
         idempotencyKey: key === "" ? null : key,
+        inReplyToId: body.in_reply_to_id ?? null,
         mediaIds: body.media_ids,
         text: body.status,
       };

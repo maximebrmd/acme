@@ -27,6 +27,7 @@ import {
   PostIdSchema,
   UserIdSchema,
   WorkspaceIdSchema,
+  Uuid7Schema,
 } from "#shared/domain/ids.ts";
 import { readerOf } from "#test/notifications/support.ts";
 
@@ -51,6 +52,12 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     _tag: "ChannelReconnectSoon",
     channel,
     expiresAt: DateTime.makeUnsafe("2026-12-01T09:30:00Z"),
+  },
+  CommentsReceived: {
+    _tag: "CommentsReceived",
+    count: 3,
+    postId,
+    threadId: Uuid7Schema.make("00000000-0000-7000-8000-00000000c0de"),
   },
   PostApprovalRequested: {
     _tag: "PostApprovalRequested",
@@ -316,6 +323,7 @@ describe("notification preferences", () => {
 
     expect(changed.email).toStrictEqual({
       channelReconnect: true,
+      comments: false,
       postFailed: false,
       postPublished: true,
       postReview: true,

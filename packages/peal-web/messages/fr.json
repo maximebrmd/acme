@@ -6,7 +6,7 @@
   "Analytics": {
     "open": "Statistiques",
     "openLabel": "Statistiques de {workspace}",
-    "metric": "{metric, select, posts {Publications} likes {J’aime} reposts {Partages} replies {Réponses} quotes {Citations} impressions {Impressions} other {{metric}}}",
+    "metric": "{metric, select, posts {Publications} likes {J’aime} reposts {Partages} replies {Réponses} quotes {Citations} impressions {Impressions} engagement {Engagement} followers {Abonnés} views {Vues} reach {Portée} clicks {Clics} saves {Enregistrements} other {{metric}}}",
     "page": {
       "title": "Statistiques",
       "description": "Ce qu’ont donné, sur leurs plateformes, les publications parues sur une période. Les jours suivent votre fuseau horaire, {zone}.",
@@ -15,9 +15,9 @@
       "loading": "Chargement des statistiques…",
       "loadFailed": "Les statistiques n’ont pas pu être chargées.",
       "retry": "Réessayer",
-      "empty": "Aucune publication n’est encore parue sur Mastodon ou Bluesky sur cette période, les plateformes dont Peal relève les chiffres pour l’instant. Les chiffres d’une publication arrivent dans l’heure qui suit sa parution.",
+      "empty": "Aucune publication n’est encore parue sur cette période sur une plateforme dont Peal relève les chiffres. Les chiffres d’une publication arrivent dans l’heure qui suit sa parution.",
       "collection": "Peal relève les chiffres de chaque publication toutes les heures pendant les 48 heures qui suivent sa parution, puis chaque jour jusqu’à ses 30 jours.",
-      "noImpressions": "Mastodon et Bluesky ne disent pas combien de personnes ont vu une publication : il n’y a donc pas d’impressions ; celles de TikTok et de YouTube sont leurs vues."
+      "noImpressions": "Aucune publication de la période n’est sur une plateforme qui dit combien de fois elle a été affichée : il n’y a donc pas d’impressions. Mastodon et Bluesky n’en donnent pas ; celles de TikTok et de YouTube sont leurs vues."
     },
     "totals": {
       "title": "Totaux",
@@ -58,6 +58,33 @@
       "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Peal ne les relève pour l’instant que sur {counted}.",
       "countedName": "{platform, select, linkedin {les pages LinkedIn} other {{name}}}",
       "uncountedName": "{platform, select, linkedin {les profils LinkedIn} other {{name}}}"
+    },
+    "trend": {
+      "title": "Par rapport {days, plural, one {au jour précédent} other {aux # jours précédents}}",
+      "description": "Les publications parues sur la période, à côté de celles parues du {from} au {to}.",
+      "more": "{count} de plus{shared, select, yes { ({share})} other {}}",
+      "fewer": "{count} de moins{shared, select, yes { ({share})} other {}}",
+      "same": "Pas de changement",
+      "unknown": "Non fourni par la plateforme",
+      "notKept": "Pas de comparaison : les conditions d’une plateforme gardent ses chiffres moins longtemps que ne remonte la période précédente"
+    },
+    "accounts": {
+      "title": "Abonnés",
+      "description": "Peal relève les abonnés de chaque canal une fois par jour, à partir du jour où le canal est connecté. Quand une plateforme compte les vues et la portée d’un compte par jour, elles sont dans le tableau.",
+      "none": "Peal relève les abonnés de chaque canal une fois par jour, à partir du jour où le canal est connecté. Rien n’a encore été relevé sur cette période.",
+      "gained": "{change, select, more {{count} de plus} fewer {{count} de moins} other {Pas de changement}} sur la période{range, select, previous { précédente} other {}}",
+      "views": "Afficher les abonnés en",
+      "caption": "Abonnés à la fin de chaque jour, du {from} au {to}. Le tableau donne les mêmes chiffres, avec les vues et la portée.",
+      "tableCaption": "Abonnés, vues et portée chaque jour",
+      "byChannel": "Abonnés à la fin de la période, par canal",
+      "change": "Évolution",
+      "disconnected": "Un canal qui n’est plus connecté"
+    },
+    "export": {
+      "title": "Export",
+      "description": "Les mêmes chiffres en fichiers CSV, à ouvrir dans un tableur. Un chiffre qu’une plateforme ne fournit pas reste vide.",
+      "posts": "Publications de la période",
+      "accounts": "Comptes, jour par jour"
     }
   },
   "Assistant": {
@@ -537,11 +564,13 @@
         "content": "À corriger avant de programmer :"
       },
       "violation": {
+        "inPart": "Partie {part} : {text}",
         "noChannels": "Choisissez au moins un canal.",
         "overrideWithoutChannel": "Un canal avec son propre texte n’est plus sélectionné.",
         "empty": "{channel} : il n’y a rien à publier.",
         "textTooLong": "{channel} : {length} sur {maximum} {unit, select, utf8Bytes {octets} other {caractères}}.",
         "tooManyMedia": "{channel} : {count} images ou vidéos, {maximum} au plus.",
+        "tooManyParts": "{channel} :{maximum, plural, =1 {cette plateforme prend une publication seule, sans rien à sa suite. Retirez les autres parties, ou publiez-les ailleurs} other {{count} parties, {maximum} au plus}}.",
         "mediaRequired": "{channel} : une image ou une vidéo est nécessaire.",
         "tooManyHashtags": "{channel} : {count} hashtags, {maximum} au plus.",
         "tooManyMentions": "{channel} : {count} mentions, {maximum} au plus.",
@@ -554,6 +583,26 @@
         "forbiddenCharacters": "{channel} : le texte ne peut pas contenir {characters}."
       },
       "channelDetail": "{handle} sur {platform}"
+    },
+    "Parts": {
+      "legend": "Fil",
+      "hint": "Ajoutez les parties qui suivent la publication. Sur les plateformes qui ont des fils, chacune part en réponse à la précédente, dans l’ordre, et rien n’est envoyé après une partie qui a échoué.",
+      "partTitle": "Partie {position}",
+      "textPlaceholder": "Ce que dit cette partie",
+      "textHint": "Le texte de la partie {position}, pour tous les canaux.",
+      "ownText": "Partie {position} sur {channel}",
+      "ownTextHint": "Ce canal a son propre texte pour la partie {position} : c’est lui qui part sur ce canal, et non le texte pour tous les canaux.",
+      "dropOwnText": "Utiliser le texte pour tous les canaux sur {channel}",
+      "add": "Ajouter une partie",
+      "remove": "Retirer la partie {position}",
+      "moveEarlier": "Monter la partie {position}",
+      "moveLater": "Descendre la partie {position}",
+      "delayLabel": "Attente après la partie précédente",
+      "delay": "{seconds, select, 0 {Aucune : juste après} 60 {1 minute} 300 {5 minutes} 900 {15 minutes} 1800 {30 minutes} 3600 {1 heure} 7200 {2 heures} 21600 {6 heures} 43200 {12 heures} 86400 {1 jour} other {{seconds} secondes}}",
+      "mediaLegend": "Images et vidéos de la partie {position}",
+      "alone": "{channel} : cette plateforme prend une publication seule, sans rien à sa suite. Retirez les parties, ou laissez ce canal de côté : la publication y serait refusée.",
+      "tooMany": "{channel} : {maximum} parties au plus après la première.",
+      "full": "Une publication a au plus {maximum} parties après la première."
     },
     "Options": {
       "section": "Options des plateformes",
@@ -734,6 +783,16 @@
     "newPost": "Nouvelle publication"
   },
   "PostDetail": {
+    "partsTitle": "Parties",
+    "partsLive": "{live} parties en ligne sur {count}.",
+    "partLive": "Partie {position} : en ligne",
+    "partLink": "Partie {position} : la voir sur {platform}",
+    "partNotSent": "Partie {position} : non envoyée",
+    "partsRest": "La renvoyer envoie les parties qui ne sont pas parties, jamais une partie en ligne.",
+    "partsStopped": "Peal ne peut pas envoyer les parties qui ne sont pas parties : il n’a pas de publication à laquelle répondre. Publiez-les sur {platform}, en réponse à la dernière partie en ligne.",
+    "partsCounts": "Ses compteurs sont lus pour la première partie.",
+    "partText": "Partie {position}",
+    "attemptPart": "Partie {position}. ",
     "title": "{status, select, publishing {Publication en cours d’envoi} cancelled {Publication annulée} other {Publication}}",
     "description": "Comment la publication s’est passée sur chacun de ses canaux, tentative par tentative.",
     "scheduledFor": "Programmée le {at, date, medium} à {at, time, short}",
@@ -753,7 +812,7 @@
     "rounds": "Envoyée {count, plural, one {une fois} other {# fois}}",
     "attemptsTitle": "Tentatives",
     "attempt": "{round, plural, =1 {Tentative {attempt}} other {Envoi {round}, tentative {attempt}}}, le {at, date, medium} à {at, time, short} : {result}",
-    "result": "{result, select, published {publiée} unconfirmed {pas de réponse, elle est peut-être partie} contentRejected {la plateforme a refusé son texte ou son format} channelDisconnected {le canal a été déconnecté} channelDisabled {le canal a été désactivé} mediaRemoved {une image ou vidéo a été supprimée} mediaRejected {la plateforme a refusé une image ou vidéo} rateLimited {la plateforme a demandé à Peal d’attendre} tokenExpired {l’autorisation du compte ne fonctionne plus} unavailable {la plateforme était injoignable} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme était épuisée} appBillingLimit {la plateforme refuse l’application de ce serveur tant que son opérateur ne l’a pas réglée} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle} other {{result}}}",
+    "result": "{result, select, published {publiée} unconfirmed {pas de réponse, elle est peut-être partie} contentRejected {la plateforme a refusé son texte ou son format} channelDisconnected {le canal a été déconnecté} channelDisabled {le canal a été désactivé} mediaRemoved {une image ou vidéo a été supprimée} mediaRejected {la plateforme a refusé une image ou vidéo} rateLimited {la plateforme a demandé à Peal d’attendre} tokenExpired {l’autorisation du compte ne fonctionne plus} unavailable {la plateforme était injoignable} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme était épuisée} appBillingLimit {la plateforme refuse l’application de ce serveur tant que son opérateur ne l’a pas réglée} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle} partsNotSent {les parties suivantes ne peuvent pas être envoyées depuis Peal} repliesNotAllowed {X n’a pas laissé l’application de ce serveur publier les parties suivantes en réponse} other {{result}}}",
     "retryAt": "Nouvel essai à {at, time, short}.",
     "noAttempts": "Aucune tentative pour l’instant.",
     "repost": "Republier",
@@ -964,7 +1023,7 @@
       "offlineAccess": "Rester connectée en votre absence, jusqu’à ce que vous la déconnectiez",
       "workspaceRead": "Lire l’espace de travail : publications, canaux, médias et statistiques",
       "workspaceWrite": "Faire ce que votre rôle permet dans l’espace de travail, comme rédiger des brouillons et gérer les médias, sans rien programmer ni publier",
-      "workspacePublish": "Programmer et publier des publications sur vos comptes connectés, où tout le monde peut les voir",
+      "workspacePublish": "Programmer et publier des publications sur vos comptes connectés, et répondre publiquement aux commentaires au nom de ces comptes, où tout le monde peut les voir",
       "other": "Utiliser la permission « {scope} »"
     },
     "device": {
@@ -1004,7 +1063,7 @@
       "allow": "Autoriser",
       "allowing": "Autorisation…",
       "deny": "Refuser",
-      "publish": "L’autoriser à programmer et publier des publications sur vos comptes connectés, où tout le monde peut les voir",
+      "publish": "L’autoriser à programmer et publier des publications sur vos comptes connectés, et à répondre publiquement aux commentaires au nom de ces comptes, où tout le monde peut les voir",
       "publishHint": "{rest, select, drafts {Sans cela, elle peut toujours rédiger des brouillons, que vous relisez et programmez vous-même.} other {Sans cela, elle peut toujours lire l’espace de travail, et rien de plus.}}"
     }
   },
@@ -1022,6 +1081,7 @@
       "PostApprovedLate": "{by, select, visitor {Une personne invitée à relire} application {Une application} other {Un membre}} a approuvé une publication de {workspace} après son heure. Rien n’a été publié en retard : elle est de nouveau un brouillon, toujours approuvé. Donnez-lui une nouvelle date.",
       "PostChangesRequested": "{by, select, visitor {Une personne invitée à relire} application {Une application} other {Un membre}} a demandé des modifications sur une publication de {workspace}. Elle est de nouveau un brouillon.",
       "PostCommented": "{by, select, visitor {Une personne invitée à relire} application {Une application} other {Un membre}} a commenté une publication de {workspace}.",
+      "CommentsReceived": "{count, plural, one {# nouveau commentaire} other {# nouveaux commentaires}} sous une publication de {workspace}.",
       "ChannelReconnectRequired": "{channel} dans {workspace} doit être reconnecté : rien n’y est publié d’ici là.",
       "ChannelReconnectSoon": "{channel} dans {workspace} doit être reconnecté avant le {expiresAt, date, long} : son autorisation ne peut pas être renouvelée.",
       "TrialEnding": "L’essai {plan} de {workspace} prend fin le {endsAt, date, long}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement.",
@@ -1033,8 +1093,8 @@
       "WebhookEndpointDisabled": "{reason, select, gone {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : il a répondu 410 Gone, ce qui demande de ne plus rien lui livrer.} other {Le point de terminaison de webhook de {host} dans {workspace} a été désactivé : toutes les livraisons échouaient depuis {days, number} jours. Corrigez le destinataire, puis réactivez-le.}}",
       "TrialEndingOver": "L’essai {plan} de {workspace} prend fin le {endsAt, date, long}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement. Il dépasse ce que permet l’offre gratuite ({over}) : à partir de ce jour, rien n’est programmé ni publié tant qu’il n’y est pas revenu."
     },
-    "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} other {{reason}}}",
-    "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} webhooks {Ouvrir les webhooks} other {Ouvrir les canaux}}",
+    "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} partsNotSent {ses premières parties sont en ligne, et Peal ne peut pas envoyer les suivantes : il n’a pas de publication à laquelle répondre, car la partie qui les précède a été retrouvée à la main ou n’existe plus sur la plateforme. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur la plateforme, en réponse à la dernière partie en ligne.} repliesNotAllowed {sa première partie est en ligne, et X n’a pas laissé l’application de ce serveur publier les suivantes en réponse : en accès libre-service, une application ne peut répondre qu’à une publication dont l’auteur a mentionné ou cité le compte. Elle ne peut pas être renvoyée depuis Peal : publiez la suite sur X, en réponse à la dernière partie en ligne.} other {{reason}}}",
+    "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} webhooks {Ouvrir les webhooks} inbox {Ouvrir les commentaires} other {Ouvrir les canaux}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # non lue} other {Notifications, # non lues}}",
       "many": "99+",
@@ -1067,6 +1127,7 @@
       "postUnconfirmed": "Une publication est peut-être partie, et doit être vérifiée sur la plateforme",
       "postReview": "Une publication attend mon approbation, ou une publication que je suis est commentée, approuvée ou renvoyée",
       "channelReconnect": "Un canal doit être reconnecté, maintenant ou bientôt",
+      "comments": "Des personnes commentent des publications en ligne",
       "postPublished": "Une publication est partie",
       "postsLegend": "Me prévenir pour",
       "everyPost": "Toutes les publications de mes espaces de travail, pas seulement les miennes",
@@ -1553,6 +1614,10 @@
         "ready": "Un fichier est prêt pour les publications",
         "failed": "Un fichier est refusé ou illisible"
       },
+      "comment": {
+        "received": "Un commentaire est lu sous une publication en ligne",
+        "replied": "Une réponse à un commentaire part de Peal"
+      },
       "webhook": {
         "test": "Événement de test"
       }
@@ -1950,7 +2015,7 @@
       "disabledToReconnect": "Désactivé, à reconnecter"
     },
     "troubleStatus": "{status, select, failed {Échec} other {Non confirmé}}",
-    "reason": "{reason, select, contentRejected {Contenu refusé} channelDisconnected {Canal déconnecté} channelDisabled {Canal désactivé} mediaRemoved {Média supprimé} mediaRejected {Média refusé} missed {Manquée} notPublished {Introuvable après vérification} rateLimited {Limite de débit} tokenExpired {Autorisation expirée} unavailable {Plateforme injoignable} appNotAudited {Publications privées seulement, application non auditée} quotaExceeded {Allocation quotidienne de mises en ligne épuisée} appBillingLimit {Application du serveur non réglée} planLimit {Limite de l’abonnement atteinte} noResponse {Pas de réponse} unreadableResponse {Réponse illisible} interrupted {Interrompue} adapterFailure {Échec pendant l’appel} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {Contenu refusé} channelDisconnected {Canal déconnecté} channelDisabled {Canal désactivé} mediaRemoved {Média supprimé} mediaRejected {Média refusé} missed {Manquée} notPublished {Introuvable après vérification} rateLimited {Limite de débit} tokenExpired {Autorisation expirée} unavailable {Plateforme injoignable} appNotAudited {Publications privées seulement, application non auditée} quotaExceeded {Allocation quotidienne de mises en ligne épuisée} appBillingLimit {Application du serveur non réglée} planLimit {Limite de l’abonnement atteinte} partsNotSent {Suite non envoyée} repliesNotAllowed {Réponses refusées par X} noResponse {Pas de réponse} unreadableResponse {Réponse illisible} interrupted {Interrompue} adapterFailure {Échec pendant l’appel} other {{reason}}}",
     "requests": {
       "title": "Demandes sur les contrats",
       "description": "Les demandes de résiliation ou de rétractation que le formulaire n’a pas pu appliquer seul : aucun contrat trouvé, ou leur auteur n’a pas suivi le lien reçu par e-mail. N’en appliquez une à un espace de travail qu’une fois certain que son auteur est titulaire de ce contrat ; elle prend effet à la date de sa réception, et son auteur en est informé.",
@@ -2128,6 +2193,10 @@
       "wholePost": "Commenter plutôt toute la publication"
     },
     "preview": {
+      "partsLabel": "Les parties qui suivent, envoyées dans l’ordre, en fil :",
+      "part": "Partie {position}",
+      "partDelay": "{seconds, select, 60 {1 minute} 300 {5 minutes} 900 {15 minutes} 1800 {30 minutes} 3600 {1 heure} 7200 {2 heures} 21600 {6 heures} 43200 {12 heures} 86400 {1 jour} other {{seconds} secondes}} après la partie précédente",
+      "partMediaLabel": "Images, vidéos et documents de la partie {position}",
       "title": "La publication sur chaque canal",
       "hint": "Ce que chaque canal recevra. Ce n’est pas la mise en page de la plateforme.",
       "hintSelect": "Ce que chaque canal recevra. Ce n’est pas la mise en page de la plateforme. Sélectionnez des mots pour les commenter.",
@@ -2252,6 +2321,117 @@
       "saveFailed": "Le paramètre n’a pas pu être enregistré.",
       "loadFailed": "Le paramètre n’a pas pu être chargé.",
       "readOnly": "Les propriétaires et les administrateurs le choisissent."
+    }
+  },
+  "Inbox": {
+    "open": "Boîte de réception",
+    "openLabel": "Boîte de réception de {workspace}",
+    "title": "Boîte de réception",
+    "description": "Les commentaires laissés sous les publications de {workspace}, là où elles sont en ligne.",
+    "collected": "Peal lit les commentaires sur {platforms}, pendant {windowDays, number} jours après la mise en ligne d’une publication sauf si la personne qui exploite Peal a fixé une autre fenêtre, et les conserve {retentionDays, number} jours de plus.",
+    "loading": "Chargement des commentaires…",
+    "loadFailed": "Les commentaires n’ont pas pu être chargés.",
+    "retry": "Réessayer",
+    "readOnly": "Vous pouvez lire les commentaires. Y répondre demande la permission de répondre aux commentaires.",
+    "filter": {
+      "legend": "Afficher",
+      "unanswered": "En attente d’une réponse",
+      "channel": "Canal",
+      "allChannels": "Tous les canaux"
+    },
+    "list": {
+      "title": "Publications commentées",
+      "empty": "Aucun commentaire n’a encore été lu.",
+      "emptyFiltered": "Aucune publication ne correspond à ces filtres.",
+      "loadMore": "Charger la suite"
+    },
+    "row": {
+      "thread": "Commentaires sous la publication sur {channel}",
+      "counts": "{unanswered, number} en attente sur {comments, number}",
+      "lastComment": "Dernier commentaire le {at}",
+      "noComment": "Aucun commentaire ne reste sur la plateforme.",
+      "openPost": "Ouvrir la publication",
+      "onPlatform": "Voir la publication sur la plateforme",
+      "ended": "{reason, select, window {Ses commentaires ne sont plus lus : la publication a dépassé les jours pendant lesquels Peal les lit.} disconnected {Ses commentaires ne sont plus lus : son canal a été déconnecté.} unsupported {Ses commentaires ne sont plus lus : Peal n’en lit aucun sur cette plateforme.} missing {Ses commentaires ne sont plus lus : la plateforme n’affiche plus la publication.} other {Ses commentaires ne sont plus lus.}}"
+    },
+    "thread": {
+      "title": "Commentaires",
+      "channel": "Sous la publication sur {channel}, en ligne depuis le {at}.",
+      "back": "Retour à la boîte de réception",
+      "listTitle": "Du plus ancien au plus récent",
+      "empty": "Aucun commentaire sous cette publication.",
+      "notFound": "Ces commentaires n’existent pas, ou ne sont plus conservés."
+    },
+    "comment": {
+      "unknownAuthor": "Quelqu’un",
+      "writtenAt": "Écrit le {at}",
+      "state": "{state, select, new {Nouveau} answered {Répondu} hidden {Masqué} deleted {Supprimé} other {{state}}}",
+      "deleted": "Ce commentaire n’est plus sur la plateforme",
+      "liked": "Aimé",
+      "onPlatform": "Voir le commentaire sur la plateforme",
+      "answers": "Réponses à ce commentaire",
+      "replies": "Réponses envoyées depuis Peal"
+    },
+    "reply": {
+      "from": "Réponse envoyée depuis Peal le {at}",
+      "status": "{status, select, sending {Envoi…} sent {Envoyée} failed {Non envoyée} unconfirmed {À vérifier} withdrawn {Retirée} other {{status}}}",
+      "onPlatform": "Voir la réponse sur la plateforme",
+      "failed": "Rien n’est parti : {reason}",
+      "unconfirmed": "Cette réponse est peut-être sur la plateforme : {reason} Peal ne la renvoie jamais. Vérifiez sur la plateforme, puis dites ce que vous avez trouvé.",
+      "reason": "{reason, select, channelUnavailable {le canal a été déconnecté ou désactivé.} reconnectNeeded {la plateforme refuse l’autorisation du compte. Déconnectez le canal et connectez à nouveau le compte.} rateLimited {la plateforme a continué de refuser les requêtes.} platformUnavailable {la plateforme était injoignable.} commentGone {le commentaire n’est plus sur la plateforme.} refused {la plateforme a refusé la réponse.} notSent {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} noResponse {la requête est partie et aucune réponse n’est venue.} interrupted {Peal s’est arrêté pendant l’appel, et la plateforme n’a pas pu le dire ensuite.} adapterFailure {une erreur de Peal est survenue alors que la requête était peut-être partie.} other {{reason}}}",
+      "withdrawnNote": "Elle a été supprimée de la plateforme.",
+      "confirmSent": "Elle y est",
+      "confirmNotSent": "Elle n’est pas partie",
+      "confirmed": "{sent, select, true {La réponse est enregistrée comme envoyée.} other {La réponse est enregistrée comme non envoyée : le commentaire attend de nouveau une réponse.}}",
+      "withdraw": "Retirer",
+      "withdrawing": "Retrait…",
+      "withdrawTitle": "Retirer cette réponse ?",
+      "withdrawDescription": "La réponse est supprimée de la plateforme. Les personnes qui l’ont déjà lue ont pu la conserver. Cette action est irréversible.",
+      "withdrawn": "La réponse a été retirée."
+    },
+    "box": {
+      "label": "Répondre à {author}",
+      "public": "Toutes les personnes qui voient la publication voient la réponse, envoyée au nom du compte du canal.",
+      "mention": "Sur Mastodon, une réponse n’atteint la personne que si elle la mentionne : elle commencera par {mention}, que le décompte inclut.",
+      "count": "{length, number} sur {maximum, number} {unit, select, utf8Bytes {octets} other {caractères}}",
+      "tooLong": "{over, plural, one {# de trop} other {# de trop}}",
+      "send": "Envoyer",
+      "sending": "Envoi…",
+      "sent": "La réponse est en route.",
+      "pending": "{status, select, sending {Une réponse à ce commentaire est en route. Attendez qu’elle soit partie pour en écrire une autre.} other {Une réponse à ce commentaire est peut-être partie. Dites ce que vous avez trouvé sur la plateforme avant d’en écrire une autre.}}"
+    },
+    "action": {
+      "markAnswered": "Marquer comme répondu",
+      "markWaiting": "Marquer comme en attente",
+      "like": "Aimer",
+      "unlike": "Ne plus aimer",
+      "hide": "Masquer",
+      "show": "Afficher",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer ce commentaire ?",
+      "deleteDescription": "Le commentaire est supprimé de la plateforme, pour tout le monde. Cette action est irréversible.",
+      "cancel": "Annuler",
+      "done": "{action, select, answered {Le commentaire est marqué comme répondu.} waiting {Le commentaire attend de nouveau une réponse.} like {Le commentaire est aimé.} unlike {La mention « J’aime » a été retirée.} hide {Le commentaire est masqué.} unhide {Le commentaire est de nouveau affiché.} delete {Le commentaire a été supprimé.} other {C’est fait.}}"
+    },
+    "abilities": {
+      "reconnect": "L’autorisation du compte ne permet pas de répondre. Pour répondre aux commentaires ici, déconnectez le canal et connectez à nouveau le compte.",
+      "channels": "Ouvrir les canaux",
+      "unsupported": "Répondre n’est pas possible ici : la plateforme ne le propose pas à ce compte, ou Peal n’y envoie pas encore de réponses.",
+      "disconnected": "Répondre n’est pas possible ici : le canal a été déconnecté."
+    },
+    "errors": {
+      "forbidden": "Vous n’avez pas le droit de faire cela.",
+      "threadNotFound": "Ces commentaires n’existent plus.",
+      "commentNotFound": "Ce commentaire n’existe plus.",
+      "commentGone": "Le commentaire n’est plus sur sa plateforme : il ne peut être ni répondu ni modéré.",
+      "replyNotFound": "Cette réponse n’existe plus.",
+      "replyPending": "Une réponse à ce commentaire est en route, ou est peut-être partie. Réglez-la avant d’en écrire une autre, pour que la même réponse n’apparaisse jamais deux fois.",
+      "replyEmpty": "La réponse ne dit rien.",
+      "replyTooLong": "La réponse est trop longue : {length, number} là où la plateforme en accepte {maximum, number}, comptés comme elle compte. Rien n’a été envoyé.",
+      "unavailable": "{standing, select, reconnect {L’autorisation du compte ne le permet pas. Connectez à nouveau le compte depuis la page Canaux, sans le déconnecter : le canal reste, avec son historique.} other {Ce n’est pas possible sur ce canal : sa plateforme ne le propose pas au compte, ou Peal ne le fait pas encore là-bas.}}",
+      "actionFailed": "La plateforme ne l’a pas fait, et rien n’a changé : {reason, select, rateLimited {elle demande de ralentir. Réessayez dans un instant.} platformUnavailable {elle était injoignable. Réessayez plus tard.} reconnectNeeded {elle refuse l’autorisation du compte. Déconnectez le canal et connectez à nouveau le compte.} channelUnavailable {le canal a été déconnecté ou désactivé.} commentGone {le commentaire n’y est plus.} refused {elle a refusé.} other {{reason}}}",
+      "statusConflict": "{status, select, sending {La réponse est encore en route.} sent {La réponse a déjà été envoyée.} failed {La réponse n’est pas partie.} unconfirmed {La réponse doit d’abord être vérifiée sur la plateforme.} withdrawn {La réponse a déjà été retirée.} other {La réponse n’est pas dans un état qui le permet.}}",
+      "unknown": "Une erreur est survenue. Réessayez."
     }
   }
 }

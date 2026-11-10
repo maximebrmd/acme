@@ -2,6 +2,7 @@ import { Array as Arr, Effect } from "effect";
 
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { MediaFile } from "#publishing/domain/media-file.ts";
+import { shownMedia } from "#publishing/domain/post-content.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
@@ -49,7 +50,8 @@ export const channelsFor = Effect.fn("Publishing.channelsFor")(
 );
 
 /**
- * The files of the media the content shows, in its order. Fails with
+ * The files of the media the content shows in any of its parts, each once,
+ * in its order. Fails with
  * UnknownMedia when it shows media the actor's posts may not: another
  * workspace's, or media that is not ready.
  */
@@ -57,7 +59,7 @@ export const mediaFor = Effect.fn("Publishing.mediaFor")(function* mediaFor(
   actor: Actor,
   content: PostContent
 ) {
-  const requested = content.media.map(({ mediaId }) => mediaId);
+  const requested = shownMedia(content).map(({ mediaId }) => mediaId);
 
   if (requested.length === 0) {
     const none: readonly MediaFile[] = [];

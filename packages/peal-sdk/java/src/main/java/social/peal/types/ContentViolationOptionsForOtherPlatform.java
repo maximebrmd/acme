@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 import social.peal.core.ObjectMappers;
 
@@ -21,6 +23,8 @@ import social.peal.core.ObjectMappers;
 public final class ContentViolationOptionsForOtherPlatform {
     private final String channelId;
 
+    private final Optional<Integer> part;
+
     private final Platform platform;
 
     private final Platform optionsPlatform;
@@ -28,8 +32,13 @@ public final class ContentViolationOptionsForOtherPlatform {
     private final Map<String, Object> additionalProperties;
 
     private ContentViolationOptionsForOtherPlatform(
-            String channelId, Platform platform, Platform optionsPlatform, Map<String, Object> additionalProperties) {
+            String channelId,
+            Optional<Integer> part,
+            Platform platform,
+            Platform optionsPlatform,
+            Map<String, Object> additionalProperties) {
         this.channelId = channelId;
+        this.part = part;
         this.platform = platform;
         this.optionsPlatform = optionsPlatform;
         this.additionalProperties = additionalProperties;
@@ -38,6 +47,11 @@ public final class ContentViolationOptionsForOtherPlatform {
     @JsonProperty("channelId")
     public String getChannelId() {
         return channelId;
+    }
+
+    @JsonProperty("part")
+    public Optional<Integer> getPart() {
+        return part;
     }
 
     @JsonProperty("platform")
@@ -64,13 +78,14 @@ public final class ContentViolationOptionsForOtherPlatform {
 
     private boolean equalTo(ContentViolationOptionsForOtherPlatform other) {
         return channelId.equals(other.channelId)
+                && part.equals(other.part)
                 && platform.equals(other.platform)
                 && optionsPlatform.equals(other.optionsPlatform);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.channelId, this.platform, this.optionsPlatform);
+        return Objects.hash(this.channelId, this.part, this.platform, this.optionsPlatform);
     }
 
     @java.lang.Override
@@ -102,6 +117,10 @@ public final class ContentViolationOptionsForOtherPlatform {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage part(Optional<Integer> part);
+
+        _FinalStage part(Integer part);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -112,6 +131,8 @@ public final class ContentViolationOptionsForOtherPlatform {
 
         private Platform optionsPlatform;
 
+        private Optional<Integer> part = Optional.empty();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -119,6 +140,7 @@ public final class ContentViolationOptionsForOtherPlatform {
         @java.lang.Override
         public Builder from(ContentViolationOptionsForOtherPlatform other) {
             channelId(other.getChannelId());
+            part(other.getPart());
             platform(other.getPlatform());
             optionsPlatform(other.getOptionsPlatform());
             return this;
@@ -146,14 +168,28 @@ public final class ContentViolationOptionsForOtherPlatform {
         }
 
         @java.lang.Override
+        public _FinalStage part(Integer part) {
+            this.part = Optional.ofNullable(part);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "part", nulls = Nulls.SKIP)
+        public _FinalStage part(Optional<Integer> part) {
+            this.part = part;
+            return this;
+        }
+
+        @java.lang.Override
         public ContentViolationOptionsForOtherPlatform build() {
             return new ContentViolationOptionsForOtherPlatform(
-                    channelId, platform, optionsPlatform, additionalProperties);
+                    channelId, part, platform, optionsPlatform, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("channelId")
+                    || key.equalsIgnoreCase("part")
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("optionsPlatform")) {
                 return;

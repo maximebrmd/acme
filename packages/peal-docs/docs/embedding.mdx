@@ -2,7 +2,7 @@
 title: Embedding Peal
 description: Use Peal inside your own product. Give each of your customers a workspace through the API, let them connect their social accounts on a hosted page without a Peal account, post for them, and hear what happened.
 sidebar:
-  order: 15
+  order: 17
 ---
 
 A product of yours can publish to social platforms for its own customers through Peal, without any of them having a Peal account or seeing Peal's app. You hold a **partner account**; each of your customers is a **workspace** it owns; your backend acts in those workspaces with a **partner key**; your customers connect their social accounts on a **hosted page** you send them to; and Peal tells your server what happens through [webhooks](/webhooks).
@@ -36,7 +36,7 @@ A partner key starts with `peal_partner_`, and is sent as `Authorization: Bearer
 | `workspaces:write`  | Create them, rename them, change their external id    |
 | `workspaces:delete` | Delete one, with everything in it                     |
 
-Inside each workspace it owns, a partner key holds the [permissions](/scheduling#roles) you ticked, among those a product needs for its customers: `channel:*`, `media:*`, `post:*`, `analytics:read`, `assistant:use`, `webhook:*`, `billing:read` and `activity:read`, which reads the workspace's [activity log](/settings#activity): what your key asked to change there, and the accounts connected through connect links. It never holds what belongs to people: members, invitations, API keys, billing changes.
+Inside each workspace it owns, a partner key holds the [permissions](/scheduling#roles) you ticked, among those a product needs for its customers: `channel:*`, `media:*`, `post:*`, `analytics:read`, `engagement:read` and `engagement:reply` (the [comments](/inbox) under a customer's posts, and answering them in public as its account: other people wrote those comments, so give a key these only if your product shows or answers them), `assistant:use`, `webhook:*`, `billing:read` and `activity:read`, which reads the workspace's [activity log](/settings#activity): what your key asked to change there, and the accounts connected through connect links. It never holds what belongs to people: members, invitations, API keys, billing changes.
 
 ### What a partner key reaches [#isolation]
 

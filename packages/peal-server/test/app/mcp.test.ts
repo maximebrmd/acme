@@ -236,10 +236,13 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
         // Every tool is listed; those that change something refuse.
         assert.deepStrictEqual(results.names, [
+          "analytics_dashboard",
           "analytics_summary",
           "approve_post",
           "await_post",
           "cancel_post",
+          "channel_analytics",
+          "confirm_comment_reply",
           "confirm_target",
           "create_connect_link",
           "create_draft",
@@ -250,6 +253,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "find_tools",
           "get_billing",
           "get_channel_capabilities",
+          "get_comment_thread",
           "get_connect_link",
           "get_partner_account",
           "get_post",
@@ -260,6 +264,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "list_activity",
           "list_approvals",
           "list_channels",
+          "list_comment_threads",
           "list_connect_links",
           "list_drafts",
           "list_invitations",
@@ -271,8 +276,11 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "list_webhook_deliveries",
           "list_webhooks",
           "list_workspaces",
+          "mark_comment_answered",
+          "moderate_comment",
           "post_analytics",
           "publish_post",
+          "reply_to_comment",
           "repost_target",
           "request_changes",
           "reschedule_post",
@@ -285,6 +293,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           "update_draft",
           "validate_post",
           "whoami",
+          "withdraw_comment_reply",
         ]);
         assert.strictEqual(results.whoami.user.id, fixture.owner.id);
         assert.strictEqual(results.whoami.workspace.id, fixture.studio);

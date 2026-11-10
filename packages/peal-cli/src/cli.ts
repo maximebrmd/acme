@@ -11,6 +11,7 @@ import { channels } from "#commands/channels.ts";
 import { doctor } from "#commands/doctor.ts";
 import { drafts } from "#commands/drafts.ts";
 import { health } from "#commands/health.ts";
+import { inbox } from "#commands/inbox.ts";
 import { invitations } from "#commands/invitations.ts";
 import { links } from "#commands/links.ts";
 import { login } from "#commands/login.ts";
@@ -51,6 +52,7 @@ export const cli = peal.pipe(
     media,
     analytics,
     billing,
+    inbox,
     members,
     invitations,
     webhooks,

@@ -127,6 +127,27 @@ export const OptionConstraintSchema = Schema.Union([
 
 export type OptionConstraint = typeof OptionConstraintSchema.Type;
 
+/** The counts of a post Peal reads, where the platform gives them. */
+export const postCountNames = [
+  "likes",
+  "reposts",
+  "replies",
+  "quotes",
+  "impressions",
+  "clicks",
+  "reach",
+  "saves",
+] as const;
+
+/** The numbers of an account Peal reads, where the platform gives them. */
+export const accountNumberNames = [
+  "followers",
+  "following",
+  "posts",
+  "views",
+  "reach",
+] as const;
+
 /**
  * What a post on a platform may hold, as far as Peal checks it before the
  * post goes out; the platform may refuse more.
@@ -135,7 +156,25 @@ export const PlatformCapabilitiesSchema = Schema.Struct({
   // Whether Peal reads the counts of each post published there: for a
   // platform, on any of its channels; for a channel, on that one (a LinkedIn
   // company page, not a profile).
-  analytics: Schema.Struct({ perPost: Schema.Boolean }),
+  // `postCounts` are the counts Peal reads of each post there, and
+  // `accountNumbers` those of the account, day by day: both empty where it
+  // reads none. A number left out is one the platform does not give.
+  analytics: Schema.Struct({
+    accountNumbers: Schema.Array(Schema.Literals(accountNumberNames)),
+    perPost: Schema.Boolean,
+    postCounts: Schema.Array(Schema.Literals(postCountNames)),
+  }),
+  // The parts a post may have there after its first (`content.followUps`):
+  // replies in a `thread`, each to the part before it, or `comment`s under
+  // the post, `maxCount` at most. Each follows the rules of a post there,
+  // text and media. Null: the platform takes a post alone, and a post with
+  // more parts is refused there when it is scheduled (`tooManyParts`).
+  followUps: Schema.NullOr(
+    Schema.Struct({
+      kind: Schema.Literals(["thread", "comment"]),
+      maxCount: Schema.Int,
+    }).annotate({ identifier: "FollowUpCapabilities" })
+  ),
   // What the platform tells about an account, for the options that refer
   // to it.
   lookups: Schema.Array(LookupDescriptionSchema),

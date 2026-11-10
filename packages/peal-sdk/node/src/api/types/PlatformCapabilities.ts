@@ -4,6 +4,7 @@ import * as Peal from "../index.js";
 
 export interface PlatformCapabilities {
     analytics: PlatformCapabilities.Analytics;
+    followUps: Peal.FollowUpCapabilities | null;
     lookups: Peal.LookupDescription[];
     media: Peal.MediaCapabilities;
     options: PlatformCapabilities.Options;
@@ -14,7 +15,40 @@ export interface PlatformCapabilities {
 
 export namespace PlatformCapabilities {
     export interface Analytics {
+        accountNumbers: Analytics.AccountNumbers.Item[];
         perPost: boolean;
+        postCounts: Analytics.PostCounts.Item[];
+    }
+
+    export namespace Analytics {
+        export type AccountNumbers = AccountNumbers.Item[];
+
+        export namespace AccountNumbers {
+            export const Item = {
+                    Followers: "followers",
+                    Following: "following",
+                    Posts: "posts",
+                    Views: "views",
+                    Reach: "reach"
+                } as const;
+            export type Item = typeof Item[keyof typeof Item];
+        }
+
+        export type PostCounts = PostCounts.Item[];
+
+        export namespace PostCounts {
+            export const Item = {
+                    Likes: "likes",
+                    Reposts: "reposts",
+                    Replies: "replies",
+                    Quotes: "quotes",
+                    Impressions: "impressions",
+                    Clicks: "clicks",
+                    Reach: "reach",
+                    Saves: "saves"
+                } as const;
+            export type Item = typeof Item[keyof typeof Item];
+        }
     }
 
     export interface Options {

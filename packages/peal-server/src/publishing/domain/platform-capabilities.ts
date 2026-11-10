@@ -32,6 +32,14 @@ export const capabilitiesVersion = 1;
  * reads each post's counts there.
  */
 export interface PlatformCapabilities {
+  /**
+   * The numbers Peal reads there, by name: each post's counts, and the
+   * account's numbers. Empty where it reads none.
+   */
+  readonly counted: {
+    readonly account: readonly string[];
+    readonly post: readonly string[];
+  };
   /** Peal reads the counts of each post published there. */
   readonly countsPosts: boolean;
   readonly lookups: readonly OptionLookup[];
@@ -99,8 +107,21 @@ export interface ChannelCapabilities {
   readonly capabilities: PlatformCapabilities;
 }
 
+// The platform's rules but for its later parts, which it then takes none
+// of: `followUps` left out.
+const withoutParts = ({
+  followUps: _followUps,
+  ...rules
+}: PlatformRules): PlatformRules => rules;
+
+// Where Peal reads no number.
+const nothingCounted: PlatformCapabilities["counted"] = {
+  account: [],
+  post: [],
+};
+
 /**
- * The platform's capabilities. `countsPosts` comes from the analytics
+ * The platform's capabilities. `countsPosts` and `counted` come from the analytics
  * context, which knows where it reads counts. A platform's own are those of
  * any of its channels: on LinkedIn, the counts and the lookup only company
  * pages have are there. With `connection`, they are a channel's that came
@@ -110,11 +131,17 @@ export interface ChannelCapabilities {
 export const capabilitiesOf = (
   platform: Platform,
   countsPosts: boolean,
-  connection?: Option.Option<ChannelConnection>
+  connection?: Option.Option<ChannelConnection>,
+  counted: PlatformCapabilities["counted"] = nothingCounted,
+  // False where the operator turned the platform's later parts off.
+  takesParts = true
 ): PlatformCapabilities => {
-  const rules = platformRules[platform];
+  const rules = takesParts
+    ? platformRules[platform]
+    : withoutParts(platformRules[platform]);
 
   return {
+    counted,
     countsPosts,
     lookups: optionLookupsOn(platform, connection),
     maxAltTextLength: Math.min(
@@ -133,6 +160,16 @@ export const capabilitiesOf = (
 
 /** Every platform's capabilities, in the platforms' order. */
 export const everyCapabilities = (
-  counted: (platform: Platform) => boolean
+  counted: (platform: Platform) => boolean,
+  numbers?: (platform: Platform) => PlatformCapabilities["counted"],
+  takesParts: (platform: Platform) => boolean = () => true
 ): readonly PlatformCapabilities[] =>
-  platforms.map((platform) => capabilitiesOf(platform, counted(platform)));
+  platforms.map((platform) =>
+    capabilitiesOf(
+      platform,
+      counted(platform),
+      undefined,
+      numbers?.(platform),
+      takesParts(platform)
+    )
+  );

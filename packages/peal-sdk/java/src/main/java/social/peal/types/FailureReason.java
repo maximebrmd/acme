@@ -15,9 +15,14 @@ public final class FailureReason {
 
     public static final FailureReason UNAVAILABLE = new FailureReason(Value.UNAVAILABLE, "unavailable");
 
+    public static final FailureReason REPLIES_NOT_ALLOWED =
+            new FailureReason(Value.REPLIES_NOT_ALLOWED, "repliesNotAllowed");
+
     public static final FailureReason MISSED = new FailureReason(Value.MISSED, "missed");
 
     public static final FailureReason MEDIA_REJECTED = new FailureReason(Value.MEDIA_REJECTED, "mediaRejected");
+
+    public static final FailureReason PARTS_NOT_SENT = new FailureReason(Value.PARTS_NOT_SENT, "partsNotSent");
 
     public static final FailureReason TOKEN_EXPIRED = new FailureReason(Value.TOKEN_EXPIRED, "tokenExpired");
 
@@ -76,10 +81,14 @@ public final class FailureReason {
                 return visitor.visitMediaRemoved();
             case UNAVAILABLE:
                 return visitor.visitUnavailable();
+            case REPLIES_NOT_ALLOWED:
+                return visitor.visitRepliesNotAllowed();
             case MISSED:
                 return visitor.visitMissed();
             case MEDIA_REJECTED:
                 return visitor.visitMediaRejected();
+            case PARTS_NOT_SENT:
+                return visitor.visitPartsNotSent();
             case TOKEN_EXPIRED:
                 return visitor.visitTokenExpired();
             case APP_NOT_AUDITED:
@@ -113,10 +122,14 @@ public final class FailureReason {
                 return MEDIA_REMOVED;
             case "unavailable":
                 return UNAVAILABLE;
+            case "repliesNotAllowed":
+                return REPLIES_NOT_ALLOWED;
             case "missed":
                 return MISSED;
             case "mediaRejected":
                 return MEDIA_REJECTED;
+            case "partsNotSent":
+                return PARTS_NOT_SENT;
             case "tokenExpired":
                 return TOKEN_EXPIRED;
             case "appNotAudited":
@@ -167,6 +180,10 @@ public final class FailureReason {
 
         PLAN_LIMIT,
 
+        PARTS_NOT_SENT,
+
+        REPLIES_NOT_ALLOWED,
+
         UNKNOWN
     }
 
@@ -198,6 +215,10 @@ public final class FailureReason {
         T visitAppBillingLimit();
 
         T visitPlanLimit();
+
+        T visitPartsNotSent();
+
+        T visitRepliesNotAllowed();
 
         T visitUnknown(String unknownType);
     }

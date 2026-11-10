@@ -1,12 +1,28 @@
-import { Config, Console, DateTime, Effect, Option } from "effect";
+import {
+  Config,
+  Console,
+  DateTime,
+  Effect,
+  FileSystem,
+  Option,
+  Path,
+  Stream,
+} from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
+  AnalyticsDashboardSchema,
   AnalyticsSummarySchema,
   CalendarDaySchema,
+  ChannelSeriesSchema,
   countedPlatforms,
   PostAnalyticsSchema,
 } from "peal-contract";
-import type { AnalyticsSummary, MetricTotals } from "peal-contract";
+import type {
+  AnalyticsSummary,
+  DashboardTotals,
+  FollowerChange,
+  MetricTotals,
+} from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
@@ -217,6 +233,9 @@ const post = Command.make(
           ["  Replies", String(target.latest.replies)],
           ["  Quotes", count(target.latest.quotes)],
           ["  Impressions", count(target.latest.impressions)],
+          ["  Reach", count(target.latest.reach)],
+          ["  Clicks", count(target.latest.clicks)],
+          ["  Saves", count(target.latest.saves)],
         ])) {
           yield* Console.log(line);
         }
@@ -229,7 +248,329 @@ const post = Command.make(
   )
 );
 
+// The range a command asks for: --days, or --from and --to; 30 days
+// unless said.
+const rangeFlags = {
+  days: Flag.Literals("days", ["7", "30", "90"]).pipe(
+    Flag.withDescription(
+      "The last 7, 30 or 90 days, today included. Defaults to 30 unless --from and --to are given."
+    ),
+    Flag.optional
+  ),
+  from: day("from", "The first day, included, with --to."),
+  timeZone: timeZoneFlag,
+  to: day("to", "The last day, included, with --from."),
+};
+
+const periods = { "30": 30, "7": 7, "90": 90 } as const;
+
+const rangeOf = (input: {
+  readonly days: Option.Option<keyof typeof periods>;
+  readonly from: Option.Option<string>;
+  readonly timeZone: string;
+  readonly to: Option.Option<string>;
+}) => {
+  const between = Option.all({ from: input.from, to: input.to });
+  const dated = Option.isSome(input.from) || Option.isSome(input.to);
+
+  if (
+    !isZoneName(input.timeZone) ||
+    Option.isNone(DateTime.zoneMakeNamed(input.timeZone))
+  ) {
+    return Effect.fail(
+      new Refused({
+        reason: `${input.timeZone} is not a time zone Peal knows: give an IANA zone, such as Europe/Paris.`,
+      })
+    );
+  }
+
+  if (Option.isSome(between) && Option.isNone(input.days)) {
+    return Effect.succeed({ ...between.value, timeZone: input.timeZone });
+  }
+
+  return dated
+    ? Effect.fail(
+        new Refused({
+          reason: "Give --days, or --from and --to together, not both.",
+        })
+      )
+    : Effect.succeed({
+        days: periods[Option.getOrElse(input.days, () => "30" as const)],
+        timeZone: input.timeZone,
+      });
+};
+
+// A change against the range before: +6, -2, or – where either is unknown.
+const change = (now: number | null, before: number | null): string => {
+  if (now === null || before === null) {
+    return "–";
+  }
+
+  const difference = now - before;
+
+  return difference > 0 ? `+${String(difference)}` : String(difference);
+};
+
+const signed = (value: number | null): string =>
+  value === null ? "–" : change(value, 0);
+
+const comparisonLines = (
+  totals: DashboardTotals,
+  // None when the range before is not all kept: no change is shown.
+  previous: DashboardTotals | undefined,
+  followers: FollowerChange
+): string[] => {
+  const was = (metric: keyof DashboardTotals) =>
+    previous === undefined ? null : previous[metric];
+
+  return columns([
+    ["  Posts", String(totals.posts), change(totals.posts, was("posts"))],
+    ["  Likes", String(totals.likes), change(totals.likes, was("likes"))],
+    [
+      "  Reposts",
+      String(totals.reposts),
+      change(totals.reposts, was("reposts")),
+    ],
+    [
+      "  Replies",
+      String(totals.replies),
+      change(totals.replies, was("replies")),
+    ],
+    ["  Quotes", count(totals.quotes), change(totals.quotes, was("quotes"))],
+    [
+      "  Impressions",
+      count(totals.impressions),
+      change(totals.impressions, was("impressions")),
+    ],
+    ["  Reach", count(totals.reach), change(totals.reach, was("reach"))],
+    ["  Clicks", count(totals.clicks), change(totals.clicks, was("clicks"))],
+    ["  Saves", count(totals.saves), change(totals.saves, was("saves"))],
+    [
+      "  Engagement",
+      String(totals.engagement),
+      change(totals.engagement, was("engagement")),
+    ],
+    ["  Followers", count(followers.current), signed(followers.gained)],
+  ]);
+};
+
+const dashboard = Command.make(
+  "dashboard",
+  { ...rangeFlags, json: jsonFlag, workspace: workspaceFlag },
+  Effect.fn("analytics.dashboard")(function* dashboard(input) {
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+    const query = yield* rangeOf(input);
+
+    const found = yield* client.analytics
+      .dashboard({ params: { workspaceId: workspace.id }, query })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(AnalyticsDashboardSchema, found);
+
+      return;
+    }
+
+    const names = yield* channelNames(client, workspace.id);
+
+    yield* Console.log(
+      `${workspace.name}, from ${found.from} to ${found.to} (${found.timeZone}), against ${found.previous.from} to ${found.previous.to}:`
+    );
+
+    for (const line of comparisonLines(
+      found.totals,
+      found.previousKept ? found.previousTotals : undefined,
+      found.followers
+    )) {
+      yield* Console.log(line);
+    }
+
+    if (!found.previousKept) {
+      yield* Console.log(
+        "  No change is shown: a platform's terms keep its figures for less than the range before goes back."
+      );
+    }
+
+    if (found.channels.length > 0) {
+      yield* Console.log("By channel:");
+
+      for (const line of columns(
+        found.channels.map((channel) => [
+          `  ${named(names, channel.channelId)}`,
+          `${String(channel.totals.posts)} posts`,
+          `${String(channel.totals.engagement)} interactions (${change(channel.totals.engagement, channel.previousKept ? channel.previousTotals.engagement : null)})`,
+          `${count(channel.followers.current)} followers (${signed(channel.followers.gained)})`,
+        ])
+      )) {
+        yield* Console.log(line);
+      }
+    }
+
+    if (found.topPosts.length > 0) {
+      yield* Console.log("Top posts:");
+
+      for (const line of columns(
+        found.topPosts.map((top) => [
+          `  ${top.postId}`,
+          named(names, top.channelId),
+          `${String(top.engagement)} interactions`,
+          top.permalink ?? "",
+        ])
+      )) {
+        yield* Console.log(line);
+      }
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "Show the workspace's analytics over a range beside the range before it: totals, followers, each channel, and the posts people did the most with. A dash is a number the platform does not give."
+  )
+);
+
+const channel = Command.make(
+  "channel",
+  {
+    ...rangeFlags,
+    channelId: Argument.String("channel-id").pipe(
+      Argument.withDescription(
+        "The channel, as peal channels list shows its id."
+      )
+    ),
+    json: jsonFlag,
+    workspace: workspaceFlag,
+  },
+  Effect.fn("analytics.channel")(function* channel(input) {
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+    const query = yield* rangeOf(input);
+
+    const found = yield* client.analytics
+      .channel({
+        params: { channelId: input.channelId, workspaceId: workspace.id },
+        query,
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (input.json) {
+      yield* printJson(ChannelSeriesSchema, found);
+
+      return;
+    }
+
+    const names = yield* channelNames(client, workspace.id);
+
+    yield* Console.log(
+      `${named(names, found.channelId)}, from ${found.from} to ${found.to} (${found.timeZone}):`
+    );
+    yield* Console.log(
+      `Followers: ${count(found.followers.current)} (${signed(found.followers.gained)})`
+    );
+
+    for (const line of columns([
+      ["  Day", "Followers", "Following", "Views", "Reach", "Interactions"],
+      ...found.days.map((each) => [
+        `  ${each.date}`,
+        count(each.followers),
+        count(each.following),
+        count(each.views),
+        count(each.reach),
+        String(each.likes + each.reposts + each.replies + each.quotes),
+      ]),
+    ])) {
+      yield* Console.log(line);
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "Show one channel day by day: its followers as Peal read them each day, the views and reach its platform counted, and what its posts gained."
+  )
+);
+
+const exportFile = Command.make(
+  "export",
+  {
+    ...rangeFlags,
+    format: Flag.Literals("format", ["csv", "json"]).pipe(
+      Flag.withDescription(
+        "csv (the default), or json: one JSON object a line."
+      ),
+      Flag.withDefault("csv" as const)
+    ),
+    kind: Argument.Literals("kind", ["posts", "accounts"]).pipe(
+      Argument.withDescription(
+        "posts: each post of the range with its counts. accounts: each channel's account, day by day."
+      )
+    ),
+    output: Flag.String("output").pipe(
+      Flag.withAlias("o"),
+      Flag.withMetavar("<file>"),
+      Flag.withDescription("The file to save to. One that exists is kept.")
+    ),
+    workspace: workspaceFlag,
+  },
+  Effect.fn("analytics.export")(function* exportFile(input) {
+    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+    const fs = yield* FileSystem.FileSystem;
+    const path = yield* Path.Path;
+    const query = yield* rangeOf(input);
+    const file = path.resolve(input.output);
+
+    const cannotSave = (failure: { readonly message: string }) =>
+      new Refused({ reason: `Cannot save ${file} (${failure.message}).` });
+
+    if (yield* fs.exists(file).pipe(Effect.mapError(cannotSave))) {
+      yield* new Refused({
+        reason: `${file} exists already: give another --output.`,
+      });
+    }
+
+    const rows = yield* client.analytics
+      .export({
+        params: { workspaceId: workspace.id },
+        query: { ...query, format: input.format, kind: input.kind },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    // Written as it comes, beside the file, to one made for it alone:
+    // never through a link, nor over a file made since it was checked. The
+    // file itself appears only once every row came: an export cut off on
+    // the way leaves nothing that looks complete.
+    const partial = `${file}.partial`;
+
+    const discard = fs.remove(partial).pipe(Effect.catch(() => Effect.void));
+
+    yield* rows.pipe(
+      Stream.run(fs.sink(partial, { flag: "wx" })),
+      Effect.catchTags({
+        HttpClientError: (failure) =>
+          discard.pipe(
+            Effect.andThen(
+              Effect.fail(
+                new Refused({
+                  reason: `The export was cut off before its end (${failure.message}): nothing was saved. Run the command again.`,
+                })
+              )
+            )
+          ),
+        PlatformError: (failure) =>
+          discard.pipe(Effect.andThen(Effect.fail(cannotSave(failure)))),
+      })
+    );
+
+    yield* fs
+      .link(partial, file)
+      .pipe(Effect.mapError(cannotSave), Effect.ensuring(discard));
+
+    yield* Console.log(`Saved to ${file}.`);
+  })
+).pipe(
+  Command.withDescription(
+    "Save the workspace's analytics as a file: each post of a range with its counts, or each channel's account day by day."
+  )
+);
+
 export const analytics = Command.make("analytics").pipe(
-  Command.withDescription("How a workspace's posts did on their platforms."),
-  Command.withSubcommands([summary, post])
+  Command.withDescription(
+    "How a workspace's posts and accounts did on their platforms."
+  ),
+  Command.withSubcommands([summary, dashboard, channel, exportFile, post])
 );

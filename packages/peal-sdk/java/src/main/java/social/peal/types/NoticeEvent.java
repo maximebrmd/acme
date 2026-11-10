@@ -54,6 +54,10 @@ public final class NoticeEvent {
         return new NoticeEvent(new PostCommentedValue(value));
     }
 
+    public static NoticeEvent commentsReceived(NoticeEventCommentsReceived value) {
+        return new NoticeEvent(new CommentsReceivedValue(value));
+    }
+
     public static NoticeEvent channelReconnectRequired(NoticeEventChannelReconnectRequired value) {
         return new NoticeEvent(new ChannelReconnectRequiredValue(value));
     }
@@ -112,6 +116,10 @@ public final class NoticeEvent {
 
     public boolean isPostCommented() {
         return value instanceof PostCommentedValue;
+    }
+
+    public boolean isCommentsReceived() {
+        return value instanceof CommentsReceivedValue;
     }
 
     public boolean isChannelReconnectRequired() {
@@ -195,6 +203,13 @@ public final class NoticeEvent {
     public Optional<NoticeEventPostCommented> getPostCommented() {
         if (isPostCommented()) {
             return Optional.of(((PostCommentedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventCommentsReceived> getCommentsReceived() {
+        if (isCommentsReceived()) {
+            return Optional.of(((CommentsReceivedValue) value).value);
         }
         return Optional.empty();
     }
@@ -298,6 +313,8 @@ public final class NoticeEvent {
 
         T visitPostCommented(NoticeEventPostCommented postCommented);
 
+        T visitCommentsReceived(NoticeEventCommentsReceived commentsReceived);
+
         T visitChannelReconnectRequired(NoticeEventChannelReconnectRequired channelReconnectRequired);
 
         T visitChannelReconnectSoon(NoticeEventChannelReconnectSoon channelReconnectSoon);
@@ -326,6 +343,7 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(PostApprovedValue.class),
         @JsonSubTypes.Type(PostChangesRequestedValue.class),
         @JsonSubTypes.Type(PostCommentedValue.class),
+        @JsonSubTypes.Type(CommentsReceivedValue.class),
         @JsonSubTypes.Type(ChannelReconnectRequiredValue.class),
         @JsonSubTypes.Type(ChannelReconnectSoonValue.class),
         @JsonSubTypes.Type(SubscriptionStartedValue.class),
@@ -606,6 +624,46 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(PostCommentedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("CommentsReceived")
+    @JsonIgnoreProperties("_tag")
+    private static final class CommentsReceivedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventCommentsReceived value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private CommentsReceivedValue() {}
+
+        private CommentsReceivedValue(NoticeEventCommentsReceived value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitCommentsReceived(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof CommentsReceivedValue && equalTo((CommentsReceivedValue) other);
+        }
+
+        private boolean equalTo(CommentsReceivedValue other) {
             return value.equals(other.value);
         }
 

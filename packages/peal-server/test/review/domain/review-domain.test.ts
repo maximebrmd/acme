@@ -137,6 +137,16 @@ describe("what people type", () => {
 
   it("refuses an empty or oversized comment", () => {
     expect(commentText(" \n\u0000 ")).toStrictEqual(Option.none());
+
+    // Half a surrogate pair is no character: what is kept is well formed.
+    const lone = String.fromCodePoint(0xd8_00);
+
+    expect(
+      Option.getOrThrow(commentText(`Fine${lone}`)).isWellFormed()
+    ).toBeTruthy();
+    expect(
+      Option.getOrThrow(visitorName(`Ada${lone}`)).isWellFormed()
+    ).toBeTruthy();
     expect(commentText("a".repeat(maxCommentLength + 1))).toStrictEqual(
       Option.none()
     );

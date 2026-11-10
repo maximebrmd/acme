@@ -3,7 +3,10 @@
 import typing
 
 import pydantic
+import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
+from ..core.serialization import FieldMetadata
+from .follow_up_capabilities import FollowUpCapabilities
 from .lookup_description import LookupDescription
 from .media_capabilities import MediaCapabilities
 from .platform import Platform
@@ -14,6 +17,9 @@ from .text_capabilities import TextCapabilities
 
 class PlatformCapabilities(UniversalBaseModel):
     analytics: PlatformCapabilitiesAnalytics
+    follow_ups: typing_extensions.Annotated[
+        typing.Optional[FollowUpCapabilities], FieldMetadata(alias="followUps"), pydantic.Field(alias="followUps")
+    ] = None
     lookups: typing.List[LookupDescription]
     media: MediaCapabilities
     options: PlatformCapabilitiesOptions

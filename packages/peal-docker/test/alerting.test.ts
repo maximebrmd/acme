@@ -19,6 +19,9 @@ const rules = readFileSync(
 const watched = [
   "peal_channels_token_sweep_unfinished_total",
   "peal_analytics_collection_unfinished_total",
+  "peal_analytics_accounts_unfinished_total",
+  "peal_engagement_collection_unfinished_total",
+  "peal_engagement_collection_thread_failures_total",
   "peal_publishing_uploads_waiting",
 ];
 

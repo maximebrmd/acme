@@ -9,6 +9,8 @@ import {
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SendPostRequest } from "#publishing/application/post-scheduling.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { newId } from "#shared/application/ids.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
@@ -365,6 +367,95 @@ describe("PostOutcomes.await", () => {
           assert.strictEqual(denied._tag, "MissingPermission");
 
           yield* scheduling.cancel(actor, later.post.id);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "takes a thread for gone out once every part has, and says how many are out meanwhile",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* waitsForParts() {
+          const scheduling = yield* PostScheduling;
+          const outcomes = yield* PostOutcomes;
+          const workspaceId = yield* freshWorkspace;
+          const channel = yield* connect(workspaceId, "mastodon");
+          const actor = actorIn(workspaceId);
+
+          const thread = (delaySeconds: number): SendPostRequest => ({
+            ...now([channel], "A synthetic thread, out now."),
+            // Another thread each time, for the duplicate guard.
+            content: new PostContent({
+              followUps: [
+                new PostPart({
+                  delaySeconds,
+                  media: [],
+                  overrides: [],
+                  text: `Its second part, after ${String(delaySeconds)} seconds.`,
+                }),
+              ],
+              media: [],
+              overrides: [],
+              text: "A synthetic thread, out now.",
+            }),
+          });
+
+          // Parts sent one after the other: the wait sees them all out.
+          const quick = yield* scheduling.send(actor, thread(0));
+
+          yield* eventually("the thread finished", isFinished(quick.post.id));
+
+          const whole = yield* outcomes.await(
+            actor,
+            quick.post.id,
+            Duration.seconds(30)
+          );
+
+          assert.isTrue(whole.settled);
+          assert.deepStrictEqual(
+            whole.targets.map(({ liveParts, status }) => [
+              status._tag,
+              liveParts.length,
+            ]),
+            [["published", 2]]
+          );
+
+          // A part that waits an hour: the post is not out as a whole, and
+          // the wait answers what it has when its time runs out, the first
+          // part live and the channel still going.
+          const slow = yield* scheduling.send(actor, thread(3600));
+
+          yield* eventually(
+            "the first part is live",
+            targetsOf(slow.post.id).pipe(
+              Effect.map((targets) =>
+                targets.every(({ liveParts }) => liveParts.length === 1)
+              )
+            )
+          );
+
+          const waiting = yield* outcomes
+            .await(actor, slow.post.id, Duration.seconds(30))
+            .pipe(Effect.forkChild);
+
+          const partial = yield* answerOf(waiting);
+
+          assert.isFalse(partial.settled);
+          assert.strictEqual(partial.post.status._tag, "publishing");
+          assert.deepStrictEqual(
+            partial.targets.map(({ liveParts, status }) => [
+              status._tag,
+              liveParts.length,
+            ]),
+            [["publishing", 1]]
+          );
+          // Its second part was not sent early.
+          assert.lengthOf(yield* callsOn(channel), 3);
+
+          // Nothing of this run is left to go out once the test is over.
+          yield* scheduling.cancel(actor, slow.post.id);
         })
       ),
     timeout

@@ -40,6 +40,7 @@ const target = (
   failureReason: null,
   id,
   options: null,
+  parts: { count: 1, live: [] },
   permalink: null,
   publishedAt: null,
   round: 1,
@@ -80,6 +81,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 1,
     finishedAt: utc("2026-06-15T08:00:01Z"),
+    part: 0,
     refusalCode: null,
     result: "rateLimited",
     retryAt: utc("2026-06-15T08:01:01Z"),
@@ -90,6 +92,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 2,
     finishedAt: utc("2026-06-15T08:01:02Z"),
+    part: 0,
     refusalCode: "channelDisconnected",
     result: "channelDisconnected",
     retryAt: null,
@@ -100,6 +103,7 @@ const attempts: readonly PublicationAttempt[] = [
   {
     attempt: 1,
     finishedAt: utc("2026-06-15T09:00:02Z"),
+    part: 0,
     refusalCode: null,
     result: "published",
     retryAt: null,
@@ -150,7 +154,72 @@ const renderPost = async (locale: "en" | "fr", shown: Post) =>
     </NextIntlClientProvider>
   );
 
+// A thread of three parts that stopped at its third.
+const thread: Post = {
+  ...post,
+  content: {
+    followUps: [
+      { delaySeconds: 0, media: [], overrides: [], text: "A second part." },
+      { delaySeconds: 300, media: [], overrides: [], text: "A third part." },
+    ],
+    media: [],
+    overrides: [],
+    text: "A first part.",
+  },
+  outcome: "partiallyPublished",
+  targets: [
+    target("t4", "c4", {
+      failureReason: "contentRejected",
+      parts: {
+        count: 3,
+        live: [
+          {
+            index: 0,
+            permalink: "https://social.example/@live/10",
+            platformPostId: "10",
+            publishedAt: utc("2026-06-15T08:00:02Z"),
+          },
+          {
+            index: 1,
+            permalink: null,
+            platformPostId: null,
+            publishedAt: utc("2026-06-15T08:00:04Z"),
+          },
+        ],
+      },
+      status: "failed",
+    }),
+  ],
+};
+
 describe(PostDetailView, () => {
+  it("shows a thread's parts, which are live, and where it stopped", async () => {
+    const html = await renderPost("en", thread);
+
+    expect(html).toContain("A third part.");
+    expect(html).toContain("2 of 3 parts are live.");
+    expect(html).toContain('href="https://social.example/@live/10"');
+    expect(html).toContain("Part 2: live");
+    expect(html).toContain("Part 3: not sent");
+  });
+
+  it("says a repost sends the rest of a thread, in the reader's language", async () => {
+    await expect(renderPost("en", thread)).resolves.toContain(
+      "Sending it again sends the parts that are not out, never one that is live."
+    );
+
+    const french = await renderPost("fr", thread);
+
+    expect(french).toContain("2 parties en ligne sur 3.");
+    expect(french).toContain("Partie 3 : non envoyée");
+  });
+
+  it("says nothing of parts for a post alone", async () => {
+    const html = await render("en", true);
+
+    expect(html).not.toContain("parts are live");
+  });
+
   it("tells a video YouTube kept private, and why the quota stopped one", async () => {
     const shown: Post = {
       ...post,

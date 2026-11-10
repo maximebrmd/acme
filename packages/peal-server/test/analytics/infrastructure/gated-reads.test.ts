@@ -10,6 +10,7 @@ import type {
 import {
   ChannelGateLive,
   GatedMetricsReader,
+  UnreadComments,
 } from "#publishing/infrastructure/channel-gate.ts";
 import { FakePlatformPublisher } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { ChannelIdSchema, PostTargetIdSchema } from "#shared/domain/ids.ts";
@@ -34,7 +35,11 @@ const gatedOver = (
     Layer.provideMerge(
       ChannelGateLive.pipe(
         Layer.provide(
-          Layer.merge(FakePlatformPublisher, readerAnswering(answer))
+          Layer.mergeAll(
+            FakePlatformPublisher,
+            readerAnswering(answer),
+            UnreadComments
+          )
         )
       )
     ),

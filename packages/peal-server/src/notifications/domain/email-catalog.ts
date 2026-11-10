@@ -92,6 +92,11 @@ export interface EmailCatalog {
    * `{workspaceName}` name the account.
    */
   readonly channelReconnectRequired: EmailMessages;
+  /**
+   * `{count}` new comments under a post of `{workspaceName}`; each entry
+   * writes its own plural with `{count}`.
+   */
+  readonly commentsReceived: EmailMessages;
   /** A channel's token expires at `{expiresAt}` and cannot be renewed. */
   readonly channelReconnectSoon: EmailMessages;
   /** Why a post did not go out, as `{reason}` in `postFailed`'s body. */

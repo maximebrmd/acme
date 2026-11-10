@@ -87,7 +87,11 @@ export const channelAccessOf = (
 
       return Context.make(
         ChannelAccess,
-        ChannelAccess.of({ account: () => found, withToken })
+        ChannelAccess.of({
+          account: () => found,
+          withToken,
+          workspaceOf: () => Effect.succeed(Option.none()),
+        })
       ).pipe(Context.add(AccessLog, AccessLog.of({ handed: Ref.get(handed) })));
     })
   );

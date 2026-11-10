@@ -1,10 +1,11 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { DateTime, Effect, Layer, Schema } from "effect";
 
 import { ExecutionIdSchema } from "#publishing/application/publication-scheduler.ts";
 import { WorkspacePostStore } from "#publishing/application/workspace-post-store.ts";
 import { PostOriginSchema } from "#publishing/domain/post-origin.ts";
 import { PostStatusNameSchema } from "#publishing/domain/post-status.ts";
+import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   AuthoredPostRecord,
@@ -14,7 +15,12 @@ import type {
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { idempotencyKeys, posts, postTargets } from "./schema.ts";
+import {
+  idempotencyKeys,
+  posts,
+  postTargets,
+  publicationCalls,
+} from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -26,16 +32,51 @@ const decodeStanding = Schema.decodeUnknownEffect(
   })
 );
 
+const decodeRound = Schema.decodeUnknownEffect(
+  Schema.Struct({
+    inFlight: Schema.Boolean,
+    round: Schema.Int,
+    targetId: PostTargetIdSchema,
+  })
+);
+
 // What the content columns hold, as the post repository writes them.
-const decodeMedia = Schema.decodeUnknownEffect(
+const MediaSchema = Schema.Array(
+  Schema.Struct({ altText: Schema.String, mediaId: Schema.String })
+);
+
+const decodeMedia = Schema.decodeUnknownEffect(MediaSchema);
+
+const OverridesSchema = Schema.Array(
+  Schema.Struct({ channelId: Schema.String, text: Schema.String })
+);
+
+const decodeOverrides = Schema.decodeUnknownEffect(OverridesSchema);
+
+// The parts after the first, as the post repository writes them.
+const decodeFollowUps = Schema.decodeUnknownEffect(
   Schema.Array(
-    Schema.Struct({ altText: Schema.String, mediaId: Schema.String })
+    Schema.Struct({
+      delaySeconds: Schema.Int,
+      media: MediaSchema,
+      overrides: OverridesSchema,
+      text: Schema.String,
+    })
   )
 );
 
-const decodeOverrides = Schema.decodeUnknownEffect(
-  Schema.Array(Schema.Struct({ channelId: Schema.String, text: Schema.String }))
+// The parts live on a target, as the post repository writes them: only
+// how many there are is exported.
+const decodeLiveParts = Schema.decodeUnknownEffect(
+  Schema.Array(Schema.Unknown)
 );
+
+// Media as an export holds it: no alt text is null.
+const exportedMedia = (media: typeof MediaSchema.Type) =>
+  media.map(({ altText, mediaId }) => ({
+    altText: altText === "" ? null : altText,
+    mediaId,
+  }));
 
 // How a post was created or scheduled, as the post repository writes it.
 const decodeOrigin = Schema.decodeUnknownEffect(
@@ -74,30 +115,47 @@ const recordOf = Effect.fnUntraced(function* recordOf(
     Effect.orDie
   );
 
+  const followUps = yield* decodeFollowUps(row.followUps).pipe(Effect.orDie);
+
+  const targets = yield* Effect.all(
+    targetRows.flatMap((target) =>
+      target.postId === row.id
+        ? [
+            decodeLiveParts(target.liveParts).pipe(
+              Effect.orDie,
+              Effect.map((live) => ({
+                channelId: target.channelId,
+                finishedAt: utcOrNull(target.finishedAt),
+                keptPrivate: target.keptPrivate,
+                options: target.options,
+                // A target published before parts were kept has its one part.
+                partsLive:
+                  live.length === 0 && target.status === "published"
+                    ? 1
+                    : live.length,
+                permalink: target.permalink,
+                status: target.status,
+              }))
+            ),
+          ]
+        : []
+    )
+  );
+
   const record: PostRecord = {
     createdVia: yield* originRecord(row, "createdVia"),
-    id: row.id,
-    media: media.map(({ altText, mediaId }) => ({
-      altText: altText === "" ? null : altText,
-      mediaId,
+    followUps: followUps.map((part) => ({
+      delaySeconds: part.delaySeconds,
+      media: exportedMedia(part.media),
+      text: part.text,
+      textOverrides: part.overrides,
     })),
+    id: row.id,
+    media: exportedMedia(media),
     scheduledAt: utcOrNull(row.scheduledAt),
     scheduledVia: yield* originRecord(row, "scheduledVia"),
     status: row.status,
-    targets: targetRows.flatMap((target) =>
-      target.postId === row.id
-        ? [
-            {
-              channelId: target.channelId,
-              finishedAt: utcOrNull(target.finishedAt),
-              keptPrivate: target.keptPrivate,
-              options: target.options,
-              permalink: target.permalink,
-              status: target.status,
-            },
-          ]
-        : []
-    ),
+    targets,
     text: row.text,
     textOverrides: overrides,
     timeZone: row.scheduleZone,
@@ -239,12 +297,62 @@ export const DrizzleWorkspacePostStore = Layer.effect(
       }
     );
 
+    const lockRounds = Effect.fn("WorkspacePostStore.lockRounds")(
+      function* lockRounds(workspaceId: string) {
+        // FOR UPDATE waits for a call that is writing its journal row,
+        // which holds the target's key, and then sees the row.
+        const targets = yield* db
+          .select({ round: postTargets.round, targetId: postTargets.id })
+          .from(postTargets)
+          .innerJoin(posts, eq(posts.id, postTargets.postId))
+          .where(
+            and(
+              eq(posts.workspaceId, workspaceId),
+              eq(posts.status, "publishing")
+            )
+          )
+          .orderBy(asc(postTargets.id))
+          .for("update", { of: postTargets })
+          .pipe(Effect.mapError(failed));
+
+        if (targets.length === 0) {
+          return [];
+        }
+
+        const begun = yield* db
+          .selectDistinct({ targetId: publicationCalls.targetId })
+          .from(publicationCalls)
+          .where(
+            and(
+              inArray(
+                publicationCalls.targetId,
+                targets.map(({ targetId }) => targetId)
+              ),
+              isNull(publicationCalls.finishedAt)
+            )
+          )
+          .pipe(Effect.mapError(failed));
+
+        const inFlight = new Set(begun.map(({ targetId }) => targetId));
+
+        return yield* Effect.all(
+          targets.map((target) =>
+            decodeRound({
+              ...target,
+              inFlight: inFlight.has(target.targetId),
+            }).pipe(Effect.orDie)
+          )
+        );
+      }
+    );
+
     return WorkspacePostStore.of({
       clearAuthor,
       deleteAll,
       exportAll,
       exportAuthored,
       lockAll,
+      lockRounds,
     });
   })
 );

@@ -24,6 +24,8 @@ export const SubscribableWebhookEventTypeSchema = Schema.Literals([
   "channel.reconnect_needed",
   "media.ready",
   "media.failed",
+  "comment.received",
+  "comment.replied",
 ]).annotate({
   description: "An event a webhook endpoint can subscribe to.",
   identifier: "SubscribableWebhookEventType",
@@ -98,9 +100,18 @@ const post = { ...workspace, postId: Schema.String };
 
 // One post on one channel, in the round it was sent: 1, and one more for
 // each repost.
+// `parts` says how many parts the post has on the channel (1 for a post
+// alone) and how many of them are live, as a post of several parts stops
+// at the first that fails or has no confirmed outcome; left out of events
+// from before posts had parts.
 const postOnChannel = {
   ...post,
   ...WebhookTargetSchema.fields,
+  parts: Schema.optionalKey(
+    Schema.Struct({ count: Schema.Int, live: Schema.Int }).annotate({
+      identifier: "WebhookTargetParts",
+    })
+  ),
   round: Schema.Int,
 };
 
@@ -111,6 +122,14 @@ const channel = {
 };
 
 const media = { ...workspace, mediaId: Schema.String };
+
+// A comment under a post that went live on a channel, by ids.
+const comment = {
+  ...post,
+  channelId: Schema.String,
+  commentId: Schema.String,
+  threadId: Schema.String,
+};
 
 // What every payload holds beside its type and data: the event's id (also
 // the `webhook-id` header, the same on every delivery of the event), when
@@ -248,6 +267,24 @@ export const WebhookPayloadSchema = Schema.Union([
     ...envelope,
     data: Schema.Struct({ ...media, reason: MediaFailureReasonSchema }),
     type: Schema.Literal("media.failed"),
+  }),
+  // Peal read a comment for the first time under a post that went live.
+  // Ids only: what it says and who wrote it are read through the API.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({ ...comment, receivedAt: Schema.String }),
+    type: Schema.Literal("comment.received"),
+  }),
+  // A reply to the comment went out from Peal, as the channel's account.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...comment,
+      permalink: Schema.NullOr(Schema.String),
+      repliedAt: Schema.String,
+      replyId: Schema.String,
+    }),
+    type: Schema.Literal("comment.replied"),
   }),
   // A member asked for a test event on the endpoint.
   Schema.Struct({

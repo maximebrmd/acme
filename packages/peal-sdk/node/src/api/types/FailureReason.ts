@@ -14,6 +14,8 @@ export const FailureReason = {
         AppNotAudited: "appNotAudited",
         QuotaExceeded: "quotaExceeded",
         AppBillingLimit: "appBillingLimit",
-        PlanLimit: "planLimit"
+        PlanLimit: "planLimit",
+        PartsNotSent: "partsNotSent",
+        RepliesNotAllowed: "repliesNotAllowed"
     } as const;
 export type FailureReason = typeof FailureReason[keyof typeof FailureReason];

@@ -58,7 +58,18 @@ const kept = [
   ["webhooks", "endpoints", "workspace_id"],
   ["billing", "contract_references", "workspace_id"],
   ["billing", "contract_requests", "workspace_id"],
+  // What analytics and the inbox follow: a channel's account, a read a
+  // platform bills, and a thread with someone's comment and a reply.
+  ["analytics", "tracked_channels", "workspace_id"],
+  ["analytics", "paid_reads", "workspace_id"],
+  ["engagement", "threads", "workspace_id"],
+  ["engagement", "comments", "workspace_id"],
+  ["engagement", "replies", "workspace_id"],
 ] as const;
+
+// Where analytics and the inbox record an erased workspace, so that a run
+// which listed its posts before follows none of them after.
+const erasedLists = ["analytics", "engagement"] as const;
 
 // What an erasure keeps without its workspace, as proof of a contract: a
 // restore puts the backup's row in its place.
@@ -128,6 +139,20 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
               VALUES (${`PEAL-${randomUUID()}`}, ${`sub_synthetic_${randomUUID()}`}, ${workspaceId}, now())`;
             yield* sql`INSERT INTO billing.contract_requests (id, kind, channel, status, acknowledgement, locale, received_at, workspace_id)
               VALUES (${uuid7()}, 'cancellation', 'session', 'applied', 'sent', 'en', now(), ${workspaceId})`;
+
+            const threadId = uuid7();
+            const commentId = uuid7();
+
+            yield* sql`INSERT INTO analytics.tracked_channels (channel_id, workspace_id, platform, next_collection_at)
+              VALUES (${uuid7()}, ${workspaceId}, 'mastodon', now())`;
+            yield* sql`INSERT INTO analytics.paid_reads (workspace_id, platform, day, resource)
+              VALUES (${workspaceId}, 'x', current_date, '1800000000000000001')`;
+            yield* sql`INSERT INTO engagement.threads (id, workspace_id, channel_id, target_id, post_id, platform_post_id, published_at, next_collection_at, comment_count, unanswered_count, last_comment_at)
+              VALUES (${threadId}, ${workspaceId}, ${uuid7()}, ${uuid7()}, ${postId}, '113000000000000001', now(), now(), 1, 0, now())`;
+            yield* sql`INSERT INTO engagement.comments (id, thread_id, workspace_id, channel_id, platform_comment_id, author_platform_id, author_handle, author_display_name, text, written_at, received_at, state)
+              VALUES (${commentId}, ${threadId}, ${workspaceId}, ${uuid7()}, '113000000000000002', '7001', 'reader@social.example', 'A synthetic reader', 'A synthetic comment a restore brings back.', now(), now(), 'answered')`;
+            yield* sql`INSERT INTO engagement.replies (id, thread_id, comment_id, workspace_id, channel_id, text, created_at, status, settled_at)
+              VALUES (${uuid7()}, ${threadId}, ${commentId}, ${workspaceId}, ${uuid7()}, 'A synthetic reply', now(), 'sent', now())`;
           }
 
           // The backup: what the database held before the erasures.
@@ -216,6 +241,11 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
 
           yield* sql`DELETE FROM legal.identification_holds WHERE user_id = ${bea.id}`;
 
+          // Nor does the backup know these workspaces were erased.
+          for (const schema of erasedLists) {
+            yield* sql`DELETE FROM ${sql(schema)}.erased_workspaces WHERE workspace_id IN (${harbour}, ${studio})`;
+          }
+
           assert.strictEqual(yield* left(harbour), held);
           assert.strictEqual(yield* left(studio), held);
           assert.strictEqual(yield* accounts(bea.id), 1);
@@ -247,6 +277,18 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
             ),
             closure
           );
+
+          // Analytics and the inbox know again that both were erased, so
+          // neither follows a post of theirs it had listed before.
+          for (const schema of erasedLists) {
+            assert.strictEqual(
+              yield* sql`SELECT count(*)::int AS count FROM ${sql(schema)}.erased_workspaces WHERE workspace_id IN (${harbour}, ${studio})`.pipe(
+                Effect.flatMap(countOf)
+              ),
+              2,
+              schema
+            );
+          }
 
           // What nobody erased is untouched.
           assert.strictEqual(yield* accounts(ana.id), 1);

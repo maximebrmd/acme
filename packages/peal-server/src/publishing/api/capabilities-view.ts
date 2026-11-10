@@ -1,3 +1,5 @@
+import { Schema } from "effect";
+import { accountNumberNames, postCountNames } from "peal-contract";
 import type {
   AccountStanding as AccountStandingView,
   ChannelCapabilities as ChannelCapabilitiesView,
@@ -81,6 +83,10 @@ const formatsView = (media: MediaRules): readonly MediaFormatView[] =>
     return limits === undefined ? [] : [formatView(contentType, limits)];
   });
 
+const isPostCount = Schema.is(Schema.Literals(postCountNames));
+
+const isAccountNumber = Schema.is(Schema.Literals(accountNumberNames));
+
 /**
  * A platform's capabilities as the contract describes them, to the API and
  * the MCP tools alike: absent limits null.
@@ -91,7 +97,15 @@ export const platformCapabilitiesView = (
   const { rules } = capabilities;
 
   return {
-    analytics: { perPost: capabilities.countsPosts },
+    analytics: {
+      accountNumbers: capabilities.counted.account.filter(isAccountNumber),
+      perPost: capabilities.countsPosts,
+      postCounts: capabilities.counted.post.filter(isPostCount),
+    },
+    followUps:
+      rules.followUps === undefined
+        ? null
+        : { kind: rules.followUps.kind, maxCount: rules.followUps.maximum },
     lookups: capabilities.lookups.map(lookupDescriptionView),
     media: {
       altText: {

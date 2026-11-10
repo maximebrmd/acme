@@ -4,6 +4,9 @@ import { SqlClient } from "effect/sql";
 
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostPart } from "#publishing/domain/post-part.ts";
+import { TextOverride } from "#publishing/domain/text-override.ts";
 import { YouTubeOptions } from "#publishing/domain/youtube-options.ts";
 import { CommentRejected } from "#review/application/comment-rejected.ts";
 import { LinkAccessDenied } from "#review/application/link-access-denied.ts";
@@ -119,6 +122,7 @@ describe("a review link", () => {
           assert.deepStrictEqual(page.post.channels, [
             {
               channelId,
+              followUps: [],
               handle: page.post.channels[0]?.handle ?? Option.none(),
               options: Option.none(),
               platform: Option.some("mastodon" as const),
@@ -377,6 +381,67 @@ describe("a review link", () => {
               (channel) => channel.options
             ),
             expected
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "shows every part of a post, as each channel will receive it",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* showsParts() {
+          const visitors = yield* VisitorReview;
+          const workspaceId = yield* freshWorkspace;
+          const channelId = yield* connect(workspaceId, "mastodon");
+          const editor = actorAs(yield* freshUser, workspaceId);
+
+          const { post } = yield* PostDrafts.use((drafts) =>
+            drafts.create(editor, {
+              channelIds: [channelId],
+              content: new PostContent({
+                followUps: [
+                  new PostPart({
+                    delaySeconds: 0,
+                    media: [],
+                    overrides: [
+                      new TextOverride({ channelId, text: "Second, here" }),
+                    ],
+                    text: "Second",
+                  }),
+                  new PostPart({
+                    delaySeconds: 60,
+                    media: [],
+                    overrides: [],
+                    text: "Third",
+                  }),
+                ],
+                media: [],
+                overrides: [],
+                text: "First",
+              }),
+            })
+          );
+
+          const { token } = yield* linkTo(editor, post.id, "view");
+          const page = yield* visitors.open(token);
+
+          assert.deepStrictEqual(
+            page.post.channels.map(({ followUps, text: first }) => ({
+              first,
+              followUps,
+            })),
+            [
+              {
+                first: "First",
+                followUps: [
+                  { delaySeconds: 0, media: [], text: "Second, here" },
+                  { delaySeconds: 60, media: [], text: "Third" },
+                ],
+              },
+            ]
           );
         })
       ),
