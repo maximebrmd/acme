@@ -180,6 +180,21 @@ another draft: keep the id, and change the draft with `--post`.
 A draft is not checked against the platforms. A draft that saves can still be
 refused when it is scheduled.
 
+A workspace files its posts under tags, which say nothing to the platforms.
+A tag is named by its id or its name:
+
+```sh
+peal tags list --json
+peal tags create "Spring campaign" --colour green --json
+peal drafts save --post <post-id> --tag "Spring campaign" --json
+peal posts tag <post-id> --tag "Spring campaign" --json
+peal posts list --tag "Spring campaign" --json
+```
+
+`posts tag` sets a post's tags, whatever its status, instead of those it
+had; without `--tag` it takes them all off. `drafts save --post` keeps a
+draft's tags unless `--tag` is given.
+
 ## Schedule or publish
 
 Only when the user asked for these channels and this time. Say back what will

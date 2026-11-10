@@ -53,6 +53,8 @@ const refusalOf = (refusal: PostRefusal): string =>
       `these channels are not the workspace's: ${channelIds.join(", ")}`,
     UnknownMedia: ({ mediaIds }) =>
       `these media are not the workspace's, or not ready: ${mediaIds.join(", ")}`,
+    UnknownTags: ({ tagIds }) =>
+      `these tags are not the workspace's: ${tagIds.join(", ")}`,
   });
 
 // The cells of a row that could not be read, each with what is wrong.

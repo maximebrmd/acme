@@ -131,6 +131,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.publication_attempts a JOIN publishing.post_targets t ON t.id = a.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.publication_calls": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.publication_calls c JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
+  "publishing.tags": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.tags WHERE workspace_id = ${id}`,
   "publishing.upload_sessions": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.upload_sessions u JOIN publishing.publication_calls c ON c.idempotency_key = u.idempotency_key JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "review.approval_requests": (sql, id) =>
@@ -349,6 +351,14 @@ const fill = Effect.fn("fill")(function* fill(
 
   // As a post the person scheduled in the web app keeps it.
   yield* sql`UPDATE publishing.posts SET created_via = '{"_tag":"web"}'::jsonb, scheduled_via = '{"_tag":"web"}'::jsonb, scheduled_by = ${person.id} WHERE id = ${postId}`;
+
+  // A tag the post is filed under.
+  const tagId = uuid7();
+
+  yield* sql`INSERT INTO publishing.tags (id, workspace_id, name, name_key, colour, created_at)
+    VALUES (${tagId}, ${workspaceId}, 'Synthetic', 'synthetic', 'blue', now())`;
+
+  yield* sql`UPDATE publishing.posts SET tag_ids = ARRAY[${tagId}]::uuid[] WHERE id = ${postId}`;
 
   // The key of the request that made it, as `posts.send` keeps it.
   yield* sql`INSERT INTO publishing.idempotency_keys (workspace_id, key_digest, request_digest, post_id, created_at)

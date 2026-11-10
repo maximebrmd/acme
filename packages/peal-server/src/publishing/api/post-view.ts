@@ -101,6 +101,7 @@ export const postView = ({ post, targets }: PostWithTargets): PostView => ({
   scheduledBy: Option.getOrNull(post.attribution.scheduledBy),
   scheduledVia: originOrNull(post.attribution.scheduledVia),
   status: post.status._tag,
+  tagIds: [...post.tagIds],
   targets: targets.map(targetView),
 });
 

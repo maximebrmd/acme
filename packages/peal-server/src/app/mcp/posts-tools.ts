@@ -52,6 +52,12 @@ const options = PostDraftSchema.fields.options.schema.annotate({
     "What the post sets on the platforms that ask for more than text and media, one entry per channel, tagged by the channel's `platform`: YouTube's title (required), madeForKids (required), privacy, tags, categoryId, notifySubscribers and containsSyntheticMedia; TikTok's privacyLevel (required: one of the levels get_tiktok_creator answers), disableComment, disableDuet, disableStitch, commercialContent, brandOrganic, brandContent and aiGenerated; Google Business Profile's postType (standard when left out, event or offer), title, startsAt and endsAt (required for an event or an offer, as 2026-11-27T09:00 on the location's own clock), callToAction (book, order, shop, learnMore, signUp or call) with its callToActionUrl (none for call), and an offer's couponCode, redeemUrl and terms; Pinterest's boardId (required: a board's id from the pinterestBoards lookup, run_channel_lookup), boardSectionId (from pinterestBoardSections), title, link, coverSecond and dominantColor; LinkedIn's visibility (public when left out, connections on a profile, or loggedIn), disableReshare, mentions (company pages, each a name and urn as the linkedinOrganizations lookup answers them on a company page channel, the text holding @ and that name), linkUrl with its linkTitle and a linkDescription, and a PDF document's documentTitle. get_channel_capabilities describes every field of a channel. A draft keeps them unfinished; scheduling needs the required ones.",
 });
 
+// The API's tags of a post, by id.
+const tagIds = PostDraftSchema.fields.tagIds.schema.annotate({
+  description:
+    "The workspace's tags the post is filed under, as list_tags answers their ids, each once. Tags say nothing to the platforms.",
+});
+
 export const ListDrafts = Tool.make("list_drafts", {
   dependencies: [CurrentMember],
   description: `Lists the workspace's drafts, newest first: posts that go out at no time until someone schedules them. Answers 20 a page unless \`limit\` (at most ${String(maxDraftPageSize)}) says otherwise; pass \`nextCursor\` as \`cursor\` for the next page.`,
@@ -72,7 +78,7 @@ export const ListDrafts = Tool.make("list_drafts", {
 export const GetPost = Tool.make("get_post", {
   dependencies: [CurrentMember],
   description:
-    "Answers with a post of the workspace: what it says, when it goes out, and how it went on each channel (its `targets`, whose ids repost_target and confirm_target take, each with its platform `options`, and `keptPrivate` when YouTube kept the video private although it was asked otherwise). A failed target says why in `failureReason`: the platform refused its text or format (contentRejected) or a media (mediaRejected); its channel was disconnected (channelDisconnected) or turned off (channelDisabled), or a media deleted (mediaRemoved); Peal was down at its time (missed); the user found it missing (notPublished); the platform kept limiting Peal (rateLimited), its daily upload allowance stayed spent (quotaExceeded, YouTube's), it refused the account's token (tokenExpired) or could not be reached (unavailable); the platform takes only private posts from this server's app until it audits it (appNotAudited, TikTok's: the account must be private and the post visible to its owner only); or the platform refused this server's app until its operator pays for it (appBillingLimit, X's: credits used up or spending cap reached), which is not the post's fault; or the workspace's plan had no room for it when it was due (planLimit: more channels than the plan allows, or the month's posts used up), and nothing was sent.",
+    "Answers with a post of the workspace: what it says, when it goes out, the tags it is filed under (`tagIds`, which list_tags names), and how it went on each channel (its `targets`, whose ids repost_target and confirm_target take, each with its platform `options`, and `keptPrivate` when YouTube kept the video private although it was asked otherwise). A failed target says why in `failureReason`: the platform refused its text or format (contentRejected) or a media (mediaRejected); its channel was disconnected (channelDisconnected) or turned off (channelDisabled), or a media deleted (mediaRemoved); Peal was down at its time (missed); the user found it missing (notPublished); the platform kept limiting Peal (rateLimited), its daily upload allowance stayed spent (quotaExceeded, YouTube's), it refused the account's token (tokenExpired) or could not be reached (unavailable); the platform takes only private posts from this server's app until it audits it (appNotAudited, TikTok's: the account must be private and the post visible to its owner only); or the platform refused this server's app until its operator pays for it (appBillingLimit, X's: credits used up or spending cap reached), which is not the post's fault; or the workspace's plan had no room for it when it was due (planLimit: more channels than the plan allows, or the month's posts used up), and nothing was sent.",
   failure: ToolRefused,
   parameters: Schema.Struct({ postId }),
   success: PostSchema,
@@ -83,12 +89,13 @@ export const GetPost = Tool.make("get_post", {
 export const CreateDraft = Tool.make("create_draft", {
   dependencies: [CurrentMember],
   description:
-    "Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the channels it is for, and the options of those whose platform asks for more (LinkedIn, TikTok, YouTube, Pinterest, Google Business Profile). A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.",
+    "Saves a new draft in the workspace: its text, the media of the workspace it shows (ready ones, each with its alt text), the text it has instead on some channels, the channels it is for, the options of those whose platform asks for more (LinkedIn, TikTok, YouTube, Pinterest, Google Business Profile), and the workspace's tags it is filed under (`tagIds`, none when left out). A draft goes out at no time until it is scheduled (schedule_post, or the user in the web app), so the user can review it first. Its text, media and options are checked against each platform's rules only once it is scheduled; options for another platform, or for a channel the draft is not for, are refused at once.",
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelIds,
     content: PostContentSchema,
     options: Schema.optionalKey(options),
+    tagIds: Schema.optionalKey(tagIds),
   }),
   success: PostSchema,
 })
@@ -100,13 +107,14 @@ export const CreateDraft = Tool.make("create_draft", {
 export const UpdateDraft = Tool.make("update_draft", {
   dependencies: [CurrentMember],
   description:
-    "Replaces a draft's content and channels with those given: text, media and channels left out are removed from it. Read the draft with get_post first, and send back what should stay. Without `options`, the draft keeps the options it has on the channels it keeps; with them, they replace its options, and `[]` removes them all. A post scheduled or sent is not a draft, and is refused.",
+    "Replaces a draft's content and channels with those given: text, media and channels left out are removed from it. Read the draft with get_post first, and send back what should stay. Without `options`, the draft keeps the options it has on the channels it keeps; with them, they replace its options, and `[]` removes them all. Without `tagIds`, it keeps its tags too; with them, they replace its tags. A post scheduled or sent is not a draft, and is refused.",
   failure: ToolRefused,
   parameters: Schema.Struct({
     channelIds,
     content: PostContentSchema,
     options: Schema.optionalKey(options),
     postId,
+    tagIds: Schema.optionalKey(tagIds),
   }),
   success: PostSchema,
 })
@@ -238,7 +246,7 @@ const waitsForOutcome = `It answers while the post publishes, unless \`waitSecon
 
 export const ListPosts = Tool.make("list_posts", {
   dependencies: [CurrentMember],
-  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application) and \`authorId\`. \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
+  description: `Lists the workspace's posts, whatever their state, a page at a time (${String(defaultPostPageSize)} unless \`limit\` says otherwise, ${String(maxPostPageSize)} at most): each whole, with its channels, how each went, its address there and why it failed. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended: \`failed\` and \`partiallyPublished\` are the ones to follow up), \`channelId\`, \`platform\`, \`from\` (included) and \`to\` (excluded) on the scheduled instant, which leave out posts without a time, \`createdVia\` (web, apiKey or application), \`authorId\` and \`tagId\` (the posts filed under that tag). \`sort\` orders by creation (createdDesc, the default, or createdAsc) or by scheduled instant (scheduledDesc, scheduledAsc: only posts with a time). Pass \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page; it is null on the last. \`channels\` gives the platform of each channel the page names.`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     authorId: Schema.optionalKey(Schema.String),
@@ -255,6 +263,12 @@ export const ListPosts = Tool.make("list_posts", {
     platform: Schema.optionalKey(PlatformSchema),
     sort: Schema.optionalKey(PostSortSchema),
     status: Schema.optionalKey(PostStatusSchema),
+    tagId: Schema.optionalKey(
+      Schema.String.annotate({
+        description:
+          "Only the posts filed under this tag, as list_tags answers its id.",
+      })
+    ),
     to: Schema.optionalKey(instant("2026-07-01T00:00:00Z")),
   }),
   success: Schema.Struct({
@@ -338,7 +352,7 @@ export const CancelPost = Tool.make("cancel_post", {
 
 export const CreatePost = Tool.make("create_post", {
   dependencies: [CurrentMember],
-  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. Apart from keys, a post whose content already goes to one of its channels less than ${String(duplicateWindowHours)} hours from its time is refused, naming the post that has it: pass \`allowDuplicate: true\` only when the user means to post the same twice. ${waitsForOutcome} ${mayWait} ${needsPublishing}`,
+  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), the workspace's tags it is filed under (\`tagIds\`), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. Apart from keys, a post whose content already goes to one of its channels less than ${String(duplicateWindowHours)} hours from its time is refused, naming the post that has it: pass \`allowDuplicate: true\` only when the user means to post the same twice. ${waitsForOutcome} ${mayWait} ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     allowDuplicate: NewPostSchema.fields.allowDuplicate,
@@ -346,6 +360,7 @@ export const CreatePost = Tool.make("create_post", {
     content: NewPostSchema.fields.content,
     idempotencyKey: BulkPostSchema.fields.idempotencyKey,
     options: NewPostSchema.fields.options,
+    tagIds: NewPostSchema.fields.tagIds,
     waitSeconds,
     when,
   }),
@@ -363,12 +378,13 @@ const newPost = {
   content: NewPostSchema.fields.content,
   idempotencyKey: BulkPostSchema.fields.idempotencyKey,
   options: NewPostSchema.fields.options,
+  tagIds: NewPostSchema.fields.tagIds,
   when,
 };
 
 export const CreatePosts = Tool.make("create_posts", {
   dependencies: [CurrentMember],
-  description: `Creates and sends up to ${String(maxBulkPosts)} posts in one call, each as create_post would: one post per item, each with its own channels, content, options and \`when\`, so the same content at several times, or at a time of its own on each channel, is several items. ${reachesThePublic} Items are taken in order, each on its own: one refused keeps none of the others from being made, and nothing is undone. The answer says, for each item by its place (\`index\`, from 0), \`created\` with its post, or \`refused\` with why (\`refusal\`: its \`_tag\` and fields, as PostContentInvalid with every violation, UnknownChannels, UnknownMedia, ScheduleInPast, InvalidTimeZone, PlanLimitReached, DuplicatePost, IdempotencyKeyReused): fix those and call again with them alone. Each item is checked against the posts made before it, the call's earlier items included, for the same content on the same channel within ${String(duplicateWindowHours)} hours (allowDuplicate on the item when it is meant). Pass an \`idempotencyKey\` for the whole call so that calling again after a lost answer makes no post twice: each item is kept under the key and its place, and the same call answers the posts it made (\`replayed\`). An item's own \`idempotencyKey\` is used instead for that item. ${needsPublishing}`,
+  description: `Creates and sends up to ${String(maxBulkPosts)} posts in one call, each as create_post would: one post per item, each with its own channels, content, options, tags and \`when\`, so the same content at several times, or at a time of its own on each channel, is several items. ${reachesThePublic} Items are taken in order, each on its own: one refused keeps none of the others from being made, and nothing is undone. The answer says, for each item by its place (\`index\`, from 0), \`created\` with its post, or \`refused\` with why (\`refusal\`: its \`_tag\` and fields, as PostContentInvalid with every violation, UnknownChannels, UnknownMedia, ScheduleInPast, InvalidTimeZone, PlanLimitReached, DuplicatePost, IdempotencyKeyReused): fix those and call again with them alone. Each item is checked against the posts made before it, the call's earlier items included, for the same content on the same channel within ${String(duplicateWindowHours)} hours (allowDuplicate on the item when it is meant). Pass an \`idempotencyKey\` for the whole call so that calling again after a lost answer makes no post twice: each item is kept under the key and its place, and the same call answers the posts it made (\`replayed\`). An item's own \`idempotencyKey\` is used instead for that item. ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
     idempotencyKey: newPost.idempotencyKey,

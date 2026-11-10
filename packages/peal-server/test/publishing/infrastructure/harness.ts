@@ -41,6 +41,7 @@ import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-c
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
+import { DrizzleTagStore } from "#publishing/infrastructure/drizzle-tag-store.ts";
 import {
   FakePlatform,
   FakePlatformPublisher,
@@ -143,6 +144,7 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
         DrizzleContentFingerprints,
         DrizzleIdempotencyKeys,
         DrizzlePostRepository,
+        DrizzleTagStore,
         journal,
         RecordingChannelHealth,
         RecordingOperatorAlerts,

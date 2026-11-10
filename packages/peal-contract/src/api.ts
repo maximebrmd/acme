@@ -33,11 +33,34 @@ import { ReviewApi } from "./review.ts";
 import { SessionApi } from "./session.ts";
 import { StaffApi } from "./staff.ts";
 import { SystemApi } from "./system.ts";
+import { TagsApi } from "./tags.ts";
 import { TikTokApi } from "./tiktok.ts";
 import { WebhooksApi } from "./webhooks.ts";
 import { WorkspacesApi } from "./workspaces.ts";
 
 export { DatabaseUnavailable } from "./database-unavailable.ts";
+
+export {
+  maxTagNameLength,
+  maxTagsPerPost,
+  maxTagsPerWorkspace,
+  PostTagIdsSchema,
+  TagColourSchema,
+  TagDetailsSchema,
+  TagNameSchema,
+  TagsApi,
+  TagSchema,
+} from "./tags.ts";
+
+export type { Tag, TagColour, TagDetails } from "./tags.ts";
+
+export { TagNameTaken } from "./tag-name-taken.ts";
+
+export { TagNotFound } from "./tag-not-found.ts";
+
+export { TooManyTags } from "./too-many-tags.ts";
+
+export { UnknownTags } from "./unknown-tags.ts";
 
 export {
   ActivityActorSchema,
@@ -727,6 +750,7 @@ export {
   NewPostSchema,
   PostContentSchema,
   PostDraftSchema,
+  PostTagsSchema,
   PostImportSchema,
   PostOriginSchema,
   PostOriginViaSchema,
@@ -762,6 +786,7 @@ export type {
   Post,
   PostContent,
   PostDraft,
+  PostTags,
   PostOrigin,
   PostOriginVia,
   PostChannel,
@@ -1335,6 +1360,7 @@ export class Api extends HttpApi.make("peal")
   .add(ReviewLinkApi)
   .add(ContractRequestsApi)
   .add(ContractRequestsDeskApi)
+  .add(TagsApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.
   .annotateMerge(

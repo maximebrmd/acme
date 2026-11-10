@@ -35,11 +35,13 @@ import {
 } from "./post-text.ts";
 import { PostValidationSchema } from "./post-validation.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
+import { maxTagsPerPost, PostTagIdsSchema } from "./tags.ts";
 import { ChannelOptionsSchema, TargetOptionsSchema } from "./target-options.ts";
 import type { ChannelOptions } from "./target-options.ts";
 import { TargetStatusConflict } from "./target-status-conflict.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
 import { UnknownMedia } from "./unknown-media.ts";
+import { UnknownTags } from "./unknown-tags.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 const uniqueBy = <A>(key: (item: A) => string, expected: string) =>
@@ -246,6 +248,8 @@ export const PostSchema = Schema.Struct({
   // before this was kept.
   scheduledVia: Schema.NullOr(PostOriginSchema),
   status: PostStatusSchema,
+  // The workspace's tags it is filed under (`tags.list` names them).
+  tagIds: Schema.Array(Schema.String),
   // One per channel, oldest first.
   targets: Schema.Array(PostTargetSchema),
 }).annotate({ identifier: "Post" });
@@ -255,7 +259,8 @@ export type Post = typeof PostSchema.Type;
 /**
  * A draft: what it says, the channels it is for so far, and the options it
  * has on some of them, which its targets keep. Options left out are none:
- * an update replaces them all.
+ * an update replaces them all. Its tags (`tagIds`) are the workspace's:
+ * left out, a new draft has none and an update keeps those the draft has.
  */
 export const PostDraftSchema = Schema.Struct({
   channelIds: Schema.Array(Schema.String),
@@ -268,9 +273,17 @@ export const PostDraftSchema = Schema.Struct({
       )
     )
   ),
+  tagIds: Schema.optionalKey(PostTagIdsSchema),
 }).annotate({ identifier: "PostDraft" });
 
 export type PostDraft = typeof PostDraftSchema.Type;
+
+/** The tags to file a post under, instead of those it has. */
+export const PostTagsSchema = Schema.Struct({
+  tagIds: PostTagIdsSchema,
+}).annotate({ identifier: "PostTags" });
+
+export type PostTags = typeof PostTagsSchema.Type;
 
 /** A draft's time and channels. */
 export const SchedulePostSchema = Schema.Struct({
@@ -316,6 +329,8 @@ export const NewPostSchema = Schema.Struct({
       )
     )
   ),
+  // The workspace's tags it is filed under; left out, none.
+  tagIds: Schema.optionalKey(PostTagIdsSchema),
   when: PostTimingSchema,
 }).annotate({ identifier: "NewPost" });
 
@@ -676,17 +691,24 @@ export class PostsApi extends HttpApiGroup.make("posts")
         platform: Schema.optionalKey(PlatformSchema),
         sort: Schema.optionalKey(PostSortSchema),
         status: Schema.optionalKey(PostStatusSchema),
+        tagId: Schema.optionalKey(Schema.String),
         to: Schema.optionalKey(Schema.DateTimeUtc),
       },
       success: PostPageSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Lists the workspace's posts, whatever their state, a page at a time: ${defaultPostPageSize} unless \`limit\` (at most ${maxPostPageSize}) says otherwise. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended, such as \`failed\` or \`partiallyPublished\`), \`channelId\` (posts with a target on that channel), \`platform\` (posts with a target on a connected channel of that platform), \`from\` (included) and \`to\` (excluded), on the scheduled instant, which leave out posts without a time, \`createdVia\` (\`web\`, \`apiKey\` or \`application\`) and \`authorId\`. \`sort\` orders them by creation (\`createdDesc\`, the default, or \`createdAsc\`) or by scheduled instant (\`scheduledDesc\`, \`scheduledAsc\`, which list only posts with a time). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and \`channels\` gives the platform of each channel the page names. Needs post:read and channel:read.`,
+        description: `Lists the workspace's posts, whatever their state, a page at a time: ${defaultPostPageSize} unless \`limit\` (at most ${maxPostPageSize}) says otherwise. Every filter given must hold: \`status\` (draft, scheduled, publishing, finished, cancelled), \`outcome\` (how a finished post ended, such as \`failed\` or \`partiallyPublished\`), \`channelId\` (posts with a target on that channel), \`platform\` (posts with a target on a connected channel of that platform), \`tagId\` (posts filed under that tag), \`from\` (included) and \`to\` (excluded), on the scheduled instant, which leave out posts without a time, \`createdVia\` (\`web\`, \`apiKey\` or \`application\`) and \`authorId\`. \`sort\` orders them by creation (\`createdDesc\`, the default, or \`createdAsc\`) or by scheduled instant (\`scheduledDesc\`, \`scheduledAsc\`, which list only posts with a time). Pass the page's \`nextCursor\` as \`cursor\`, with the same filters and sort, for the next page: a cursor marks where its page ended, so posts created, moved or deleted meanwhile make no page repeat or skip one; a cursor of another sort, or none a page gave, is a bad request. Each post comes whole, with its targets, their status, address and failure reason, and \`channels\` gives the platform of each channel the page names. Needs post:read and channel:read.`,
         summary: "List posts",
       })
     ),
     HttpApiEndpoint.post("create", "/", {
-      error: [Forbidden, PostContentInvalid, UnknownChannels, UnknownMedia],
+      error: [
+        Forbidden,
+        PostContentInvalid,
+        UnknownChannels,
+        UnknownMedia,
+        UnknownTags,
+      ],
       params: workspace,
       payload: PostDraftSchema,
       success: PostSchema.pipe(HttpApiSchema.status(201)),
@@ -709,6 +731,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
         IdempotencyKeyReused,
         PostNotFound,
         DuplicatePost,
+        UnknownTags,
       ],
       headers: {
         "idempotency-key": Schema.optionalKey(
@@ -826,6 +849,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
         PostContentInvalid,
         UnknownChannels,
         UnknownMedia,
+        UnknownTags,
       ],
       params: post,
       payload: PostDraftSchema,
@@ -833,8 +857,19 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Replaces a draft's content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.",
+          "Replaces a draft's content, channels and options: options left out are removed. Its tags are replaced by `tagIds` when given, and kept otherwise. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.",
         summary: "Update a draft",
+      })
+    ),
+    HttpApiEndpoint.put("tag", "/:postId/tags", {
+      error: [Forbidden, PostNotFound, UnknownTags],
+      params: post,
+      payload: PostTagsSchema,
+      success: PostSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Files a post under these tags of the workspace, ${maxTagsPerPost} at most, instead of those it had; an empty list takes them all off. Tags say nothing to the platforms, so a post takes them whatever its status, sent or not. Needs post:update.`,
+        summary: "Set a post's tags",
       })
     ),
     HttpApiEndpoint.post("schedule", "/:postId/schedule", {

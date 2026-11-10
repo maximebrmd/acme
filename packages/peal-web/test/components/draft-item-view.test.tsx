@@ -26,6 +26,7 @@ const draft = (text: string, channels: number, media: number): Post => ({
   scheduledBy: null,
   scheduledVia: null,
   status: "draft",
+  tagIds: [],
   targets: Array.from({ length: channels }, (_, index) => ({
     channelId: `00000000-0000-7000-8000-00000000c00${index}`,
     failureReason: null,

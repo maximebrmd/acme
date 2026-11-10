@@ -23,6 +23,7 @@ import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PostSearch } from "#publishing/application/post-search.ts";
+import { PostTags } from "#publishing/application/post-tags.ts";
 import { PostUsage } from "#publishing/application/post-usage.ts";
 import { PostingCapabilities } from "#publishing/application/posting-capabilities.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
@@ -44,6 +45,7 @@ import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-pu
 import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
 import { DrizzlePublishedTargets } from "#publishing/infrastructure/drizzle-published-targets.ts";
 import { DrizzleRecordedPosts } from "#publishing/infrastructure/drizzle-recorded-posts.ts";
+import { DrizzleTagStore } from "#publishing/infrastructure/drizzle-tag-store.ts";
 import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
 import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
@@ -90,6 +92,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
     PostQueries.layer,
     PostRecords.layer,
     PostSearch.layer,
+    PostTags.layer,
     HeldPosts.layer,
     PostFollowUp.layer,
     PostUsage.layer
@@ -102,6 +105,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
         DrizzlePostRepository,
         DrizzlePublicationJournal,
         DrizzlePublishedTargets,
+        DrizzleTagStore,
         DrizzleWorkspacePostStore,
         LoggedChannelHealth,
         LoggedOperatorAlerts,
@@ -117,7 +121,7 @@ const publishingOver = <E, R, E2, R2, E3, R3, H, R4>(
 /**
  * The publishing context's use cases (`PostBatches`, `PostChecks`,
  * `PostDrafts`, `PostOutcomes`, `PostQueries`, `PostSearch`,
- * `PostScheduling`, `PostFollowUp`, for the handlers; `HeldPosts`, for the
+ * `PostScheduling`, `PostFollowUp`, `PostTags`, for the handlers; `HeldPosts`, for the
  * review context; `PostRecords`, for the workspace context's exports and
  * erasures; `PostUsage`, for billing; `PublishedTargets`, which analytics
  * follows; `PostOversight`, for the staff console; in `PublishingLive`,
@@ -248,6 +252,9 @@ export const MediaInPostsLive = MediaInPosts.layer.pipe(
 // the Authentication and WorkspaceAccess middleware of the workspace context,
 // which the composition root brings.
 export { PostsHandlers as PostsApiLive } from "#publishing/api/posts.ts";
+
+// The workspace's tags, behind the same middleware.
+export { TagsHandlers as TagsApiLive } from "#publishing/api/tags.ts";
 
 // TikTok's creator info for the composer, behind the same middleware.
 export { TikTokHandlers as TikTokApiLive } from "#publishing/api/tiktok.ts";

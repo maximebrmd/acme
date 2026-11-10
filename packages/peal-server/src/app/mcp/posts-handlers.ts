@@ -10,13 +10,19 @@ import type {
 } from "peal-contract";
 
 import { PostTools } from "#app/mcp/posts-tools.ts";
-import { notAllowed, planRefusal, refuse } from "#app/mcp/refusals.ts";
+import {
+  notAllowed,
+  planRefusal,
+  refuse,
+  unknownTags,
+} from "#app/mcp/refusals.ts";
 import { keyAt, readPost, sendRead } from "#publishing/api/post-batch.ts";
 import { checkRequestFrom } from "#publishing/api/post-check-input.ts";
 import { validationOf } from "#publishing/api/post-check-view.ts";
 import {
   channelIdsFrom,
   contentFrom,
+  draftTagsFrom,
   optionsFrom,
   postIdFrom,
   postIdOption,
@@ -269,15 +275,17 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(confirmed);
         }).pipe(Effect.catchTags(malformedPost)),
-      create_draft: ({ channelIds, content, options }) =>
+      create_draft: ({ channelIds, content, options, tagIds }) =>
         Effect.gen(function* create() {
           const given = yield* givenOptions(options);
+          const tags = yield* draftTagsFrom(tagIds);
 
           const created = yield* drafts
             .create(yield* actor, {
               channelIds: yield* channelIdsFrom(channelIds),
               content: yield* contentFrom(content),
               options: Option.getOrElse(given, () => []),
+              ...tags,
             })
             .pipe(
               Effect.catchTags({
@@ -286,11 +294,14 @@ export const PostToolsLive = PostTools.toLayer(
                 PostContentRejected: contentRejected,
                 UnknownChannels: unknownChannels,
                 UnknownMedia: unknownMedia,
+                UnknownTags: unknownTags,
               })
             );
 
           return postView(created);
-        }).pipe(Effect.catchTags(malformedContent)),
+        }).pipe(
+          Effect.catchTags({ ...malformedContent, UnknownTags: unknownTags })
+        ),
       create_post: ({ idempotencyKey, waitSeconds = 0, ...post }) =>
         Effect.gen(function* createPost() {
           const request = yield* sendRequestFrom(post, idempotencyKey);
@@ -317,6 +328,7 @@ export const PostToolsLive = PostTools.toLayer(
                 refuse(
                   "The post this idempotencyKey made was deleted since: nothing was made. Use a new key to make it again."
                 ),
+              UnknownTags: unknownTags,
             })
           );
 
@@ -326,7 +338,13 @@ export const PostToolsLive = PostTools.toLayer(
             .pipe(Effect.orDie);
 
           return postView(awaited);
-        }).pipe(Effect.catchTags({ ...malformedContent, ...badZone })),
+        }).pipe(
+          Effect.catchTags({
+            ...malformedContent,
+            ...badZone,
+            UnknownTags: unknownTags,
+          })
+        ),
       create_posts: ({ idempotencyKey, posts }) =>
         Effect.gen(function* createPosts() {
           const read = yield* Effect.all(
@@ -598,11 +616,13 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(draft);
         }).pipe(Effect.catchTags(malformedPost)),
-      update_draft: ({ channelIds, content, options, postId }) =>
+      update_draft: ({ channelIds, content, options, postId, tagIds }) =>
         Effect.gen(function* update() {
           const id = yield* postIdFrom(postId);
           const channels = yield* channelIdsFrom(channelIds);
           const given = yield* givenOptions(options);
+          // Without tags, the draft keeps those it has.
+          const tags = yield* draftTagsFrom(tagIds);
 
           // Without options, the draft keeps those it has on the channels
           // it keeps, rather than lose them as the API's update would.
@@ -615,6 +635,7 @@ export const PostToolsLive = PostTools.toLayer(
               channelIds: channels,
               content: yield* contentFrom(content),
               options: kept,
+              ...tags,
             })
             .pipe(
               Effect.catchTags({
@@ -625,11 +646,18 @@ export const PostToolsLive = PostTools.toLayer(
                 PostNotFound: notFound,
                 UnknownChannels: unknownChannels,
                 UnknownMedia: unknownMedia,
+                UnknownTags: unknownTags,
               })
             );
 
           return postView(updated);
-        }).pipe(Effect.catchTags({ ...malformedPost, ...malformedContent })),
+        }).pipe(
+          Effect.catchTags({
+            ...malformedPost,
+            ...malformedContent,
+            UnknownTags: unknownTags,
+          })
+        ),
       validate_post: (post) =>
         Effect.gen(function* validatePost() {
           const read = yield* checkRequestFrom(post);

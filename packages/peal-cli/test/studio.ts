@@ -21,6 +21,7 @@ import {
   InvalidTimeZone,
   InvitationNotFound,
   maxImportRows,
+  maxTagsPerWorkspace,
   LookupInputInvalid,
   LookupNotFound,
   maxWebhookEndpoints,
@@ -34,11 +35,15 @@ import {
   ReturnUrlNotAllowed,
   ReviewLinkNotFound,
   ScheduleInPast,
+  TagNameTaken,
+  TagNotFound,
   TargetStatusConflict,
+  TooManyTags,
   TooManyWebhookEndpoints,
   Unauthenticated,
   UnknownChannels,
   UnknownMedia,
+  UnknownTags,
   UnsupportedMediaType,
   UploadIncomplete,
   WebhookDeliveryNotFound,
@@ -86,6 +91,7 @@ import type {
   ReviewLink,
   SignedRequest,
   Standing,
+  Tag,
   TikTokAccount,
   WebhookDelivery,
   WebhookEndpoint,
@@ -305,6 +311,26 @@ const contributorId = "8d0f7780-8536-41ef-a55c-f18fd2a01bf8";
 
 const content = (text: string) => ({ media: [], overrides: [], text });
 
+export const campaignTagId = "0190f3a0-0000-7000-8000-00000000a001";
+
+export const evergreenTagId = "0190f3a0-0000-7000-8000-00000000a002";
+
+// The labels the studio files its posts under, oldest first.
+const tags: readonly Tag[] = [
+  {
+    colour: "green",
+    createdAt: at("2026-10-01T09:00:00Z"),
+    id: campaignTagId,
+    name: "Spring campaign",
+  },
+  {
+    colour: "blue",
+    createdAt: at("2026-10-02T09:00:00Z"),
+    id: evergreenTagId,
+    name: "Evergreen",
+  },
+];
+
 const posts: readonly Post[] = [
   {
     authorId: userId,
@@ -316,6 +342,7 @@ const posts: readonly Post[] = [
     scheduledBy: null,
     scheduledVia: null,
     status: "draft",
+    tagIds: [],
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e010", mastodonId)],
   },
   {
@@ -328,6 +355,7 @@ const posts: readonly Post[] = [
     scheduledBy: null,
     scheduledVia: null,
     status: "scheduled",
+    tagIds: [campaignTagId],
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e011", mastodonId)],
   },
   {
@@ -340,6 +368,7 @@ const posts: readonly Post[] = [
     scheduledBy: contributorId,
     scheduledVia: null,
     status: "awaitingApproval",
+    tagIds: [],
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e012", mastodonId)],
   },
   {
@@ -352,6 +381,7 @@ const posts: readonly Post[] = [
     scheduledBy: null,
     scheduledVia: null,
     status: "finished",
+    tagIds: [],
     targets: [
       {
         ...pendingOn(failedTargetId, mastodonId),
@@ -844,6 +874,8 @@ export interface StudioState {
   /** What the media store answers a signed request with. */
   readonly storeStatus: number;
   readonly stored: readonly StoredRequest[];
+  /** The workspace's tags, oldest first. */
+  readonly tags: readonly Tag[];
   /** Whether the server has the keys that encrypt signing secrets. */
   readonly signingKeys: boolean;
   readonly webhooks: readonly WebhookEndpoint[];
@@ -925,6 +957,7 @@ export const makeStudio = (
       signingKeys: true,
       storeStatus: 200,
       stored: [],
+      tags,
       webhooks,
     }),
     whileExporting: Ref.make<Effect.Effect<void>>(Effect.void),
@@ -1084,6 +1117,53 @@ const checkChannels = (channelIds: readonly string[]) => {
     ? Effect.void
     : Effect.fail(new UnknownChannels({ channelIds: unknown }));
 };
+
+// The tags a post names must be the workspace's.
+const checkTags = (studio: Studio, tagIds: readonly string[]) =>
+  Ref.get(studio.state).pipe(
+    Effect.flatMap(({ tags: all }) => {
+      const unknown = tagIds.filter(
+        (tagId) => !all.some(({ id }) => id === tagId)
+      );
+
+      return unknown.length === 0
+        ? Effect.void
+        : Effect.fail(new UnknownTags({ tagIds: unknown }));
+    })
+  );
+
+// The studio's tag a path names.
+const findTag = (
+  studio: Studio,
+  params: { readonly tagId: string; readonly workspaceId: string }
+) =>
+  Ref.get(studio.state).pipe(
+    Effect.flatMap(({ tags: all }) =>
+      Option.match(
+        Option.fromUndefinedOr(
+          params.workspaceId === studioId
+            ? all.find(({ id }) => id === params.tagId)
+            : undefined
+        ),
+        {
+          onNone: () => Effect.fail(new TagNotFound()),
+          onSome: (tag) => Effect.succeed(tag),
+        }
+      )
+    )
+  );
+
+// A name another tag of the workspace has, whatever its case.
+const checkTagName = (studio: Studio, name: string, but?: string) =>
+  Ref.get(studio.state).pipe(
+    Effect.flatMap(({ tags: all }) =>
+      all.some(
+        (tag) => tag.id !== but && tag.name.toLowerCase() === name.toLowerCase()
+      )
+        ? Effect.fail(new TagNameTaken())
+        : Effect.void
+    )
+  );
 
 const mastodonLimit = 500;
 
@@ -1406,6 +1486,7 @@ const checkNewPost = (studio: Studio, payload: NewPost) =>
   Effect.gen(function* checkingNewPost() {
     yield* checkChannels(payload.channelIds);
     yield* checkMedia(studio, payload.content);
+    yield* checkTags(studio, payload.tagIds ?? []);
 
     const when = timeOf(payload);
     const status = yield* checkTime(when.at, when.timeZone);
@@ -1488,6 +1569,7 @@ const makePost = (studio: Studio, payload: NewPost, key: string | undefined) =>
       scheduledBy: userId,
       scheduledVia: viaCommandLine,
       status,
+      tagIds: payload.tagIds ?? [],
       targets: targetsOf(id, payload),
     });
 
@@ -2059,6 +2141,8 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new Forbidden();
             }
 
+            yield* checkTags(studio, payload.tagIds ?? []);
+
             const { posts: all } = yield* Ref.get(studio.state);
             const id = `0190f3a0-0000-7000-8000-${String(all.length + 1).padStart(12, "0")}`;
 
@@ -2074,6 +2158,7 @@ export const studioGroupsLive = (studio: Studio) =>
               scheduledBy: null,
               scheduledVia: null,
               status: "draft",
+              tagIds: payload.tagIds ?? [],
               targets: targetsOf(id, payload),
             });
           }),
@@ -2309,6 +2394,7 @@ export const studioGroupsLive = (studio: Studio) =>
                   post.createdVia?.via === query.createdVia,
                 query.authorId === undefined ||
                   post.authorId === query.authorId,
+                query.tagId === undefined || post.tagIds.includes(query.tagId),
               ].every(Boolean)
             );
 
@@ -2347,6 +2433,24 @@ export const studioGroupsLive = (studio: Studio) =>
 
             return yield* afterWaiting(studio, post, query.wait);
           }),
+        tag: ({ params, payload }) =>
+          Effect.gen(function* tag() {
+            yield* allowed("post:update");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            yield* checkTags(studio, payload.tagIds);
+            yield* record(studio, `tag:${post.id}:${payload.tagIds.join(",")}`);
+
+            return yield* savePost(studio, {
+              ...post,
+              tagIds: payload.tagIds,
+            });
+          }),
         unschedule: ({ params }) =>
           Effect.gen(function* unschedule() {
             yield* publishing;
@@ -2383,11 +2487,14 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new PostStatusConflict({ status: post.status });
             }
 
+            yield* checkTags(studio, payload.tagIds ?? []);
             yield* record(studio, `update:${post.id}`);
 
             return yield* savePost(studio, {
               ...post,
               content: payload.content,
+              // Tags left out are kept.
+              tagIds: payload.tagIds ?? post.tagIds,
               targets: targetsOf(post.id, payload),
             });
           }),
@@ -3598,6 +3705,95 @@ export const studioGroupsLive = (studio: Studio) =>
                 enabled && !found.enabled ? null : found.failingSince,
               updatedAt: now,
             });
+          }),
+      })
+    ),
+    HttpApiBuilder.group(Api, "tags", (handlers) =>
+      handlers.handleAll({
+        create: ({ params, payload }) =>
+          Effect.gen(function* create() {
+            yield* allowed("post:update");
+
+            if (params.workspaceId !== studioId) {
+              return yield* new Forbidden();
+            }
+
+            yield* checkTagName(studio, payload.name);
+
+            const { changes, tags: all } = yield* Ref.get(studio.state);
+
+            if (all.length >= maxTagsPerWorkspace) {
+              return yield* new TooManyTags({ allowed: maxTagsPerWorkspace });
+            }
+
+            // An id no tag had, deleted ones included.
+            const made =
+              changes.filter((change) => change.startsWith("tag:create:"))
+                .length +
+              tags.length +
+              1;
+
+            const tag: Tag = {
+              colour: payload.colour,
+              createdAt: studioNow,
+              id: `0190f3a0-0000-7000-8000-00000000a${String(made).padStart(3, "0")}`,
+              name: payload.name,
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              tags: [...current.tags, tag],
+            }));
+            yield* record(studio, `tag:create:${tag.name}:${tag.colour}`);
+
+            return tag;
+          }),
+        delete: ({ params }) =>
+          Effect.gen(function* remove() {
+            yield* allowed("post:update");
+
+            const tag = yield* findTag(studio, params);
+
+            // Its posts lose it, and stay.
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              posts: current.posts.map((post) => ({
+                ...post,
+                tagIds: post.tagIds.filter((tagId) => tagId !== tag.id),
+              })),
+              tags: current.tags.filter(({ id }) => id !== tag.id),
+            }));
+            yield* record(studio, `tag:delete:${tag.id}`);
+          }),
+        list: ({ params }) =>
+          allowed("post:read").pipe(
+            Effect.andThen(Ref.get(studio.state)),
+            Effect.map(({ tags: all }) =>
+              params.workspaceId === studioId ? all : []
+            )
+          ),
+        update: ({ params, payload }) =>
+          Effect.gen(function* update() {
+            yield* allowed("post:update");
+
+            const tag = yield* findTag(studio, params);
+
+            yield* checkTagName(studio, payload.name, tag.id);
+
+            const changed: Tag = { ...tag, ...payload };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              tags: current.tags.map((found) =>
+                found.id === tag.id ? changed : found
+              ),
+            }));
+            yield* record(
+              studio,
+              `tag:update:${tag.id}:${changed.name}:${changed.colour}`
+            );
+
+            return changed;
           }),
       })
     ),

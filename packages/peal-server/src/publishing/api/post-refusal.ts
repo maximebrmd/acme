@@ -9,6 +9,7 @@ import {
   ScheduleInPast,
   UnknownChannels,
   UnknownMedia,
+  UnknownTags,
 } from "peal-contract";
 import type { CurrentMember, PostRefusal } from "peal-contract";
 
@@ -116,6 +117,8 @@ export const refusalOf =
         Effect.succeed<PostRefusal>(new UnknownChannels({ channelIds })),
       UnknownMedia: ({ mediaIds }) =>
         Effect.succeed<PostRefusal>(new UnknownMedia({ mediaIds })),
+      UnknownTags: ({ tagIds }) =>
+        Effect.succeed<PostRefusal>(new UnknownTags({ tagIds })),
     });
 
 /**

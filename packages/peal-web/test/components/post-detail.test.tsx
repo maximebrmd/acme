@@ -58,6 +58,7 @@ const post: Post = {
   scheduledBy: null,
   scheduledVia: null,
   status: "finished",
+  tagIds: [],
   targets: [
     target("t1", "c1", {
       failureReason: "channelDisconnected",
@@ -154,6 +155,7 @@ describe(PostDetailView, () => {
   it("tells a video YouTube kept private, and why the quota stopped one", async () => {
     const shown: Post = {
       ...post,
+      tagIds: [],
       targets: [
         target("t4", "c4", {
           keptPrivate: true,

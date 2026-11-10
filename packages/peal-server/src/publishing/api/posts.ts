@@ -16,6 +16,7 @@ import {
   TargetStatusConflict,
   UnknownChannels,
   UnknownMedia,
+  UnknownTags,
 } from "peal-contract";
 import type {
   BulkPostResult,
@@ -32,6 +33,7 @@ import { PostOutcomes } from "#publishing/application/post-outcomes.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PostSearch } from "#publishing/application/post-search.ts";
+import { PostTags } from "#publishing/application/post-tags.ts";
 import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
@@ -49,11 +51,13 @@ import { validationOf } from "./post-check-view.ts";
 import {
   channelIdsFrom,
   contentFrom,
+  draftTagsFrom,
   optionsFrom,
   postIdFrom,
   postIdOption,
   scheduleFrom,
   sendRequestFrom,
+  tagIdsFrom,
   targetIdFrom,
 } from "./post-input.ts";
 import { refusalOfCheck, toldRefusal } from "./post-refusal.ts";
@@ -78,6 +82,9 @@ const unknownChannels = ({
 
 const unknownMedia = ({ mediaIds }: { readonly mediaIds: readonly string[] }) =>
   Effect.fail(new UnknownMedia({ mediaIds }));
+
+const unknownTags = ({ tagIds }: { readonly tagIds: readonly string[] }) =>
+  Effect.fail(new UnknownTags({ tagIds }));
 
 const inPast = () => Effect.fail(new ScheduleInPast());
 
@@ -114,6 +121,7 @@ export const PostsHandlers = HttpApiBuilder.group(
     const queries = yield* PostQueries;
     const scheduling = yield* PostScheduling;
     const searching = yield* PostSearch;
+    const tags = yield* PostTags;
     const limitReached = yield* limitRefusal;
 
     const toValidation = validationOf(limitReached);
@@ -222,9 +230,10 @@ export const PostsHandlers = HttpApiBuilder.group(
           const channelIds = yield* channelIdsFrom(payload.channelIds);
           const content = yield* contentFrom(payload.content);
           const options = yield* optionsFrom(payload.options ?? []);
+          const filed = yield* draftTagsFrom(payload.tagIds);
 
           const created = yield* drafts
-            .create(actor, { channelIds, content, options })
+            .create(actor, { channelIds, content, options, ...filed })
             .pipe(
               Effect.catchTags({
                 DatabaseError: Effect.die,
@@ -232,6 +241,7 @@ export const PostsHandlers = HttpApiBuilder.group(
                 PostContentRejected: contentInvalid,
                 UnknownChannels: unknownChannels,
                 UnknownMedia: unknownMedia,
+                UnknownTags: unknownTags,
               })
             );
 
@@ -605,6 +615,23 @@ export const PostsHandlers = HttpApiBuilder.group(
 
           return postView(awaited);
         }),
+      tag: ({ params, payload }) =>
+        Effect.gen(function* tag() {
+          const actor = actorOf(yield* CurrentMember);
+          const postId = yield* postIdFrom(params.postId);
+          const tagIds = yield* tagIdsFrom(payload.tagIds);
+
+          const tagged = yield* tags.assign(actor, postId, tagIds).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              MissingPermission: forbidden,
+              PostNotFound: notFound,
+              UnknownTags: unknownTags,
+            })
+          );
+
+          return postView(tagged);
+        }),
       unschedule: ({ params }) =>
         Effect.gen(function* unschedule() {
           const actor = actorOf(yield* CurrentMember);
@@ -628,9 +655,10 @@ export const PostsHandlers = HttpApiBuilder.group(
           const channelIds = yield* channelIdsFrom(payload.channelIds);
           const content = yield* contentFrom(payload.content);
           const options = yield* optionsFrom(payload.options ?? []);
+          const filed = yield* draftTagsFrom(payload.tagIds);
 
           const updated = yield* drafts
-            .update(actor, postId, { channelIds, content, options })
+            .update(actor, postId, { channelIds, content, options, ...filed })
             .pipe(
               Effect.catchTags({
                 DatabaseError: Effect.die,
@@ -640,6 +668,7 @@ export const PostsHandlers = HttpApiBuilder.group(
                 PostNotFound: notFound,
                 UnknownChannels: unknownChannels,
                 UnknownMedia: unknownMedia,
+                UnknownTags: unknownTags,
               })
             );
 

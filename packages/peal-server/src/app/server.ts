@@ -63,6 +63,7 @@ import {
   MediaInPostsLive,
   PostsApiLive,
   PublishingLive,
+  TagsApiLive,
   TikTokApiLive,
   publishingWorkersReading,
 } from "#publishing/container.ts";
@@ -123,7 +124,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   ReviewApiLive,
   WebhooksApiLive,
   ActivityApiLive,
-  ContractRequestsDeskApiLive
+  ContractRequestsDeskApiLive,
+  TagsApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {

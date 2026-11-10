@@ -433,6 +433,7 @@ CREATE TABLE "publishing"."posts" (
 	"scheduled_via" jsonb,
 	"started_at" timestamp with time zone,
 	"status" text NOT NULL,
+	"tag_ids" uuid[] DEFAULT '{}'::uuid[] NOT NULL,
 	"text" text DEFAULT '' NOT NULL,
 	"text_overrides" jsonb DEFAULT '[]' NOT NULL,
 	"workspace_id" uuid NOT NULL
@@ -470,6 +471,16 @@ CREATE TABLE "publishing"."quota_usage" (
 	"units" integer NOT NULL,
 	CONSTRAINT "quota_usage_pkey" PRIMARY KEY("bucket","day"),
 	CONSTRAINT "quota_usage_units" CHECK ("units" >= 0)
+);
+--> statement-breakpoint
+CREATE TABLE "publishing"."tags" (
+	"colour" text NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"name" text NOT NULL,
+	"name_key" text NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "tags_workspace_name" UNIQUE("workspace_id","name_key")
 );
 --> statement-breakpoint
 CREATE TABLE "publishing"."upload_sessions" (
@@ -981,6 +992,7 @@ CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHER
 CREATE INDEX "idempotency_keys_created_at" ON "publishing"."idempotency_keys" ("created_at");--> statement-breakpoint
 CREATE INDEX "post_targets_channel_content" ON "publishing"."post_targets" ("channel_id","content_digest") WHERE "content_digest" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint
+CREATE INDEX "posts_tag_ids" ON "publishing"."posts" USING gin ("tag_ids");--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
 CREATE INDEX "posts_scheduled" ON "publishing"."posts" ("scheduled_at") WHERE "status" = 'scheduled';--> statement-breakpoint
 CREATE INDEX "posts_workspace_id" ON "publishing"."posts" ("workspace_id","id");--> statement-breakpoint

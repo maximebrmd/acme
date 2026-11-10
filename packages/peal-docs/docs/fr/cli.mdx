@@ -186,11 +186,13 @@ peal drafts list                  # du plus récent au plus ancien ; --limit et 
 peal drafts save --text "Le catalogue de printemps est sorti" --channel <channel-id> --channel <channel-id>
 peal drafts save --post <post-id> --text "Le catalogue de printemps sort aujourd’hui"
 peal drafts save --post <post-id> --options '<channel-id>={"platform":"youtube","title":"Catalogue de printemps","madeForKids":false}'
+peal drafts save --post <post-id> --tag "Campagne de printemps"
 peal drafts discard <post-id>
 ```
 
 - `peal drafts save` sans `--post` écrit un nouveau brouillon, pour les canaux que nomme `--channel` (aucun pour l’instant convient). Avec `--post`, il modifie ce brouillon : le texte, quand `--text` est donné, et les canaux, quand un `--channel` l’est. Ce que vous laissez de côté reste tel quel, médias et [options des plateformes](/scheduling#options) des canaux qu’il garde compris.
 - `--options <channel-id>=<json>` règle les options de la plateforme d’un canal, en JSON avec sa `platform` : pour YouTube, `title` et `madeForKids` (tous deux nécessaires pour programmer), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia` ; pour TikTok, `privacyLevel` (nécessaire, l’un de ceux que liste `peal channels tiktok`), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated` ; pour Pinterest, `boardId` (nécessaire, l’un de ceux que liste `peal channels lookup`), `boardSectionId`, `title`, `link`, `coverSecond`, `dominantColor` ; pour LinkedIn, `visibility` (`public` par défaut, `connections` sur un profil, ou `loggedIn`), `disableReshare`, `mentions` (des pages d’entreprise, chacune un `name` et un `urn` que `peal channels lookup` trouve sur un canal de page d’entreprise), `linkUrl` avec son `linkTitle` et une `linkDescription`, et le `documentTitle` d’un document PDF ; pour Google Business Profile, `postType` (`standard` par défaut, `event` ou `offer`), `title`, `startsAt` et `endsAt` (nécessaires pour un événement ou une offre, comme `2026-11-27T09:00`, à l’heure de l’établissement), `callToAction` avec `callToActionUrl`, et pour une offre `couponCode`, `redeemUrl` et `terms`. Répétez-le pour plusieurs canaux ; il remplace en entier les options de ce canal.
+- `--tag <id-ou-nom>` range le brouillon sous l’une des [étiquettes](#tags) de l’espace de travail ; répétez-le pour plusieurs. Sans lui, un brouillon que vous modifiez garde ses étiquettes ; avec lui, il prend celles données à leur place.
 - Un brouillon ne part à aucune heure. Son texte, ses médias et ses options sont vérifiés contre les règles de chaque plateforme quand il est programmé, avec `peal posts schedule` ou dans l’application web.
 - `peal drafts discard` supprime un brouillon pour de bon. Une publication programmée ou partie n’est pas un brouillon : déprogrammez-la ou annulez-la plutôt.
 
@@ -212,6 +214,7 @@ peal post "Le catalogue de printemps est sorti" --channel <channel-id> --now --w
 - **Où.** `--channel` (ou `--channels`) nomme un canal par son identifiant ; répétez-le, ou séparez les identifiants par des virgules. Il en faut au moins un.
 - **Médias.** Chaque `--media` est un fichier, importé d’abord ; une adresse `https://`, que le serveur va chercher ; ou l’identifiant d’un média que l’espace de travail a déjà, tel que `peal media list` le montre. Ils s’affichent dans l’ordre donné, 20 au plus. Le premier `--alt` décrit le premier `--media`, le deuxième le deuxième.
 - **Options.** `--options <channel-id>=<json>` règle les [options de la plateforme](/scheduling#options) d’un canal, comme les prend `peal drafts save`.
+- **Étiquettes.** `--tag <id-ou-nom>` range la publication sous l’une des [étiquettes](#tags) de l’espace de travail ; répétez-le pour plusieurs.
 - **La relancer.** `--idempotency-key` prend le texte de votre choix, de 255 caractères au plus, comme un UUID : dans les 24 heures, la même clé avec la même publication répond la publication créée la première fois, sans en faire une autre ; avec une autre publication, elle est refusée. Sans elle, `peal` n’envoie aucune clé. Pour relancer une publication avec des médias, donnez à `--media` des identifiants de médias : fichiers et adresses sont stockés de nouveau à chaque lancement, ce qui en fait une autre publication.
 - **Deux fois la même publication.** En dehors des clés, une publication dont le contenu (le texte que reçoit le canal et les mêmes médias, dans le même ordre) part déjà sur l’un de ses canaux à moins de 23 heures de son heure est refusée, et `peal` nomme la publication qui l’a déjà. `--allow-duplicate` la laisse passer, quand vous voulez vraiment publier deux fois la même chose ([Publications en double](/posting-api#duplicates)).
 - **Vérifier d’abord.** `--dry-run` vérifie la publication et ne publie rien : il dit ce qui serait refusé.
@@ -224,6 +227,7 @@ La publication est d’abord vérifiée contre la plateforme de chaque canal. Qu
 ```sh
 peal posts list
 peal posts list --from 2026-11-01T00:00:00Z --to 2026-12-01T00:00:00Z
+peal posts list --tag "Campagne de printemps"
 peal posts show <post-id>
 peal posts attempts <post-id>
 peal posts wait <post-id> --seconds 30
@@ -238,11 +242,12 @@ peal posts cancel <post-id>
 peal posts repost <post-id> <target-id>
 peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
 peal posts confirm <post-id> <target-id> not-published
+peal posts tag <post-id> --tag "Campagne de printemps" --tag Intemporel
 ```
 
-- `peal posts list` liste les publications de l’espace de travail, quel que soit leur état, une page à la fois, avec ce que chacune est devenue ([Lister les publications](/posting-api#search)).
+- `peal posts list` liste les publications de l’espace de travail, quel que soit leur état, une page à la fois, avec ce que chacune est devenue ([Lister les publications](/posting-api#search)). `--tag` garde les publications rangées sous une [étiquette](#tags).
 - `peal posts attempts` liste chaque tentative de Peal pour publier la publication, par canal, envoi et tentative : quand elle a commencé, comment elle a fini, le code qui accompagne un refus, celui de la plateforme ou celui de Peal, et quand Peal a réessayé.
-- `peal posts show` affiche le statut et l’heure de la publication, puis une ligne par canal, qui commence par l’identifiant de sa cible, avec ce qui s’y est passé : échouée et pourquoi, non confirmée et pourquoi, ou publiée à son adresse (et gardée privée, quand YouTube a gardé privée une vidéo publique ou non répertoriée), puis les options de la publication sur chaque canal qui en a.
+- `peal posts show` affiche le statut et l’heure de la publication, ses étiquettes quand elle en a, puis une ligne par canal, qui commence par l’identifiant de sa cible, avec ce qui s’y est passé : échouée et pourquoi, non confirmée et pourquoi, ou publiée à son adresse (et gardée privée, quand YouTube a gardé privée une vidéo publique ou non répertoriée), puis les options de la publication sur chaque canal qui en a.
 - `peal posts wait` attend que chaque canal d’une publication ait son résultat, jusqu’à `--seconds` (60 au plus), puis montre la publication dans son état du moment. Attendre ne change rien : relancez-le quand le temps s’est écoulé avant.
 - `peal posts import` crée et envoie les publications que liste un fichier CSV, une par ligne, avec les colonnes `text`, `channels` et `at`, et au besoin `media`, `time_zone`, `allow_duplicate` et `idempotency_key` ([Importer des publications depuis un fichier CSV](/posting-api#import)). Chaque ligne est d’abord vérifiée, et rien n’est créé si une seule n’est pas valide. `--dry-run` ne fait que vérifier le fichier. `--idempotency-key` permet de relancer l’import sans risque pendant 24 heures : les lignes déjà créées ne le sont pas deux fois.
 - `peal posts schedule` programme un brouillon pour `--at`, lu comme le lit `peal post`, sur les canaux qu’il a, ou sur ceux que nomme `--channel`. Son texte, ses médias et ses options doivent respecter les règles de chaque plateforme, sinon rien n’est programmé.
@@ -252,6 +257,24 @@ peal posts confirm <post-id> <target-id> not-published
 - `peal posts cancel` annule pour de bon un brouillon ou une publication programmée : elle ne part sur aucun canal. Une publication déjà en cours de publication finit avec ce que ses canaux ont fait, et ceux qui n’ont pas encore reçu l’envoi sont annulés. Pour modifier une publication programmée et la garder, déprogrammez-la plutôt.
 - `peal posts repost` renvoie la publication, maintenant, sur un canal où elle a échoué ou n’est pas confirmée. Quand elle n’est pas confirmée, vérifiez d’abord sur la plateforme : elle est peut-être déjà en ligne.
 - `peal posts confirm` enregistre ce que vous avez trouvé sur la plateforme pour une publication que Peal n’a pas pu confirmer : `published`, avec son adresse si vous l’avez, ou `not-published`, qui la marque en échec sur ce canal pour que `peal posts repost` puisse la renvoyer. [Programmer des publications](/scheduling) explique comment finissent les publications.
+
+## Étiquettes [#tags]
+
+```sh
+peal tags list
+peal tags create "Campagne de printemps" --colour green
+peal tags update "Campagne de printemps" --name "Printemps 2027" --colour teal
+peal tags delete "Printemps 2027"
+peal posts tag <post-id> --tag Intemporel
+```
+
+- Les étiquettes sont les libellés sous lesquels un espace de travail range ses publications, 100 au plus. Elles ne disent rien aux plateformes : rien d’une étiquette ne part avec une publication.
+- `peal tags create` prend un nom de 40 caractères au plus, qu’aucune autre étiquette de l’espace de travail ne porte, quelle que soit sa casse, et une couleur avec `--colour` (`gray` sauf indication contraire, `red`, `orange`, `amber`, `green`, `teal`, `blue`, `purple` ou `pink`).
+- Partout où une commande prend une étiquette, donnez son identifiant ou son nom, quelle que soit sa casse : `peal tags list` montre les deux.
+- `peal tags update` change le nom, la couleur ou les deux, et garde ce que vous laissez de côté. Ses publications gardent l’étiquette.
+- `peal tags delete` supprime définitivement une étiquette et la retire de chaque publication qui la portait ; les publications restent.
+- `peal posts tag` range une publication sous les étiquettes que nomme `--tag`, 10 au plus, à la place de celles qu’elle avait ; sans `--tag`, il les retire toutes. Une publication prend des étiquettes quel que soit son statut, partie ou non.
+- Tout membre qui lit les publications lit les étiquettes ; créer, modifier et supprimer une étiquette, et étiqueter une publication, demandent le droit de modifier les publications.
 
 ## Médias [#media]
 

@@ -10,6 +10,7 @@ import type {
   Unauthenticated,
   UnknownChannels,
   UnknownMedia,
+  UnknownTags,
   WorkspaceNotFound,
 } from "peal-contract";
 
@@ -28,6 +29,7 @@ export type ComposerFailure =
   | Unauthenticated
   | UnknownChannels
   | UnknownMedia
+  | UnknownTags
   | WorkspaceNotFound
   // The date and time picked name no instant.
   | { readonly _tag: "InvalidTime" }

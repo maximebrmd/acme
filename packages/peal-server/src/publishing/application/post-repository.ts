@@ -6,6 +6,7 @@ import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { PostingMonth } from "#publishing/domain/posting-month.ts";
+import type { TagId } from "#publishing/domain/tag-id.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
   ChannelId,
@@ -91,6 +92,14 @@ export class PostRepository extends Context.Service<
       next: PostTarget,
       current: PostTarget
     ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * Files the post under these tags, instead of those it had. Nothing
+     * else of the post is written, whatever its status.
+     */
+    readonly setTags: (
+      postId: PostId,
+      tagIds: readonly TagId[]
+    ) => Effect.Effect<void, DatabaseError>;
     /**
      * Makes these the post's targets: those it had and that are not listed
      * are deleted, the listed ones it lacked are added, and the others take

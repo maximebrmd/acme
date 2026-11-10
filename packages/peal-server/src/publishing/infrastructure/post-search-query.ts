@@ -80,6 +80,14 @@ export const pageConditions = ({
       (channelIds) =>
         sql`EXISTS (SELECT 1 FROM ${postTargets} WHERE ${postTargets.postId} = ${posts.id} AND ${inArray(postTargets.channelId, [...channelIds])})`
     ),
+    some(
+      filter.tagIds,
+      (tagIds) =>
+        sql`${posts.tagIds} && ARRAY[${sql.join(
+          tagIds.map((tagId) => sql`${tagId}`),
+          sql`, `
+        )}]::uuid[]`
+    ),
     some(after, (position) => past(sort, position))
   );
 

@@ -10,6 +10,7 @@ import { PeopleToolsLive } from "#app/mcp/people-handlers.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
 import { ReportToolsLive } from "#app/mcp/reports-handlers.ts";
 import { ReviewToolsLive } from "#app/mcp/review-handlers.ts";
+import { TagToolsLive } from "#app/mcp/tags-handlers.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { BasicTools } from "#app/mcp/tools.ts";
 import { WebhookToolsLive } from "#app/mcp/webhooks-handlers.ts";
@@ -223,6 +224,7 @@ const BasicToolsLive = BasicTools.toLayer(
 export const PealToolsLive = Layer.mergeAll(
   BasicToolsLive,
   PostToolsLive,
+  TagToolsLive,
   MediaToolsLive,
   ReportToolsLive,
   PeopleToolsLive,

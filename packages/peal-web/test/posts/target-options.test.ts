@@ -367,6 +367,7 @@ describe(valuesOfPost, () => {
         scheduledBy: null,
         scheduledVia: null,
         status: "draft",
+        tagIds: [],
         targets: ["c1", "c2", "gone"].map((id) => ({
           channelId: id,
           failureReason: null,

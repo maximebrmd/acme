@@ -16,6 +16,16 @@ import { scopeGrants } from "#workspace/api/refusal.ts";
 export const refuse = (message: string) =>
   Effect.fail(new ToolRefused({ message }));
 
+/** Tags a call names that are not the workspace's. */
+export const unknownTags = ({
+  tagIds,
+}: {
+  readonly tagIds: readonly string[];
+}) =>
+  refuse(
+    `These tags are not the workspace's: ${tagIds.join(", ")}. list_tags answers its tags.`
+  );
+
 // Whose permission is missing, and who can do something about it: a
 // partner's key, a workspace's key, or the user's role.
 const whoseOf = (member: Member, doing: string, permission: Permission) => {

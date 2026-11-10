@@ -38,6 +38,7 @@ import { PostScheduling } from "./post-scheduling.ts";
 import type { SendPostRequest, SentPost } from "./post-scheduling.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
+import type { UnknownTags } from "./unknown-tags.ts";
 
 /** The most posts made in one request. */
 export const maxBulkPosts = 50;
@@ -56,7 +57,8 @@ export type SendRefusal =
   | PostNotFound
   | ScheduleInPast
   | UnknownChannels
-  | UnknownMedia;
+  | UnknownMedia
+  | UnknownTags;
 
 /**
  * What checking one request of several found: its check, or that its
@@ -223,6 +225,7 @@ export class PostBatches extends Context.Service<
             ScheduleInPast: refused,
             UnknownChannels: refused,
             UnknownMedia: refused,
+            UnknownTags: refused,
           })
         );
 

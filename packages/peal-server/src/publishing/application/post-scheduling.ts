@@ -27,11 +27,13 @@ import {
   scheduledThrough,
   schedulePost,
   asReceived,
+  tagPost,
 } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import { postingMonthOf, sameMonth } from "#publishing/domain/posting-month.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
+import type { TagId } from "#publishing/domain/tag-id.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
@@ -58,13 +60,15 @@ import { PostAllowance } from "./post-allowance.ts";
 import { PostEvents } from "./post-events.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { PostOrigins } from "./post-origins.ts";
-import { channelsFor, mediaFor } from "./post-references.ts";
+import { channelsFor, mediaFor, tagsFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets, StoredPost } from "./post-repository.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
 import { violationsOf } from "./publishability.ts";
+import type { TagStore } from "./tag-store.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
+import type { UnknownTags } from "./unknown-tags.ts";
 import { withinPlan as withinPlanOf } from "./within-plan.ts";
 import type { WorkspaceChannels } from "./workspace-channels.ts";
 import {
@@ -93,6 +97,8 @@ export interface SchedulePostRequest {
   // The options it has on some channels, one at most per channel.
   readonly options?: readonly ChannelOptions[];
   readonly schedule: Schedule;
+  /** The workspace's tags it is filed under; left out, none. */
+  readonly tagIds?: readonly TagId[];
 }
 
 /**
@@ -117,6 +123,8 @@ export interface SendPostRequest {
   readonly idempotency: Option.Option<KeyedRequest>;
   // The options it has on some channels, one at most per channel.
   readonly options?: readonly ChannelOptions[];
+  /** The workspace's tags it is filed under; left out, none. */
+  readonly tagIds?: readonly TagId[];
   /** The zone its time was chosen in, which calendars show it in. */
   readonly timeZone: TimeZoneId;
 }
@@ -144,6 +152,9 @@ type Unpublishable =
   | UnknownChannels
   | UnknownMedia;
 
+// A new post is refused too when a tag it names is not the workspace's.
+type Unfiled = Unpublishable | UnknownTags;
+
 type Ports =
   | AccountRules
   | ApprovalGate
@@ -154,6 +165,7 @@ type Ports =
   | PostAllowance
   | PostOrigins
   | PostRepository
+  | TagStore
   | WorkspaceChannels;
 
 // Someone who only asks acts on drafts and on posts that wait: a scheduled
@@ -205,7 +217,7 @@ export class PostScheduling extends Context.Service<
       request: SchedulePostRequest
     ) => Effect.Effect<
       PostWithTargets,
-      DatabaseError | MissingPermission | ScheduleInPast | Unpublishable
+      DatabaseError | MissingPermission | ScheduleInPast | Unfiled
     >;
     /**
      * Creates a post and sends it to the given channels, now or at an
@@ -229,7 +241,7 @@ export class PostScheduling extends Context.Service<
       | MissingPermission
       | PostNotFound
       | ScheduleInPast
-      | Unpublishable
+      | Unfiled
     >;
     /**
      * Deletes the idempotency keys past their lifetime, and says how many:
@@ -555,6 +567,7 @@ export class PostScheduling extends Context.Service<
             content,
             options = [],
             schedule: at,
+            tagIds = [],
           }: SchedulePostRequest,
           claimed: (
             post: Post
@@ -577,6 +590,10 @@ export class PostScheduling extends Context.Service<
             options
           );
 
+          const tags = yield* tagsFor(actor.workspaceId, tagIds).pipe(
+            withPorts
+          );
+
           const now = yield* DateTime.now;
           const postId = yield* newId(PostIdSchema).pipe(withPorts);
 
@@ -586,12 +603,15 @@ export class PostScheduling extends Context.Service<
           const post = scheduledThrough(
             yield* Effect.fromResult(
               schedulePost(
-                createDraft(
-                  postId,
-                  actor.workspaceId,
-                  content,
-                  authorOf(actor),
-                  Option.some(via)
+                tagPost(
+                  createDraft(
+                    postId,
+                    actor.workspaceId,
+                    content,
+                    authorOf(actor),
+                    Option.some(via)
+                  ),
+                  tags
                 ),
                 asReceived(at, received, now),
                 now

@@ -18,7 +18,7 @@
 - The use cases' permission checks refuse a client the user let read only.
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
-  `media-tools.ts`, `reports-tools.ts`, `people-tools.ts`, `webhooks-tools.ts`)
+  `tags-tools.ts`, `media-tools.ts`, `reports-tools.ts`, `people-tools.ts`, `webhooks-tools.ts`)
   and its handlers beside it, merged
   into `PealTools`. Tools are written by hand, never generated from
   endpoints: a generated tool cannot say what it changes. `find_tools`

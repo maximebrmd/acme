@@ -534,6 +534,7 @@
         "timeZone": "Pick a time zone from the list.",
         "unknownChannels": "Some of these channels are no longer connected.",
         "unknownMedia": "Some images or videos can no longer be attached.",
+        "unknownTags": "Some tags no longer exist. Choose the post's tags again.",
         "content": "Fix these before scheduling:"
       },
       "violation": {

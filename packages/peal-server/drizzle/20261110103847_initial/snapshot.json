@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "28db30a9-efec-4e46-a21b-38efa03a83ff",
+  "id": "39d10d9b-564d-434a-957f-8fbbf41891d7",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -805,6 +805,26 @@
         "n|rel|publishing.quota_usage",
         "n|type|publishing.quota_usage",
         "n|rel|publishing.quota_usage_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "tags"
+      ],
+      "writes": [
+        "s|tbl|publishing.tags",
+        "n|tbl|publishing.tags",
+        "e|tbl|publishing.tags",
+        "n|rel|publishing.tags",
+        "n|type|publishing.tags",
+        "n|rel|publishing.tags_pkey",
+        "n|rel|publishing.tags_workspace_name"
       ],
       "reads": [
         "n|sch|publishing"
@@ -2423,6 +2443,26 @@
         "n|sch|publishing",
         "n|col|publishing.post_targets.finished_at",
         "n|col|publishing.post_targets.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "posts",
+        "posts_tag_ids"
+      ],
+      "writes": [
+        "s|idx|publishing.posts_tag_ids",
+        "n|idx|publishing.posts_tag_ids",
+        "e|idx|publishing.posts_tag_ids",
+        "n|rel|publishing.posts_tag_ids"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
+        "n|col|publishing.posts.tag_ids"
       ]
     },
     {
@@ -4500,6 +4540,12 @@
     {
       "schema": "publishing",
       "name": "quota_usage",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "tags",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -8513,6 +8559,19 @@
     {
       "schema": "publishing",
       "table": "posts",
+      "name": "tag_ids",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 1,
+      "default": "'{}'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
       "name": "text",
       "type": "text",
       "typeSchema": null,
@@ -8814,6 +8873,84 @@
       "table": "quota_usage",
       "name": "units",
       "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "tags",
+      "name": "colour",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "tags",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "tags",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "tags",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "tags",
+      "name": "name_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "tags",
+      "name": "workspace_id",
+      "type": "uuid",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -14534,6 +14671,27 @@
     {
       "schema": "publishing",
       "table": "posts",
+      "name": "posts_tag_ids",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "tag_ids",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "gin",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
       "name": "posts_workspace_scheduled_at",
       "nameExplicit": true,
       "columns": [
@@ -16690,6 +16848,16 @@
     },
     {
       "schema": "publishing",
+      "table": "tags",
+      "name": "tags_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
       "table": "upload_sessions",
       "name": "upload_sessions_pkey",
       "columns": [
@@ -17066,6 +17234,18 @@
         "target_id",
         "round",
         "attempt"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "publishing",
+      "table": "tags",
+      "name": "tags_workspace_name",
+      "nameExplicit": true,
+      "columns": [
+        "workspace_id",
+        "name_key"
       ],
       "nullsNotDistinct": false,
       "entityType": "uniques"

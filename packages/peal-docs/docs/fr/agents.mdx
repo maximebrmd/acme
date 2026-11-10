@@ -16,6 +16,7 @@ Un agent IA peut publier par Peal comme le fait un membre : il lit les canaux de
 | Lister les canaux où une publication peut partir, les médias qu’elle peut montrer, les brouillons et les publications | `list_channels`, `list_media`, `list_drafts`, `list_posts` |
 | Faire entrer une image ou une vidéo depuis une adresse publique                                                       | `import_media`                                             |
 | Rédiger un brouillon, le modifier ou le supprimer                                                                     | `create_draft`, `update_draft`, `discard_draft`            |
+| Ranger des publications sous les étiquettes de l’espace de travail, et lister celles d’une étiquette                  | `list_tags`, `create_tag`, `tag_post`, `list_posts`        |
 | Programmer un brouillon, publier maintenant, ou créer et envoyer une publication en un seul appel                     | `schedule_post`, `publish_post`, `create_post`             |
 | Vérifier une publication avant de l’envoyer, et voir ce que recevrait chaque canal                                    | `validate_post`                                            |
 | Créer et envoyer jusqu’à 50 publications en un seul appel                                                             | `create_posts`                                             |
@@ -226,6 +227,7 @@ Faites d’abord lancer `peal doctor --json` à l’agent : il vérifie le serve
 | `get_post`                        | `peal posts show <post-id>`                                                                                            |
 | `list_posts`, `await_post`        | `peal posts list`, `peal posts wait <post-id>`                                                                         |
 | `list_post_attempts`              | `peal posts attempts <post-id>`                                                                                        |
+| `list_tags`, `tag_post`           | `peal tags list`, `peal posts tag <post-id> --tag <tag>`                                                               |
 | `list_activity`                   | `peal activity list`                                                                                                   |
 | `repost_target`, `confirm_target` | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`                        |
 
@@ -265,6 +267,8 @@ Votre propre agent ou script peut appeler les points d’accès sur lesquels rep
 | `reschedule_post`, `publish_post` | `POST …/posts/{postId}/reschedule`, avec l’instant présent pour publier maintenant |
 | `unschedule_post`, `cancel_post`  | `POST …/posts/{postId}/unschedule`, `POST …/posts/{postId}/cancel`                 |
 | `get_post`, `list_post_attempts`  | `GET …/posts/{postId}`, `GET …/posts/{postId}/attempts`                            |
+| `list_tags`, `create_tag`         | `GET …/tags`, `POST …/tags`                                                        |
+| `tag_post`                        | `PUT …/posts/{postId}/tags`                                                        |
 | `await_post`                      | `GET …/posts/{postId}/outcome`                                                     |
 | `repost_target`, `confirm_target` | `POST …/posts/{postId}/targets/{targetId}/repost`, `…/confirm`                     |
 

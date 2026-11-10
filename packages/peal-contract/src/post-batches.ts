@@ -10,6 +10,7 @@ import { PostNotFound } from "./post-not-found.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
 import { UnknownMedia } from "./unknown-media.ts";
+import { UnknownTags } from "./unknown-tags.ts";
 
 /** The most posts one bulk request makes. */
 export const maxBulkPosts = 50;
@@ -36,6 +37,7 @@ export const PostRefusalSchema = Schema.Union([
   PostNotFound,
   DuplicatePost,
   Forbidden,
+  UnknownTags,
 ]).annotate({ identifier: "PostRefusal" });
 
 export type PostRefusal = typeof PostRefusalSchema.Type;

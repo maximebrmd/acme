@@ -5,6 +5,7 @@ import type {
   PostOutcome,
   PostStatusName,
 } from "#publishing/domain/post-status.ts";
+import type { TagId } from "#publishing/domain/tag-id.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
@@ -42,6 +43,11 @@ export interface PostFilter {
   /** Scheduled from this instant, included. */
   readonly scheduledFrom: Option.Option<DateTime.Utc>;
   readonly status: Option.Option<PostStatusName>;
+  /**
+   * Posts filed under one of these tags at least; an empty list matches
+   * no post.
+   */
+  readonly tagIds: Option.Option<readonly TagId[]>;
 }
 
 /**

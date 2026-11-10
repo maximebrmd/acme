@@ -12,6 +12,7 @@ import { ToolRefused } from "#app/mcp/tool-refused.ts";
 export const ToolAreaSchema = Schema.Literals([
   "account",
   "posts",
+  "tags",
   "media",
   "reports",
   "people",
@@ -21,7 +22,7 @@ export const ToolAreaSchema = Schema.Literals([
   "review",
 ]).annotate({
   description:
-    "An area of Peal: `account` (who the connection is, its workspace and channels, the server), `posts` (drafts, scheduling, publishing, outcomes), `media` (images and videos), `reports` (analytics, the plan and the activity log), `people` (members and invitations), `webhooks` (endpoints and their deliveries), `connect` (connect links, and the workspace's partner account), `channels` (what each channel's platform takes, and its lookups), `review` (the posts that wait for an approval, and deciding them).",
+    "An area of Peal: `account` (who the connection is, its workspace and channels, the server), `posts` (drafts, scheduling, publishing, outcomes), `tags` (the labels a workspace files its posts under, and tagging a post), `media` (images and videos), `reports` (analytics, the plan and the activity log), `people` (members and invitations), `webhooks` (endpoints and their deliveries), `connect` (connect links, and the workspace's partner account), `channels` (what each channel's platform takes, and its lookups), `review` (the posts that wait for an approval, and deciding them).",
 });
 
 export type ToolArea = typeof ToolAreaSchema.Type;

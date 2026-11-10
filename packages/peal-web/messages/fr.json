@@ -534,6 +534,7 @@
         "timeZone": "Choisissez un fuseau horaire dans la liste.",
         "unknownChannels": "Certains de ces canaux ne sont plus connectés.",
         "unknownMedia": "Certaines images ou vidéos ne peuvent plus être jointes.",
+        "unknownTags": "Certaines étiquettes n’existent plus. Choisissez à nouveau celles de la publication.",
         "content": "À corriger avant de programmer :"
       },
       "violation": {

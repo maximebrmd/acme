@@ -16,6 +16,7 @@ An AI agent can post through Peal the way a member does: it reads the workspace'
 | List the channels a post can go to, the media it can show, drafts and posts   | `list_channels`, `list_media`, `list_drafts`, `list_posts` |
 | Bring an image or a video in from a public address                            | `import_media`                                             |
 | Write a draft, change it or discard it                                        | `create_draft`, `update_draft`, `discard_draft`            |
+| File posts under the workspace's tags, and list a tag's posts                 | `list_tags`, `create_tag`, `tag_post`, `list_posts`        |
 | Schedule a draft, publish a post now, or create and send one in a single call | `schedule_post`, `publish_post`, `create_post`             |
 | Check a post before sending it, and see what each channel would receive       | `validate_post`                                            |
 | Create and send up to 50 posts in one call                                    | `create_posts`                                             |
@@ -226,6 +227,7 @@ Have the agent run `peal doctor --json` first: it checks the server, the credent
 | `get_post`                        | `peal posts show <post-id>`                                                                                   |
 | `list_posts`, `await_post`        | `peal posts list`, `peal posts wait <post-id>`                                                                |
 | `list_post_attempts`              | `peal posts attempts <post-id>`                                                                               |
+| `list_tags`, `tag_post`           | `peal tags list`, `peal posts tag <post-id> --tag <tag>`                                                      |
 | `list_activity`                   | `peal activity list`                                                                                          |
 | `repost_target`, `confirm_target` | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`               |
 
@@ -265,6 +267,8 @@ Your own agent or script can call the endpoints the tools are built on, under `/
 | `reschedule_post`, `publish_post` | `POST …/posts/{postId}/reschedule`, with the present instant for now |
 | `unschedule_post`, `cancel_post`  | `POST …/posts/{postId}/unschedule`, `POST …/posts/{postId}/cancel`   |
 | `get_post`, `list_post_attempts`  | `GET …/posts/{postId}`, `GET …/posts/{postId}/attempts`              |
+| `list_tags`, `create_tag`         | `GET …/tags`, `POST …/tags`                                          |
+| `tag_post`                        | `PUT …/posts/{postId}/tags`                                          |
 | `await_post`                      | `GET …/posts/{postId}/outcome`                                       |
 | `repost_target`, `confirm_target` | `POST …/posts/{postId}/targets/{targetId}/repost`, `…/confirm`       |
 

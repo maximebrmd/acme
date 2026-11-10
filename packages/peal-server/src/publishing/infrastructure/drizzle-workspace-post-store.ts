@@ -14,7 +14,7 @@ import type {
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { idempotencyKeys, posts, postTargets } from "./schema.ts";
+import { idempotencyKeys, postTargets, posts, tags } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -235,6 +235,12 @@ export const DrizzleWorkspacePostStore = Layer.effect(
         yield* db
           .delete(idempotencyKeys)
           .where(eq(idempotencyKeys.workspaceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        // And the tags they were filed under.
+        yield* db
+          .delete(tags)
+          .where(eq(tags.workspaceId, workspaceId))
           .pipe(Effect.mapError(failed));
       }
     );

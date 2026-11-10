@@ -166,6 +166,7 @@ export const ComposerErrors = ({
     Unexpected: generic,
     UnknownChannels: () => t("errors.unknownChannels"),
     UnknownMedia: () => t("errors.unknownMedia"),
+    UnknownTags: () => t("errors.unknownTags"),
     WorkspaceNotFound: generic,
   });
 

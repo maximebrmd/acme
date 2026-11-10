@@ -11,6 +11,7 @@ import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
 import { ReviewTools } from "#app/mcp/review-tools.ts";
+import { TagTools } from "#app/mcp/tags-tools.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { WebhookTools } from "#app/mcp/webhooks-tools.ts";
 
@@ -117,6 +118,7 @@ export const BasicTools = Toolkit.make(
 export const PealTools = Toolkit.merge(
   BasicTools,
   PostTools,
+  TagTools,
   MediaTools,
   ReportTools,
   PeopleTools,

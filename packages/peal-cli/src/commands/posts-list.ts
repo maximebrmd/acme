@@ -15,6 +15,7 @@ import type { Post, PostPage } from "peal-contract";
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns, excerpt, instant } from "#print.ts";
+import { findTag } from "#tags.ts";
 import { instantOf, zoneFlag } from "#when.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
@@ -130,6 +131,13 @@ export const list = Command.make(
       ),
       Flag.optional
     ),
+    tag: Flag.String("tag").pipe(
+      Flag.withMetavar("<id-or-name>"),
+      Flag.withDescription(
+        "Only the posts filed under this tag, by its id or its name, as peal tags list shows them."
+      ),
+      Flag.optional
+    ),
     timeZone: zoneFlag(
       "The IANA time zone a --from or a --to without an offset is read in, such as Europe/Paris."
     ),
@@ -146,7 +154,15 @@ export const list = Command.make(
     // A time that cannot be read is refused before a request leaves.
     const from = yield* instantFor(input.from, input.timeZone, "--from");
     const to = yield* instantFor(input.to, input.timeZone, "--to");
-    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+    const session = yield* inWorkspace(input.workspace);
+    const { client, url, workspace } = session;
+
+    // A tag is named by its id or its name; the search takes its id.
+    const tagId = yield* Option.match(input.tag, {
+      onNone: () => Effect.succeedNone,
+      onSome: (named) =>
+        findTag(session, named).pipe(Effect.map(({ id }) => Option.some(id))),
+    });
 
     const page = yield* client.posts
       .search({
@@ -164,6 +180,7 @@ export const list = Command.make(
           ...given(input.platform, (platform) => ({ platform })),
           ...given(input.sort, (sort) => ({ sort })),
           ...given(input.status, (status) => ({ status })),
+          ...given(tagId, (filedUnder) => ({ tagId: filedUnder })),
           ...given(to, (instantTo) => ({ to: instantTo })),
         },
       })

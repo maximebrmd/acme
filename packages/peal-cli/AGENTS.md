@@ -12,7 +12,7 @@
   allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `media`, `approvals`, `review`, `analytics`, `billing`,
+  `post`, `tags`, `media`, `approvals`, `review`, `analytics`, `billing`,
   `members`, `invitations` and `webhooks`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
@@ -67,6 +67,14 @@
   row refused or unreadable ends as a refusal, after printing every row, and
   never prints the file. No command sends `posts.bulk`: a CSV file is the
   command line's way to several posts.
+- `peal tags` (list, create, update, delete) keeps a workspace's tags, and
+  `peal posts tag`, `peal posts list --tag`, `peal drafts save --tag` and
+  `peal post --tag` file posts under them. Wherever a command takes a tag
+  it takes its id or its name, whatever its case, resolved through
+  `tags.list` (`src/tags.ts`: `tagNamed`, `tagsNamed`); `drafts save
+  --post` sends `tagIds` only when `--tag` is given, so a draft keeps its
+  tags. The MCP toolkit `tags-tools.ts` has the same (`list_tags`,
+  `create_tag`, `update_tag`, `delete_tag`, `tag_post`), by id alone.
 - The command line has `peal links` (create, list, show, revoke) and
   `peal partner` (show, keys, workspaces), which read; the MCP toolkit
   `connect-tools.ts` has the same, `create_connect_link` and

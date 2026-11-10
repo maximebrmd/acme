@@ -30,6 +30,7 @@ import {
 } from "#post-flags.ts";
 import { channelsOf, namesFor, printPost, timeOf } from "#post-result.ts";
 import { Refused } from "#refused.ts";
+import { tagIdsOf, tagsFlag } from "#tags.ts";
 import { instantOf, timeZoneFlag } from "#when.ts";
 import { channelNames, inWorkspace, workspaceFlag } from "#workspace.ts";
 
@@ -292,6 +293,9 @@ export const post = Command.make(
     options: optionsFlag(
       'What the post sets on a channel whose platform asks for more, as peal drafts save takes it: JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels.'
     ),
+    tags: tagsFlag(
+      "A tag to file the post under, by its id or its name, as peal tags list shows them; repeat it for several. Tags say nothing to the platforms."
+    ),
     text: Argument.String("text").pipe(
       Argument.withDescription("What the post says.")
     ),
@@ -310,7 +314,10 @@ export const post = Command.make(
 
     const { channelIds, options, when } = yield* planned(input);
 
-    const withMedia = (media: readonly MediaAttachment[]) => {
+    const withMedia = (
+      media: readonly MediaAttachment[],
+      tagIds: readonly string[] = []
+    ) => {
       const written: NewPost = {
         channelIds,
         content: { media, overrides: [], text: input.text },
@@ -318,8 +325,12 @@ export const post = Command.make(
         when,
       };
 
+      // Tags are sent only when some were given.
+      const filed: NewPost =
+        tagIds.length === 0 ? written : { ...written, tagIds };
+
       return checkPost(
-        input.allowDuplicate ? { ...written, allowDuplicate: true } : written
+        input.allowDuplicate ? { ...filed, allowDuplicate: true } : filed
       );
     };
 
@@ -328,6 +339,8 @@ export const post = Command.make(
     const session = yield* inWorkspace(input.workspace);
     const { client, url, workspace } = session;
     const destination = { client, url, workspaceId: workspace.id };
+    // A tag the workspace lacks is refused before any media is stored.
+    const tagIds = yield* tagIdsOf(session, input.tags);
     const media: MediaAttachment[] = [];
 
     for (const [index, source] of input.media.entries()) {
@@ -341,7 +354,7 @@ export const post = Command.make(
     }
 
     if (input.dryRun) {
-      yield* check(session, yield* withMedia(media), input.json);
+      yield* check(session, yield* withMedia(media, tagIds), input.json);
 
       return;
     }
@@ -353,7 +366,7 @@ export const post = Command.make(
           onSome: (key) => ({ "idempotency-key": key }),
         }),
         params: { workspaceId: workspace.id },
-        payload: yield* withMedia(media),
+        payload: yield* withMedia(media, tagIds),
         query: Option.match(input.wait, {
           onNone: () => ({}),
           onSome: (wait) => ({ wait }),

@@ -12,6 +12,7 @@ import {
   PostReviewSchema,
   PostSchema,
   PostValidationSchema,
+  TagSchema,
 } from "peal-contract";
 import type { TargetOptions } from "peal-contract";
 
@@ -264,9 +265,12 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           create_draft: [false, false, false, false],
           create_post: [false, false, false, true],
           create_posts: [false, false, false, true],
+          create_tag: [false, false, false, false],
           // An endpoint is a server outside Peal, which then hears of the
           // workspace.
           create_webhook: [false, false, false, true],
+          // Its posts lose it, and stay.
+          delete_tag: [false, true, true, false],
           discard_draft: [false, true, true, false],
           find_tools: [true, false, true, false],
           get_billing: [true, false, true, false],
@@ -289,6 +293,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_partner_workspaces: [true, false, true, false],
           list_post_attempts: [true, false, true, false],
           list_posts: [true, false, true, false],
+          list_tags: [true, false, true, false],
           list_webhook_deliveries: [true, false, true, false],
           list_webhooks: [true, false, true, false],
           list_workspaces: [true, false, true, false],
@@ -302,8 +307,12 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           run_channel_lookup: [true, false, true, true],
           schedule_post: [false, false, false, true],
           server_health: [true, false, true, false],
+          // The same tags again change nothing more, and remove nothing
+          // but a label.
+          tag_post: [false, false, true, false],
           unschedule_post: [false, true, true, false],
           update_draft: [false, true, true, false],
+          update_tag: [false, true, true, false],
           // It asks TikTok what a creator takes.
           validate_post: [true, false, true, true],
           whoami: [true, false, true, false],
@@ -746,6 +755,165 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             }),
             "This is not one of the workspace's channels"
           );
+        })
+    );
+
+    it.effect(
+      "keep the workspace's tags, file posts under them and list a tag's posts",
+      () =>
+        Effect.gen(function* tags() {
+          const fixture = yield* ToolsFixture;
+          const writer = yield* connected(fixture.writing);
+          const reader = yield* connected(fixture.reading);
+
+          const TagJsonSchema = Schema.toCodecJson(TagSchema);
+
+          const TagsJsonSchema = Schema.toCodecJson(
+            Schema.Struct({ tags: Schema.Array(TagSchema) })
+          );
+
+          const PostsJsonSchema = Schema.toCodecJson(
+            Schema.Struct({ posts: Schema.Array(PostSchema) })
+          );
+
+          const campaign = yield* writer.call("create_tag", TagJsonSchema, {
+            colour: "green",
+            name: "Synthetic campaign",
+          });
+
+          assert.strictEqual(campaign.name, "Synthetic campaign");
+          assert.strictEqual(campaign.colour, "green");
+
+          // A name is a tag's own, whatever its case.
+          assert.include(
+            yield* writer.refused("create_tag", {
+              colour: "red",
+              name: "SYNTHETIC CAMPAIGN",
+            }),
+            "The workspace already has a tag of this name"
+          );
+
+          // A connection that reads only reads the tags, and makes none.
+          assert.include(
+            yield* reader.refused("create_tag", {
+              colour: "blue",
+              name: "Not for a reader",
+            }),
+            "did not give this client the scope workspace:write"
+          );
+          assert.deepStrictEqual(
+            (yield* reader.call("list_tags", TagsJsonSchema)).tags.map(
+              ({ id }) => id
+            ),
+            [campaign.id]
+          );
+
+          // What is left out of a change stays.
+          const renamed = yield* writer.call("update_tag", TagJsonSchema, {
+            name: "Synthetic launch",
+            tagId: campaign.id,
+          });
+
+          assert.strictEqual(renamed.name, "Synthetic launch");
+          assert.strictEqual(renamed.colour, "green");
+          assert.include(
+            yield* writer.refused("update_tag", { tagId: campaign.id }),
+            "Give a name, a colour or both"
+          );
+
+          const draft = yield* writer.call("create_draft", PostJsonSchema, {
+            channelIds: [fixture.channelId],
+            content: content("A synthetic draft, filed under a tag."),
+            tagIds: [campaign.id],
+          });
+
+          assert.deepStrictEqual(draft.tagIds, [campaign.id]);
+
+          const plain = yield* writer.call("create_draft", PostJsonSchema, {
+            channelIds: [],
+            content: content("A synthetic draft under no tag."),
+          });
+
+          assert.deepStrictEqual(plain.tagIds, []);
+
+          // A draft rewritten without tags keeps those it has.
+          const rewritten = yield* writer.call("update_draft", PostJsonSchema, {
+            channelIds: [fixture.channelId],
+            content: content("A synthetic draft, still filed."),
+            postId: draft.id,
+          });
+
+          assert.deepStrictEqual(rewritten.tagIds, [campaign.id]);
+
+          const tagged = yield* writer.call("tag_post", PostJsonSchema, {
+            postId: plain.id,
+            tagIds: [campaign.id],
+          });
+
+          assert.deepStrictEqual(tagged.tagIds, [campaign.id]);
+          assert.include(
+            yield* reader.refused("tag_post", {
+              postId: plain.id,
+              tagIds: [],
+            }),
+            "This connection may not tag posts in this workspace"
+          );
+          assert.include(
+            yield* writer.refused("tag_post", {
+              postId: plain.id,
+              tagIds: ["0190f3a0-0000-7000-8000-00000000c0de", "not-a-tag"],
+            }),
+            "These tags are not the workspace's"
+          );
+
+          const filed = yield* reader.call("list_posts", PostsJsonSchema, {
+            tagId: campaign.id,
+          });
+
+          assert.deepStrictEqual(
+            filed.posts.map(({ id }) => id).toSorted(),
+            [draft.id, plain.id].toSorted()
+          );
+
+          // No tag at all takes them off.
+          const cleared = yield* writer.call("tag_post", PostJsonSchema, {
+            postId: plain.id,
+            tagIds: [],
+          });
+
+          assert.deepStrictEqual(cleared.tagIds, []);
+
+          // Deleting a tag takes it off its posts, which stay.
+          assert.deepStrictEqual(
+            yield* writer.call(
+              "delete_tag",
+              Schema.Struct({ deleted: Schema.String }),
+              { tagId: campaign.id }
+            ),
+            { deleted: campaign.id }
+          );
+          assert.deepStrictEqual(
+            (yield* writer.call("get_post", PostJsonSchema, {
+              postId: draft.id,
+            })).tagIds,
+            []
+          );
+          assert.include(
+            yield* writer.refused("delete_tag", { tagId: campaign.id }),
+            "The workspace has no tag with this id"
+          );
+          assert.deepStrictEqual(
+            (yield* reader.call("list_tags", TagsJsonSchema)).tags,
+            []
+          );
+
+          for (const postId of [draft.id, plain.id]) {
+            yield* writer.call(
+              "discard_draft",
+              Schema.Struct({ discarded: Schema.String }),
+              { postId }
+            );
+          }
         })
     );
 

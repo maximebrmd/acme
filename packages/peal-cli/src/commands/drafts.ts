@@ -13,6 +13,7 @@ import { jsonFlag, printJson, printNothing } from "#json.ts";
 import { optionsOf } from "#post-flags.ts";
 import { columns, excerpt } from "#print.ts";
 import { Refused } from "#refused.ts";
+import { tagIdsOf, tagsFlag } from "#tags.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
 const plural = (count: number, one: string, many: string) =>
@@ -143,6 +144,9 @@ const save = Command.make(
       Flag.withDescription("The draft to change. Without it, a new draft."),
       Flag.optional
     ),
+    tags: tagsFlag(
+      "A tag to file the post under, by its id or its name, as peal tags list shows them; repeat it for several. A draft you change keeps its tags without it, and takes those given instead of them with it; peal posts tag takes them all off."
+    ),
     text: Flag.String("text").pipe(
       Flag.withDescription(
         "What the post says. A draft you change keeps its text without it."
@@ -152,9 +156,15 @@ const save = Command.make(
     workspace: workspaceFlag,
   },
   Effect.fn("drafts.save")(function* save(input) {
-    const { client, url, workspace } = yield* inWorkspace(input.workspace);
+    const session = yield* inWorkspace(input.workspace);
+    const { client, url, workspace } = session;
     const params = { workspaceId: workspace.id };
     const given = yield* Effect.all(input.options.map(optionsOf));
+    const tagIds = yield* tagIdsOf(session, input.tags);
+
+    // Tags are sent only when some were given: a new draft has none
+    // without them, and a draft that changes keeps its own.
+    const filed = tagIds.length === 0 ? {} : { tagIds };
 
     const saved: Post = yield* Option.match(input.postId, {
       onNone: () =>
@@ -166,6 +176,7 @@ const save = Command.make(
             text: Option.getOrElse(input.text, () => ""),
           },
           options: given,
+          ...filed,
         }).pipe(
           Effect.flatMap((payload) =>
             client.posts
@@ -196,6 +207,7 @@ const save = Command.make(
                 text: Option.getOrElse(input.text, () => draft.content.text),
               },
               options: withOptions(channelIds, given, kept),
+              ...filed,
             });
           }),
           Effect.flatMap((payload) =>
@@ -218,7 +230,7 @@ const save = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Write a new draft, or change one: its text, channels and the options of platforms that ask for more. peal posts schedule schedules it, and peal posts publish sends it now."
+    "Write a new draft, or change one: its text, channels, tags and the options of platforms that ask for more. peal posts schedule schedules it, and peal posts publish sends it now."
   )
 );
 

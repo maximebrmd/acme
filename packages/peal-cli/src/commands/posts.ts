@@ -28,6 +28,7 @@ import { channelIdsOf, channelsFlag } from "#post-flags.ts";
 import { channelsOf, namesFor, printPost, timeOf } from "#post-result.ts";
 import { columns, excerpt, instant } from "#print.ts";
 import { Refused } from "#refused.ts";
+import { tagsFlag, tagsNamed, tagsOf } from "#tags.ts";
 import { atFlag, instantOf, timeZoneFlag } from "#when.ts";
 import { channelNames, inWorkspace, named, workspaceFlag } from "#workspace.ts";
 
@@ -175,7 +176,8 @@ const show = Command.make(
   "show",
   { json: jsonFlag, postId: postArgument, workspace: workspaceFlag },
   Effect.fn("posts.show")(function* show({ json, postId, workspace: choice }) {
-    const { client, url, workspace } = yield* inWorkspace(choice);
+    const session = yield* inWorkspace(choice);
+    const { client, url, workspace } = session;
 
     const post = yield* client.posts
       .get({ params: { postId, workspaceId: workspace.id } })
@@ -189,6 +191,19 @@ const show = Command.make(
 
     const names = yield* channelNames(client, workspace.id);
 
+    // Its tags by name; by id when the workspace's cannot be read.
+    const tagNames =
+      post.tagIds.length === 0
+        ? []
+        : yield* tagsOf(session).pipe(
+            Effect.map((tags) =>
+              post.tagIds.map(
+                (tagId) => tags.find(({ id }) => id === tagId)?.name ?? tagId
+              )
+            ),
+            Effect.orElseSucceed(() => post.tagIds)
+          );
+
     const status =
       post.outcome === null ? post.status : `${post.status} (${post.outcome})`;
 
@@ -196,6 +211,10 @@ const show = Command.make(
       `Post ${post.id} in ${workspace.name}: ${status}${whenOf(post)}.`
     );
     yield* Console.log(`  ${excerpt(post.content.text)}`);
+
+    if (tagNames.length > 0) {
+      yield* Console.log(`Tags: ${tagNames.join(", ")}`);
+    }
 
     if (post.targets.length === 0) {
       yield* Console.log("It is for no channel yet.");
@@ -226,7 +245,7 @@ const show = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Show a post: its status and time, how it went on each channel, with the target ids repost and confirm take, and its options on the platforms that ask for more."
+    "Show a post: its status and time, its tags, how it went on each channel, with the target ids repost and confirm take, and its options on the platforms that ask for more."
   )
 );
 
@@ -623,9 +642,54 @@ const cancel = Command.make(
   )
 );
 
+const tag = Command.make(
+  "tag",
+  {
+    json: jsonFlag,
+    postId: postArgument,
+    tags: tagsFlag(
+      "A tag to file the post under, by its id or its name, as peal tags list shows them; repeat it for several. Without any, the post loses every tag."
+    ),
+    workspace: workspaceFlag,
+  },
+  Effect.fn("posts.tag")(function* tag({
+    json,
+    postId,
+    tags: given,
+    workspace: choice,
+  }) {
+    const session = yield* inWorkspace(choice);
+    const { client, url, workspace } = session;
+    const chosen = yield* tagsNamed(session, given);
+
+    const post = yield* client.posts
+      .tag({
+        params: { postId, workspaceId: workspace.id },
+        payload: { tagIds: chosen.map(({ id }) => id) },
+      })
+      .pipe(Effect.mapError(explain(url)));
+
+    if (json) {
+      yield* printJson(PostSchema, post);
+
+      return;
+    }
+
+    yield* Console.log(
+      chosen.length === 0
+        ? `Took every tag off post ${post.id}.`
+        : `Post ${post.id} is now filed under: ${chosen.map(({ name }) => name).join(", ")}.`
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "File a post under these tags of the workspace, instead of those it had; without --tag, take them all off. Tags say nothing to the platforms, so a post takes them whatever its status, sent or not."
+  )
+);
+
 export const posts = Command.make("posts").pipe(
   Command.withDescription(
-    "A workspace's posts: listing them, scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, following up where it failed, and importing a file of them. peal post writes and sends one in a single command."
+    "A workspace's posts: listing them, scheduling a draft, publishing it now, moving, cancelling or taking it back to draft, how it went, following up where it failed, filing it under tags, and importing a file of them. peal post writes and sends one in a single command."
   ),
   Command.withSubcommands([
     list,
@@ -639,6 +703,7 @@ export const posts = Command.make("posts").pipe(
     cancel,
     repost,
     confirm,
+    tag,
     importPosts,
   ])
 );

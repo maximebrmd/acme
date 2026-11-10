@@ -1,4 +1,4 @@
-import { DateTime, Duration, Option, Result, Schema } from "effect";
+import { DateTime, Duration, Effect, Option, Result, Schema } from "effect";
 
 import { can } from "#shared/domain/access.ts";
 import type { Actor } from "#shared/domain/access.ts";
@@ -20,6 +20,8 @@ import type { PostOutcome, PostStatus } from "./post-status.ts";
 import type { PostTarget } from "./post-target.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
 import { Schedule } from "./schedule.ts";
+import type { TagId } from "./tag-id.ts";
+import { PostTagIdsSchema } from "./tag.ts";
 
 /**
  * A post, sent to one or more channels (its targets, `./post-target.ts`), and
@@ -45,7 +47,8 @@ import { Schedule } from "./schedule.ts";
  * What the post says is its content (`./post-content.ts`), which only a
  * draft may change. Its author is the member who created it, none when an
  * API key did, and its attribution says how it was created and scheduled
- * (`./post-origin.ts`).
+ * (`./post-origin.ts`). Its tags (`./tag.ts`) file it for its workspace:
+ * they are no part of what it says, and change whatever its status.
  *
  * `scheduleRevision` counts the times the post was scheduled or taken back
  * to draft. The job that publishes a post is started for one revision, and
@@ -64,6 +67,10 @@ export class Post extends Schema.Class<Post>(
   id: PostIdSchema,
   scheduleRevision: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   status: PostStatusSchema,
+  // None unless given: the labels its workspace filed it under.
+  tagIds: PostTagIdsSchema.pipe(
+    Schema.withConstructorDefault(Effect.succeed([]))
+  ),
   workspaceId: WorkspaceIdSchema,
 }) {}
 
@@ -81,6 +88,7 @@ const withStatus = (
     id: post.id,
     scheduleRevision,
     status,
+    tagIds: post.tagIds,
     workspaceId: post.workspaceId,
   });
 
@@ -151,6 +159,7 @@ export const editDraft = (post: Post, content: PostContent): Transition =>
           id: post.id,
           scheduleRevision: post.scheduleRevision,
           status: post.status,
+          tagIds: post.tagIds,
           workspaceId: post.workspaceId,
         })
       )
@@ -189,6 +198,23 @@ const attributed = (
     id: post.id,
     scheduleRevision: post.scheduleRevision,
     status: post.status,
+    tagIds: post.tagIds,
+    workspaceId: post.workspaceId,
+  });
+
+/**
+ * Files the post under these tags, instead of those it had. Tags say
+ * nothing to the platforms, so a post takes them whatever its status.
+ */
+export const tagPost = (post: Post, tagIds: readonly TagId[]): Post =>
+  new Post({
+    attribution: post.attribution,
+    authorId: post.authorId,
+    content: post.content,
+    id: post.id,
+    scheduleRevision: post.scheduleRevision,
+    status: post.status,
+    tagIds,
     workspaceId: post.workspaceId,
   });
 

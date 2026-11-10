@@ -186,11 +186,13 @@ peal drafts list                  # newest first; --limit and --cursor page thro
 peal drafts save --text "Spring catalogue is out" --channel <channel-id> --channel <channel-id>
 peal drafts save --post <post-id> --text "Spring catalogue is out today"
 peal drafts save --post <post-id> --options '<channel-id>={"platform":"youtube","title":"Spring catalogue","madeForKids":false}'
+peal drafts save --post <post-id> --tag "Spring campaign"
 peal drafts discard <post-id>
 ```
 
 - `peal drafts save` without `--post` writes a new draft, for the channels `--channel` names (none yet is fine). With `--post`, it changes that draft: the text, when `--text` is given, and the channels, when any `--channel` is. What you leave out stays as it was, its media and its [platform options](/scheduling#options) on the channels it keeps included.
 - `--options <channel-id>=<json>` sets a channel's platform options, as JSON with its `platform`: for YouTube, `title` and `madeForKids` (both needed to schedule), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia`; for TikTok, `privacyLevel` (needed, one `peal channels tiktok` lists), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated`; for Pinterest, `boardId` (needed, one `peal channels lookup` lists), `boardSectionId`, `title`, `link`, `coverSecond`, `dominantColor`; for LinkedIn, `visibility` (`public` when left out, `connections` on a profile, or `loggedIn`), `disableReshare`, `mentions` (company pages, each a `name` and a `urn` that `peal channels lookup` finds on a company page channel), `linkUrl` with its `linkTitle` and a `linkDescription`, and a PDF document's `documentTitle`; for Google Business Profile, `postType` (`standard` when left out, `event` or `offer`), `title`, `startsAt` and `endsAt` (needed for an event or an offer, as `2026-11-27T09:00`, on the location's clock), `callToAction` with `callToActionUrl`, and an offer's `couponCode`, `redeemUrl` and `terms`. Repeat it for several channels; it replaces that channel's options whole.
+- `--tag <id-or-name>` files the draft under one of the workspace's [tags](#tags); repeat it for several. A draft you change keeps its tags without it, and takes those given instead of them with it.
 - A draft goes out at no time. Its text, media and options are checked against each platform's rules when it is scheduled, with `peal posts schedule` or in the web app.
 - `peal drafts discard` deletes a draft for good. A post that is scheduled or went out is not a draft: unschedule or cancel it instead.
 
@@ -212,6 +214,7 @@ peal post "Spring catalogue is out" --channel <channel-id> --now --wait 30
 - **Where.** `--channel` (or `--channels`) names a channel by its id; repeat it, or separate ids with commas. At least one.
 - **Media.** Each `--media` is a file, uploaded first; an `https://` address, which the server imports; or the id of a media the workspace has, as `peal media list` shows it. They show in the order given, 20 at most. The first `--alt` describes the first `--media`, the second the second.
 - **Options.** `--options <channel-id>=<json>` sets a channel's [platform options](/scheduling#options), as `peal drafts save` takes them.
+- **Tags.** `--tag <id-or-name>` files the post under one of the workspace's [tags](#tags); repeat it for several.
 - **Running it again.** `--idempotency-key` takes any text of your choosing, of 255 characters at most, such as a UUID: within 24 hours, the same key with the same post answers the post the first run made, and makes no other; with another post it is refused. Without it, `peal` sends no key. To run a post with media again, give `--media` as media ids: files and addresses are stored anew on each run, which makes it another post.
 - **The same post twice.** Apart from keys, a post whose content (the text the channel receives and the same media, in the same order) already goes to one of its channels less than 23 hours from its time is refused, and `peal` names the post that has it. `--allow-duplicate` lets it through, when you mean to post the same twice ([Duplicate posts](/posting-api#duplicates)).
 - **Checking first.** `--dry-run` checks the post and posts nothing: it tells what would be refused.
@@ -224,6 +227,7 @@ The post is checked against every channel's platform first. When it breaks a rul
 ```sh
 peal posts list
 peal posts list --from 2026-11-01T00:00:00Z --to 2026-12-01T00:00:00Z
+peal posts list --tag "Spring campaign"
 peal posts show <post-id>
 peal posts attempts <post-id>
 peal posts wait <post-id> --seconds 30
@@ -238,11 +242,12 @@ peal posts cancel <post-id>
 peal posts repost <post-id> <target-id>
 peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
 peal posts confirm <post-id> <target-id> not-published
+peal posts tag <post-id> --tag "Spring campaign" --tag Evergreen
 ```
 
-- `peal posts list` lists the workspace's posts, whatever their state, a page at a time, with how each went ([List posts](/posting-api#search)).
+- `peal posts list` lists the workspace's posts, whatever their state, a page at a time, with how each went ([List posts](/posting-api#search)). `--tag` keeps the posts filed under a [tag](#tags).
 - `peal posts attempts` lists every attempt Peal made at publishing the post, by channel, round and attempt: when it started, how it ended, the code behind a refusal, the platform's own or Peal's, and when Peal tried again.
-- `peal posts show` prints the post's status and time, then one line per channel, starting with its target id, with how it went there: failed and why, unconfirmed and why, or published at its address (and kept private, when YouTube kept a public or unlisted video private), then the post's options on each channel that has some.
+- `peal posts show` prints the post's status and time, its tags when it has some, then one line per channel, starting with its target id, with how it went there: failed and why, unconfirmed and why, or published at its address (and kept private, when YouTube kept a public or unlisted video private), then the post's options on each channel that has some.
 - `peal posts wait` waits until every channel of a post has its result, up to `--seconds` (60 at most), then shows the post as it stands. Waiting changes nothing: run it again when the time ran out first.
 - `peal posts import` creates and sends the posts a CSV file lists, one per row, with the columns `text`, `channels` and `at`, and optionally `media`, `time_zone`, `allow_duplicate` and `idempotency_key` ([Import posts from a CSV file](/posting-api#import)). Every row is checked first, and nothing is made unless every row is valid. `--dry-run` only checks the file. `--idempotency-key` makes the import safe to run again within 24 hours: the rows already made are not made twice.
 - `peal posts schedule` schedules a draft for `--at`, read as `peal post` reads it, on the channels it has, or on those `--channel` names. Its text, media and options must fit each platform's rules, or nothing is scheduled.
@@ -252,6 +257,24 @@ peal posts confirm <post-id> <target-id> not-published
 - `peal posts cancel` cancels a draft or a scheduled post for good: it goes out on no channel. A post already publishing finishes with what its channels did, and those not yet sent are cancelled. To change a scheduled post and keep it, unschedule it instead.
 - `peal posts repost` sends the post again, now, on one channel where it failed or is unconfirmed. When it is unconfirmed, check the platform first: it may be live already.
 - `peal posts confirm` records what you found on the platform for a post Peal could not confirm: `published`, with its address if you have it, or `not-published`, which fails it there so `peal posts repost` can send it again. See [Scheduling](/scheduling) for how posts end.
+
+## Tags [#tags]
+
+```sh
+peal tags list
+peal tags create "Spring campaign" --colour green
+peal tags update "Spring campaign" --name "Spring 2027" --colour teal
+peal tags delete "Spring 2027"
+peal posts tag <post-id> --tag Evergreen
+```
+
+- Tags are the labels a workspace files its posts under, 100 at most. They say nothing to the platforms: nothing of a tag goes out with a post.
+- `peal tags create` takes a name of 40 characters at most, which no other tag of the workspace has, whatever its case, and a `--colour` (`gray` unless you say otherwise, `red`, `orange`, `amber`, `green`, `teal`, `blue`, `purple` or `pink`).
+- Wherever a command takes a tag, give its id or its name, whatever its case: `peal tags list` shows both.
+- `peal tags update` changes the name, the colour or both, and keeps what you leave out. Its posts keep the tag.
+- `peal tags delete` deletes a tag for good and takes it off every post that had it; the posts stay.
+- `peal posts tag` files a post under the tags `--tag` names, 10 at most, instead of those it had; without `--tag`, it takes them all off. A post takes tags whatever its status, sent or not.
+- Every member who reads posts reads the tags; creating, changing and deleting a tag, and tagging a post, need the right to change posts.
 
 ## Media [#media]
 

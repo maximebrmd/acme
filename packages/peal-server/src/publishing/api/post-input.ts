@@ -5,6 +5,7 @@ import {
   PostNotFound,
   UnknownChannels,
   UnknownMedia,
+  UnknownTags,
   NewPostSchema,
 } from "peal-contract";
 import type {
@@ -19,6 +20,8 @@ import { ChannelOptionsListSchema } from "#publishing/domain/channel-options.ts"
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
+import { TagIdSchema } from "#publishing/domain/tag-id.ts";
+import type { TagId } from "#publishing/domain/tag-id.ts";
 import {
   ChannelIdSchema,
   MediaAssetIdSchema,
@@ -36,6 +39,8 @@ const decodeMediaId = Schema.decodeUnknownOption(MediaAssetIdSchema);
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
 
 const decodeTargetId = Schema.decodeUnknownOption(PostTargetIdSchema);
+
+const decodeTagId = Schema.decodeUnknownOption(TagIdSchema);
 
 const decodeTimeZone = Schema.decodeUnknownOption(TimeZoneIdSchema);
 
@@ -81,6 +86,28 @@ export const optionsFrom = (input: readonly OptionsInput[]) =>
   channelIdsFrom(input.map(({ channelId }) => channelId)).pipe(
     Effect.andThen(decodeOptions(input).pipe(Effect.orDie))
   );
+
+/** The tags a request names, or UnknownTags for malformed ids. */
+export const tagIdsFrom = (
+  raw: readonly string[]
+): Effect.Effect<readonly TagId[], UnknownTags> => {
+  const invalid = malformed(raw, decodeTagId);
+
+  return Arr.isReadonlyArrayNonEmpty(invalid)
+    ? Effect.fail(new UnknownTags({ tagIds: invalid }))
+    : Effect.succeed(raw.flatMap((id) => Option.toArray(decodeTagId(id))));
+};
+
+// The tags a request names, when it names any.
+const tagsGiven = (
+  raw: readonly string[] | undefined
+): Effect.Effect<{ readonly tagIds?: readonly TagId[] }, UnknownTags> =>
+  raw === undefined
+    ? Effect.succeed({})
+    : tagIdsFrom(raw).pipe(Effect.map((tagIds) => ({ tagIds })));
+
+/** A draft's tags, as a request gives them: left out, nothing is said. */
+export const draftTagsFrom = tagsGiven;
 
 /** The post a path names, or PostNotFound. */
 export const postIdFrom = (raw: string) =>
@@ -179,6 +206,7 @@ export const sendRequestFrom = (input: NewPostInput, key?: string) =>
       content: yield* contentFrom(input.content),
       idempotency: yield* keyedFrom(input, key),
       options: yield* optionsFrom(input.options ?? []),
+      ...(yield* tagsGiven(input.tagIds)),
       timeZone: zone,
     };
 
