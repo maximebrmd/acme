@@ -17,6 +17,9 @@ import { auditRetention } from "#staff/domain/audit-retention.ts";
 import { deliveryRetention } from "#webhooks/domain/delivery-policy.ts";
 import { erasureLedgerRetention } from "#workspace/domain/erasure-ledger.ts";
 
+const categoryOf = (id: string) =>
+  processingRegister.find((category) => category.id === id);
+
 describe("the data processing registry", () => {
   it("keeps what French law has a host keep as long as the purge does", () => {
     expect({
@@ -70,23 +73,27 @@ describe("the data processing registry", () => {
   });
 
   it("says of what each new surface keeps: webhooks, how posts were made, idempotency keys and contract requests", () => {
-    const category = (id: string) =>
-      processingRegister.find((one) => one.id === id);
+    const [webhooks, content, contracts] = ["webhooks", "content", "contracts"]
+      .map(categoryOf)
+      .map((category) => ({
+        data: category?.data.en ?? "",
+        kept: [category?.retention.en ?? "", category?.retention.fr ?? ""],
+      }));
 
-    const webhooks = category("webhooks");
-    const content = category("content");
-    const contracts = category("contracts");
-
-    expect(webhooks?.retention.en).toContain("30 days");
-    expect(webhooks?.retention.fr).toContain("30 jours");
-    expect(content?.data.en).toContain("how each post was created");
-    expect(content?.retention.en).toContain("24 hours");
-    expect(content?.retention.fr).toContain("24 heures");
-    expect(contracts?.data.en).toContain("request to cancel");
-    expect(contracts?.retention.en).toContain("5 years from its receipt");
-    expect(contracts?.retention.fr).toContain(
-      "5 ans à compter de sa réception"
-    );
+    expect(webhooks?.kept).toStrictEqual([
+      expect.stringContaining("30 days"),
+      expect.stringContaining("30 jours"),
+    ]);
+    expect(content?.data).toContain("how each post was created");
+    expect(content?.kept).toStrictEqual([
+      expect.stringContaining("24 hours"),
+      expect.stringContaining("24 heures"),
+    ]);
+    expect(contracts?.data).toContain("request to cancel");
+    expect(contracts?.kept).toStrictEqual([
+      expect.stringContaining("5 years from its receipt"),
+      expect.stringContaining("5 ans à compter de sa réception"),
+    ]);
   });
 
   it("says something of every category, in both languages", () => {

@@ -417,10 +417,12 @@ layer(importingHeard, { timeout: "120 seconds" })(
             type: "media.ready",
           });
           assert.deepStrictEqual(
-            sent.slice(1).map(({ data, type }) => [
-              type,
-              "mediaId" in data ? data.mediaId : null,
-            ]),
+            sent
+              .slice(1)
+              .map(({ data, type }) => [
+                type,
+                "mediaId" in data ? data.mediaId : null,
+              ]),
             [["media.failed", damaged.asset.id]]
           );
 

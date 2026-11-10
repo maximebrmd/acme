@@ -4,7 +4,7 @@
 // at most, and staff acting as the member. Each gets what the scopes, the
 // key's permissions and the impersonation rules say, on every one of them.
 import { assert, layer } from "@effect/vitest";
-import { Context, Effect, Layer, Schema } from "effect";
+import { Context, Effect, Layer, Option, Schema } from "effect";
 import { HttpApiClient } from "effect/http-api";
 import { deviceCodeGrantType, OAuthApi } from "peal-contract";
 
@@ -80,10 +80,10 @@ const commandLine = Effect.fn("commandLine")(function* commandLine(
   return { authorization: `Bearer ${tokens.access_token}` };
 });
 
-const TaggedSchema = Schema.Struct({ _tag: Schema.String });
-
-const tagOf = (body: unknown): string =>
-  Schema.is(TaggedSchema)(body) ? body._tag : "";
+// The error an answer names, when it names one.
+const decodeTagged = Schema.decodeUnknownOption(
+  Schema.Struct({ _tag: Schema.String })
+);
 
 // What each endpoint answers a caller: 403 when they may not, and anything
 // else once they are let through to the use case's own rules.
@@ -308,7 +308,12 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
             Object.fromEntries(
               [...(ownerAnswers ?? [])].map(([name, { reply }]) => [
                 name,
-                reply.status === 200 ? "ok" : tagOf(reply.body),
+                reply.status === 200
+                  ? "ok"
+                  : Option.match(decodeTagged(reply.body), {
+                      onNone: () => "",
+                      onSome: ({ _tag }) => _tag,
+                    }),
               ])
             ),
             {
