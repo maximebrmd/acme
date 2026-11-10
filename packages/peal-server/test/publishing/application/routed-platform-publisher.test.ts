@@ -95,20 +95,30 @@ const PlanTest = Layer.succeed(
   })
 );
 
-const PublisherTest = RoutedPlatformPublisher.pipe(
-  Layer.provide(
-    Layer.mergeAll(
-      PlanTest,
-      RecordingClients,
-      credentialsOf(
-        { accountId: "UC-synthetic-channel", platform: "youtube" },
-        ["token-1"]
+// The publisher, for channels of this account.
+const publisherFor = (account: Parameters<typeof credentialsOf>[0]) =>
+  RoutedPlatformPublisher.pipe(
+    Layer.provide(
+      Layer.mergeAll(
+        PlanTest,
+        RecordingClients,
+        credentialsOf(account, ["token-1"])
       )
-    )
-  ),
-  Layer.provideMerge(DrizzlePostRepository),
-  Layer.provideMerge(DatabaseTest)
-);
+    ),
+    Layer.provideMerge(DrizzlePostRepository),
+    Layer.provideMerge(DatabaseTest)
+  );
+
+const PublisherTest = publisherFor({
+  accountId: "UC-synthetic-channel",
+  platform: "youtube",
+});
+
+// On a platform with threads.
+const ThreadPublisherTest = publisherFor({
+  accountId: "synthetic@mastodon.test",
+  platform: "mastodon",
+});
 
 const part = (text: string) =>
   new PostPart({ delaySeconds: 0, media: [], overrides: [], text });
@@ -162,105 +172,6 @@ layer(PublisherTest)("the platform adapters", (it) => {
       );
     })
   );
-  it.effect(
-    "receive a later part with the posts it answers to, or nothing when one is unknown",
-    () =>
-      Effect.gen(function* receiveParts() {
-        const posts = yield* PostRepository;
-        const postId = yield* newId(PostIdSchema);
-        const channelId = yield* newId(ChannelIdSchema);
-        const publishedAt = DateTime.makeUnsafe("2026-06-15T08:00:00Z");
-
-        const live = (index: number, id: Option.Option<string>) => ({
-          index,
-          permalink: Option.none(),
-          platformPostId: id.pipe(
-            Option.map((given) => PlatformPostIdSchema.make(given))
-          ),
-          publishedAt,
-        });
-
-        const pending = createTarget(
-          yield* newId(PostTargetIdSchema),
-          postId,
-          channelId
-        );
-
-        // Two parts are live; the second was found by hand, without an id.
-        const target = new PostTarget({
-          channelId,
-          id: pending.id,
-          liveParts: [live(0, Option.some("root-1")), live(1, Option.none())],
-          options: Option.none(),
-          postId,
-          round: 2,
-          status: {
-            _tag: "publishing",
-            cancelRequested: false,
-            startedAt: publishedAt,
-          },
-        });
-
-        yield* posts.insert(
-          createDraft(
-            postId,
-            yield* freshWorkspace,
-            new PostContent({
-              followUps: [part("Second"), part("Third")],
-              media: [],
-              overrides: [],
-              text: "First",
-            }),
-            Option.none()
-          ),
-          [target]
-        );
-
-        const send = (sent: number) =>
-          PlatformPublisher.use((publisher) =>
-            publisher.publish({
-              channelId,
-              idempotencyKey: `a-synthetic-part-${String(sent)}`,
-              part: sent,
-              postId,
-              startedAt: publishedAt,
-              targetId: target.id,
-            })
-          ).pipe(Effect.result);
-
-        const before = (yield* Ref.get(handed)).length;
-        const second = yield* send(1);
-        const third = yield* send(2);
-
-        yield* posts.remove(postId).pipe(Effect.orDie);
-
-        const received = (yield* Ref.get(handed)).slice(before);
-
-        // The second part answers the first, which is also its root.
-        assert.isTrue(Result.isSuccess(second));
-        assert.deepStrictEqual(
-          received.map(({ part: index, replyTo, text }) => ({
-            index,
-            replyTo,
-            text,
-          })),
-          [
-            {
-              index: 1,
-              replyTo: Option.some({ parent: "root-1", root: "root-1" }),
-              text: "Second",
-            },
-          ]
-        );
-
-        // The third would answer a part Peal has no id for: nothing is sent.
-        assert.deepStrictEqual(
-          Result.getFailure(third),
-          Option.some(new BadRequest({ code: "replyTargetUnknown" }))
-        );
-      })
-  );
-
   it.effect(
     "refuse a post the workspace's plan has no room for when it is due, sending nothing",
     () =>
@@ -363,3 +274,160 @@ layer(PublisherTest)("the platform adapters", (it) => {
       })
   );
 });
+
+layer(ThreadPublisherTest)("the adapters of a platform with threads", (it) => {
+  it.effect(
+    "receive a later part with the posts it answers to, or nothing when one is unknown",
+    () =>
+      Effect.gen(function* receiveParts() {
+        const posts = yield* PostRepository;
+        const postId = yield* newId(PostIdSchema);
+        const channelId = yield* newId(ChannelIdSchema);
+        const publishedAt = DateTime.makeUnsafe("2026-06-15T08:00:00Z");
+
+        const live = (index: number, id: Option.Option<string>) => ({
+          index,
+          permalink: Option.none(),
+          platformPostId: id.pipe(
+            Option.map((given) => PlatformPostIdSchema.make(given))
+          ),
+          publishedAt,
+        });
+
+        const pending = createTarget(
+          yield* newId(PostTargetIdSchema),
+          postId,
+          channelId
+        );
+
+        // Two parts are live; the second was found by hand, without an id.
+        const target = new PostTarget({
+          channelId,
+          id: pending.id,
+          liveParts: [live(0, Option.some("root-1")), live(1, Option.none())],
+          options: Option.none(),
+          postId,
+          round: 2,
+          status: {
+            _tag: "publishing",
+            cancelRequested: false,
+            startedAt: publishedAt,
+          },
+        });
+
+        yield* posts.insert(
+          createDraft(
+            postId,
+            yield* freshWorkspace,
+            new PostContent({
+              followUps: [part("Second"), part("Third")],
+              media: [],
+              overrides: [],
+              text: "First",
+            }),
+            Option.none()
+          ),
+          [target]
+        );
+
+        const send = (sent: number) =>
+          PlatformPublisher.use((publisher) =>
+            publisher.publish({
+              channelId,
+              idempotencyKey: `a-synthetic-part-${String(sent)}`,
+              part: sent,
+              postId,
+              startedAt: publishedAt,
+              targetId: target.id,
+            })
+          ).pipe(Effect.result);
+
+        const before = (yield* Ref.get(handed)).length;
+        const second = yield* send(1);
+        const third = yield* send(2);
+
+        yield* posts.remove(postId).pipe(Effect.orDie);
+
+        const received = (yield* Ref.get(handed)).slice(before);
+
+        // The second part answers the first, which is also its root.
+        assert.isTrue(Result.isSuccess(second));
+        assert.deepStrictEqual(
+          received.map(({ part: index, replyTo, text }) => ({
+            index,
+            replyTo,
+            text,
+          })),
+          [
+            {
+              index: 1,
+              replyTo: Option.some({ parent: "root-1", root: "root-1" }),
+              text: "Second",
+            },
+          ]
+        );
+
+        // The third would answer a part Peal has no id for: nothing is sent.
+        assert.deepStrictEqual(
+          Result.getFailure(third),
+          Option.some(new BadRequest({ code: "replyTargetUnknown" }))
+        );
+      })
+  );
+});
+
+layer(PublisherTest)(
+  "the adapters of a platform that takes a post alone",
+  (it) => {
+    it.effect("never receive a part after the first", () =>
+      Effect.gen(function* refusesParts() {
+        const posts = yield* PostRepository;
+        const postId = yield* newId(PostIdSchema);
+        const channelId = yield* newId(ChannelIdSchema);
+
+        const target = createTarget(
+          yield* newId(PostTargetIdSchema),
+          postId,
+          channelId
+        );
+
+        yield* posts.insert(
+          createDraft(
+            postId,
+            yield* freshWorkspace,
+            new PostContent({
+              followUps: [part("Second")],
+              media: [],
+              overrides: [],
+              text: "First",
+            }),
+            Option.none()
+          ),
+          [target]
+        );
+
+        const before = (yield* Ref.get(handed)).length;
+
+        const refused = yield* PlatformPublisher.use((publisher) =>
+          publisher.publish({
+            channelId,
+            idempotencyKey: "a-synthetic-stray-part",
+            part: 1,
+            postId,
+            startedAt: DateTime.makeUnsafe("2026-06-15T08:00:00Z"),
+            targetId: target.id,
+          })
+        ).pipe(
+          Effect.flip,
+          Effect.ensuring(posts.remove(postId).pipe(Effect.orDie))
+        );
+
+        assert.deepStrictEqual(
+          refused,
+          new BadRequest({ code: "partsNotSupported" })
+        );
+        assert.lengthOf(yield* Ref.get(handed), before);
+      })
+    );
+  }
+);

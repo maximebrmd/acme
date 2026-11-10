@@ -28,6 +28,7 @@ export interface FakeBlob {
 
 /** A record the PDS holds. */
 export interface FakeRecord {
+  readonly cid: string;
   readonly rkey: string;
   readonly value: { readonly [field: string]: JsonValue };
 }
@@ -240,10 +241,12 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
       return json({ error: "InternalServerError" }, 500);
     }
 
-    records.set(body.rkey, { rkey: body.rkey, value: body.record });
+    const cid = `bafyrecord${records.size + 1}`;
+
+    records.set(body.rkey, { cid, rkey: body.rkey, value: body.record });
 
     return json({
-      cid: `bafyrecord${records.size}`,
+      cid,
       uri: `at://${blueskyDid}/${body.collection}/${body.rkey}`,
     });
   };
@@ -297,7 +300,7 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
         return found === undefined
           ? json({ error: "RecordNotFound", message: "Could not locate" }, 400)
           : json({
-              cid: "bafyrecord",
+              cid: found.cid,
               uri: `at://${blueskyDid}/app.bsky.feed.post/${found.rkey}`,
               value: found.value,
             });

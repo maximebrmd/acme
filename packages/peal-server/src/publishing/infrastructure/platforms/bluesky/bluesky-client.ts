@@ -23,11 +23,15 @@ import {
   commitUnanswered,
   unanswered,
 } from "#publishing/infrastructure/platforms/platform-exchange.ts";
+import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
-import type { Published } from "#shared/domain/publish-result.ts";
+import type {
+  PlatformPostId,
+  Published,
+} from "#shared/domain/publish-result.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
 import { streamedBody } from "#shared/infrastructure/platforms/public-http.ts";
@@ -110,6 +114,23 @@ const StoredRecordSchema = Schema.Struct({
   value: Schema.Struct({ createdAt: Schema.String, text: Schema.String }),
 });
 
+// A record named with the hash of what it holds, as a reply names the
+// posts it answers (com.atproto.repo.strongRef).
+const StrongRefSchema = Schema.Struct({
+  cid: Schema.NonEmptyString,
+  uri: Schema.NonEmptyString,
+});
+
+type StrongRef = typeof StrongRefSchema.Type;
+
+// What a reply answers: the thread's first post and the post just above.
+const ReplySchema = Schema.Struct({
+  parent: StrongRefSchema,
+  root: StrongRefSchema,
+});
+
+type Reply = typeof ReplySchema.Type;
+
 // Reading an answer's body fails with these.
 type AnswerError = HttpClientError.HttpClientError | Schema.SchemaError;
 
@@ -159,6 +180,7 @@ const PostRecordSchema = Schema.Struct({
     Schema.Union([ImagesEmbedSchema, VideoEmbedSchema])
   ),
   facets: Schema.OptionFromOptionalKey(Schema.Array(FacetSchema)),
+  reply: Schema.OptionFromOptionalKey(ReplySchema),
   text: Schema.String,
 });
 
@@ -533,7 +555,11 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
       return yield* videoReadiness(video.value, status);
     });
 
-    const recordOf = (post: OutgoingPost, prepared: BlueskyMedia) => {
+    const recordOf = (
+      post: OutgoingPost,
+      prepared: BlueskyMedia,
+      reply: Option.Option<Reply>
+    ) => {
       const facets = facetsOf(post.text);
 
       return encodeRecord({
@@ -541,15 +567,78 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
         createdAt: DateTime.formatIso(post.startedAt),
         embed: embedOf(prepared),
         facets: facets.length === 0 ? Option.none() : Option.some(facets),
+        reply,
         text: post.text,
       });
     };
+
+    // A post of the account as a reply names it: its address, with the
+    // hash the PDS holds for it now. Reading changes nothing: no answer is
+    // the server being down, and a post that is gone can be answered by
+    // nothing, so the part is refused before anything is sent.
+    const strongRefOf = (post: OutgoingPost, uri: PlatformPostId) =>
+      withSession(post, (session) =>
+        api
+          .get(new URL("/xrpc/com.atproto.repo.getRecord", session.pds), {
+            urlParams: {
+              collection: postCollection,
+              repo: session.did,
+              rkey: uri.slice(uri.lastIndexOf("/") + 1),
+            },
+          })
+          .pipe(
+            Effect.flatMap(
+              (
+                response
+              ): Effect.Effect<StrongRef, AnswerError | PublishFailure> => {
+                if (response.status === 200) {
+                  return HttpClientResponse.schemaBodyJson(StrongRefSchema)(
+                    response
+                  );
+                }
+
+                return response.status === 400
+                  ? HttpClientResponse.schemaBodyJson(XrpcErrorSchema)(
+                      response
+                    ).pipe(
+                      Effect.flatMap(
+                        ({ error }): Effect.Effect<never, PublishFailure> =>
+                          Effect.fail(
+                            error === "RecordNotFound"
+                              ? new BadRequest({ code: "replyTargetGone" })
+                              : new PlatformUnavailable()
+                          )
+                      )
+                    )
+                  : Effect.fail(new PlatformUnavailable());
+              }
+            ),
+            Effect.catchTags(mediaUnanswered)
+          )
+      );
+
+    // What the part answers, as its record names it: nothing for the post
+    // itself.
+    const replyOf = (post: OutgoingPost) =>
+      Option.match(post.replyTo, {
+        onNone: () => Effect.succeed(Option.none<Reply>()),
+        onSome: ({ parent, root }) =>
+          Effect.gen(function* naming() {
+            const above = yield* strongRefOf(post, parent);
+
+            return Option.some<Reply>({
+              parent: above,
+              root: parent === root ? above : yield* strongRefOf(post, root),
+            });
+          }),
+      });
 
     const commit = Effect.fn("BlueskyClient.commit")(function* commit(
       post: OutgoingPost,
       prepared: BlueskyMedia
     ) {
       const recordKey = recordKeyOf(post.startedAt, post.idempotencyKey);
+      const reply = yield* replyOf(post);
 
       return yield* withSession(post, (session) =>
         dpop
@@ -560,7 +649,7 @@ export const blueskyClient = Effect.fn("BlueskyClient.make")(
             ).pipe(
               HttpClientRequest.bodyJsonUnsafe({
                 collection: postCollection,
-                record: recordOf(post, prepared),
+                record: recordOf(post, prepared, reply),
                 repo: session.did,
                 rkey: recordKey,
               })

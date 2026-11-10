@@ -1,6 +1,7 @@
 import { Effect, Layer, Option, Result } from "effect";
 
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
+import { followUpsOn } from "#publishing/domain/platform-rules.ts";
 import { partsOn } from "#publishing/domain/post-content.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
@@ -156,6 +157,13 @@ export const RoutedPlatformPublisher = Layer.effect(
         return yield* Effect.die(
           `Post ${request.postId} has no part ${String(request.part)}`
         );
+      }
+
+      // Scheduling refuses parts where the platform takes a post alone; a
+      // part that came this far all the same must never go out as a post
+      // of its own.
+      if (part.index > 0 && followUpsOn(account.platform) === undefined) {
+        return yield* new BadRequest({ code: "partsNotSupported" });
       }
 
       const sent: OutgoingPost = {
