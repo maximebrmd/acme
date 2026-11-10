@@ -123,11 +123,11 @@ Members who may connect channels, and API keys with `channel:connect`, create on
 
 Each channel shows one of these:
 
-| Status           | What it means                                                                                                                                                       |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connected        | Peal can post to the account.                                                                                                                                       |
-| Reconnect needed | The platform no longer accepts Peal's access. Nothing goes out on the channel until you reconnect it.                                                               |
-| Turned off       | Nothing goes out on the channel, and reconnecting leaves it off. To post to the account again, [disconnect](#disconnect) the channel and connect the account again. |
+| Status           | What it means                                                                                                                |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Connected        | Peal can post to the account.                                                                                                |
+| Reconnect needed | The platform no longer accepts Peal's access. Nothing goes out on the channel until you reconnect it.                        |
+| Turned off       | Nothing goes out on the channel, and reconnecting leaves it off. To post to the account again, [turn it back on](#turn-off). |
 
 A channel whose access cannot be renewed also shows the date by which it must be reconnected, and its workspace's owners and admins are told ahead of that date.
 
@@ -152,6 +152,20 @@ At a post's time, Peal posts it as the channel's account, with its text on that 
 - **Google Business Profile**: Peal makes a post on the location, with the post's text as its description and the type, dates, button and offer of its [platform options](/scheduling#options). Google fetches each photo from the media store; a post takes no video. Google may reject a post for its content policy after taking it: the post then fails. Once the post is live, its page links to it on Google.
 
 - **Pinterest**: Peal creates a Pin on the board, and the board section, of the post's [platform options](/scheduling#options), with the post's text as its description, the first file's alt text as its alt text, and the title and link you gave. One image makes an image Pin, two to five a carousel, which Pinterest fetches from the media store; a video goes up from the media store in one request, Pinterest processes it, and its cover is the frame at the second you chose, the first one otherwise. Pinterest gives Peal nothing to tell a Pin it already made from one it did not: when its answer is lost, Peal looks for the Pin on the board, and never sends it twice.
+
+## Name a channel [#name]
+
+Two accounts on the same platform can look alike in a list. Choose **Rename** next to a channel to give it a name of your own, of 60 characters at most, such as "Client A" or "Support". The name is Peal's: it shows beside the handle and the name the platform gives the account, which stay, and it is sent to no platform. Clear it to take it back.
+
+## Turn a channel off [#turn-off]
+
+Choose **Turn off** next to a channel to stop posting to an account without disconnecting it. The channel keeps its connection, its history and its name, still counts in your plan, and is sent no reconnect reminder meanwhile.
+
+A post that reaches its time while one of its channels is off fails on that channel, with the reason "Channel turned off", and goes out on its others. It is not sent later: turn the channel back on, then schedule it in a new post.
+
+Choose **Turn on** to post to the account again. If the platform stopped accepting Peal's access while the channel was off, it shows **Reconnect needed**: [reconnect](#reconnect) it.
+
+Naming a channel and turning it off or on take the right to connect channels. Through the API: `PATCH …/channels/{channelId}`, `POST …/channels/{channelId}/disable` and `…/enable`. `GET …/channels/search` lists a workspace's channels a page at a time, by platform, status or text, with how many are in each status.
 
 ## Reconnect [#reconnect]
 

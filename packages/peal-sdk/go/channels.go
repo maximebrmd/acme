@@ -262,6 +262,42 @@ func (c *ConnectChannel) MarshalJSON() ([]byte, error) {
 }
 
 var (
+	disableChannelsRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	disableChannelsRequestFieldChannelID   = big.NewInt(1 << 1)
+)
+
+type DisableChannelsRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+	ChannelID   string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (d *DisableChannelsRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if d.explicitFields != nil {
+		next.Set(d.explicitFields)
+	}
+	next.Or(next, field)
+	d.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DisableChannelsRequest) SetWorkspaceID(workspaceID string) {
+	d.WorkspaceID = workspaceID
+	d.require(disableChannelsRequestFieldWorkspaceID)
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (d *DisableChannelsRequest) SetChannelID(channelID string) {
+	d.ChannelID = channelID
+	d.require(disableChannelsRequestFieldChannelID)
+}
+
+var (
 	disconnectChannelsRequestFieldWorkspaceID = big.NewInt(1 << 0)
 	disconnectChannelsRequestFieldChannelID   = big.NewInt(1 << 1)
 )
@@ -295,6 +331,114 @@ func (d *DisconnectChannelsRequest) SetWorkspaceID(workspaceID string) {
 func (d *DisconnectChannelsRequest) SetChannelID(channelID string) {
 	d.ChannelID = channelID
 	d.require(disconnectChannelsRequestFieldChannelID)
+}
+
+var (
+	enableChannelsRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	enableChannelsRequestFieldChannelID   = big.NewInt(1 << 1)
+)
+
+type EnableChannelsRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+	ChannelID   string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (e *EnableChannelsRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if e.explicitFields != nil {
+		next.Set(e.explicitFields)
+	}
+	next.Or(next, field)
+	e.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *EnableChannelsRequest) SetWorkspaceID(workspaceID string) {
+	e.WorkspaceID = workspaceID
+	e.require(enableChannelsRequestFieldWorkspaceID)
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *EnableChannelsRequest) SetChannelID(channelID string) {
+	e.ChannelID = channelID
+	e.require(enableChannelsRequestFieldChannelID)
+}
+
+var (
+	findChannelsRequestFieldWorkspaceID = big.NewInt(1 << 0)
+	findChannelsRequestFieldCursor      = big.NewInt(1 << 1)
+	findChannelsRequestFieldLimit       = big.NewInt(1 << 2)
+	findChannelsRequestFieldPlatform    = big.NewInt(1 << 3)
+	findChannelsRequestFieldQ           = big.NewInt(1 << 4)
+	findChannelsRequestFieldStatus      = big.NewInt(1 << 5)
+)
+
+type FindChannelsRequest struct {
+	WorkspaceID string             `json:"-" url:"-"`
+	Cursor      *string            `json:"-" url:"cursor,omitempty"`
+	Limit       *string            `json:"-" url:"limit,omitempty"`
+	Platform    *Platform          `json:"-" url:"platform,omitempty"`
+	Q           *string            `json:"-" url:"q,omitempty"`
+	Status      *ChannelStatusName `json:"-" url:"status,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (f *FindChannelsRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if f.explicitFields != nil {
+		next.Set(f.explicitFields)
+	}
+	next.Or(next, field)
+	f.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FindChannelsRequest) SetWorkspaceID(workspaceID string) {
+	f.WorkspaceID = workspaceID
+	f.require(findChannelsRequestFieldWorkspaceID)
+}
+
+// SetCursor sets the Cursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FindChannelsRequest) SetCursor(cursor *string) {
+	f.Cursor = cursor
+	f.require(findChannelsRequestFieldCursor)
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FindChannelsRequest) SetLimit(limit *string) {
+	f.Limit = limit
+	f.require(findChannelsRequestFieldLimit)
+}
+
+// SetPlatform sets the Platform field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FindChannelsRequest) SetPlatform(platform *Platform) {
+	f.Platform = platform
+	f.require(findChannelsRequestFieldPlatform)
+}
+
+// SetQ sets the Q field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FindChannelsRequest) SetQ(q *string) {
+	f.Q = q
+	f.require(findChannelsRequestFieldQ)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (f *FindChannelsRequest) SetStatus(status *ChannelStatusName) {
+	f.Status = status
+	f.require(findChannelsRequestFieldStatus)
 }
 
 var (
@@ -479,9 +623,10 @@ var (
 	channelFieldDisplayName    = big.NewInt(1 << 2)
 	channelFieldHandle         = big.NewInt(1 << 3)
 	channelFieldID             = big.NewInt(1 << 4)
-	channelFieldPlatform       = big.NewInt(1 << 5)
-	channelFieldStatus         = big.NewInt(1 << 6)
-	channelFieldTokenExpiresAt = big.NewInt(1 << 7)
+	channelFieldLabel          = big.NewInt(1 << 5)
+	channelFieldPlatform       = big.NewInt(1 << 6)
+	channelFieldStatus         = big.NewInt(1 << 7)
+	channelFieldTokenExpiresAt = big.NewInt(1 << 8)
 )
 
 // channelNullableFields maps the wire names of Channel's nullable fields (required or optional) to their field bits.
@@ -489,6 +634,7 @@ var channelNullableFields = map[string]*big.Int{
 	"avatarUrl":      channelFieldAvatarURL,
 	"connection":     channelFieldConnection,
 	"displayName":    channelFieldDisplayName,
+	"label":          channelFieldLabel,
 	"tokenExpiresAt": channelFieldTokenExpiresAt,
 }
 
@@ -498,6 +644,7 @@ type Channel struct {
 	DisplayName    *string            `json:"displayName,omitempty" url:"displayName,omitempty"`
 	Handle         string             `json:"handle" url:"handle"`
 	ID             string             `json:"id" url:"id"`
+	Label          *string            `json:"label,omitempty" url:"label,omitempty"`
 	Platform       Platform           `json:"platform" url:"platform"`
 	Status         *ChannelStatus     `json:"status" url:"status"`
 	TokenExpiresAt *string            `json:"tokenExpiresAt,omitempty" url:"tokenExpiresAt,omitempty"`
@@ -542,6 +689,13 @@ func (c *Channel) GetID() string {
 		return ""
 	}
 	return c.ID
+}
+
+func (c *Channel) GetLabel() *string {
+	if c == nil {
+		return nil
+	}
+	return c.Label
 }
 
 func (c *Channel) GetPlatform() Platform {
@@ -616,6 +770,13 @@ func (c *Channel) SetID(id string) {
 	c.require(channelFieldID)
 }
 
+// SetLabel sets the Label field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *Channel) SetLabel(label *string) {
+	c.Label = label
+	c.require(channelFieldLabel)
+}
+
 // SetPlatform sets the Platform field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (c *Channel) SetPlatform(platform Platform) {
@@ -672,6 +833,254 @@ func (c *Channel) MarshalJSON() ([]byte, error) {
 }
 
 func (c *Channel) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	channelPageFieldCounts     = big.NewInt(1 << 0)
+	channelPageFieldItems      = big.NewInt(1 << 1)
+	channelPageFieldNextCursor = big.NewInt(1 << 2)
+)
+
+// channelPageNullableFields maps the wire names of ChannelPage's nullable fields (required or optional) to their field bits.
+var channelPageNullableFields = map[string]*big.Int{
+	"nextCursor": channelPageFieldNextCursor,
+}
+
+type ChannelPage struct {
+	Counts     *ChannelPageCounts `json:"counts" url:"counts"`
+	Items      []*Channel         `json:"items" url:"items"`
+	NextCursor *string            `json:"nextCursor,omitempty" url:"nextCursor,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChannelPage) GetCounts() *ChannelPageCounts {
+	if c == nil {
+		return nil
+	}
+	return c.Counts
+}
+
+func (c *ChannelPage) GetItems() []*Channel {
+	if c == nil {
+		return nil
+	}
+	return c.Items
+}
+
+func (c *ChannelPage) GetNextCursor() *string {
+	if c == nil {
+		return nil
+	}
+	return c.NextCursor
+}
+
+func (c *ChannelPage) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ChannelPage) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetCounts sets the Counts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelPage) SetCounts(counts *ChannelPageCounts) {
+	c.Counts = counts
+	c.require(channelPageFieldCounts)
+}
+
+// SetItems sets the Items field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelPage) SetItems(items []*Channel) {
+	c.Items = items
+	c.require(channelPageFieldItems)
+}
+
+// SetNextCursor sets the NextCursor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelPage) SetNextCursor(nextCursor *string) {
+	c.NextCursor = nextCursor
+	c.require(channelPageFieldNextCursor)
+}
+
+func (c *ChannelPage) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelPage
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChannelPage(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, channelPageNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		c.require(presentFields)
+	}
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChannelPage) MarshalJSON() ([]byte, error) {
+	type embed ChannelPage
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ChannelPage) String() string {
+	if c == nil {
+		return "<nil>"
+	}
+	if len(c.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(c.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(c); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", c)
+}
+
+var (
+	channelPageCountsFieldActive        = big.NewInt(1 << 0)
+	channelPageCountsFieldDisabled      = big.NewInt(1 << 1)
+	channelPageCountsFieldRefreshNeeded = big.NewInt(1 << 2)
+)
+
+type ChannelPageCounts struct {
+	Active        int `json:"active" url:"active"`
+	Disabled      int `json:"disabled" url:"disabled"`
+	RefreshNeeded int `json:"refreshNeeded" url:"refreshNeeded"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (c *ChannelPageCounts) GetActive() int {
+	if c == nil {
+		return 0
+	}
+	return c.Active
+}
+
+func (c *ChannelPageCounts) GetDisabled() int {
+	if c == nil {
+		return 0
+	}
+	return c.Disabled
+}
+
+func (c *ChannelPageCounts) GetRefreshNeeded() int {
+	if c == nil {
+		return 0
+	}
+	return c.RefreshNeeded
+}
+
+func (c *ChannelPageCounts) GetExtraProperties() map[string]interface{} {
+	if c == nil {
+		return nil
+	}
+	return c.extraProperties
+}
+
+func (c *ChannelPageCounts) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetActive sets the Active field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelPageCounts) SetActive(active int) {
+	c.Active = active
+	c.require(channelPageCountsFieldActive)
+}
+
+// SetDisabled sets the Disabled field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelPageCounts) SetDisabled(disabled int) {
+	c.Disabled = disabled
+	c.require(channelPageCountsFieldDisabled)
+}
+
+// SetRefreshNeeded sets the RefreshNeeded field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelPageCounts) SetRefreshNeeded(refreshNeeded int) {
+	c.RefreshNeeded = refreshNeeded
+	c.require(channelPageCountsFieldRefreshNeeded)
+}
+
+func (c *ChannelPageCounts) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelPageCounts
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*c = ChannelPageCounts(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *c)
+	if err != nil {
+		return err
+	}
+	c.extraProperties = extraProperties
+	c.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (c *ChannelPageCounts) MarshalJSON() ([]byte, error) {
+	type embed ChannelPageCounts
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (c *ChannelPageCounts) String() string {
 	if c == nil {
 		return "<nil>"
 	}
@@ -987,6 +1396,31 @@ func (c *ChannelStatusDisabled) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", c)
+}
+
+type ChannelStatusName string
+
+const (
+	ChannelStatusNameActive        ChannelStatusName = "active"
+	ChannelStatusNameRefreshNeeded ChannelStatusName = "refreshNeeded"
+	ChannelStatusNameDisabled      ChannelStatusName = "disabled"
+)
+
+func NewChannelStatusNameFromString(s string) (ChannelStatusName, error) {
+	switch s {
+	case "active":
+		return ChannelStatusNameActive, nil
+	case "refreshNeeded":
+		return ChannelStatusNameRefreshNeeded, nil
+	case "disabled":
+		return ChannelStatusNameDisabled, nil
+	}
+	var t ChannelStatusName
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c ChannelStatusName) Ptr() *ChannelStatusName {
+	return &c
 }
 
 type ChannelStatusRefreshNeeded struct {
@@ -1711,4 +2145,70 @@ func NewLinkedInConnectionFromString(s string) (LinkedInConnection, error) {
 
 func (l LinkedInConnection) Ptr() *LinkedInConnection {
 	return &l
+}
+
+var (
+	channelUpdateFieldWorkspaceID = big.NewInt(1 << 0)
+	channelUpdateFieldChannelID   = big.NewInt(1 << 1)
+	channelUpdateFieldLabel       = big.NewInt(1 << 2)
+)
+
+type ChannelUpdate struct {
+	WorkspaceID string  `json:"-" url:"-"`
+	ChannelID   string  `json:"-" url:"-"`
+	Label       *string `json:"label,omitempty" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (c *ChannelUpdate) require(field *big.Int) {
+	next := new(big.Int)
+	if c.explicitFields != nil {
+		next.Set(c.explicitFields)
+	}
+	next.Or(next, field)
+	c.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelUpdate) SetWorkspaceID(workspaceID string) {
+	c.WorkspaceID = workspaceID
+	c.require(channelUpdateFieldWorkspaceID)
+}
+
+// SetChannelID sets the ChannelID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelUpdate) SetChannelID(channelID string) {
+	c.ChannelID = channelID
+	c.require(channelUpdateFieldChannelID)
+}
+
+// SetLabel sets the Label field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *ChannelUpdate) SetLabel(label *string) {
+	c.Label = label
+	c.require(channelUpdateFieldLabel)
+}
+
+func (c *ChannelUpdate) UnmarshalJSON(data []byte) error {
+	type unmarshaler ChannelUpdate
+	var body unmarshaler
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	*c = ChannelUpdate(body)
+	return nil
+}
+
+func (c *ChannelUpdate) MarshalJSON() ([]byte, error) {
+	type embed ChannelUpdate
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*c),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, c.explicitFields)
+	return json.Marshal(explicitMarshaler)
 }

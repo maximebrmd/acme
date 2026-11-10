@@ -3,10 +3,12 @@ import type {
   AttemptResult,
   Post as PostView,
   PostOrigin as OriginView,
+  PostWarning,
   PublicationAttempt as AttemptView,
   PostTarget as TargetView,
 } from "peal-contract";
 
+import type { DroppedChannels } from "#publishing/application/post-presets.ts";
 import type { PostWithTargets } from "#publishing/application/post-repository.ts";
 import type { RecordedAttempt } from "#publishing/application/publication-journal.ts";
 import { partCount } from "#publishing/domain/post-content.ts";
@@ -19,6 +21,17 @@ import { failureReasonOf } from "#publishing/domain/publication-policy.ts";
 import type { AttemptOutcome } from "#publishing/domain/publication-policy.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
 import { TargetOptionsSchema } from "#publishing/domain/target-options.ts";
+
+/** What a post's request is told of the channels its sets left out. */
+export const droppedWarnings = (
+  dropped: readonly DroppedChannels[]
+): readonly PostWarning[] =>
+  dropped.map(({ channelIds, setId, setName }) => ({
+    _tag: "channelsDropped" as const,
+    channelIds: [...channelIds],
+    channelSetId: setId,
+    channelSetName: setName,
+  }));
 
 // The domain's options, as plain values the contract describes.
 const encodeOptions = Schema.encodeSync(TargetOptionsSchema);
@@ -103,24 +116,39 @@ const saidBy = ({
  * What clients see of a post: what it says, when, where it went, and how
  * it was created and scheduled.
  */
-export const postView = ({ post, targets }: PostWithTargets): PostView => ({
-  authorId: Option.getOrNull(post.authorId),
-  content: {
-    followUps: post.content.followUps.map((part) => ({
-      delaySeconds: part.delaySeconds,
-      ...saidBy(part),
-    })),
-    ...saidBy(post.content),
-  },
-  createdVia: originOrNull(post.attribution.createdVia),
-  id: post.id,
-  outcome: post.status._tag === "finished" ? post.status.outcome : null,
-  schedule: scheduleOf(post.status),
-  scheduledBy: Option.getOrNull(post.attribution.scheduledBy),
-  scheduledVia: originOrNull(post.attribution.scheduledVia),
-  status: post.status._tag,
-  targets: targets.map((target) => targetView(target, partCount(post.content))),
-});
+export const postView = ({
+  dropped = [],
+  post,
+  targets,
+}: PostWithTargets): PostView => {
+  const view: PostView = {
+    authorId: Option.getOrNull(post.authorId),
+    content: {
+      followUps: post.content.followUps.map((part) => ({
+        delaySeconds: part.delaySeconds,
+        ...saidBy(part),
+      })),
+      ...saidBy(post.content),
+    },
+    createdVia: originOrNull(post.attribution.createdVia),
+    id: post.id,
+    outcome: post.status._tag === "finished" ? post.status.outcome : null,
+    schedule: scheduleOf(post.status),
+    scheduledBy: Option.getOrNull(post.attribution.scheduledBy),
+    scheduledVia: originOrNull(post.attribution.scheduledVia),
+    status: post.status._tag,
+    tagIds: [...post.tagIds],
+    targets: targets.map((target) =>
+      targetView(target, partCount(post.content))
+    ),
+  };
+
+  // Said on the answer of the request that made the post, and only when
+  // there is something to say.
+  return dropped.length === 0
+    ? view
+    : { ...view, warnings: droppedWarnings(dropped) };
+};
 
 // What an attempt came to, in the words the failure reasons use.
 const resultOf = (outcome: AttemptOutcome): AttemptResult =>

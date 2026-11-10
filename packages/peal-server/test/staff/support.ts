@@ -174,6 +174,7 @@ export const memoryStaff = (
         Layer.succeed(
           WorkspaceHealth,
           WorkspaceHealth.of({
+            ads: () => Effect.succeed({ accounts: [], boosts: {} }),
             billing: () =>
               Effect.succeed({
                 plan: Option.none(),

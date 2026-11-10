@@ -4,6 +4,7 @@ import {
   Forbidden,
   PlanLimitReached,
   PostNotFound,
+  SpendCeilingExceeded,
   TooManyRequests,
 } from "peal-contract";
 
@@ -129,5 +130,33 @@ describe("a refusal, with the request it answers", () => {
     ).toBe(
       "Peal takes 600 requests every 60 seconds from one sign-in or key, and this one sent more: nothing was done. Try again in 42 seconds."
     );
+  });
+
+  it("writes a ceiling's amounts in the currency's units when it knows them", () => {
+    const over = new SpendCeilingExceeded({
+      ceiling: 30_000,
+      committed: 28_000,
+      currency: "EUR",
+      requested: 5000,
+    });
+
+    expect(explain(url, 2)(over)[CliError.userMessage]).toContain(
+      "the ceiling is 300.00 EUR, its boosts already commit 280.00 EUR, and this one would add 50.00 EUR"
+    );
+    expect(explain(url)(over)[CliError.userMessage]).toContain(
+      "the ceiling is 30000, its boosts already commit 28000, and this one would add 5000. Nothing was reserved or sent. An owner raises the ceiling in the web app, or make the boost smaller; Peal never raises a ceiling on its own. Amounts are in EUR's minor units"
+    );
+  });
+
+  it("sends a sign-in without the ads scope back to peal login --ads", () => {
+    expect(
+      explain(url)(
+        new Forbidden({
+          permission: "ads:spend",
+          reason: "missingScope",
+          scope: "workspace:publish",
+        })
+      )[CliError.userMessage]
+    ).toContain("run peal login --ads again and approve it");
   });
 });

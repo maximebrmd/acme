@@ -21,6 +21,7 @@ class Channel(UniversalBaseModel):
     ] = None
     handle: str
     id: str
+    label: typing.Optional[str] = None
     platform: Platform
     status: ChannelStatus
     token_expires_at: typing_extensions.Annotated[

@@ -9,9 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::PostNotReviewableEncoded }, key: "POST_NOT_REVIEWABLE"
+      member -> { Peal::Types::ChannelSetNameTakenEncoded }, key: "CHANNEL_SET_NAME_TAKEN"
 
-      member -> { Peal::Types::TooManyReviewLinksEncoded }, key: "TOO_MANY_REVIEW_LINKS"
+      member -> { Peal::Types::TooManyChannelSetsEncoded }, key: "TOO_MANY_CHANNEL_SETS"
     end
   end
 end

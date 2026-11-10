@@ -5,7 +5,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum ConflictErrorBody {
     #[non_exhaustive]
-    PostNotReviewable {
+    ChannelSetNameTaken {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -13,11 +13,10 @@ pub enum ConflictErrorBody {
         #[serde(rename = "requestId")]
         #[serde(skip_serializing_if = "Option::is_none")]
         request_id: Option<String>,
-        status: PostNotReviewableEncodedStatus,
     },
 
     #[non_exhaustive]
-    TooManyReviewLinks {
+    TooManyChannelSets {
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -26,7 +25,7 @@ pub enum ConflictErrorBody {
         #[serde(skip_serializing_if = "Option::is_none")]
         request_id: Option<String>,
         #[serde(default)]
-        limit: i64,
+        allowed: i64,
     },
 
     /// Catch-all variant for unrecognized discriminant values.
@@ -37,105 +36,98 @@ pub enum ConflictErrorBody {
 }
 
 impl ConflictErrorBody {
-    pub fn post_not_reviewable(status: PostNotReviewableEncodedStatus) -> Self {
-        Self::PostNotReviewable {
+    pub fn channel_set_name_taken() -> Self {
+        Self::ChannelSetNameTaken {
             code: None,
             message: None,
             request_id: None,
-            status,
         }
     }
 
-    pub fn too_many_review_links(limit: i64) -> Self {
-        Self::TooManyReviewLinks {
+    pub fn too_many_channel_sets(allowed: i64) -> Self {
+        Self::TooManyChannelSets {
             code: None,
             message: None,
             request_id: None,
-            limit,
+            allowed,
         }
     }
 
-    pub fn post_not_reviewable_with_code(
+    pub fn channel_set_name_taken_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
-        status: PostNotReviewableEncodedStatus,
     ) -> Self {
-        Self::PostNotReviewable {
+        Self::ChannelSetNameTaken {
             code: Some(code),
             message,
             request_id,
-            status,
         }
     }
 
-    pub fn post_not_reviewable_with_message(
+    pub fn channel_set_name_taken_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
-        status: PostNotReviewableEncodedStatus,
     ) -> Self {
-        Self::PostNotReviewable {
+        Self::ChannelSetNameTaken {
             code,
             message: Some(message),
             request_id,
-            status,
         }
     }
 
-    pub fn post_not_reviewable_with_request_id(
+    pub fn channel_set_name_taken_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
-        status: PostNotReviewableEncodedStatus,
     ) -> Self {
-        Self::PostNotReviewable {
+        Self::ChannelSetNameTaken {
             code,
             message,
             request_id: Some(request_id),
-            status,
         }
     }
 
-    pub fn too_many_review_links_with_code(
+    pub fn too_many_channel_sets_with_code(
         code: String,
         message: Option<String>,
         request_id: Option<String>,
-        limit: i64,
+        allowed: i64,
     ) -> Self {
-        Self::TooManyReviewLinks {
+        Self::TooManyChannelSets {
             code: Some(code),
             message,
             request_id,
-            limit,
+            allowed,
         }
     }
 
-    pub fn too_many_review_links_with_message(
+    pub fn too_many_channel_sets_with_message(
         code: Option<String>,
         message: String,
         request_id: Option<String>,
-        limit: i64,
+        allowed: i64,
     ) -> Self {
-        Self::TooManyReviewLinks {
+        Self::TooManyChannelSets {
             code,
             message: Some(message),
             request_id,
-            limit,
+            allowed,
         }
     }
 
-    pub fn too_many_review_links_with_request_id(
+    pub fn too_many_channel_sets_with_request_id(
         code: Option<String>,
         message: Option<String>,
         request_id: String,
-        limit: i64,
+        allowed: i64,
     ) -> Self {
-        Self::TooManyReviewLinks {
+        Self::TooManyChannelSets {
             code,
             message,
             request_id: Some(request_id),
-            limit,
+            allowed,
         }
     }
 

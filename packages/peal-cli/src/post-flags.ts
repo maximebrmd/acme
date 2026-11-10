@@ -123,3 +123,21 @@ export const followUpsOf = (texts: readonly string[], delaySeconds: number) =>
       text,
     }));
   });
+
+/**
+ * The options a draft or a channel set goes with: those given replace the
+ * ones it has on their channel; it keeps the others on the channels it
+ * keeps.
+ */
+export const withOptions = (
+  channelIds: readonly string[],
+  given: readonly ChannelOptions[],
+  kept: readonly ChannelOptions[]
+): ChannelOptions[] => [
+  ...kept.filter(
+    ({ channelId }) =>
+      channelIds.includes(channelId) &&
+      !given.some((chosen) => chosen.channelId === channelId)
+  ),
+  ...given,
+];

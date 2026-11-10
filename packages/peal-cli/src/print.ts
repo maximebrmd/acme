@@ -46,9 +46,14 @@ export const columns = (rows: readonly (readonly string[])[]): string[] => {
   );
 };
 
-/** A channel as people recognize it: its platform and handle. */
+/**
+ * A channel as people recognize it: the name the workspace gave it, if it
+ * gave one, then its platform and handle, which always show.
+ */
 export const channelName = (channel: Channel): string =>
-  `${channel.platform} ${channel.handle}`;
+  channel.label === null
+    ? `${channel.platform} ${channel.handle}`
+    : `${channel.label} (${channel.platform} ${channel.handle})`;
 
 const replacement = String.fromCodePoint(0xff_fd);
 

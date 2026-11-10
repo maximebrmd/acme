@@ -1,5 +1,55 @@
 [
   {
+    "code": "ad_account_busy",
+    "status": 409,
+    "tag": "AdAccountBusy"
+  },
+  {
+    "code": "ad_account_not_found",
+    "status": 404,
+    "tag": "AdAccountNotFound"
+  },
+  {
+    "code": "ad_account_spend_cap_exceeded",
+    "status": 409,
+    "tag": "AdAccountSpendCapExceeded"
+  },
+  {
+    "code": "ad_account_unusable",
+    "status": 409,
+    "tag": "AdAccountUnusable"
+  },
+  {
+    "code": "ad_connection_not_found",
+    "status": 404,
+    "tag": "AdConnectionNotFound"
+  },
+  {
+    "code": "ad_network_unavailable",
+    "status": 503,
+    "tag": "AdNetworkUnavailable"
+  },
+  {
+    "code": "ad_sign_in_failed",
+    "status": 422,
+    "tag": "AdSignInFailed"
+  },
+  {
+    "code": "ad_spending_not_enabled",
+    "status": 409,
+    "tag": "AdSpendingNotEnabled"
+  },
+  {
+    "code": "ad_spending_unavailable",
+    "status": 409,
+    "tag": "AdSpendingUnavailable"
+  },
+  {
+    "code": "ads_unavailable",
+    "status": 404,
+    "tag": "AdsUnavailable"
+  },
+  {
     "code": "already_member",
     "status": 409,
     "tag": "AlreadyMember"
@@ -60,9 +110,34 @@
     "tag": "BillingUnavailable"
   },
   {
+    "code": "boost_invalid",
+    "status": 422,
+    "tag": "BoostInvalid"
+  },
+  {
+    "code": "boost_key_reused",
+    "status": 409,
+    "tag": "BoostKeyReused"
+  },
+  {
+    "code": "boost_not_found",
+    "status": 404,
+    "tag": "BoostNotFound"
+  },
+  {
+    "code": "boost_state_conflict",
+    "status": 409,
+    "tag": "BoostStateConflict"
+  },
+  {
     "code": "captcha_refused",
     "status": 403,
     "tag": "CaptchaRefused"
+  },
+  {
+    "code": "ceiling_currency_mismatch",
+    "status": 422,
+    "tag": "CeilingCurrencyMismatch"
   },
   {
     "code": "channel_cannot_post",
@@ -73,6 +148,16 @@
     "code": "channel_not_found",
     "status": 404,
     "tag": "ChannelNotFound"
+  },
+  {
+    "code": "channel_set_name_taken",
+    "status": 409,
+    "tag": "ChannelSetNameTaken"
+  },
+  {
+    "code": "channel_set_not_found",
+    "status": 404,
+    "tag": "ChannelSetNotFound"
   },
   {
     "code": "client_error_too_large",
@@ -365,6 +450,11 @@
     "tag": "PostNotFound"
   },
   {
+    "code": "post_not_promotable",
+    "status": 422,
+    "tag": "PostNotPromotable"
+  },
+  {
     "code": "post_not_reviewable",
     "status": 409,
     "tag": "PostNotReviewable"
@@ -435,9 +525,24 @@
     "tag": "ServiceUnavailable"
   },
   {
+    "code": "signature_name_taken",
+    "status": 409,
+    "tag": "SignatureNameTaken"
+  },
+  {
+    "code": "signature_not_found",
+    "status": 404,
+    "tag": "SignatureNotFound"
+  },
+  {
     "code": "signed_request_refused",
     "status": 400,
     "tag": "SignedRequestRefused"
+  },
+  {
+    "code": "spend_ceiling_exceeded",
+    "status": 409,
+    "tag": "SpendCeilingExceeded"
   },
   {
     "code": "staff_action_refused",
@@ -445,9 +550,24 @@
     "tag": "StaffActionRefused"
   },
   {
+    "code": "tag_name_taken",
+    "status": 409,
+    "tag": "TagNameTaken"
+  },
+  {
+    "code": "tag_not_found",
+    "status": 404,
+    "tag": "TagNotFound"
+  },
+  {
     "code": "target_status_conflict",
     "status": 409,
     "tag": "TargetStatusConflict"
+  },
+  {
+    "code": "too_many_channel_sets",
+    "status": 409,
+    "tag": "TooManyChannelSets"
   },
   {
     "code": "too_many_client_errors",
@@ -495,6 +615,16 @@
     "tag": "TooManyReviewRequests"
   },
   {
+    "code": "too_many_signatures",
+    "status": 409,
+    "tag": "TooManySignatures"
+  },
+  {
+    "code": "too_many_tags",
+    "status": 409,
+    "tag": "TooManyTags"
+  },
+  {
     "code": "too_many_webhook_endpoints",
     "status": 409,
     "tag": "TooManyWebhookEndpoints"
@@ -523,6 +653,11 @@
     "code": "unknown_media",
     "status": 422,
     "tag": "UnknownMedia"
+  },
+  {
+    "code": "unknown_tags",
+    "status": 422,
+    "tag": "UnknownTags"
   },
   {
     "code": "unsupported_media_type",

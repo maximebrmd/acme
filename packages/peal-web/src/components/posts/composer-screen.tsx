@@ -8,6 +8,7 @@ import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
 
 import { Composer } from "#components/posts/composer.tsx";
+import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
 import { PostDetail } from "#components/posts/post-detail.tsx";
 import { PostReviewSection } from "#components/review/post-review-section.tsx";
 import { Link } from "#i18n/navigation.ts";
@@ -19,6 +20,11 @@ interface ComposerScreenProps {
   readonly permissions: readonly Permission[];
   /** None for a new post. */
   readonly postId: string | undefined;
+  /**
+   * Where a new post's schedule starts, as the calendar's `?at=` wrote it;
+   * the composer ignores a value that names no time to come.
+   */
+  readonly startAt?: string | undefined;
   /** The signed-in user. */
   readonly userId: string;
   readonly workspaceId: string;
@@ -77,6 +83,7 @@ const ExistingPost = ({
   const result = useAtomValue(query);
   const retry = useAtomRefresh(query);
   const approvalPolicy = useApprovalPolicy(workspaceId);
+  const tAds = useTranslations("Ads.boost");
 
   if (AsyncResult.isSuccess(result)) {
     const post = result.value;
@@ -104,6 +111,22 @@ const ExistingPost = ({
     ) : (
       <div className="flex flex-col gap-6">
         <PostDetail
+          actions={
+            <DuplicatePost
+              permissions={permissions}
+              postId={post.id}
+              workspaceId={workspaceId}
+            />
+          }
+          adsLink={
+            <Button
+              variant="outline"
+              render={<Link href={`/app/${workspaceId}/ads`} />}
+              nativeButton={false}
+            >
+              {tAds("toAds")}
+            </Button>
+          }
           channels={channels}
           permissions={permissions}
           post={post}
@@ -132,6 +155,7 @@ const ExistingPost = ({
 export const ComposerScreen = ({
   permissions,
   postId,
+  startAt,
   userId,
   workspaceId,
 }: ComposerScreenProps) => {
@@ -157,6 +181,7 @@ export const ComposerScreen = ({
         channels={channels.value}
         permissions={permissions}
         post={undefined}
+        startAt={startAt}
         userId={userId}
         workspaceId={workspaceId}
       />

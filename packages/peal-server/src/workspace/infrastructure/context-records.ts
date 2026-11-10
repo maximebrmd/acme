@@ -1,6 +1,7 @@
 import { Effect, Layer } from "effect";
 
 import { ActivityRecords } from "#activity/application/activity-records.ts";
+import { AdRecords } from "#ads/application/ad-records.ts";
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { UsageRecords } from "#assistant/application/ports/usage-records.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
@@ -23,7 +24,7 @@ import { WorkspaceBusy } from "#workspace/application/workspace-busy.ts";
 import { WorkspaceFilesRemain } from "#workspace/application/workspace-files-remain.ts";
 import { WorkspaceSubscribed } from "#workspace/application/workspace-subscribed.ts";
 
-// A post of the workspace is going out.
+// A post of the workspace is going out, or one of its boosts may spend.
 const busy = ({ workspaceId }: { readonly workspaceId: WorkspaceId }) =>
   Effect.fail(new WorkspaceBusy({ workspaceId }));
 
@@ -46,7 +47,7 @@ const billingRefusals = (workspaceId: WorkspaceId) => ({
  * the channels, the media library, the notices, the assistant's usage,
  * analytics' posts followed, engagement's threads, billing's
  * subscriptions, the webhooks, the activity logs, the staff audit log, the
- * legal records, and the reviews of posts.
+ * legal records, the reviews of posts, and the ads.
  */
 export const ContextRecordsLive = Layer.effect(
   ContextRecords,
@@ -64,6 +65,7 @@ export const ContextRecordsLive = Layer.effect(
     const webhooks = yield* WebhookRecords;
     const activity = yield* ActivityRecords;
     const engagement = yield* EngagementRecords;
+    const adRecords = yield* AdRecords;
     const pseudonyms = yield* Pseudonyms;
 
     return ContextRecords.of({
@@ -77,6 +79,7 @@ export const ContextRecordsLive = Layer.effect(
           yield* reviews.forgetUser(userId);
           yield* channels.eraseUser(userId);
           yield* activity.forgetUser(userId);
+          yield* adRecords.forgetUser(userId);
           yield* staff.forgetUser(userId, pseudonym);
           yield* billing.forgetUser(userId, pseudonym);
         }
@@ -98,6 +101,13 @@ export const ContextRecordsLive = Layer.effect(
           yield* usage.eraseWorkspace(workspaceId);
           yield* webhooks.eraseWorkspace(workspaceId);
           yield* activity.eraseWorkspace(workspaceId);
+
+          // Ads refuse while a boost may still spend: it is stopped
+          // first, which settling checked, unless one started since.
+          yield* adRecords
+            .ensureErasable(workspaceId)
+            .pipe(Effect.catchTag("BoostsRunning", busy));
+          yield* adRecords.eraseWorkspace(workspaceId);
 
           // Billing last: refused if Stripe still bills it, which settling
           // made sure it no longer does, unless a checkout completed since.
@@ -131,6 +141,7 @@ export const ContextRecordsLive = Layer.effect(
       exportWorkspace: (workspaceId) =>
         Effect.all({
           accountAnalytics: analytics.exportAccounts(workspaceId),
+          ads: adRecords.exportWorkspace(workspaceId),
           analytics: analytics.exportWorkspace(workspaceId),
           assistantUsage: usage.exportWorkspace(workspaceId),
           billing: billing.exportWorkspace(workspaceId),
@@ -138,6 +149,7 @@ export const ContextRecordsLive = Layer.effect(
           media: media.exportWorkspace(workspaceId),
           posts: posts.exportWorkspace(workspaceId),
           review: reviews.exportWorkspace(workspaceId),
+          saved: posts.exportSaved(workspaceId),
           webhooks: webhooks.exportWorkspace(workspaceId),
         }),
       holdIdentification: (record, closedAt) => legal.hold(record, closedAt),
@@ -159,9 +171,13 @@ export const ContextRecordsLive = Layer.effect(
           yield* Effect.forEach(
             workspaceIds,
             (workspaceId) =>
-              posts
-                .ensureErasable(workspaceId)
-                .pipe(Effect.catchTag("PostsPublishing", busy)),
+              posts.ensureErasable(workspaceId).pipe(
+                Effect.catchTag("PostsPublishing", busy),
+                // Nor while a boost may still spend: erasing would leave
+                // it running at its network with nobody to stop it here.
+                Effect.andThen(adRecords.ensureErasable(workspaceId)),
+                Effect.catchTag("BoostsRunning", busy)
+              ),
             { discard: true }
           );
 

@@ -47,12 +47,16 @@ require_relative "peal/api_keys/types/new_api_key"
 require_relative "peal/api_keys/types/revoke_api_keys_request"
 require_relative "peal/channels/client"
 require_relative "peal/channels/types/list_channels_request"
+require_relative "peal/channels/types/find_channels_request"
 require_relative "peal/channels/types/platforms_channels_request"
 require_relative "peal/channels/types/connect_channel"
 require_relative "peal/channels/types/connect_callback"
 require_relative "peal/channels/types/choose_accounts"
 require_relative "peal/channels/types/reconnect_channels_request"
 require_relative "peal/channels/types/disconnect_channels_request"
+require_relative "peal/channels/types/channel_update"
+require_relative "peal/channels/types/disable_channels_request"
+require_relative "peal/channels/types/enable_channels_request"
 require_relative "peal/posts/client"
 require_relative "peal/posts/types/drafts_posts_request"
 require_relative "peal/posts/types/list_posts_request"
@@ -67,6 +71,8 @@ require_relative "peal/posts/types/update_posts_request"
 require_relative "peal/posts/types/discard_posts_request"
 require_relative "peal/posts/types/outcome_posts_request"
 require_relative "peal/posts/types/attempts_posts_request"
+require_relative "peal/posts/types/post_tags"
+require_relative "peal/posts/types/duplicate_posts_request"
 require_relative "peal/posts/types/schedule_post"
 require_relative "peal/posts/types/reschedule_posts_request"
 require_relative "peal/posts/types/unschedule_posts_request"
@@ -132,6 +138,30 @@ require_relative "peal/inbox/types/set_answered_inbox_request"
 require_relative "peal/inbox/types/moderate_inbox_request"
 require_relative "peal/inbox/types/confirm_reply_inbox_request"
 require_relative "peal/inbox/types/withdraw_reply_inbox_request"
+require_relative "peal/ads/client"
+require_relative "peal/ads/types/status_ads_request"
+require_relative "peal/ads/types/list_connections_ads_request"
+require_relative "peal/ads/types/connect_ads_request"
+require_relative "peal/ads/types/ad_sign_in_callback"
+require_relative "peal/ads/types/reachable_accounts_ads_request"
+require_relative "peal/ads/types/ad_accounts_to_connect"
+require_relative "peal/ads/types/disconnect_ads_request"
+require_relative "peal/ads/types/list_accounts_ads_request"
+require_relative "peal/ads/types/get_account_ads_request"
+require_relative "peal/ads/types/remove_account_ads_request"
+require_relative "peal/ads/types/ad_spending_decision"
+require_relative "peal/ads/types/list_campaigns_ads_request"
+require_relative "peal/ads/types/list_ads_ads_request"
+require_relative "peal/ads/types/list_insights_ads_request"
+require_relative "peal/ads/types/post_performance_ads_request"
+require_relative "peal/ads/types/quote_boost_ads_request"
+require_relative "peal/ads/types/list_boosts_ads_request"
+require_relative "peal/ads/types/create_boost_ads_request"
+require_relative "peal/ads/types/get_boost_ads_request"
+require_relative "peal/ads/types/pause_boost_ads_request"
+require_relative "peal/ads/types/resume_boost_ads_request"
+require_relative "peal/ads/types/stop_boost_ads_request"
+require_relative "peal/ads/types/audit_trail_ads_request"
 require_relative "peal/activity/client"
 require_relative "peal/activity/types/list_activity_request"
 require_relative "peal/partner/client"
@@ -166,6 +196,25 @@ require_relative "peal/review/types/changes_request"
 require_relative "peal/review/types/links_review_request"
 require_relative "peal/review/types/new_review_link"
 require_relative "peal/review/types/revoke_link_review_request"
+require_relative "peal/tags/client"
+require_relative "peal/tags/types/list_tags_request"
+require_relative "peal/tags/types/create_tags_request"
+require_relative "peal/tags/types/delete_tags_request"
+require_relative "peal/tags/types/update_tags_request"
+require_relative "peal/signatures/client"
+require_relative "peal/signatures/types/list_signatures_request"
+require_relative "peal/signatures/types/create_signatures_request"
+require_relative "peal/signatures/types/update_signatures_request"
+require_relative "peal/signatures/types/delete_signatures_request"
+require_relative "peal/channel_sets/client"
+require_relative "peal/channel_sets/types/list_channel_sets_request"
+require_relative "peal/channel_sets/types/create_channel_sets_request"
+require_relative "peal/channel_sets/types/update_channel_sets_request"
+require_relative "peal/channel_sets/types/delete_channel_sets_request"
+require_relative "peal/channel_defaults/client"
+require_relative "peal/channel_defaults/types/get_channel_defaults_request"
+require_relative "peal/channel_defaults/types/new_channel_defaults"
+require_relative "peal/channel_defaults/types/clear_channel_defaults_request"
 require_relative "peal/environment"
 
 module Peal
@@ -189,23 +238,57 @@ module Peal
   end
 
   module Types
-    autoload :ReviewLinkNotFoundEncoded, ::File.join(__dir__, "peal/types/review_link_not_found_encoded")
+    autoload :ChannelNotFoundEncoded, ::File.join(__dir__, "peal/types/channel_not_found_encoded")
     autoload :WorkspaceNotFoundEncodedTag, ::File.join(__dir__, "peal/types/workspace_not_found_encoded_tag")
     autoload :WorkspaceNotFoundEncoded, ::File.join(__dir__, "peal/types/workspace_not_found_encoded")
     autoload :NotFoundErrorBody, ::File.join(__dir__, "peal/types/not_found_error_body")
-    autoload :ConnectFailedEncodedTag, ::File.join(__dir__, "peal/types/connect_failed_encoded_tag")
-    autoload :ConnectFailureReason, ::File.join(__dir__, "peal/types/connect_failure_reason")
-    autoload :ConnectFailedEncoded, ::File.join(__dir__, "peal/types/connect_failed_encoded")
-    autoload :ReturnURLNotAllowedEncoded, ::File.join(__dir__, "peal/types/return_url_not_allowed_encoded")
+    autoload :Platform, ::File.join(__dir__, "peal/types/platform")
+    autoload :ContentViolationAltTextTooLong, ::File.join(__dir__, "peal/types/content_violation_alt_text_too_long")
+    autoload :NonFiniteNumber, ::File.join(__dir__, "peal/types/non_finite_number")
+    autoload :ContentViolationAspectRatioUnsupportedMaximum, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported_maximum")
+    autoload :ContentViolationAspectRatioUnsupportedMinimum, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported_minimum")
+    autoload :ContentViolationAspectRatioUnsupported, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported")
+    autoload :ContentViolationEmpty, ::File.join(__dir__, "peal/types/content_violation_empty")
+    autoload :ContentViolationForbiddenCharacters, ::File.join(__dir__, "peal/types/content_violation_forbidden_characters")
+    autoload :ContentViolationMediaRequired, ::File.join(__dir__, "peal/types/content_violation_media_required")
+    autoload :ContentViolationMediaTooLarge, ::File.join(__dir__, "peal/types/content_violation_media_too_large")
+    autoload :ContentViolationMediaTooSmall, ::File.join(__dir__, "peal/types/content_violation_media_too_small")
+    autoload :MediaContentType, ::File.join(__dir__, "peal/types/media_content_type")
+    autoload :ContentViolationMediaTypeUnsupported, ::File.join(__dir__, "peal/types/content_violation_media_type_unsupported")
+    autoload :ContentViolationMixedMedia, ::File.join(__dir__, "peal/types/content_violation_mixed_media")
+    autoload :ContentViolationNoChannels, ::File.join(__dir__, "peal/types/content_violation_no_channels")
+    autoload :ContentViolationOptionInvalid, ::File.join(__dir__, "peal/types/content_violation_option_invalid")
+    autoload :ContentViolationOptionMissing, ::File.join(__dir__, "peal/types/content_violation_option_missing")
+    autoload :ContentViolationOptionTooLong, ::File.join(__dir__, "peal/types/content_violation_option_too_long")
+    autoload :ContentViolationOptionsForOtherPlatform, ::File.join(__dir__, "peal/types/content_violation_options_for_other_platform")
+    autoload :ContentViolationOptionsWithoutChannel, ::File.join(__dir__, "peal/types/content_violation_options_without_channel")
+    autoload :ContentViolationOverrideWithoutChannel, ::File.join(__dir__, "peal/types/content_violation_override_without_channel")
+    autoload :ContentViolationSideOutOfRange, ::File.join(__dir__, "peal/types/content_violation_side_out_of_range")
+    autoload :TextUnit, ::File.join(__dir__, "peal/types/text_unit")
+    autoload :ContentViolationTextTooLong, ::File.join(__dir__, "peal/types/content_violation_text_too_long")
+    autoload :ContentViolationTooManyHashtags, ::File.join(__dir__, "peal/types/content_violation_too_many_hashtags")
+    autoload :ContentViolationTooManyLinks, ::File.join(__dir__, "peal/types/content_violation_too_many_links")
+    autoload :ContentViolationTooManyMedia, ::File.join(__dir__, "peal/types/content_violation_too_many_media")
+    autoload :ContentViolationTooManyMentions, ::File.join(__dir__, "peal/types/content_violation_too_many_mentions")
+    autoload :ContentViolationTooManyParts, ::File.join(__dir__, "peal/types/content_violation_too_many_parts")
+    autoload :ContentViolationTooManyPixels, ::File.join(__dir__, "peal/types/content_violation_too_many_pixels")
+    autoload :ContentViolationTooManyVideos, ::File.join(__dir__, "peal/types/content_violation_too_many_videos")
+    autoload :ContentViolationVideoTooLong, ::File.join(__dir__, "peal/types/content_violation_video_too_long")
+    autoload :ContentViolationVideoTooShort, ::File.join(__dir__, "peal/types/content_violation_video_too_short")
+    autoload :ContentViolation, ::File.join(__dir__, "peal/types/content_violation")
+    autoload :PostContentInvalidEncodedTag, ::File.join(__dir__, "peal/types/post_content_invalid_encoded_tag")
+    autoload :PostContentInvalidEncoded, ::File.join(__dir__, "peal/types/post_content_invalid_encoded")
+    autoload :UnknownChannelsEncodedTag, ::File.join(__dir__, "peal/types/unknown_channels_encoded_tag")
+    autoload :UnknownChannelsEncoded, ::File.join(__dir__, "peal/types/unknown_channels_encoded")
     autoload :UnprocessableEntityErrorBody, ::File.join(__dir__, "peal/types/unprocessable_entity_error_body")
     autoload :InvalidTimeRangeEncodedTag, ::File.join(__dir__, "peal/types/invalid_time_range_encoded_tag")
     autoload :InvalidTimeRangeEncoded, ::File.join(__dir__, "peal/types/invalid_time_range_encoded")
     autoload :EffectHttpApiErrorBadRequestEncodedTag, ::File.join(__dir__, "peal/types/effect_http_api_error_bad_request_encoded_tag")
     autoload :EffectHttpApiErrorBadRequestEncoded, ::File.join(__dir__, "peal/types/effect_http_api_error_bad_request_encoded")
     autoload :BadRequestErrorBody, ::File.join(__dir__, "peal/types/bad_request_error_body")
-    autoload :PostNotReviewableEncodedStatus, ::File.join(__dir__, "peal/types/post_not_reviewable_encoded_status")
-    autoload :PostNotReviewableEncoded, ::File.join(__dir__, "peal/types/post_not_reviewable_encoded")
-    autoload :TooManyReviewLinksEncoded, ::File.join(__dir__, "peal/types/too_many_review_links_encoded")
+    autoload :ChannelSetNameTakenEncodedTag, ::File.join(__dir__, "peal/types/channel_set_name_taken_encoded_tag")
+    autoload :ChannelSetNameTakenEncoded, ::File.join(__dir__, "peal/types/channel_set_name_taken_encoded")
+    autoload :TooManyChannelSetsEncoded, ::File.join(__dir__, "peal/types/too_many_channel_sets_encoded")
     autoload :ConflictErrorBody, ::File.join(__dir__, "peal/types/conflict_error_body")
     autoload :TooManyConnectLinksEncoded, ::File.join(__dir__, "peal/types/too_many_connect_links_encoded")
     autoload :TooManyRequestsEncodedTag, ::File.join(__dir__, "peal/types/too_many_requests_encoded_tag")
@@ -221,7 +304,6 @@ module Peal
     autoload :ForbiddenEncoded, ::File.join(__dir__, "peal/types/forbidden_encoded")
     autoload :PartnerAccountsClosedEncoded, ::File.join(__dir__, "peal/types/partner_accounts_closed_encoded")
     autoload :ForbiddenErrorBody, ::File.join(__dir__, "peal/types/forbidden_error_body")
-    autoload :MediaContentType, ::File.join(__dir__, "peal/types/media_content_type")
     autoload :AccountRestrictionMediaTypesRefused, ::File.join(__dir__, "peal/types/account_restriction_media_types_refused")
     autoload :AccountRestrictionOptionFixed, ::File.join(__dir__, "peal/types/account_restriction_option_fixed")
     autoload :AccountRestrictionOptionValues, ::File.join(__dir__, "peal/types/account_restriction_option_values")
@@ -240,14 +322,55 @@ module Peal
     autoload :ActivityVia, ::File.join(__dir__, "peal/types/activity_via")
     autoload :ActivityEvent, ::File.join(__dir__, "peal/types/activity_event")
     autoload :ActivityPage, ::File.join(__dir__, "peal/types/activity_page")
+    autoload :AdObjectStatus, ::File.join(__dir__, "peal/types/ad_object_status")
+    autoload :PaidTotals, ::File.join(__dir__, "peal/types/paid_totals")
+    autoload :Ad, ::File.join(__dir__, "peal/types/ad")
+    autoload :AdAccess, ::File.join(__dir__, "peal/types/ad_access")
+    autoload :AdAccountStatus, ::File.join(__dir__, "peal/types/ad_account_status")
+    autoload :AdNetwork, ::File.join(__dir__, "peal/types/ad_network")
+    autoload :AdAccount, ::File.join(__dir__, "peal/types/ad_account")
+    autoload :AdAccountBusyEncodedTag, ::File.join(__dir__, "peal/types/ad_account_busy_encoded_tag")
+    autoload :AdAccountBusyEncoded, ::File.join(__dir__, "peal/types/ad_account_busy_encoded")
+    autoload :AdAccountNotFoundEncoded, ::File.join(__dir__, "peal/types/ad_account_not_found_encoded")
+    autoload :AdAccountSpendCapExceededEncoded, ::File.join(__dir__, "peal/types/ad_account_spend_cap_exceeded_encoded")
+    autoload :AdAccountUnsupported, ::File.join(__dir__, "peal/types/ad_account_unsupported")
+    autoload :AdAccountUnusableEncodedReason, ::File.join(__dir__, "peal/types/ad_account_unusable_encoded_reason")
+    autoload :AdAccountUnusableEncoded, ::File.join(__dir__, "peal/types/ad_account_unusable_encoded")
+    autoload :AdAuditAction, ::File.join(__dir__, "peal/types/ad_audit_action")
+    autoload :AdAuditEntryByKind, ::File.join(__dir__, "peal/types/ad_audit_entry_by_kind")
+    autoload :AdAuditEntryBy, ::File.join(__dir__, "peal/types/ad_audit_entry_by")
+    autoload :AdAuditEntry, ::File.join(__dir__, "peal/types/ad_audit_entry")
+    autoload :AdAuditPage, ::File.join(__dir__, "peal/types/ad_audit_page")
+    autoload :CampaignObjective, ::File.join(__dir__, "peal/types/campaign_objective")
+    autoload :AdCampaign, ::File.join(__dir__, "peal/types/ad_campaign")
+    autoload :CalendarDay, ::File.join(__dir__, "peal/types/calendar_day")
+    autoload :AdCampaignReport, ::File.join(__dir__, "peal/types/ad_campaign_report")
+    autoload :AdConnection, ::File.join(__dir__, "peal/types/ad_connection")
+    autoload :AdConnectionNotFoundEncoded, ::File.join(__dir__, "peal/types/ad_connection_not_found_encoded")
+    autoload :AdInsightDay, ::File.join(__dir__, "peal/types/ad_insight_day")
+    autoload :AdInsightReport, ::File.join(__dir__, "peal/types/ad_insight_report")
+    autoload :AdMoney, ::File.join(__dir__, "peal/types/ad_money")
+    autoload :AdNetworkUnavailableEncodedTag, ::File.join(__dir__, "peal/types/ad_network_unavailable_encoded_tag")
+    autoload :AdNetworkUnavailableEncoded, ::File.join(__dir__, "peal/types/ad_network_unavailable_encoded")
+    autoload :AdReport, ::File.join(__dir__, "peal/types/ad_report")
+    autoload :AdSignIn, ::File.join(__dir__, "peal/types/ad_sign_in")
+    autoload :AdSignInFailedEncodedTag, ::File.join(__dir__, "peal/types/ad_sign_in_failed_encoded_tag")
+    autoload :AdSignInFailedEncodedReason, ::File.join(__dir__, "peal/types/ad_sign_in_failed_encoded_reason")
+    autoload :AdSignInFailedEncoded, ::File.join(__dir__, "peal/types/ad_sign_in_failed_encoded")
+    autoload :ReachableAdAccount, ::File.join(__dir__, "peal/types/reachable_ad_account")
+    autoload :AdSignInResult, ::File.join(__dir__, "peal/types/ad_sign_in_result")
+    autoload :AdSpending, ::File.join(__dir__, "peal/types/ad_spending")
+    autoload :AdSpendingNotEnabledEncoded, ::File.join(__dir__, "peal/types/ad_spending_not_enabled_encoded")
+    autoload :AdSpendingUnavailableEncoded, ::File.join(__dir__, "peal/types/ad_spending_unavailable_encoded")
+    autoload :AdsMode, ::File.join(__dir__, "peal/types/ads_mode")
+    autoload :AdsStatus, ::File.join(__dir__, "peal/types/ads_status")
+    autoload :AdsUnavailableEncoded, ::File.join(__dir__, "peal/types/ads_unavailable_encoded")
     autoload :AlreadyMemberEncoded, ::File.join(__dir__, "peal/types/already_member_encoded")
     autoload :AltTextTooLongEncodedTag, ::File.join(__dir__, "peal/types/alt_text_too_long_encoded_tag")
     autoload :AltTextTooLongEncoded, ::File.join(__dir__, "peal/types/alt_text_too_long_encoded")
-    autoload :CalendarDay, ::File.join(__dir__, "peal/types/calendar_day")
     autoload :AnalyticsDashboardPrevious, ::File.join(__dir__, "peal/types/analytics_dashboard_previous")
     autoload :DashboardTotals, ::File.join(__dir__, "peal/types/dashboard_totals")
     autoload :FollowerChange, ::File.join(__dir__, "peal/types/follower_change")
-    autoload :Platform, ::File.join(__dir__, "peal/types/platform")
     autoload :ChannelDashboard, ::File.join(__dir__, "peal/types/channel_dashboard")
     autoload :DashboardDay, ::File.join(__dir__, "peal/types/dashboard_day")
     autoload :PlatformDashboard, ::File.join(__dir__, "peal/types/platform_dashboard")
@@ -307,6 +430,25 @@ module Peal
     autoload :TrialOffer, ::File.join(__dir__, "peal/types/trial_offer")
     autoload :Usage, ::File.join(__dir__, "peal/types/usage")
     autoload :Billing, ::File.join(__dir__, "peal/types/billing")
+    autoload :BoostObjective, ::File.join(__dir__, "peal/types/boost_objective")
+    autoload :BoostPlatform, ::File.join(__dir__, "peal/types/boost_platform")
+    autoload :BoostAudience, ::File.join(__dir__, "peal/types/boost_audience")
+    autoload :BoostBudgetKind, ::File.join(__dir__, "peal/types/boost_budget_kind")
+    autoload :BoostBudget, ::File.join(__dir__, "peal/types/boost_budget")
+    autoload :BoostFailureReason, ::File.join(__dir__, "peal/types/boost_failure_reason")
+    autoload :BoostState, ::File.join(__dir__, "peal/types/boost_state")
+    autoload :Boost, ::File.join(__dir__, "peal/types/boost")
+    autoload :BoostStepStep, ::File.join(__dir__, "peal/types/boost_step_step")
+    autoload :BoostStepOutcome, ::File.join(__dir__, "peal/types/boost_step_outcome")
+    autoload :BoostStep, ::File.join(__dir__, "peal/types/boost_step")
+    autoload :BoostDetail, ::File.join(__dir__, "peal/types/boost_detail")
+    autoload :BoostViolation, ::File.join(__dir__, "peal/types/boost_violation")
+    autoload :BoostInvalidEncoded, ::File.join(__dir__, "peal/types/boost_invalid_encoded")
+    autoload :BoostKeyReusedEncoded, ::File.join(__dir__, "peal/types/boost_key_reused_encoded")
+    autoload :BoostNotFoundEncoded, ::File.join(__dir__, "peal/types/boost_not_found_encoded")
+    autoload :BoostPage, ::File.join(__dir__, "peal/types/boost_page")
+    autoload :BoostQuote, ::File.join(__dir__, "peal/types/boost_quote")
+    autoload :BoostStateConflictEncoded, ::File.join(__dir__, "peal/types/boost_state_conflict_encoded")
     autoload :GoogleBusinessCallToAction, ::File.join(__dir__, "peal/types/google_business_call_to_action")
     autoload :GoogleBusinessPostType, ::File.join(__dir__, "peal/types/google_business_post_type")
     autoload :GoogleBusinessOptions, ::File.join(__dir__, "peal/types/google_business_options")
@@ -338,40 +480,11 @@ module Peal
     autoload :TargetParts, ::File.join(__dir__, "peal/types/target_parts")
     autoload :UnconfirmedReason, ::File.join(__dir__, "peal/types/unconfirmed_reason")
     autoload :PostTarget, ::File.join(__dir__, "peal/types/post_target")
+    autoload :PostWarningChannelsDropped, ::File.join(__dir__, "peal/types/post_warning_channels_dropped")
+    autoload :PostWarning, ::File.join(__dir__, "peal/types/post_warning")
     autoload :Post, ::File.join(__dir__, "peal/types/post")
     autoload :BulkPostResultCreated, ::File.join(__dir__, "peal/types/bulk_post_result_created")
-    autoload :ContentViolationAltTextTooLong, ::File.join(__dir__, "peal/types/content_violation_alt_text_too_long")
-    autoload :NonFiniteNumber, ::File.join(__dir__, "peal/types/non_finite_number")
-    autoload :ContentViolationAspectRatioUnsupportedMaximum, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported_maximum")
-    autoload :ContentViolationAspectRatioUnsupportedMinimum, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported_minimum")
-    autoload :ContentViolationAspectRatioUnsupported, ::File.join(__dir__, "peal/types/content_violation_aspect_ratio_unsupported")
-    autoload :ContentViolationEmpty, ::File.join(__dir__, "peal/types/content_violation_empty")
-    autoload :ContentViolationForbiddenCharacters, ::File.join(__dir__, "peal/types/content_violation_forbidden_characters")
-    autoload :ContentViolationMediaRequired, ::File.join(__dir__, "peal/types/content_violation_media_required")
-    autoload :ContentViolationMediaTooLarge, ::File.join(__dir__, "peal/types/content_violation_media_too_large")
-    autoload :ContentViolationMediaTooSmall, ::File.join(__dir__, "peal/types/content_violation_media_too_small")
-    autoload :ContentViolationMediaTypeUnsupported, ::File.join(__dir__, "peal/types/content_violation_media_type_unsupported")
-    autoload :ContentViolationMixedMedia, ::File.join(__dir__, "peal/types/content_violation_mixed_media")
-    autoload :ContentViolationNoChannels, ::File.join(__dir__, "peal/types/content_violation_no_channels")
-    autoload :ContentViolationOptionInvalid, ::File.join(__dir__, "peal/types/content_violation_option_invalid")
-    autoload :ContentViolationOptionMissing, ::File.join(__dir__, "peal/types/content_violation_option_missing")
-    autoload :ContentViolationOptionTooLong, ::File.join(__dir__, "peal/types/content_violation_option_too_long")
-    autoload :ContentViolationOptionsForOtherPlatform, ::File.join(__dir__, "peal/types/content_violation_options_for_other_platform")
-    autoload :ContentViolationOptionsWithoutChannel, ::File.join(__dir__, "peal/types/content_violation_options_without_channel")
-    autoload :ContentViolationOverrideWithoutChannel, ::File.join(__dir__, "peal/types/content_violation_override_without_channel")
-    autoload :ContentViolationSideOutOfRange, ::File.join(__dir__, "peal/types/content_violation_side_out_of_range")
-    autoload :TextUnit, ::File.join(__dir__, "peal/types/text_unit")
-    autoload :ContentViolationTextTooLong, ::File.join(__dir__, "peal/types/content_violation_text_too_long")
-    autoload :ContentViolationTooManyHashtags, ::File.join(__dir__, "peal/types/content_violation_too_many_hashtags")
-    autoload :ContentViolationTooManyLinks, ::File.join(__dir__, "peal/types/content_violation_too_many_links")
-    autoload :ContentViolationTooManyMedia, ::File.join(__dir__, "peal/types/content_violation_too_many_media")
-    autoload :ContentViolationTooManyMentions, ::File.join(__dir__, "peal/types/content_violation_too_many_mentions")
-    autoload :ContentViolationTooManyParts, ::File.join(__dir__, "peal/types/content_violation_too_many_parts")
-    autoload :ContentViolationTooManyPixels, ::File.join(__dir__, "peal/types/content_violation_too_many_pixels")
-    autoload :ContentViolationTooManyVideos, ::File.join(__dir__, "peal/types/content_violation_too_many_videos")
-    autoload :ContentViolationVideoTooLong, ::File.join(__dir__, "peal/types/content_violation_video_too_long")
-    autoload :ContentViolationVideoTooShort, ::File.join(__dir__, "peal/types/content_violation_video_too_short")
-    autoload :ContentViolation, ::File.join(__dir__, "peal/types/content_violation")
+    autoload :ChannelSetNotFoundEncoded, ::File.join(__dir__, "peal/types/channel_set_not_found_encoded")
     autoload :DuplicateOnChannel, ::File.join(__dir__, "peal/types/duplicate_on_channel")
     autoload :DuplicatePostEncoded, ::File.join(__dir__, "peal/types/duplicate_post_encoded")
     autoload :IdempotencyKeyReusedEncoded, ::File.join(__dir__, "peal/types/idempotency_key_reused_encoded")
@@ -380,15 +493,18 @@ module Peal
     autoload :PlanLimit, ::File.join(__dir__, "peal/types/plan_limit")
     autoload :PlanLimitReachedEncodedTag, ::File.join(__dir__, "peal/types/plan_limit_reached_encoded_tag")
     autoload :PlanLimitReachedEncoded, ::File.join(__dir__, "peal/types/plan_limit_reached_encoded")
-    autoload :PostContentInvalidEncoded, ::File.join(__dir__, "peal/types/post_content_invalid_encoded")
     autoload :PostNotFoundEncoded, ::File.join(__dir__, "peal/types/post_not_found_encoded")
     autoload :ScheduleInPastEncoded, ::File.join(__dir__, "peal/types/schedule_in_past_encoded")
-    autoload :UnknownChannelsEncoded, ::File.join(__dir__, "peal/types/unknown_channels_encoded")
+    autoload :SignatureNotFoundEncoded, ::File.join(__dir__, "peal/types/signature_not_found_encoded")
     autoload :UnknownMediaEncoded, ::File.join(__dir__, "peal/types/unknown_media_encoded")
+    autoload :UnknownTagsEncodedTag, ::File.join(__dir__, "peal/types/unknown_tags_encoded_tag")
+    autoload :UnknownTagsEncoded, ::File.join(__dir__, "peal/types/unknown_tags_encoded")
     autoload :PostRefusal, ::File.join(__dir__, "peal/types/post_refusal")
     autoload :BulkPostResultRefused, ::File.join(__dir__, "peal/types/bulk_post_result_refused")
     autoload :BulkPostResult, ::File.join(__dir__, "peal/types/bulk_post_result")
     autoload :BulkResult, ::File.join(__dir__, "peal/types/bulk_result")
+    autoload :CeilingCurrencyMismatchEncodedTag, ::File.join(__dir__, "peal/types/ceiling_currency_mismatch_encoded_tag")
+    autoload :CeilingCurrencyMismatchEncoded, ::File.join(__dir__, "peal/types/ceiling_currency_mismatch_encoded")
     autoload :CommentSelectionLocated, ::File.join(__dir__, "peal/types/comment_selection_located")
     autoload :CommentSelection, ::File.join(__dir__, "peal/types/comment_selection")
     autoload :CommentAnchor, ::File.join(__dir__, "peal/types/comment_anchor")
@@ -429,17 +545,25 @@ module Peal
     autoload :PlatformCapabilities, ::File.join(__dir__, "peal/types/platform_capabilities")
     autoload :ChannelCapabilities, ::File.join(__dir__, "peal/types/channel_capabilities")
     autoload :ChannelDay, ::File.join(__dir__, "peal/types/channel_day")
-    autoload :ChannelNotFoundEncoded, ::File.join(__dir__, "peal/types/channel_not_found_encoded")
+    autoload :ChannelDefaults, ::File.join(__dir__, "peal/types/channel_defaults")
+    autoload :ChannelPageCounts, ::File.join(__dir__, "peal/types/channel_page_counts")
+    autoload :ChannelPage, ::File.join(__dir__, "peal/types/channel_page")
     autoload :LimitedCount, ::File.join(__dir__, "peal/types/limited_count")
     autoload :TextCount, ::File.join(__dir__, "peal/types/text_count")
     autoload :PartPreview, ::File.join(__dir__, "peal/types/part_preview")
     autoload :ChannelPreview, ::File.join(__dir__, "peal/types/channel_preview")
     autoload :ChannelSeries, ::File.join(__dir__, "peal/types/channel_series")
+    autoload :ChannelSet, ::File.join(__dir__, "peal/types/channel_set")
+    autoload :ChannelSetDetails, ::File.join(__dir__, "peal/types/channel_set_details")
+    autoload :ChannelStatusName, ::File.join(__dir__, "peal/types/channel_status_name")
     autoload :ChoosableAccount, ::File.join(__dir__, "peal/types/choosable_account")
     autoload :CommentInvalidEncodedTag, ::File.join(__dir__, "peal/types/comment_invalid_encoded_tag")
     autoload :CommentProblem, ::File.join(__dir__, "peal/types/comment_problem")
     autoload :CommentInvalidEncoded, ::File.join(__dir__, "peal/types/comment_invalid_encoded")
     autoload :CommentNotFoundEncoded, ::File.join(__dir__, "peal/types/comment_not_found_encoded")
+    autoload :ConnectFailedEncodedTag, ::File.join(__dir__, "peal/types/connect_failed_encoded_tag")
+    autoload :ConnectFailureReason, ::File.join(__dir__, "peal/types/connect_failure_reason")
+    autoload :ConnectFailedEncoded, ::File.join(__dir__, "peal/types/connect_failed_encoded")
     autoload :ConnectLinkStatus, ::File.join(__dir__, "peal/types/connect_link_status")
     autoload :HostedConnectFailure, ::File.join(__dir__, "peal/types/hosted_connect_failure")
     autoload :ConnectLink, ::File.join(__dir__, "peal/types/connect_link")
@@ -556,7 +680,12 @@ module Peal
     autoload :MediaUsage, ::File.join(__dir__, "peal/types/media_usage")
     autoload :MetricsSnapshot, ::File.join(__dir__, "peal/types/metrics_snapshot")
     autoload :Money, ::File.join(__dir__, "peal/types/money")
+    autoload :SpecialAdCategory, ::File.join(__dir__, "peal/types/special_ad_category")
+    autoload :NewBoost, ::File.join(__dir__, "peal/types/new_boost")
     autoload :NoticeChannel, ::File.join(__dir__, "peal/types/notice_channel")
+    autoload :NoticeEventAdBoostChangedChange, ::File.join(__dir__, "peal/types/notice_event_ad_boost_changed_change")
+    autoload :NoticeEventAdBoostChanged, ::File.join(__dir__, "peal/types/notice_event_ad_boost_changed")
+    autoload :NoticeEventAdConnectionReconnectRequired, ::File.join(__dir__, "peal/types/notice_event_ad_connection_reconnect_required")
     autoload :NoticeEventChannelReconnectRequired, ::File.join(__dir__, "peal/types/notice_event_channel_reconnect_required")
     autoload :NoticeEventChannelReconnectSoon, ::File.join(__dir__, "peal/types/notice_event_channel_reconnect_soon")
     autoload :NoticeEventCommentsReceived, ::File.join(__dir__, "peal/types/notice_event_comments_received")
@@ -580,6 +709,7 @@ module Peal
     autoload :NoticePage, ::File.join(__dir__, "peal/types/notice_page")
     autoload :NotificationPreferencesEmail, ::File.join(__dir__, "peal/types/notification_preferences_email")
     autoload :NotificationPreferences, ::File.join(__dir__, "peal/types/notification_preferences")
+    autoload :OrganicCounts, ::File.join(__dir__, "peal/types/organic_counts")
     autoload :Partner, ::File.join(__dir__, "peal/types/partner")
     autoload :PartnerDetailField, ::File.join(__dir__, "peal/types/partner_detail_field")
     autoload :PartnerDetailsInvalidEncodedTag, ::File.join(__dir__, "peal/types/partner_details_invalid_encoded_tag")
@@ -596,10 +726,16 @@ module Peal
     autoload :PlatformRateLimitedEncoded, ::File.join(__dir__, "peal/types/platform_rate_limited_encoded")
     autoload :PlatformUnreachableEncodedTag, ::File.join(__dir__, "peal/types/platform_unreachable_encoded_tag")
     autoload :PlatformUnreachableEncoded, ::File.join(__dir__, "peal/types/platform_unreachable_encoded")
+    autoload :PostAdPerformancePaidItem, ::File.join(__dir__, "peal/types/post_ad_performance_paid_item")
+    autoload :PostAdPerformance, ::File.join(__dir__, "peal/types/post_ad_performance")
     autoload :TargetMetrics, ::File.join(__dir__, "peal/types/target_metrics")
     autoload :PostAnalytics, ::File.join(__dir__, "peal/types/post_analytics")
     autoload :PostChannel, ::File.join(__dir__, "peal/types/post_channel")
     autoload :PostDraft, ::File.join(__dir__, "peal/types/post_draft")
+    autoload :PostNotPromotableEncodedReason, ::File.join(__dir__, "peal/types/post_not_promotable_encoded_reason")
+    autoload :PostNotPromotableEncoded, ::File.join(__dir__, "peal/types/post_not_promotable_encoded")
+    autoload :PostNotReviewableEncodedStatus, ::File.join(__dir__, "peal/types/post_not_reviewable_encoded_status")
+    autoload :PostNotReviewableEncoded, ::File.join(__dir__, "peal/types/post_not_reviewable_encoded")
     autoload :PostPage, ::File.join(__dir__, "peal/types/post_page")
     autoload :ReviewedMedia, ::File.join(__dir__, "peal/types/reviewed_media")
     autoload :ReviewedPart, ::File.join(__dir__, "peal/types/reviewed_part")
@@ -624,18 +760,38 @@ module Peal
     autoload :ReplyPendingEncoded, ::File.join(__dir__, "peal/types/reply_pending_encoded")
     autoload :ReplyStatusConflictEncodedTag, ::File.join(__dir__, "peal/types/reply_status_conflict_encoded_tag")
     autoload :ReplyStatusConflictEncoded, ::File.join(__dir__, "peal/types/reply_status_conflict_encoded")
+    autoload :ReturnURLNotAllowedEncoded, ::File.join(__dir__, "peal/types/return_url_not_allowed_encoded")
+    autoload :ReviewLinkNotFoundEncoded, ::File.join(__dir__, "peal/types/review_link_not_found_encoded")
     autoload :ReviewSettings, ::File.join(__dir__, "peal/types/review_settings")
     autoload :Role, ::File.join(__dir__, "peal/types/role")
+    autoload :SignatureScopeChannel, ::File.join(__dir__, "peal/types/signature_scope_channel")
+    autoload :SignatureScopePlatform, ::File.join(__dir__, "peal/types/signature_scope_platform")
+    autoload :SignatureScopeWorkspace, ::File.join(__dir__, "peal/types/signature_scope_workspace")
+    autoload :SignatureScope, ::File.join(__dir__, "peal/types/signature_scope")
+    autoload :Signature, ::File.join(__dir__, "peal/types/signature")
+    autoload :SignatureDetails, ::File.join(__dir__, "peal/types/signature_details")
+    autoload :SignatureNameTakenEncodedTag, ::File.join(__dir__, "peal/types/signature_name_taken_encoded_tag")
+    autoload :SignatureNameTakenEncoded, ::File.join(__dir__, "peal/types/signature_name_taken_encoded")
+    autoload :SpendCeilingExceededEncoded, ::File.join(__dir__, "peal/types/spend_ceiling_exceeded_encoded")
     autoload :Standing, ::File.join(__dir__, "peal/types/standing")
     autoload :SubscribableWebhookEventType, ::File.join(__dir__, "peal/types/subscribable_webhook_event_type")
     autoload :SuggestionHashtags, ::File.join(__dir__, "peal/types/suggestion_hashtags")
     autoload :SuggestionText, ::File.join(__dir__, "peal/types/suggestion_text")
     autoload :Suggestion, ::File.join(__dir__, "peal/types/suggestion")
+    autoload :TagColour, ::File.join(__dir__, "peal/types/tag_colour")
+    autoload :Tag, ::File.join(__dir__, "peal/types/tag")
+    autoload :TagDetails, ::File.join(__dir__, "peal/types/tag_details")
+    autoload :TagNameTakenEncodedTag, ::File.join(__dir__, "peal/types/tag_name_taken_encoded_tag")
+    autoload :TagNameTakenEncoded, ::File.join(__dir__, "peal/types/tag_name_taken_encoded")
+    autoload :TagNotFoundEncoded, ::File.join(__dir__, "peal/types/tag_not_found_encoded")
     autoload :TargetConfirmationNotPublished, ::File.join(__dir__, "peal/types/target_confirmation_not_published")
     autoload :TargetConfirmationPublished, ::File.join(__dir__, "peal/types/target_confirmation_published")
     autoload :TargetConfirmation, ::File.join(__dir__, "peal/types/target_confirmation")
     autoload :TargetStatusConflictEncoded, ::File.join(__dir__, "peal/types/target_status_conflict_encoded")
     autoload :TooManyInvitationsEncoded, ::File.join(__dir__, "peal/types/too_many_invitations_encoded")
+    autoload :TooManyReviewLinksEncoded, ::File.join(__dir__, "peal/types/too_many_review_links_encoded")
+    autoload :TooManySignaturesEncoded, ::File.join(__dir__, "peal/types/too_many_signatures_encoded")
+    autoload :TooManyTagsEncoded, ::File.join(__dir__, "peal/types/too_many_tags_encoded")
     autoload :TooManyWebhookEndpointsEncodedTag, ::File.join(__dir__, "peal/types/too_many_webhook_endpoints_encoded_tag")
     autoload :TooManyWebhookEndpointsEncoded, ::File.join(__dir__, "peal/types/too_many_webhook_endpoints_encoded")
     autoload :TooManyWebhookSendsEncoded, ::File.join(__dir__, "peal/types/too_many_webhook_sends_encoded")

@@ -7,12 +7,15 @@ import java.util.function.Supplier;
 import social.peal.core.ClientOptions;
 import social.peal.core.Suppliers;
 import social.peal.resources.activity.AsyncActivityClient;
+import social.peal.resources.ads.AsyncAdsClient;
 import social.peal.resources.analytics.AsyncAnalyticsClient;
 import social.peal.resources.apikeys.AsyncApiKeysClient;
 import social.peal.resources.assistant.AsyncAssistantClient;
 import social.peal.resources.billing.AsyncBillingClient;
 import social.peal.resources.capabilities.AsyncCapabilitiesClient;
+import social.peal.resources.channeldefaults.AsyncChannelDefaultsClient;
 import social.peal.resources.channels.AsyncChannelsClient;
+import social.peal.resources.channelsets.AsyncChannelSetsClient;
 import social.peal.resources.connectlinks.AsyncConnectLinksClient;
 import social.peal.resources.inbox.AsyncInboxClient;
 import social.peal.resources.invitations.AsyncInvitationsClient;
@@ -26,7 +29,9 @@ import social.peal.resources.partneraccount.AsyncPartnerAccountClient;
 import social.peal.resources.posts.AsyncPostsClient;
 import social.peal.resources.review.AsyncReviewClient;
 import social.peal.resources.session.AsyncSessionClient;
+import social.peal.resources.signatures.AsyncSignaturesClient;
 import social.peal.resources.system.AsyncSystemClient;
+import social.peal.resources.tags.AsyncTagsClient;
 import social.peal.resources.tiktok.AsyncTiktokClient;
 import social.peal.resources.webhooks.AsyncWebhooksClient;
 
@@ -69,6 +74,8 @@ public class AsyncPealClient implements AutoCloseable {
 
     protected final Supplier<AsyncInboxClient> inboxClient;
 
+    protected final Supplier<AsyncAdsClient> adsClient;
+
     protected final Supplier<AsyncActivityClient> activityClient;
 
     protected final Supplier<AsyncPartnerClient> partnerClient;
@@ -78,6 +85,14 @@ public class AsyncPealClient implements AutoCloseable {
     protected final Supplier<AsyncConnectLinksClient> connectLinksClient;
 
     protected final Supplier<AsyncReviewClient> reviewClient;
+
+    protected final Supplier<AsyncTagsClient> tagsClient;
+
+    protected final Supplier<AsyncSignaturesClient> signaturesClient;
+
+    protected final Supplier<AsyncChannelSetsClient> channelSetsClient;
+
+    protected final Supplier<AsyncChannelDefaultsClient> channelDefaultsClient;
 
     public AsyncPealClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
@@ -100,11 +115,16 @@ public class AsyncPealClient implements AutoCloseable {
         this.lookupsClient = Suppliers.memoize(() -> new AsyncLookupsClient(clientOptions));
         this.webhooksClient = Suppliers.memoize(() -> new AsyncWebhooksClient(clientOptions));
         this.inboxClient = Suppliers.memoize(() -> new AsyncInboxClient(clientOptions));
+        this.adsClient = Suppliers.memoize(() -> new AsyncAdsClient(clientOptions));
         this.activityClient = Suppliers.memoize(() -> new AsyncActivityClient(clientOptions));
         this.partnerClient = Suppliers.memoize(() -> new AsyncPartnerClient(clientOptions));
         this.partnerAccountClient = Suppliers.memoize(() -> new AsyncPartnerAccountClient(clientOptions));
         this.connectLinksClient = Suppliers.memoize(() -> new AsyncConnectLinksClient(clientOptions));
         this.reviewClient = Suppliers.memoize(() -> new AsyncReviewClient(clientOptions));
+        this.tagsClient = Suppliers.memoize(() -> new AsyncTagsClient(clientOptions));
+        this.signaturesClient = Suppliers.memoize(() -> new AsyncSignaturesClient(clientOptions));
+        this.channelSetsClient = Suppliers.memoize(() -> new AsyncChannelSetsClient(clientOptions));
+        this.channelDefaultsClient = Suppliers.memoize(() -> new AsyncChannelDefaultsClient(clientOptions));
     }
 
     public AsyncSystemClient system() {
@@ -179,6 +199,10 @@ public class AsyncPealClient implements AutoCloseable {
         return this.inboxClient.get();
     }
 
+    public AsyncAdsClient ads() {
+        return this.adsClient.get();
+    }
+
     public AsyncActivityClient activity() {
         return this.activityClient.get();
     }
@@ -197,6 +221,22 @@ public class AsyncPealClient implements AutoCloseable {
 
     public AsyncReviewClient review() {
         return this.reviewClient.get();
+    }
+
+    public AsyncTagsClient tags() {
+        return this.tagsClient.get();
+    }
+
+    public AsyncSignaturesClient signatures() {
+        return this.signaturesClient.get();
+    }
+
+    public AsyncChannelSetsClient channelSets() {
+        return this.channelSetsClient.get();
+    }
+
+    public AsyncChannelDefaultsClient channelDefaults() {
+        return this.channelDefaultsClient.get();
     }
 
     /**

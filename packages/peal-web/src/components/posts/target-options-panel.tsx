@@ -25,6 +25,7 @@ import { Separator } from "peal-ui/components/separator";
 import { useEffect } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 
+import { channelName } from "#channels/channel-name.ts";
 import {
   pinterestBoards,
   pinterestBoardSections,
@@ -596,7 +597,7 @@ const ChannelOptionsFields = ({
       <legend className="px-1 text-sm font-medium">
         {t("legend", {
           channel: tPosts("Composer.channelDetail", {
-            handle: channel.handle,
+            handle: channelName(channel),
             platform,
           }),
         })}

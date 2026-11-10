@@ -19,6 +19,7 @@ change crosses several:
 | `review`             | [`src/review/AGENTS.md`](src/review/AGENTS.md)               |
 | `engagement`         | [`src/engagement/AGENTS.md`](src/engagement/AGENTS.md)       |
 | `activity`           | [`src/activity/AGENTS.md`](src/activity/AGENTS.md)           |
+| `ads`                | [`src/ads/AGENTS.md`](src/ads/AGENTS.md)                     |
 | the MCP endpoint     | [`src/app/mcp/AGENTS.md`](src/app/mcp/AGENTS.md)             |
 
 The shared kernel's rules are below.
@@ -29,23 +30,24 @@ The server follows DDD and Clean Architecture. Each bounded context in
 `packages/peal-server/src/` has four layers, plus a `container.ts` that wires
 them:
 
-| Context         | Holds                                                                             |
-| --------------- | --------------------------------------------------------------------------------- |
-| `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters       |
-| `channels`      | connected accounts, connect flows, encrypted tokens and their renewal             |
-| `media`         | uploads, storage, probing, alt text, files handed to platforms                    |
-| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth, partner accounts           |
-| `notifications` | account emails, in-app notices, their emails, notification preferences            |
-| `assistant`     | the writing assistant: prompts, language models, the daily quota                  |
-| `shared`        | the kernel the others build on                                                    |
-| `analytics`     | the posts it follows, snapshots of their counts, the hourly collection            |
-| `billing`       | plans, subscriptions, entitlements, the billing page's usage                      |
-| `staff`         | the staff console: what staff read and do, and the audit log of it                |
-| `engagement`    | the inbox: comments under published posts, replies sent to them, their collection |
-| `activity`      | each workspace's activity log, and the requests counted for the rate limit        |
-| `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log         |
-| `legal`         | what French law has a host keep, and the legal requests that read it              |
-| `review`        | approval policies, requests and decisions, review links, comments                 |
+| Context         | Holds                                                                                                                                                           |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters, and what a workspace saves to write and file them (tags, signatures, channel sets) |
+| `channels`      | connected accounts, connect flows, encrypted tokens and their renewal                                                                                           |
+| `media`         | uploads, storage, probing, alt text, files handed to platforms                                                                                                  |
+| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth, partner accounts                                                                                         |
+| `notifications` | account emails, in-app notices, their emails, notification preferences                                                                                          |
+| `assistant`     | the writing assistant: prompts, language models, the daily quota                                                                                                |
+| `shared`        | the kernel the others build on                                                                                                                                  |
+| `analytics`     | the posts it follows, snapshots of their counts, the hourly collection                                                                                          |
+| `billing`       | plans, subscriptions, entitlements, the billing page's usage                                                                                                    |
+| `staff`         | the staff console: what staff read and do, and the audit log of it                                                                                              |
+| `engagement`    | the inbox: comments under published posts, replies sent to them, their collection                                                                               |
+| `activity`      | each workspace's activity log, and the requests counted for the rate limit                                                                                      |
+| `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log                                                                                       |
+| `legal`         | what French law has a host keep, and the legal requests that read it                                                                                            |
+| `review`        | approval policies, requests and decisions, review links, comments                                                                                               |
+| `ads`           | ad accounts, what they may spend, what is read of them, boosts                                                                                                  |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -272,7 +274,7 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`, `engagement`; the
+  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`, `engagement`, `ads`; the
   workspace context's are Better Auth's, in `auth`). Effect creates its
   `cluster_*` tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
@@ -308,7 +310,10 @@ and no socket, for tests.
   what a sign-in says of an account (`storableAuthorized`), what a
   platform answers a publishing call with (`storableResult`,
   `storableFailure`, in the routed publisher), a file's codec, a webhook
-  receiver's answer (`excerptOf`) and what visitors type on a review page
-  (`review/domain/plain-text.ts`). A new place a platform's string is
+  receiver's answer (`excerptOf`), what visitors type on a review page
+  (`review/domain/plain-text.ts`) and the names an ad network gives an ad
+  account, a campaign, an ad set or an ad (`ads/infrastructure/meta/
+  marketing-mapping.ts`); an ad network's refusal keeps its codes, never
+  its words. A new place a platform's string is
   kept goes through the helper, with a test that hands it a NUL and half
   a surrogate pair.

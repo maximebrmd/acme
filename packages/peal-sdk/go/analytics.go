@@ -931,8 +931,6 @@ func (a *AnalyticsSummary) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
-type CalendarDay = string
-
 var (
 	channelDashboardFieldFollowers         = big.NewInt(1 << 0)
 	channelDashboardFieldPreviousFollowers = big.NewInt(1 << 1)

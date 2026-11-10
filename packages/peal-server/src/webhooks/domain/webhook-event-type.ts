@@ -21,6 +21,14 @@ export const SubscribableEventTypeSchema = Schema.Literals([
   "media.failed",
   "comment.received",
   "comment.replied",
+  "boost.started",
+  "boost.paused",
+  "boost.resumed",
+  "boost.stopped",
+  "boost.ended",
+  "boost.failed",
+  "boost.unconfirmed",
+  "boost.budget_reached",
 ]);
 
 export type SubscribableEventType = typeof SubscribableEventTypeSchema.Type;

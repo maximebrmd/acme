@@ -17,6 +17,14 @@ export const SubscribableWebhookEventType = {
         MediaReady: "media.ready",
         MediaFailed: "media.failed",
         CommentReceived: "comment.received",
-        CommentReplied: "comment.replied"
+        CommentReplied: "comment.replied",
+        BoostStarted: "boost.started",
+        BoostPaused: "boost.paused",
+        BoostResumed: "boost.resumed",
+        BoostStopped: "boost.stopped",
+        BoostEnded: "boost.ended",
+        BoostFailed: "boost.failed",
+        BoostUnconfirmed: "boost.unconfirmed",
+        BoostBudgetReached: "boost.budget_reached"
     } as const;
 export type SubscribableWebhookEventType = typeof SubscribableWebhookEventType[keyof typeof SubscribableWebhookEventType];

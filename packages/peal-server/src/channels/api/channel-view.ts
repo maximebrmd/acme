@@ -13,6 +13,7 @@ export const toChannelView = (channel: Channel): ChannelView => ({
   displayName: Option.getOrNull(channel.displayName),
   handle: channel.handle,
   id: channel.id,
+  label: Option.getOrNull(channel.label),
   platform: channel.platform,
   status: channel.status,
   tokenExpiresAt:

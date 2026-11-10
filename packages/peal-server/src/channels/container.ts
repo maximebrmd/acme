@@ -4,6 +4,7 @@ import { FetchHttpClient } from "effect/http";
 
 import { ChannelAccess } from "#channels/application/channel-access.ts";
 import { ChannelOversight } from "#channels/application/channel-oversight.ts";
+import { ChannelSettings } from "#channels/application/channel-settings.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { ConnectLinks } from "#channels/application/connect-links.ts";
@@ -92,6 +93,7 @@ const UseCasesLive = Layer.mergeAll(
   ChannelAccess.layer,
   ChannelOversight.layer,
   ListChannels.layer,
+  ChannelSettings.layer,
   DisconnectChannel.layer,
   // The links' sign-ins are ConnectChannel's, and their retention the
   // links' own.

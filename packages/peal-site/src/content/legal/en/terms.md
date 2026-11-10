@@ -30,6 +30,30 @@ Your use of each platform stays subject to that platform's own terms. Platforms 
 
 [Responsibilities and limits that apply to publishing through third-party platforms.]
 
+## Ads and spending through Peal
+
+Where an organisation connects an ad account, Peal can read that account's campaigns and figures and, when a member asks, boost a post the organisation published through Peal, as an ad on the ad network. This section applies to that use. [Confirm with counsel before ads are opened to customers: this section as a whole, and whether spending through Peal needs an acceptance of its own, apart from these terms.]
+
+**Who sells the ads.** Ads are bought from the ad network (Meta, for ads on Facebook and Instagram), under the contract between the network and the holder of the ad account. The network bills the advertiser directly, on the ad account's payment method. We are not a party to that purchase: we never receive, hold or pass on the money, we issue no invoice for it and take no commission on it. [Confirm with counsel and the accountant that no fee or commission on ad spend is charged, or describe it here and on the pricing page.]
+
+**You decide what is spent.** Nothing is spent until an owner of the organisation turns spending on for an ad account and sets a monthly ceiling for it, in the account's currency. Peal never turns spending on, raises a ceiling or raises a budget on its own. The ceiling limits what the boosts made through Peal may commit on that ad account in one calendar month of the account's time zone. It is not a limit on the ad account itself: ads made elsewhere, at the network or with another tool, are not counted and are not held back by it. To cap the account as a whole, set a spend cap at the network.
+
+**What a budget may cost.** A boost has a budget and an end date, both required. A total budget commits its amount. A daily budget commits, for each day the boost runs, its amount and 75% more, because the network may spend up to 75% more than a daily budget on a given day, and never more than 7 times its amount in a calendar week, Sunday to Saturday. Before you confirm a boost, Peal shows the most it can cost and the room left under the ceiling.
+
+**Who acts for you.** The members whose role lets them spend, the API keys that were given that permission, and the applications a member allowed to spend act for the organisation: what they ask the network to run is yours to pay to the network, within the ceiling. Choose with care who holds that role, and which keys and applications get that permission.
+
+**Your responsibility for the ads.** You are responsible for the content of the ads, for the audience you choose, and for the declarations made when a boost is asked for: that the ad is not of a special category the network restricts (housing, employment, financial products and services, social issues, elections or politics), which Peal does not boost, and, when the audience is in the European Union, who benefits from the ad and who pays for it. You must hold the rights to advertise for the Page or account concerned, and follow the ad network's own terms and advertising policies, which apply to you directly.
+
+**What the network decides.** The network may refuse, review, delay, limit or stop an ad, or restrict an ad account, under its own rules; we have no say in it. The figures of an ad (spend, impressions, reach, clicks, results) are the network's own, as it reports them.
+
+**Peal's figures are not an invoice.** Peal reads spend and results from the network at intervals, so what it shows lags behind the network and may be corrected by it afterwards. The amounts the network bills are the ones that count: check them in the ad account.
+
+**When Peal cannot confirm.** If Peal asked the network to run a boost and could not confirm whether it runs, Peal says so, marks the boost as unconfirmed and tells the organisation's owners: the boost may be spending. Check it and stop it, in Peal or at the network, if it must not run. Peal does not send the request again on its own.
+
+**Pausing and stopping.** A boost can be paused or stopped in Peal at any time. Peal then asks the network to pause the campaign: the pause takes effect when the network applies it, and what the network spent until then stays due to it. You can always pause or delete the campaign at the network itself. Deleting an organisation, or disconnecting an ad account, is refused while one of its boosts runs or may run: stop it first.
+
+**Liability.** Our liability for amounts spent on an ad network through Peal follows the "Warranties and liability" section below, which applies to this section as to the rest of these terms. [Counsel to decide whether ad spend needs a rule of its own in that section, such as for a boost that ran against what was asked because of a fault of ours; no amount or cap is stated here.]
+
 ## Your content
 
 [Who owns the content you add to Peal, the licence you grant us so that we can store it and publish it where you ask, and your responsibility for what you publish.]

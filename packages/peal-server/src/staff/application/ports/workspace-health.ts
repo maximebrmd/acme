@@ -63,6 +63,24 @@ export interface WebhookHealth {
   readonly id: string;
 }
 
+/**
+ * A workspace's ads: each connected ad account with whether an owner
+ * allowed it to spend, and how many boosts stand in each state. Never a
+ * token, an audience, a campaign or what was spent.
+ */
+export interface AdsHealth {
+  readonly accounts: readonly {
+    readonly access: string;
+    readonly currency: string;
+    readonly id: string;
+    /** In the account's minor units; none while spending is off. */
+    readonly monthlyCeiling: Option.Option<number>;
+    readonly network: string;
+    readonly status: string;
+  }[];
+  readonly boosts: Readonly<Record<string, number>>;
+}
+
 /** How many of a workspace's posts are in each status. */
 export interface PostCounts {
   readonly awaitingApproval: number;
@@ -106,5 +124,8 @@ export class WorkspaceHealth extends Context.Service<
     readonly webhooks: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly WebhookHealth[], DatabaseError>;
+    readonly ads: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<AdsHealth, DatabaseError>;
   }
 >()("peal-server/staff/application/WorkspaceHealth") {}

@@ -157,6 +157,31 @@ export const NoticeEventSchema = Schema.Union([
     host: Schema.String,
     reason: WebhookTurnOffReasonSchema,
   }),
+  // What happened to a boost: it started, ended, failed (`reason`, one of
+  // the boost failure reasons), used its whole budget, or Peal could not
+  // learn whether it runs (`unconfirmed`: it may be spending). `budget` is
+  // in the ad account's minor units, `budgetDigits` decimal digits below
+  // the currency's unit.
+  Schema.TaggedStruct("AdBoostChanged", {
+    boostId: Schema.String,
+    budget: MoneySchema,
+    budgetDigits: Schema.Literals([0, 2]),
+    change: Schema.Literals([
+      "started",
+      "ended",
+      "failed",
+      "budgetReached",
+      "unconfirmed",
+    ]),
+    endsAt: Schema.DateTimeUtc,
+    postId: Schema.String,
+    reason: Schema.NullOr(Schema.String),
+  }),
+  // An ad network refused the sign-in that connects ad accounts: nothing
+  // is read of them until its person signs in again.
+  Schema.TaggedStruct("AdConnectionReconnectRequired", {
+    network: Schema.String,
+  }),
 ]).annotate({ identifier: "NoticeEvent" });
 
 export type NoticeEvent = typeof NoticeEventSchema.Type;

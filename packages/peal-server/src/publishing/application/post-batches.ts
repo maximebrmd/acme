@@ -26,6 +26,7 @@ import type { ChannelId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
+import type { ChannelSetNotFound } from "./channel-set-not-found.ts";
 import type { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 import { IdempotencyKeys } from "./idempotency-keys.ts";
 import type { KeyUse } from "./idempotency-keys.ts";
@@ -33,11 +34,14 @@ import { PostAllowance } from "./post-allowance.ts";
 import { isSendable, PostChecks } from "./post-checks.ts";
 import type { PostCheck } from "./post-checks.ts";
 import type { PostNotFound } from "./post-not-found.ts";
+import { nothingAsked } from "./post-presets.ts";
 import { PostRepository } from "./post-repository.ts";
 import { PostScheduling } from "./post-scheduling.ts";
 import type { SendPostRequest, SentPost } from "./post-scheduling.ts";
+import type { SignatureNotFound } from "./signature-not-found.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
+import type { UnknownTags } from "./unknown-tags.ts";
 
 /** The most posts made in one request. */
 export const maxBulkPosts = 50;
@@ -55,8 +59,11 @@ export type SendRefusal =
   | PostContentRejected
   | PostNotFound
   | ScheduleInPast
+  | SignatureNotFound
+  | ChannelSetNotFound
   | UnknownChannels
-  | UnknownMedia;
+  | UnknownMedia
+  | UnknownTags;
 
 /**
  * What checking one request of several found: its check, or that its
@@ -78,7 +85,12 @@ export type RequestCheck =
   | RepeatedRequest
   | { readonly _tag: "checked"; readonly check: PostCheck }
   | { readonly _tag: "keyReused" }
-  | { readonly _tag: "made" };
+  | { readonly _tag: "made" }
+  // It names a channel set or a signature the workspace does not have.
+  | {
+      readonly _tag: "unfilled";
+      readonly missing: ChannelSetNotFound | SignatureNotFound;
+    };
 
 /** What became of one post of several: made, or why not. */
 export type SendOutcome = Result.Result<SentPost, SendRefusal>;
@@ -214,6 +226,7 @@ export class PostBatches extends Context.Service<
         scheduling.send(actor, request).pipe(
           Effect.map((sent): SendOutcome => Result.succeed(sent)),
           Effect.catchTags({
+            ChannelSetNotFound: refused,
             DuplicateContent: refused,
             IdempotencyKeyReused: refused,
             MissingPermission: refused,
@@ -221,8 +234,10 @@ export class PostBatches extends Context.Service<
             PostContentRejected: refused,
             PostNotFound: refused,
             ScheduleInPast: refused,
+            SignatureNotFound: refused,
             UnknownChannels: refused,
             UnknownMedia: refused,
+            UnknownTags: refused,
           })
         );
 
@@ -264,6 +279,7 @@ export class PostBatches extends Context.Service<
               content,
               idempotency,
               options = [],
+              presets,
             },
             place
           ) {
@@ -296,13 +312,42 @@ export class PostBatches extends Context.Service<
               return again;
             }
 
-            const found = yield* checks.check(actor, {
-              allowDuplicate,
-              channelIds,
-              content,
-              options,
-              when: Option.some({ at }),
-            });
+            const checked = yield* checks
+              .check(actor, {
+                allowDuplicate,
+                channelIds,
+                content,
+                options,
+                presets: presets ?? nothingAsked,
+                when: Option.some({ at }),
+              })
+              .pipe(
+                Effect.map(
+                  (
+                    done
+                  ): Result.Result<
+                    PostCheck,
+                    ChannelSetNotFound | SignatureNotFound
+                  > => Result.succeed(done)
+                ),
+                Effect.catchTags({
+                  ChannelSetNotFound: (missing) =>
+                    Effect.succeed(Result.fail(missing)),
+                  SignatureNotFound: (missing) =>
+                    Effect.succeed(Result.fail(missing)),
+                })
+              );
+
+            if (Result.isFailure(checked)) {
+              const unfilled: RequestCheck = {
+                _tag: "unfilled",
+                missing: checked.failure,
+              };
+
+              return unfilled;
+            }
+
+            const found = checked.success;
 
             if (!isSendable(found)) {
               const alone: RequestCheck = { _tag: "checked", check: found };
@@ -316,7 +361,12 @@ export class PostBatches extends Context.Service<
             const repeated = allowDuplicate
               ? Option.none<RepeatedRequest>()
               : Arr.findFirst(accepted, (earlier) => {
-                  const shared = repeatedOn(earlier, when, channelIds, content);
+                  const shared = repeatedOn(
+                    earlier,
+                    when,
+                    found.filled.channelIds,
+                    found.filled.content
+                  );
 
                   return shared.length === 0
                     ? Option.none()
@@ -342,7 +392,12 @@ export class PostBatches extends Context.Service<
               return full;
             }
 
-            accepted.push({ at: when, channelIds, content, place });
+            accepted.push({
+              at: when,
+              channelIds: found.filled.channelIds,
+              content: found.filled.content,
+              place,
+            });
 
             if (Option.isSome(idempotency)) {
               keyed.set(idempotency.value.key, idempotency.value.fingerprint);

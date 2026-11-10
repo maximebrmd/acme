@@ -2,7 +2,7 @@
 title: Auto-hébergement
 description: Les services nécessaires à une instance Peal auto-hébergée, comment faire tourner le serveur et l’application web derrière une seule adresse, et comment configurer l’e-mail, les médias, les canaux, l’assistant de rédaction et MCP.
 sidebar:
-  order: 18
+  order: 20
 ---
 
 Peal accède à chaque service extérieur par un port doté d’une option par défaut auto-hébergeable. Une instance auto-hébergée fait tourner deux programmes à elle, le serveur et l’application web, et a besoin de Postgres, d’un stockage objet compatible S3 et d’un moyen d’envoyer des e-mails. Tout le reste est facultatif et reste désactivé tant que vous ne le configurez pas.
@@ -330,6 +330,10 @@ Un fournisseur nommé sans les réglages qu’il demande arrête le serveur au d
 Chaque espace de travail peut envoyer à l’assistant `PEAL_AI_DAILY_REQUESTS` demandes par jour UTC, 100 sans réglage ; `0` n’en laisse passer aucune. Avec la [facturation](#billing), chaque abonnement fixe la sienne à la place. Sans elle, chaque espace de travail en a autant : sur une instance où tout le monde peut s’inscrire, chaque nouvel espace de travail s’ajoute à ce que votre fournisseur peut facturer. Une demande pour laquelle le fournisseur n’a pas pu être joint ne compte pas. Une demande sans réponse au bout de 90 secondes échoue et compte, car le fournisseur a pu la traiter.
 
 Ce que les membres envoient, c’est le texte de la publication, jusqu’à 5 000 caractères, et les réponses sont limitées à 4 096 tokens. Le texte est envoyé comme une donnée, avec des consignes que le texte ne peut pas changer. Le serveur n’écrit jamais le texte ni la réponse dans ses journaux ou ses traces, n’enregistre ni l’un ni l’autre, et n’envoie au fournisseur aucun contexte de trace : ses journaux et ses traces ne nomment que le fournisseur, le modèle, le nombre de tokens et le type d’échec.
+
+## Publicités [#ads]
+
+Les publicités sont désactivées tant que vous n’avez pas défini `PEAL_ADS` : `read` permet aux espaces de travail de connecter des comptes publicitaires Meta et de lire leurs campagnes et leurs chiffres, et `spend` leur permet aussi de mettre en avant des publications parues, ce qui dépense leur argent chez Meta. Un serveur auto-hébergé apporte sa propre application Meta avec l’accès aux publicités : celle de `META_APP_ID` et `META_APP_SECRET`, qui connecte aussi les [Pages Facebook](#meta), à laquelle Meta a accordé les autorisations publicitaires, avec une adresse de redirection de plus que [la commande](#platform-addresses) affiche pour les publicités. [Publicités](/ads#operator) liste ce que Meta vous demande, et pourquoi rester sur `read` tant qu’il n’a pas accordé `ads_management`.
 
 ## Facturation [#billing]
 

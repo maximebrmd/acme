@@ -11,11 +11,14 @@ from .environment import PealEnvironment
 
 if typing.TYPE_CHECKING:
     from .activity.client import ActivityClient, AsyncActivityClient
+    from .ads.client import AdsClient, AsyncAdsClient
     from .analytics.client import AnalyticsClient, AsyncAnalyticsClient
     from .api_keys.client import ApiKeysClient, AsyncApiKeysClient
     from .assistant.client import AssistantClient, AsyncAssistantClient
     from .billing.client import AsyncBillingClient, BillingClient
     from .capabilities.client import AsyncCapabilitiesClient, CapabilitiesClient
+    from .channel_defaults.client import AsyncChannelDefaultsClient, ChannelDefaultsClient
+    from .channel_sets.client import AsyncChannelSetsClient, ChannelSetsClient
     from .channels.client import AsyncChannelsClient, ChannelsClient
     from .connect_links.client import AsyncConnectLinksClient, ConnectLinksClient
     from .inbox.client import AsyncInboxClient, InboxClient
@@ -30,7 +33,9 @@ if typing.TYPE_CHECKING:
     from .posts.client import AsyncPostsClient, PostsClient
     from .review.client import AsyncReviewClient, ReviewClient
     from .session.client import AsyncSessionClient, SessionClient
+    from .signatures.client import AsyncSignaturesClient, SignaturesClient
     from .system.client import AsyncSystemClient, SystemClient
+    from .tags.client import AsyncTagsClient, TagsClient
     from .tiktok.client import AsyncTiktokClient, TiktokClient
     from .webhooks.client import AsyncWebhooksClient, WebhooksClient
 
@@ -137,11 +142,16 @@ class Peal:
         self._lookups: typing.Optional[LookupsClient] = None
         self._webhooks: typing.Optional[WebhooksClient] = None
         self._inbox: typing.Optional[InboxClient] = None
+        self._ads: typing.Optional[AdsClient] = None
         self._activity: typing.Optional[ActivityClient] = None
         self._partner: typing.Optional[PartnerClient] = None
         self._partner_account: typing.Optional[PartnerAccountClient] = None
         self._connect_links: typing.Optional[ConnectLinksClient] = None
         self._review: typing.Optional[ReviewClient] = None
+        self._tags: typing.Optional[TagsClient] = None
+        self._signatures: typing.Optional[SignaturesClient] = None
+        self._channel_sets: typing.Optional[ChannelSetsClient] = None
+        self._channel_defaults: typing.Optional[ChannelDefaultsClient] = None
 
     @property
     def system(self):
@@ -288,6 +298,14 @@ class Peal:
         return self._inbox
 
     @property
+    def ads(self):
+        if self._ads is None:
+            from .ads.client import AdsClient  # noqa: E402
+
+            self._ads = AdsClient(client_wrapper=self._client_wrapper)
+        return self._ads
+
+    @property
     def activity(self):
         if self._activity is None:
             from .activity.client import ActivityClient  # noqa: E402
@@ -326,6 +344,38 @@ class Peal:
 
             self._review = ReviewClient(client_wrapper=self._client_wrapper)
         return self._review
+
+    @property
+    def tags(self):
+        if self._tags is None:
+            from .tags.client import TagsClient  # noqa: E402
+
+            self._tags = TagsClient(client_wrapper=self._client_wrapper)
+        return self._tags
+
+    @property
+    def signatures(self):
+        if self._signatures is None:
+            from .signatures.client import SignaturesClient  # noqa: E402
+
+            self._signatures = SignaturesClient(client_wrapper=self._client_wrapper)
+        return self._signatures
+
+    @property
+    def channel_sets(self):
+        if self._channel_sets is None:
+            from .channel_sets.client import ChannelSetsClient  # noqa: E402
+
+            self._channel_sets = ChannelSetsClient(client_wrapper=self._client_wrapper)
+        return self._channel_sets
+
+    @property
+    def channel_defaults(self):
+        if self._channel_defaults is None:
+            from .channel_defaults.client import ChannelDefaultsClient  # noqa: E402
+
+            self._channel_defaults = ChannelDefaultsClient(client_wrapper=self._client_wrapper)
+        return self._channel_defaults
 
 
 def _make_default_async_client(
@@ -451,11 +501,16 @@ class AsyncPeal:
         self._lookups: typing.Optional[AsyncLookupsClient] = None
         self._webhooks: typing.Optional[AsyncWebhooksClient] = None
         self._inbox: typing.Optional[AsyncInboxClient] = None
+        self._ads: typing.Optional[AsyncAdsClient] = None
         self._activity: typing.Optional[AsyncActivityClient] = None
         self._partner: typing.Optional[AsyncPartnerClient] = None
         self._partner_account: typing.Optional[AsyncPartnerAccountClient] = None
         self._connect_links: typing.Optional[AsyncConnectLinksClient] = None
         self._review: typing.Optional[AsyncReviewClient] = None
+        self._tags: typing.Optional[AsyncTagsClient] = None
+        self._signatures: typing.Optional[AsyncSignaturesClient] = None
+        self._channel_sets: typing.Optional[AsyncChannelSetsClient] = None
+        self._channel_defaults: typing.Optional[AsyncChannelDefaultsClient] = None
 
     @property
     def system(self):
@@ -602,6 +657,14 @@ class AsyncPeal:
         return self._inbox
 
     @property
+    def ads(self):
+        if self._ads is None:
+            from .ads.client import AsyncAdsClient  # noqa: E402
+
+            self._ads = AsyncAdsClient(client_wrapper=self._client_wrapper)
+        return self._ads
+
+    @property
     def activity(self):
         if self._activity is None:
             from .activity.client import AsyncActivityClient  # noqa: E402
@@ -640,6 +703,38 @@ class AsyncPeal:
 
             self._review = AsyncReviewClient(client_wrapper=self._client_wrapper)
         return self._review
+
+    @property
+    def tags(self):
+        if self._tags is None:
+            from .tags.client import AsyncTagsClient  # noqa: E402
+
+            self._tags = AsyncTagsClient(client_wrapper=self._client_wrapper)
+        return self._tags
+
+    @property
+    def signatures(self):
+        if self._signatures is None:
+            from .signatures.client import AsyncSignaturesClient  # noqa: E402
+
+            self._signatures = AsyncSignaturesClient(client_wrapper=self._client_wrapper)
+        return self._signatures
+
+    @property
+    def channel_sets(self):
+        if self._channel_sets is None:
+            from .channel_sets.client import AsyncChannelSetsClient  # noqa: E402
+
+            self._channel_sets = AsyncChannelSetsClient(client_wrapper=self._client_wrapper)
+        return self._channel_sets
+
+    @property
+    def channel_defaults(self):
+        if self._channel_defaults is None:
+            from .channel_defaults.client import AsyncChannelDefaultsClient  # noqa: E402
+
+            self._channel_defaults = AsyncChannelDefaultsClient(client_wrapper=self._client_wrapper)
+        return self._channel_defaults
 
 
 def _get_base_url(*, base_url: typing.Optional[str] = None, environment: PealEnvironment) -> str:

@@ -9,6 +9,7 @@ const channel = (id: string): Channel => ({
   displayName: null,
   handle: `@peal_${id}`,
   id,
+  label: null,
   platform: "mastodon",
   status: { _tag: "active" },
   tokenExpiresAt: null,
@@ -24,6 +25,7 @@ const draftFor = (...channelIds: readonly string[]): Post => ({
   scheduledBy: null,
   scheduledVia: null,
   status: "draft",
+  tagIds: [],
   targets: channelIds.map((channelId, index) => ({
     channelId,
     failureReason: null,

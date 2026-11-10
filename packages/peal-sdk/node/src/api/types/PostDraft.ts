@@ -4,6 +4,10 @@ import * as Peal from "../index.js";
 
 export interface PostDraft {
     channelIds: string[];
+    channelSets?: string[] | undefined;
     content: Peal.PostContent;
+    defaultSignatures?: boolean | undefined;
     options?: Peal.ChannelOptions[] | undefined;
+    signatureId?: string | undefined;
+    tagIds?: string[] | undefined;
 }

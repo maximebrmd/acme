@@ -298,6 +298,26 @@ public class ValidateTest : BaseMockServerTest
                 {
                   "_tag": "noChannels"
                 }
+              ],
+              "warnings": [
+                {
+                  "_tag": "channelsDropped",
+                  "channelIds": [
+                    "channelIds",
+                    "channelIds"
+                  ],
+                  "channelSetId": "channelSetId",
+                  "channelSetName": "channelSetName"
+                },
+                {
+                  "_tag": "channelsDropped",
+                  "channelIds": [
+                    "channelIds",
+                    "channelIds"
+                  ],
+                  "channelSetId": "channelSetId",
+                  "channelSetName": "channelSetName"
+                }
               ]
             }
             """;
@@ -324,6 +344,7 @@ public class ValidateTest : BaseMockServerTest
                 WorkspaceId = "workspaceId",
                 AllowDuplicate = null,
                 ChannelIds = new List<string>() { "channelIds", "channelIds" },
+                ChannelSets = null,
                 Content = new PostContent
                 {
                     FollowUps = null,
@@ -339,7 +360,9 @@ public class ValidateTest : BaseMockServerTest
                     },
                     Text = "text",
                 },
+                DefaultSignatures = null,
                 Options = null,
+                SignatureId = null,
                 When = null,
             }
         );
@@ -456,6 +479,16 @@ public class ValidateTest : BaseMockServerTest
               "violations": [
                 {
                   "_tag": "noChannels"
+                }
+              ],
+              "warnings": [
+                {
+                  "_tag": "channelsDropped",
+                  "channelIds": [
+                    "channelIds"
+                  ],
+                  "channelSetId": "channelSetId",
+                  "channelSetName": "channelSetName"
                 }
               ]
             }

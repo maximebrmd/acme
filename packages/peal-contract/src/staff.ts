@@ -9,6 +9,7 @@ import {
 import { PlanSchema } from "./billing-plans.ts";
 import { BillingSubscriptionSchema } from "./billing.ts";
 import { ChannelStatusSchema } from "./channels.ts";
+import { Int64Schema } from "./int64.ts";
 import { ChannelConnectionSchema, PlatformSchema } from "./platform.ts";
 import { FailureReasonSchema, UnconfirmedReasonSchema } from "./posts.ts";
 import { StaffAccess } from "./staff-access.ts";
@@ -243,8 +244,30 @@ export const StaffBillingSchema = Schema.Struct({
   subscription: Schema.NullOr(BillingSubscriptionSchema),
 }).annotate({ identifier: "StaffBilling" });
 
+/**
+ * A workspace's ads as staff see them: each connected ad account with its
+ * network, currency, status and whether an owner allowed it to spend (its
+ * monthly ceiling, in minor units; null while spending is off), and how
+ * many boosts stand in each state. Never a token, an audience, a
+ * campaign's name or what was spent.
+ */
+export const StaffAdsSchema = Schema.Struct({
+  accounts: Schema.Array(
+    Schema.Struct({
+      access: Schema.String,
+      currency: Schema.String,
+      id: Schema.String,
+      monthlyCeiling: Schema.NullOr(Int64Schema),
+      network: Schema.String,
+      status: Schema.String,
+    })
+  ),
+  boosts: Schema.Record(Schema.String, Schema.Int),
+}).annotate({ identifier: "StaffAds" });
+
 /** A workspace as staff see it: its people and health, not its content. */
 export const StaffWorkspaceSchema = Schema.Struct({
+  ads: StaffAdsSchema,
   billing: StaffBillingSchema,
   channels: Schema.Array(StaffChannelSchema),
   createdAt: Schema.DateTimeUtc,

@@ -54,6 +54,40 @@ export const reconnectCursorOf = (channel: Channel): ReconnectCursor => ({
   updatedAt: channel.updatedAt,
 });
 
+/** Which of a workspace's channels to list, and which page of them. */
+export interface ChannelPageRequest {
+  /** The last channel of the page before, if this is not the first. */
+  readonly after: Option.Option<ChannelId>;
+  readonly limit: number;
+  readonly platform: Option.Option<Platform>;
+  /**
+   * Text the channel's handle, the name its platform shows or the name the
+   * workspace gave it holds, whatever its case.
+   */
+  readonly query: Option.Option<string>;
+  readonly status: Option.Option<Channel["status"]["_tag"]>;
+  readonly workspaceId: WorkspaceId;
+}
+
+/** How many channels are in each status. */
+export interface ChannelStatusCounts {
+  readonly active: number;
+  readonly disabled: number;
+  readonly refreshNeeded: number;
+}
+
+/** A page of channels, oldest first. */
+export interface ChannelPage {
+  /**
+   * The channels the platform and text asked for match, by status: what a
+   * list shows beside each status it can be narrowed to.
+   */
+  readonly counts: ChannelStatusCounts;
+  readonly items: readonly Channel[];
+  /** Where the next page starts, if there is one. */
+  readonly next: Option.Option<ChannelId>;
+}
+
 /**
  * The channels of every workspace, and their encrypted tokens. Reads that
  * name a workspace only find its own channels, whatever the id; tokens are
@@ -164,6 +198,31 @@ export class ChannelRepository extends Context.Service<
       channel: Channel,
       credentials: Option.Option<ChannelCredentials>
     ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * Writes the name the workspace gives the channel, or none, and
+     * nothing else of it. Says whether the channel was there.
+     */
+    readonly setLabel: (
+      workspaceId: WorkspaceId,
+      channelId: ChannelId,
+      label: Option.Option<string>,
+      now: DateTime.Utc
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * Writes whether the channel is on, off or to reconnect, and nothing
+     * else of it: its tokens and profile stay as the row has them. Says
+     * whether the channel was there.
+     */
+    readonly setStatus: (
+      channel: Channel
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * A page of the workspace's channels that match, oldest first, and how
+     * many match by status, whatever the status asked for.
+     */
+    readonly search: (
+      request: ChannelPageRequest
+    ) => Effect.Effect<ChannelPage, DatabaseError>;
     /** Deletes the channel and its tokens. Says whether it was there. */
     readonly remove: (
       workspaceId: WorkspaceId,

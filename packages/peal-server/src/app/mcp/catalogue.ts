@@ -1,6 +1,7 @@
 import { Context } from "effect";
 import { Tool } from "effect/ai";
 
+import { AdsTools } from "#app/mcp/ads-tools.ts";
 import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { ConnectTools } from "#app/mcp/connect-tools.ts";
 import { ToolAreaSchema } from "#app/mcp/discovery-tools.ts";
@@ -11,8 +12,11 @@ import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
 import { ReviewTools } from "#app/mcp/review-tools.ts";
+import { SavedTools } from "#app/mcp/saved-tools.ts";
+import { TagTools } from "#app/mcp/tags-tools.ts";
 import { BasicTools } from "#app/mcp/tools.ts";
 import { WebhookTools } from "#app/mcp/webhooks-tools.ts";
+import { scopesFor } from "#workspace/domain/oauth-grant.ts";
 import type { WorkspaceScope } from "#workspace/domain/oauth-grant.ts";
 
 // What the catalogue reads of a tool.
@@ -31,6 +35,7 @@ interface ListedTool {
  */
 export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
   account: Object.values(BasicTools.tools),
+  ads: Object.values(AdsTools.tools),
   channels: Object.values(CapabilityTools.tools),
   connect: Object.values(ConnectTools.tools),
   inbox: Object.values(InboxTools.tools),
@@ -39,6 +44,8 @@ export const toolAreas: Readonly<Record<ToolArea, readonly ListedTool[]>> = {
   posts: Object.values(PostTools.tools),
   reports: Object.values(ReportTools.tools),
   review: Object.values(ReviewTools.tools),
+  saved: Object.values(SavedTools.tools),
+  tags: Object.values(TagTools.tools),
   webhooks: Object.values(WebhookTools.tools),
 };
 
@@ -78,18 +85,60 @@ export interface CatalogueTool {
   readonly destructive: boolean;
   readonly name: string;
   readonly reachesOutside: boolean;
-  /** The scope an OAuth client needs to call it. */
+  /** The scope an OAuth client needs to call it: the one to ask for. */
   readonly scope: WorkspaceScope;
+  /**
+   * Every set of scopes that lets an OAuth client call it: holding all of
+   * one is enough. Most tools have one set of one scope.
+   */
+  readonly scopeSets: readonly (readonly WorkspaceScope[])[];
   readonly title: string;
 }
 
-const scopeOf = (name: string, changes: boolean): WorkspaceScope => {
-  if (publishingTools.has(name)) {
-    return "workspace:publish";
+/**
+ * The tools that spend on ads, or change or quote what spends, with the
+ * scopes each takes: their use cases check `ads:spend` (a quote checks
+ * what spending would), or, to pause or stop, `ads:spend` or `ads:manage`,
+ * which the scope `workspace:ads` leaves to an OAuth client beside
+ * `workspace:publish` or `workspace:write` (`scopesFor`). A test calls
+ * each with a connection that lacks the scope.
+ */
+const adsScopeSets = new Map<string, readonly (readonly WorkspaceScope[])[]>(
+  Object.entries({
+    boost_post: [scopesFor("ads:spend")],
+    pause_boost: [scopesFor("ads:spend"), scopesFor("ads:manage")],
+    quote_boost: [scopesFor("ads:spend")],
+    resume_boost: [scopesFor("ads:spend")],
+    stop_boost: [scopesFor("ads:spend"), scopesFor("ads:manage")],
+  })
+);
+
+/** The tools that take the scope `workspace:ads`. */
+export const adsTools: ReadonlySet<string> = new Set(adsScopeSets.keys());
+
+const scopeSetsOf = (
+  name: string,
+  changes: boolean
+): readonly (readonly WorkspaceScope[])[] => {
+  const ads = adsScopeSets.get(name);
+
+  if (ads !== undefined) {
+    return ads;
   }
 
-  return changes ? "workspace:write" : "workspace:read";
+  if (publishingTools.has(name)) {
+    return [["workspace:publish"]];
+  }
+
+  return [[changes ? "workspace:write" : "workspace:read"]];
 };
+
+/** Whether scopes an OAuth client holds let it call the tool. */
+export const scopesLetCall = (
+  tool: Pick<CatalogueTool, "scopeSets">,
+  held: readonly string[]
+): boolean =>
+  tool.scopeSets.some((set) => set.every((scope) => held.includes(scope)));
 
 /** Every tool the endpoint offers, area by area, in the order they list. */
 export const toolCatalogue = (): readonly CatalogueTool[] =>
@@ -99,6 +148,8 @@ export const toolCatalogue = (): readonly CatalogueTool[] =>
         Context.getOrElse(tool.annotations, annotation, () => false);
 
       const changes = !hint(Tool.Readonly);
+      const scopeSets = scopeSetsOf(tool.name, changes);
+      const [[scope = "workspace:read"] = []] = scopeSets;
 
       return {
         area,
@@ -107,7 +158,8 @@ export const toolCatalogue = (): readonly CatalogueTool[] =>
         destructive: hint(Tool.Destructive),
         name: tool.name,
         reachesOutside: hint(Tool.OpenWorld),
-        scope: scopeOf(tool.name, changes),
+        scope,
+        scopeSets,
         title: Context.getOrElse(tool.annotations, Tool.Title, () => tool.name),
       };
     })

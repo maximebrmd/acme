@@ -121,6 +121,49 @@ const contentOf = (
   locale: Locale
 ): Content =>
   Match.valueTags(event, {
+    AdBoostChanged: ({
+      budget,
+      budgetDigits,
+      change,
+      endsAt,
+      reason,
+    }): Content => ({
+      messages: {
+        budgetReached: catalog.adBoostBudgetReached,
+        ended: catalog.adBoostEnded,
+        failed: catalog.adBoostFailed,
+        started: catalog.adBoostStarted,
+        unconfirmed: catalog.adBoostUnconfirmed,
+      }[change],
+      values: [
+        [
+          "budget",
+          // An ad account's amounts are in its own minor units, which are
+          // whole units for some currencies: brought to hundredths here.
+          moneyIn(
+            {
+              amount: budgetDigits === 0 ? budget.amount * 100 : budget.amount,
+              currency: budget.currency,
+            },
+            locale
+          ),
+        ],
+        ["endsAt", instantIn(endsAt, locale)],
+        [
+          "reason",
+          reason.pipe(
+            Option.flatMapNullishOr(
+              (name) => catalog.adBoostFailureReasons[name]
+            ),
+            Option.getOrElse(() => catalog.adBoostFailureOther)
+          ),
+        ],
+      ],
+    }),
+    AdConnectionReconnectRequired: (): Content => ({
+      messages: catalog.adConnectionReconnect,
+      values: [],
+    }),
     ChannelReconnectRequired: ({ channel }): Content => ({
       messages: catalog.channelReconnectRequired,
       values: [

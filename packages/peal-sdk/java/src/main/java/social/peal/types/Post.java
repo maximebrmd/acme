@@ -44,7 +44,11 @@ public final class Post {
 
     private final PostStatus status;
 
+    private final List<String> tagIds;
+
     private final List<PostTarget> targets;
+
+    private final Optional<List<PostWarning>> warnings;
 
     private final Map<String, Object> additionalProperties;
 
@@ -58,7 +62,9 @@ public final class Post {
             Optional<String> scheduledBy,
             Optional<PostOrigin> scheduledVia,
             PostStatus status,
+            List<String> tagIds,
             List<PostTarget> targets,
+            Optional<List<PostWarning>> warnings,
             Map<String, Object> additionalProperties) {
         this.authorId = authorId;
         this.content = content;
@@ -69,7 +75,9 @@ public final class Post {
         this.scheduledBy = scheduledBy;
         this.scheduledVia = scheduledVia;
         this.status = status;
+        this.tagIds = tagIds;
         this.targets = targets;
+        this.warnings = warnings;
         this.additionalProperties = additionalProperties;
     }
 
@@ -136,9 +144,19 @@ public final class Post {
         return status;
     }
 
+    @JsonProperty("tagIds")
+    public List<String> getTagIds() {
+        return tagIds;
+    }
+
     @JsonProperty("targets")
     public List<PostTarget> getTargets() {
         return targets;
+    }
+
+    @JsonProperty("warnings")
+    public Optional<List<PostWarning>> getWarnings() {
+        return warnings;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
@@ -198,7 +216,9 @@ public final class Post {
                 && scheduledBy.equals(other.scheduledBy)
                 && scheduledVia.equals(other.scheduledVia)
                 && status.equals(other.status)
-                && targets.equals(other.targets);
+                && tagIds.equals(other.tagIds)
+                && targets.equals(other.targets)
+                && warnings.equals(other.warnings);
     }
 
     @java.lang.Override
@@ -213,7 +233,9 @@ public final class Post {
                 this.scheduledBy,
                 this.scheduledVia,
                 this.status,
-                this.targets);
+                this.tagIds,
+                this.targets,
+                this.warnings);
     }
 
     @java.lang.Override
@@ -282,11 +304,21 @@ public final class Post {
 
         _FinalStage scheduledVia(Nullable<PostOrigin> scheduledVia);
 
+        _FinalStage tagIds(List<String> tagIds);
+
+        _FinalStage addTagIds(String tagIds);
+
+        _FinalStage addAllTagIds(List<String> tagIds);
+
         _FinalStage targets(List<PostTarget> targets);
 
         _FinalStage addTargets(PostTarget targets);
 
         _FinalStage addAllTargets(List<PostTarget> targets);
+
+        _FinalStage warnings(Optional<List<PostWarning>> warnings);
+
+        _FinalStage warnings(List<PostWarning> warnings);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -297,7 +329,11 @@ public final class Post {
 
         private PostStatus status;
 
+        private Optional<List<PostWarning>> warnings = Optional.empty();
+
         private List<PostTarget> targets = new ArrayList<>();
+
+        private List<String> tagIds = new ArrayList<>();
 
         private Optional<PostOrigin> scheduledVia = Optional.empty();
 
@@ -326,7 +362,9 @@ public final class Post {
             scheduledBy(other.getScheduledBy());
             scheduledVia(other.getScheduledVia());
             status(other.getStatus());
+            tagIds(other.getTagIds());
             targets(other.getTargets());
+            warnings(other.getWarnings());
             return this;
         }
 
@@ -352,6 +390,19 @@ public final class Post {
         }
 
         @java.lang.Override
+        public _FinalStage warnings(List<PostWarning> warnings) {
+            this.warnings = Optional.ofNullable(warnings);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "warnings", nulls = Nulls.SKIP)
+        public _FinalStage warnings(Optional<List<PostWarning>> warnings) {
+            this.warnings = warnings;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage addAllTargets(List<PostTarget> targets) {
             if (targets != null) {
                 this.targets.addAll(targets);
@@ -371,6 +422,30 @@ public final class Post {
             this.targets.clear();
             if (targets != null) {
                 this.targets.addAll(targets);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addAllTagIds(List<String> tagIds) {
+            if (tagIds != null) {
+                this.tagIds.addAll(tagIds);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addTagIds(String tagIds) {
+            this.tagIds.add(tagIds);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "tagIds", nulls = Nulls.SKIP)
+        public _FinalStage tagIds(List<String> tagIds) {
+            this.tagIds.clear();
+            if (tagIds != null) {
+                this.tagIds.addAll(tagIds);
             }
             return this;
         }
@@ -537,7 +612,9 @@ public final class Post {
                     scheduledBy,
                     scheduledVia,
                     status,
+                    tagIds,
                     targets,
+                    warnings,
                     additionalProperties);
         }
 
@@ -552,7 +629,9 @@ public final class Post {
                     || key.equalsIgnoreCase("scheduledBy")
                     || key.equalsIgnoreCase("scheduledVia")
                     || key.equalsIgnoreCase("status")
-                    || key.equalsIgnoreCase("targets")) {
+                    || key.equalsIgnoreCase("tagIds")
+                    || key.equalsIgnoreCase("targets")
+                    || key.equalsIgnoreCase("warnings")) {
                 return;
             }
             this.additionalProperties.put(key, value);

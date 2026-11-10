@@ -4,12 +4,15 @@ import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
 import type { MediaFile } from "#publishing/domain/media-file.ts";
 import { shownMedia } from "#publishing/domain/post-content.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
+import type { TagId } from "#publishing/domain/tag-id.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import type { ChannelId } from "#shared/domain/ids.ts";
+import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { AttachableMedia } from "./attachable-media.ts";
+import { TagStore } from "./tag-store.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
 import { UnknownMedia } from "./unknown-media.ts";
+import { UnknownTags } from "./unknown-tags.ts";
 import { WorkspaceChannels } from "./workspace-channels.ts";
 
 // What a post refers to in other contexts, checked before it is saved: its
@@ -83,4 +86,29 @@ export const mediaFor = Effect.fn("Publishing.mediaFor")(function* mediaFor(
 
     return file === undefined ? [] : [file];
   });
+});
+
+/**
+ * The tags, each once and in the order asked, once every one is the
+ * workspace's. Fails with UnknownTags otherwise.
+ */
+export const tagsFor = Effect.fn("Publishing.tagsFor")(function* tagsFor(
+  workspaceId: WorkspaceId,
+  tagIds: readonly TagId[]
+) {
+  const requested = Arr.dedupe(tagIds);
+
+  if (requested.length === 0) {
+    return requested;
+  }
+
+  const kept = yield* TagStore.use((tags) => tags.list(workspaceId));
+  const known = new Set<string>(kept.map(({ id }) => id));
+  const missing = requested.filter((tagId) => !known.has(tagId));
+
+  if (Arr.isReadonlyArrayNonEmpty(missing)) {
+    return yield* new UnknownTags({ tagIds: missing });
+  }
+
+  return requested;
 });

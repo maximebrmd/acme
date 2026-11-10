@@ -8,7 +8,7 @@ import { TestClock } from "effect/testing";
 import { cliClientId } from "peal-contract";
 
 import { runWith } from "#cli.ts";
-import { loginScope } from "#commands/login.ts";
+import { adsLoginScope, loginScope } from "#commands/login.ts";
 import { NotSignedIn } from "#not-signed-in.ts";
 import { SignInFailed } from "#sign-in-failed.ts";
 
@@ -143,6 +143,27 @@ describe("peal login", () => {
         assert.notInclude(printed, "synthetic-access");
         assert.notInclude(printed, "synthetic-refresh");
       }).pipe(Effect.scoped, Effect.provide(environmentLayer))
+  );
+
+  it.effect("asks to work with ads only with --ads", () =>
+    Effect.gen(function* withAds() {
+      const setup = yield* setUp();
+      const login = yield* setup.run(["login", "--ads"]).pipe(Effect.forkChild);
+
+      yield* elapse;
+      yield* Fiber.join(login);
+
+      const state = yield* setup.authorization.state;
+      const { logs } = yield* output;
+
+      assert.notInclude(loginScope, "workspace:ads");
+      assert.deepStrictEqual(
+        state.deviceRequests.map(({ scope }) => scope),
+        [adsLoginScope]
+      );
+      assert.include(adsLoginScope.split(" "), "workspace:ads");
+      assert.include(logs.join("\n"), "Boosting spends money");
+    }).pipe(Effect.scoped, Effect.provide(environmentLayer))
   );
 
   it.effect("makes a file others could read private again", () =>

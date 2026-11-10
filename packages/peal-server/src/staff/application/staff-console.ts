@@ -23,6 +23,7 @@ import type {
   PostCounts,
   PostTrouble,
   WorkspaceBilling,
+  AdsHealth,
   WebhookHealth,
 } from "./ports/workspace-health.ts";
 import { UserNotFound } from "./user-not-found.ts";
@@ -59,6 +60,8 @@ export interface WorkspaceOverview extends WorkspaceProfile {
     readonly platform: Option.Option<ChannelHealth["platform"]>;
   })[];
   readonly webhooks: readonly WebhookHealth[];
+  /** Its ad accounts and boosts, as metadata. */
+  readonly ads: AdsHealth;
 }
 
 /** The server's health. */
@@ -219,9 +222,10 @@ export class StaffConsole extends Context.Service<
           return yield* new WorkspaceNotFound({ workspaceId });
         }
 
-        const { billing, channels, posts, troubles, webhooks } =
+        const { ads, billing, channels, posts, troubles, webhooks } =
           yield* Effect.all(
             {
+              ads: health.ads(workspaceId),
               billing: health.billing(workspaceId),
               channels: health.channels(workspaceId),
               posts: health.posts(workspaceId),
@@ -233,6 +237,7 @@ export class StaffConsole extends Context.Service<
 
         const overview: WorkspaceOverview = {
           ...found.value,
+          ads,
           billing,
           channels,
           posts,

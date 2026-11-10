@@ -20,5 +20,6 @@ export interface SearchPostsRequest {
     platform?: Peal.Platform;
     sort?: Peal.PostSort;
     status?: Peal.PostStatus;
+    tagId?: string;
     to?: string;
 }

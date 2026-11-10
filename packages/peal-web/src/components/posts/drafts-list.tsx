@@ -4,7 +4,7 @@ import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
 import { Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Post } from "peal-contract";
+import type { Post, Tag } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
@@ -13,6 +13,8 @@ import { useState } from "react";
 import { useHydrated } from "#components/media/use-hydrated.ts";
 import { Link } from "#i18n/navigation.ts";
 import { draftPage } from "#posts/api.ts";
+import { workspaceTags } from "#tags/atoms.ts";
+import { tagsOf } from "#tags/post-tags.ts";
 
 import { DraftItemView, useDraftTitle } from "./draft-item-view.tsx";
 
@@ -26,8 +28,14 @@ const DraftItem = ({
 }) => {
   const title = useDraftTitle(post);
 
+  // The workspace's tags, which name the draft's; none until they are known.
+  const tags = Option.getOrElse(
+    AsyncResult.value(useAtomValue(workspaceTags(workspaceId))),
+    (): readonly Tag[] => []
+  );
+
   return (
-    <DraftItemView post={post}>
+    <DraftItemView post={post} tags={tagsOf(post.tagIds, tags)}>
       <Link
         href={`/app/${workspaceId}/posts/${post.id}`}
         className="line-clamp-2 font-medium underline-offset-4 hover:underline"

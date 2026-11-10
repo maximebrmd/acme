@@ -1,5 +1,5 @@
 use crate::api::*;
-use crate::{ApiError, ClientConfig, HttpClient, RequestOptions};
+use crate::{ApiError, ClientConfig, HttpClient, QueryBuilder, RequestOptions};
 use reqwest::Method;
 
 pub struct ChannelsClient {
@@ -49,6 +49,63 @@ impl ChannelsClient {
                 &format!("api/workspaces/{}/channels", workspace_id),
                 None,
                 None,
+                options,
+            )
+            .await
+    }
+
+    /// Lists the workspace's channels a page at a time, oldest first: 50 unless `limit` (at most 100) says otherwise. Every filter given must hold: `platform`, `status` (`active`, `refreshNeeded` or `disabled`) and `q`, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. `counts` says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's `nextCursor` as `cursor`, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .channels
+    ///         .find(
+    ///             &"workspaceId".to_string(),
+    ///             &FindQueryRequest {
+    ///                 ..Default::default()
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn find(
+        &self,
+        workspace_id: &str,
+        request: &FindQueryRequest,
+        options: Option<RequestOptions>,
+    ) -> Result<ChannelPage, ApiError> {
+        self.http_client
+            .execute_request(
+                Method::GET,
+                &format!("api/workspaces/{}/channels/search", workspace_id),
+                None,
+                QueryBuilder::new()
+                    .string("cursor", request.cursor.clone())
+                    .string("limit", request.limit.clone())
+                    .serialize("platform", request.platform.clone())
+                    .string("q", request.q.clone())
+                    .serialize("status", request.status.clone())
+                    .build(),
                 options,
             )
             .await
@@ -376,6 +433,170 @@ impl ChannelsClient {
             .execute_request(
                 Method::DELETE,
                 &format!("api/workspaces/{}/channels/{}", workspace_id, channel_id),
+                None,
+                None,
+                options,
+            )
+            .await
+    }
+
+    /// Gives the channel the name the workspace calls it by (`label`, 60 characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .channels
+    ///         .update(
+    ///             &"workspaceId".to_string(),
+    ///             &"channelId".to_string(),
+    ///             &ChannelUpdate {
+    ///                 ..Default::default()
+    ///             },
+    ///             None,
+    ///         )
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn update(
+        &self,
+        workspace_id: &str,
+        channel_id: &str,
+        request: &ChannelUpdate,
+        options: Option<RequestOptions>,
+    ) -> Result<Channel, ApiError> {
+        let options = {
+            let mut o = options.unwrap_or_default();
+            o.max_retries = Some(0);
+            Some(o)
+        };
+        self.http_client
+            .execute_request(
+                Method::PATCH,
+                &format!("api/workspaces/{}/channels/{}", workspace_id, channel_id),
+                Some(serde_json::to_value(request).map_err(ApiError::Serialization)?),
+                None,
+                options,
+            )
+            .await
+    }
+
+    /// Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (`channelDisabled`) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .channels
+    ///         .disable(&"workspaceId".to_string(), &"channelId".to_string(), None)
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn disable(
+        &self,
+        workspace_id: &str,
+        channel_id: &str,
+        options: Option<RequestOptions>,
+    ) -> Result<Channel, ApiError> {
+        let options = {
+            let mut o = options.unwrap_or_default();
+            o.max_retries = Some(0);
+            Some(o)
+        };
+        self.http_client
+            .execute_request(
+                Method::POST,
+                &format!(
+                    "api/workspaces/{}/channels/{}/disable",
+                    workspace_id, channel_id
+                ),
+                None,
+                None,
+                options,
+            )
+            .await
+    }
+
+    /// Turns a channel back on. It posts again at once, or has the status `refreshNeeded` when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+    ///
+    /// # Arguments
+    ///
+    /// * `options` - Additional request options such as headers, timeout, etc.
+    ///
+    /// # Returns
+    ///
+    /// JSON response from the API
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use peal_sdk::prelude::*;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let config = ClientConfig {
+    ///         token: Some("<token>".to_string()),
+    ///         ..Default::default()
+    ///     };
+    ///     let client = PealClient::new(config).expect("Failed to build client");
+    ///     client
+    ///         .channels
+    ///         .enable(&"workspaceId".to_string(), &"channelId".to_string(), None)
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn enable(
+        &self,
+        workspace_id: &str,
+        channel_id: &str,
+        options: Option<RequestOptions>,
+    ) -> Result<Channel, ApiError> {
+        let options = {
+            let mut o = options.unwrap_or_default();
+            o.max_retries = Some(0);
+            Some(o)
+        };
+        self.http_client
+            .execute_request(
+                Method::POST,
+                &format!(
+                    "api/workspaces/{}/channels/{}/enable",
+                    workspace_id, channel_id
+                ),
                 None,
                 None,
                 options,

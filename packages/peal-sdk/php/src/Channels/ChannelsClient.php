@@ -13,6 +13,8 @@ use Peal\Core\Client\HttpMethod;
 use Peal\Core\Json\JsonDecoder;
 use JsonException;
 use Psr\Http\Client\ClientExceptionInterface;
+use Peal\Channels\Requests\FindChannelsRequest;
+use Peal\Types\ChannelPage;
 use Peal\Types\ConnectablePlatforms;
 use Peal\Types\Platform;
 use Peal\Channels\Requests\ConnectChannel;
@@ -20,6 +22,7 @@ use Peal\Types\Authorization;
 use Peal\Channels\Requests\ConnectCallback;
 use Peal\Types\ConnectOutcome;
 use Peal\Channels\Requests\ChooseAccounts;
+use Peal\Channels\Requests\ChannelUpdate;
 
 class ChannelsClient
 {
@@ -99,6 +102,80 @@ class ChannelsClient
                     return null;
                 }
                 return JsonDecoder::decodeArray($json, [Channel::class]); // @phpstan-ignore-line
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Lists the workspace's channels a page at a time, oldest first: 50 unless `limit` (at most 100) says otherwise. Every filter given must hold: `platform`, `status` (`active`, `refreshNeeded` or `disabled`) and `q`, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. `counts` says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's `nextCursor` as `cursor`, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+     *
+     * Example:
+     * ```php
+     * $client->channels->find(
+     *     'workspaceId',
+     *     new FindChannelsRequest([]),
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param FindChannelsRequest $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?ChannelPage
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function find(string $workspaceId, FindChannelsRequest $request = new FindChannelsRequest(), ?array $options = null): ?ChannelPage
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $query = [];
+        if ($request->cursor != null) {
+            $query['cursor'] = $request->cursor;
+        }
+        if ($request->limit != null) {
+            $query['limit'] = $request->limit;
+        }
+        if ($request->platform != null) {
+            $query['platform'] = $request->platform;
+        }
+        if ($request->q != null) {
+            $query['q'] = $request->q;
+        }
+        if ($request->status != null) {
+            $query['status'] = $request->status;
+        }
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/channels/search",
+                    method: HttpMethod::GET,
+                    query: $query,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return ChannelPage::fromJson($json);
             }
         } catch (JsonException $e) {
             throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
@@ -455,6 +532,185 @@ class ChannelsClient
             if ($statusCode >= 200 && $statusCode < 400) {
                 return;
             }
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Gives the channel the name the workspace calls it by (`label`, 60 characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.
+     *
+     * Example:
+     * ```php
+     * $client->channels->update(
+     *     'workspaceId',
+     *     'channelId',
+     *     new ChannelUpdate([
+     *         'label' => null,
+     *     ]),
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param string $channelId
+     * @param ChannelUpdate $request
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?Channel
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function update(string $workspaceId, string $channelId, ChannelUpdate $request, ?array $options = null): ?Channel
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/channels/{$channelId}",
+                    method: HttpMethod::PATCH,
+                    body: $request,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return Channel::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (`channelDisabled`) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+     *
+     * Example:
+     * ```php
+     * $client->channels->disable(
+     *     'workspaceId',
+     *     'channelId',
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param string $channelId
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?Channel
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function disable(string $workspaceId, string $channelId, ?array $options = null): ?Channel
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/channels/{$channelId}/disable",
+                    method: HttpMethod::POST,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return Channel::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
+        } catch (ClientExceptionInterface $e) {
+            throw new PealException(message: $e->getMessage(), previous: $e);
+        }
+        throw new PealApiException(
+            message: 'API request failed',
+            statusCode: $statusCode,
+            body: $response->getBody()->getContents(),
+        );
+    }
+
+    /**
+     * Turns a channel back on. It posts again at once, or has the status `refreshNeeded` when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+     *
+     * Example:
+     * ```php
+     * $client->channels->enable(
+     *     'workspaceId',
+     *     'channelId',
+     * );
+     * ```
+     *
+     * @param string $workspaceId
+     * @param string $channelId
+     * @param ?array{
+     *   baseUrl?: string,
+     *   maxRetries?: int,
+     *   timeout?: float,
+     *   headers?: array<string, string>,
+     *   queryParameters?: array<string, mixed>,
+     *   bodyProperties?: array<string, mixed>,
+     * } $options
+     * @return ?Channel
+     * @throws PealException
+     * @throws PealApiException
+     */
+    public function enable(string $workspaceId, string $channelId, ?array $options = null): ?Channel
+    {
+        $options = array_merge($this->options, $options ?? []);
+        $options['maxRetries'] = 0;
+        try {
+            $response = $this->client->sendRequest(
+                new JsonApiRequest(
+                    baseUrl: $options['baseUrl'] ?? $this->client->options['baseUrl'] ?? Environments::Default_->value,
+                    path: "api/workspaces/{$workspaceId}/channels/{$channelId}/enable",
+                    method: HttpMethod::POST,
+                ),
+                $options,
+            );
+            $statusCode = $response->getStatusCode();
+            if ($statusCode >= 200 && $statusCode < 400) {
+                $json = $response->getBody()->getContents();
+                if (empty($json)) {
+                    return null;
+                }
+                return Channel::fromJson($json);
+            }
+        } catch (JsonException $e) {
+            throw new PealException(message: "Failed to deserialize response: {$e->getMessage()}", previous: $e);
         } catch (ClientExceptionInterface $e) {
             throw new PealException(message: $e->getMessage(), previous: $e);
         }

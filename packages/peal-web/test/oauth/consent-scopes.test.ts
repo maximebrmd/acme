@@ -1,9 +1,23 @@
 import { describe, expect, it } from "@effect/vitest";
 import { Option } from "effect";
 
-import { consentAnswer, withoutPublishing } from "#auth/consent-scopes.ts";
+import {
+  consentAnswer,
+  mayLeaveAdsOut,
+  withoutPublishing,
+} from "#auth/consent-scopes.ts";
 
 const drafting = ["openid", "workspace:write", "workspace:publish"];
+
+const advertising = [...drafting, "workspace:ads"];
+
+const everything = { ads: true, publishing: true };
+
+const withoutPublish = { ads: true, publishing: false };
+
+const withoutAds = { ads: false, publishing: true };
+
+const nothing = { ads: false, publishing: false };
 
 describe(withoutPublishing, () => {
   it("offers nothing when publishing was not asked for", () => {
@@ -28,22 +42,71 @@ describe(withoutPublishing, () => {
 
 describe(consentAnswer, () => {
   it("allows everything asked for without naming a scope", () => {
-    expect(consentAnswer(drafting, true)).toStrictEqual({ accept: true });
+    expect(consentAnswer(drafting, everything)).toStrictEqual({ accept: true });
   });
 
   it("leaves publishing out of the scope sent once unticked", () => {
-    expect(consentAnswer(drafting, false)).toStrictEqual({
+    expect(consentAnswer(drafting, withoutPublish)).toStrictEqual({
       accept: true,
       scope: "openid workspace:write",
     });
   });
 
   it("narrows nothing when there was no choice to make", () => {
-    expect(consentAnswer(["openid", "workspace:write"], false)).toStrictEqual({
+    expect(consentAnswer(["openid", "workspace:write"], nothing)).toStrictEqual(
+      {
+        accept: true,
+      }
+    );
+    expect(
+      consentAnswer(["openid", "workspace:publish"], nothing)
+    ).toStrictEqual({ accept: true });
+  });
+});
+
+describe(mayLeaveAdsOut, () => {
+  it("offers nothing when ads were not asked for", () => {
+    expect(mayLeaveAdsOut(drafting)).toBeFalsy();
+  });
+
+  it("lets ads be left out of what else was asked of the workspace", () => {
+    expect(mayLeaveAdsOut(advertising)).toBeTruthy();
+    expect(mayLeaveAdsOut(["workspace:read", "workspace:ads"])).toBeTruthy();
+  });
+
+  it("offers nothing when ads are all the client asked of the workspace", () => {
+    expect(mayLeaveAdsOut(["openid", "workspace:ads"])).toBeFalsy();
+  });
+});
+
+describe("consentAnswer with ads", () => {
+  it("allows ads with the rest without naming a scope", () => {
+    expect(consentAnswer(advertising, everything)).toStrictEqual({
       accept: true,
     });
-    expect(consentAnswer(["openid", "workspace:publish"], false)).toStrictEqual(
-      { accept: true }
-    );
+  });
+
+  it("leaves ads out of the scope sent once unticked", () => {
+    expect(consentAnswer(advertising, withoutAds)).toStrictEqual({
+      accept: true,
+      scope: "openid workspace:write workspace:publish",
+    });
+  });
+
+  it("leaves both out when both are unticked, and publishing alone", () => {
+    expect(consentAnswer(advertising, nothing)).toStrictEqual({
+      accept: true,
+      scope: "openid workspace:write",
+    });
+    expect(consentAnswer(advertising, withoutPublish)).toStrictEqual({
+      accept: true,
+      scope: "openid workspace:write workspace:ads",
+    });
+  });
+
+  it("narrows nothing when ads are all there is to allow", () => {
+    expect(consentAnswer(["openid", "workspace:ads"], nothing)).toStrictEqual({
+      accept: true,
+    });
   });
 });

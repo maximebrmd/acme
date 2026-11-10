@@ -26,36 +26,36 @@ public final class ConflictErrorBody {
         return value.visit(visitor);
     }
 
-    public static ConflictErrorBody postNotReviewable(PostNotReviewableEncoded value) {
-        return new ConflictErrorBody(new PostNotReviewableValue(value));
+    public static ConflictErrorBody channelSetNameTaken(ChannelSetNameTakenEncoded value) {
+        return new ConflictErrorBody(new ChannelSetNameTakenValue(value));
     }
 
-    public static ConflictErrorBody tooManyReviewLinks(TooManyReviewLinksEncoded value) {
-        return new ConflictErrorBody(new TooManyReviewLinksValue(value));
+    public static ConflictErrorBody tooManyChannelSets(TooManyChannelSetsEncoded value) {
+        return new ConflictErrorBody(new TooManyChannelSetsValue(value));
     }
 
-    public boolean isPostNotReviewable() {
-        return value instanceof PostNotReviewableValue;
+    public boolean isChannelSetNameTaken() {
+        return value instanceof ChannelSetNameTakenValue;
     }
 
-    public boolean isTooManyReviewLinks() {
-        return value instanceof TooManyReviewLinksValue;
+    public boolean isTooManyChannelSets() {
+        return value instanceof TooManyChannelSetsValue;
     }
 
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<PostNotReviewableEncoded> getPostNotReviewable() {
-        if (isPostNotReviewable()) {
-            return Optional.of(((PostNotReviewableValue) value).value);
+    public Optional<ChannelSetNameTakenEncoded> getChannelSetNameTaken() {
+        if (isChannelSetNameTaken()) {
+            return Optional.of(((ChannelSetNameTakenValue) value).value);
         }
         return Optional.empty();
     }
 
-    public Optional<TooManyReviewLinksEncoded> getTooManyReviewLinks() {
-        if (isTooManyReviewLinks()) {
-            return Optional.of(((TooManyReviewLinksValue) value).value);
+    public Optional<TooManyChannelSetsEncoded> getTooManyChannelSets() {
+        if (isTooManyChannelSets()) {
+            return Optional.of(((TooManyChannelSetsValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,46 +89,47 @@ public final class ConflictErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitPostNotReviewable(PostNotReviewableEncoded postNotReviewable);
+        T visitChannelSetNameTaken(ChannelSetNameTakenEncoded channelSetNameTaken);
 
-        T visitTooManyReviewLinks(TooManyReviewLinksEncoded tooManyReviewLinks);
+        T visitTooManyChannelSets(TooManyChannelSetsEncoded tooManyChannelSets);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(PostNotReviewableValue.class), @JsonSubTypes.Type(TooManyReviewLinksValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(ChannelSetNameTakenValue.class), @JsonSubTypes.Type(TooManyChannelSetsValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("PostNotReviewable")
+    @JsonTypeName("ChannelSetNameTaken")
     @JsonIgnoreProperties("_tag")
-    private static final class PostNotReviewableValue implements Value {
+    private static final class ChannelSetNameTakenValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private PostNotReviewableEncoded value;
+        private ChannelSetNameTakenEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private PostNotReviewableValue() {}
+        private ChannelSetNameTakenValue() {}
 
-        private PostNotReviewableValue(PostNotReviewableEncoded value) {
+        private ChannelSetNameTakenValue(ChannelSetNameTakenEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitPostNotReviewable(value);
+            return visitor.visitChannelSetNameTaken(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof PostNotReviewableValue && equalTo((PostNotReviewableValue) other);
+            return other instanceof ChannelSetNameTakenValue && equalTo((ChannelSetNameTakenValue) other);
         }
 
-        private boolean equalTo(PostNotReviewableValue other) {
+        private boolean equalTo(ChannelSetNameTakenValue other) {
             return value.equals(other.value);
         }
 
@@ -143,32 +144,32 @@ public final class ConflictErrorBody {
         }
     }
 
-    @JsonTypeName("TooManyReviewLinks")
+    @JsonTypeName("TooManyChannelSets")
     @JsonIgnoreProperties("_tag")
-    private static final class TooManyReviewLinksValue implements Value {
+    private static final class TooManyChannelSetsValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private TooManyReviewLinksEncoded value;
+        private TooManyChannelSetsEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private TooManyReviewLinksValue() {}
+        private TooManyChannelSetsValue() {}
 
-        private TooManyReviewLinksValue(TooManyReviewLinksEncoded value) {
+        private TooManyChannelSetsValue(TooManyChannelSetsEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitTooManyReviewLinks(value);
+            return visitor.visitTooManyChannelSets(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof TooManyReviewLinksValue && equalTo((TooManyReviewLinksValue) other);
+            return other instanceof TooManyChannelSetsValue && equalTo((TooManyChannelSetsValue) other);
         }
 
-        private boolean equalTo(TooManyReviewLinksValue other) {
+        private boolean equalTo(TooManyChannelSetsValue other) {
             return value.equals(other.value);
         }
 

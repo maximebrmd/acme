@@ -20,9 +20,14 @@ public partial interface IPealClient
     public ILookupsClient Lookups { get; }
     public IWebhooksClient Webhooks { get; }
     public IInboxClient Inbox { get; }
+    public IAdsClient Ads { get; }
     public IActivityClient Activity { get; }
     public IPartnerClient Partner { get; }
     public IPartnerAccountClient PartnerAccount { get; }
     public IConnectLinksClient ConnectLinks { get; }
     public IReviewClient Review { get; }
+    public ITagsClient Tags { get; }
+    public ISignaturesClient Signatures { get; }
+    public IChannelSetsClient ChannelSets { get; }
+    public IChannelDefaultsClient ChannelDefaults { get; }
 }

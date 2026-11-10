@@ -2,7 +2,7 @@
 title: Self-hosting
 description: The services a self-hosted Peal instance needs, how to run the server and the web app behind one address, and how to set up email, media, channels, the writing assistant and MCP.
 sidebar:
-  order: 18
+  order: 20
 ---
 
 Peal reaches every outside service through a port with a self-hostable default. A self-hosted instance runs two programs of its own, the server and the web app, and needs Postgres, an S3-compatible object store and a way to send email. Everything else is optional and stays off until you configure it.
@@ -330,6 +330,10 @@ A provider named without the settings it needs stops the server at startup, and 
 Each workspace may send the assistant `PEAL_AI_DAILY_REQUESTS` requests per UTC day, 100 unless set; `0` lets none through. With [billing](#billing) on, each plan sets its own instead. Without it, every workspace gets that many: on an instance where anyone may sign up, each new workspace adds to what your provider can bill. A request the provider could not be reached for does not count. One that gets no answer within 90 seconds fails and counts, as the provider may have run it.
 
 What members send is the post's text, up to 5,000 characters, and answers are capped at 4,096 tokens. The text is sent as data, with instructions the text cannot change. The server never logs or traces the text or the answer, saves neither, and sends the provider no trace context: its logs and traces name the provider, the model, the token counts and the kind of failure only.
+
+## Ads [#ads]
+
+Ads are off until you set `PEAL_ADS`: `read` lets workspaces connect Meta ad accounts and read their campaigns and numbers, and `spend` also lets them boost published posts, which spends their money at Meta. A self-hosted server brings its own Meta app with ads access: the app in `META_APP_ID` and `META_APP_SECRET`, which also connects [Facebook Pages](#meta), given the ads permissions by Meta, with one more redirect address that [the command](#platform-addresses) prints for ads. [Ads](/ads#operator) lists what Meta asks of you, and why to stay on `read` until it granted `ads_management`.
 
 ## Billing [#billing]
 

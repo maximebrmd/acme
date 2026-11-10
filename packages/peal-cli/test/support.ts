@@ -51,28 +51,49 @@ import type { Studio } from "./studio.ts";
 
 const unused = Effect.die("not used by the CLI tests");
 
-// What a run needs besides the network: no terminal or child processes,
-// plain output, only the environment variables a test names, and a file
-// system that does nothing unless a test brings a real one.
-export const cliEnvironment = (
-  env: Record<string, string> = {},
-  fileSystem: Layer.Layer<FileSystem.FileSystem> = FileSystem.layerNoop({})
-) =>
-  Layer.mergeAll(
-    fileSystem,
-    Path.layer,
-    Stdio.layerTest({}),
+// A terminal nobody sits at, or one where someone types `answers`, a line
+// for each question, and leaves once they are spent.
+const terminalOf = (answers: readonly string[] | undefined) => {
+  const left = [...(answers ?? [])];
+
+  return Layer.mergeAll(
+    Stdio.layerTest({ stdinIsTerminal: Effect.succeed(answers !== undefined) }),
     Layer.succeed(
       Terminal.Terminal,
       Terminal.make({
         columns: Effect.succeed(80),
         display: () => Effect.void,
         readInput: unused,
-        readLine: unused,
+        readLine:
+          answers === undefined
+            ? unused
+            : Effect.suspend(() => {
+                const answer = left.shift();
+
+                return answer === undefined
+                  ? Effect.fail(new Terminal.QuitError({}))
+                  : Effect.succeed(answer);
+              }),
         rows: Effect.succeed(24),
         size: unused,
       })
-    ),
+    )
+  );
+};
+
+// What a run needs besides the network: no terminal, unless a test types
+// answers at one, no child processes, plain output, only the environment
+// variables a test names, and a file system that does nothing unless a
+// test brings a real one.
+export const cliEnvironment = (
+  env: Record<string, string> = {},
+  fileSystem: Layer.Layer<FileSystem.FileSystem> = FileSystem.layerNoop({}),
+  answers?: readonly string[]
+) =>
+  Layer.mergeAll(
+    fileSystem,
+    Path.layer,
+    terminalOf(answers),
     Layer.succeed(
       ChildProcessSpawner.ChildProcessSpawner,
       ChildProcessSpawner.make(() => unused)

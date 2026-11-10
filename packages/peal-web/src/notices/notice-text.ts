@@ -1,8 +1,9 @@
 import { DateTime, Match } from "effect";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { webhookFailingDays } from "peal-contract";
 import type { NoticeChannel, NoticeEvent } from "peal-contract";
 
+import { formatMoney } from "#ads/money.ts";
 import { useSize } from "#billing/size.ts";
 
 /** What a notice says, and where the reader acts on it. */
@@ -23,6 +24,7 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
   const t = useTranslations("Notices");
   const format = useFormatter();
   const size = useSize();
+  const locale = useLocale();
 
   const channelName = (channel: NoticeChannel | null) =>
     channel === null
@@ -72,9 +74,45 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
       text,
     });
 
+    const ads = (text: string): NoticeText => ({
+      href: `/app/${workspaceId}/ads`,
+      open: t("open", { page: "ads" }),
+      text,
+    });
+
     const plan = (name: string) => t("plan", { plan: name });
 
     return Match.valueTags(event, {
+      AdBoostChanged: ({
+        budget,
+        budgetDigits,
+        change,
+        endsAt,
+        postId,
+        reason,
+      }) =>
+        post(
+          postId,
+          t("event.AdBoostChanged", {
+            budget: formatMoney(
+              locale,
+              budget.amount,
+              budget.currency.toUpperCase(),
+              budgetDigits
+            ),
+            change,
+            endsAt: DateTime.toDate(endsAt),
+            reason: t("boostReason", { reason: reason ?? "refused" }),
+            workspace,
+          })
+        ),
+      AdConnectionReconnectRequired: ({ network }) =>
+        ads(
+          t("event.AdConnectionReconnectRequired", {
+            network: t("adNetwork", { network }),
+            workspace,
+          })
+        ),
       ChannelReconnectRequired: () =>
         channels(t("event.ChannelReconnectRequired", { channel, workspace })),
       ChannelReconnectSoon: ({ expiresAt }) =>

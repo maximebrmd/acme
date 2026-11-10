@@ -196,9 +196,14 @@
   once. One channel per platform account per workspace: connecting an account
   again reconnects its channel. Reconnecting adds no channel, so no plan
   limit refuses it, and its contract lists none.
-- No route turns a channel off or back on (`disable` and `enable` are domain
-  rules only), and reconnecting leaves a channel turned off as it is: notices
-  and docs tell members to disconnect it and connect the account again.
+- A channel is turned off and back on through `ChannelSettings`
+  (`channels.disable`, `channels.enable`, the domain's `disable` and
+  `enable`), and reconnecting leaves a channel turned off as it is: notices,
+  emails and docs tell members to turn it back on. A channel that is off
+  still counts in its plan. Off is not disconnected: nothing calls
+  `ChannelEvents.disconnected`, so analytics and the inbox keep what they
+  read, and pass it over while `ChannelAccess` answers `disabled`
+  (`paused`) until it is back on.
 - Any request to a host a user chose (a Mastodon instance, the servers a
   Bluesky DID names) goes through `publicHttpClient` or `publicFetch` from
   `#shared/infrastructure/platforms`: HTTPS on the default port only,
@@ -293,3 +298,12 @@
 - Erasure covers the new tables (`erasure.test.ts`): a workspace's links,
   its partner row and keys go with it; usage days name no person and go
   with the partner.
+- `ChannelSettings` holds what a workspace decides about a channel it
+  keeps, for members with channel:connect. Its name there (`label`) is
+  Peal's own, shown beside the platform's handle and name, never instead,
+  and never sent anywhere; it is written alone (`setLabel`), as the status
+  is (`setStatus`, under the channel's lock): `ChannelRepository.update`
+  writes neither the label nor anything a renewal did not read, so a token
+  renewal and a renaming never undo each other. `ListChannels.search`
+  pages by id (UUIDv7, oldest first) and counts by status whatever the
+  status asked for.

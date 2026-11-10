@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 import {
   HttpApiEndpoint,
+  HttpApiError,
   HttpApiGroup,
   HttpApiSchema,
   OpenApi,
@@ -38,6 +39,17 @@ export const ChannelStatusSchema = Schema.Union([
 
 export type ChannelStatus = typeof ChannelStatusSchema.Type;
 
+/** The longest name a workspace gives one of its channels. */
+export const maxChannelLabelLength = 60;
+
+/** The most channels a page of the search holds, and how many when not told. */
+export const maxChannelPageSize = 100;
+
+export const defaultChannelPageSize = 50;
+
+/** The longest text a search for channels takes. */
+export const maxChannelQueryLength = 100;
+
 /** A social account connected to the workspace, without its tokens. */
 export const ChannelSchema = Schema.Struct({
   // The account's picture, as the platform serves it.
@@ -50,6 +62,9 @@ export const ChannelSchema = Schema.Struct({
   displayName: Schema.NullOr(Schema.String),
   handle: Schema.String,
   id: Schema.String,
+  // The name the workspace gave the channel, shown in Peal beside the
+  // platform's handle and name, and sent nowhere; null when it gave none.
+  label: Schema.NullOr(Schema.String),
   platform: PlatformSchema,
   status: ChannelStatusSchema,
   // When the account's token stops working, for a token the platform does
@@ -59,6 +74,49 @@ export const ChannelSchema = Schema.Struct({
 }).annotate({ identifier: "Channel" });
 
 export type Channel = typeof ChannelSchema.Type;
+
+/** What a workspace changes of a channel it keeps: its name there. */
+export const ChannelUpdateSchema = Schema.Struct({
+  // One line, without spaces around it; null takes the name back.
+  label: Schema.NullOr(
+    Schema.String.check(
+      Schema.isBetweenLength(1, maxChannelLabelLength),
+      Schema.makeFilter((label: string) => label === label.trim(), {
+        expected: "a name without spaces around it",
+      }),
+      Schema.makeFilter((label: string) => !/\p{Cc}/u.test(label), {
+        expected: "a name on one line, without control characters",
+      })
+    )
+  ),
+}).annotate({ identifier: "ChannelUpdate" });
+
+export type ChannelUpdate = typeof ChannelUpdateSchema.Type;
+
+/** A channel's status, by name, as a list is narrowed to one. */
+export const ChannelStatusNameSchema = Schema.Literals([
+  "active",
+  "refreshNeeded",
+  "disabled",
+]).annotate({ identifier: "ChannelStatusName" });
+
+export type ChannelStatusName = typeof ChannelStatusNameSchema.Type;
+
+/** A page of the workspace's channels, oldest first. */
+export const ChannelPageSchema = Schema.Struct({
+  // How many channels the platform and text asked for match, by status,
+  // whatever the status asked for.
+  counts: Schema.Struct({
+    active: Schema.Int,
+    disabled: Schema.Int,
+    refreshNeeded: Schema.Int,
+  }),
+  items: Schema.Array(ChannelSchema),
+  // Pass it as `cursor` for the next page; null on the last one.
+  nextCursor: Schema.NullOr(Schema.String),
+}).annotate({ identifier: "ChannelPage" });
+
+export type ChannelPage = typeof ChannelPageSchema.Type;
 
 /**
  * What starting a connection needs, by platform: Mastodon asks which
@@ -190,6 +248,29 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
         summary: "List channels",
       })
     ),
+    HttpApiEndpoint.get("find", "/search", {
+      error: [Forbidden, HttpApiError.BadRequest],
+      params: workspace,
+      query: {
+        cursor: Schema.optionalKey(Schema.String),
+        limit: Schema.optionalKey(
+          Schema.Int.check(
+            Schema.isBetween({ maximum: maxChannelPageSize, minimum: 1 })
+          )
+        ),
+        platform: Schema.optionalKey(PlatformSchema),
+        q: Schema.optionalKey(
+          Schema.String.check(Schema.isBetweenLength(1, maxChannelQueryLength))
+        ),
+        status: Schema.optionalKey(ChannelStatusNameSchema),
+      },
+      success: ChannelPageSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Lists the workspace's channels a page at a time, oldest first: ${defaultChannelPageSize} unless \`limit\` (at most ${maxChannelPageSize}) says otherwise. Every filter given must hold: \`platform\`, \`status\` (\`active\`, \`refreshNeeded\` or \`disabled\`) and \`q\`, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. \`counts\` says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's \`nextCursor\` as \`cursor\`, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.`,
+        summary: "Search channels",
+      })
+    ),
     HttpApiEndpoint.get("platforms", "/platforms", {
       error: Forbidden,
       params: workspace,
@@ -246,6 +327,39 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
         description:
           "Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.",
         summary: "Start reconnecting a channel",
+      })
+    ),
+    HttpApiEndpoint.patch("update", "/:channelId", {
+      error: [Forbidden, ChannelNotFound],
+      params: { ...workspace, channelId: Schema.String },
+      payload: ChannelUpdateSchema,
+      success: ChannelSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Gives the channel the name the workspace calls it by (\`label\`, ${maxChannelLabelLength} characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.`,
+        summary: "Rename a channel",
+      })
+    ),
+    HttpApiEndpoint.post("disable", "/:channelId/disable", {
+      error: [Forbidden, ChannelNotFound],
+      params: { ...workspace, channelId: Schema.String },
+      success: ChannelSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (`channelDisabled`) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.",
+        summary: "Turn a channel off",
+      })
+    ),
+    HttpApiEndpoint.post("enable", "/:channelId/enable", {
+      error: [Forbidden, ChannelNotFound],
+      params: { ...workspace, channelId: Schema.String },
+      success: ChannelSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Turns a channel back on. It posts again at once, or has the status `refreshNeeded` when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.",
+        summary: "Turn a channel back on",
       })
     ),
     HttpApiEndpoint.delete("disconnect", "/:channelId", {

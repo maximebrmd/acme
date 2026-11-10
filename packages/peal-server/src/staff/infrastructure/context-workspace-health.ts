@@ -1,5 +1,6 @@
 import { Effect, Layer, Option } from "effect";
 
+import { AdOversight } from "#ads/application/ad-oversight.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { ChannelOversight } from "#channels/application/channel-oversight.ts";
 import { PostOversight } from "#publishing/application/post-oversight.ts";
@@ -21,8 +22,26 @@ export const ContextWorkspaceHealth = Layer.effect(
     const channels = yield* ChannelOversight;
     const posts = yield* PostOversight;
     const webhooks = yield* WebhookOversight;
+    const ads = yield* AdOversight;
 
     return WorkspaceHealth.of({
+      ads: (workspaceId) =>
+        ads.ofWorkspace(workspaceId).pipe(
+          Effect.map(({ accounts, boosts }) => ({
+            accounts: accounts.map(({ account, authorization }) => ({
+              access: account.access,
+              currency: account.currency,
+              id: account.id,
+              monthlyCeiling:
+                authorization._tag === "on"
+                  ? Option.some(authorization.monthlyCeiling)
+                  : Option.none(),
+              network: account.network,
+              status: account.status,
+            })),
+            boosts,
+          }))
+        ),
       billing: (workspaceId) =>
         entitlements.of(workspaceId).pipe(
           Effect.map(({ plan, subscription }) => ({

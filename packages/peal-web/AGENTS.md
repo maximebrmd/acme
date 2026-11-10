@@ -29,20 +29,21 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   address),
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
   platforms' redirect URI `connect/[platform]/callback` (which shows the
-  account picker when a sign-in reached several accounts), Meta's data
+  account picker when a sign-in reached several accounts), the ad
+  networks' `connect/ads/[network]/callback`, Meta's data
   deletion status `data-deletion/[code]`, the page behind a review link
   `review` (no sign-in, noindex; the token is the address's fragment, read
   in the browser), and the signed-in
   app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
   `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
   `…/analytics`, `…/inbox` and `…/inbox/[threadId]` (for `engagement:read`:
-  not-found otherwise, as for staff acting as a member), `…/drafts`,
-  `…/posts/new`, `…/posts/[postId]`, which opens
+  not-found otherwise, as for staff acting as a member), `…/ads`,
+  `…/drafts`, `…/posts/new`, `…/posts/[postId]`, which opens
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/approvals` (the posts that
-  wait), `…/settings` (with `members`, `invitations`, `api-keys` and
-  `webhooks`) and `…/billing`. The staff console is
+  wait), `…/settings` (with `members`, `invitations`, `tags`, `signatures`,
+  `channel-sets`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]`,
   `admin/contract-requests` (through `deskRead`), `admin/audit` and
@@ -130,6 +131,54 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `#posts/api.ts`, as `LookupChoices`): a field shows that its list is being
   read, or why it could not be with a way to ask again, and keeps a value
   the list lacks.
+- Tags, signatures and channel sets each have a settings page (list,
+  create, edit, delete: views in `components/<feature>/*-views.tsx`, state
+  in `*-settings.tsx`, atoms in `#<feature>/atoms.ts`), read with post:read
+  and changed with post:update. Their failures are explained from the one
+  `SavedItems.errors` catalogue (`#settings/saved-item-error.ts`). Draw a
+  tag with peal-ui's `Tag` and `TagDot`, never a colour value.
+- The composer takes them through components of their own, each wired
+  with a few lines: `ChannelSetPicker` (applies a set with `appliedSet`,
+  which leaves out and counts the channels disconnected since),
+  `SignatureMenu` (`withSignature`, the contract's `signedText`),
+  `DefaultSignatures` with `useDefaultSigning` (only the request that
+  first creates a post carries `defaultSignatures`, and the composer then
+  takes its texts from the answer), `LinkWarnings` (`#posts/link-check.ts`,
+  advice that blocks nothing: never flag a working link) and
+  `PostTagsField`, which saves tags with the post while it is written and
+  at once (`posts.tag`, `savedOn`) on a post scheduled or out, as
+  `PostDetail` does.
+- Name a channel with `#channels/channel-name.ts`, never `channel.handle`
+  alone: `channelName` wherever one line names it (the workspace's name
+  with the handle beside it, "Client A (@handle)"), `channelTitle` where
+  the handle is written beside anyway (the channels page, the composer's
+  picker). The name is Peal's (`Channel.label`, `RenameChannel`,
+  `labelUpdateOf`) and never hides the handle. The text tabs still show
+  the handle alone. `ChannelPower` turns a channel off, after a
+  confirmation, and back on: every string about a channel that is off
+  says to turn it back on, on the Channels page, not to reconnect it.
+- `DuplicatePost` (post:read and post:create, `#posts/duplicate.ts`) copies
+  a post into a new draft and opens it: in the composer through
+  `ComposerActions`' `extra`, on a post that went out through
+  `PostDetail`'s `actions`, which `ComposerScreen` fills, as the view under
+  test imports no navigation. The calendar's chips are links, with no menu.
+- A schedule whose save created the post with default signatures that
+  changed a text stops there (`pausesToCheck`,
+  `#signatures/signing-pause.ts`): the composer shows the saved texts and
+  `SignaturePause`, a status region, asks to check them and choose
+  Schedule again, which asks for no signature. Never schedule text the
+  counters did not count.
+- The calendar filters the posts it loaded in the browser
+  (`#posts/calendar-filter.ts`, `CalendarFilters`), and links each day and
+  each hour still to come to `…/posts/new?at=YYYY-MM-DDTHH:mm`
+  (`#posts/start-time.ts`), which the composer reads on the viewer's clock
+  and ignores when malformed or past.
+- Times of day follow the browser's own preference (`#i18n/hour-cycle.ts`,
+  in `localStorage`, chosen on the account page): `ViewerHourCycle`, in the
+  locale layout, gives every message's `{at, time, short}` the clock
+  chosen, and code that formats a time itself adds `useTimeOptions()` to
+  its options. The server renders the language's clock; the preference
+  applies after hydration.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the
@@ -226,3 +275,34 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   one callback page, `connect/[platform]/callback`, finishes the link
   rather than a member's connection. Its strings are the `ConnectLink`
   catalogue; the member's flow is unchanged.
+- Ads (`#ads/*`, `components/ads/`, the `Ads` catalogue; a boost is
+  "boost" and "mise en avant"). The ads page (`AdsScreen`, ads:read) says
+  only that ads are off when `status.mode` is `off`; ads:manage connects
+  and disconnects, and only ads:authorize (owners) sees `SpendingFormView`,
+  which says what a ceiling allows before its button: keep that text.
+  The tab keeps the sign-in's workspace in `sessionStorage`
+  (`#ads/pending-sign-in.ts`) for the callback page (`CompleteAdSignIn`,
+  its view `AdSignInView`).
+- Ad amounts are whole minor units: read what a person types with
+  `parseAmount` and write amounts with `useMoney` or `formatMoney`
+  (`#ads/money.ts`), with the account's `minorUnitDigits`; never multiply
+  or divide an amount. A `Boost` comes without digits: take its account's,
+  else `digitsOfCurrency`.
+- `PostDetail` offers `BoostDialog` on a published Facebook or Instagram
+  channel to members with ads:spend, on a server whose mode is `spend`.
+  `checkBoost` (`#ads/boost-draft.ts`) makes the request: days are the ad
+  account's calendar, `specialAdCategory` is sent only once declared, and
+  an audience in the EU names who benefits and who pays. `quoteBoost`
+  comes first, and `BoostSummaryView` shows what it answers (the most the
+  boost can cost, the ceiling, what is committed) before the one button,
+  which names the amount and the end. `createBoost` carries the
+  `Idempotency-Key` made when the review opened: never make one per
+  click. Explain every refusal with `adsErrorOf` and `useAdsErrorLines`:
+  a new contract error gets its words in `Ads.errors`.
+- `PostPaid` (ads:read) shows a post's boosts and `PaidSectionView`'s two
+  columns, organic and paid: never add them up. Pause and stop take
+  ads:spend or ads:manage, resume ads:spend (`controlsOf`); stopping asks
+  first, and an `unconfirmed` boost says it may be spending.
+- The consent page lets a person leave `workspace:ads` out as it does
+  publishing (`mayLeaveAdsOut`, `consentAnswer` in
+  `#auth/consent-scopes.ts`).

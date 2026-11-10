@@ -177,5 +177,149 @@
       "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
     },
     "type": "webhook.test"
+  },
+  {
+    "data": {
+      "adAccountId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c09",
+      "boostId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c0a",
+      "budget": {
+        "amount": 5000,
+        "kind": "total"
+      },
+      "committed": 5000,
+      "currency": "EUR",
+      "endsAt": "2026-11-17T12:00:00.000Z",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c01",
+      "reason": null,
+      "state": "active",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "boost.started"
+  },
+  {
+    "data": {
+      "adAccountId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c09",
+      "boostId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c0a",
+      "budget": {
+        "amount": 5000,
+        "kind": "total"
+      },
+      "committed": 5000,
+      "currency": "EUR",
+      "endsAt": "2026-11-17T12:00:00.000Z",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c01",
+      "reason": null,
+      "state": "paused",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "boost.paused"
+  },
+  {
+    "data": {
+      "adAccountId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c09",
+      "boostId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c0a",
+      "budget": {
+        "amount": 5000,
+        "kind": "total"
+      },
+      "committed": 5000,
+      "currency": "EUR",
+      "endsAt": "2026-11-17T12:00:00.000Z",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c01",
+      "reason": null,
+      "state": "active",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "boost.resumed"
+  },
+  {
+    "data": {
+      "adAccountId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c09",
+      "boostId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c0a",
+      "budget": {
+        "amount": 5000,
+        "kind": "total"
+      },
+      "committed": 5000,
+      "currency": "EUR",
+      "endsAt": "2026-11-17T12:00:00.000Z",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c01",
+      "reason": null,
+      "state": "stopped",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "boost.stopped"
+  },
+  {
+    "data": {
+      "adAccountId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c09",
+      "boostId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c0a",
+      "budget": {
+        "amount": 5000,
+        "kind": "total"
+      },
+      "committed": 5000,
+      "currency": "EUR",
+      "endsAt": "2026-11-17T12:00:00.000Z",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c01",
+      "reason": null,
+      "state": "ended",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "boost.ended"
+  },
+  {
+    "data": {
+      "adAccountId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c09",
+      "boostId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c0a",
+      "budget": {
+        "amount": 5000,
+        "kind": "total"
+      },
+      "committed": 0,
+      "currency": "EUR",
+      "endsAt": "2026-11-17T12:00:00.000Z",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c01",
+      "reason": "budgetTooLow",
+      "state": "failed",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "boost.failed"
+  },
+  {
+    "data": {
+      "adAccountId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c09",
+      "boostId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c0a",
+      "budget": {
+        "amount": 5000,
+        "kind": "total"
+      },
+      "committed": 5000,
+      "currency": "EUR",
+      "endsAt": "2026-11-17T12:00:00.000Z",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c01",
+      "reason": null,
+      "state": "unconfirmed",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "boost.unconfirmed"
+  },
+  {
+    "data": {
+      "adAccountId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c09",
+      "boostId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c0a",
+      "budget": {
+        "amount": 5000,
+        "kind": "total"
+      },
+      "committed": 5000,
+      "currency": "EUR",
+      "endsAt": "2026-11-17T12:00:00.000Z",
+      "postId": "019a6f3e-7b10-7c3a-9d41-5e2f8a6b4c01",
+      "reason": null,
+      "state": "active",
+      "workspaceId": "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+    },
+    "type": "boost.budget_reached"
   }
 ]

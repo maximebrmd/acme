@@ -7,15 +7,14 @@ import { Badge } from "peal-ui/components/badge";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Label } from "peal-ui/components/label";
 
+import { channelInitial, channelTitle } from "#channels/channel-name.ts";
+
 interface ChannelPickerProps {
   readonly channels: readonly Channel[];
   readonly disabled: boolean;
   readonly onChange: (channelIds: readonly string[]) => void;
   readonly selected: readonly string[];
 }
-
-const initialOf = (channel: Channel) =>
-  (channel.displayName ?? channel.handle).replace(/^@/u, "").slice(0, 1);
 
 // The workspace's channels, to pick where the post goes. The order of the
 // list is kept, whatever order they are picked in.
@@ -66,12 +65,10 @@ export const ChannelPicker = ({
               {channel.avatarUrl === null ? null : (
                 <AvatarImage src={channel.avatarUrl} alt="" />
               )}
-              <AvatarFallback>{initialOf(channel)}</AvatarFallback>
+              <AvatarFallback>{channelInitial(channel)}</AvatarFallback>
             </Avatar>
             <div className="flex min-w-0 flex-1 flex-col">
-              <Label htmlFor={id}>
-                {channel.displayName ?? channel.handle}
-              </Label>
+              <Label htmlFor={id}>{channelTitle(channel)}</Label>
               <span
                 id={`${id}-detail`}
                 className="text-muted-foreground truncate text-xs"

@@ -2,6 +2,7 @@ import { HttpApi, OpenApi } from "effect/http-api";
 
 import { AccountApi } from "./account.ts";
 import { ActivityApi } from "./activity.ts";
+import { AdsApi } from "./ads.ts";
 import { AnalyticsApi } from "./analytics.ts";
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
@@ -9,7 +10,9 @@ import { BillingActionsApi } from "./billing-actions.ts";
 import { BillingApi } from "./billing.ts";
 import { CapabilitiesApi } from "./capabilities.ts";
 import { CaptchaApi } from "./captcha.ts";
+import { ChannelDefaultsApi } from "./channel-defaults.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
+import { ChannelSetsApi } from "./channel-sets.ts";
 import { ChannelsApi } from "./channels.ts";
 import { ClientErrorsApi } from "./client-errors.ts";
 import { ConnectLinksApi } from "./connect-links.ts";
@@ -32,13 +35,95 @@ import { PostsApi } from "./posts.ts";
 import { ReviewLinkApi } from "./review-link.ts";
 import { ReviewApi } from "./review.ts";
 import { SessionApi } from "./session.ts";
+import { SignaturesApi } from "./signatures.ts";
 import { StaffApi } from "./staff.ts";
 import { SystemApi } from "./system.ts";
+import { TagsApi } from "./tags.ts";
 import { TikTokApi } from "./tiktok.ts";
 import { WebhooksApi } from "./webhooks.ts";
 import { WorkspacesApi } from "./workspaces.ts";
 
 export { DatabaseUnavailable } from "./database-unavailable.ts";
+
+export {
+  maxTagNameLength,
+  maxTagsPerPost,
+  maxTagsPerWorkspace,
+  PostTagIdsSchema,
+  TagColourSchema,
+  TagDetailsSchema,
+  TagNameSchema,
+  TagsApi,
+  TagSchema,
+} from "./tags.ts";
+
+export type { Tag, TagColour, TagDetails } from "./tags.ts";
+
+export { TagNameTaken } from "./tag-name-taken.ts";
+
+export { TagNotFound } from "./tag-not-found.ts";
+
+export { TooManyTags } from "./too-many-tags.ts";
+
+export { UnknownTags } from "./unknown-tags.ts";
+
+export {
+  maxSignatureLength,
+  maxSignatureNameLength,
+  maxSignaturesPerWorkspace,
+  SignatureDetailsSchema,
+  SignatureSchema,
+  SignatureScopeSchema,
+  SignaturesApi,
+  signedText,
+} from "./signatures.ts";
+
+export type {
+  Signature,
+  SignatureDetails,
+  SignatureScope,
+} from "./signatures.ts";
+
+export { SignatureNameTaken } from "./signature-name-taken.ts";
+
+export { SignatureNotFound } from "./signature-not-found.ts";
+
+export { TooManySignatures } from "./too-many-signatures.ts";
+
+export {
+  ChannelSetDetailsSchema,
+  ChannelSetReferencesSchema,
+  ChannelSetsApi,
+  ChannelSetSchema,
+  maxChannelSetNameLength,
+  maxChannelSetsPerPost,
+  maxChannelSetsPerWorkspace,
+  maxChannelsPerSet,
+  PostWarningSchema,
+} from "./channel-sets.ts";
+
+export type {
+  ChannelSet,
+  ChannelSetDetails,
+  PostWarning,
+} from "./channel-sets.ts";
+
+export { ChannelSetNameTaken } from "./channel-set-name-taken.ts";
+
+export {
+  ChannelDefaultsApi,
+  ChannelDefaultsSchema,
+  NewChannelDefaultsSchema,
+} from "./channel-defaults.ts";
+
+export type {
+  ChannelDefaults,
+  NewChannelDefaults,
+} from "./channel-defaults.ts";
+
+export { ChannelSetNotFound } from "./channel-set-not-found.ts";
+
+export { TooManyChannelSets } from "./too-many-channel-sets.ts";
 
 export {
   ActivityActorSchema,
@@ -447,6 +532,13 @@ export type {
 export {
   AuthorizationSchema,
   ChannelSchema,
+  ChannelPageSchema,
+  ChannelStatusNameSchema,
+  ChannelUpdateSchema,
+  defaultChannelPageSize,
+  maxChannelLabelLength,
+  maxChannelPageSize,
+  maxChannelQueryLength,
   ChannelStatusSchema,
   ChoosableAccountSchema,
   ChooseAccountsSchema,
@@ -459,6 +551,9 @@ export {
 export type {
   Authorization,
   Channel,
+  ChannelPage,
+  ChannelStatusName,
+  ChannelUpdate,
   ChannelStatus,
   ChoosableAccount,
   ChooseAccounts,
@@ -756,6 +851,7 @@ export {
   NewPostSchema,
   PostContentSchema,
   PostDraftSchema,
+  PostTagsSchema,
   PostImportSchema,
   PostOriginSchema,
   PostOriginViaSchema,
@@ -794,6 +890,7 @@ export type {
   Post,
   PostContent,
   PostDraft,
+  PostTags,
   PostOrigin,
   PostOriginVia,
   PostChannel,
@@ -1152,6 +1249,106 @@ export { ReplyPending } from "./reply-pending.ts";
 
 export { ReplyStatusConflict } from "./reply-status-conflict.ts";
 
+export {
+  AdAccessSchema,
+  AdAccountSchema,
+  AdAccountStatusSchema,
+  AdAuditActionSchema,
+  AdAuditEntrySchema,
+  AdAuditPageSchema,
+  AdCampaignReportSchema,
+  AdCampaignSchema,
+  AdConnectionSchema,
+  adInsightRetentionDays,
+  AdInsightDaySchema,
+  AdInsightReportSchema,
+  AdMoneySchema,
+  AdNetworkSchema,
+  AdObjectStatusSchema,
+  AdReportSchema,
+  AdsApi,
+  AdSchema,
+  AdsModeSchema,
+  AdSpendingDecisionSchema,
+  AdSpendingSchema,
+  BoostAudienceSchema,
+  BoostBudgetSchema,
+  BoostDetailSchema,
+  BoostFailureReasonSchema,
+  BoostPageSchema,
+  BoostQuoteSchema,
+  BoostSchema,
+  BoostStateSchema,
+  BoostStepSchema,
+  CampaignObjectiveSchema,
+  dailyOverspendPercent,
+  weeklySpendLimitDays,
+  maxAdAccountsPerRequest,
+  maxAdAmount,
+  maxBoostAge,
+  maxBoostCountries,
+  maxBoostPartyLength,
+  maxBoostRunDays,
+  maxBoostStartAheadDays,
+  minBoostAge,
+  NewBoostSchema,
+  OrganicCountsSchema,
+  PaidTotalsSchema,
+  PostAdPerformanceSchema,
+  ReachableAdAccountSchema,
+  SpecialAdCategorySchema,
+} from "./ads.ts";
+
+export type {
+  AdAccount,
+  AdConnection,
+  AdMoney,
+  AdNetwork,
+  AdSpending,
+  Boost,
+  BoostFailureReason,
+  BoostState,
+  NewBoost,
+  PaidTotals,
+  ReachableAdAccount,
+} from "./ads.ts";
+
+export { AdAccountBusy } from "./ad-account-busy.ts";
+
+export { AdAccountNotFound } from "./ad-account-not-found.ts";
+
+export { AdAccountSpendCapExceeded } from "./ad-account-spend-cap-exceeded.ts";
+
+export { AdAccountUnusable } from "./ad-account-unusable.ts";
+
+export { AdConnectionNotFound } from "./ad-connection-not-found.ts";
+
+export { AdNetworkUnavailable } from "./ad-network-unavailable.ts";
+
+export { AdSignInFailed } from "./ad-sign-in-failed.ts";
+
+export { AdSpendingNotEnabled } from "./ad-spending-not-enabled.ts";
+
+export { AdSpendingUnavailable } from "./ad-spending-unavailable.ts";
+
+export { AdsUnavailable } from "./ads-unavailable.ts";
+
+export { BoostInvalid, BoostViolationSchema } from "./boost-invalid.ts";
+
+export type { BoostViolation } from "./boost-invalid.ts";
+
+export { BoostKeyReused } from "./boost-key-reused.ts";
+
+export { BoostNotFound } from "./boost-not-found.ts";
+
+export { BoostStateConflict } from "./boost-state-conflict.ts";
+
+export { CeilingCurrencyMismatch } from "./ceiling-currency-mismatch.ts";
+
+export { PostNotPromotable } from "./post-not-promotable.ts";
+
+export { SpendCeilingExceeded } from "./spend-ceiling-exceeded.ts";
+
 export { ConnectLinkIntake } from "./connect-link-intake.ts";
 
 export { ConnectLinkNotFound } from "./connect-link-not-found.ts";
@@ -1419,6 +1616,7 @@ export class Api extends HttpApi.make("peal")
   .add(LookupsApi)
   .add(WebhooksApi)
   .add(InboxApi)
+  .add(AdsApi)
   .add(ActivityApi)
   .add(PartnerApi)
   .add(PartnerAccountApi)
@@ -1431,6 +1629,10 @@ export class Api extends HttpApi.make("peal")
   .add(ReviewLinkApi)
   .add(ContractRequestsApi)
   .add(ContractRequestsDeskApi)
+  .add(TagsApi)
+  .add(SignaturesApi)
+  .add(ChannelSetsApi)
+  .add(ChannelDefaultsApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.
   .annotateMerge(

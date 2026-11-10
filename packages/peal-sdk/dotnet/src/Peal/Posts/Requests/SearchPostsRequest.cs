@@ -40,6 +40,9 @@ public record SearchPostsRequest
     public PostStatus? Status { get; set; }
 
     [JsonIgnore]
+    public string? TagId { get; set; }
+
+    [JsonIgnore]
     public string? To { get; set; }
 
     /// <inheritdoc />

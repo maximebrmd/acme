@@ -51,11 +51,16 @@ public partial class PealClient : IPealClient
         Lookups = new LookupsClient(_client);
         Webhooks = new WebhooksClient(_client);
         Inbox = new InboxClient(_client);
+        Ads = new AdsClient(_client);
         Activity = new ActivityClient(_client);
         Partner = new PartnerClient(_client);
         PartnerAccount = new PartnerAccountClient(_client);
         ConnectLinks = new ConnectLinksClient(_client);
         Review = new ReviewClient(_client);
+        Tags = new TagsClient(_client);
+        Signatures = new SignaturesClient(_client);
+        ChannelSets = new ChannelSetsClient(_client);
+        ChannelDefaults = new ChannelDefaultsClient(_client);
     }
 
     public ISystemClient System { get; }
@@ -94,6 +99,8 @@ public partial class PealClient : IPealClient
 
     public IInboxClient Inbox { get; }
 
+    public IAdsClient Ads { get; }
+
     public IActivityClient Activity { get; }
 
     public IPartnerClient Partner { get; }
@@ -103,4 +110,12 @@ public partial class PealClient : IPealClient
     public IConnectLinksClient ConnectLinks { get; }
 
     public IReviewClient Review { get; }
+
+    public ITagsClient Tags { get; }
+
+    public ISignaturesClient Signatures { get; }
+
+    public IChannelSetsClient ChannelSets { get; }
+
+    public IChannelDefaultsClient ChannelDefaults { get; }
 }

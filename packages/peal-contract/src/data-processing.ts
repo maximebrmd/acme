@@ -29,6 +29,8 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  *   `analyticsPinterest`, `analyticsGoogleBusiness`), and
  *   `analyticsDisconnected`: the figures the platforms report
  *   (`analytics/domain/analytics-retention.ts`);
+ * - `adInsights`, `adAuditTrail`: each day of an ad's numbers, and each
+ *   line of the ads audit trail (`ads/domain/insight-retention.ts`);
  * - `auditLog`, `banRecords`, `banPastEnd`: the staff audit log
  *   (`staff/domain/audit-retention.ts`);
  * - `legalIdentity`, `legalAccount`, `legalConnections`,
@@ -56,6 +58,8 @@ export type ProcessingText = Readonly<Record<ProcessingLocale, string>>;
  */
 export const retentionPeriods = {
   activityLog: { days: 90 },
+  adAuditTrail: { days: 396 },
+  adInsights: { days: 396 },
   analytics: { days: 730 },
   analyticsDisconnected: { days: 7 },
   analyticsGoogleBusiness: { days: 30 },
@@ -164,8 +168,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
   {
     applies: "always",
     data: {
-      en: "The posts, media and schedules of your workspaces, what was read of each file (its type, size, dimensions, duration, or a document’s number of pages), the comments members write on posts and the approvals they ask for and decide, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts and for the accounts you connected (their followers, and their views where the platform counts them, day by day); for a post made in one call with an idempotency key, a digest of that key and of its request, never either; and, for each channel a post goes to, a fingerprint of what each channel receives (a digest of its text and media), which keeps the same post from going out twice by mistake",
-      fr: "Les publications, médias et planifications de vos espaces de travail, ce qui a été lu de chaque fichier (son type, sa taille, ses dimensions, sa durée, ou le nombre de pages d’un document), les commentaires que les membres écrivent sur les publications et les approbations qu’ils demandent et décident, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications et pour les comptes que vous avez connectés (leurs abonnés, et leurs vues quand la plateforme les compte, jour par jour) ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre ; et, pour chaque canal où part une publication, une empreinte de ce que le canal reçoit (un condensé de son texte et de ses médias), qui évite qu’une même publication parte deux fois par erreur",
+      en: "The posts, media and schedules of your workspaces, the tags, signatures, channel sets and default options they save to write and file posts, the names they give their channels, what was read of each file (its type, size, dimensions, duration, or a document’s number of pages), the comments members write on posts and the approvals they ask for and decide, the history of each publication, how each post was created and scheduled (in the app, with an API key or through an application you connected, with its name, and by which member), and the figures the platforms report for your posts and for the accounts you connected (their followers, and their views where the platform counts them, day by day); for a post made in one call with an idempotency key, a digest of that key and of its request, never either; and, for each channel a post goes to, a fingerprint of what each channel receives (a digest of its text and media), which keeps the same post from going out twice by mistake",
+      fr: "Les publications, médias et planifications de vos espaces de travail, les étiquettes, signatures, groupes de canaux et options par défaut qu’ils enregistrent pour écrire et classer les publications, les noms qu’ils donnent à leurs canaux, ce qui a été lu de chaque fichier (son type, sa taille, ses dimensions, sa durée, ou le nombre de pages d’un document), les commentaires que les membres écrivent sur les publications et les approbations qu’ils demandent et décident, l’historique de chaque mise en ligne, la façon dont chaque publication a été créée et programmée (dans l’application, avec une clé d’API ou par une application que vous avez connectée, avec son nom, et par quel membre), et les chiffres que les plateformes communiquent pour vos publications et pour les comptes que vous avez connectés (leurs abonnés, et leurs vues quand la plateforme les compte, jour par jour) ; pour une publication créée en un appel avec une clé d’idempotence, une empreinte de cette clé et de sa requête, jamais l’une ni l’autre ; et, pour chaque canal où part une publication, une empreinte de ce que le canal reçoit (un condensé de son texte et de ses médias), qui évite qu’une même publication parte deux fois par erreur",
     },
     id: "content",
     legalBasis: contract,
@@ -179,8 +183,8 @@ export const processingRegister: readonly ProcessingCategory[] = [
       fr: "Planifier et mettre en ligne vos publications, et montrer leurs résultats",
     },
     retention: {
-      en: `Drafts and media files: until a member deletes them, or the workspace is deleted. Posts that were scheduled, published or cancelled, and their publication history: until the workspace is deleted. The figures the platforms report for posts and accounts: ${p.analytics.days / 365} years, or less where a platform’s terms allow less (LinkedIn ${p.analyticsLinkedIn.days / 365} year, Pinterest ${p.analyticsPinterest.days} days, Google Business Profile ${p.analyticsGoogleBusiness.days} days); the figures of a disconnected account and of its posts: ${p.analyticsDisconnected.days} days after it is disconnected, unless the workspace connects the same account again before; all of them earlier with the workspace. The posts you wrote or scheduled in a workspace you share stay with it when you close your account, without your name. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
-      fr: `Brouillons et fichiers média : jusqu’à leur suppression par un membre, ou celle de l’espace de travail. Publications programmées, mises en ligne ou annulées, et leur historique de mise en ligne : jusqu’à la suppression de l’espace de travail. Les chiffres que les plateformes communiquent pour les publications et les comptes : ${p.analytics.days / 365} ans, ou moins quand les conditions d’une plateforme l’imposent (LinkedIn ${p.analyticsLinkedIn.days / 365} an, Pinterest ${p.analyticsPinterest.days} jours, Google Business Profile ${p.analyticsGoogleBusiness.days} jours) ; les chiffres d’un compte déconnecté et de ses publications : ${p.analyticsDisconnected.days} jours après sa déconnexion, sauf si l’espace de travail reconnecte le même compte entre-temps ; tous plus tôt avec l’espace de travail. Les publications que vous avez écrites ou programmées dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
+      en: `Drafts, media files, tags, signatures, channel sets and default options: until a member deletes them, or the workspace is deleted. Posts that were scheduled, published or cancelled, and their publication history: until the workspace is deleted. The figures the platforms report for posts and accounts: ${p.analytics.days / 365} years, or less where a platform’s terms allow less (LinkedIn ${p.analyticsLinkedIn.days / 365} year, Pinterest ${p.analyticsPinterest.days} days, Google Business Profile ${p.analyticsGoogleBusiness.days} days); the figures of a disconnected account and of its posts: ${p.analyticsDisconnected.days} days after it is disconnected, unless the workspace connects the same account again before; all of them earlier with the workspace. The posts you wrote or scheduled in a workspace you share stay with it when you close your account, without your name. Idempotency key digests: ${p.idempotencyKeys.hours} hours, then deleted within a day`,
+      fr: `Brouillons, fichiers média, étiquettes, signatures, groupes de canaux et options par défaut : jusqu’à leur suppression par un membre, ou celle de l’espace de travail. Publications programmées, mises en ligne ou annulées, et leur historique de mise en ligne : jusqu’à la suppression de l’espace de travail. Les chiffres que les plateformes communiquent pour les publications et les comptes : ${p.analytics.days / 365} ans, ou moins quand les conditions d’une plateforme l’imposent (LinkedIn ${p.analyticsLinkedIn.days / 365} an, Pinterest ${p.analyticsPinterest.days} jours, Google Business Profile ${p.analyticsGoogleBusiness.days} jours) ; les chiffres d’un compte déconnecté et de ses publications : ${p.analyticsDisconnected.days} jours après sa déconnexion, sauf si l’espace de travail reconnecte le même compte entre-temps ; tous plus tôt avec l’espace de travail. Les publications que vous avez écrites ou programmées dans un espace de travail partagé y restent à la fermeture de votre compte, sans votre nom. Empreintes des clés d’idempotence : ${p.idempotencyKeys.hours} heures, puis supprimées dans la journée`,
     },
     source: {
       en: "You and the other members of your workspaces; the platforms you connected, for the figures of your posts and accounts",
@@ -373,6 +377,37 @@ export const processingRegister: readonly ProcessingCategory[] = [
     source: {
       en: "The owners and admins of the workspace, for the account and its keys; the partner’s own systems, through those keys, for its customers’ workspaces",
       fr: "Les propriétaires et administrateurs de l’espace de travail, pour le compte et ses clés ; les systèmes du partenaire, au moyen de ces clés, pour les espaces de travail de ses clients",
+    },
+  },
+  {
+    // Applies only on a server whose operator turned ads on (`PEAL_ADS`):
+    // elsewhere the ads context keeps nothing.
+    applies: "always",
+    data: {
+      en: "On a server where ads are on. Each sign-in a member makes to an ad network to connect ad accounts: the person’s id at the network, the permissions they gave, when the sign-in ends, and its access token, stored encrypted and never shown. The ad accounts connected: the network’s id, name, currency, time zone, status, spend cap and amount spent as the network gives them, the monthly ceiling an owner set, who connected each and who allowed it to spend. Their campaigns, ad sets and ads as read from the network (ids, names, statuses, objectives, budgets, dates, and the id of the post an ad promotes), and each ad’s daily numbers: counts and money, never who saw an ad. Boosts: the post, the channel, the budget, the dates, the audience asked for (countries and an age range), who benefits from the ad and who pays for it when the audience is in the European Union, who asked for it, where it stands and the ids of what it made at the network; the journal of the requests sent for it (steps, times, outcomes, the network’s ids and codes). The ads audit trail: every decision about spending and every change to a boost, with who made it and the amounts",
+      fr: "Sur un serveur où les publicités sont activées. Chaque connexion d’un membre à un réseau publicitaire pour y relier des comptes publicitaires : l’identifiant de la personne sur le réseau, les autorisations qu’elle a données, la date de fin de la connexion, et son jeton d’accès, stocké chiffré et jamais affiché. Les comptes publicitaires connectés : l’identifiant sur le réseau, le nom, la devise, le fuseau horaire, l’état, le plafond de dépenses et le montant dépensé tels que le réseau les donne, le plafond mensuel fixé par un propriétaire, qui a connecté chacun et qui l’a autorisé à dépenser. Leurs campagnes, ensembles de publicités et publicités tels que lus sur le réseau (identifiants, noms, états, objectifs, budgets, dates, et l’identifiant de la publication qu’une publicité met en avant), et les chiffres quotidiens de chaque publicité : des décomptes et des montants, jamais qui a vu une publicité. Les mises en avant : la publication, le canal, le budget, les dates, l’audience demandée (des pays et une tranche d’âge), qui bénéficie de la publicité et qui la paie lorsque l’audience se trouve dans l’Union européenne, qui l’a demandée, son état et les identifiants de ce qu’elle a créé sur le réseau ; le journal des requêtes envoyées pour elle (étapes, dates, résultats, identifiants et codes du réseau). Le journal d’audit des publicités : chaque décision sur les dépenses et chaque modification d’une mise en avant, avec son auteur et les montants",
+    },
+    id: "ads",
+    legalBasis: {
+      en: "Performance of a contract (GDPR Article 6(1)(b)); for the audit trail, legitimate interests (Article 6(1)(f)): those of a workspace’s owners and of the operator in accounting for every decision that spends money",
+      fr: "Exécution d’un contrat (RGPD, article 6, paragraphe 1, point b) ; pour le journal d’audit, intérêts légitimes (point f) : ceux des propriétaires d’un espace de travail et de l’exploitant à pouvoir répondre de chaque décision qui engage une dépense",
+    },
+    name: {
+      en: "Ad accounts, boosts and their figures",
+      fr: "Comptes publicitaires, mises en avant et leurs chiffres",
+    },
+    operatorSet: false,
+    purposes: {
+      en: "Connect the ad accounts a workspace chooses, show what their ads did beside its posts, boost a published post when a member asks, within the ceiling an owner set, and show the workspace’s owners who decided what was spent",
+      fr: "Connecter les comptes publicitaires qu’un espace de travail choisit, montrer ce que leurs publicités ont donné à côté de ses publications, mettre en avant une publication parue à la demande d’un membre, dans la limite du plafond fixé par un propriétaire, et montrer aux propriétaires de l’espace de travail qui a décidé de ce qui a été dépensé",
+    },
+    retention: {
+      en: `Sign-ins, ad accounts, what was read of them and boosts: until the sign-in is removed, the ad account is disconnected or the workspace is deleted; the person who signed in can also ask the ad network to delete what the service holds about them, which removes their sign-ins and the ad accounts these connect. A sign-in left in progress: 15 minutes; one that connected no account: a day. Each ad’s daily numbers: ${p.adInsights.days} days (13 months), then deleted within a day. The ads audit trail: ${p.adAuditTrail.days} days (13 months) from each line, then deleted within a day. Closing your account removes your id from what stays with the workspaces you shared: the sign-ins you made stay with their ad accounts, without it`,
+      fr: `Connexions, comptes publicitaires, ce qui en a été lu et mises en avant : jusqu’au retrait de la connexion, à la déconnexion du compte publicitaire ou à la suppression de l’espace de travail ; la personne qui s’est connectée peut aussi demander au réseau publicitaire la suppression de ce que le service détient à son sujet, ce qui retire ses connexions et les comptes publicitaires qu’elles relient. Une connexion restée en cours : 15 minutes ; une connexion qui n’a relié aucun compte : un jour. Les chiffres quotidiens de chaque publicité : ${p.adInsights.days} jours (13 mois), puis supprimés dans la journée. Le journal d’audit des publicités : ${p.adAuditTrail.days} jours (13 mois) à compter de chaque ligne, puis supprimé dans la journée. La fermeture de votre compte retire votre identifiant de ce qui reste dans les espaces de travail que vous partagiez : les connexions que vous avez faites y restent avec leurs comptes publicitaires, sans lui`,
+    },
+    source: {
+      en: "The member who signs in to the ad network, and the network, for the sign-in, the ad accounts and what is read of them; the owners, for what an ad account may spend; the members, the API keys and the applications that ask for boosts",
+      fr: "Le membre qui se connecte au réseau publicitaire, et le réseau, pour la connexion, les comptes publicitaires et ce qui en est lu ; les propriétaires, pour ce qu’un compte publicitaire peut dépenser ; les membres, les clés d’API et les applications qui demandent des mises en avant",
     },
   },
   {
@@ -692,6 +727,14 @@ export const recipientCategories: readonly RecipientCategory[] = [
     recipient: {
       en: "The platforms you publish to, which receive what you publish there and process it as controllers, under their own privacy policies",
       fr: "Les plateformes sur lesquelles vous publiez, qui reçoivent ce que vous y publiez et le traitent en tant que responsables de traitement, selon leurs propres politiques de confidentialité",
+    },
+  },
+  {
+    // On a server where ads are on, for the workspaces that boost a post.
+    applies: "always",
+    recipient: {
+      en: "On a server where ads are on, the ad network a boost runs on (Meta Platforms, for ads on Facebook and Instagram), which receives what the ad needs: the post’s id, the budget, the dates, the audience asked for, and who benefits from the ad and who pays for it; it processes them as a controller, under its own terms and privacy policy",
+      fr: "Sur un serveur où les publicités sont activées, le réseau publicitaire sur lequel une mise en avant est diffusée (Meta Platforms, pour les publicités sur Facebook et Instagram), qui reçoit ce que la publicité demande : l’identifiant de la publication, le budget, les dates, l’audience demandée, et qui bénéficie de la publicité et qui la paie ; il les traite en tant que responsable de traitement, selon ses propres conditions et sa politique de confidentialité",
     },
   },
   {

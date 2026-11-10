@@ -2,7 +2,7 @@
 title: Présentation de l’API
 description: L’organisation de l’API HTTP de Peal, comment s’y authentifier, l’emplacement de son document OpenAPI et la référence de chaque point d’accès.
 sidebar:
-  order: 13
+  order: 15
 ---
 
 L’application web, la ligne de commande et le point d’accès MCP reposent sur la même API HTTP : tout ce qu’ils font, votre propre code peut le faire aussi.
@@ -33,7 +33,7 @@ En dehors des sondes de santé et des documents que les plateformes lisent sur P
 
 - **Une clé d’API**, pour les scripts et les intégrations : envoyez-la en `Authorization: Bearer peal_…`. Une clé appartient à un espace de travail et porte une partie des permissions du membre qui l’a créée, jamais plus : une clé sans `post:schedule` ne programme ni ne publie. Les membres qui peuvent gérer les clés (propriétaires et administrateurs) en créent une avec `POST /api/workspaces/{workspaceId}/api-keys` une fois connectés, et ne voient la clé que dans cette réponse. Une clé peut envoyer 600 requêtes par minute ([Limites de débit](/api-conventions#rate-limits)).
 - **Une clé partenaire**, pour un produit qui utilise Peal pour ses propres clients : envoyez-la en `Authorization: Bearer peal_partner_…`. Elle appartient à un compte partenaire, crée et lit sous `/api/partner` les espaces de travail que ce compte possède, et agit dans chacun d’eux, et dans aucun autre, avec les permissions qu’elle a reçues ([Intégrer Peal](/embedding)).
-- **Un jeton d’accès OAuth**, que la [ligne de commande](/cli) et les [clients MCP](/mcp) obtiennent quand vous les connectez, envoyé de la même façon. Il agit en votre nom, dans la limite de ce que vous avez accepté : `workspace:read` lit, `workspace:write` fait ce que votre rôle permet, sauf ce qui fait partir des publications, et `workspace:publish` programme et publie ([Ce que permet chaque permission](/agents#scopes)). Tout point d’accès qui demande `post:schedule` demande `workspace:publish` à un jeton OAuth, et répond 403 sans lui.
+- **Un jeton d’accès OAuth**, que la [ligne de commande](/cli) et les [clients MCP](/mcp) obtiennent quand vous les connectez, envoyé de la même façon. Il agit en votre nom, dans la limite de ce que vous avez accepté : `workspace:read` lit, `workspace:write` fait ce que votre rôle permet, sauf ce qui fait partir des publications, et `workspace:publish` programme et publie ([Ce que permet chaque permission](/agents#scopes)). Tout point d’accès qui demande `post:schedule` demande `workspace:publish` à un jeton OAuth, et répond 403 sans lui. Un quatrième scope, `workspace:ads`, n’ouvre rien seul : avec `workspace:write` il gère les comptes publicitaires, et avec `workspace:publish` il dépense en [publicités](/ads#access).
 - **Le cookie de session** de l’application web, pour l’application web elle-même. Une requête qui change quelque chose avec lui doit venir de l’origine même de l’application web.
 
 Avec une session ou un jeton OAuth, `GET /api/me` dit qui vous êtes, et liste vos espaces de travail, avec votre rôle et vos permissions dans chacun. Une clé d’API appartient à un espace de travail, pas à une personne, et y reçoit 403.

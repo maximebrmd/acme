@@ -23,7 +23,7 @@ const reconnect = () =>
 
 const turnedOff = () =>
   refuse(
-    "This channel is turned off: the user disconnects it and connects the account again to use it."
+    "This channel is turned off: enable_channel turns it back on, to use it."
   );
 
 const slowDown = ({ retryAfter }: RateLimited) =>

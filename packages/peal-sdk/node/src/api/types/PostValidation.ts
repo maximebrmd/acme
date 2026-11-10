@@ -12,4 +12,5 @@ export interface PostValidation {
     unknownMedia: string[];
     valid: boolean;
     violations: Peal.ContentViolation[];
+    warnings?: Peal.PostWarning[] | undefined;
 }

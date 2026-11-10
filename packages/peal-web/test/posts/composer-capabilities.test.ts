@@ -32,6 +32,7 @@ const postIn = (
   scheduledBy: null,
   scheduledVia: null,
   status,
+  tagIds: [],
   targets: [],
 });
 

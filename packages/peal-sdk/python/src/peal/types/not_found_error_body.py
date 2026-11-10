@@ -10,10 +10,10 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 
 
-class NotFoundErrorBody_ReviewLinkNotFound(UniversalBaseModel):
+class NotFoundErrorBody_ChannelNotFound(UniversalBaseModel):
     type: typing_extensions.Annotated[
-        typing.Literal["ReviewLinkNotFound"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ] = "ReviewLinkNotFound"
+        typing.Literal["ChannelNotFound"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "ChannelNotFound"
     code: typing.Optional[str] = None
     message: typing.Optional[str] = None
     request_id: typing_extensions.Annotated[
@@ -51,6 +51,6 @@ class NotFoundErrorBody_WorkspaceNotFound(UniversalBaseModel):
 
 
 NotFoundErrorBody = typing_extensions.Annotated[
-    typing.Union[NotFoundErrorBody_ReviewLinkNotFound, NotFoundErrorBody_WorkspaceNotFound],
+    typing.Union[NotFoundErrorBody_ChannelNotFound, NotFoundErrorBody_WorkspaceNotFound],
     pydantic.Field(discriminator="type"),
 ]

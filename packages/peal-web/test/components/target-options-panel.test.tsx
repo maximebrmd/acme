@@ -30,6 +30,7 @@ const channel = (
   displayName: null,
   handle,
   id,
+  label: null,
   platform,
   status: { _tag: "active" },
   tokenExpiresAt: null,

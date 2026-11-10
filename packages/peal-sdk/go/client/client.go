@@ -4,12 +4,15 @@ package client
 
 import (
 	activity "github.com/peal-social/peal/packages/peal-sdk/go/activity"
+	ads "github.com/peal-social/peal/packages/peal-sdk/go/ads"
 	analytics "github.com/peal-social/peal/packages/peal-sdk/go/analytics"
 	apikeys "github.com/peal-social/peal/packages/peal-sdk/go/apikeys"
 	assistant "github.com/peal-social/peal/packages/peal-sdk/go/assistant"
 	billing "github.com/peal-social/peal/packages/peal-sdk/go/billing"
 	capabilities "github.com/peal-social/peal/packages/peal-sdk/go/capabilities"
+	channeldefaults "github.com/peal-social/peal/packages/peal-sdk/go/channeldefaults"
 	channels "github.com/peal-social/peal/packages/peal-sdk/go/channels"
+	channelsets "github.com/peal-social/peal/packages/peal-sdk/go/channelsets"
 	connectlinks "github.com/peal-social/peal/packages/peal-sdk/go/connectlinks"
 	core "github.com/peal-social/peal/packages/peal-sdk/go/core"
 	inbox "github.com/peal-social/peal/packages/peal-sdk/go/inbox"
@@ -26,7 +29,9 @@ import (
 	posts "github.com/peal-social/peal/packages/peal-sdk/go/posts"
 	review "github.com/peal-social/peal/packages/peal-sdk/go/review"
 	session "github.com/peal-social/peal/packages/peal-sdk/go/session"
+	signatures "github.com/peal-social/peal/packages/peal-sdk/go/signatures"
 	system "github.com/peal-social/peal/packages/peal-sdk/go/system"
+	tags "github.com/peal-social/peal/packages/peal-sdk/go/tags"
 	tiktok "github.com/peal-social/peal/packages/peal-sdk/go/tiktok"
 	webhooks "github.com/peal-social/peal/packages/peal-sdk/go/webhooks"
 )
@@ -50,11 +55,16 @@ type Client struct {
 	Lookups                 *lookups.Client
 	Webhooks                *webhooks.Client
 	Inbox                   *inbox.Client
+	Ads                     *ads.Client
 	Activity                *activity.Client
 	Partner                 *partner.Client
 	PartnerAccount          *partneraccount.Client
 	ConnectLinks            *connectlinks.Client
 	Review                  *review.Client
+	Tags                    *tags.Client
+	Signatures              *signatures.Client
+	ChannelSets             *channelsets.Client
+	ChannelDefaults         *channeldefaults.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -82,11 +92,16 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Lookups:                 lookups.NewClient(options),
 		Webhooks:                webhooks.NewClient(options),
 		Inbox:                   inbox.NewClient(options),
+		Ads:                     ads.NewClient(options),
 		Activity:                activity.NewClient(options),
 		Partner:                 partner.NewClient(options),
 		PartnerAccount:          partneraccount.NewClient(options),
 		ConnectLinks:            connectlinks.NewClient(options),
 		Review:                  review.NewClient(options),
+		Tags:                    tags.NewClient(options),
+		Signatures:              signatures.NewClient(options),
+		ChannelSets:             channelsets.NewClient(options),
+		ChannelDefaults:         channeldefaults.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,
 		caller: internal.NewCaller(

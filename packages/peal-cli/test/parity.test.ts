@@ -27,8 +27,43 @@ const partnerSettings =
 const inbox =
   "A person's own notices, which the web app shows them; an API key has none.";
 
+const adSignIn =
+  "Signing in to an ad network and choosing the ad accounts it connects is a person's, in the web app, in their own session: the server refuses an API key and an application, the command line included.";
+
+const adSignIns =
+  "Sign-ins to an ad network are listed and removed where they are made, in the web app; peal ads accounts lists the ad accounts they connect.";
+
 const coverage = {
   "activity.list": by("activity list"),
+  "ads.auditTrail": by("ads audit"),
+  "ads.completeConnect": exempt(adSignIn),
+  "ads.connect": exempt(adSignIn),
+  "ads.connectAccounts": exempt(adSignIn),
+  "ads.createBoost": by("ads boost create"),
+  "ads.disconnect": exempt(
+    "Removing a sign-in deletes its ad accounts, what was read of them and their boosts' records: a person does it, in the web app."
+  ),
+  "ads.getAccount": by("ads account"),
+  "ads.getBoost": by("ads boost show"),
+  "ads.listAccounts": by("ads accounts"),
+  "ads.listAds": by("ads list"),
+  "ads.listBoosts": by("ads boosts"),
+  "ads.listCampaigns": by("ads campaigns"),
+  "ads.listConnections": exempt(adSignIns),
+  "ads.listInsights": by("ads insights"),
+  "ads.pauseBoost": by("ads boost pause"),
+  "ads.postPerformance": by("ads post"),
+  "ads.quoteBoost": by("ads boost quote"),
+  "ads.reachableAccounts": exempt(adSignIn),
+  "ads.removeAccount": exempt(
+    "Disconnecting an ad account deletes what was read of it and its boosts' records: a person does it, in the web app."
+  ),
+  "ads.resumeBoost": by("ads boost resume"),
+  "ads.setSpending": exempt(
+    "Allowing an ad account to spend, and its monthly ceiling, is an owner's decision, in the web app, in their own session: the server refuses an API key and an application, the command line included."
+  ),
+  "ads.status": by("ads status"),
+  "ads.stopBoost": by("ads boost stop"),
   "analytics.channel": by("analytics channel"),
   "analytics.dashboard": by("analytics dashboard"),
   "analytics.export": exempt(
@@ -55,17 +90,28 @@ const coverage = {
   "billing.standing": by("billing"),
   "capabilities.channel": by("channels capabilities"),
   "capabilities.platforms": by("channels capabilities"),
+  "channelDefaults.clear": by("channels defaults clear"),
+  "channelDefaults.get": by("channels defaults show"),
+  "channelDefaults.set": by("channels defaults set"),
+  "channelSets.create": by("sets create"),
+  "channelSets.delete": by("sets delete"),
+  "channelSets.list": by("sets list"),
+  "channelSets.update": by("sets update"),
   "channels.chooseAccounts": exempt(connecting),
   "channels.completeConnect": exempt(connecting),
   "channels.connect": exempt(connecting),
+  "channels.disable": by("channels disable"),
   "channels.disconnect": exempt(
     "Disconnecting deletes a channel and fails its scheduled posts: a person does it, in the web app."
   ),
+  "channels.enable": by("channels enable"),
+  "channels.find": by("channels list"),
   "channels.list": by("channels list"),
   "channels.platforms": exempt(
     "Only the web app's connect forms read which platforms the server connects."
   ),
   "channels.reconnect": exempt(connecting),
+  "channels.update": by("channels rename"),
   "connectLinks.create": by("links create"),
   "connectLinks.get": by("links show"),
   "connectLinks.list": by("links list"),
@@ -127,6 +173,7 @@ const coverage = {
   "posts.create": by("drafts save"),
   "posts.discard": by("drafts discard"),
   "posts.drafts": by("drafts list"),
+  "posts.duplicate": by("posts duplicate"),
   "posts.get": by("posts show"),
   "posts.import": by("posts import"),
   "posts.list": exempt(
@@ -138,6 +185,7 @@ const coverage = {
   "posts.schedule": by("posts schedule"),
   "posts.search": by("posts list"),
   "posts.send": by("post"),
+  "posts.tag": by("posts tag"),
   "posts.unschedule": by("posts unschedule"),
   "posts.update": by("drafts save"),
   "posts.validate": by("post"),
@@ -155,9 +203,17 @@ const coverage = {
   "review.thread": by("review show"),
   "review.updateSettings": by("approvals policy"),
   "session.me": by("whoami"),
+  "signatures.create": by("signatures create"),
+  "signatures.delete": by("signatures delete"),
+  "signatures.list": by("signatures list"),
+  "signatures.update": by("signatures update"),
   "system.changelog": by("doctor"),
   "system.health": by("health"),
   "system.ready": by("doctor"),
+  "tags.create": by("tags create"),
+  "tags.delete": by("tags delete"),
+  "tags.list": by("tags list"),
+  "tags.update": by("tags update"),
   "tiktok.creator": by("channels tiktok"),
   "webhooks.create": by("webhooks create"),
   "webhooks.delete": by("webhooks delete"),

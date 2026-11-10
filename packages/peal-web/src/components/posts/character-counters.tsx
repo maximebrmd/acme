@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { Channel } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
 
+import { channelName } from "#channels/channel-name.ts";
 import { MediaFitBadges } from "#components/posts/media-fit-badges.tsx";
 import { fits as takesPost } from "#posts/character-count.ts";
 import type { ChannelFit, ChannelProblem } from "#posts/character-count.ts";
@@ -65,7 +66,7 @@ export const CharacterCounters = ({ fits }: CharacterCountersProps) => {
             >
               <span className="truncate">
                 {t("channelDetail", {
-                  handle: channel.handle,
+                  handle: channelName(channel),
                   platform: tPosts("platform", { platform: channel.platform }),
                 })}
               </span>

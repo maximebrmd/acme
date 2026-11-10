@@ -15,6 +15,9 @@ import {
   ApprovalRequestSchema,
   ChangesOutcomeSchema,
   ChannelCapabilitiesSchema,
+  ChannelDefaultsSchema,
+  ChannelSchema,
+  ChannelSetSchema,
   InboxCommentSchema,
   InboxReplySchema,
   InboxThreadDetailSchema,
@@ -24,9 +27,12 @@ import {
   PostReviewSchema,
   PostSchema,
   PostValidationSchema,
+  SignatureSchema,
+  TagSchema,
 } from "peal-contract";
 import type { TargetOptions } from "peal-contract";
 
+import { adsTools } from "#app/mcp/catalogue.ts";
 import { ListedMemberSchema } from "#app/mcp/people-tools.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
@@ -97,6 +103,8 @@ interface Fixture {
   readonly publishing: string;
   /** A token that may only read the workspace. */
   readonly reading: string;
+  /** A token that reads the workspace, with the ads scope and no other. */
+  readonly readingAds: string;
   readonly workspaceId: string;
 }
 
@@ -147,6 +155,15 @@ const ToolsFixtureLive = Layer.effect(
       "openid workspace:read workspace:write workspace:publish"
     );
 
+    // The ads scope beside reading alone: it opens nothing that spends,
+    // which takes publishing too.
+    const readingAds = yield* authorize(
+      owner,
+      clientId,
+      workspaceId,
+      "openid workspace:read workspace:ads"
+    );
+
     const { key } = yield* apiKeyOf(owner, workspaceId, [
       "channel:read",
       "post:read",
@@ -159,6 +176,7 @@ const ToolsFixtureLive = Layer.effect(
       owner,
       publishing,
       reading,
+      readingAds,
       workspaceId,
       writing,
       youtubeId: youtube.id,
@@ -335,33 +353,60 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           analytics_summary: [true, false, true, false],
           approve_post: [false, false, false, true],
           await_post: [true, false, true, false],
+          // Spends the user's money at an ad network, and cannot be undone.
+          boost_post: [false, true, false, true],
           cancel_post: [false, true, true, false],
           channel_analytics: [true, false, true, false],
+          // The options that were kept are gone.
+          clear_channel_defaults: [false, true, true, false],
           confirm_comment_reply: [false, true, true, false],
           confirm_target: [false, true, true, false],
+          create_channel_set: [false, false, false, false],
           // A link's address lets whoever holds it connect an account,
           // through Peal's own page: nothing leaves Peal with the call.
           create_connect_link: [false, false, false, false],
           create_draft: [false, false, false, false],
           create_post: [false, false, false, true],
           create_posts: [false, false, false, true],
+          // As a default, it takes the place of the one its scope had.
+          create_signature: [false, true, false, false],
+          create_tag: [false, false, false, false],
           // An endpoint is a server outside Peal, which then hears of the
           // workspace.
           create_webhook: [false, false, false, true],
+          delete_channel_set: [false, true, true, false],
+          delete_signature: [false, true, true, false],
+          // Its posts lose it, and stay.
+          delete_tag: [false, true, true, false],
+          // Nothing is deleted: the channel keeps its connection and its
+          // history, and enable_channel turns it back on.
+          disable_channel: [false, false, true, false],
           discard_draft: [false, true, true, false],
+          // Each call makes another draft.
+          duplicate_post: [false, false, false, false],
+          enable_channel: [false, false, true, false],
           find_tools: [true, false, true, false],
+          get_ad_account: [true, false, true, false],
+          get_ad_insights: [true, false, true, false],
+          get_ads_status: [true, false, true, false],
           get_billing: [true, false, true, false],
+          get_boost: [true, false, true, false],
           get_channel_capabilities: [true, false, true, true],
+          get_channel_defaults: [true, false, true, false],
           get_comment_thread: [true, false, true, false],
           get_connect_link: [true, false, true, false],
           get_partner_account: [true, false, true, false],
           get_post: [true, false, true, false],
+          get_post_ad_performance: [true, false, true, false],
           get_post_review: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
           import_media: [false, false, false, true],
           invite_member: [false, true, false, true],
           list_activity: [true, false, true, false],
+          list_ad_campaigns: [true, false, true, false],
           list_approvals: [true, false, true, false],
+          list_boosts: [true, false, true, false],
+          list_channel_sets: [true, false, true, false],
           list_channels: [true, false, true, false],
           list_comment_threads: [true, false, true, false],
           list_connect_links: [true, false, true, false],
@@ -372,25 +417,41 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           list_partner_workspaces: [true, false, true, false],
           list_post_attempts: [true, false, true, false],
           list_posts: [true, false, true, false],
+          list_signatures: [true, false, true, false],
+          list_tags: [true, false, true, false],
           list_webhook_deliveries: [true, false, true, false],
           list_webhooks: [true, false, true, false],
           list_workspaces: [true, false, true, false],
           mark_comment_answered: [false, false, true, false],
           moderate_comment: [false, true, true, true],
+          pause_boost: [false, false, true, true],
           post_analytics: [true, false, true, false],
           publish_post: [false, false, false, true],
+          quote_boost: [true, false, true, false],
+          // It takes the place of the name the channel had.
+          rename_channel: [false, true, true, false],
           // A reply is a public message from the account.
           reply_to_comment: [false, false, false, true],
           repost_target: [false, false, false, true],
           request_changes: [false, true, false, false],
           reschedule_post: [false, true, true, true],
+          resume_boost: [false, true, true, true],
           revoke_connect_link: [false, true, true, false],
           revoke_invitation: [false, true, true, false],
           run_channel_lookup: [true, false, true, true],
           schedule_post: [false, false, false, true],
           server_health: [true, false, true, false],
+          // They replace the options the channel had.
+          set_channel_defaults: [false, true, true, false],
+          stop_boost: [false, true, true, true],
+          // The same tags again change nothing more, and remove nothing
+          // but a label.
+          tag_post: [false, false, true, false],
           unschedule_post: [false, true, true, false],
+          update_channel_set: [false, true, true, false],
           update_draft: [false, true, true, false],
+          update_signature: [false, true, true, false],
+          update_tag: [false, true, true, false],
           // It asks TikTok what a creator takes.
           validate_post: [true, false, true, true],
           whoami: [true, false, true, false],
@@ -447,6 +508,31 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.isFalse(granted(all, "create_draft"));
           assert.isFalse(granted(all, "schedule_post"));
 
+          // Spending takes the ads scope and publishing together; a quote
+          // checks what spending would, and changes nothing.
+          const adsReader = yield* connected(fixture.readingAds);
+
+          const ads = yield* adsReader.call("find_tools", FoundSchema, {
+            area: "ads",
+          });
+
+          assert.isTrue(granted(ads, "list_boosts"));
+
+          for (const name of [
+            "boost_post",
+            "pause_boost",
+            "quote_boost",
+            "resume_boost",
+            "stop_boost",
+          ]) {
+            assert.isFalse(granted(ads, name), name);
+            assert.strictEqual(
+              ads.tools.find((tool) => tool.name === name)?.scope,
+              "workspace:ads",
+              name
+            );
+          }
+
           // An area, and words in any order and case.
           const media = yield* reader.call("find_tools", FoundSchema, {
             area: "media",
@@ -455,6 +541,28 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.deepStrictEqual(
             media.tools.map(({ name }) => name),
             ["list_media", "import_media"]
+          );
+
+          // So is what a workspace saves to write its posts with.
+          const saving = yield* reader.call("find_tools", FoundSchema, {
+            area: "saved",
+          });
+
+          assert.deepStrictEqual(
+            saving.tools.map(({ name, scope }) => [name, scope]),
+            [
+              ["list_signatures", "workspace:read"],
+              ["create_signature", "workspace:write"],
+              ["update_signature", "workspace:write"],
+              ["delete_signature", "workspace:write"],
+              ["list_channel_sets", "workspace:read"],
+              ["create_channel_set", "workspace:write"],
+              ["update_channel_set", "workspace:write"],
+              ["delete_channel_set", "workspace:write"],
+              ["get_channel_defaults", "workspace:read"],
+              ["set_channel_defaults", "workspace:write"],
+              ["clear_channel_defaults", "workspace:write"],
+            ]
           );
 
           // Connect links and the partner account are an area of their own.
@@ -598,6 +706,62 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
                 new Map<string, ToolArguments>(Object.entries(bogus)).get(name)
               ),
               "workspace:publish",
+              name
+            );
+          }
+
+          // The tools that spend on ads, or change what spends, take the
+          // ads scope, and refuse a connection without it, naming it,
+          // before reading anything.
+          const boostId = postId;
+
+          const spending = (yield* writer.call(
+            "find_tools",
+            FoundSchema
+          )).tools.filter(({ scope }) => scope === "workspace:ads");
+
+          const unasked = {
+            boost_post: {
+              accountId: postId,
+              audience: { ageMax: 65, ageMin: 18, countries: ["US"] },
+              budget: { amount: 5000, kind: "total" },
+              channelId: fixture.channelId,
+              currency: "EUR",
+              endsAt: "2030-01-08T10:00:00Z",
+              idempotencyKey: "never-made",
+              postId,
+              specialAdCategory: "none",
+            },
+            pause_boost: { boostId },
+            quote_boost: {
+              accountId: postId,
+              audience: { ageMax: 65, ageMin: 18, countries: ["US"] },
+              budget: { amount: 5000, kind: "total" },
+              channelId: fixture.channelId,
+              currency: "EUR",
+              endsAt: "2030-01-08T10:00:00Z",
+              postId,
+              specialAdCategory: "none",
+            },
+            resume_boost: { boostId },
+            stop_boost: { boostId },
+          } satisfies Record<string, ToolArguments>;
+
+          assert.deepStrictEqual(
+            spending.map(({ name }) => name).toSorted(),
+            [...adsTools].toSorted()
+          );
+
+          for (const { name, scopeGranted } of spending) {
+            assert.isFalse(scopeGranted, name);
+            assert.include(
+              yield* writer.refused(
+                name,
+                new Map<string, ToolArguments>(Object.entries(unasked)).get(
+                  name
+                )
+              ),
+              "workspace:ads",
               name
             );
           }
@@ -871,6 +1035,790 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             }),
             "This is not one of the workspace's channels"
           );
+        })
+    );
+
+    it.effect(
+      "keep the workspace's tags, file posts under them and list a tag's posts",
+      () =>
+        Effect.gen(function* tags() {
+          const fixture = yield* ToolsFixture;
+          const writer = yield* connected(fixture.writing);
+          const reader = yield* connected(fixture.reading);
+
+          const TagJsonSchema = Schema.toCodecJson(TagSchema);
+
+          const TagsJsonSchema = Schema.toCodecJson(
+            Schema.Struct({ tags: Schema.Array(TagSchema) })
+          );
+
+          const PostsJsonSchema = Schema.toCodecJson(
+            Schema.Struct({ posts: Schema.Array(PostSchema) })
+          );
+
+          const campaign = yield* writer.call("create_tag", TagJsonSchema, {
+            colour: "green",
+            name: "Synthetic campaign",
+          });
+
+          assert.strictEqual(campaign.name, "Synthetic campaign");
+          assert.strictEqual(campaign.colour, "green");
+
+          // A name is a tag's own, whatever its case.
+          assert.include(
+            yield* writer.refused("create_tag", {
+              colour: "red",
+              name: "SYNTHETIC CAMPAIGN",
+            }),
+            "The workspace already has a tag of this name"
+          );
+
+          // A connection that reads only reads the tags, and makes none.
+          assert.include(
+            yield* reader.refused("create_tag", {
+              colour: "blue",
+              name: "Not for a reader",
+            }),
+            "did not give this client the scope workspace:write"
+          );
+          assert.deepStrictEqual(
+            (yield* reader.call("list_tags", TagsJsonSchema)).tags.map(
+              ({ id }) => id
+            ),
+            [campaign.id]
+          );
+
+          // What is left out of a change stays.
+          const renamed = yield* writer.call("update_tag", TagJsonSchema, {
+            name: "Synthetic launch",
+            tagId: campaign.id,
+          });
+
+          assert.strictEqual(renamed.name, "Synthetic launch");
+          assert.strictEqual(renamed.colour, "green");
+          assert.include(
+            yield* writer.refused("update_tag", { tagId: campaign.id }),
+            "Give a name, a colour or both"
+          );
+
+          const draft = yield* writer.call("create_draft", PostJsonSchema, {
+            channelIds: [fixture.channelId],
+            content: content("A synthetic draft, filed under a tag."),
+            tagIds: [campaign.id],
+          });
+
+          assert.deepStrictEqual(draft.tagIds, [campaign.id]);
+
+          const plain = yield* writer.call("create_draft", PostJsonSchema, {
+            channelIds: [],
+            content: content("A synthetic draft under no tag."),
+          });
+
+          assert.deepStrictEqual(plain.tagIds, []);
+
+          // A draft rewritten without tags keeps those it has.
+          const rewritten = yield* writer.call("update_draft", PostJsonSchema, {
+            channelIds: [fixture.channelId],
+            content: content("A synthetic draft, still filed."),
+            postId: draft.id,
+          });
+
+          assert.deepStrictEqual(rewritten.tagIds, [campaign.id]);
+
+          const tagged = yield* writer.call("tag_post", PostJsonSchema, {
+            postId: plain.id,
+            tagIds: [campaign.id],
+          });
+
+          assert.deepStrictEqual(tagged.tagIds, [campaign.id]);
+          assert.include(
+            yield* reader.refused("tag_post", {
+              postId: plain.id,
+              tagIds: [],
+            }),
+            "This connection may not tag posts in this workspace"
+          );
+          assert.include(
+            yield* writer.refused("tag_post", {
+              postId: plain.id,
+              tagIds: ["0190f3a0-0000-7000-8000-00000000c0de", "not-a-tag"],
+            }),
+            "These tags are not the workspace's"
+          );
+
+          const filed = yield* reader.call("list_posts", PostsJsonSchema, {
+            tagId: campaign.id,
+          });
+
+          assert.deepStrictEqual(
+            filed.posts.map(({ id }) => id).toSorted(),
+            [draft.id, plain.id].toSorted()
+          );
+
+          // No tag at all takes them off.
+          const cleared = yield* writer.call("tag_post", PostJsonSchema, {
+            postId: plain.id,
+            tagIds: [],
+          });
+
+          assert.deepStrictEqual(cleared.tagIds, []);
+
+          // Deleting a tag takes it off its posts, which stay.
+          assert.deepStrictEqual(
+            yield* writer.call(
+              "delete_tag",
+              Schema.Struct({ deleted: Schema.String }),
+              { tagId: campaign.id }
+            ),
+            { deleted: campaign.id }
+          );
+          assert.deepStrictEqual(
+            (yield* writer.call("get_post", PostJsonSchema, {
+              postId: draft.id,
+            })).tagIds,
+            []
+          );
+          assert.include(
+            yield* writer.refused("delete_tag", { tagId: campaign.id }),
+            "The workspace has no tag with this id"
+          );
+          assert.deepStrictEqual(
+            (yield* reader.call("list_tags", TagsJsonSchema)).tags,
+            []
+          );
+
+          for (const postId of [draft.id, plain.id]) {
+            yield* writer.call(
+              "discard_draft",
+              Schema.Struct({ discarded: Schema.String }),
+              { postId }
+            );
+          }
+        })
+    );
+
+    it.effect(
+      "name channels, turn them off and back on, find them, and duplicate a post",
+      () =>
+        Effect.gen(function* housekeeping() {
+          const fixture = yield* ToolsFixture;
+          const channels = yield* ChannelRepository;
+          const writer = yield* connected(fixture.writing);
+          const reader = yield* connected(fixture.reading);
+          const workspaceId = WorkspaceIdSchema.make(fixture.workspaceId);
+
+          // Channels of the test's own, on platforms no other has: one
+          // whose token never runs out, one whose token has.
+          const lasting = yield* freshChannel(workspaceId, {
+            platform: "bluesky",
+            token: { _tag: "nonExpiring" },
+          });
+
+          const lapsed = yield* freshChannel(workspaceId, {
+            platform: "threads",
+          });
+
+          yield* Effect.all([
+            channels.insert(lasting, syntheticCredentials(lasting)),
+            channels.insert(lapsed, syntheticCredentials(lapsed)),
+          ]);
+          yield* Effect.addFinalizer(() =>
+            Effect.all([
+              channels.remove(workspaceId, lasting.id),
+              channels.remove(workspaceId, lapsed.id),
+            ]).pipe(Effect.orDie)
+          );
+
+          const ChannelJsonSchema = Schema.toCodecJson(ChannelSchema);
+
+          const ChannelsJsonSchema = Schema.toCodecJson(
+            Schema.Struct({
+              channels: Schema.Array(ChannelSchema),
+              counts: Schema.optionalKey(
+                Schema.Struct({
+                  active: Schema.Number,
+                  disabled: Schema.Number,
+                  refreshNeeded: Schema.Number,
+                })
+              ),
+            })
+          );
+
+          // A name of the workspace's own, beside the platform's.
+          const named = yield* writer.call(
+            "rename_channel",
+            ChannelJsonSchema,
+            { channelId: lasting.id, label: "Synthetic head office" }
+          );
+
+          assert.strictEqual(named.id, lasting.id);
+          assert.strictEqual(named.label, "Synthetic head office");
+          assert.strictEqual(named.handle, lasting.handle);
+
+          // A connection that reads only finds it by that name, whatever
+          // its case, and changes nothing.
+          const found = yield* reader.call(
+            "list_channels",
+            ChannelsJsonSchema,
+            { search: "HEAD OFFICE" }
+          );
+
+          assert.deepStrictEqual(
+            found.channels.map(({ id, label }) => ({ id, label })),
+            [{ id: lasting.id, label: "Synthetic head office" }]
+          );
+          assert.deepStrictEqual(found.counts, {
+            active: 1,
+            disabled: 0,
+            refreshNeeded: 0,
+          });
+
+          for (const [tool, args] of [
+            ["rename_channel", { channelId: lasting.id, label: null }],
+            ["disable_channel", { channelId: lasting.id }],
+            ["enable_channel", { channelId: lasting.id }],
+          ] as const) {
+            assert.include(
+              yield* reader.refused(tool, args),
+              "did not give this client the scope workspace:write",
+              tool
+            );
+          }
+
+          // Off: nothing is deleted, and again changes nothing more.
+          for (const call of ["first", "again"]) {
+            const off = yield* writer.call(
+              "disable_channel",
+              ChannelJsonSchema,
+              { channelId: lasting.id }
+            );
+
+            assert.deepStrictEqual(
+              off.status,
+              { _tag: "disabled", refreshNeeded: false },
+              call
+            );
+            assert.strictEqual(off.label, "Synthetic head office", call);
+          }
+
+          // The counts tell of every status, whatever the status asked.
+          const none = yield* reader.call("list_channels", ChannelsJsonSchema, {
+            platform: "bluesky",
+            status: "active",
+          });
+
+          assert.deepStrictEqual(none.channels, []);
+          assert.deepStrictEqual(none.counts, {
+            active: 0,
+            disabled: 1,
+            refreshNeeded: 0,
+          });
+          assert.deepStrictEqual(
+            (yield* reader.call("list_channels", ChannelsJsonSchema, {
+              status: "disabled",
+            })).channels.map(({ id }) => id),
+            [lasting.id]
+          );
+
+          // Without a filter, every channel, and no counts, as before.
+          const all = yield* reader.call("list_channels", ChannelsJsonSchema);
+
+          assert.includeMembers(
+            all.channels.map(({ id }) => id),
+            [fixture.channelId, fixture.youtubeId, lasting.id, lapsed.id]
+          );
+          assert.isUndefined(all.counts);
+
+          // Back on: it posts again.
+          const on = yield* writer.call("enable_channel", ChannelJsonSchema, {
+            channelId: lasting.id,
+          });
+
+          assert.deepStrictEqual(on.status, { _tag: "active" });
+
+          // One whose token ran out meanwhile asks to be reconnected.
+          yield* writer.call("disable_channel", ChannelJsonSchema, {
+            channelId: lapsed.id,
+          });
+
+          const stale = yield* writer.call(
+            "enable_channel",
+            ChannelJsonSchema,
+            { channelId: lapsed.id }
+          );
+
+          assert.deepStrictEqual(stale.status, { _tag: "refreshNeeded" });
+
+          for (const channelId of [
+            "0190f3a0-0000-7000-8000-00000000c0de",
+            "not-a-channel",
+          ]) {
+            assert.include(
+              yield* writer.refused("disable_channel", { channelId }),
+              "The workspace has no channel with this id"
+            );
+          }
+
+          // Null takes the name back.
+          const unnamed = yield* writer.call(
+            "rename_channel",
+            ChannelJsonSchema,
+            { channelId: lasting.id, label: null }
+          );
+
+          assert.isNull(unnamed.label);
+
+          // A copy of a post is a new draft, each time.
+          const draft = yield* writer.call("create_draft", PostJsonSchema, {
+            channelIds: [fixture.channelId],
+            content: content("A synthetic draft to write another from."),
+          });
+
+          const copy = yield* writer.call("duplicate_post", PostJsonSchema, {
+            postId: draft.id,
+          });
+
+          assert.notStrictEqual(copy.id, draft.id);
+          assert.strictEqual(copy.status, "draft");
+          assert.isNull(copy.schedule);
+          assert.strictEqual(copy.content.text, draft.content.text);
+          assert.deepStrictEqual(
+            copy.targets.map(({ channelId }) => channelId),
+            [fixture.channelId]
+          );
+          assert.include(
+            yield* reader.refused("duplicate_post", { postId: draft.id }),
+            "This connection may not duplicate posts in this workspace"
+          );
+          assert.include(
+            yield* writer.refused("duplicate_post", {
+              postId: "0190f3a0-0000-7000-8000-00000000c0de",
+            }),
+            "The workspace has no post with this id"
+          );
+
+          for (const postId of [draft.id, copy.id]) {
+            yield* writer.call(
+              "discard_draft",
+              Schema.Struct({ discarded: Schema.String }),
+              { postId }
+            );
+          }
+        }).pipe(Effect.scoped)
+    );
+
+    it.effect(
+      "keep the workspace's signatures, channel sets and default options, which posts take",
+      () =>
+        Effect.gen(function* saved() {
+          const fixture = yield* ToolsFixture;
+          const writer = yield* connected(fixture.writing);
+          const reader = yield* connected(fixture.reading);
+          const workspaceId = WorkspaceIdSchema.make(fixture.workspaceId);
+
+          const SignatureJsonSchema = Schema.toCodecJson(SignatureSchema);
+          const SetJsonSchema = Schema.toCodecJson(ChannelSetSchema);
+          const DefaultsJsonSchema = Schema.toCodecJson(ChannelDefaultsSchema);
+          const DeletedSchema = Schema.Struct({ deleted: Schema.String });
+
+          const SignaturesJsonSchema = Schema.toCodecJson(
+            Schema.Struct({ signatures: Schema.Array(SignatureSchema) })
+          );
+
+          const SetsJsonSchema = Schema.toCodecJson(
+            Schema.Struct({ channelSets: Schema.Array(ChannelSetSchema) })
+          );
+
+          const drafts: string[] = [];
+
+          const drafted = (args: ToolArguments) =>
+            writer.call("create_draft", PostJsonSchema, args).pipe(
+              Effect.tap((draft) =>
+                Effect.sync(() => {
+                  drafts.push(draft.id);
+                })
+              )
+            );
+
+          const stranger = "0190f3a0-0000-7000-8000-00000000c0de";
+
+          // A signature, the default of the whole workspace.
+          const signOff = yield* writer.call(
+            "create_signature",
+            SignatureJsonSchema,
+            {
+              isDefault: true,
+              name: "Synthetic sign-off",
+              text: "The synthetic team",
+            }
+          );
+
+          assert.deepStrictEqual(signOff.scope, { _tag: "workspace" });
+          assert.isTrue(signOff.isDefault);
+          assert.include(
+            yield* writer.refused("create_signature", {
+              name: "SYNTHETIC SIGN-OFF",
+              text: "Another synthetic text",
+            }),
+            "The workspace already has a signature of this name"
+          );
+
+          // A connection that reads only reads them, and makes none.
+          assert.include(
+            yield* reader.refused("create_signature", {
+              name: "Not for a reader",
+              text: "A synthetic text",
+            }),
+            "did not give this client the scope workspace:write"
+          );
+          assert.deepStrictEqual(
+            (yield* reader.call(
+              "list_signatures",
+              SignaturesJsonSchema
+            )).signatures.map(({ id }) => id),
+            [signOff.id]
+          );
+
+          // A draft that asks for the defaults takes it under its text.
+          const signed = yield* drafted({
+            channelIds: [fixture.channelId],
+            content: content("A synthetic draft, signed."),
+            defaultSignatures: true,
+          });
+
+          assert.strictEqual(
+            signed.content.text,
+            "A synthetic draft, signed.\n\nThe synthetic team"
+          );
+
+          // And never twice: the text ends with it already.
+          const again = yield* writer.call("update_draft", PostJsonSchema, {
+            channelIds: [fixture.channelId],
+            content: content(signed.content.text),
+            postId: signed.id,
+            signatureId: signOff.id,
+          });
+
+          assert.strictEqual(again.content.text, signed.content.text);
+          assert.include(
+            yield* writer.refused("create_draft", {
+              channelIds: [fixture.channelId],
+              content: content("A synthetic draft, unsigned."),
+              signatureId: stranger,
+            }),
+            "The signature this names is not the workspace's"
+          );
+
+          // What is left out of a change stays.
+          const renamed = yield* writer.call(
+            "update_signature",
+            SignatureJsonSchema,
+            { name: "Synthetic farewell", signatureId: signOff.id }
+          );
+
+          assert.strictEqual(renamed.name, "Synthetic farewell");
+          assert.strictEqual(renamed.text, "The synthetic team");
+          assert.isTrue(renamed.isDefault);
+          assert.include(
+            yield* writer.refused("update_signature", {
+              signatureId: signOff.id,
+            }),
+            "Give a name, a text, a scope, isDefault or several"
+          );
+          assert.include(
+            yield* writer.refused("update_signature", {
+              scope: { _tag: "channel", channelId: stranger },
+              signatureId: signOff.id,
+            }),
+            "These channels are not the workspace's"
+          );
+
+          // A set of channels, one of which is disconnected later.
+          const passing = yield* freshChannel(workspaceId);
+
+          yield* ChannelRepository.use((channels) =>
+            channels.insert(passing, syntheticCredentials(passing))
+          );
+
+          const videoOptions: TargetOptions = {
+            madeForKids: false,
+            platform: "youtube",
+            title: "A synthetic title",
+          };
+
+          const set = yield* writer.call("create_channel_set", SetJsonSchema, {
+            channelIds: [fixture.channelId, fixture.youtubeId, passing.id],
+            name: "Synthetic launch",
+            options: [{ channelId: fixture.youtubeId, options: videoOptions }],
+          });
+
+          assert.deepStrictEqual(set.unavailableChannelIds, []);
+          assert.include(
+            yield* writer.refused("create_channel_set", {
+              channelIds: [fixture.channelId],
+              name: "synthetic LAUNCH",
+            }),
+            "The workspace already has a channel set of this name"
+          );
+          assert.include(
+            yield* writer.refused("create_channel_set", {
+              channelIds: [fixture.channelId],
+              name: "Synthetic misfit",
+              options: [
+                { channelId: fixture.channelId, options: videoOptions },
+              ],
+            }),
+            "The options were refused, and nothing was changed"
+          );
+          assert.include(
+            yield* reader.refused("create_channel_set", {
+              channelIds: [fixture.channelId],
+              name: "Not for a reader",
+            }),
+            "did not give this client the scope workspace:write"
+          );
+
+          // A draft names the set, whatever the case of its name, and
+          // takes the options it keeps.
+          const whole = yield* drafted({
+            channelIds: [],
+            channelSets: ["synthetic LAUNCH"],
+            content: content("A synthetic draft for a set."),
+          });
+
+          assert.deepStrictEqual(
+            whole.targets.map(({ channelId }) => channelId).toSorted(),
+            [fixture.channelId, fixture.youtubeId, passing.id].toSorted()
+          );
+          assert.deepStrictEqual(
+            whole.targets.find(
+              ({ channelId }) => channelId === fixture.youtubeId
+            )?.options,
+            videoOptions
+          );
+          assert.isUndefined(whole.warnings);
+
+          // Once a channel is disconnected, the set says so, and a post
+          // made with it is told which channel it went without.
+          yield* ChannelRepository.use((channels) =>
+            channels.remove(workspaceId, passing.id)
+          );
+
+          const listed = yield* reader.call(
+            "list_channel_sets",
+            SetsJsonSchema
+          );
+
+          assert.deepStrictEqual(
+            listed.channelSets.map(({ id, unavailableChannelIds }) => ({
+              id,
+              unavailableChannelIds,
+            })),
+            [{ id: set.id, unavailableChannelIds: [passing.id] }]
+          );
+
+          const partial = yield* drafted({
+            channelIds: [],
+            channelSets: [set.id],
+            content: content("A synthetic draft for what is left of a set."),
+          });
+
+          assert.deepStrictEqual(
+            partial.targets.map(({ channelId }) => channelId).toSorted(),
+            [fixture.channelId, fixture.youtubeId].toSorted()
+          );
+          assert.deepStrictEqual(partial.warnings, [
+            {
+              _tag: "channelsDropped",
+              channelIds: [passing.id],
+              channelSetId: set.id,
+              channelSetName: "Synthetic launch",
+            },
+          ]);
+
+          // Checking a post says the same, and signs what it would send.
+          const checked = yield* reader.call(
+            "validate_post",
+            Schema.toCodecJson(PostValidationSchema),
+            {
+              channelIds: [],
+              channelSets: [set.id],
+              content: content("A synthetic post, checked."),
+              defaultSignatures: true,
+            }
+          );
+
+          assert.deepStrictEqual(
+            checked.warnings?.map(({ channelIds }) => channelIds),
+            [[passing.id]]
+          );
+          assert.isTrue(
+            checked.channels.every(({ text }) =>
+              text.endsWith("\n\nThe synthetic team")
+            )
+          );
+          assert.include(
+            yield* writer.refused("create_draft", {
+              channelIds: [],
+              channelSets: ["No such synthetic set"],
+              content: content("A synthetic draft for no set."),
+            }),
+            "A channel set this names is not the workspace's"
+          );
+
+          // A change keeps what it leaves out, but the channel that is
+          // gone, which a set cannot keep.
+          const kept = yield* writer.call("update_channel_set", SetJsonSchema, {
+            channelSetId: set.id,
+            name: "Synthetic videos",
+          });
+
+          assert.strictEqual(kept.name, "Synthetic videos");
+          assert.deepStrictEqual(kept.channelIds, [
+            fixture.channelId,
+            fixture.youtubeId,
+          ]);
+          assert.deepStrictEqual(kept.options, [
+            { channelId: fixture.youtubeId, options: videoOptions },
+          ]);
+
+          // The options of a channel it loses go with it.
+          const narrowed = yield* writer.call(
+            "update_channel_set",
+            SetJsonSchema,
+            { channelIds: [fixture.channelId], channelSetId: set.id }
+          );
+
+          assert.deepStrictEqual(narrowed.options, []);
+          assert.include(
+            yield* writer.refused("update_channel_set", {
+              channelSetId: set.id,
+            }),
+            "Give a name, channels, options or several"
+          );
+
+          // A channel's default options, which a new draft takes where it
+          // gives none.
+          const defaults: TargetOptions = {
+            madeForKids: false,
+            platform: "youtube",
+            privacy: "unlisted",
+          };
+
+          assert.deepStrictEqual(
+            yield* reader.call("get_channel_defaults", DefaultsJsonSchema, {
+              channelId: fixture.youtubeId,
+            }),
+            { options: null }
+          );
+          assert.deepStrictEqual(
+            yield* writer.call("set_channel_defaults", DefaultsJsonSchema, {
+              channelId: fixture.youtubeId,
+              options: defaults,
+            }),
+            { options: defaults }
+          );
+          assert.include(
+            yield* reader.refused("set_channel_defaults", {
+              channelId: fixture.youtubeId,
+              options: defaults,
+            }),
+            "did not give this client the scope workspace:write"
+          );
+          assert.include(
+            yield* writer.refused("set_channel_defaults", {
+              channelId: fixture.channelId,
+              options: defaults,
+            }),
+            "The options were refused, and nothing was changed"
+          );
+          assert.include(
+            yield* writer.refused("get_channel_defaults", {
+              channelId: "not-a-channel",
+            }),
+            "The workspace has no channel with this id"
+          );
+
+          const defaulted = yield* drafted({
+            channelIds: [fixture.youtubeId],
+            content: content("A synthetic video draft."),
+          });
+
+          assert.deepStrictEqual(
+            defaulted.targets.map(({ options }) => options),
+            [defaults]
+          );
+
+          // Its own options win.
+          const own = yield* drafted({
+            channelIds: [fixture.youtubeId],
+            content: content("A synthetic video draft of its own."),
+            options: [
+              {
+                channelId: fixture.youtubeId,
+                options: { platform: "youtube", title: "Its own title" },
+              },
+            ],
+          });
+
+          assert.deepStrictEqual(
+            own.targets.map(({ options }) => options),
+            [{ platform: "youtube", title: "Its own title" }]
+          );
+
+          // Everything goes, and the posts stay as they are.
+          assert.deepStrictEqual(
+            yield* writer.call(
+              "clear_channel_defaults",
+              Schema.Struct({ cleared: Schema.String }),
+              { channelId: fixture.youtubeId }
+            ),
+            { cleared: fixture.youtubeId }
+          );
+          assert.deepStrictEqual(
+            yield* reader.call("get_channel_defaults", DefaultsJsonSchema, {
+              channelId: fixture.youtubeId,
+            }),
+            { options: null }
+          );
+          assert.deepStrictEqual(
+            yield* writer.call("delete_channel_set", DeletedSchema, {
+              channelSetId: set.id,
+            }),
+            { deleted: set.id }
+          );
+          assert.include(
+            yield* writer.refused("delete_channel_set", {
+              channelSetId: set.id,
+            }),
+            "The workspace has no channel set with this id"
+          );
+          assert.deepStrictEqual(
+            yield* writer.call("delete_signature", DeletedSchema, {
+              signatureId: signOff.id,
+            }),
+            { deleted: signOff.id }
+          );
+          assert.include(
+            yield* writer.refused("delete_signature", {
+              signatureId: signOff.id,
+            }),
+            "The workspace has no signature with this id"
+          );
+          assert.strictEqual(
+            (yield* writer.call("get_post", PostJsonSchema, {
+              postId: signed.id,
+            })).content.text,
+            signed.content.text
+          );
+
+          for (const postId of drafts) {
+            yield* writer.call(
+              "discard_draft",
+              Schema.Struct({ discarded: Schema.String }),
+              { postId }
+            );
+          }
         })
     );
 

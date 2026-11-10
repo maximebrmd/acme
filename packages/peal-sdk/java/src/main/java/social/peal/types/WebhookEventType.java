@@ -14,7 +14,9 @@ public final class WebhookEventType {
     public static final WebhookEventType COMMENT_RECEIVED =
             new WebhookEventType(Value.COMMENT_RECEIVED, "comment.received");
 
-    public static final WebhookEventType POST_PUBLISHED = new WebhookEventType(Value.POST_PUBLISHED, "post.published");
+    public static final WebhookEventType BOOST_RESUMED = new WebhookEventType(Value.BOOST_RESUMED, "boost.resumed");
+
+    public static final WebhookEventType BOOST_FAILED = new WebhookEventType(Value.BOOST_FAILED, "boost.failed");
 
     public static final WebhookEventType POST_APPROVAL_REQUESTED =
             new WebhookEventType(Value.POST_APPROVAL_REQUESTED, "post.approval_requested");
@@ -25,15 +27,32 @@ public final class WebhookEventType {
     public static final WebhookEventType POST_CHANGES_REQUESTED =
             new WebhookEventType(Value.POST_CHANGES_REQUESTED, "post.changes_requested");
 
+    public static final WebhookEventType BOOST_STOPPED = new WebhookEventType(Value.BOOST_STOPPED, "boost.stopped");
+
     public static final WebhookEventType POST_APPROVED = new WebhookEventType(Value.POST_APPROVED, "post.approved");
 
     public static final WebhookEventType CHANNEL_CONNECTED =
             new WebhookEventType(Value.CHANNEL_CONNECTED, "channel.connected");
 
+    public static final WebhookEventType BOOST_UNCONFIRMED =
+            new WebhookEventType(Value.BOOST_UNCONFIRMED, "boost.unconfirmed");
+
+    public static final WebhookEventType WEBHOOK_TEST = new WebhookEventType(Value.WEBHOOK_TEST, "webhook.test");
+
+    public static final WebhookEventType POST_UNCONFIRMED =
+            new WebhookEventType(Value.POST_UNCONFIRMED, "post.unconfirmed");
+
+    public static final WebhookEventType BOOST_STARTED = new WebhookEventType(Value.BOOST_STARTED, "boost.started");
+
+    public static final WebhookEventType POST_PUBLISHED = new WebhookEventType(Value.POST_PUBLISHED, "post.published");
+
+    public static final WebhookEventType BOOST_BUDGET_REACHED =
+            new WebhookEventType(Value.BOOST_BUDGET_REACHED, "boost.budget_reached");
+
     public static final WebhookEventType COMMENT_REPLIED =
             new WebhookEventType(Value.COMMENT_REPLIED, "comment.replied");
 
-    public static final WebhookEventType WEBHOOK_TEST = new WebhookEventType(Value.WEBHOOK_TEST, "webhook.test");
+    public static final WebhookEventType BOOST_ENDED = new WebhookEventType(Value.BOOST_ENDED, "boost.ended");
 
     public static final WebhookEventType CHANNEL_DISCONNECTED =
             new WebhookEventType(Value.CHANNEL_DISCONNECTED, "channel.disconnected");
@@ -45,10 +64,9 @@ public final class WebhookEventType {
 
     public static final WebhookEventType POST_SCHEDULED = new WebhookEventType(Value.POST_SCHEDULED, "post.scheduled");
 
-    public static final WebhookEventType MEDIA_READY = new WebhookEventType(Value.MEDIA_READY, "media.ready");
+    public static final WebhookEventType BOOST_PAUSED = new WebhookEventType(Value.BOOST_PAUSED, "boost.paused");
 
-    public static final WebhookEventType POST_UNCONFIRMED =
-            new WebhookEventType(Value.POST_UNCONFIRMED, "post.unconfirmed");
+    public static final WebhookEventType MEDIA_READY = new WebhookEventType(Value.MEDIA_READY, "media.ready");
 
     private final Value value;
 
@@ -88,22 +106,38 @@ public final class WebhookEventType {
                 return visitor.visitPostFailed();
             case COMMENT_RECEIVED:
                 return visitor.visitCommentReceived();
-            case POST_PUBLISHED:
-                return visitor.visitPostPublished();
+            case BOOST_RESUMED:
+                return visitor.visitBoostResumed();
+            case BOOST_FAILED:
+                return visitor.visitBoostFailed();
             case POST_APPROVAL_REQUESTED:
                 return visitor.visitPostApprovalRequested();
             case POST_UNSCHEDULED:
                 return visitor.visitPostUnscheduled();
             case POST_CHANGES_REQUESTED:
                 return visitor.visitPostChangesRequested();
+            case BOOST_STOPPED:
+                return visitor.visitBoostStopped();
             case POST_APPROVED:
                 return visitor.visitPostApproved();
             case CHANNEL_CONNECTED:
                 return visitor.visitChannelConnected();
-            case COMMENT_REPLIED:
-                return visitor.visitCommentReplied();
+            case BOOST_UNCONFIRMED:
+                return visitor.visitBoostUnconfirmed();
             case WEBHOOK_TEST:
                 return visitor.visitWebhookTest();
+            case POST_UNCONFIRMED:
+                return visitor.visitPostUnconfirmed();
+            case BOOST_STARTED:
+                return visitor.visitBoostStarted();
+            case POST_PUBLISHED:
+                return visitor.visitPostPublished();
+            case BOOST_BUDGET_REACHED:
+                return visitor.visitBoostBudgetReached();
+            case COMMENT_REPLIED:
+                return visitor.visitCommentReplied();
+            case BOOST_ENDED:
+                return visitor.visitBoostEnded();
             case CHANNEL_DISCONNECTED:
                 return visitor.visitChannelDisconnected();
             case CHANNEL_RECONNECT_NEEDED:
@@ -112,10 +146,10 @@ public final class WebhookEventType {
                 return visitor.visitPostCancelled();
             case POST_SCHEDULED:
                 return visitor.visitPostScheduled();
+            case BOOST_PAUSED:
+                return visitor.visitBoostPaused();
             case MEDIA_READY:
                 return visitor.visitMediaReady();
-            case POST_UNCONFIRMED:
-                return visitor.visitPostUnconfirmed();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -131,22 +165,38 @@ public final class WebhookEventType {
                 return POST_FAILED;
             case "comment.received":
                 return COMMENT_RECEIVED;
-            case "post.published":
-                return POST_PUBLISHED;
+            case "boost.resumed":
+                return BOOST_RESUMED;
+            case "boost.failed":
+                return BOOST_FAILED;
             case "post.approval_requested":
                 return POST_APPROVAL_REQUESTED;
             case "post.unscheduled":
                 return POST_UNSCHEDULED;
             case "post.changes_requested":
                 return POST_CHANGES_REQUESTED;
+            case "boost.stopped":
+                return BOOST_STOPPED;
             case "post.approved":
                 return POST_APPROVED;
             case "channel.connected":
                 return CHANNEL_CONNECTED;
-            case "comment.replied":
-                return COMMENT_REPLIED;
+            case "boost.unconfirmed":
+                return BOOST_UNCONFIRMED;
             case "webhook.test":
                 return WEBHOOK_TEST;
+            case "post.unconfirmed":
+                return POST_UNCONFIRMED;
+            case "boost.started":
+                return BOOST_STARTED;
+            case "post.published":
+                return POST_PUBLISHED;
+            case "boost.budget_reached":
+                return BOOST_BUDGET_REACHED;
+            case "comment.replied":
+                return COMMENT_REPLIED;
+            case "boost.ended":
+                return BOOST_ENDED;
             case "channel.disconnected":
                 return CHANNEL_DISCONNECTED;
             case "channel.reconnect_needed":
@@ -155,10 +205,10 @@ public final class WebhookEventType {
                 return POST_CANCELLED;
             case "post.scheduled":
                 return POST_SCHEDULED;
+            case "boost.paused":
+                return BOOST_PAUSED;
             case "media.ready":
                 return MEDIA_READY;
-            case "post.unconfirmed":
-                return POST_UNCONFIRMED;
             default:
                 return new WebhookEventType(Value.UNKNOWN, value);
         }
@@ -197,6 +247,22 @@ public final class WebhookEventType {
 
         COMMENT_REPLIED,
 
+        BOOST_STARTED,
+
+        BOOST_PAUSED,
+
+        BOOST_RESUMED,
+
+        BOOST_STOPPED,
+
+        BOOST_ENDED,
+
+        BOOST_FAILED,
+
+        BOOST_UNCONFIRMED,
+
+        BOOST_BUDGET_REACHED,
+
         WEBHOOK_TEST,
 
         UNKNOWN
@@ -234,6 +300,22 @@ public final class WebhookEventType {
         T visitCommentReceived();
 
         T visitCommentReplied();
+
+        T visitBoostStarted();
+
+        T visitBoostPaused();
+
+        T visitBoostResumed();
+
+        T visitBoostStopped();
+
+        T visitBoostEnded();
+
+        T visitBoostFailed();
+
+        T visitBoostUnconfirmed();
+
+        T visitBoostBudgetReached();
 
         T visitWebhookTest();
 

@@ -32,4 +32,23 @@ describe(grantableBy, () => {
       "post:publish"
     );
   });
+
+  it("refuses what only a person does, even to an owner who holds it", () => {
+    const owner = new Actor({
+      permissions: ["ads:authorize", "ads:read"],
+      subject: actor.subject,
+      workspaceId: actor.workspaceId,
+    });
+
+    const result = grantableBy(owner, ["ads:read", "ads:authorize"]);
+
+    assert.strictEqual(
+      Result.isFailure(result) ? result.failure._tag : "granted",
+      "PermissionNotGrantable"
+    );
+    assert.strictEqual(
+      Result.isFailure(result) ? result.failure.permission : "",
+      "ads:authorize"
+    );
+  });
 });

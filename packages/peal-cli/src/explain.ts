@@ -4,15 +4,20 @@ import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
 import { duplicateWindowHours, maxImportRows } from "peal-contract";
 import type {
+  AdAccountUnusable,
+  BoostViolation,
   CommentInvalid,
   ContentViolation,
   DuplicateOnChannel,
   ImportUnreadable,
   MediaSourceFailure,
+  PostNotPromotable,
   WebhookUrlRefused,
 } from "peal-contract";
 import type { TextUnit } from "peal-contract/post-text";
 
+import { money } from "#ads-money.ts";
+import type { MinorUnitDigits } from "#ads-money.ts";
 import { apiErrorJson } from "#api-error.ts";
 import type { ApiError } from "#api-error.ts";
 import { requestFailed } from "#api-request-failed.ts";
@@ -194,12 +199,108 @@ const commentProblems: Readonly<Record<CommentInvalid["problem"], string>> = {
   text: "its text is empty, or longer than 2000 characters",
 };
 
+// Why an ad account takes no boost now, and who puts it right.
+const unusableAccounts: Readonly<Record<AdAccountUnusable["reason"], string>> =
+  {
+    permission:
+      "The ad account's sign-in did not allow making and running ads: the person who signed in signs in again, in the web app, and allows it. Nothing was sent.",
+    reconnectNeeded:
+      "The ad network refused the ad account's sign-in: the person who signed in signs in again, in the web app. Nothing was sent.",
+    status:
+      "The ad account cannot run ads now: its network turned it off, waits for a payment, is reviewing it, or closed it. That is settled at the ad network. Nothing was sent.",
+  };
+
+// Why a post is not boosted there.
+const notPromotable: Readonly<Record<PostNotPromotable["reason"], string>> = {
+  connection:
+    "The Instagram account was connected through Instagram Login, which cannot run ads: a person connects it through its Facebook Page, in the web app. Nothing was sent.",
+  notPublished:
+    "The post is not published on that channel, or the channel was disconnected since: Peal boosts a post once it is live there, and peal posts show tells where it went out. Nothing was sent.",
+  platform:
+    "Peal boosts posts on Facebook Pages and Instagram only, and that channel is of another platform. Nothing was sent.",
+};
+
+/** What breaks one of Peal's rules for a boost, as the user fixes it. */
+export const boostViolations: Readonly<Record<BoostViolation, string>> = {
+  ageRange: "the youngest age is above the oldest",
+  beneficiaryRequired:
+    "the audience is in the European Union, where an ad says who benefits from it and who pays for it: give --beneficiary and --payer",
+  budgetEmpty: "the budget is zero",
+  currencyMismatch:
+    "the budget's currency is not the ad account's: give --currency as peal ads accounts shows it",
+  endsBeforeStart: "the run ends before it starts, or has ended already",
+  runTooLong: "the run is longer than 90 days",
+  runTooShort:
+    "the run is shorter than a day, or, with a daily budget, not longer than one",
+  specialCategory:
+    "Peal does not boost ads about housing, employment, financial products or services, or social issues, elections or politics",
+  startsTooFarAhead: "the run starts more than 30 days ahead",
+};
+
+/** The scope a sign-in needs to manage ad accounts and, with publishing, to spend. */
+export const adsScope = "workspace:ads";
+
+const withoutAdsScope =
+  "This sign-in was made without the permission to work with ads (the scope workspace:ads), which is asked only on purpose, as it lets an application spend: run peal login --ads again and approve it. Nothing was done.";
+
+// Amounts of an ad account's currency: written in its units when the
+// command knows how many decimals it has, and as the API counts them
+// otherwise.
+const amountsIn = (currency: string, digits: MinorUnitDigits | undefined) => ({
+  note:
+    digits === undefined
+      ? ` Amounts are in ${currency}'s minor units, as the ad network counts them (cents for EUR, yen for JPY).`
+      : "",
+  of: (amount: number): string =>
+    digits === undefined ? String(amount) : money(amount, currency, digits),
+});
+
 const refused = (reason: string) => new Refused({ reason });
 
 const reasonOf =
-  (url: string) =>
+  (url: string, digits?: MinorUnitDigits) =>
   (failure: ApiFailure): ApiRequestFailed | Refused | SignInExpired =>
     Match.valueTags(failure, {
+      AdAccountBusy: ({ boosts }) =>
+        refused(
+          `The ad account has ${String(boosts)} ${boosts === 1 ? "boost that runs, may run, is paused or is being made" : "boosts that run, may run, are paused or are being made"}: stop them first, with peal ads boost stop, so nothing spends that Peal no longer follows.`
+        ),
+      AdAccountNotFound: () =>
+        refused(
+          "The workspace has no ad account with that id: peal ads accounts lists them."
+        ),
+      AdAccountSpendCapExceeded: ({ currency, requested, room }) => {
+        const amounts = amountsIn(currency, digits);
+
+        return refused(
+          `The ad account's own spend cap, set at its ad network, leaves ${amounts.of(room)}, and the boost would commit ${amounts.of(requested)}: nothing was reserved or sent. Make the boost smaller, or have the cap raised at the ad network; Peal never raises it.${amounts.note}`
+        );
+      },
+      AdAccountUnusable: ({ reason }) => refused(unusableAccounts[reason]),
+      AdConnectionNotFound: () =>
+        refused(
+          "The workspace has no such sign-in to an ad network, or it is another member's."
+        ),
+      AdNetworkUnavailable: ({ retryAfterSeconds }) =>
+        refused(
+          `The ad network did not answer, asked to slow down, or could not confirm the change: nothing is known to have changed, and the boost stands where it did. Trying again is safe${retryAfterSeconds === null ? ", later" : `, in ${String(retryAfterSeconds)} seconds`}; peal ads boost show tells where it stands.`
+        ),
+      AdSignInFailed: () =>
+        refused(
+          "The sign-in to the ad network did not come to a connection: a person starts it again, in the web app."
+        ),
+      AdSpendingNotEnabled: () =>
+        refused(
+          "No owner of the workspace allowed this ad account to spend through Peal. An owner turns spending on, with a monthly ceiling, in the web app, signed in themselves: no command, API key or application does it. Nothing was spent."
+        ),
+      AdSpendingUnavailable: () =>
+        refused(
+          "This server offers ads for reading only: its operator has not turned spending on (PEAL_ADS=spend). Nothing was spent or changed."
+        ),
+      AdsUnavailable: () =>
+        refused(
+          "Ads are off on this server, or the ad network is not set up on it: its operator turns them on (PEAL_ADS)."
+        ),
       AlreadyMember: () => refused("That address belongs to a member already."),
       AltTextTooLong: ({ maxLength }) =>
         refused(
@@ -214,15 +315,48 @@ const reasonOf =
           "The post does not wait for an approval: none was asked, or it was already decided, withdrawn or scheduled. peal approvals list shows those that wait."
         ),
       BadRequest: () => refused("Peal could not read the request."),
+      BoostInvalid: ({ violations }) =>
+        refused(
+          [
+            "Peal refused the boost, and reserved and sent nothing:",
+            ...violations.map(
+              (violation) => `  ${violation}: ${boostViolations[violation]}`
+            ),
+          ].join("\n")
+        ),
+      BoostKeyReused: () =>
+        refused(
+          "This idempotency key already names a boost of the workspace that asked for something else (another post, account, budget or end): nothing was made. To run that boost again, send exactly what was sent with the key; a new boost takes a new --idempotency-key. peal ads boosts lists the boosts there are."
+        ),
+      BoostNotFound: () =>
+        refused(
+          "The workspace has no boost with that id: peal ads boosts lists them."
+        ),
+      BoostStateConflict: ({ state }) =>
+        refused(
+          `The boost is ${state}, which does not allow this: only a paused boost resumes, and one that failed, ended or was stopped does not run again. Nothing was changed.`
+        ),
+      CeilingCurrencyMismatch: ({ accountCurrency }) =>
+        refused(
+          `The ceiling is in another currency than the ad account's (${accountCurrency}): nothing was changed.`
+        ),
       ChannelCannotPost: ({ reason }) =>
         refused(
           reason === "disabled"
-            ? "The channel is turned off: disconnect it and connect the account again, in the web app, to post to it."
+            ? "The channel is turned off: turn it back on with peal channels enable, or in the web app, to post to it."
             : "The channel must be reconnected, in the web app, before it can post."
         ),
       ChannelNotFound: () =>
         refused(
           "The workspace has no such channel, or it is not of this platform: peal channels list shows them."
+        ),
+      ChannelSetNameTaken: () =>
+        refused(
+          "The workspace already has a channel set of that name, whatever its case: nothing was changed. peal sets list shows them."
+        ),
+      ChannelSetNotFound: () =>
+        refused(
+          "The workspace has no such channel set, by id or by name: peal sets list shows them."
         ),
       CommentInvalid: ({ problem }) =>
         refused(`Peal refused the comment: ${commentProblems[problem]}.`),
@@ -244,12 +378,22 @@ const reasonOf =
         ),
       // The server says what is missing and how to get it; one older than
       // that says nothing.
-      Forbidden: ({ message }) =>
-        refused(
+      Forbidden: ({ message, permission, reason, scope }) => {
+        // Whatever scope the server names first, a sign-in refused over an
+        // ads permission lacks the scope --ads asks for.
+        if (
+          reason === "missingScope" &&
+          (scope === adsScope || permission?.startsWith("ads:") === true)
+        ) {
+          return refused(withoutAdsScope);
+        }
+
+        return refused(
           message === undefined || message === ""
             ? "Peal refused: your role in this workspace does not allow it, or your account was suspended."
             : `Peal refused: ${message}`
-        ),
+        );
+      },
       HttpClientError: requestFailed(url),
       IdempotencyKeyReused: () =>
         refused(
@@ -350,6 +494,7 @@ const reasonOf =
           ].join("\n")
         ),
       PostNotFound: () => refused("The workspace has no such post."),
+      PostNotPromotable: ({ reason }) => refused(notPromotable[reason]),
       PostNotReviewable: ({ status }) =>
         refused(
           status === "cancelled"
@@ -383,9 +528,36 @@ const reasonOf =
       ScheduleInPast: () =>
         refused("That time has passed: give a later --at, or publish it now."),
       SchemaError: requestFailed(url),
+      SignatureNameTaken: () =>
+        refused(
+          "The workspace already has a signature of that name, whatever its case: nothing was changed. peal signatures list shows them."
+        ),
+      SignatureNotFound: () =>
+        refused(
+          "The workspace has no signature with that id: peal signatures list shows them."
+        ),
+      SpendCeilingExceeded: ({ ceiling, committed, currency, requested }) => {
+        const amounts = amountsIn(currency, digits);
+
+        return refused(
+          `The boost would pass the ad account's monthly ceiling: the ceiling is ${amounts.of(ceiling)}, its boosts already commit ${amounts.of(committed)}, and this one would add ${amounts.of(requested)}. Nothing was reserved or sent. An owner raises the ceiling in the web app, or make the boost smaller; Peal never raises a ceiling on its own.${amounts.note}`
+        );
+      },
+      TagNameTaken: () =>
+        refused(
+          "The workspace already has a tag of that name, whatever its case: nothing was changed. peal tags list shows them."
+        ),
+      TagNotFound: () =>
+        refused(
+          "The workspace has no tag with that id: peal tags list shows them."
+        ),
       TargetStatusConflict: ({ status }) =>
         refused(
           `The post is ${status} on that channel: only a failed or unconfirmed post is posted again, and only an unconfirmed one confirmed.`
+        ),
+      TooManyChannelSets: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} channel sets, the most it may: delete one first, with peal sets delete.`
         ),
       TooManyConnectLinks: ({ allowed }) =>
         refused(
@@ -403,6 +575,14 @@ const reasonOf =
         refused(
           `The post has ${String(limit)} working review links, the most it may: revoke one first.`
         ),
+      TooManySignatures: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} signatures, the most it may: delete one first, with peal signatures delete.`
+        ),
+      TooManyTags: ({ allowed }) =>
+        refused(
+          `The workspace has ${String(allowed)} tags, the most it may: delete one first, with peal tags delete.`
+        ),
       TooManyWebhookEndpoints: ({ allowed }) =>
         refused(
           `The workspace has ${String(allowed)} webhook endpoints, the most it may, whatever its plan: delete one first, with peal webhooks delete.`
@@ -419,6 +599,10 @@ const reasonOf =
       UnknownMedia: ({ mediaIds }) =>
         refused(
           `These media are not the workspace's, or not ready: ${mediaIds.join(", ")}.`
+        ),
+      UnknownTags: ({ tagIds }) =>
+        refused(
+          `These tags are not the workspace's: ${tagIds.join(", ")}. peal tags list shows them.`
         ),
       UnsupportedMediaType: ({ contentType }) =>
         refused(
@@ -464,12 +648,13 @@ const requestOf = (failure: ApiFailure) =>
 /**
  * What a failed request means, as the user reads it: the sign-in to renew,
  * the server to check, or why it refused, with the request's id when the
- * server gave one.
+ * server gave one. A command that knows how many decimals the ad account's
+ * currency has says so (`digits`), and amounts are written in its units.
  */
 export const explain =
-  (url: string) =>
+  (url: string, digits?: MinorUnitDigits) =>
   (failure: ApiFailure): ApiRequestFailed | Refused | SignInExpired => {
-    const explained = reasonOf(url)(failure);
+    const explained = reasonOf(url, digits)(failure);
 
     return explained._tag === "Refused"
       ? new Refused({

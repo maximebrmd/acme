@@ -45,6 +45,11 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * domain's `PostOriginSchema` decodes), and `scheduled_by` which member
  * scheduled it. All null on posts from before they were kept, the last two
  * on a draft too, and `scheduled_by` when an API key scheduled it.
+ *
+ * `tag_ids` are the tags (`tags`) its workspace filed it under, each once:
+ * no part of what it says, and written apart from its status
+ * (`PostRepository.setTags`), so a job that settles the post never undoes
+ * a tagging made meanwhile.
  */
 export const posts = publishing.table(
   "posts",
@@ -65,11 +70,17 @@ export const posts = publishing.table(
     scheduledVia: jsonb("scheduled_via"),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
+    tagIds: uuid("tag_ids")
+      .array()
+      .notNull()
+      .default(sql`'{}'::uuid[]`),
     text: text("text").notNull().default(""),
     textOverrides: jsonb("text_overrides").notNull().default([]),
     workspaceId: uuid("workspace_id").notNull(),
   },
   (table) => [
+    // The posts filed under a tag.
+    index("posts_tag_ids").using("gin", table.tagIds),
     index("posts_workspace_scheduled_at").on(
       table.workspaceId,
       table.scheduledAt
@@ -276,4 +287,91 @@ export const quotaUsage = publishing.table(
     primaryKey({ columns: [table.bucket, table.day] }),
     check("quota_usage_units", sql`${table.units} >= 0`),
   ]
+);
+
+/**
+ * The labels a workspace files its posts under: a name, one per workspace
+ * whatever its case (`name_key`), and a colour of the palette. Workspace
+ * content, naming nobody; rows go with their workspace.
+ */
+export const tags = publishing.table(
+  "tags",
+  {
+    colour: text("colour").notNull(),
+    createdAt: instant("created_at").notNull(),
+    id: uuid("id").primaryKey(),
+    name: text("name").notNull(),
+    nameKey: text("name_key").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    unique("tags_workspace_name").on(table.workspaceId, table.nameKey),
+  ]
+);
+
+/**
+ * The blocks of text a workspace keeps to end its posts with: a name, one
+ * per workspace whatever its case (`name_key`), the text, and where it is
+ * meant for (`scope`: `workspace`, `platform` with `scope_platform`, or
+ * `channel` with `scope_channel_id`). `is_default` marks the one new posts
+ * take in its scope when they ask for the defaults. Workspace content,
+ * naming nobody; rows go with their workspace.
+ */
+export const signatures = publishing.table(
+  "signatures",
+  {
+    createdAt: instant("created_at").notNull(),
+    id: uuid("id").primaryKey(),
+    isDefault: boolean("is_default").notNull().default(false),
+    name: text("name").notNull(),
+    nameKey: text("name_key").notNull(),
+    scope: text("scope").notNull(),
+    scopeChannelId: uuid("scope_channel_id"),
+    scopePlatform: text("scope_platform"),
+    text: text("text").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    unique("signatures_workspace_name").on(table.workspaceId, table.nameKey),
+  ]
+);
+
+/**
+ * The selections of channels a workspace keeps under a name: the channels,
+ * in the order chosen, and the options posts take on some of them (JSON
+ * the domain's `ChannelOptionsListSchema` decodes). A channel disconnected
+ * since stays listed: the set says so when it is read or used. Workspace
+ * content, naming nobody; rows go with their workspace.
+ */
+export const channelSets = publishing.table(
+  "channel_sets",
+  {
+    channelIds: uuid("channel_ids").array().notNull(),
+    createdAt: instant("created_at").notNull(),
+    id: uuid("id").primaryKey(),
+    name: text("name").notNull(),
+    nameKey: text("name_key").notNull(),
+    options: jsonb("options").notNull().default([]),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    unique("channel_sets_workspace_name").on(table.workspaceId, table.nameKey),
+  ]
+);
+
+/**
+ * The options a workspace's new posts take on a channel when they give
+ * none there (JSON the domain's `TargetOptionsSchema` decodes, tagged by
+ * platform). Rows go with their workspace; one whose channel was
+ * disconnected is read by nothing.
+ */
+export const channelDefaults = publishing.table(
+  "channel_defaults",
+  {
+    channelId: uuid("channel_id").primaryKey(),
+    options: jsonb("options").notNull(),
+    updatedAt: instant("updated_at").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [index("channel_defaults_workspace").on(table.workspaceId)]
 );

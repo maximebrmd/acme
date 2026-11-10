@@ -60,6 +60,24 @@ describe(grantableToPartnerKey, () => {
       ).toBe(permission);
     }
   });
+
+  // Ads spend a customer's money on their own payment method, on a
+  // decision an owner makes in person: a product acting for them reads
+  // none of it either.
+  it("refuses every ads permission, spending first among them", () => {
+    for (const permission of [
+      "ads:spend",
+      "ads:manage",
+      "ads:authorize",
+      "ads:read",
+    ] as const) {
+      const result = grantableToPartnerKey(["post:read", permission]);
+
+      expect(
+        Result.isFailure(result) ? result.failure.permission : "granted"
+      ).toBe(permission);
+    }
+  });
 });
 
 describe(distinctScopes, () => {

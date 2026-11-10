@@ -48,6 +48,7 @@ const channel: Channel = {
   displayName: null,
   handle: "@alice@mastodon.test",
   id: "01900000-0000-7000-8000-0000000000c1",
+  label: null,
   platform: "mastodon",
   status: { _tag: "active" },
   tokenExpiresAt: null,
@@ -253,6 +254,7 @@ describe(PostMetricsView, () => {
       ...channel,
       handle: "Alice Example",
       id: "01900000-0000-7000-8000-0000000000c3",
+      label: null,
       platform: "linkedin",
     };
 
@@ -261,6 +263,7 @@ describe(PostMetricsView, () => {
       ...channel,
       handle: "Example Bakery",
       id: "01900000-0000-7000-8000-0000000000c4",
+      label: null,
       platform: "googleBusiness",
     };
 
@@ -341,6 +344,7 @@ describe(PostMetricsView, () => {
       ...channel,
       handle: "@alice_example",
       id: "01900000-0000-7000-8000-0000000000c5",
+      label: null,
       platform: "tiktok",
     };
 
@@ -348,6 +352,7 @@ describe(PostMetricsView, () => {
       ...channel,
       handle: "Alice Example",
       id: "01900000-0000-7000-8000-0000000000c6",
+      label: null,
       platform: "youtube",
     };
 
@@ -370,6 +375,7 @@ describe(PostMetricsView, () => {
       connection: "linkedinPage",
       handle: "example-bakery",
       id: "01900000-0000-7000-8000-0000000000c7",
+      label: null,
       platform: "linkedin",
     };
 
@@ -391,6 +397,7 @@ describe(PostMetricsView, () => {
       ...channel,
       handle: "Alice Example",
       id: "01900000-0000-7000-8000-0000000000c3",
+      label: null,
       platform: "linkedin",
     };
 

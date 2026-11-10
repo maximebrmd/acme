@@ -10,6 +10,7 @@ from .channel_preview import ChannelPreview
 from .content_violation import ContentViolation
 from .duplicate_on_channel import DuplicateOnChannel
 from .plan_shortfall import PlanShortfall
+from .post_warning import PostWarning
 from .schedule_check import ScheduleCheck
 
 
@@ -31,6 +32,7 @@ class PostValidation(UniversalBaseModel):
     ]
     valid: bool
     violations: typing.List[ContentViolation]
+    warnings: typing.Optional[typing.List[PostWarning]] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -12,8 +12,9 @@
   allows it, for a self-hosted server without TLS.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `media`, `approvals`, `review`, `analytics`, `inbox`, `billing`,
-  `members`, `invitations` and `webhooks`, which act in the
+  `post`, `tags`, `signatures`, `sets`, `media`, `approvals`, `review`,
+  `analytics`, `inbox`, `billing`, `members`, `invitations`, `webhooks`
+  and `ads`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read
@@ -67,6 +68,35 @@
   row refused or unreadable ends as a refusal, after printing every row, and
   never prints the file. No command sends `posts.bulk`: a CSV file is the
   command line's way to several posts.
+- `peal tags` (list, create, update, delete) keeps a workspace's tags, and
+  `peal posts tag`, `peal posts list --tag`, `peal drafts save --tag` and
+  `peal post --tag` file posts under them. Wherever a command takes a tag
+  it takes its id or its name, whatever its case, resolved through
+  `tags.list` (`src/tags.ts`: `tagNamed`, `tagsNamed`); `drafts save
+  --post` sends `tagIds` only when `--tag` is given, so a draft keeps its
+  tags. The MCP toolkit `tags-tools.ts` has the same (`list_tags`,
+  `create_tag`, `update_tag`, `delete_tag`, `tag_post`), by id alone.
+- `peal signatures` and `peal sets` (list, create, update, delete) keep a
+  workspace's signatures and channel sets, and `peal channels defaults`
+  (show, set, clear) a channel's default options; `update` reads the item
+  first and keeps what no flag names, and a set loses the channels that are
+  no longer connected. `peal post` and `peal drafts save` take `--set`,
+  `--signature` and `--default-signatures`: a set or a signature is named
+  by id or name and sent by id (`src/saved-items.ts`: `presetsOf`), looked
+  up before any media is stored. Whatever answer carries `warnings` prints
+  each in prose after the rest (`warningLines`); `--json` prints the answer
+  as it came. The MCP toolkit `saved-tools.ts` has the same, by id, and
+  its posts name sets by id or name.
+- `peal channels rename`, `disable` and `enable`
+  (`commands/channel-settings.ts`) name a channel and turn it off or back
+  on, and `peal posts duplicate` makes a draft of a post, reading it first
+  only to say what the copy left out. `peal channels list` reads
+  `channels.list`, and `channels.find` once a filter or a page is asked
+  (`--platform`, `--status`, `--search`, `--limit`, `--cursor`): `--json`
+  then prints the page, and the bare list keeps the array it always printed.
+  A channel is shown with its label first and its handle always
+  (`channelName`). The MCP tools are `rename_channel`, `disable_channel`,
+  `enable_channel` and `duplicate_post`.
 - The command line has `peal links` (create, list, show, revoke) and
   `peal partner` (show, keys, workspaces), which read; the MCP toolkit
   `connect-tools.ts` has the same, `create_connect_link` and
@@ -86,3 +116,32 @@
   printed through `printableConsole` like everything else, and a reply
   that is `unconfirmed` is never sent again, so `explain` sends the user
   to the platform, then to `peal inbox confirm`.
+- `peal ads` reads ad accounts, campaigns, ads, insights and boosts, and
+  `peal ads boost` quotes, creates, shows, pauses, resumes and stops one.
+  No command signs in to an ad network, connects an ad account or sets a
+  ceiling: those are a person's, in the web app, and the commands that
+  would need them say so. Amounts are typed in the currency's units and
+  turned into minor units from their digits (`minorUnits`,
+  `src/ads-money.ts`), with the `minorUnitDigits` of the account read
+  first; never through a float, never rounded or converted, and `--currency`
+  is never defaulted. `money` writes them back, and `explain(url, digits)`
+  words a refusal's amounts with it.
+- What spends asks first: `boost create` quotes, prints what it will spend
+  and for how long, then `confirmed` (`src/confirm.ts`) takes `--yes` or
+  `yes` typed at a terminal (`Stdio.stdinIsTerminal`, `Terminal.readLine`);
+  `neverAsksInJson` refuses `--json` without `--yes` before any request.
+  `boost resume` and `boost stop` follow the same rule. `boost create`
+  refuses without `--not-special-category` before any request, sends an
+  `Idempotency-Key` always (made up and printed before the request when
+  left out), and a request without a usable answer names the key to send
+  again. Boost states and failure reasons have their words in
+  `src/ads-print.ts`, typed by the contract.
+- `peal login` asks for `workspace:ads` only with `--ads`, never by
+  default: a person opts in to an application that can spend. `peal doctor`
+  says which the sign-in holds (`ads-scope`), and `explain` sends a sign-in
+  refused over an ads permission back to `peal login --ads`.
+- Tests type answers at a terminal with `signedIn`'s `answering([...])`;
+  without it stdin is no terminal. The studio's ads are in
+  `test/studio-ads.ts` (`StudioState.ads`: the server's mode, two ad
+  accounts, the boosts), whose handlers refuse a bearer credential what
+  only a person does.

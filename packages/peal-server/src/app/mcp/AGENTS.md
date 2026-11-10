@@ -18,8 +18,8 @@
 - The use cases' permission checks refuse a client the user let read only.
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
-  `media-tools.ts`, `reports-tools.ts`, `people-tools.ts`, `webhooks-tools.ts`,
-  `inbox-tools.ts`)
+  `tags-tools.ts`, `saved-tools.ts`, `media-tools.ts`, `reports-tools.ts`,
+  `people-tools.ts`, `webhooks-tools.ts`, `inbox-tools.ts`)
   and its handlers beside it, merged
   into `PealTools`. Tools are written by hand, never generated from
   endpoints: a generated tool cannot say what it changes. `find_tools`
@@ -63,6 +63,31 @@
   schedule|publish|reschedule|cancel`, `peal post`), for a sign-in that
   holds `workspace:publish`: `peal post` takes `--at` or `--now`, never a
   default.
+- `rename_channel`, `disable_channel` and `enable_channel` sit with
+  `list_channels` in `BasicTools` (the `account` area), through
+  `ChannelSettings`: turning a channel off deletes nothing, so it is not
+  destructive, and its description says the posts that reach their time on
+  the channel fail there until it is back on. `list_channels` takes
+  `platform`, `status` and `search`, reads every page of
+  `ListChannels.search` once one is given, and answers `counts` then;
+  without any, its answer is the list it always was. `duplicate_post`
+  (`PostTools`) makes a draft of a post, a new one each call. Wherever a
+  tool says a channel is turned off, it names `enable_channel`, never
+  disconnecting. The CLI's are `peal channels rename|disable|enable` and
+  `peal posts duplicate`.
+- `saved-tools.ts` keeps what a workspace saves to write its posts with:
+  signatures, channel sets and a channel's default options (`list_`,
+  `create_`, `update_`, `delete_signature` and `_channel_set`; `get_`,
+  `set_`, `clear_channel_defaults`), through the API's own input helpers
+  and views. `update_signature` and `update_channel_set` read the item
+  first and keep what the call leaves out, and a set loses the channels
+  that are no longer connected. `create_draft`, `update_draft`,
+  `create_post`, `create_posts` and `validate_post` take `channelSets` (ids
+  or names), `defaultSignatures` and `signatureId`, decoded with
+  `presetsFrom`; an answer's `warnings` name the channels a set left out.
+  The CLI's are `peal signatures`, `peal sets`, `peal channels defaults`,
+  and `--set`, `--signature`, `--default-signatures` on `peal post` and
+  `peal drafts save`.
 - On `/api/mcp`, a partner key names the workspace it acts in with each
   request, by id, in the `Peal-Workspace` header (`workspaceNamed` in
   `authenticate.ts`; 400 without it), and is told 404 for any workspace
@@ -76,3 +101,14 @@
   and `list_comment_threads` answers counts, never text. A reply whose
   outcome is unknown is never sent again by a tool: the description sends
   the model to the user, then to `confirm_comment_reply`.
+- The ads toolkit (`ads-tools.ts`) reads ad accounts, campaigns, daily
+  numbers and boosts; `boost_post` and `resume_boost` spend the user's
+  money: they are `destructive` and `openWorld`, say so first in their
+  description with when to call them, take the scope `workspace:ads`
+  (`adsScopeSets` in `catalogue.ts`, from `scopesFor`, with `quote_boost`,
+  `pause_boost` and `stop_boost`; a test calls each without it), and
+  `find_tools` grants a tool only when the connection holds every scope of
+  one of its sets,
+  and `boost_post` takes an `idempotencyKey`. No tool signs in to an ad
+  network, connects an account or sets a ceiling: those are a person's.
+  Instants in parameters are text (`boostFields`).

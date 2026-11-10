@@ -200,6 +200,9 @@ export const unschedulePost = PealApi.mutation("posts", "unschedule");
 
 export const discardPost = PealApi.mutation("posts", "discard");
 
+/** Makes a new draft that says what a post says, whatever its status. */
+export const duplicatePost = PealApi.mutation("posts", "duplicate");
+
 export const repostTarget = PealApi.mutation("posts", "repost");
 
 export const confirmTarget = PealApi.mutation("posts", "confirm");

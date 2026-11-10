@@ -24,16 +24,34 @@ class PostToValidate extends JsonSerializableType
     public array $channelIds;
 
     /**
+     * @var ?array<string> $channelSets
+     */
+    #[JsonProperty('channelSets'), ArrayType(['string'])]
+    public ?array $channelSets;
+
+    /**
      * @var PostContent $content
      */
     #[JsonProperty('content')]
     public PostContent $content;
 
     /**
+     * @var ?bool $defaultSignatures
+     */
+    #[JsonProperty('defaultSignatures')]
+    public ?bool $defaultSignatures;
+
+    /**
      * @var ?array<ChannelOptions> $options
      */
     #[JsonProperty('options'), ArrayType([ChannelOptions::class])]
     public ?array $options;
+
+    /**
+     * @var ?string $signatureId
+     */
+    #[JsonProperty('signatureId')]
+    public ?string $signatureId;
 
     /**
      * @var ?PostTiming $when
@@ -46,7 +64,10 @@ class PostToValidate extends JsonSerializableType
      *   channelIds: array<string>,
      *   content: PostContent,
      *   allowDuplicate?: ?bool,
+     *   channelSets?: ?array<string>,
+     *   defaultSignatures?: ?bool,
      *   options?: ?array<ChannelOptions>,
+     *   signatureId?: ?string,
      *   when?: ?PostTiming,
      * } $values
      */
@@ -55,8 +76,11 @@ class PostToValidate extends JsonSerializableType
     ) {
         $this->allowDuplicate = $values['allowDuplicate'] ?? null;
         $this->channelIds = $values['channelIds'];
+        $this->channelSets = $values['channelSets'] ?? null;
         $this->content = $values['content'];
+        $this->defaultSignatures = $values['defaultSignatures'] ?? null;
         $this->options = $values['options'] ?? null;
+        $this->signatureId = $values['signatureId'] ?? null;
         $this->when = $values['when'] ?? null;
     }
 }

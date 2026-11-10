@@ -78,6 +78,8 @@ const contentGroups: ReadonlySet<string> = new Set([
 // keeps what was asked to change, leaves it out. A request that makes
 // nothing only when asked not to (a dry run) says so itself (ChangeMark).
 const checksOnly: ReadonlySet<string> = new Set([
+  // A quote checks a boost as making it would, and reserves nothing.
+  "ads.quoteBoost",
   // A lookup reads the platform, and answers: its input comes in a body.
   "lookups.run",
   "posts.validate",

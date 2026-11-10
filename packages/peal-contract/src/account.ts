@@ -13,7 +13,7 @@ import { ConnectedAppSchema } from "./connected-apps.ts";
 import { DeletionIncomplete } from "./deletion-incomplete.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
-import { ByteCountSchema } from "./int64.ts";
+import { Int64Schema, ByteCountSchema } from "./int64.ts";
 import { LastOwner } from "./last-owner.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { NoticeEventSchema } from "./notices.ts";
@@ -91,6 +91,8 @@ const ExportedChannelSchema = Schema.Struct({
   displayName: nullable(Schema.String),
   handle: Schema.String,
   id: Schema.String,
+  // The name the workspace gave it; null when it gave none.
+  label: nullable(Schema.String),
   platform: Schema.String,
   status: Schema.String,
 });
@@ -133,6 +135,8 @@ const ExportedPostSchema = Schema.Struct({
   // How it was last scheduled; null on a draft, or when it was not kept.
   scheduledVia: nullable(ExportedPostOriginSchema),
   status: Schema.String,
+  // The workspace's tags it is filed under (`saved.tags` names them).
+  tagIds: Schema.Array(Schema.String),
   targets: Schema.Array(
     Schema.Struct({
       channelId: Schema.String,
@@ -517,8 +521,105 @@ const ExportedAccountDaySchema = Schema.Struct({
   views: nullable(Schema.Int),
 });
 
+// What a workspace saved to write and file its posts.
+const ExportedSavedItemsSchema = Schema.Struct({
+  // The options new posts take on a channel when they give none.
+  channelDefaults: Schema.Array(
+    Schema.Struct({ channelId: Schema.String, options: Schema.Unknown })
+  ),
+  channelSets: Schema.Array(
+    Schema.Struct({
+      channelIds: Schema.Array(Schema.String),
+      createdAt: instant,
+      id: Schema.String,
+      name: Schema.String,
+      // The options posts take on some of its channels.
+      options: Schema.Unknown,
+    })
+  ),
+  signatures: Schema.Array(
+    Schema.Struct({
+      createdAt: instant,
+      id: Schema.String,
+      isDefault: Schema.Boolean,
+      name: Schema.String,
+      // `workspace`, `platform` or `channel`.
+      scope: Schema.String,
+      scopeChannelId: nullable(Schema.String),
+      scopePlatform: nullable(Schema.String),
+      text: Schema.String,
+    })
+  ),
+  tags: Schema.Array(
+    Schema.Struct({
+      colour: Schema.String,
+      createdAt: instant,
+      id: Schema.String,
+      name: Schema.String,
+    })
+  ),
+});
+
+// What ads keep of the workspace: its sign-ins to ad networks without
+// their tokens, its ad accounts with what an owner allowed them to spend,
+// its boosts as they were asked, and the audit trail of every decision
+// about money. Amounts are in each account's minor units. The campaigns
+// and numbers read from the networks are read there.
+const ExportedAdsSchema = Schema.Struct({
+  accounts: Schema.Array(
+    Schema.Struct({
+      connectedAt: instant,
+      currency: Schema.String,
+      externalId: Schema.String,
+      id: Schema.String,
+      monthlyCeiling: nullable(Int64Schema),
+      name: Schema.String,
+      network: Schema.String,
+      spendingEnabled: Schema.Boolean,
+      timeZone: Schema.String,
+    })
+  ),
+  audit: Schema.Array(
+    Schema.Struct({
+      accountId: nullable(Schema.String),
+      action: Schema.String,
+      amounts: Schema.Unknown,
+      at: instant,
+      boostId: nullable(Schema.String),
+      currency: nullable(Schema.String),
+    })
+  ),
+  boosts: Schema.Array(
+    Schema.Struct({
+      accountId: Schema.String,
+      audience: Schema.Unknown,
+      beneficiary: nullable(Schema.String),
+      budgetAmount: Int64Schema,
+      budgetKind: Schema.String,
+      committed: Int64Schema,
+      createdAt: instant,
+      currency: Schema.String,
+      endsAt: instant,
+      id: Schema.String,
+      payer: nullable(Schema.String),
+      postId: Schema.String,
+      startsAt: instant,
+      state: Schema.String,
+    })
+  ),
+  connections: Schema.Array(
+    Schema.Struct({
+      createdAt: instant,
+      id: Schema.String,
+      network: Schema.String,
+      scopes: Schema.Array(Schema.String),
+    })
+  ),
+});
+
 const ExportedWorkspaceSchema = Schema.Struct({
   accountAnalytics: Schema.Array(ExportedAccountDaySchema),
+  ads: ExportedAdsSchema,
   analytics: Schema.Array(ExportedAnalyticsSchema),
   apiKeys: Schema.Array(ApiKeySchema),
   assistantUsage: Schema.Array(ExportedUsageSchema),
@@ -530,6 +631,8 @@ const ExportedWorkspaceSchema = Schema.Struct({
   name: Schema.String,
   posts: Schema.Array(ExportedPostSchema),
   review: ExportedReviewSchema,
+  // Its tags, signatures, channel sets and channels' default options.
+  saved: ExportedSavedItemsSchema,
   slug: Schema.String,
   webhooks: Schema.Array(ExportedWebhookSchema),
 });

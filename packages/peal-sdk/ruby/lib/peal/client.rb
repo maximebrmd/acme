@@ -110,6 +110,11 @@ module Peal
       @inbox ||= Peal::Inbox::Client.new(client: @raw_client)
     end
 
+    # @return [Peal::Ads::Client]
+    def ads
+      @ads ||= Peal::Ads::Client.new(client: @raw_client)
+    end
+
     # @return [Peal::Activity::Client]
     def activity
       @activity ||= Peal::Activity::Client.new(client: @raw_client)
@@ -133,6 +138,26 @@ module Peal
     # @return [Peal::Review::Client]
     def review
       @review ||= Peal::Review::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::Tags::Client]
+    def tags
+      @tags ||= Peal::Tags::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::Signatures::Client]
+    def signatures
+      @signatures ||= Peal::Signatures::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::ChannelSets::Client]
+    def channel_sets
+      @channel_sets ||= Peal::ChannelSets::Client.new(client: @raw_client)
+    end
+
+    # @return [Peal::ChannelDefaults::Client]
+    def channel_defaults
+      @channel_defaults ||= Peal::ChannelDefaults::Client.new(client: @raw_client)
     end
   end
 end

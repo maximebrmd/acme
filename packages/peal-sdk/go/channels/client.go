@@ -61,6 +61,33 @@ func (c *Client) List(
 	return response.Body, nil
 }
 
+// Lists the workspace's channels a page at a time, oldest first: 50 unless `limit` (at most 100) says otherwise. Every filter given must hold: `platform`, `status` (`active`, `refreshNeeded` or `disabled`) and `q`, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. `counts` says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's `nextCursor` as `cursor`, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+//
+// Example:
+//
+//	request := &peal.FindChannelsRequest{
+//	    WorkspaceID: "workspaceId",
+//	}
+//	_, err := client.Channels.Find(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Find(
+	ctx context.Context,
+	request *peal.FindChannelsRequest,
+	opts ...option.RequestOption,
+) (*peal.ChannelPage, error) {
+	response, err := c.WithRawResponse.Find(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
 // Lists the platforms this server can connect accounts of, in Peal's order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.
 //
 // Example:
@@ -231,4 +258,88 @@ func (c *Client) Disconnect(
 		return err
 	}
 	return nil
+}
+
+// Gives the channel the name the workspace calls it by (`label`, 60 characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.
+//
+// Example:
+//
+//	request := &peal.ChannelUpdate{
+//	    WorkspaceID: "workspaceId",
+//	    ChannelID: "channelId",
+//	}
+//	_, err := client.Channels.Update(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Update(
+	ctx context.Context,
+	request *peal.ChannelUpdate,
+	opts ...option.RequestOption,
+) (*peal.Channel, error) {
+	response, err := c.WithRawResponse.Update(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (`channelDisabled`) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+//
+// Example:
+//
+//	request := &peal.DisableChannelsRequest{
+//	    WorkspaceID: "workspaceId",
+//	    ChannelID: "channelId",
+//	}
+//	_, err := client.Channels.Disable(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Disable(
+	ctx context.Context,
+	request *peal.DisableChannelsRequest,
+	opts ...option.RequestOption,
+) (*peal.Channel, error) {
+	response, err := c.WithRawResponse.Disable(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
+}
+
+// Turns a channel back on. It posts again at once, or has the status `refreshNeeded` when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+//
+// Example:
+//
+//	request := &peal.EnableChannelsRequest{
+//	    WorkspaceID: "workspaceId",
+//	    ChannelID: "channelId",
+//	}
+//	_, err := client.Channels.Enable(
+//	    context.TODO(),
+//	    request,
+//	)
+func (c *Client) Enable(
+	ctx context.Context,
+	request *peal.EnableChannelsRequest,
+	opts ...option.RequestOption,
+) (*peal.Channel, error) {
+	response, err := c.WithRawResponse.Enable(
+		ctx,
+		request,
+		opts...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return response.Body, nil
 }

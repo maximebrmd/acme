@@ -45,6 +45,8 @@ public final class SearchPostsRequest {
 
     private final Optional<PostStatus> status;
 
+    private final Optional<String> tagId;
+
     private final Optional<String> to;
 
     private final Map<String, Object> additionalProperties;
@@ -60,6 +62,7 @@ public final class SearchPostsRequest {
             Optional<Platform> platform,
             Optional<PostSort> sort,
             Optional<PostStatus> status,
+            Optional<String> tagId,
             Optional<String> to,
             Map<String, Object> additionalProperties) {
         this.authorId = authorId;
@@ -72,6 +75,7 @@ public final class SearchPostsRequest {
         this.platform = platform;
         this.sort = sort;
         this.status = status;
+        this.tagId = tagId;
         this.to = to;
         this.additionalProperties = additionalProperties;
     }
@@ -126,6 +130,11 @@ public final class SearchPostsRequest {
         return status;
     }
 
+    @JsonProperty("tagId")
+    public Optional<String> getTagId() {
+        return tagId;
+    }
+
     @JsonProperty("to")
     public Optional<String> getTo() {
         return to;
@@ -153,6 +162,7 @@ public final class SearchPostsRequest {
                 && platform.equals(other.platform)
                 && sort.equals(other.sort)
                 && status.equals(other.status)
+                && tagId.equals(other.tagId)
                 && to.equals(other.to);
     }
 
@@ -169,6 +179,7 @@ public final class SearchPostsRequest {
                 this.platform,
                 this.sort,
                 this.status,
+                this.tagId,
                 this.to);
     }
 
@@ -203,6 +214,8 @@ public final class SearchPostsRequest {
 
         private Optional<PostStatus> status = Optional.empty();
 
+        private Optional<String> tagId = Optional.empty();
+
         private Optional<String> to = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -220,6 +233,7 @@ public final class SearchPostsRequest {
             platform(other.getPlatform());
             sort(other.getSort());
             status(other.getStatus());
+            tagId(other.getTagId());
             to(other.getTo());
             return this;
         }
@@ -334,6 +348,17 @@ public final class SearchPostsRequest {
             return this;
         }
 
+        @JsonSetter(value = "tagId", nulls = Nulls.SKIP)
+        public Builder tagId(Optional<String> tagId) {
+            this.tagId = tagId;
+            return this;
+        }
+
+        public Builder tagId(String tagId) {
+            this.tagId = Optional.ofNullable(tagId);
+            return this;
+        }
+
         @JsonSetter(value = "to", nulls = Nulls.SKIP)
         public Builder to(Optional<String> to) {
             this.to = to;
@@ -357,6 +382,7 @@ public final class SearchPostsRequest {
                     platform,
                     sort,
                     status,
+                    tagId,
                     to,
                     additionalProperties);
         }
@@ -373,6 +399,7 @@ public final class SearchPostsRequest {
                     || key.equalsIgnoreCase("platform")
                     || key.equalsIgnoreCase("sort")
                     || key.equalsIgnoreCase("status")
+                    || key.equalsIgnoreCase("tagId")
                     || key.equalsIgnoreCase("to")) {
                 return;
             }

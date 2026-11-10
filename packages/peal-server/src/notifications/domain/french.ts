@@ -8,6 +8,69 @@ export const french: EmailCatalog = {
       "Si vous n’êtes pas à l’origine de cette demande, prévenez la personne qui gère ce serveur Peal. Peal n’envoie plus d’e-mail à cette adresse.",
     subject: "Votre compte Peal est supprimé",
   },
+  adBoostBudgetReached: {
+    action: "Ouvrir la publication",
+    body: "Une mise en avant dans {workspaceName} a dépensé tout son budget de {budget}. Le réseau publicitaire cesse de la diffuser ; plus rien n’est dépensé pour elle.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous êtes propriétaire de {workspaceName} sur Peal. Cet e-mail est toujours envoyé : un propriétaire répond de ce que ses publicités dépensent.",
+    subject: "Une mise en avant a utilisé son budget de {budget}",
+  },
+  adBoostEnded: {
+    action: "Ouvrir la publication",
+    body: "Une mise en avant dans {workspaceName}, d’un budget de {budget}, a atteint sa date de fin ({endsAt}) et n’est plus diffusée. Ce qu’elle a dépensé figure sur la page de la publication, et sur la facture de votre compte publicitaire.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous êtes propriétaire de {workspaceName} sur Peal. Cet e-mail est toujours envoyé : un propriétaire répond de ce que ses publicités dépensent.",
+    subject: "Une mise en avant est terminée",
+  },
+  adBoostFailed: {
+    action: "Ouvrir la publication",
+    body: "Une mise en avant dans {workspaceName}, d’un budget de {budget}, n’a pas pu être créée : {reason} Rien n’a été diffusé, et rien n’a été dépensé.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous êtes propriétaire de {workspaceName} sur Peal. Cet e-mail est toujours envoyé : un propriétaire répond de ce que ses publicités dépensent.",
+    subject: "Une mise en avant n’a pas pu être créée",
+  },
+  adBoostFailureOther: "le réseau publicitaire l’a refusée.",
+  adBoostFailureReasons: {
+    accountSpendCap:
+      "le plafond de dépenses du compte publicitaire laisse trop peu de marge.",
+    accountUnusable:
+      "le compte publicitaire ne peut pas diffuser de publicités pour le moment.",
+    budgetTooLow: "le budget est inférieur au minimum du réseau publicitaire.",
+    ceilingExceeded: "le plafond mensuel laisse trop peu de marge.",
+    currencyMismatch: "sa devise n’est pas celle du compte publicitaire.",
+    networkUnavailable:
+      "le réseau publicitaire n’a pas répondu pendant trop longtemps.",
+    permissionMissing:
+      "la connexion au réseau publicitaire n’a pas une autorisation que les publicités demandent.",
+    postNotPromotable:
+      "la publication ne peut pas être diffusée comme publicité.",
+    reconnectNeeded:
+      "le réseau publicitaire a refusé la connexion, que la personne concernée renouvelle en se connectant de nouveau.",
+    spendingOff:
+      "les dépenses ont été désactivées pour le compte publicitaire.",
+    spendingUnavailable: "ce serveur ne propose plus de dépenser en publicité.",
+  },
+  adBoostStarted: {
+    action: "Ouvrir la publication",
+    body: "Une mise en avant a démarré dans {workspaceName} : elle peut dépenser jusqu’à son budget de {budget}, sur le moyen de paiement de votre compte publicitaire, jusqu’au {endsAt}. Mettez-la en pause ou arrêtez-la à tout moment depuis la page de la publication.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous êtes propriétaire de {workspaceName} sur Peal. Cet e-mail est toujours envoyé : un propriétaire répond de ce que ses publicités dépensent.",
+    subject: "Une mise en avant a démarré : jusqu’à {budget} jusqu’au {endsAt}",
+  },
+  adBoostUnconfirmed: {
+    action: "Ouvrir la publication",
+    body: "Peal a demandé au réseau publicitaire de diffuser une mise en avant dans {workspaceName}, d’un budget de {budget}, et n’a pas pu savoir si elle est diffusée. Elle dépense peut-être. Vérifiez-la sur la page de la publication, et arrêtez-la si elle ne doit pas être diffusée : Peal n’y touche plus de lui-même.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous êtes propriétaire de {workspaceName} sur Peal. Cet e-mail est toujours envoyé : un propriétaire répond de ce que ses publicités dépensent.",
+    subject: "Vérifiez une mise en avant : Peal n’a pas pu la confirmer",
+  },
+  adConnectionReconnect: {
+    action: "Ouvrir les publicités",
+    body: "Le réseau publicitaire a refusé la connexion qui relie des comptes publicitaires à {workspaceName}. Leurs campagnes et leurs chiffres ne sont plus lus, et aucune mise en avant ne peut y être créée, tant que la personne qui s’était connectée ne le refait pas. Les mises en avant en cours continuent d’être diffusées par le réseau.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez les comptes publicitaires de {workspaceName} sur Peal. Cet e-mail est toujours envoyé : rien n’est lu ni modifié sur ces comptes tant que personne n’intervient.",
+    subject: "Reconnectez-vous à votre réseau publicitaire",
+  },
   billingEnded: {
     account:
       "Les abonnements des espaces de travail supprimés ont été résiliés immédiatement : plus rien n’est facturé, et la période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement : si vous avez souscrit en tant que consommateur il y a moins de 14 jours, vous pouvez vous rétracter et être remboursé de la part non utilisée. Leurs factures sont conservées comme le droit comptable l’exige ; demandez-en une copie à la personne qui gère ce serveur Peal.",
@@ -103,7 +166,7 @@ export const french: EmailCatalog = {
     appNotAudited:
       "la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.",
     channelDisabled:
-      "son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication.",
+      "son canal a été désactivé avant son départ. Réactivez le canal, puis programmez-la dans une nouvelle publication.",
     channelDisconnected:
       "son canal a été déconnecté de l’espace de travail avant son départ.",
     contentRejected: "la plateforme a refusé son texte ou son format.",

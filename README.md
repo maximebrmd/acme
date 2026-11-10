@@ -419,6 +419,7 @@ In development, these are the ones you may want:
 | `PEAL_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server           |
 | `PEAL_AI_MODEL`               | `claude-opus-5-5` with Anthropic | The model: required for an OpenAI-compatible server                    |
 | `PEAL_AI_DAILY_REQUESTS`      | `100`                            | Assistant requests each workspace may send per UTC day                 |
+| `PEAL_ADS`                    | `off`                            | `read` connects Meta ad accounts, `spend` also boosts posts            |
 | `STRIPE_SECRET_KEY`           | unset: no billing, no limits     | Bills workspaces through Stripe, with the variables it needs           |
 | `TURNSTILE_SITE_KEY`          | unset: no captcha                | With `TURNSTILE_SECRET_KEY`, Turnstile on sign-up and resets           |
 | `MCP_DYNAMIC_REGISTRATION`    | `false`                          | Lets MCP clients register themselves                                   |

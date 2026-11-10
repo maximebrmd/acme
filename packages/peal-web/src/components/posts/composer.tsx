@@ -30,21 +30,32 @@ import { PostMetrics } from "#components/analytics/post-metrics.tsx";
 import { OfferUpgrade } from "#components/billing/offer-upgrade.tsx";
 import { AssistantMenu } from "#components/posts/assistant-menu.tsx";
 import { ChannelPicker } from "#components/posts/channel-picker.tsx";
+import { ChannelSetPicker } from "#components/posts/channel-set-picker.tsx";
 import { CharacterCounters } from "#components/posts/character-counters.tsx";
 import { ComposerActions } from "#components/posts/composer-actions.tsx";
 import type { ComposerAction } from "#components/posts/composer-actions.tsx";
 import { ComposerErrors } from "#components/posts/composer-errors.tsx";
+import {
+  DefaultSignatures,
+  useDefaultSigning,
+} from "#components/posts/default-signatures.tsx";
+import { DuplicatePost } from "#components/posts/duplicate-post.tsx";
 import { FollowUpParts } from "#components/posts/follow-up-parts.tsx";
+import { LinkWarnings } from "#components/posts/link-warnings.tsx";
 import { MediaAttachments } from "#components/posts/media-attachments.tsx";
 import { PostOrigins } from "#components/posts/post-origins.tsx";
+import { PostTagsField } from "#components/posts/post-tags-field.tsx";
 import {
   instantOfChoice,
   ScheduleFields,
 } from "#components/posts/schedule-fields.tsx";
 import type { ScheduleChoice } from "#components/posts/schedule-fields.tsx";
+import { SignatureMenu } from "#components/posts/signature-menu.tsx";
+import { SignaturePause } from "#components/posts/signature-pause.tsx";
 import { TargetOptionsSection } from "#components/posts/target-options-panel.tsx";
 import { TargetStatuses } from "#components/posts/target-statuses.tsx";
 import { TextTabs } from "#components/posts/text-tabs.tsx";
+import { useTimeOptions } from "#i18n/hour-cycle.ts";
 import { getPathname, useRouter } from "#i18n/navigation.ts";
 import { useAttachedMedia } from "#posts/attached-media.ts";
 import { connectedTargets } from "#posts/channel-selection.ts";
@@ -53,6 +64,7 @@ import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits } from "#posts/media-fit.ts";
 import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
+import { startChoiceOf } from "#posts/start-time.ts";
 import {
   channelOptionsOf,
   initialValues,
@@ -66,6 +78,8 @@ import {
   timeKey,
   wallClockOf,
 } from "#posts/zoned-time.ts";
+import { withSignatureUnderLastPart } from "#signatures/insert.ts";
+import { pausesToCheck } from "#signatures/signing-pause.ts";
 
 const utcZone = "UTC";
 
@@ -194,6 +208,7 @@ const calendarOf = (workspaceId: string, date: ScheduleChoice["date"]) =>
 const startOf = (post: Post | undefined) => ({
   media: post?.content.media ?? [],
   schedule: post?.schedule ?? null,
+  tagIds: post?.tagIds ?? [],
   text: post?.content.text ?? "",
 });
 
@@ -204,6 +219,8 @@ interface ComposerProps {
   readonly permissions: readonly Permission[];
   /** None for a new post. */
   readonly post: Post | undefined;
+  /** Where a new post's schedule starts, as `?at=` wrote it; none otherwise. */
+  readonly startAt?: string | undefined;
   /** The signed-in user. */
   readonly userId: string;
   readonly workspaceId: string;
@@ -222,12 +239,14 @@ export const Composer = ({
   channels,
   permissions,
   post,
+  startAt,
   userId,
   workspaceId,
 }: ComposerProps) => {
   const t = useTranslations("Posts.Composer");
   const tPosts = useTranslations("Posts");
   const format = useFormatter();
+  const timeOptions = useTimeOptions();
   const router = useRouter();
   const locale = useLocale();
   const requests = usePostRequests(workspaceId);
@@ -260,8 +279,13 @@ export const Composer = ({
     connectedTargets(post, channels)
   );
 
+  const [tagIds, setTagIds] = useState<readonly string[]>(start.tagIds);
+
   const [choice, setChoice] = useState<ScheduleChoice>(() =>
-    choiceOf(start.schedule)
+    Option.getOrElse(
+      startChoiceOf(startAt, browserTimeZone(), DateTime.nowUnsafe()),
+      () => choiceOf(start.schedule)
+    )
   );
 
   // A new post is saved once, then updated. It gets its own address, without
@@ -287,6 +311,9 @@ export const Composer = ({
 
   const busy = isPending ? action : null;
   const locked = !canWrite || busy !== null;
+  const signing = useDefaultSigning(workspaceId, postId === undefined);
+  // Whether scheduling stopped for the person to read the signed text.
+  const [signedPause, setSignedPause] = useState(false);
 
   const selected = channelIds.flatMap((channelId) =>
     channels.filter(({ id }) => id === channelId)
@@ -327,10 +354,22 @@ export const Composer = ({
       dateStyle: "medium",
       timeStyle: "short",
       timeZone: choice.timeZone,
+      ...timeOptions,
     });
 
   const opened = (saved: Post) => {
     if (postId === undefined) {
+      const signed = signing.textsOf(saved);
+
+      // Saved with the default signatures: the texts are now the server's.
+      if (signed !== undefined) {
+        setText(signed.text);
+        setOverrides(signed.overrides);
+        // A post of several parts is signed under its last.
+        setParts(partsOf(saved.content));
+        setAccepted((count) => count + 1);
+      }
+
       setPostId(saved.id);
       window.history.replaceState(
         null,
@@ -348,6 +387,8 @@ export const Composer = ({
       channelIds,
       content,
       options,
+      tagIds,
+      ...signing.payload,
     });
 
     if (Option.isSome(saved)) {
@@ -369,11 +410,29 @@ export const Composer = ({
       channelIds,
       content,
       options,
+      tagIds,
+      ...signing.payload,
     });
 
     const [first, ...rest] = channelIds;
 
     if (Option.isNone(saved)) {
+      return;
+    }
+
+    // Just created with the default signatures, which no counter counted:
+    // the person reads the text as saved, then chooses Schedule again.
+    if (
+      pausesToCheck({
+        asked: signing.payload.defaultSignatures === true,
+        created: postId === undefined,
+        saved: saved.value,
+        sent: content,
+      })
+    ) {
+      opened(saved.value);
+      setSignedPause(true);
+
       return;
     }
 
@@ -479,6 +538,7 @@ export const Composer = ({
 
   const perform = (next: ComposerAction) => {
     setAction(next);
+    setSignedPause(false);
     startTransition(work[next]);
   };
 
@@ -516,6 +576,22 @@ export const Composer = ({
             <legend className="mb-3 text-sm font-medium">
               {t("channelsLegend")}
             </legend>
+            <ChannelSetPicker
+              channelIds={channelIds}
+              channels={channels}
+              disabled={locked}
+              editable={canWrite}
+              options={options}
+              permissions={permissions}
+              workspaceId={workspaceId}
+              onApply={(applied) => {
+                setChannelIds(applied.channelIds);
+                setOptionValues((current) => ({
+                  ...current,
+                  ...applied.values,
+                }));
+              }}
+            />
             <ChannelPicker
               channels={channels}
               selected={channelIds}
@@ -539,6 +615,24 @@ export const Composer = ({
                 setAccepted((count) => count + 1);
               }}
             />
+            <SignatureMenu
+              channels={selected}
+              disabled={locked}
+              workspaceId={workspaceId}
+              onInsert={(channelId, signature) => {
+                // A post of several parts is signed under its last.
+                const signed = withSignatureUnderLastPart(
+                  { overrides, parts, text },
+                  channelId,
+                  signature
+                );
+
+                setText(signed.text);
+                setOverrides(signed.overrides);
+                setParts(signed.parts);
+                setAccepted((count) => count + 1);
+              }}
+            />
             <TextTabs
               key={accepted}
               selected={selected}
@@ -552,6 +646,10 @@ export const Composer = ({
                 );
               }}
             />
+            <LinkWarnings
+              texts={[text, ...content.overrides.map((own) => own.text)]}
+            />
+            <DefaultSignatures disabled={locked} signing={signing} />
           </fieldset>
           <section
             aria-labelledby="counters-title"
@@ -618,6 +716,14 @@ export const Composer = ({
               onChange={setChoice}
             />
           </fieldset>
+          <PostTagsField
+            disabled={busy !== null}
+            permissions={permissions}
+            savedOn={canWrite ? undefined : postId}
+            tagIds={tagIds}
+            workspaceId={workspaceId}
+            onChange={setTagIds}
+          />
           {post === undefined || status === "draft" ? null : (
             <TargetStatuses channels={channels} post={post} />
           )}
@@ -630,6 +736,7 @@ export const Composer = ({
               workspaceId={workspaceId}
             />
           ) : null}
+          <SignaturePause shown={signedPause} willWait={willWait} />
           <ComposerErrors
             channels={channels}
             failure={requests.failure}
@@ -654,6 +761,14 @@ export const Composer = ({
             ) && partsFit
           }
           onAction={perform}
+          extra={
+            <DuplicatePost
+              disabled={busy !== null}
+              permissions={permissions}
+              postId={postId}
+              workspaceId={workspaceId}
+            />
+          }
         />
       </CardFooter>
     </Card>

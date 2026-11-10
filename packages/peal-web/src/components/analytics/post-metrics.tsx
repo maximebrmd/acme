@@ -16,6 +16,7 @@ import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
 
 import { platformCapabilities, postAnalytics } from "#analytics/api.ts";
+import { channelName } from "#channels/channel-name.ts";
 import { MetricList } from "#components/analytics/metric-list.tsx";
 import { ReadingsChart } from "#components/analytics/readings-chart.tsx";
 import { InTimeZone } from "#components/notices/in-time-zone.tsx";
@@ -131,9 +132,12 @@ export const PostMetricsView = ({
     <div className="flex flex-col gap-6">
       <ul className="flex flex-col gap-6">
         {analytics.targets.map((target) => {
+          const channel = channels.find(({ id }) => id === target.channelId);
+
           const handle =
-            channels.find(({ id }) => id === target.channelId)?.handle ??
-            tPosts("disconnectedChannel");
+            channel === undefined
+              ? tPosts("disconnectedChannel")
+              : channelName(channel);
 
           return (
             <li key={target.targetId} className="flex flex-col gap-2">

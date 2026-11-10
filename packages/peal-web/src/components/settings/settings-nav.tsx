@@ -6,18 +6,24 @@ import { Link, usePathname } from "#i18n/navigation.ts";
 
 export type SettingsSection =
   | "apiKeys"
+  | "channelSets"
   | "general"
   | "invitations"
   | "members"
   | "partner"
+  | "signatures"
+  | "tags"
   | "webhooks";
 
 const paths: Readonly<Record<SettingsSection, string>> = {
   apiKeys: "/api-keys",
+  channelSets: "/channel-sets",
   general: "",
   invitations: "/invitations",
   members: "/members",
   partner: "/partner",
+  signatures: "/signatures",
+  tags: "/tags",
   webhooks: "/webhooks",
 };
 

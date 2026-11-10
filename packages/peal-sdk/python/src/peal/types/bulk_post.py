@@ -18,8 +18,20 @@ class BulkPost(UniversalBaseModel):
     channel_ids: typing_extensions.Annotated[
         typing.List[str], FieldMetadata(alias="channelIds"), pydantic.Field(alias="channelIds")
     ]
+    channel_sets: typing_extensions.Annotated[
+        typing.Optional[typing.List[str]], FieldMetadata(alias="channelSets"), pydantic.Field(alias="channelSets")
+    ] = None
     content: PostContent
+    default_signatures: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="defaultSignatures"), pydantic.Field(alias="defaultSignatures")
+    ] = None
     options: typing.Optional[typing.List[ChannelOptions]] = None
+    signature_id: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="signatureId"), pydantic.Field(alias="signatureId")
+    ] = None
+    tag_ids: typing_extensions.Annotated[
+        typing.Optional[typing.List[str]], FieldMetadata(alias="tagIds"), pydantic.Field(alias="tagIds")
+    ] = None
     when: PostTiming
     idempotency_key: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="idempotencyKey"), pydantic.Field(alias="idempotencyKey")

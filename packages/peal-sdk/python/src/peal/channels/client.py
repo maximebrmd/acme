@@ -7,6 +7,8 @@ from ..core.request_options import RequestOptions
 from ..types.authorization import Authorization
 from ..types.channel import Channel
 from ..types.channel_connection import ChannelConnection
+from ..types.channel_page import ChannelPage
+from ..types.channel_status_name import ChannelStatusName
 from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
 from ..types.platform import Platform
@@ -61,6 +63,64 @@ class ChannelsClient:
         )
         """
         _response = self._raw_client.list(workspace_id, request_options=request_options)
+        return _response.data
+
+    def find(
+        self,
+        workspace_id: str,
+        *,
+        cursor: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        platform: typing.Optional[Platform] = None,
+        q: typing.Optional[str] = None,
+        status: typing.Optional[ChannelStatusName] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> ChannelPage:
+        """
+        Lists the workspace's channels a page at a time, oldest first: 50 unless `limit` (at most 100) says otherwise. Every filter given must hold: `platform`, `status` (`active`, `refreshNeeded` or `disabled`) and `q`, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. `counts` says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's `nextCursor` as `cursor`, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        cursor : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        platform : typing.Optional[Platform]
+
+        q : typing.Optional[str]
+
+        status : typing.Optional[ChannelStatusName]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ChannelPage
+            ChannelPage
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.channels.find(
+            workspace_id="workspaceId",
+        )
+        """
+        _response = self._raw_client.find(
+            workspace_id,
+            cursor=cursor,
+            limit=limit,
+            platform=platform,
+            q=q,
+            status=status,
+            request_options=request_options,
+        )
         return _response.data
 
     def platforms(
@@ -322,6 +382,118 @@ class ChannelsClient:
         _response = self._raw_client.disconnect(workspace_id, channel_id, request_options=request_options)
         return _response.data
 
+    def update(
+        self,
+        workspace_id: str,
+        channel_id: str,
+        *,
+        label: typing.Optional[str] = OMIT,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Channel:
+        """
+        Gives the channel the name the workspace calls it by (`label`, 60 characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        label : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Channel
+            Channel
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.channels.update(
+            workspace_id="workspaceId",
+            channel_id="channelId",
+        )
+        """
+        _response = self._raw_client.update(workspace_id, channel_id, label=label, request_options=request_options)
+        return _response.data
+
+    def disable(
+        self, workspace_id: str, channel_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> Channel:
+        """
+        Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (`channelDisabled`) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Channel
+            Channel
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.channels.disable(
+            workspace_id="workspaceId",
+            channel_id="channelId",
+        )
+        """
+        _response = self._raw_client.disable(workspace_id, channel_id, request_options=request_options)
+        return _response.data
+
+    def enable(
+        self, workspace_id: str, channel_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> Channel:
+        """
+        Turns a channel back on. It posts again at once, or has the status `refreshNeeded` when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Channel
+            Channel
+
+        Examples
+        --------
+        from peal import Peal
+
+        client = Peal(
+            token="YOUR_TOKEN",
+        )
+        client.channels.enable(
+            workspace_id="workspaceId",
+            channel_id="channelId",
+        )
+        """
+        _response = self._raw_client.enable(workspace_id, channel_id, request_options=request_options)
+        return _response.data
+
 
 class AsyncChannelsClient:
     def __init__(self, *, client_wrapper: AsyncClientWrapper):
@@ -376,6 +548,72 @@ class AsyncChannelsClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.list(workspace_id, request_options=request_options)
+        return _response.data
+
+    async def find(
+        self,
+        workspace_id: str,
+        *,
+        cursor: typing.Optional[str] = None,
+        limit: typing.Optional[str] = None,
+        platform: typing.Optional[Platform] = None,
+        q: typing.Optional[str] = None,
+        status: typing.Optional[ChannelStatusName] = None,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> ChannelPage:
+        """
+        Lists the workspace's channels a page at a time, oldest first: 50 unless `limit` (at most 100) says otherwise. Every filter given must hold: `platform`, `status` (`active`, `refreshNeeded` or `disabled`) and `q`, text the channel's handle, the name its platform shows or the name the workspace gave it holds, whatever its case. `counts` says how many channels the platform and text match in each status, whatever the status asked for. Pass the page's `nextCursor` as `cursor`, with the same filters, for the next page; a cursor no page gave is a bad request. Needs channel:read.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        cursor : typing.Optional[str]
+
+        limit : typing.Optional[str]
+
+        platform : typing.Optional[Platform]
+
+        q : typing.Optional[str]
+
+        status : typing.Optional[ChannelStatusName]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        ChannelPage
+            ChannelPage
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.channels.find(
+                workspace_id="workspaceId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.find(
+            workspace_id,
+            cursor=cursor,
+            limit=limit,
+            platform=platform,
+            q=q,
+            status=status,
+            request_options=request_options,
+        )
         return _response.data
 
     async def platforms(
@@ -683,4 +921,142 @@ class AsyncChannelsClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.disconnect(workspace_id, channel_id, request_options=request_options)
+        return _response.data
+
+    async def update(
+        self,
+        workspace_id: str,
+        channel_id: str,
+        *,
+        label: typing.Optional[str] = OMIT,
+        request_options: typing.Optional[RequestOptions] = None,
+    ) -> Channel:
+        """
+        Gives the channel the name the workspace calls it by (`label`, 60 characters at most, on one line), or takes it back with null. The name is Peal's own: it is shown beside the handle and name the platform gives the account, which stay, and is sent to no platform. Needs channel:connect.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        label : typing.Optional[str]
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Channel
+            Channel
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.channels.update(
+                workspace_id="workspaceId",
+                channel_id="channelId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.update(
+            workspace_id, channel_id, label=label, request_options=request_options
+        )
+        return _response.data
+
+    async def disable(
+        self, workspace_id: str, channel_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> Channel:
+        """
+        Turns the channel off: nothing goes out on it until it is turned back on. It keeps its connection, its history, its name and its place in the plan's count, and no reconnect reminder is sent meanwhile. A post that reaches its time while the channel is off fails on that channel (`channelDisabled`) and goes out on its others; it is not sent later. A channel already off stays as it is. Needs channel:connect.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Channel
+            Channel
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.channels.disable(
+                workspace_id="workspaceId",
+                channel_id="channelId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.disable(workspace_id, channel_id, request_options=request_options)
+        return _response.data
+
+    async def enable(
+        self, workspace_id: str, channel_id: str, *, request_options: typing.Optional[RequestOptions] = None
+    ) -> Channel:
+        """
+        Turns a channel back on. It posts again at once, or has the status `refreshNeeded` when its token stopped working or ran out while it was off: reconnect the account then. A channel that is on stays as it is. Needs channel:connect.
+
+        Parameters
+        ----------
+        workspace_id : str
+
+        channel_id : str
+
+        request_options : typing.Optional[RequestOptions]
+            Request-specific configuration.
+
+        Returns
+        -------
+        Channel
+            Channel
+
+        Examples
+        --------
+        import asyncio
+
+        from peal import AsyncPeal
+
+        client = AsyncPeal(
+            token="YOUR_TOKEN",
+        )
+
+
+        async def main() -> None:
+            await client.channels.enable(
+                workspace_id="workspaceId",
+                channel_id="channelId",
+            )
+
+
+        asyncio.run(main())
+        """
+        _response = await self._raw_client.enable(workspace_id, channel_id, request_options=request_options)
         return _response.data

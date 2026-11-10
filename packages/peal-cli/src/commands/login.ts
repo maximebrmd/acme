@@ -1,5 +1,5 @@
 import { Console, DateTime, Duration, Effect, Result } from "effect";
-import { Command } from "effect/cli";
+import { Command, Flag } from "effect/cli";
 import { cliClientId, deviceCodeGrantType } from "peal-contract";
 import type { DeviceAuthorization, OAuthError, Token } from "peal-contract";
 
@@ -9,6 +9,7 @@ import type { ApiRequestFailed } from "#api-request-failed.ts";
 import { PealApi } from "#api.ts";
 import { CredentialStore } from "#credentials.ts";
 import { display } from "#display.ts";
+import { adsScope } from "#explain.ts";
 import { credentialsOf, isOAuthError } from "#session.ts";
 import { SignInFailed } from "#sign-in-failed.ts";
 
@@ -19,6 +20,13 @@ import { SignInFailed } from "#sign-in-failed.ts";
  */
 export const loginScope =
   "offline_access workspace:read workspace:write workspace:publish";
+
+/**
+ * The same, and working with ads: managing ad accounts and, with the scope
+ * to publish, boosting posts, which spends money. Asked only with --ads: a
+ * person opts in to an application that can spend.
+ */
+export const adsLoginScope = `${loginScope} ${adsScope}`;
 
 // RFC 8628 §3.5: wait five seconds between requests unless the server says
 // otherwise, and five more each time it asks to slow down.
@@ -43,8 +51,17 @@ const slowDown: Attempt = { _tag: "slowDown" };
 
 export const login = Command.make(
   "login",
-  {},
-  Effect.fn("login")(function* login() {
+  {
+    ads: Flag.Boolean("ads").pipe(
+      Flag.withDescription(
+        `Also ask to work with ads (the scope ${adsScope}): to boost posts, which spends money from an ad account's payment method, and to pause, resume and stop boosts. Never asked without this flag. Reading ads needs none of it.`
+      ),
+      Flag.withDefault(false)
+    ),
+  },
+  Effect.fn("login")(function* login({ ads }) {
+    const scope = ads ? adsLoginScope : loginScope;
+
     yield* personOnly("sign in");
 
     const { baseUrl, oauth, sendingCredentials } = yield* PealApi;
@@ -98,7 +115,7 @@ export const login = Command.make(
 
     const device = yield* oauth.tokens
       .deviceAuthorization({
-        payload: { client_id: cliClientId, resource, scope: loginScope },
+        payload: { client_id: cliClientId, resource, scope },
       })
       .pipe(
         Effect.mapError((failure) =>
@@ -162,6 +179,12 @@ export const login = Command.make(
       "The command line asks to read your workspaces, to change them as your role allows, and to schedule and publish posts to your connected accounts: the page lists each before you approve."
     );
 
+    if (ads) {
+      yield* Console.log(
+        "With --ads, it also asks to work with ads: to boost posts on the ad accounts an owner allowed to spend, within the monthly ceiling they set. Boosting spends money, which the ad network charges to the ad account's payment method."
+      );
+    }
+
     yield* Console.log(
       `Waiting for you to approve the sign-in (the code works for ${Duration.format(Duration.seconds(device.expires_in))})…`
     );
@@ -182,7 +205,7 @@ export const login = Command.make(
 
     yield* store.write(
       baseUrl,
-      credentialsOf(token, yield* DateTime.now, loginScope)
+      credentialsOf(token, yield* DateTime.now, scope)
     );
 
     yield* Console.log(
@@ -191,6 +214,6 @@ export const login = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Sign in to the Peal server: approve a code in the browser, and the command line saves its sign-in for the other commands."
+    "Sign in to the Peal server: approve a code in the browser, and the command line saves its sign-in for the other commands. With --ads, the sign-in also asks to work with ads, which can spend money."
   )
 );

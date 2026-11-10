@@ -12,6 +12,8 @@ import { ToolRefused } from "#app/mcp/tool-refused.ts";
 export const ToolAreaSchema = Schema.Literals([
   "account",
   "posts",
+  "tags",
+  "saved",
   "media",
   "reports",
   "people",
@@ -20,9 +22,10 @@ export const ToolAreaSchema = Schema.Literals([
   "channels",
   "review",
   "inbox",
+  "ads",
 ]).annotate({
   description:
-    "An area of Peal: `account` (who the connection is, its workspace and channels, the server), `posts` (drafts, scheduling, publishing, outcomes), `media` (images and videos), `reports` (analytics, the plan and the activity log), `people` (members and invitations), `webhooks` (endpoints and their deliveries), `connect` (connect links, and the workspace's partner account), `channels` (what each channel's platform takes, and its lookups), `review` (the posts that wait for an approval, and deciding them), `inbox` (the comments under published posts, and answering them).",
+    "An area of Peal: `account` (who the connection is, its workspace and channels, with naming a channel and turning it off or on, the server), `posts` (drafts, scheduling, publishing, outcomes), `tags` (the labels a workspace files its posts under, and tagging a post), `saved` (what a workspace saves to write its posts with: signatures, channel sets and a channel's default options), `media` (images and videos), `reports` (analytics, the plan and the activity log), `people` (members and invitations), `webhooks` (endpoints and their deliveries), `connect` (connect links, and the workspace's partner account), `channels` (what each channel's platform takes, and its lookups), `review` (the posts that wait for an approval, and deciding them), `inbox` (the comments under published posts, and answering them), `ads` (ad accounts, campaigns and their numbers, and boosting a published post, which spends money).",
 });
 
 export type ToolArea = typeof ToolAreaSchema.Type;
@@ -38,14 +41,16 @@ export const FoundToolSchema = Schema.Struct({
   // Whether its effect reaches outside Peal: a post on a platform, an
   // email, a request to another server.
   reachesOutside: Schema.Boolean,
-  // The OAuth scope a client needs to call it.
+  // The OAuth scope a client needs to call it: the one to ask for. What
+  // spends on ads takes workspace:publish beside workspace:ads.
   scope: Schema.Literals([
     "workspace:read",
     "workspace:write",
     "workspace:publish",
+    "workspace:ads",
   ]),
-  // Whether this connection holds that scope: null for an API key, which
-  // carries permissions, not scopes (whoami lists them).
+  // Whether this connection holds every scope the tool takes: null for an
+  // API key, which carries permissions, not scopes (whoami lists them).
   scopeGranted: Schema.NullOr(Schema.Boolean),
   // What it does, in a sentence. tools/list gives the whole description.
   summary: Schema.String,

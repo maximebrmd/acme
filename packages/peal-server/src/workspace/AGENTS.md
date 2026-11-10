@@ -32,8 +32,10 @@ The staff context follows these rules too. What the law has a host keep is in
   plan's room) and sharing its constants and link (`invitationLifetime`,
   `pendingInvitationLimit`, `invitationUrl` in `options.ts`): change both
   together. The web app still invites through Better Auth's route.
-- API keys belong to workspaces, never carry more than their creator holds,
-  and are created only through `POST /api/workspaces/:workspaceId/api-keys`:
+- API keys belong to workspaces, never carry more than their creator holds
+  nor what only a person in their own session uses (`personOnlyPermissions`:
+  `ads:authorize`, refused with `PermissionNotGrantable`, 403
+  `personRequired`), and are created only through `POST /api/workspaces/:workspaceId/api-keys`:
   Better Auth's own key routes are disabled.
 - Staff (Better Auth's admin role) act through the staff context's use
   cases only (`StaffActions`): each checks `mayAct`
@@ -184,7 +186,11 @@ The staff context follows these rules too. What the law has a host keep is in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and
   billing state (plan and subscription statuses, never a card or Stripe's
-  ids): those `CloseAccount` deletes. Posts come with each target's
+  ids): those `CloseAccount` deletes. Such a workspace comes with what it
+  saved to write and file posts (`saved`, from `PostRecords.exportSaved`:
+  its tags, signatures, channel sets and channels' default options), and
+  each channel with the name the workspace gave it. Posts come with their
+  tags' ids, each target's
   platform options and whether YouTube kept the video private, and the
   export lists what staff did to the account (action, time, reason, and
   for changes made as it the operation, workspace and object ids),
@@ -288,8 +294,9 @@ The staff context follows these rules too. What the law has a host keep is in
   (`PersonRequired` otherwise), shown once. It carries scopes
   (`workspaces:read`, `:write`, `:delete`) for `/api/partner`, and the
   permissions it holds in each workspace, out of `partnerKeyPermissions`
-  (`workspace/domain/partner-key.ts`): never members, invitations, API keys
-  or billing changes. `engagement:read` and `engagement:reply` are among
+  (`workspace/domain/partner-key.ts`): never members, invitations, API keys,
+  billing changes or any `ads:*` (a boost spends the customer's money on
+  an owner's decision in person). `engagement:read` and `engagement:reply` are among
   them, as publishing is: a product that posts for its customers reads
   and answers what is said under those posts, in a workspace that has no
   member to do it. `Authentication` answers it as a

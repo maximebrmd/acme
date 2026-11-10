@@ -1,5 +1,6 @@
 import { Array as Arr, Effect, Match, Option, Schema } from "effect";
 import {
+  ChannelSetNotFound,
   DuplicatePost,
   errorCodeOf,
   IdempotencyKeyReused,
@@ -7,8 +8,10 @@ import {
   PostNotFound,
   PostRefusalSchema,
   ScheduleInPast,
+  SignatureNotFound,
   UnknownChannels,
   UnknownMedia,
+  UnknownTags,
 } from "peal-contract";
 import type { CurrentMember, PostRefusal } from "peal-contract";
 
@@ -90,6 +93,8 @@ export const refusalOf =
   (limitReached: LimitRefusal) =>
   (failure: SendRefusal): Effect.Effect<PostRefusal, never, CurrentMember> =>
     Match.valueTags(failure, {
+      ChannelSetNotFound: () =>
+        Effect.succeed<PostRefusal>(new ChannelSetNotFound()),
       DuplicateContent: ({ duplicates }) =>
         Effect.succeed<PostRefusal>(
           new DuplicatePost({
@@ -112,10 +117,14 @@ export const refusalOf =
         Effect.succeed<PostRefusal>(new PostContentInvalid({ violations })),
       PostNotFound: () => Effect.succeed<PostRefusal>(new PostNotFound()),
       ScheduleInPast: () => Effect.succeed<PostRefusal>(new ScheduleInPast()),
+      SignatureNotFound: () =>
+        Effect.succeed<PostRefusal>(new SignatureNotFound()),
       UnknownChannels: ({ channelIds }) =>
         Effect.succeed<PostRefusal>(new UnknownChannels({ channelIds })),
       UnknownMedia: ({ mediaIds }) =>
         Effect.succeed<PostRefusal>(new UnknownMedia({ mediaIds })),
+      UnknownTags: ({ tagIds }) =>
+        Effect.succeed<PostRefusal>(new UnknownTags({ tagIds })),
     });
 
 /**

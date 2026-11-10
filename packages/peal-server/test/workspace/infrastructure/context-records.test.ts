@@ -6,6 +6,7 @@ import { assert, layer } from "@effect/vitest";
 import { Context, Effect, Layer, Option, Ref } from "effect";
 
 import { ActivityRecords } from "#activity/application/activity-records.ts";
+import { AdRecords } from "#ads/application/ad-records.ts";
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { UsageRecords } from "#assistant/application/ports/usage-records.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
@@ -89,6 +90,10 @@ const RecordsTest = Layer.unwrap(
           Layer.mock(UsageRecords, { eraseWorkspace: () => Effect.void }),
           Layer.mock(ReviewRecords, { eraseWorkspace: () => Effect.void }),
           Layer.mock(WebhookRecords, { eraseWorkspace: () => Effect.void }),
+          Layer.mock(AdRecords, {
+            ensureErasable: () => Effect.void,
+            eraseWorkspace: () => Effect.void,
+          }),
           Layer.mock(ActivityRecords, { eraseWorkspace: () => Effect.void }),
           Layer.mock(StaffRecords, {}),
           Layer.mock(LegalRecords, {})

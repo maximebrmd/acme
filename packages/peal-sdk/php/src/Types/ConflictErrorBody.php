@@ -9,8 +9,8 @@ class ConflictErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'PostNotReviewable'
-     *   |'TooManyReviewLinks'
+     *    'ChannelSetNameTaken'
+     *   |'TooManyChannelSets'
      *   |'_unknown'
      * ) $type
      */
@@ -18,8 +18,8 @@ class ConflictErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    PostNotReviewableEncoded
-     *   |TooManyReviewLinksEncoded
+     *    ChannelSetNameTakenEncoded
+     *   |TooManyChannelSetsEncoded
      *   |mixed
      * ) $value
      */
@@ -28,13 +28,13 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'PostNotReviewable'
-     *   |'TooManyReviewLinks'
+     *    'ChannelSetNameTaken'
+     *   |'TooManyChannelSets'
      *   |'_unknown'
      * ),
      *   value: (
-     *    PostNotReviewableEncoded
-     *   |TooManyReviewLinksEncoded
+     *    ChannelSetNameTakenEncoded
+     *   |TooManyChannelSetsEncoded
      *   |mixed
      * ),
      * } $values
@@ -47,45 +47,45 @@ class ConflictErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param PostNotReviewableEncoded $postNotReviewable
+     * @param ChannelSetNameTakenEncoded $channelSetNameTaken
      * @return ConflictErrorBody
      */
-    public static function postNotReviewable(PostNotReviewableEncoded $postNotReviewable): ConflictErrorBody
+    public static function channelSetNameTaken(ChannelSetNameTakenEncoded $channelSetNameTaken): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'PostNotReviewable',
-            'value' => $postNotReviewable,
+            'type' => 'ChannelSetNameTaken',
+            'value' => $channelSetNameTaken,
         ]);
     }
 
     /**
-     * @param TooManyReviewLinksEncoded $tooManyReviewLinks
+     * @param TooManyChannelSetsEncoded $tooManyChannelSets
      * @return ConflictErrorBody
      */
-    public static function tooManyReviewLinks(TooManyReviewLinksEncoded $tooManyReviewLinks): ConflictErrorBody
+    public static function tooManyChannelSets(TooManyChannelSetsEncoded $tooManyChannelSets): ConflictErrorBody
     {
         return new ConflictErrorBody([
-            'type' => 'TooManyReviewLinks',
-            'value' => $tooManyReviewLinks,
+            'type' => 'TooManyChannelSets',
+            'value' => $tooManyChannelSets,
         ]);
     }
 
     /**
      * @return bool
      */
-    public function isPostNotReviewable(): bool
+    public function isChannelSetNameTaken(): bool
     {
-        return $this->value instanceof PostNotReviewableEncoded && $this->type === 'PostNotReviewable';
+        return $this->value instanceof ChannelSetNameTakenEncoded && $this->type === 'ChannelSetNameTaken';
     }
 
     /**
-     * @return PostNotReviewableEncoded
+     * @return ChannelSetNameTakenEncoded
      */
-    public function asPostNotReviewable(): PostNotReviewableEncoded
+    public function asChannelSetNameTaken(): ChannelSetNameTakenEncoded
     {
-        if (!($this->value instanceof PostNotReviewableEncoded && $this->type === 'PostNotReviewable')) {
+        if (!($this->value instanceof ChannelSetNameTakenEncoded && $this->type === 'ChannelSetNameTaken')) {
             throw new Exception(
-                "Expected PostNotReviewable; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected ChannelSetNameTaken; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -95,19 +95,19 @@ class ConflictErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isTooManyReviewLinks(): bool
+    public function isTooManyChannelSets(): bool
     {
-        return $this->value instanceof TooManyReviewLinksEncoded && $this->type === 'TooManyReviewLinks';
+        return $this->value instanceof TooManyChannelSetsEncoded && $this->type === 'TooManyChannelSets';
     }
 
     /**
-     * @return TooManyReviewLinksEncoded
+     * @return TooManyChannelSetsEncoded
      */
-    public function asTooManyReviewLinks(): TooManyReviewLinksEncoded
+    public function asTooManyChannelSets(): TooManyChannelSetsEncoded
     {
-        if (!($this->value instanceof TooManyReviewLinksEncoded && $this->type === 'TooManyReviewLinks')) {
+        if (!($this->value instanceof TooManyChannelSetsEncoded && $this->type === 'TooManyChannelSets')) {
             throw new Exception(
-                "Expected TooManyReviewLinks; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected TooManyChannelSets; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -134,12 +134,12 @@ class ConflictErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'PostNotReviewable':
-                $value = $this->asPostNotReviewable()->jsonSerialize();
+            case 'ChannelSetNameTaken':
+                $value = $this->asChannelSetNameTaken()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
-            case 'TooManyReviewLinks':
-                $value = $this->asTooManyReviewLinks()->jsonSerialize();
+            case 'TooManyChannelSets':
+                $value = $this->asTooManyChannelSets()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -178,11 +178,11 @@ class ConflictErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'PostNotReviewable':
-                $args['value'] = PostNotReviewableEncoded::jsonDeserialize($data);
+            case 'ChannelSetNameTaken':
+                $args['value'] = ChannelSetNameTakenEncoded::jsonDeserialize($data);
                 break;
-            case 'TooManyReviewLinks':
-                $args['value'] = TooManyReviewLinksEncoded::jsonDeserialize($data);
+            case 'TooManyChannelSets':
+                $args['value'] = TooManyChannelSetsEncoded::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

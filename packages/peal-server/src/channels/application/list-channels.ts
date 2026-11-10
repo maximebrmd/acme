@@ -7,6 +7,15 @@ import { authorize } from "#shared/domain/authorize.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import { ChannelRepository } from "./channel-repository.ts";
+import type { ChannelPage, ChannelPageRequest } from "./channel-repository.ts";
+
+/** The most channels a page holds, and how many when not told. */
+export const maxChannelPageSize = 100;
+
+export const defaultChannelPageSize = 50;
+
+/** Which channels to list, and which page of them. */
+export type ChannelSearchRequest = Omit<ChannelPageRequest, "workspaceId">;
 
 /** The channels connected to the actor's workspace. Needs channel:read. */
 export class ListChannels extends Context.Service<
@@ -15,6 +24,15 @@ export class ListChannels extends Context.Service<
     readonly list: (
       actor: Actor
     ) => Effect.Effect<readonly Channel[], DatabaseError | MissingPermission>;
+    /**
+     * A page of the workspace's channels, oldest first: those of a
+     * platform, in a status, or whose handle or names hold some text, with
+     * how many match by status.
+     */
+    readonly search: (
+      actor: Actor,
+      request: ChannelSearchRequest
+    ) => Effect.Effect<ChannelPage, DatabaseError | MissingPermission>;
   }
 >()("peal-server/channels/application/ListChannels") {
   static readonly layer = Layer.effect(
@@ -28,7 +46,20 @@ export class ListChannels extends Context.Service<
         return yield* channels.list(actor.workspaceId);
       });
 
-      return ListChannels.of({ list });
+      const search = Effect.fn("ListChannels.search")(function* search(
+        actor: Actor,
+        request: ChannelSearchRequest
+      ) {
+        yield* Effect.fromResult(authorize(actor, "channel:read"));
+
+        return yield* channels.search({
+          ...request,
+          limit: Math.min(Math.max(request.limit, 1), maxChannelPageSize),
+          workspaceId: actor.workspaceId,
+        });
+      });
+
+      return ListChannels.of({ list, search });
     })
   );
 }

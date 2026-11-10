@@ -30,6 +30,12 @@ pub enum ApiError {
         resource_id: Option<String>,
         resource_type: Option<String>,
     },
+    #[error("BadRequestError: Bad request - {message}")]
+    BadRequestError {
+        message: String,
+        field: Option<String>,
+        details: Option<String>,
+    },
     #[error("PaymentRequiredError: {message}")]
     PaymentRequiredError {
         message: String,
@@ -51,12 +57,6 @@ pub enum ApiError {
     },
     #[error("BadGatewayError: {message}")]
     BadGatewayError { message: String },
-    #[error("BadRequestError: Bad request - {message}")]
-    BadRequestError {
-        message: String,
-        field: Option<String>,
-        details: Option<String>,
-    },
     #[error("ConflictError: Conflict - {message}")]
     ConflictError {
         message: String,
@@ -216,6 +216,31 @@ impl ApiError {
                     resource_type: None,
                 };
             }
+            400 => {
+                // Parse error body for BadRequestError;
+                if let Some(body_str) = body {
+                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(body_str) {
+                        return Self::BadRequestError {
+                            message: parsed
+                                .get("message")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("Unknown error")
+                                .to_string(),
+                            field: parsed
+                                .get("field")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                            details: parsed
+                                .get("details")
+                                .and_then(|v| v.as_str().map(|s| s.to_string())),
+                        };
+                    }
+                }
+                return Self::BadRequestError {
+                    message: body.unwrap_or("Unknown error").to_string(),
+                    field: None,
+                    details: None,
+                };
+            }
             402 => {
                 // Parse error body for PaymentRequiredError;
                 if let Some(body_str) = body {
@@ -309,31 +334,6 @@ impl ApiError {
                 }
                 return Self::BadGatewayError {
                     message: body.unwrap_or("Unknown error").to_string(),
-                };
-            }
-            400 => {
-                // Parse error body for BadRequestError;
-                if let Some(body_str) = body {
-                    if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(body_str) {
-                        return Self::BadRequestError {
-                            message: parsed
-                                .get("message")
-                                .and_then(|v| v.as_str())
-                                .unwrap_or("Unknown error")
-                                .to_string(),
-                            field: parsed
-                                .get("field")
-                                .and_then(|v| v.as_str().map(|s| s.to_string())),
-                            details: parsed
-                                .get("details")
-                                .and_then(|v| v.as_str().map(|s| s.to_string())),
-                        };
-                    }
-                }
-                return Self::BadRequestError {
-                    message: body.unwrap_or("Unknown error").to_string(),
-                    field: None,
-                    details: None,
                 };
             }
             409 => {

@@ -20,11 +20,16 @@ use Peal\Capabilities\CapabilitiesClient;
 use Peal\Lookups\LookupsClient;
 use Peal\Webhooks\WebhooksClient;
 use Peal\Inbox\InboxClient;
+use Peal\Ads\AdsClient;
 use Peal\Activity\ActivityClient;
 use Peal\Partner\PartnerClient;
 use Peal\PartnerAccount\PartnerAccountClient;
 use Peal\ConnectLinks\ConnectLinksClient;
 use Peal\Review\ReviewClient;
+use Peal\Tags\TagsClient;
+use Peal\Signatures\SignaturesClient;
+use Peal\ChannelSets\ChannelSetsClient;
+use Peal\ChannelDefaults\ChannelDefaultsClient;
 use Psr\Http\Client\ClientInterface;
 use Peal\Core\Client\RawClient;
 
@@ -121,6 +126,11 @@ class PealClient
     public InboxClient $inbox;
 
     /**
+     * @var AdsClient $ads
+     */
+    public AdsClient $ads;
+
+    /**
      * @var ActivityClient $activity
      */
     public ActivityClient $activity;
@@ -144,6 +154,26 @@ class PealClient
      * @var ReviewClient $review
      */
     public ReviewClient $review;
+
+    /**
+     * @var TagsClient $tags
+     */
+    public TagsClient $tags;
+
+    /**
+     * @var SignaturesClient $signatures
+     */
+    public SignaturesClient $signatures;
+
+    /**
+     * @var ChannelSetsClient $channelSets
+     */
+    public ChannelSetsClient $channelSets;
+
+    /**
+     * @var ChannelDefaultsClient $channelDefaults
+     */
+    public ChannelDefaultsClient $channelDefaults;
 
     /**
      * @var array{
@@ -214,10 +244,15 @@ class PealClient
         $this->lookups = new LookupsClient($this->client, $this->options);
         $this->webhooks = new WebhooksClient($this->client, $this->options);
         $this->inbox = new InboxClient($this->client, $this->options);
+        $this->ads = new AdsClient($this->client, $this->options);
         $this->activity = new ActivityClient($this->client, $this->options);
         $this->partner = new PartnerClient($this->client, $this->options);
         $this->partnerAccount = new PartnerAccountClient($this->client, $this->options);
         $this->connectLinks = new ConnectLinksClient($this->client, $this->options);
         $this->review = new ReviewClient($this->client, $this->options);
+        $this->tags = new TagsClient($this->client, $this->options);
+        $this->signatures = new SignaturesClient($this->client, $this->options);
+        $this->channelSets = new ChannelSetsClient($this->client, $this->options);
+        $this->channelDefaults = new ChannelDefaultsClient($this->client, $this->options);
     }
 }
