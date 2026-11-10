@@ -197,8 +197,8 @@ Chaque commande affiche l’identifiant du média. Seul un média `ready` va dan
 
 ```sh
 peal approvals list
-peal approvals approve <post-id>
-peal approvals request-changes <post-id> --comment "Dites jeudi, pas vendredi."
+peal approvals approve <post-id> --approval <approval-id> --subject <fingerprint>
+peal approvals request-changes <post-id> --approval <approval-id> --subject <fingerprint> --comment "Dites jeudi, pas vendredi."
 peal approvals policy
 peal approvals policy --set always
 peal review show <post-id>
@@ -208,10 +208,10 @@ peal review links <post-id>
 peal review revoke <link-id>
 ```
 
-- `peal approvals list` affiche les publications qui attendent une [approbation](/review), avec l’heure demandée pour chacune et qui a demandé. `approve` en programme une ; approuvée après son heure, elle redevient un brouillon. `request-changes` la renvoie en brouillon avec votre commentaire.
+- `peal approvals list` affiche les publications qui attendent une [approbation](/review), avec l’heure demandée pour chacune et qui a demandé. `approve` en programme une ; approuvée après son heure, elle redevient un brouillon. `request-changes` la renvoie en brouillon avec votre commentaire. Les deux décident de ce que vous avez lu : `list` et `peal review show` affichent, pour chaque publication qui attend, les `--approval` et `--subject` qu’une décision prend, et une publication qui a changé depuis n’est pas décidée (`peal` le dit ; relisez-la).
 - La ligne de commande est une application : sous la politique qui retient les publications des applications, ce qu’elle programme attend, et elle n’approuve que ce qu’un membre a demandé dans l’application web.
 - `peal approvals policy` montre quelles publications attendent ; `--set never`, `contributorsAndApplications` ou `always` le change, pour les propriétaires et les administrateurs.
-- `peal review show` affiche les approbations d’une publication et ses commentaires, fil par fil. Ce que les personnes invitées ont tapé est affiché comme du texte, les caractères de contrôle remplacés.
+- `peal review show` affiche la publication telle que chaque canal la recevra, ses approbations et ses commentaires, fil par fil. Ce que les personnes invitées ont tapé est affiché comme du texte, les caractères de contrôle remplacés.
 - `peal review link` crée un lien de relecture (`--access view` ou `comment`, par défaut ; `--hours`, 14 jours sinon) et affiche son adresse, une seule fois. Un lien qui permet d’approuver se crée dans l’application web seulement : la ligne de commande est une application, et approuverait ainsi ses propres publications. `links` liste les liens d’une publication sans leur adresse, et `revoke` en termine un.
 
 ## Sortie pour les scripts [#json]

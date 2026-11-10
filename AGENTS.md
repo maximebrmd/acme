@@ -1954,6 +1954,15 @@ and no socket, for tests.
   channels and their options. Never the time. The review context keeps its
   SHA-256 only (`subject_hash`). Add what a new kind of content says to the
   subject, or an approval would cover a post that changed.
+- A decision is for what its reviewer was shown. The link's page and a
+  post's review (`review.thread`, `get_post_review`, `peal review show`)
+  answer the post with the request that waits, read request first, so the
+  post shown is never older than the request; approving and asking for
+  changes send back its id and `subjectHash` (`ShownRequest`, `asShown`),
+  from every client, and another request or hash is `ApprovalChanged`
+  (409): the client shows the post again. Never decide for "whatever
+  waits", and render a decision's post from the answer that gave its
+  request, never from another query.
 - An approval after the post's time (beyond `scheduleGrace`) publishes
   nothing: `releasePost` takes the post back to draft, still approved.
 - `review.approval_requests` is the record of who approved what: a decided

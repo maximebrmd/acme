@@ -1,14 +1,18 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
+import type { ApprovalChanged } from "#review/domain/approval-changed.ts";
 import type { ApprovalNotPending } from "#review/domain/approval-not-pending.ts";
-import type { ApprovalRequest } from "#review/domain/approval-request.ts";
+import type {
+  ApprovalRequest,
+  ShownRequest,
+} from "#review/domain/approval-request.ts";
 import { visitorEmail, visitorName } from "#review/domain/plain-text.ts";
 import type { ReviewComment } from "#review/domain/review-comment.ts";
 import { allows, standingOf } from "#review/domain/review-link.ts";
 import type { LinkAccess, ReviewLink } from "#review/domain/review-link.ts";
 import type { Reviewer } from "#review/domain/reviewer.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { MediaAssetId, UserId } from "#shared/domain/ids.ts";
+import type { UserId } from "#shared/domain/ids.ts";
 import type { Locale } from "#shared/domain/locale.ts";
 
 import { CommentRejected } from "./comment-rejected.ts";
@@ -20,7 +24,6 @@ import { CommentStore } from "./ports/comment-store.ts";
 import { LinkStore } from "./ports/link-store.ts";
 import { LinkTokens } from "./ports/link-tokens.ts";
 import { MediaPreviews } from "./ports/media-previews.ts";
-import type { MediaPreview } from "./ports/media-previews.ts";
 import { MemberNames } from "./ports/member-names.ts";
 import { ReviewedPosts } from "./ports/reviewed-posts.ts";
 import type { ReviewedPost } from "./ports/reviewed-posts.ts";
@@ -28,6 +31,8 @@ import { VisitorGuard } from "./ports/visitor-guard.ts";
 import { membersIn } from "./post-review.ts";
 import { ReviewDesk } from "./review-desk.ts";
 import type { CommentDraft } from "./review-desk.ts";
+import { shownMedia } from "./shown-media.ts";
+import type { ShownMedia } from "./shown-media.ts";
 import { VisitorRefused } from "./visitor-refused.ts";
 
 /** What a link shows: one post, and nothing else of its workspace. */
@@ -38,7 +43,7 @@ export interface LinkPage {
   readonly names: ReadonlyMap<UserId, string>;
   readonly post: ReviewedPost;
   /** The files it shows; a file that cannot be shown has none. */
-  readonly previews: ReadonlyMap<MediaAssetId, MediaPreview>;
+  readonly previews: ShownMedia;
   /** What is asked of whoever may approve, and what was decided last. */
   readonly request: Option.Option<ApprovalRequest>;
 }
@@ -80,16 +85,21 @@ export class VisitorReview extends Context.Service<
     ) => Effect.Effect<ReviewComment, Refusal>;
     readonly approve: (
       token: string,
-      visitor: VisitorIdentity
+      visitor: VisitorIdentity,
+      shown: ShownRequest
     ) => Effect.Effect<
       { readonly late: boolean },
-      ApprovalNotPending | Refusal
+      ApprovalChanged | ApprovalNotPending | Refusal
     >;
     readonly requestChanges: (
       token: string,
       visitor: VisitorIdentity,
+      shown: ShownRequest,
       text: string
-    ) => Effect.Effect<ReviewComment, ApprovalNotPending | Refusal>;
+    ) => Effect.Effect<
+      ReviewComment,
+      ApprovalChanged | ApprovalNotPending | Refusal
+    >;
   }
 >()("peal-server/review/application/VisitorReview") {
   static readonly layer = Layer.effect(
@@ -104,6 +114,25 @@ export class VisitorReview extends Context.Service<
       const previews = yield* MediaPreviews;
       const requests = yield* ApprovalStore;
       const tokens = yield* LinkTokens;
+
+      // The link's post, while it may still change or go out.
+      const shownPost = Effect.fn("VisitorReview.shownPost")(
+        function* shownPost(link: ReviewLink) {
+          const post = yield* posts.get(link.workspaceId, link.postId);
+
+          if (Option.isNone(post)) {
+            return yield* new LinkClosed({ reason: "deleted" });
+          }
+
+          const { status } = post.value;
+
+          if (status === "published" || status === "cancelled") {
+            return yield* new LinkClosed({ reason: status });
+          }
+
+          return post.value;
+        }
+      );
 
       // The link and its post, while both still stand.
       const standing = Effect.fn("VisitorReview.standing")(function* standing(
@@ -122,50 +151,32 @@ export class VisitorReview extends Context.Service<
           return yield* new LinkClosed({ reason: state });
         }
 
-        const post = yield* posts.get(link.workspaceId, link.postId);
-
-        if (Option.isNone(post)) {
-          return yield* new LinkClosed({ reason: "deleted" });
-        }
-
-        const { status } = post.value;
-
-        if (status === "published" || status === "cancelled") {
-          return yield* new LinkClosed({ reason: status });
-        }
-
-        return { link, post: post.value };
+        return { link, post: yield* shownPost(link) };
       });
 
       const open = Effect.fn("VisitorReview.open")(function* open(
         token: string
       ) {
-        const { link, post } = yield* standing(token);
+        const { link } = yield* standing(token);
 
         const written = allows(link, "comment")
           ? yield* comments.ofPost(link.workspaceId, link.postId)
           : [];
 
+        // What the page shows is never older than the approval it names:
+        // the approval is read first, then the post again, so a decision
+        // for this page's approval is one for this page's post, or is
+        // refused (ApprovalChanged).
         const asked = yield* requests.ofPost(link.workspaceId, link.postId);
         const request = Option.fromUndefinedOr(asked[0]);
-
-        const shown = yield* Effect.forEach(
-          post.media,
-          ({ mediaId }) =>
-            previews
-              .of(post.workspaceId, mediaId)
-              .pipe(
-                Effect.map(Option.map((preview) => [mediaId, preview] as const))
-              ),
-          { concurrency: 4 }
-        );
+        const post = yield* shownPost(link);
 
         return {
           comments: written,
           link,
           names: yield* names.of(membersIn(written, Option.toArray(request))),
           post,
-          previews: new Map(shown.flatMap((entry) => Option.toArray(entry))),
+          previews: yield* shownMedia(previews, post),
           request,
         };
       });
@@ -236,7 +247,8 @@ export class VisitorReview extends Context.Service<
 
       const approve = Effect.fn("VisitorReview.approve")(function* approve(
         token: string,
-        visitor: VisitorIdentity
+        visitor: VisitorIdentity,
+        shown: ShownRequest
       ) {
         const { by, link, post } = yield* admitted(token, visitor, "approve");
 
@@ -245,7 +257,7 @@ export class VisitorReview extends Context.Service<
         // approves: one that names no member approves nothing an
         // application asked for.
         const { late } = yield* desk
-          .approve(by, post, Option.isNone(link.createdBy))
+          .approve(by, post, shown, Option.isNone(link.createdBy))
           .pipe(
             Effect.catchTag("ApprovalNeedsPerson", () =>
               Effect.fail(new LinkAccessDenied({ needed: "approve" }))
@@ -259,10 +271,11 @@ export class VisitorReview extends Context.Service<
         function* requestChanges(
           token: string,
           visitor: VisitorIdentity,
+          shown: ShownRequest,
           text: string
         ) {
           const { by, post } = yield* admitted(token, visitor, "approve");
-          const sentBack = yield* desk.requestChanges(by, post, text);
+          const sentBack = yield* desk.requestChanges(by, post, shown, text);
 
           return sentBack.comment;
         }

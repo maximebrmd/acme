@@ -1,11 +1,15 @@
 import { Context, Effect, Layer, Option } from "effect";
 
+import type { ApprovalChanged } from "#review/domain/approval-changed.ts";
 import type { ApprovalNotPending } from "#review/domain/approval-not-pending.ts";
 import {
   isApplication,
   isImpersonated,
 } from "#review/domain/approval-policy.ts";
-import type { ApprovalRequest } from "#review/domain/approval-request.ts";
+import type {
+  ApprovalRequest,
+  ShownRequest,
+} from "#review/domain/approval-request.ts";
 import type { ReviewComment } from "#review/domain/review-comment.ts";
 import type { ReviewCommentId } from "#review/domain/review-ids.ts";
 import { reviewerOf } from "#review/domain/reviewer.ts";
@@ -21,19 +25,28 @@ import type { CommentNotFound } from "./comment-not-found.ts";
 import type { CommentRejected } from "./comment-rejected.ts";
 import { ApprovalStore } from "./ports/approval-store.ts";
 import { CommentStore } from "./ports/comment-store.ts";
+import { MediaPreviews } from "./ports/media-previews.ts";
 import { MemberNames } from "./ports/member-names.ts";
 import { ReviewedPosts } from "./ports/reviewed-posts.ts";
 import type { ReviewedPost } from "./ports/reviewed-posts.ts";
 import { ReviewDesk } from "./review-desk.ts";
 import type { CommentDraft } from "./review-desk.ts";
 import { ReviewPostNotFound } from "./review-post-not-found.ts";
+import { noMedia, shownMedia } from "./shown-media.ts";
+import type { ShownMedia } from "./shown-media.ts";
 
 /** The most requests that wait listed at once. */
 export const maxPendingListed = 100;
 
-/** A post's review: its comments and what was asked and decided. */
+/**
+ * A post's review: its comments, what was asked and decided, and the post
+ * as its channels will receive it, which is what the request that waits is
+ * for.
+ */
 export interface PostThread {
   readonly comments: readonly ReviewComment[];
+  /** The files the post shows; none for a member who may not read media. */
+  readonly previews: ShownMedia;
   /** The names of the members who wrote or decided. */
   readonly names: ReadonlyMap<UserId, string>;
   readonly post: ReviewedPost;
@@ -98,6 +111,10 @@ const mayDecide = (actor: Actor) =>
  *   member asked for in person: what an application asked for waits for a
  *   person (ApprovalNeedsPerson).
  *
+ * A decision names the request its reviewer was shown and what the post
+ * said then (`ShownRequest`): a post asked again or changed since is
+ * ApprovalChanged, and they look again.
+ *
  * Whoever may approve may approve a post they wrote or asked to send: an
  * approval says that someone allowed to has looked, not that two people
  * have.
@@ -128,18 +145,20 @@ export class PostReview extends Context.Service<
     >;
     readonly approve: (
       actor: Actor,
-      postId: PostId
+      postId: PostId,
+      shown: ShownRequest
     ) => Effect.Effect<
       { readonly late: boolean; readonly request: ApprovalRequest },
-      ApprovalNeedsPerson | ApprovalNotPending | Refused
+      ApprovalChanged | ApprovalNeedsPerson | ApprovalNotPending | Refused
     >;
     readonly requestChanges: (
       actor: Actor,
       postId: PostId,
+      shown: ShownRequest,
       text: string
     ) => Effect.Effect<
       { readonly comment: ReviewComment; readonly request: ApprovalRequest },
-      ApprovalNotPending | CommentRejected | Refused
+      ApprovalChanged | ApprovalNotPending | CommentRejected | Refused
     >;
   }
 >()("peal-server/review/application/PostReview") {
@@ -150,6 +169,7 @@ export class PostReview extends Context.Service<
       const desk = yield* ReviewDesk;
       const names = yield* MemberNames;
       const posts = yield* ReviewedPosts;
+      const previews = yield* MediaPreviews;
       const requests = yield* ApprovalStore;
 
       const postOf = Effect.fn("PostReview.postOf")(function* postOf(
@@ -170,14 +190,24 @@ export class PostReview extends Context.Service<
       ) {
         yield* Effect.fromResult(authorize(actor, "post:read"));
 
-        const post = yield* postOf(actor, postId);
+        yield* postOf(actor, postId);
+
         const written = yield* comments.ofPost(actor.workspaceId, postId);
+
+        // The post shown is never older than the request it is shown
+        // with: the requests are read first, so a decision for this
+        // answer's request is one for this answer's post, or is refused
+        // (ApprovalChanged).
         const asked = yield* requests.ofPost(actor.workspaceId, postId);
+        const post = yield* postOf(actor, postId);
 
         return {
           comments: written,
           names: yield* names.of(membersIn(written, asked)),
           post,
+          previews: can(actor, "media:read")
+            ? yield* shownMedia(previews, post)
+            : noMedia,
           requests: asked,
         };
       });
@@ -231,24 +261,32 @@ export class PostReview extends Context.Service<
 
       const approve = Effect.fn("PostReview.approve")(function* approve(
         actor: Actor,
-        postId: PostId
+        postId: PostId,
+        shown: ShownRequest
       ) {
         yield* mayDecide(actor);
 
         return yield* desk.approve(
           reviewerOf(actor),
           yield* postOf(actor, postId),
+          shown,
           isApplication(actor)
         );
       });
 
       const requestChanges = Effect.fn("PostReview.requestChanges")(
-        function* requestChanges(actor: Actor, postId: PostId, text: string) {
+        function* requestChanges(
+          actor: Actor,
+          postId: PostId,
+          shown: ShownRequest,
+          text: string
+        ) {
           yield* mayDecide(actor);
 
           return yield* desk.requestChanges(
             reviewerOf(actor),
             yield* postOf(actor, postId),
+            shown,
             text
           );
         }

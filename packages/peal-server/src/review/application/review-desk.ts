@@ -1,12 +1,17 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
+import type { ApprovalChanged } from "#review/domain/approval-changed.ts";
 import { ApprovalNotPending } from "#review/domain/approval-not-pending.ts";
 import {
   approve as approveRequest,
+  asShown,
   requestChanges as refuseRequest,
   takesApplicationApproval,
 } from "#review/domain/approval-request.ts";
-import type { ApprovalRequest } from "#review/domain/approval-request.ts";
+import type {
+  ApprovalRequest,
+  ShownRequest,
+} from "#review/domain/approval-request.ts";
 import { quotes } from "#review/domain/comment-anchor.ts";
 import type { CommentAnchor } from "#review/domain/comment-anchor.ts";
 import { commentText, quotedText } from "#review/domain/plain-text.ts";
@@ -125,24 +130,28 @@ export class ReviewDesk extends Context.Service<
     /**
      * Approves the post, which is then scheduled, or back to draft if
      * late. Through an application, only what a member asked for in person
-     * (`takesApplicationApproval`).
+     * (`takesApplicationApproval`). Both decisions are for the request
+     * the reviewer was shown (`asShown`): another one, or the same for a
+     * post that says something else, is ApprovalChanged.
      */
     readonly approve: (
       by: Reviewer,
       post: ReviewedPost,
+      shown: ShownRequest,
       throughApplication: boolean
     ) => Effect.Effect<
       { readonly late: boolean; readonly request: ApprovalRequest },
-      ApprovalNeedsPerson | ApprovalNotPending | DatabaseError
+      ApprovalChanged | ApprovalNeedsPerson | ApprovalNotPending | DatabaseError
     >;
     /** Sends the post back to draft, with a comment that says why. */
     readonly requestChanges: (
       by: Reviewer,
       post: ReviewedPost,
+      shown: ShownRequest,
       text: string
     ) => Effect.Effect<
       { readonly comment: ReviewComment; readonly request: ApprovalRequest },
-      ApprovalNotPending | CommentRejected | DatabaseError
+      ApprovalChanged | ApprovalNotPending | CommentRejected | DatabaseError
     >;
   }
 >()("peal-server/review/application/ReviewDesk") {
@@ -288,29 +297,31 @@ export class ReviewDesk extends Context.Service<
         return next;
       });
 
+      // The request that waits, when it is the one the reviewer was shown.
       const pendingFor = Effect.fn("ReviewDesk.pendingFor")(
-        function* pendingFor(post: ReviewedPost) {
+        function* pendingFor(post: ReviewedPost, shown: ShownRequest) {
           const pending = yield* requests.lockPending(
             post.workspaceId,
             post.postId
           );
 
-          return yield* Option.match(pending, {
-            onNone: () =>
-              Effect.fail(new ApprovalNotPending({ postId: post.postId })),
-            onSome: Effect.succeed,
-          });
+          if (Option.isNone(pending)) {
+            return yield* new ApprovalNotPending({ postId: post.postId });
+          }
+
+          return yield* Effect.fromResult(asShown(pending.value, shown));
         }
       );
 
       const approve = Effect.fn("ReviewDesk.approve")(function* approve(
         by: Reviewer,
         post: ReviewedPost,
+        shown: ShownRequest,
         throughApplication: boolean
       ) {
         return yield* transaction(
           Effect.gen(function* approveAndRelease() {
-            const pending = yield* pendingFor(post);
+            const pending = yield* pendingFor(post, shown);
 
             if (throughApplication && !takesApplicationApproval(pending)) {
               return yield* new ApprovalNeedsPerson({ postId: post.postId });
@@ -353,12 +364,17 @@ export class ReviewDesk extends Context.Service<
         function* requestChanges(
           by: Reviewer,
           post: ReviewedPost,
+          shown: ShownRequest,
           text: string
         ) {
           return yield* transaction(
             Effect.gen(function* refuseAndSendBack() {
               const request = yield* Effect.fromResult(
-                refuseRequest(yield* pendingFor(post), by, yield* DateTime.now)
+                refuseRequest(
+                  yield* pendingFor(post, shown),
+                  by,
+                  yield* DateTime.now
+                )
               );
 
               yield* requests.update(request);

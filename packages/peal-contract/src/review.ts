@@ -6,11 +6,14 @@ import {
   OpenApi,
 } from "effect/http-api";
 
+import { ApprovalChanged } from "./approval-changed.ts";
 import { ApprovalNotPending } from "./approval-not-pending.ts";
 import { Authentication } from "./authentication.ts";
 import { CommentInvalid } from "./comment-invalid.ts";
 import { CommentNotFound } from "./comment-not-found.ts";
 import { Forbidden } from "./forbidden.ts";
+import { MediaKindSchema } from "./media.ts";
+import { PlatformSchema } from "./platform.ts";
 import { PostNotFound } from "./post-not-found.ts";
 import { PostNotReviewable } from "./post-not-reviewable.ts";
 import { PostScheduleSchema } from "./posts.ts";
@@ -224,14 +227,50 @@ export const ApprovalRequestSchema = Schema.Struct({
   // The time asked for, in the zone it was chosen in.
   schedule: PostScheduleSchema,
   status: ApprovalStatusSchema,
+  // The fingerprint of what the post said when this was asked: its text,
+  // its media and their alt text, its channels and its options on each. A
+  // decision sends it back with `id`.
+  subjectHash: Schema.String,
 }).annotate({ identifier: "ApprovalRequest" });
 
 export type ApprovalRequest = typeof ApprovalRequestSchema.Type;
 
-/** A post's review: its comments, oldest first, and its approvals, newest first. */
+/** A post on one of its channels, as the channel will receive it. */
+export const ReviewedChannelSchema = Schema.Struct({
+  channelId: Schema.String,
+  // The account's name on its platform; null once it was disconnected.
+  handle: Schema.NullOr(Schema.String),
+  platform: Schema.NullOr(PlatformSchema),
+  text: Schema.String,
+}).annotate({ identifier: "ReviewedChannel" });
+
+export type ReviewedChannel = typeof ReviewedChannelSchema.Type;
+
+/**
+ * An image, a video or a document (a PDF, on LinkedIn) a post shows. `url`
+ * reads the file from the media store for two hours; it is null, with
+ * `kind`, for a file that cannot be shown. A document has no alt text.
+ */
+export const ReviewedMediaSchema = Schema.Struct({
+  altText: Schema.String,
+  kind: Schema.NullOr(MediaKindSchema),
+  mediaId: Schema.String,
+  url: Schema.NullOr(Schema.String),
+}).annotate({ identifier: "ReviewedMedia" });
+
+export type ReviewedMedia = typeof ReviewedMediaSchema.Type;
+
+/**
+ * A post's review: its comments, oldest first, its approvals, newest first,
+ * and the post as each of its channels will receive it now, which is what
+ * the approval that waits is for. Decide on what this answer shows, with
+ * the `id` and `subjectHash` of its pending approval.
+ */
 export const PostReviewSchema = Schema.Struct({
   approvals: Schema.Array(ApprovalRequestSchema),
+  channels: Schema.Array(ReviewedChannelSchema),
   comments: Schema.Array(ReviewCommentSchema),
+  media: Schema.Array(ReviewedMediaSchema),
 }).annotate({ identifier: "PostReview" });
 
 export type PostReview = typeof PostReviewSchema.Type;
@@ -248,8 +287,32 @@ export const ApprovalOutcomeSchema = Schema.Struct({
 
 export type ApprovalOutcome = typeof ApprovalOutcomeSchema.Type;
 
-/** Why changes are asked for: kept as a comment on the post. */
+/** The longest fingerprint a decision sends back. */
+export const maxSubjectHashLength = 128;
+
+/**
+ * The approval a decision is about, as its reviewer was shown it: its `id`
+ * and its `subjectHash`. A decision is for what was read: when the post
+ * was asked again or says something else since, it answers ApprovalChanged.
+ */
+export const shownApprovalFields = {
+  approvalId: Schema.String.check(Schema.isMaxLength(maxSubjectHashLength)),
+  subjectHash: Schema.String.check(Schema.isMaxLength(maxSubjectHashLength)),
+};
+
+/** An approval of a post, as its reviewer was shown it. */
+export const ApprovalDecisionSchema = Schema.Struct(
+  shownApprovalFields
+).annotate({ identifier: "ApprovalDecision" });
+
+export type ApprovalDecision = typeof ApprovalDecisionSchema.Type;
+
+/**
+ * Why changes are asked for, kept as a comment on the post, and the
+ * approval it refuses, as its reviewer was shown it.
+ */
 export const ChangesRequestSchema = Schema.Struct({
+  ...shownApprovalFields,
   comment: CommentTextSchema,
 }).annotate({ identifier: "ChangesRequest" });
 
@@ -397,25 +460,32 @@ export class ReviewApi extends HttpApiGroup.make("review")
       })
     ),
     HttpApiEndpoint.post("approve", "/posts/:postId/approve", {
-      error: [Forbidden, PostNotFound, ApprovalNotPending],
+      error: [Forbidden, PostNotFound, ApprovalNotPending, ApprovalChanged],
       params: post,
+      payload: ApprovalDecisionSchema,
       success: ApprovalOutcomeSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Approves a post that waits for an approval: it is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.",
+          "Approves a post that waits for an approval, as the reviewer was shown it: send the `id` and the `subjectHash` of the approval that waits, as the post's review or the list of approvals gave them. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): read it again. It is scheduled for the time it was asked for, and its job starts. Approved after that time (beyond a minute), nothing is published late: the post goes back to draft, still approved, and `late` is true; scheduling it again needs no new approval while it says the same. Recorded with who approved and when. Needs post:approve, and is refused to staff acting as a member.",
         summary: "Approve a post",
       })
     ),
     HttpApiEndpoint.post("requestChanges", "/posts/:postId/request-changes", {
-      error: [Forbidden, PostNotFound, ApprovalNotPending, CommentInvalid],
+      error: [
+        Forbidden,
+        PostNotFound,
+        ApprovalNotPending,
+        ApprovalChanged,
+        CommentInvalid,
+      ],
       params: post,
       payload: ChangesRequestSchema,
       success: ChangesOutcomeSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Sends a post that waits for an approval back to draft, with a comment that says what to change. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.",
+          "Sends a post that waits for an approval back to draft, with a comment that says what to change, and the `id` and `subjectHash` of the approval it refuses, as for approving. Its author and whoever asked are told. Needs post:approve, and is refused to staff acting as a member.",
         summary: "Request changes to a post",
       })
     ),

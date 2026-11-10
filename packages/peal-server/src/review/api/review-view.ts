@@ -8,6 +8,9 @@ import type {
   ReviewPage as PageView,
 } from "peal-contract";
 
+import type { ReviewedPost } from "#review/application/ports/reviewed-posts.ts";
+import type { PostThread } from "#review/application/post-review.ts";
+import type { ShownMedia } from "#review/application/shown-media.ts";
 import type { LinkPage } from "#review/application/visitor-review.ts";
 import type { ApprovalRequest } from "#review/domain/approval-request.ts";
 import { locate } from "#review/domain/comment-anchor.ts";
@@ -115,6 +118,7 @@ export const approvalView = (
   requestedVia: request.requestedVia,
   schedule: { at: request.scheduledAt, timeZone: request.timeZone },
   status: request.status,
+  subjectHash: request.subjectHash,
 });
 
 /** A review link as the workspace sees it: never its token. */
@@ -142,6 +146,63 @@ export const textsOf =
       channels.find((channel) => channel.channelId === channelId)
     ).pipe(Option.map(({ text }) => text));
 
+/** The post on each of its channels, as the channel will receive it. */
+export const channelsView = ({
+  channels,
+}: ReviewedPost): PageView["channels"] =>
+  channels.map(({ channelId, handle, platform, text }) => ({
+    channelId,
+    handle: Option.getOrNull(handle),
+    platform: Option.getOrNull(platform),
+    text,
+  }));
+
+/**
+ * The files the post shows, each with where it is read from when it can be
+ * shown. Without `shown`, files are named by their id and alt text alone.
+ */
+export const mediaView = (
+  { media }: ReviewedPost,
+  shown: ShownMedia
+): PageView["media"] =>
+  media.map(({ altText, mediaId }) => {
+    const preview = Option.fromUndefinedOr(shown.get(mediaId));
+
+    return {
+      altText,
+      kind: preview.pipe(
+        Option.map(({ kind }) => kind),
+        Option.getOrNull
+      ),
+      mediaId,
+      url: preview.pipe(
+        Option.map(({ url }) => url),
+        Option.getOrNull
+      ),
+    };
+  });
+
+/**
+ * A post's review as the workspace's clients see it. `shown` is the
+ * thread's own files, or none for a client that is handed no file, as an
+ * AI model.
+ */
+export const threadView = (
+  thread: PostThread,
+  shown: ShownMedia = thread.previews
+) => {
+  const context: ViewContext = { names: thread.names, toWorkspace: true };
+
+  return {
+    approvals: thread.requests.map((request) => approvalView(request, context)),
+    channels: channelsView(thread.post),
+    comments: thread.comments.map((comment) =>
+      commentView(comment, textsOf(thread.post.channels), context)
+    ),
+    media: mediaView(thread.post, shown),
+  };
+};
+
 /** What a link shows to whoever holds it. */
 export const pageView = (page: LinkPage): PageView | undefined => {
   const { link, post } = page;
@@ -158,32 +219,12 @@ export const pageView = (page: LinkPage): PageView | undefined => {
       Option.map((request) => approvalView(request, context)),
       Option.getOrNull
     ),
-    channels: post.channels.map(({ channelId, handle, platform, text }) => ({
-      channelId,
-      handle: Option.getOrNull(handle),
-      platform: Option.getOrNull(platform),
-      text,
-    })),
+    channels: channelsView(post),
     comments: page.comments.map((comment) =>
       commentView(comment, textsOf(post.channels), context)
     ),
     expiresAt: link.expiresAt,
-    media: post.media.map(({ altText, mediaId }) => {
-      const preview = Option.fromUndefinedOr(page.previews.get(mediaId));
-
-      return {
-        altText,
-        kind: preview.pipe(
-          Option.map(({ kind }) => kind),
-          Option.getOrNull
-        ),
-        mediaId,
-        url: preview.pipe(
-          Option.map(({ url }) => url),
-          Option.getOrNull
-        ),
-      };
-    }),
+    media: mediaView(post, page.previews),
     schedule: post.schedule.pipe(
       Option.map(({ at, timeZone }) => ({ at, timeZone })),
       Option.getOrNull

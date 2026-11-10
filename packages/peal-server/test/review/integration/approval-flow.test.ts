@@ -32,6 +32,7 @@ import { Heard } from "#test/review/heard.ts";
 import {
   impersonating,
   onReviewServerAt,
+  shown,
   throughClient,
   Told,
   visitor,
@@ -187,12 +188,18 @@ describe("a workspace where contributors and applications wait", () => {
             impersonating(yield* freshUser, yield* freshUser, workspaceId),
           ]) {
             assert.deepStrictEqual(
-              yield* Effect.flip(review.approve(refused, post.id)),
+              yield* Effect.flip(
+                review.approve(refused, post.id, yield* shown(post))
+              ),
               new MissingPermission({ permission: "post:approve" })
             );
           }
 
-          const { late, request } = yield* review.approve(editor, post.id);
+          const { late, request } = yield* review.approve(
+            editor,
+            post.id,
+            yield* shown(post)
+          );
 
           assert.isFalse(late);
           assert.strictEqual(request.status, "approved");
@@ -204,7 +211,9 @@ describe("a workspace where contributors and applications wait", () => {
 
           // Decided once.
           assert.deepStrictEqual(
-            yield* Effect.flip(review.approve(editor, post.id)),
+            yield* Effect.flip(
+              review.approve(editor, post.id, yield* shown(post))
+            ),
             new ApprovalNotPending({ postId: post.id })
           );
 
@@ -268,7 +277,11 @@ describe("a workspace where contributors and applications wait", () => {
           ]);
 
           // Approved, the key's post is scheduled, and told then.
-          yield* review.approve(editor, byKey.post.id);
+          yield* review.approve(
+            editor,
+            byKey.post.id,
+            yield* shown(byKey.post)
+          );
 
           assert.deepStrictEqual(yield* heard, [
             ["scheduled", byEditor.post.id],
@@ -343,18 +356,28 @@ describe("a workspace where contributors and applications wait", () => {
           for (const { post } of [byKey, byClient]) {
             for (const application of [client, apiKeyIn(workspaceId)]) {
               assert.deepStrictEqual(
-                yield* Effect.flip(review.approve(application, post.id)),
+                yield* Effect.flip(
+                  review.approve(application, post.id, yield* shown(post))
+                ),
                 new ApprovalNeedsPerson({ postId: post.id })
               );
             }
           }
 
           assert.strictEqual(
-            (yield* review.approve(client, byMember.post.id)).request.status,
+            (yield* review.approve(
+              client,
+              byMember.post.id,
+              yield* shown(byMember.post)
+            )).request.status,
             "approved"
           );
           assert.strictEqual(
-            (yield* review.approve(editor, byKey.post.id)).request.status,
+            (yield* review.approve(
+              editor,
+              byKey.post.id,
+              yield* shown(byKey.post)
+            )).request.status,
             "approved"
           );
 
@@ -368,7 +391,9 @@ describe("a workspace where contributors and applications wait", () => {
           );
 
           assert.deepStrictEqual(
-            yield* Effect.flip(review.approve(client, again.post.id)),
+            yield* Effect.flip(
+              review.approve(client, again.post.id, yield* shown(again.post))
+            ),
             new ApprovalNeedsPerson({ postId: again.post.id })
           );
         })
@@ -410,22 +435,25 @@ describe("a workspace where contributors and applications wait", () => {
           }
 
           // An application still shows a post, and takes comments on it.
-          const shown = yield* links.create(key, post.id, {
+          const commenting = yield* links.create(key, post.id, {
             access: "comment",
             lifetime: Option.none(),
           });
 
           assert.deepStrictEqual(
-            yield* Effect.flip(visitors.approve(shown.token, visitor())),
+            yield* Effect.flip(
+              visitors.approve(commenting.token, visitor(), yield* shown(post))
+            ),
             new LinkAccessDenied({ needed: "approve" })
           );
 
           // A link a person made approves what an application asked for.
           const { token } = yield* links.create(editor, post.id, approving);
 
-          assert.deepStrictEqual(yield* visitors.approve(token, visitor()), {
-            late: false,
-          });
+          assert.deepStrictEqual(
+            yield* visitors.approve(token, visitor(), yield* shown(post)),
+            { late: false }
+          );
           assert.strictEqual(yield* statusOf(post.id), "scheduled");
         })
       ),
@@ -454,6 +482,7 @@ describe("a workspace where contributors and applications wait", () => {
           const sentBack = yield* review.requestChanges(
             editor,
             post.id,
+            yield* shown(post),
             "There is a typo in the last word."
           );
 
@@ -513,7 +542,11 @@ describe("a workspace where contributors and applications wait", () => {
 
           yield* setTime("2026-06-15T09:30:00Z");
 
-          const approved = yield* review.approve(editor, post.id);
+          const approved = yield* review.approve(
+            editor,
+            post.id,
+            yield* shown(post)
+          );
 
           assert.isTrue(approved.late);
           assert.strictEqual(yield* statusOf(post.id), "draft");
@@ -564,14 +597,16 @@ describe("a workspace where contributors and applications wait", () => {
             ["withdrawn"]
           );
           assert.deepStrictEqual(
-            yield* Effect.flip(review.approve(editor, post.id)),
+            yield* Effect.flip(
+              review.approve(editor, post.id, yield* shown(post))
+            ),
             new ApprovalNotPending({ postId: post.id })
           );
 
           // Asked again and approved, then changed: the approval was for
           // the first wording, and the post waits again.
           yield* scheduling.reschedule(contributor, post.id, at8);
-          yield* review.approve(editor, post.id);
+          yield* review.approve(editor, post.id, yield* shown(post));
           yield* scheduling.unschedule(editor, post.id);
           yield* drafts.update(contributor, post.id, {
             channelIds: [channelId],
@@ -644,7 +679,7 @@ describe("a workspace where every post waits", () => {
 
           assert.strictEqual(post.status._tag, "awaitingApproval");
 
-          yield* review.approve(editor, post.id);
+          yield* review.approve(editor, post.id, yield* shown(post));
 
           assert.strictEqual(yield* statusOf(post.id), "scheduled");
         })

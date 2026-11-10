@@ -733,15 +733,27 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             ]
           );
 
+          // What each approval names, as a client that read them sends it
+          // back.
+          const shownFor = (postId: string) => {
+            const approval = approvals.find((asked) => asked.postId === postId);
+
+            return {
+              approvalId: approval?.id ?? "",
+              postId,
+              subjectHash: approval?.subjectHash ?? "",
+            };
+          };
+
           // Reading only decides nothing.
           assert.include(
-            yield* reader.refused("approve_post", { postId: inPerson.id }),
+            yield* reader.refused("approve_post", shownFor(inPerson.id)),
             "This connection may not approve posts"
           );
           assert.include(
             yield* reader.refused("request_changes", {
+              ...shownFor(inPerson.id),
               comment: "Not mine to ask.",
-              postId: inPerson.id,
             }),
             "This connection may not approve posts"
           );
@@ -749,14 +761,23 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // Approving is publishing: a connection that only writes decides
           // nothing either.
           assert.include(
-            yield* writer.refused("approve_post", { postId: inPerson.id }),
+            yield* writer.refused("approve_post", shownFor(inPerson.id)),
             "This connection may not approve posts"
           );
 
           // What an application asked for waits for a person.
           assert.include(
-            yield* publisher.refused("approve_post", { postId: byKey.id }),
+            yield* publisher.refused("approve_post", shownFor(byKey.id)),
             "it waits for a person"
+          );
+
+          // A decision for something else than what was read is refused.
+          assert.include(
+            yield* publisher.refused("approve_post", {
+              ...shownFor(inPerson.id),
+              subjectHash: "0".repeat(64),
+            }),
+            "says something else since the user was shown it"
           );
 
           const before = yield* mcpConnections(workspaceId);
@@ -764,7 +785,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           const sentBack = yield* publisher.call(
             "request_changes",
             Schema.toCodecJson(ChangesOutcomeSchema),
-            { comment: "Say Thursday, not Friday.", postId: inPerson.id }
+            { ...shownFor(inPerson.id), comment: "Say Thursday, not Friday." }
           );
 
           assert.strictEqual(sentBack.approval.status, "changesRequested");
@@ -781,7 +802,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             [["member", "Say Thursday, not Friday."]]
           );
           assert.include(
-            yield* publisher.refused("approve_post", { postId: inPerson.id }),
+            yield* publisher.refused("approve_post", shownFor(inPerson.id)),
             "The post does not wait for an approval"
           );
 

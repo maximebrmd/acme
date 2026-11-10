@@ -4,7 +4,7 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { Channel, NewComment, Permission, Post } from "peal-contract";
+import type { NewComment, Permission, Post } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import {
@@ -41,47 +41,25 @@ import { failureText } from "#review/failure-text.ts";
 import type { ReviewFailure } from "#review/failure-text.ts";
 
 import { ApprovalHistoryView } from "./approval-history-view.tsx";
-import type { PreviewedChannel } from "./channel-previews-view.tsx";
 import { CommentForm } from "./comment-form.tsx";
 import { ReviewBoard } from "./review-board.tsx";
 import { ReviewLinksPanel } from "./review-links-panel.tsx";
 
 interface PostReviewSectionProps {
-  readonly channels: readonly Channel[];
   readonly permissions: readonly Permission[];
   readonly post: Post;
   readonly workspaceId: string;
 }
 
-// The post as each of its channels will receive it, named as the workspace
-// names its channels.
-const previewsOf = (
-  post: Post,
-  channels: readonly Channel[]
-): readonly PreviewedChannel[] =>
-  post.targets.map(({ channelId }) => {
-    const channel = channels.find(({ id }) => id === channelId);
-
-    return {
-      channelId,
-      handle: channel?.handle ?? null,
-      platform: channel?.platform ?? null,
-      text:
-        post.content.overrides.find(
-          (override) => override.channelId === channelId
-        )?.text ?? post.content.text,
-    };
-  });
-
 const unexpected: ReviewFailure = { _tag: "Unexpected" };
 
 /**
  * A post's review, in the app: the approval it waits for and who may
- * decide, what was decided before, its comments, and the links that show it
+ * decide, the post as its channels will receive it, which is what the
+ * decision is for, what was decided before, its comments, and the links that show it
  * to people without an account.
  */
 export const PostReviewSection = ({
-  channels,
   permissions,
   post,
   workspaceId,
@@ -100,16 +78,33 @@ export const PostReviewSection = ({
   const can = (permission: Permission) => permissions.includes(permission);
   const params = { postId: post.id, workspaceId };
   const waiting = post.status === "awaitingApproval";
-  const canDecide = waiting && can("post:approve");
+  const mayDecide = waiting && can("post:approve");
 
   const settled = <A, E extends ReviewFailure>(exit: Exit.Exit<A, E>) => {
-    setFailure(
-      Exit.isSuccess(exit)
-        ? null
-        : Option.getOrElse(failureOf(exit), () => unexpected)
-    );
+    const failed = Exit.isSuccess(exit)
+      ? null
+      : Option.getOrElse(failureOf(exit), () => unexpected);
+
+    setFailure(failed);
+
+    // A decision is for what this review showed: when the post says
+    // something else now, the review shows it before anything is decided.
+    if (failed?._tag === "ApprovalChanged") {
+      reload();
+    }
 
     return Exit.isSuccess(exit);
+  };
+
+  // The approval that waits, as this review shows it with the post it is
+  // for: a decision names it, so it is for what was read here.
+  const pending = AsyncResult.isSuccess(review)
+    ? review.value.approvals.find(({ status }) => status === "pending")
+    : undefined;
+
+  const shown = {
+    approvalId: pending?.id ?? "",
+    subjectHash: pending?.subjectHash ?? "",
   };
 
   const onComment = async (payload: NewComment) =>
@@ -129,6 +124,7 @@ export const PostReviewSection = ({
     startTransition(async () => {
       const exit = await approve({
         params,
+        payload: shown,
         reactivityKeys: [...reviewKeys, ...postsKeys],
       });
 
@@ -140,6 +136,8 @@ export const PostReviewSection = ({
     });
   };
 
+  // Deciding waits for the review: it shows the post the decision is for.
+  const canDecide = mayDecide && pending !== undefined;
   const mayWrite = can("post:create") || can("post:approve");
 
   const body = (() => {
@@ -172,10 +170,10 @@ export const PostReviewSection = ({
         <ApprovalHistoryView approvals={review.value.approvals} />
         <ReviewBoard
           canComment={mayWrite}
-          channels={previewsOf(post, channels)}
+          channels={review.value.channels}
           comments={review.value.comments}
           failure={failure === null ? null : failureText(t, failure)}
-          media={[]}
+          media={review.value.media}
           onComment={onComment}
           onResolve={mayWrite ? onResolve : undefined}
         />
@@ -197,7 +195,7 @@ export const PostReviewSection = ({
             <Alert>
               <AlertDescription>
                 <span className="flex flex-col gap-3">
-                  {t(canDecide ? "decide.waitingForYou" : "decide.waiting")}
+                  {t(mayDecide ? "decide.waitingForYou" : "decide.waiting")}
                   {canDecide ? (
                     <span className="flex flex-wrap gap-2">
                       <Button
@@ -230,7 +228,7 @@ export const PostReviewSection = ({
                               const taken = settled(
                                 await sendBack({
                                   params,
-                                  payload: { comment: text },
+                                  payload: { ...shown, comment: text },
                                   reactivityKeys: [...reviewKeys, ...postsKeys],
                                 })
                               );

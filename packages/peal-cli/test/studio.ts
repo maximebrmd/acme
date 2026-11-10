@@ -4,6 +4,7 @@ import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
 import {
   AlreadyMember,
   Api,
+  ApprovalChanged,
   ApprovalNotPending,
   ChannelNotFound,
   CurrentMember,
@@ -343,10 +344,16 @@ const posts: readonly Post[] = [
   },
 ];
 
+/** The fingerprint of what the post that waits says. */
+export const awaitingSubject = "5a".repeat(32);
+
+/** The approval that waits for it. */
+export const awaitingApprovalId = "0190f3a0-0000-7000-8000-00000000b001";
+
 // The approval that waits for the post a contributor asked to send.
 const approval: ApprovalRequest = {
   decision: null,
-  id: "0190f3a0-0000-7000-8000-00000000b001",
+  id: awaitingApprovalId,
   postId: awaitingId,
   requestedAt: at("2026-11-09T10:00:00Z"),
   requestedBy: contributorId,
@@ -354,6 +361,7 @@ const approval: ApprovalRequest = {
   requestedVia: "member",
   schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
   status: "pending",
+  subjectHash: awaitingSubject,
 };
 
 // A visitor's comment on it, about a word of its text, as a link's holder
@@ -1971,7 +1979,7 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     HttpApiBuilder.group(Api, "review", (handlers) =>
       handlers.handleAll({
-        approve: ({ params }) =>
+        approve: ({ params, payload }) =>
           Effect.gen(function* approve() {
             yield* allowed("post:approve");
 
@@ -1989,6 +1997,13 @@ export const studioGroupsLive = (studio: Studio) =>
 
             if (pending === undefined) {
               return yield* new ApprovalNotPending();
+            }
+
+            if (
+              pending.id !== payload.approvalId ||
+              pending.subjectHash !== payload.subjectHash
+            ) {
+              return yield* new ApprovalChanged();
             }
 
             const decided: ApprovalRequest = {
@@ -2135,6 +2150,13 @@ export const studioGroupsLive = (studio: Studio) =>
               return yield* new ApprovalNotPending();
             }
 
+            if (
+              pending.id !== payload.approvalId ||
+              pending.subjectHash !== payload.subjectHash
+            ) {
+              return yield* new ApprovalChanged();
+            }
+
             const by = {
               kind: "member" as const,
               linkId: null,
@@ -2201,7 +2223,12 @@ export const studioGroupsLive = (studio: Studio) =>
         thread: ({ params }) =>
           Effect.gen(function* thread() {
             yield* allowed("post:read");
-            yield* findPost(studio, params.workspaceId, params.postId);
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
 
             const { approvals, comments } = yield* Ref.get(studio.state);
 
@@ -2209,9 +2236,16 @@ export const studioGroupsLive = (studio: Studio) =>
               approvals: approvals.filter(
                 ({ postId }) => postId === params.postId
               ),
+              channels: post.targets.map(({ channelId }) => ({
+                channelId,
+                handle: "@studio@social.example.test",
+                platform: "mastodon" as const,
+                text: post.content.text,
+              })),
               comments: comments.filter(
                 ({ postId }) => postId === params.postId
               ),
+              media: [],
             };
           }),
         updateSettings: ({ payload }) =>

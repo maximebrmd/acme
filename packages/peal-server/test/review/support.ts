@@ -3,6 +3,7 @@ import type { Scope } from "effect";
 
 import { PostEvents } from "#publishing/application/post-events.ts";
 import { ApprovalIntake } from "#review/application/approval-intake.ts";
+import { ApprovalStore } from "#review/application/ports/approval-store.ts";
 import type { VisitorContact } from "#review/application/ports/comment-store.ts";
 import { MediaPreviews } from "#review/application/ports/media-previews.ts";
 import { MemberNames } from "#review/application/ports/member-names.ts";
@@ -17,6 +18,7 @@ import { ReviewSettings } from "#review/application/review-settings.ts";
 import { VisitorReview } from "#review/application/visitor-review.ts";
 import type { VisitorIdentity } from "#review/application/visitor-review.ts";
 import type { ApprovalPolicy } from "#review/domain/approval-policy.ts";
+import type { ShownRequest } from "#review/domain/approval-request.ts";
 import { DrizzleApprovalStore } from "#review/infrastructure/drizzle-approval-store.ts";
 import { DrizzleCommentStore } from "#review/infrastructure/drizzle-comment-store.ts";
 import { DrizzleLinkStore } from "#review/infrastructure/drizzle-link-store.ts";
@@ -27,6 +29,7 @@ import { PublicLinkAddresses } from "#review/infrastructure/public-link-addresse
 import { PublishingReviewedPosts } from "#review/infrastructure/publishing-reviewed-posts.ts";
 import { ReviewApprovalGate } from "#review/infrastructure/review-approval-gate.ts";
 import { SecureLinkTokens } from "#review/infrastructure/secure-link-tokens.ts";
+import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
@@ -236,6 +239,24 @@ export const impersonating = (
     subject: { _tag: "user", impersonatedBy: Option.some(staffId), userId },
     workspaceId,
   });
+
+/**
+ * The approval a post's reviewers are shown now: its latest request, with
+ * what the post said when it was asked.
+ */
+export const shown = ({
+  id,
+  workspaceId,
+}: {
+  readonly id: PostId;
+  readonly workspaceId: WorkspaceId;
+}): Effect.Effect<ShownRequest, DatabaseError, ApprovalStore> =>
+  ApprovalStore.use((requests) => requests.ofPost(workspaceId, id)).pipe(
+    Effect.map(([latest]) => ({
+      requestId: latest?.id ?? "none",
+      subjectHash: latest?.subjectHash ?? "none",
+    }))
+  );
 
 /** A visitor as the public endpoints see one. */
 export const visitor = (

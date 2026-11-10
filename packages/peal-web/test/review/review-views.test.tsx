@@ -260,6 +260,7 @@ const approval = (more: Partial<ApprovalRequest> = {}): ApprovalRequest => ({
   requestedVia: "member",
   schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
   status: "pending",
+  subjectHash: "5a".repeat(32),
   ...more,
 });
 

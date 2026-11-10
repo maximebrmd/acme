@@ -1,6 +1,6 @@
 "use client";
 
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { DateTime, Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import {
@@ -72,12 +72,14 @@ const Message = ({
 );
 
 interface OpenLinkProps {
+  /** Reads the link again: the post changed since the page showed it. */
+  readonly onChanged: () => void;
   readonly page: ReviewPage;
   readonly token: string;
 }
 
 // What the link shows, and what its holder may do.
-const OpenLink = ({ page, token }: OpenLinkProps) => {
+const OpenLink = ({ onChanged, page, token }: OpenLinkProps) => {
   const t = useTranslations("Review");
   const format = useFormatter();
   const locale = useLocale();
@@ -115,13 +117,26 @@ const OpenLink = ({ page, token }: OpenLinkProps) => {
   const settled = <A, E extends ReviewFailure>(exit: Exit.Exit<A, E>) => {
     // A check's token works once, whatever the answer.
     captcha.reset();
-    setFailure(
-      Exit.isSuccess(exit)
-        ? null
-        : Option.getOrElse(failureOf(exit), () => unexpected)
-    );
+
+    const failed = Exit.isSuccess(exit)
+      ? null
+      : Option.getOrElse(failureOf(exit), () => unexpected);
+
+    setFailure(failed);
+
+    // A decision is for what this page showed: when the post says
+    // something else now, the page shows it before anything is decided.
+    if (failed?._tag === "ApprovalChanged") {
+      onChanged();
+    }
 
     return Exit.isSuccess(exit);
+  };
+
+  // The approval this page shows, which a decision names: what was read.
+  const shown = {
+    approvalId: page.approval?.id ?? "",
+    subjectHash: page.approval?.subjectHash ?? "",
   };
 
   const startWriting = () => {
@@ -146,7 +161,7 @@ const OpenLink = ({ page, token }: OpenLinkProps) => {
     startTransition(async () => {
       const exit = await approve({
         headers,
-        payload: { name },
+        payload: { ...shown, name },
         reactivityKeys: reloadKeys,
       });
 
@@ -264,7 +279,7 @@ const OpenLink = ({ page, token }: OpenLinkProps) => {
                   const taken = settled(
                     await sendBack({
                       headers,
-                      payload: { comment: text, name },
+                      payload: { ...shown, comment: text, name },
                       reactivityKeys: reloadKeys,
                     })
                   );
@@ -293,10 +308,12 @@ const OpenLink = ({ page, token }: OpenLinkProps) => {
 // The link's page, by its token.
 const LinkPage = ({ token }: { readonly token: string }) => {
   const t = useTranslations("Review");
-  const result = useAtomValue(openReviewLink(token));
+  const query = openReviewLink(token);
+  const result = useAtomValue(query);
+  const reload = useAtomRefresh(query);
 
   if (AsyncResult.isSuccess(result)) {
-    return <OpenLink page={result.value} token={token} />;
+    return <OpenLink page={result.value} token={token} onChanged={reload} />;
   }
 
   if (AsyncResult.isInitial(result)) {

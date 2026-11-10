@@ -15,6 +15,7 @@ import type { CommentDraft } from "#review/application/review-desk.ts";
 import { ReviewLinks } from "#review/application/review-links.ts";
 import { ReviewPostNotFound } from "#review/application/review-post-not-found.ts";
 import { VisitorReview } from "#review/application/visitor-review.ts";
+import { ApprovalChanged } from "#review/domain/approval-changed.ts";
 import { locate } from "#review/domain/comment-anchor.ts";
 import type { LinkAccess } from "#review/domain/review-link.ts";
 import { newId } from "#shared/application/ids.ts";
@@ -35,6 +36,7 @@ import { actorAs, contentOf } from "#test/publishing/support.ts";
 import {
   impersonating,
   onReviewServerAt,
+  shown,
   Told,
   visitor,
   withPolicy,
@@ -270,6 +272,7 @@ describe("a review link", () => {
             schedule: at8,
           });
 
+          const waiting = { id: postId, workspaceId };
           const view = yield* linkTo(editor, postId, "view");
           const comment = yield* linkTo(editor, postId, "comment");
           const approve = yield* linkTo(editor, postId, "approve");
@@ -281,7 +284,9 @@ describe("a review link", () => {
             new LinkAccessDenied({ needed: "comment" })
           );
           assert.deepStrictEqual(
-            yield* Effect.flip(visitors.approve(comment.token, visitor())),
+            yield* Effect.flip(
+              visitors.approve(comment.token, visitor(), yield* shown(waiting))
+            ),
             new LinkAccessDenied({ needed: "approve" })
           );
 
@@ -290,7 +295,8 @@ describe("a review link", () => {
           assert.deepStrictEqual(
             yield* visitors.approve(
               approve.token,
-              visitor("  Ada\n Lovelace ")
+              visitor("  Ada\n Lovelace "),
+              yield* shown(waiting)
             ),
             { late: false }
           );
@@ -321,6 +327,80 @@ describe("a review link", () => {
   );
 
   it.effect(
+    "approves what its page showed, never what the post says since",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* stalePage() {
+          const visitors = yield* VisitorReview;
+          const scheduling = yield* PostScheduling;
+          const drafts = yield* PostDrafts;
+          const review = yield* PostReview;
+          const { channelId, editor, postId, workspaceId } = yield* drafted;
+          const waiting = { id: postId, workspaceId };
+          const ask = { channelIds: [channelId] as const, schedule: at8 };
+
+          yield* withPolicy(workspaceId, "always");
+          yield* scheduling.scheduleDraft(editor, postId, ask);
+
+          const { token } = yield* linkTo(editor, postId, "approve");
+
+          // The reviewer opens the page, and reads the post.
+          const read = yield* shown(waiting);
+
+          // Its author takes it back, rewrites it and asks again.
+          yield* scheduling.unschedule(editor, postId);
+          yield* drafts.update(editor, postId, {
+            channelIds: [channelId],
+            content: contentOf("Launch day is off. Stay home."),
+          });
+          yield* scheduling.scheduleDraft(editor, postId, ask);
+
+          const changed = new ApprovalChanged({ postId });
+
+          assert.deepStrictEqual(
+            yield* Effect.flip(visitors.approve(token, visitor(), read)),
+            changed
+          );
+          assert.deepStrictEqual(
+            yield* Effect.flip(
+              visitors.requestChanges(token, visitor(), read, "Not Friday.")
+            ),
+            changed
+          );
+          assert.deepStrictEqual(
+            yield* Effect.flip(review.approve(editor, postId, read)),
+            changed
+          );
+          assert.strictEqual(
+            (yield* storedPost(postId)).post.status._tag,
+            "awaitingApproval"
+          );
+
+          // The same request for other words is not what was read either.
+          const now = yield* shown(waiting);
+
+          assert.deepStrictEqual(
+            yield* Effect.flip(
+              visitors.approve(token, visitor(), {
+                requestId: now.requestId,
+                subjectHash: read.subjectHash,
+              })
+            ),
+            changed
+          );
+
+          // Opened again, the page shows what waits now, which they approve.
+          assert.deepStrictEqual(
+            yield* visitors.approve(token, visitor(), now),
+            { late: false }
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "sends the post back when a visitor asks for changes, with their comment",
     () =>
       onReviewServerAt(
@@ -341,6 +421,7 @@ describe("a review link", () => {
           const comment = yield* visitors.requestChanges(
             token,
             visitor(),
+            yield* shown({ id: postId, workspaceId }),
             "Please say Thursday."
           );
 
@@ -378,7 +459,7 @@ describe("comments", () => {
           const { channelId, editor, postId } = yield* drafted;
           const { token } = yield* linkTo(editor, postId, "comment");
 
-          const shown = `${text} #launch`;
+          const received = `${text} #launch`;
 
           const first = yield* visitors.comment(
             token,
@@ -388,7 +469,7 @@ describe("comments", () => {
                 channelId,
                 selection: Option.some({
                   quote: "Friday",
-                  start: shown.indexOf("Friday"),
+                  start: received.indexOf("Friday"),
                 }),
               }),
             })

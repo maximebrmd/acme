@@ -197,8 +197,8 @@ Each command prints the media's id. Only a media that is `ready` goes in a post.
 
 ```sh
 peal approvals list
-peal approvals approve <post-id>
-peal approvals request-changes <post-id> --comment "Say Thursday, not Friday."
+peal approvals approve <post-id> --approval <approval-id> --subject <fingerprint>
+peal approvals request-changes <post-id> --approval <approval-id> --subject <fingerprint> --comment "Say Thursday, not Friday."
 peal approvals policy
 peal approvals policy --set always
 peal review show <post-id>
@@ -208,10 +208,10 @@ peal review links <post-id>
 peal review revoke <link-id>
 ```
 
-- `peal approvals list` prints the posts that wait for an [approval](/review), with the time each was asked for and who asked. `approve` schedules one; approved after its time, it goes back to draft instead. `request-changes` sends it back to draft with your comment.
+- `peal approvals list` prints the posts that wait for an [approval](/review), with the time each was asked for and who asked. `approve` schedules one; approved after its time, it goes back to draft instead. `request-changes` sends it back to draft with your comment. Both decide on what you read: `list` and `peal review show` print, for each post that waits, the `--approval` and `--subject` a decision takes, and a post that changed since is not decided on (`peal` says so; read it again).
 - The command line is an application: under the policy that holds applications' posts, what it schedules waits, and it approves only what a member asked for in the web app.
 - `peal approvals policy` shows which posts wait; `--set never`, `contributorsAndApplications` or `always` changes it, for owners and admins.
-- `peal review show` prints a post's approvals and its comments, thread by thread. What reviewers typed is printed as text, with control characters replaced.
+- `peal review show` prints the post as each channel will receive it, its approvals and its comments, thread by thread. What reviewers typed is printed as text, with control characters replaced.
 - `peal review link` creates a review link (`--access view` or `comment`, the default; `--hours`, 14 days unless given) and prints its address, once. A link that lets its holders approve is created in the web app only: the command line is an application, and would approve its own posts with one. `links` lists a post's links without their addresses, and `revoke` ends one.
 
 ## Output for scripts [#json]

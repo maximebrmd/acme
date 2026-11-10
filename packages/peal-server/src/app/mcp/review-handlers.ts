@@ -3,10 +3,10 @@ import { CurrentMember } from "peal-contract";
 
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";
 import { ReviewTools } from "#app/mcp/review-tools.ts";
-import { postIdOf } from "#review/api/review-input.ts";
-import { approvalView, commentView, textsOf } from "#review/api/review-view.ts";
-import type { PostThread } from "#review/application/post-review.ts";
+import { postIdOf, shownOf } from "#review/api/review-input.ts";
+import { approvalView, threadView } from "#review/api/review-view.ts";
 import { PostReview } from "#review/application/post-review.ts";
+import { noMedia } from "#review/application/shown-media.ts";
 import { actorOf } from "#shared/api/actor.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import type { PostId } from "#shared/domain/ids.ts";
@@ -20,26 +20,20 @@ const notPending = () =>
     "The post does not wait for an approval: none was asked, or it was already decided, withdrawn or scheduled. list_approvals answers those that wait."
   );
 
+const changed = () =>
+  refuse(
+    "The post waits for an approval, but not the one named: it was asked again, or says something else since the user was shown it. Read get_post_review again, show the user what the post says now, and decide with the approval's new id and subjectHash only if they still agree."
+  );
+
 const needsPerson = () =>
   refuse(
-    "An application or an API key asked for this post to go out, so it waits for a person: a member approves it in the web app, or a reviewer through a review link."
+    "An application or an API key asked for this post to go out, so it waits for a person: a member approves it in the web app, or a reviewer through a review link a member made there."
   );
 
 const commentRejected = () =>
   refuse(
     "The comment cannot be kept: it is empty once control characters are removed, or longer than 2000 characters."
   );
-
-const threadView = (thread: PostThread) => {
-  const context = { names: thread.names, toWorkspace: true };
-
-  return {
-    approvals: thread.requests.map((request) => approvalView(request, context)),
-    comments: thread.comments.map((comment) =>
-      commentView(comment, textsOf(thread.post.channels), context)
-    ),
-  };
-};
 
 const postOf = (raw: string) =>
   Option.match(postIdOf(raw), {
@@ -57,7 +51,9 @@ export const ReviewToolsLive = ReviewTools.toLayer(
     // The post's review as it is after a change, for its answer.
     const threadOf = (member: Actor, postId: PostId) =>
       review.thread(member, postId).pipe(
-        Effect.map(threadView),
+        // An AI model is handed no file: each is named by its id and its
+        // alt text.
+        Effect.map((thread) => threadView(thread, noMedia)),
         Effect.catchTags({
           DatabaseError: Effect.die,
           MissingPermission: notAllowed("read posts"),
@@ -66,20 +62,23 @@ export const ReviewToolsLive = ReviewTools.toLayer(
       );
 
     return ReviewTools.of({
-      approve_post: ({ postId: raw }) =>
+      approve_post: ({ postId: raw, ...shown }) =>
         Effect.gen(function* approvePost() {
           const member = yield* actor;
           const postId = yield* postOf(raw);
 
-          const { late, request } = yield* review.approve(member, postId).pipe(
-            Effect.catchTags({
-              ApprovalNeedsPerson: needsPerson,
-              ApprovalNotPending: notPending,
-              DatabaseError: Effect.die,
-              MissingPermission: notAllowed("approve posts"),
-              ReviewPostNotFound: notFound,
-            })
-          );
+          const { late, request } = yield* review
+            .approve(member, postId, shownOf(shown))
+            .pipe(
+              Effect.catchTags({
+                ApprovalChanged: changed,
+                ApprovalNeedsPerson: needsPerson,
+                ApprovalNotPending: notPending,
+                DatabaseError: Effect.die,
+                MissingPermission: notAllowed("approve posts"),
+                ReviewPostNotFound: notFound,
+              })
+            );
 
           const { approvals } = yield* threadOf(member, postId);
           const approval = approvals.find(({ id }) => id === request.id);
@@ -107,15 +106,16 @@ export const ReviewToolsLive = ReviewTools.toLayer(
             ),
           };
         }),
-      request_changes: ({ comment, postId: raw }) =>
+      request_changes: ({ comment, postId: raw, ...shown }) =>
         Effect.gen(function* requestChanges() {
           const member = yield* actor;
           const postId = yield* postOf(raw);
 
           const sentBack = yield* review
-            .requestChanges(member, postId, comment)
+            .requestChanges(member, postId, shownOf(shown), comment)
             .pipe(
               Effect.catchTags({
+                ApprovalChanged: changed,
                 ApprovalNotPending: notPending,
                 CommentRejected: commentRejected,
                 DatabaseError: Effect.die,

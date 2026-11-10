@@ -930,6 +930,8 @@ export { WebhooksNotConfigured } from "./webhooks-not-configured.ts";
 
 export { WorkspaceAccess } from "./workspace-access.ts";
 
+export { ApprovalChanged } from "./approval-changed.ts";
+
 export { ApprovalNotPending } from "./approval-not-pending.ts";
 
 export { CommentInvalid, CommentProblemSchema } from "./comment-invalid.ts";
@@ -958,8 +960,6 @@ export type { ReviewLinkClosure } from "./review-link-closed.ts";
 export { ReviewLinkNotFound } from "./review-link-not-found.ts";
 
 export {
-  ReviewedChannelSchema,
-  ReviewedMediaSchema,
   ReviewLinkApi,
   ReviewPageSchema,
   VisitorApprovalSchema,
@@ -968,8 +968,6 @@ export {
 } from "./review-link.ts";
 
 export type {
-  ReviewedChannel,
-  ReviewedMedia,
   ReviewPage,
   VisitorApproval,
   VisitorChanges,
@@ -993,7 +991,11 @@ export {
   ApprovalRequestSchema,
   ApprovalStatusSchema,
   ChangesOutcomeSchema,
+  ApprovalDecisionSchema,
   ChangesRequestSchema,
+  ReviewedChannelSchema,
+  ReviewedMediaSchema,
+  maxSubjectHashLength,
   CommentAnchorSchema,
   CommentSelectionSchema,
   CreatedReviewLinkSchema,
@@ -1023,7 +1025,10 @@ export type {
   ApprovalRequest,
   ApprovalStatus,
   ChangesOutcome,
+  ApprovalDecision,
   ChangesRequest,
+  ReviewedChannel,
+  ReviewedMedia,
   CommentAnchor,
   CommentSelection,
   CreatedReviewLink,

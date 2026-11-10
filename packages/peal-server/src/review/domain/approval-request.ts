@@ -8,6 +8,7 @@ import {
 } from "#shared/domain/ids.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
+import { ApprovalChanged } from "./approval-changed.ts";
 import { ApprovalNotPending } from "./approval-not-pending.ts";
 import { ApprovalRequestIdSchema } from "./review-ids.ts";
 import { ReviewerSchema } from "./reviewer.ts";
@@ -74,6 +75,28 @@ export class ApprovalRequest extends Schema.Class<ApprovalRequest>(
 }) {}
 
 type Transition = Result.Result<ApprovalRequest, ApprovalNotPending>;
+
+/**
+ * The request a reviewer was shown before deciding: which one, and what its
+ * post said then.
+ */
+export interface ShownRequest {
+  readonly requestId: string;
+  readonly subjectHash: string;
+}
+
+/**
+ * The request, when it is the one the reviewer was shown, for what its post
+ * said then. A decision is for what was read: a post asked again, or that
+ * changed while it waited, is looked at again (ApprovalChanged).
+ */
+export const asShown = (
+  request: ApprovalRequest,
+  shown: ShownRequest
+): Result.Result<ApprovalRequest, ApprovalChanged> =>
+  request.id === shown.requestId && request.subjectHash === shown.subjectHash
+    ? Result.succeed(request)
+    : Result.fail(new ApprovalChanged({ postId: request.postId }));
 
 /** The request with some of what its life changes. */
 export const changed = (

@@ -4,6 +4,7 @@ import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import {
   Api,
+  ApprovalChanged,
   ApprovalNotPending,
   CommentInvalid,
   Forbidden,
@@ -228,11 +229,25 @@ describe("the review endpoints", () => {
             }
           );
 
+          const decision = {
+            approvalId: page.approval?.id ?? "",
+            name: "Ada Lovelace",
+            subjectHash: page.approval?.subjectHash ?? "",
+          };
+
+          // An approval of something else than the page showed is for
+          // nothing: the reviewer looks again.
           assert.deepStrictEqual(
-            yield* editor.reviewLink.approve({
-              headers,
-              payload: { name: "Ada Lovelace" },
-            }),
+            yield* Effect.flip(
+              editor.reviewLink.approve({
+                headers,
+                payload: { ...decision, subjectHash: "0".repeat(64) },
+              })
+            ),
+            new ApprovalChanged()
+          );
+          assert.deepStrictEqual(
+            yield* editor.reviewLink.approve({ headers, payload: decision }),
             { late: false }
           );
 
@@ -241,10 +256,19 @@ describe("the review endpoints", () => {
           const thread = yield* contributor.review.thread({ params: post });
 
           assert.strictEqual(approved.status, "scheduled");
+          // The review shows the post the approval was for, as the page
+          // did, with the fingerprint its decision named.
           assert.deepStrictEqual(
-            thread.approvals.map(({ decision, status }) => ({
-              by: decision?.by,
-              status,
+            [
+              thread.channels,
+              thread.approvals.map((request) => request.subjectHash),
+            ],
+            [page.channels, [decision.subjectHash]]
+          );
+          assert.deepStrictEqual(
+            thread.approvals.map((request) => ({
+              by: request.decision?.by,
+              status: request.status,
             })),
             [
               {
@@ -262,10 +286,7 @@ describe("the review endpoints", () => {
           // Decided once.
           assert.deepStrictEqual(
             yield* Effect.flip(
-              editor.reviewLink.approve({
-                headers,
-                payload: { name: "Ada Lovelace" },
-              })
+              editor.reviewLink.approve({ headers, payload: decision })
             ),
             new ApprovalNotPending()
           );
@@ -413,7 +434,12 @@ describe("the review endpoints", () => {
             new PostNotFound()
           );
           assert.deepStrictEqual(
-            yield* Effect.flip(editor.review.approve({ params: post })),
+            yield* Effect.flip(
+              editor.review.approve({
+                params: post,
+                payload: { approvalId: "none", subjectHash: "none" },
+              })
+            ),
             new ApprovalNotPending()
           );
         })

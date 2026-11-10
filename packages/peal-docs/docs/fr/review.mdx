@@ -43,6 +43,8 @@ La personne qui a demandé, et toute personne qui peut programmer, peut la dépl
 
 Les propriétaires, administrateurs et éditeurs peuvent approuver, sur la page de la publication (**Approuver**) ou avec l’API, la ligne de commande ou un assistant IA. Une personne sans compte peut approuver depuis un lien de relecture qui le permet. Peal enregistre chaque décision : qui a décidé (pour un lien, le nom donné et le lien utilisé), quoi, et quand. La page de la publication montre cet historique.
 
+Une approbation vaut pour ce que la personne a lu. Si la publication a été modifiée et redemandée pendant que sa page était ouverte, son clic n’approuve rien : Peal dit que la publication a changé et la montre à nouveau, et la personne décide de ce qu’elle dit maintenant. Il en va de même pour une demande de modifications.
+
 Qui peut approuver peut approuver une publication qu’il a écrite ou demandé d’envoyer : une approbation dit qu’une personne habilitée a regardé, pas que deux personnes l’ont fait. S’il vous faut une seconde personne, faites écrire les contributeurs et approuver les éditeurs.
 
 Une application n’approuve pas ce qu’une application a demandé. Ce qu’une clé d’API, la ligne de commande ou un assistant IA a programmé attend une personne : un membre dans l’application web, ou une personne invitée depuis un lien qu’un membre y a créé. Pour la même raison, un lien qui permet d’approuver se crée dans l’application web seulement, jamais avec une clé d’API, la ligne de commande ou un assistant IA. Une application peut approuver ce qu’un membre a demandé dans l’application web, si vous l’avez autorisée à programmer et publier (`workspace:publish`) : approuver une publication, c’est la faire partir, et une application qui ne fait qu’écrire des brouillons n’approuve donc rien.
@@ -117,6 +119,8 @@ Ce que Peal conserve de vous : le nom que vous avez donné, avec vos commentaire
 L’[API](/api-overview) a les mêmes opérations, sous `/api/workspaces/{workspaceId}` : `review/settings` pour la politique, `approvals` pour les publications qui attendent, et pour une publication, `review`, `comments`, `approve`, `request-changes` et `review-links`. Une publication qui attend répond `"status": "awaitingApproval"` partout où des publications sont listées.
 
 Programmer une publication qui a besoin d’une approbation répond la publication, en attente, et non une erreur : vérifiez son `status`.
+
+`review` répond la publication telle que chaque canal la recevra, avec l’approbation qui attend. `approve` et `request-changes` prennent l’`id` de cette approbation (`approvalId`) et son `subjectHash`, l’empreinte de ce que la publication disait alors : si la publication a été redemandée ou dit autre chose depuis, ils répondent `ApprovalChanged` (409) et ne décident rien. Relisez `review`, puis décidez.
 
 La [ligne de commande](/cli#review) a `peal approvals` et `peal review`, et les [assistants IA](/mcp#tools) ont `list_approvals`, `get_post_review`, `approve_post` et `request_changes`.
 

@@ -2,6 +2,7 @@ import { Duration, Option, Schema } from "effect";
 import type { NewComment } from "peal-contract";
 
 import type { CommentDraft } from "#review/application/review-desk.ts";
+import type { ShownRequest } from "#review/domain/approval-request.ts";
 import {
   ReviewCommentIdSchema,
   ReviewLinkIdSchema,
@@ -18,6 +19,15 @@ export const commentIdOf = Schema.decodeUnknownOption(ReviewCommentIdSchema);
 export const linkIdOf = Schema.decodeUnknownOption(ReviewLinkIdSchema);
 
 const channelIdOf = Schema.decodeUnknownOption(ChannelIdSchema);
+
+/** The approval a decision names, as its reviewer was shown it. */
+export const shownOf = ({
+  approvalId,
+  subjectHash,
+}: {
+  readonly approvalId: string;
+  readonly subjectHash: string;
+}): ShownRequest => ({ requestId: approvalId, subjectHash });
 
 /** How long a link is asked to work, if the request says. */
 export const lifetimeOf = (hours: number | undefined) =>

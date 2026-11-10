@@ -2,6 +2,7 @@ import { DateTime, Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
+  ApprovalChanged,
   ApprovalNotPending,
   CommentInvalid,
   CommentNotFound,
@@ -13,7 +14,6 @@ import {
   TooManyReviewLinks,
 } from "peal-contract";
 
-import type { PostThread } from "#review/application/post-review.ts";
 import { PostReview } from "#review/application/post-review.ts";
 import { ReviewLinks } from "#review/application/review-links.ts";
 import { ReviewSettings } from "#review/application/review-settings.ts";
@@ -25,9 +25,9 @@ import {
   lifetimeOf,
   linkIdOf,
   postIdOf,
+  shownOf,
 } from "./review-input.ts";
-import { approvalView, commentView, linkView, textsOf } from "./review-view.ts";
-import type { ViewContext } from "./review-view.ts";
+import { approvalView, linkView, threadView } from "./review-view.ts";
 
 // How the use cases' failures answer. A database failure is a server error.
 
@@ -36,6 +36,8 @@ const forbidden = () => Effect.fail(new Forbidden());
 const postNotFound = () => Effect.fail(new PostNotFound());
 
 const notPending = () => Effect.fail(new ApprovalNotPending());
+
+const changed = () => Effect.fail(new ApprovalChanged());
 
 const invalid = ({
   problem,
@@ -48,23 +50,6 @@ const postIdFrom = (raw: string) =>
     onNone: postNotFound,
     onSome: Effect.succeed,
   });
-
-const contextOf = ({ names }: PostThread): ViewContext => ({
-  names,
-  toWorkspace: true,
-});
-
-// The post's review as clients see it.
-const threadView = (thread: PostThread) => {
-  const context = contextOf(thread);
-
-  return {
-    approvals: thread.requests.map((request) => approvalView(request, context)),
-    comments: thread.comments.map((comment) =>
-      commentView(comment, textsOf(thread.post.channels), context)
-    ),
-  };
-};
 
 export const ReviewHandlers = HttpApiBuilder.group(
   Api,
@@ -80,7 +65,7 @@ export const ReviewHandlers = HttpApiBuilder.group(
       postId: Parameters<typeof review.thread>[1]
     ) =>
       review.thread(actor, postId).pipe(
-        Effect.map(threadView),
+        Effect.map((thread) => threadView(thread)),
         Effect.catchTags({
           DatabaseError: Effect.die,
           MissingPermission: forbidden,
@@ -89,21 +74,24 @@ export const ReviewHandlers = HttpApiBuilder.group(
       );
 
     return handlers.handleAll({
-      approve: ({ params }) =>
+      approve: ({ params, payload }) =>
         Effect.gen(function* approve() {
           const actor = actorOf(yield* CurrentMember);
           const postId = yield* postIdFrom(params.postId);
 
-          const { late, request } = yield* review.approve(actor, postId).pipe(
-            Effect.catchTags({
-              // An application's request waits for a person.
-              ApprovalNeedsPerson: forbidden,
-              ApprovalNotPending: notPending,
-              DatabaseError: Effect.die,
-              MissingPermission: forbidden,
-              ReviewPostNotFound: postNotFound,
-            })
-          );
+          const { late, request } = yield* review
+            .approve(actor, postId, shownOf(payload))
+            .pipe(
+              Effect.catchTags({
+                ApprovalChanged: changed,
+                // An application's request waits for a person.
+                ApprovalNeedsPerson: forbidden,
+                ApprovalNotPending: notPending,
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+                ReviewPostNotFound: postNotFound,
+              })
+            );
 
           const { approvals } = yield* threadOf(actor, postId);
           const approval = approvals.find(({ id }) => id === request.id);
@@ -205,9 +193,10 @@ export const ReviewHandlers = HttpApiBuilder.group(
           const postId = yield* postIdFrom(params.postId);
 
           const sentBack = yield* review
-            .requestChanges(actor, postId, payload.comment)
+            .requestChanges(actor, postId, shownOf(payload), payload.comment)
             .pipe(
               Effect.catchTags({
+                ApprovalChanged: changed,
                 ApprovalNotPending: notPending,
                 CommentRejected: invalid,
                 DatabaseError: Effect.die,

@@ -5,6 +5,7 @@ import type { HttpApiError } from "effect/http-api";
 import type {
   AlreadyMember,
   AltTextTooLong,
+  ApprovalChanged,
   ApprovalNotPending,
   ChannelCannotPost,
   ChannelNotFound,
@@ -66,6 +67,7 @@ import { SignInExpired } from "#sign-in-expired.ts";
 export type ApiFailure =
   | AlreadyMember
   | AltTextTooLong
+  | ApprovalChanged
   | ApprovalNotPending
   | ChannelCannotPost
   | ChannelNotFound
@@ -256,6 +258,10 @@ export const explain =
       AltTextTooLong: ({ maxLength }) =>
         refused(
           `The description is longer than Peal keeps: ${String(maxLength)} characters at most.`
+        ),
+      ApprovalChanged: () =>
+        refused(
+          "The post changed since you read it: it was asked again, or says something else. Nothing was decided. Read it again with peal review show, then decide with the --approval and --subject it prints."
         ),
       ApprovalNotPending: () =>
         refused(

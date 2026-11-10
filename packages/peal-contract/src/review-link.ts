@@ -6,10 +6,9 @@ import {
   OpenApi,
 } from "effect/http-api";
 
+import { ApprovalChanged } from "./approval-changed.ts";
 import { ApprovalNotPending } from "./approval-not-pending.ts";
 import { CommentInvalid } from "./comment-invalid.ts";
-import { MediaKindSchema } from "./media.ts";
-import { PlatformSchema } from "./platform.ts";
 import { PostScheduleSchema } from "./posts.ts";
 import { ReviewAccessDenied } from "./review-access-denied.ts";
 import { ReviewCaptchaRequired } from "./review-captcha-required.ts";
@@ -25,33 +24,11 @@ import {
   maxVisitorNameLength,
   NewCommentSchema,
   ReviewCommentSchema,
+  ReviewedChannelSchema,
+  ReviewedMediaSchema,
+  shownApprovalFields,
 } from "./review.ts";
 import { TooManyReviewRequests } from "./too-many-review-requests.ts";
-
-/** A post on one of its channels, as the channel will receive it. */
-export const ReviewedChannelSchema = Schema.Struct({
-  channelId: Schema.String,
-  // The account's name on its platform; null once it was disconnected.
-  handle: Schema.NullOr(Schema.String),
-  platform: Schema.NullOr(PlatformSchema),
-  text: Schema.String,
-}).annotate({ identifier: "ReviewedChannel" });
-
-export type ReviewedChannel = typeof ReviewedChannelSchema.Type;
-
-/**
- * An image, a video or a document (a PDF, on LinkedIn) a post shows. `url`
- * reads the file from the media store for two hours; it is null, with
- * `kind`, for a file that cannot be shown. A document has no alt text.
- */
-export const ReviewedMediaSchema = Schema.Struct({
-  altText: Schema.String,
-  kind: Schema.NullOr(MediaKindSchema),
-  mediaId: Schema.String,
-  url: Schema.NullOr(Schema.String),
-}).annotate({ identifier: "ReviewedMedia" });
-
-export type ReviewedMedia = typeof ReviewedMediaSchema.Type;
 
 /**
  * What a review link shows: one post as each of its channels will receive
@@ -92,8 +69,12 @@ export const VisitorCommentSchema = Schema.Struct({
 
 export type VisitorComment = typeof VisitorCommentSchema.Type;
 
-/** A visitor's approval, under the name they give. */
+/**
+ * A visitor's approval, under the name they give, of the approval the page
+ * showed them (`approval.id`, `approval.subjectHash`).
+ */
 export const VisitorApprovalSchema = Schema.Struct({
+  ...shownApprovalFields,
   name: VisitorNameSchema,
 }).annotate({ identifier: "VisitorApproval" });
 
@@ -101,6 +82,7 @@ export type VisitorApproval = typeof VisitorApprovalSchema.Type;
 
 /** A visitor's request for changes, under the name they give. */
 export const VisitorChangesSchema = Schema.Struct({
+  ...shownApprovalFields,
   comment: CommentTextSchema,
   name: VisitorNameSchema,
 }).annotate({ identifier: "VisitorChanges" });
@@ -155,26 +137,26 @@ export class ReviewLinkApi extends HttpApiGroup.make("reviewLink")
       })
     ),
     HttpApiEndpoint.post("approve", "/approve", {
-      error: [...refusals, CommentInvalid, ApprovalNotPending],
+      error: [...refusals, CommentInvalid, ApprovalNotPending, ApprovalChanged],
       headers: writeHeaders,
       payload: VisitorApprovalSchema,
       success: Schema.Struct({ late: Schema.Boolean }),
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Approves the post through a link that allows it: recorded with the name given, the time and the link. The post is scheduled, or, approved after its time (`late`), back to draft.",
+          "Approves the post through a link that allows it, as the page showed it: send the `id` and the `subjectHash` of the page's `approval`. When the post was asked again or says something else since, nothing is approved (ApprovalChanged): open the link again. Recorded with the name given, the time and the link. The post is scheduled, or, approved after its time (`late`), back to draft.",
         summary: "Approve through a review link",
       })
     ),
     HttpApiEndpoint.post("requestChanges", "/request-changes", {
-      error: [...refusals, CommentInvalid, ApprovalNotPending],
+      error: [...refusals, CommentInvalid, ApprovalNotPending, ApprovalChanged],
       headers: writeHeaders,
       payload: VisitorChangesSchema,
       success: ReviewCommentSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Sends the post back to draft through a link that lets its holders approve, with a comment that says what to change.",
+          "Sends the post back to draft through a link that lets its holders approve, with a comment that says what to change, and the `id` and `subjectHash` of the page's `approval`, as for approving.",
         summary: "Request changes through a review link",
       })
     )

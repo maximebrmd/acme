@@ -96,7 +96,6 @@ const ExistingPost = ({
           workspaceId={workspaceId}
         />
         <PostReviewSection
-          channels={channels}
           permissions={permissions}
           post={post}
           workspaceId={workspaceId}
@@ -112,7 +111,6 @@ const ExistingPost = ({
           workspaceId={workspaceId}
         />
         <PostReviewSection
-          channels={channels}
           permissions={permissions}
           post={post}
           workspaceId={workspaceId}

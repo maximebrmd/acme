@@ -2,6 +2,7 @@ import { Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
+  ApprovalChanged,
   ApprovalNotPending,
   CommentInvalid,
   ReviewAccessDenied,
@@ -18,7 +19,7 @@ import type { VisitorRefused } from "#review/application/visitor-refused.ts";
 import { VisitorReview } from "#review/application/visitor-review.ts";
 import type { VisitorIdentity } from "#review/application/visitor-review.ts";
 
-import { draftOf } from "./review-input.ts";
+import { draftOf, shownOf } from "./review-input.ts";
 import { pageView } from "./review-view.ts";
 
 // How the use cases' failures answer a visitor. Nothing here names the
@@ -118,10 +119,11 @@ export const ReviewLinkHandlers = HttpApiBuilder.group(
           const visitor = yield* visitorOf(headers, payload);
 
           return yield* visitors
-            .approve(headers["x-review-token"], visitor)
+            .approve(headers["x-review-token"], visitor, shownOf(payload))
             .pipe(
               Effect.catchTags({
                 ...writeFailures,
+                ApprovalChanged: () => Effect.fail(new ApprovalChanged()),
                 ApprovalNotPending: () => Effect.fail(new ApprovalNotPending()),
               })
             );
@@ -149,10 +151,11 @@ export const ReviewLinkHandlers = HttpApiBuilder.group(
           const visitor = yield* visitorOf(headers, payload);
 
           const written = yield* visitors
-            .requestChanges(token, visitor, payload.comment)
+            .requestChanges(token, visitor, shownOf(payload), payload.comment)
             .pipe(
               Effect.catchTags({
                 ...writeFailures,
+                ApprovalChanged: () => Effect.fail(new ApprovalChanged()),
                 ApprovalNotPending: () => Effect.fail(new ApprovalNotPending()),
               })
             );

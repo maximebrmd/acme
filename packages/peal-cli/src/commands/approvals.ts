@@ -4,7 +4,7 @@ import { ApprovalPolicySchema } from "peal-contract";
 import type { ApprovalPolicy, ApprovalRequest } from "peal-contract";
 
 import { explain, explainingPublishing } from "#explain.ts";
-import { columns, instant } from "#print.ts";
+import { instant } from "#print.ts";
 import { inWorkspace, workspaceFlag } from "#workspace.ts";
 
 const postArgument = Argument.String("post-id").pipe(
@@ -34,6 +34,23 @@ const askedBy = ({ requestedByName, requestedVia }: ApprovalRequest) => {
     : `asked by ${who}`;
 };
 
+// The approval a decision is about, as peal approvals list printed it: a
+// decision is for what was read then.
+const shownFlags = {
+  approval: Flag.String("approval").pipe(
+    Flag.withMetavar("<approval-id>"),
+    Flag.withDescription(
+      "The approval that waits, as peal approvals list shows its id."
+    )
+  ),
+  subject: Flag.String("subject").pipe(
+    Flag.withMetavar("<fingerprint>"),
+    Flag.withDescription(
+      "The fingerprint of what the post said when you read it, as peal approvals list shows it. If the post changed since, nothing is decided."
+    )
+  ),
+};
+
 const list = Command.make(
   "list",
   { workspace: workspaceFlag },
@@ -54,33 +71,41 @@ const list = Command.make(
       `Posts of ${workspace.name} waiting for an approval, oldest first:`
     );
 
-    for (const line of columns(
-      waiting.map((asked) => [
-        `  ${asked.postId}`,
-        `for ${instant(asked.schedule.at)} (${asked.schedule.timeZone})`,
-        askedBy(asked),
-      ])
-    )) {
-      yield* Console.log(line);
+    for (const asked of waiting) {
+      yield* Console.log(
+        `  ${asked.postId}  for ${instant(asked.schedule.at)} (${asked.schedule.timeZone})  ${askedBy(asked)}`
+      );
+      yield* Console.log(
+        `    --approval ${asked.id} --subject ${asked.subjectHash}`
+      );
     }
+
+    yield* Console.log(
+      "Read a post with peal review show, which prints the same --approval and --subject for what it shows: a decision is for what the post said then."
+    );
   })
 ).pipe(
   Command.withDescription(
-    "List the posts that wait for an approval: when each was asked to go out, and who asked. peal posts show and peal review show tell more."
+    "List the posts that wait for an approval: when each was asked to go out, who asked, and the --approval and --subject a decision on it takes. peal posts show and peal review show tell more."
   )
 );
 
 const approve = Command.make(
   "approve",
-  { postId: postArgument, workspace: workspaceFlag },
+  { ...shownFlags, postId: postArgument, workspace: workspaceFlag },
   Effect.fn("approvals.approve")(function* approve({
+    approval: approvalId,
     postId,
+    subject: subjectHash,
     workspace: choice,
   }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
     const { approval, late } = yield* client.review
-      .approve({ params: { postId, workspaceId: workspace.id } })
+      .approve({
+        params: { postId, workspaceId: workspace.id },
+        payload: { approvalId, subjectHash },
+      })
       .pipe(explainingPublishing(url));
 
     yield* Console.log(
@@ -91,7 +116,7 @@ const approve = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Approve a post that waits: it is scheduled for the time it was asked for. Approved after that time, it goes back to draft instead, still approved. Approving is publishing: it needs a sign-in that may schedule and publish, and a role that approves posts."
+    "Approve a post that waits, as you read it: --approval and --subject come from peal approvals list, and a post that changed since is not approved. It is scheduled for the time it was asked for. Approved after that time, it goes back to draft instead, still approved. Approving is publishing: it needs a sign-in that may schedule and publish, and a role that approves posts."
   )
 );
 
@@ -104,12 +129,15 @@ const requestChanges = Command.make(
         "What to change, kept as a comment on the post, in plain text."
       )
     ),
+    ...shownFlags,
     postId: postArgument,
     workspace: workspaceFlag,
   },
   Effect.fn("approvals.requestChanges")(function* requestChanges({
+    approval: approvalId,
     comment,
     postId,
+    subject: subjectHash,
     workspace: choice,
   }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
@@ -117,7 +145,7 @@ const requestChanges = Command.make(
     yield* client.review
       .requestChanges({
         params: { postId, workspaceId: workspace.id },
-        payload: { comment },
+        payload: { approvalId, comment, subjectHash },
       })
       .pipe(explainingPublishing(url));
 
@@ -127,7 +155,7 @@ const requestChanges = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Send a post that waits back to draft, with a comment that says what to change. Needs the right to approve posts."
+    "Send a post that waits back to draft, with a comment that says what to change, and the --approval and --subject peal approvals list shows for it. Needs the right to approve posts."
   )
 );
 

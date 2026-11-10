@@ -4,6 +4,7 @@ import { maxReviewLinkHours } from "peal-contract";
 import type {
   ApprovalRequest,
   ReviewComment,
+  ReviewedChannel,
   Reviewer,
   ReviewLinkAccess,
 } from "peal-contract";
@@ -39,6 +40,19 @@ const approvalLine = (approval: ApprovalRequest): readonly string[] => [
   approval.decision === null
     ? ""
     : `decided by ${reviewerName(approval.decision.by)}, ${instant(approval.decision.at)}`,
+];
+
+// The post on one channel: the account, then the text it has there.
+const channelLines = ({
+  channelId,
+  handle,
+  platform,
+  text,
+}: ReviewedChannel): readonly string[] => [
+  `  ${handle ?? "a disconnected account"} (${platform ?? "unknown platform"}, channel ${channelId}):`,
+  ...(text === ""
+    ? ["    (no text)"]
+    : text.split("\n").map((line) => `    ${line}`)),
 ];
 
 // What a comment is about, when it is about some words or a channel.
@@ -81,11 +95,34 @@ const show = Command.make(
   Effect.fn("review.show")(function* show({ postId, workspace: choice }) {
     const { client, url, workspace } = yield* inWorkspace(choice);
 
-    const { approvals, comments } = yield* client.review
+    const { approvals, channels, comments, media } = yield* client.review
       .thread({ params: { postId, workspaceId: workspace.id } })
       .pipe(Effect.mapError(explain(url)));
 
     yield* Console.log(`Review of post ${postId} in ${workspace.name}.`);
+    yield* Console.log("The post, as each channel will receive it:");
+
+    for (const channel of channels) {
+      for (const line of channelLines(channel)) {
+        yield* Console.log(line);
+      }
+    }
+
+    for (const file of media) {
+      yield* Console.log(
+        `  file ${file.mediaId}, described as: ${file.altText === "" ? "(no alt text)" : file.altText}`
+      );
+    }
+
+    // A decision is for what this answer shows: it names the approval
+    // that waits and what the post said when it was read here.
+    for (const waiting of approvals.filter(
+      ({ status }) => status === "pending"
+    )) {
+      yield* Console.log(
+        `To decide on what is shown here: --approval ${waiting.id} --subject ${waiting.subjectHash}`
+      );
+    }
 
     if (approvals.length > 0) {
       yield* Console.log("Approvals, newest first:");
@@ -111,7 +148,7 @@ const show = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Show a post's review: the approvals asked for it and what was decided, and its comments, thread by thread."
+    "Show a post's review: the post as each channel will receive it, the approvals asked for it and what was decided, with the --approval and --subject a decision on what is shown takes, and its comments, thread by thread."
   )
 );
 

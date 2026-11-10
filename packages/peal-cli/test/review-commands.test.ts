@@ -2,7 +2,13 @@ import { assert, describe, it } from "@effect/vitest";
 import { Effect, Ref } from "effect";
 
 import { filesLayer, signedIn } from "./signed-in.ts";
-import { awaitingId, draftId, scheduledId } from "./studio.ts";
+import {
+  awaitingApprovalId,
+  awaitingId,
+  awaitingSubject,
+  draftId,
+  scheduledId,
+} from "./studio.ts";
 import type { Studio } from "./studio.ts";
 
 // The commands for reviews and approvals, against the in-memory studio:
@@ -14,6 +20,14 @@ const changes = (studio: Studio) =>
 
 const inStudio = ["--workspace", "studio"];
 
+// What peal approvals list prints for the post that waits.
+const asShown = [
+  "--approval",
+  awaitingApprovalId,
+  "--subject",
+  awaitingSubject,
+];
+
 describe("peal approvals", () => {
   it.effect("lists the posts that wait, and who asked", () =>
     Effect.gen(function* lists() {
@@ -24,6 +38,7 @@ describe("peal approvals", () => {
       assert.include(listed, awaitingId);
       assert.include(listed, "2026-11-21T09:00:00Z");
       assert.include(listed, "asked by Synthetic Contributor");
+      assert.include(listed, asShown.join(" "));
       assert.include(
         yield* session.printed(["approvals", "list", "--workspace", "shop"]),
         "No post of Shop waits for an approval."
@@ -35,11 +50,26 @@ describe("peal approvals", () => {
     Effect.gen(function* approves() {
       const session = yield* signedIn();
 
+      // A post that changed since it was read is not approved.
+      assert.include(
+        yield* session.refused([
+          "approvals",
+          "approve",
+          awaitingId,
+          "--approval",
+          awaitingApprovalId,
+          "--subject",
+          "0".repeat(64),
+          ...inStudio,
+        ]),
+        "The post changed since you read it"
+      );
       assert.include(
         yield* session.printed([
           "approvals",
           "approve",
           awaitingId,
+          ...asShown,
           ...inStudio,
         ]),
         `Approved post ${awaitingId}: it is scheduled for 2026-11-21T09:00:00Z.`
@@ -49,6 +79,7 @@ describe("peal approvals", () => {
           "approvals",
           "approve",
           awaitingId,
+          ...asShown,
           ...inStudio,
         ]),
         "The post does not wait for an approval"
@@ -58,6 +89,7 @@ describe("peal approvals", () => {
           "approvals",
           "approve",
           scheduledId,
+          ...asShown,
           ...inStudio,
         ]),
         "The post does not wait for an approval"
@@ -77,6 +109,7 @@ describe("peal approvals", () => {
           "approvals",
           "request-changes",
           awaitingId,
+          ...asShown,
           ...inStudio,
         ]),
         "comment"
@@ -88,6 +121,7 @@ describe("peal approvals", () => {
           awaitingId,
           "--comment",
           "Say Thursday, not Friday.",
+          ...asShown,
           ...inStudio,
         ]),
         `Asked for changes to post ${awaitingId}: it is a draft again`
@@ -152,6 +186,12 @@ describe("peal review", () => {
       // What a visitor typed never reaches the terminal as control codes.
       assert.include(shown, "Could this be \uFFFD[31mThursday?");
       assert.notInclude(shown, "\u001B");
+      // What a decision names is printed with the post it is for.
+      assert.include(shown, "A synthetic post that waits. Out on Friday.");
+      assert.include(
+        shown,
+        `To decide on what is shown here: ${asShown.join(" ")}`
+      );
       assert.include(
         yield* session.printed(["review", "show", draftId, ...inStudio]),
         "Nobody commented on this post yet"

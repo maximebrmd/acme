@@ -43,6 +43,8 @@ Whoever asked, and whoever may schedule, can move it to another time, take it ba
 
 Owners, admins and editors may approve, on the post's page (**Approve**) or with the API, the command line or an AI assistant. Someone without an account may approve through a review link that allows it. Peal records each decision: who decided (for a link, the name they gave and the link they used), what, and when. The post's page shows this history.
 
+An approval is for what its reviewer read. If the post was changed and asked again while their page was open, their click approves nothing: Peal says the post changed and shows it again, and they decide on what it says now. The same holds for a request for changes.
+
 Whoever may approve may approve a post they wrote or asked to send: an approval says that someone allowed to has looked, not that two people have. If you need a second person, have contributors write and editors approve.
 
 An application does not approve what an application asked for. What an API key, the command line or an AI assistant scheduled waits for a person: a member in the web app, or a reviewer through a link a member created there. For the same reason, a link that lets its holders approve is created in the web app only, never with an API key, the command line or an AI assistant. An application may approve what a member asked for in the web app, when you let it schedule and publish (`workspace:publish`): approving a post is what sends it out, so an application that only writes drafts approves nothing.
@@ -117,6 +119,8 @@ What Peal keeps of you: the name you gave, with your comments and decisions, for
 The [API](/api-overview) has the same operations, under `/api/workspaces/{workspaceId}`: `review/settings` for the policy, `approvals` for the posts that wait, and for a post, `review`, `comments`, `approve`, `request-changes` and `review-links`. A post that waits answers `"status": "awaitingApproval"` wherever posts are listed.
 
 Scheduling a post that needs an approval answers the post, waiting, rather than an error: check its `status`.
+
+`review` answers the post as each channel will receive it with the approval that waits. `approve` and `request-changes` take that approval's `id` (as `approvalId`) and its `subjectHash`, the fingerprint of what the post said then: when the post was asked again or says something else since, they answer `ApprovalChanged` (409) and decide nothing. Read `review` again, then decide.
 
 The [command line](/cli#review) has `peal approvals` and `peal review`, and [AI assistants](/mcp#tools) have `list_approvals`, `get_post_review`, `approve_post` and `request_changes`.
 
