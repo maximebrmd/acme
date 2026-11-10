@@ -312,16 +312,20 @@ describe("the outcome endpoints", () => {
           const attempts = yield* viewer.posts.attempts({ params });
 
           assert.deepStrictEqual(
-            attempts.map(({ attempt, result, retryAt, round, targetId }) => [
-              targetId,
-              round,
-              attempt,
-              result,
-              retryAt,
-            ]),
+            attempts.map(
+              ({ attempt, refusalCode, result, retryAt, round, targetId }) => [
+                targetId,
+                round,
+                attempt,
+                result,
+                retryAt,
+                refusalCode,
+              ]
+            ),
             [
-              [onRefused.id, 1, 1, "contentRejected", null],
-              [onLost.id, 1, 1, "unconfirmed", null],
+              // The platform's own code for the refusal, as it gave it.
+              [onRefused.id, 1, 1, "contentRejected", null, "duplicate"],
+              [onLost.id, 1, 1, "unconfirmed", null, null],
             ].toSorted(([a], [b]) => String(a).localeCompare(String(b)))
           );
 
