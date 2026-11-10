@@ -15,6 +15,7 @@ import { MediaRecords } from "#media/application/media-records.ts";
 import { NoticeRecords } from "#notifications/application/notice-records.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostsPublishing } from "#publishing/application/posts-publishing.ts";
+import { ReviewRecords } from "#review/application/review-records.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { StaffRecords } from "#staff/application/staff-records.ts";
@@ -80,6 +81,7 @@ const RecordsTest = Layer.unwrap(
           Layer.mock(MediaRecords, { eraseWorkspace: () => Effect.void }),
           Layer.mock(NoticeRecords, { eraseWorkspace: () => Effect.void }),
           Layer.mock(UsageRecords, { eraseWorkspace: () => Effect.void }),
+          Layer.mock(ReviewRecords, { eraseWorkspace: () => Effect.void }),
           Layer.mock(StaffRecords, {}),
           Layer.mock(LegalRecords, {})
         )

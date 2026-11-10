@@ -76,6 +76,8 @@ Ces outils lisent, et ne changent rien :
 | `get_billing`        | La formule de l’espace de travail, ses limites, ce que l’espace de travail utilise de chacune, et chaque abonnement avec ses prix                                                                            |
 | `list_members`       | Les membres de l’espace de travail, avec leur nom et leur rôle, comme chaque membre les voit ; leur adresse e-mail seulement avec `includeEmails`                                                            |
 | `list_invitations`   | Les invitations en attente, pour qui peut inviter ; les invitations au rôle de propriétaire, pour les propriétaires seuls                                                                                    |
+| `list_approvals`     | Les publications qui attendent une [approbation](/review) : l’heure demandée pour chacune, qui a demandé et comment                                                                                          |
+| `get_post_review`    | Les commentaires d’une publication, par les membres et par les personnes venues par un lien, et les approbations demandées avec ce qui a été décidé                                                          |
 | `server_health`      | Si le serveur Peal tourne et joint sa base de données                                                                                                                                                        |
 
 Deux autres lisent [ce qu’un canal accepte](/api-overview#capabilities), pour qu’un client n’ait pas à connaître les règles de chaque plateforme. Ils ne changent rien, et peuvent interroger la plateforme du canal, hors de Peal (`openWorldHint`) :
@@ -97,6 +99,8 @@ Ces outils changent quelque chose. Chacun indique au client, par les annotations
 | `confirm_target`    | Enregistre ce que vous avez trouvé sur la plateforme pour une publication non confirmée : publiée, ou non publiée, qui l’y met en échec.                                                                                              | oui               | oui                             | non          |
 | `invite_member`     | Envoie à quelqu’un une invitation à l’espace de travail, avec un rôle. Une invitation en attente à la même adresse est remplacée.                                                                                                     | oui               | non                             | oui          |
 | `revoke_invitation` | Révoque une invitation en attente : son lien ne fonctionne plus.                                                                                                                                                                      | oui               | oui                             | non          |
+| `approve_post`      | Approuve une publication qui attend : elle est programmée pour son heure, puis part. Seulement ce qu’un membre a demandé dans l’application web : ce qu’une application a demandé attend une personne.       | non               | non                             | oui          |
+| `request_changes`   | Renvoie en brouillon une publication qui attend, avec un commentaire qui dit quoi changer.                                                                                                                   | oui               | non                             | non          |
 
 Les annotations sont des indications qu’un client peut vous montrer ; les vérifications de droits sont celles du serveur.
 

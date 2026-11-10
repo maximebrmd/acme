@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class PostStatus {
+    public static final PostStatus AWAITING_APPROVAL = new PostStatus(Value.AWAITING_APPROVAL, "awaitingApproval");
+
     public static final PostStatus PUBLISHING = new PostStatus(Value.PUBLISHING, "publishing");
 
     public static final PostStatus CANCELLED = new PostStatus(Value.CANCELLED, "cancelled");
@@ -48,6 +50,8 @@ public final class PostStatus {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
+            case AWAITING_APPROVAL:
+                return visitor.visitAwaitingApproval();
             case PUBLISHING:
                 return visitor.visitPublishing();
             case CANCELLED:
@@ -67,6 +71,8 @@ public final class PostStatus {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static PostStatus valueOf(String value) {
         switch (value) {
+            case "awaitingApproval":
+                return AWAITING_APPROVAL;
             case "publishing":
                 return PUBLISHING;
             case "cancelled":
@@ -85,6 +91,8 @@ public final class PostStatus {
     public enum Value {
         DRAFT,
 
+        AWAITING_APPROVAL,
+
         SCHEDULED,
 
         PUBLISHING,
@@ -98,6 +106,8 @@ public final class PostStatus {
 
     public interface Visitor<T> {
         T visitDraft();
+
+        T visitAwaitingApproval();
 
         T visitScheduled();
 

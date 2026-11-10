@@ -1,12 +1,4 @@
-import {
-  ByteSize,
-  Config,
-  Effect,
-  Layer,
-  Metric,
-  Option,
-  Schema,
-} from "effect";
+import { ByteSize, Effect, Layer, Metric } from "effect";
 import { HttpIncomingMessage, HttpServerRequest } from "effect/http";
 import { RateLimiter } from "effect/persistence";
 import {
@@ -16,7 +8,10 @@ import {
   TooManyClientErrors,
 } from "peal-contract";
 
-import { requiredInProduction } from "#shared/infrastructure/environment.ts";
+import {
+  addressHeadersConfig,
+  addressOf,
+} from "#shared/infrastructure/client-address.ts";
 
 /** How many reports each address may send in a minute. */
 export const reportsPerMinute = 30;
@@ -38,43 +33,6 @@ const drop = (reason: "rateLimited" | "tooLarge") =>
 
 const tooLarge = () =>
   drop("tooLarge").pipe(Effect.andThen(Effect.fail(new ClientErrorTooLarge())));
-
-// The headers that carry the client's address: those sign-in rate limits
-// read (AUTH_IP_HEADERS), which the edge sets and overwrites.
-const addressHeadersConfig = requiredInProduction(
-  Config.Array(Schema.String, "AUTH_IP_HEADERS"),
-  ["x-forwarded-for"]
-).pipe(
-  Config.map((names) =>
-    names.flatMap((name) => {
-      const header = name.trim().toLowerCase();
-
-      return header === "" ? [] : [header];
-    })
-  )
-);
-
-const longestAddress = 100;
-
-/**
- * Who sent a request, for counting: the first address header present, else
- * the connection's address. Reports from the web app's own server count as
- * its address.
- */
-export const addressOf = (
-  request: HttpServerRequest.HttpServerRequest,
-  headers: readonly string[]
-): string => {
-  for (const header of headers) {
-    const value = request.headers[header]?.trim();
-
-    if (value !== undefined && value !== "") {
-      return value.slice(0, longestAddress);
-    }
-  }
-
-  return Option.getOrElse(request.remoteAddress, () => "unknown");
-};
 
 const bodyLimit = ByteSize.bytes(maxClientErrorBytes);
 

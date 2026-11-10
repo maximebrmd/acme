@@ -99,6 +99,41 @@ export const french: EmailCatalog = {
     x: "X",
     youtube: "YouTube",
   },
+  postApprovalRequested: {
+    action: "Relire la publication",
+    body: "Une publication de {workspaceName} attend une approbation. Elle est demandée pour le {scheduledAt}, et ne partira pas tant que personne ne l’a approuvée.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous pouvez approuver des publications dans {workspaceName} sur Peal. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Une publication attend votre approbation",
+  },
+  postApproved: {
+    action: "Ouvrir la publication",
+    body: "{by} a approuvé une publication de {workspaceName}. Elle est programmée.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, demandé son approbation ou participé à sa relecture. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Une publication a été approuvée",
+  },
+  postApprovedLate: {
+    action: "Choisir une nouvelle date",
+    body: "{by} a approuvé une publication de {workspaceName}, après l’heure à laquelle elle devait partir. Rien n’a été publié en retard : la publication est de nouveau un brouillon, toujours approuvé. Donnez-lui une nouvelle date pour la programmer.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, demandé son approbation ou participé à sa relecture. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Une publication a été approuvée après son heure",
+  },
+  postChangesRequested: {
+    action: "Ouvrir la publication",
+    body: "{by} a demandé des modifications sur une publication de {workspaceName}. Elle est de nouveau un brouillon, avec un commentaire qui dit quoi changer.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, demandé son approbation ou participé à sa relecture. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Des modifications sont demandées sur une publication",
+  },
+  postCommented: {
+    action: "Lire le commentaire",
+    body: "{by} a commenté une publication de {workspaceName}.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, demandé son approbation ou participé à sa relecture. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+    subject: "Nouveau commentaire sur une publication",
+  },
   postFailed: {
     action: "Ouvrir la publication",
     body: "Une publication de {workspaceName} n’est pas partie sur {channel} : {reason}",
@@ -126,6 +161,17 @@ export const french: EmailCatalog = {
     ignore:
       "Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé. Le lien expire dans une heure.",
     subject: "Réinitialisez votre mot de passe Peal",
+  },
+  reviewParties: {
+    application: "Une application",
+    member: "Un membre",
+    visitor: "Une personne invitée à relire",
+  },
+  reviewReply: {
+    body: "Quelqu’un a répondu à votre commentaire sur une publication que l’on vous a demandé de relire. Pour lire la réponse, ouvrez le lien de relecture que vous avez reçu.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous avez laissé votre adresse avec un commentaire, pour être prévenu des réponses. Elle ne sert à rien d’autre, et est supprimée 30 jours après la fin du lien.",
+    subject: "Une réponse à votre commentaire",
   },
   roles: {
     admin: "en tant qu’administrateur",

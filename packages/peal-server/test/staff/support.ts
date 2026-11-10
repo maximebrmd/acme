@@ -174,6 +174,7 @@ export const memoryStaff = (
             channels: () => Effect.succeed([]),
             posts: () =>
               Effect.succeed({
+                awaitingApproval: 0,
                 cancelled: 0,
                 draft: 0,
                 finished: 0,

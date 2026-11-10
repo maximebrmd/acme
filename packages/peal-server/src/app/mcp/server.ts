@@ -3,15 +3,20 @@ import { McpProtocol, McpServer, Tool } from "effect/ai";
 
 import { PealToolsLive } from "#app/mcp/handlers.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
+import { ReviewTools } from "#app/mcp/review-tools.ts";
 import { PealTools } from "#app/mcp/tools.ts";
 import { mcpAuthentication } from "#workspace/container.ts";
 
-// The tools that create, change or delete posts: the law has Peal keep the
-// connection of each call a year, as it keeps the API's writes to posts.
+// The tools that create, change or delete posts, or decide on their
+// approval: the law has Peal keep the connection of each call a year, as it
+// keeps the API's writes to posts and reviews.
 const contentTools: ReadonlySet<string> = new Set(
-  Object.values(PostTools.tools)
-    .filter((tool) => !Context.get(tool.annotations, Tool.Readonly))
-    .map((tool) => tool.name)
+  [
+    ...Object.values(PostTools.tools),
+    ...Object.values(ReviewTools.tools),
+  ].flatMap((tool) =>
+    Context.get(tool.annotations, Tool.Readonly) ? [] : [tool.name]
+  )
 );
 
 /** Where the MCP endpoint answers, under PUBLIC_URL. */

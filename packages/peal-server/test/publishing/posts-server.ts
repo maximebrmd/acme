@@ -5,8 +5,9 @@ import { MessageStorage } from "effect/cluster";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
+import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
-import { publishingWith, publishingWorkers } from "#publishing/container.ts";
+import { publishingBehind, publishingWorkers } from "#publishing/container.ts";
 import { FakePlatformPublisher } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import type { MediaAssetId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -43,16 +44,21 @@ export const attachableVideo: MediaAssetId = MediaAssetIdSchema.make(
 );
 
 /**
- * The server, with the media posts may show from `media`, and the posts a
- * month allows from `allowance` (no limit, by default).
+ * The server behind `gate`, which says which posts wait for an approval,
+ * with the media posts may show from `media`, and the posts a month allows
+ * from `allowance`.
  */
-export const postsServerWith = <E, R>(
+export const postsServerBehind = <G, E2, R2, E, R>(
+  gate: Layer.Layer<ApprovalGate | G, E2, R2>,
   media: Layer.Layer<AttachableMedia, E, R>,
   allowance: ReturnType<typeof postAllowance> = postAllowance()
 ) =>
   publishingWorkers(FakePlatformPublisher).pipe(
     Layer.provideMerge(
-      publishingWith(Layer.mergeAll(ListedWorkspaceChannels, media, allowance))
+      publishingBehind(
+        gate,
+        Layer.mergeAll(ListedWorkspaceChannels, media, allowance)
+      )
     ),
     Layer.provideMerge(RecordingPublicationOutcomes),
     Layer.provideMerge(ListChannels.layer),
@@ -62,6 +68,16 @@ export const postsServerWith = <E, R>(
     Layer.provideMerge(FakePlatformPublisher),
     Layer.provideMerge(DatabaseTest)
   );
+
+/**
+ * The server, with the media posts may show from `media`, and the posts a
+ * month allows from `allowance` (no limit, by default). No post waits for an
+ * approval.
+ */
+export const postsServerWith = <E, R>(
+  media: Layer.Layer<AttachableMedia, E, R>,
+  allowance: ReturnType<typeof postAllowance> = postAllowance()
+) => postsServerBehind(ApprovalGate.open, media, allowance);
 
 export const PostsServerTest = postsServerWith(
   attachableMedia([

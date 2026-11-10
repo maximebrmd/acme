@@ -10,6 +10,7 @@ export namespace NotificationPreferences {
         channelReconnect: boolean;
         postFailed: boolean;
         postPublished: boolean;
+        postReview: boolean;
         postUnconfirmed: boolean;
     }
 }

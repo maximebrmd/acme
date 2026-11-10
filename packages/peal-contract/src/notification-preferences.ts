@@ -15,6 +15,8 @@ export const NotificationPreferencesSchema = Schema.Struct({
     channelReconnect: Schema.Boolean,
     postFailed: Schema.Boolean,
     postPublished: Schema.Boolean,
+    // Comments on posts, and approvals asked for and decided.
+    postReview: Schema.Boolean,
     postUnconfirmed: Schema.Boolean,
   }),
   // How every post went, where the user may schedule posts, rather than
@@ -31,6 +33,7 @@ export const NotificationPreferencesChangeSchema = Schema.Struct({
       channelReconnect: Schema.optionalKey(Schema.Boolean),
       postFailed: Schema.optionalKey(Schema.Boolean),
       postPublished: Schema.optionalKey(Schema.Boolean),
+      postReview: Schema.optionalKey(Schema.Boolean),
       postUnconfirmed: Schema.optionalKey(Schema.Boolean),
     })
   ),

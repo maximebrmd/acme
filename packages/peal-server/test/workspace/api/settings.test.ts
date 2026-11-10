@@ -215,10 +215,12 @@ const PortsLive = Layer.mergeAll(
                 channelReconnect: true,
                 postFailed: true,
                 postPublished: false,
+                postReview: true,
                 postUnconfirmed: true,
               },
               everyPost: false,
             },
+            review: { approvals: [], comments: [] },
             staffActions: [],
           }),
         exportWorkspace: () =>
@@ -247,6 +249,12 @@ const PortsLive = Layer.mergeAll(
             channels: [],
             media: [],
             posts: [],
+            review: {
+              approvalPolicy: "never",
+              approvals: [],
+              comments: [],
+              links: [],
+            },
           }),
         holdIdentification: (held) =>
           record(`hold:${held.userId}:${held.email}`).pipe(provide),

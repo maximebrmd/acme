@@ -1635,122 +1635,23 @@ func (p PostOutcome) Ptr() *PostOutcome {
 	return &p
 }
 
-var (
-	postScheduleFieldAt       = big.NewInt(1 << 0)
-	postScheduleFieldTimeZone = big.NewInt(1 << 1)
-)
-
-type PostSchedule struct {
-	At       string `json:"at" url:"at"`
-	TimeZone string `json:"timeZone" url:"timeZone"`
-
-	// Private bitmask of fields set to an explicit value and therefore not to be omitted
-	explicitFields *big.Int `json:"-" url:"-"`
-
-	extraProperties map[string]interface{}
-	rawJSON         json.RawMessage
-}
-
-func (p *PostSchedule) GetAt() string {
-	if p == nil {
-		return ""
-	}
-	return p.At
-}
-
-func (p *PostSchedule) GetTimeZone() string {
-	if p == nil {
-		return ""
-	}
-	return p.TimeZone
-}
-
-func (p *PostSchedule) GetExtraProperties() map[string]interface{} {
-	if p == nil {
-		return nil
-	}
-	return p.extraProperties
-}
-
-func (p *PostSchedule) require(field *big.Int) {
-	next := new(big.Int)
-	if p.explicitFields != nil {
-		next.Set(p.explicitFields)
-	}
-	next.Or(next, field)
-	p.explicitFields = next
-}
-
-// SetAt sets the At field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PostSchedule) SetAt(at string) {
-	p.At = at
-	p.require(postScheduleFieldAt)
-}
-
-// SetTimeZone sets the TimeZone field and marks it as non-optional;
-// this prevents an empty or null value for this field from being omitted during serialization.
-func (p *PostSchedule) SetTimeZone(timeZone string) {
-	p.TimeZone = timeZone
-	p.require(postScheduleFieldTimeZone)
-}
-
-func (p *PostSchedule) UnmarshalJSON(data []byte) error {
-	type unmarshaler PostSchedule
-	var value unmarshaler
-	if err := json.Unmarshal(data, &value); err != nil {
-		return err
-	}
-	*p = PostSchedule(value)
-	extraProperties, err := internal.ExtractExtraProperties(data, *p)
-	if err != nil {
-		return err
-	}
-	p.extraProperties = extraProperties
-	p.rawJSON = json.RawMessage(data)
-	return nil
-}
-
-func (p *PostSchedule) MarshalJSON() ([]byte, error) {
-	type embed PostSchedule
-	var marshaler = struct {
-		embed
-	}{
-		embed: embed(*p),
-	}
-	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
-	return json.Marshal(explicitMarshaler)
-}
-
-func (p *PostSchedule) String() string {
-	if p == nil {
-		return "<nil>"
-	}
-	if len(p.rawJSON) > 0 {
-		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
-			return value
-		}
-	}
-	if value, err := internal.StringifyJSON(p); err == nil {
-		return value
-	}
-	return fmt.Sprintf("%#v", p)
-}
-
 type PostStatus string
 
 const (
-	PostStatusDraft      PostStatus = "draft"
-	PostStatusScheduled  PostStatus = "scheduled"
-	PostStatusPublishing PostStatus = "publishing"
-	PostStatusFinished   PostStatus = "finished"
-	PostStatusCancelled  PostStatus = "cancelled"
+	PostStatusDraft            PostStatus = "draft"
+	PostStatusAwaitingApproval PostStatus = "awaitingApproval"
+	PostStatusScheduled        PostStatus = "scheduled"
+	PostStatusPublishing       PostStatus = "publishing"
+	PostStatusFinished         PostStatus = "finished"
+	PostStatusCancelled        PostStatus = "cancelled"
 )
 
 func NewPostStatusFromString(s string) (PostStatus, error) {
 	switch s {
 	case "draft":
 		return PostStatusDraft, nil
+	case "awaitingApproval":
+		return PostStatusAwaitingApproval, nil
 	case "scheduled":
 		return PostStatusScheduled, nil
 	case "publishing":

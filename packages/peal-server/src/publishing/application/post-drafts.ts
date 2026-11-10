@@ -23,6 +23,7 @@ import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 import { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import { ApprovalGate } from "./approval-gate.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { channelsFor, mediaFor } from "./post-references.ts";
@@ -98,6 +99,7 @@ export class PostDrafts extends Context.Service<
     PostDrafts,
     Effect.gen(function* PostDraftsLive() {
       const posts = yield* PostRepository;
+      const gate = yield* ApprovalGate;
       const { transaction } = yield* TransactionRunner;
       const ports = yield* Effect.context<Ports>();
 
@@ -201,8 +203,10 @@ export class PostDrafts extends Context.Service<
             }
 
             yield* Effect.fromResult(discardDraft(current.post));
+            yield* posts.remove(postId);
 
-            return yield* posts.remove(postId);
+            // What was said of it in review goes with it.
+            return yield* gate.forgotten(actor.workspaceId, postId);
           })
         );
       });

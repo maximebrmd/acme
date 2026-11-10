@@ -26,6 +26,9 @@ import {
   OAuthClientNotPublished,
   StaffAccess,
   Unauthenticated,
+  ReviewLinkNotFound,
+  ReviewVisitor,
+  ReviewVisitorAddress,
 } from "peal-contract";
 import type { Me } from "peal-contract";
 
@@ -250,6 +253,32 @@ const LegalLive = HttpApiBuilder.group(Api, "legal", (handlers) =>
   )
 );
 
+// No review link is known here: the command line never opens one.
+const noLink = Effect.fail(new ReviewLinkNotFound());
+
+const ReviewLinkLive = HttpApiBuilder.group(Api, "reviewLink", (handlers) =>
+  handlers.handleAll({
+    approve: () => noLink,
+    comment: () => noLink,
+    open: () => noLink,
+    requestChanges: () => noLink,
+  })
+).pipe(
+  Layer.provideMerge(
+    Layer.succeed(
+      ReviewVisitor,
+      ReviewVisitor.of((httpEffect) =>
+        httpEffect.pipe(
+          Effect.provideService(
+            ReviewVisitorAddress,
+            ReviewVisitorAddress.of({ address: "203.0.113.1" })
+          )
+        )
+      )
+    )
+  )
+);
+
 // Error reports are taken, and dropped.
 const ClientErrorsLive = HttpApiBuilder.group(Api, "clientErrors", (handlers) =>
   handlers.handleAll({ reportClientError: () => Effect.void })
@@ -305,7 +334,8 @@ export const inMemoryServer = (
                 Layer.provide(DataDeletionLive),
                 Layer.provide(StaffLive),
                 Layer.provide(LegalLive),
-                Layer.provide(ClientErrorsLive)
+                Layer.provide(ClientErrorsLive),
+                Layer.provide(ReviewLinkLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(
                 Layer.provide(server.handlers)

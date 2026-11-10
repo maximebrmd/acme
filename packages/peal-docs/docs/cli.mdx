@@ -149,6 +149,27 @@ peal posts confirm <post-id> <target-id> not-published
 - `peal posts repost` sends the post again, now, on one channel where it failed or is unconfirmed. When it is unconfirmed, check the platform first: it may be live already.
 - `peal posts confirm` records what you found on the platform for a post Peal could not confirm: `published`, with its address if you have it, or `not-published`, which fails it there so `peal posts repost` can send it again. See [Scheduling](/scheduling) for how posts end.
 
+## Reviews and approvals [#review]
+
+```sh
+peal approvals list
+peal approvals approve <post-id>
+peal approvals request-changes <post-id> --comment "Say Thursday, not Friday."
+peal approvals policy
+peal approvals policy --set always
+peal review show <post-id>
+peal review comment <post-id> --text "Looks good." --reply-to <comment-id>
+peal review link <post-id> --access approve --hours 48
+peal review links <post-id>
+peal review revoke <link-id>
+```
+
+- `peal approvals list` prints the posts that wait for an [approval](/review), with the time each was asked for and who asked. `approve` schedules one; approved after its time, it goes back to draft instead. `request-changes` sends it back to draft with your comment.
+- The command line is an application: under the policy that holds applications' posts, what it schedules waits, and it approves only what a member asked for in the web app.
+- `peal approvals policy` shows which posts wait; `--set never`, `contributorsAndApplications` or `always` changes it, for owners and admins.
+- `peal review show` prints a post's approvals and its comments, thread by thread. What reviewers typed is printed as text, with control characters replaced.
+- `peal review link` creates a review link (`--access view`, `comment`, the default, or `approve`; `--hours`, 14 days unless given) and prints its address, once. `links` lists a post's links without their addresses, and `revoke` ends one.
+
 ## Analytics [#analytics]
 
 ```sh

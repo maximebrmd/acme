@@ -55,6 +55,7 @@ const troubleOf = (row: typeof TroubleRowSchema.Type): TargetTrouble =>
     : { ...row, at: utc(row.at) };
 
 const statuses = [
+  "awaitingApproval",
   "cancelled",
   "draft",
   "finished",
@@ -82,6 +83,7 @@ export const DrizzlePostOversight = Layer.effect(
         rows.find((row) => row.status === status)?.posts ?? 0;
 
       return {
+        awaitingApproval: of("awaitingApproval"),
         cancelled: of("cancelled"),
         draft: of("draft"),
         finished: of("finished"),

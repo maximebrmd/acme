@@ -19,20 +19,20 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.AlreadyMember"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.PostNotReviewable"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.AlreadyMember value)
+    public ConflictErrorBody(ConflictErrorBody.PostNotReviewable value)
     {
-        Type = "AlreadyMember";
+        Type = "PostNotReviewable";
         Value = value.Value;
     }
 
     /// <summary>
-    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyInvitations"/>.
+    /// Create an instance of ConflictErrorBody with <see cref="ConflictErrorBody.TooManyReviewLinks"/>.
     /// </summary>
-    public ConflictErrorBody(ConflictErrorBody.TooManyInvitations value)
+    public ConflictErrorBody(ConflictErrorBody.TooManyReviewLinks value)
     {
-        Type = "TooManyInvitations";
+        Type = "TooManyReviewLinks";
         Value = value.Value;
     }
 
@@ -48,62 +48,64 @@ public record ConflictErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "AlreadyMember"
+    /// Returns true if <see cref="Type"/> is "PostNotReviewable"
     /// </summary>
-    public bool IsAlreadyMember => Type == "AlreadyMember";
+    public bool IsPostNotReviewable => Type == "PostNotReviewable";
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "TooManyInvitations"
+    /// Returns true if <see cref="Type"/> is "TooManyReviewLinks"
     /// </summary>
-    public bool IsTooManyInvitations => Type == "TooManyInvitations";
+    public bool IsTooManyReviewLinks => Type == "TooManyReviewLinks";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.AlreadyMemberEncoded"/> if <see cref="Type"/> is 'AlreadyMember', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.PostNotReviewableEncoded"/> if <see cref="Type"/> is 'PostNotReviewable', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'AlreadyMember'.</exception>
-    public Peal.AlreadyMemberEncoded AsAlreadyMember() =>
-        IsAlreadyMember
-            ? (Peal.AlreadyMemberEncoded)Value!
-            : throw new global::System.Exception("ConflictErrorBody.Type is not 'AlreadyMember'");
-
-    /// <summary>
-    /// Returns the value as a <see cref="Peal.TooManyInvitationsEncoded"/> if <see cref="Type"/> is 'TooManyInvitations', otherwise throws an exception.
-    /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyInvitations'.</exception>
-    public Peal.TooManyInvitationsEncoded AsTooManyInvitations() =>
-        IsTooManyInvitations
-            ? (Peal.TooManyInvitationsEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostNotReviewable'.</exception>
+    public Peal.PostNotReviewableEncoded AsPostNotReviewable() =>
+        IsPostNotReviewable
+            ? (Peal.PostNotReviewableEncoded)Value!
             : throw new global::System.Exception(
-                "ConflictErrorBody.Type is not 'TooManyInvitations'"
+                "ConflictErrorBody.Type is not 'PostNotReviewable'"
+            );
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.TooManyReviewLinksEncoded"/> if <see cref="Type"/> is 'TooManyReviewLinks', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TooManyReviewLinks'.</exception>
+    public Peal.TooManyReviewLinksEncoded AsTooManyReviewLinks() =>
+        IsTooManyReviewLinks
+            ? (Peal.TooManyReviewLinksEncoded)Value!
+            : throw new global::System.Exception(
+                "ConflictErrorBody.Type is not 'TooManyReviewLinks'"
             );
 
     public T Match<T>(
-        Func<Peal.AlreadyMemberEncoded, T> onAlreadyMember,
-        Func<Peal.TooManyInvitationsEncoded, T> onTooManyInvitations,
+        Func<Peal.PostNotReviewableEncoded, T> onPostNotReviewable,
+        Func<Peal.TooManyReviewLinksEncoded, T> onTooManyReviewLinks,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "AlreadyMember" => onAlreadyMember(AsAlreadyMember()),
-            "TooManyInvitations" => onTooManyInvitations(AsTooManyInvitations()),
+            "PostNotReviewable" => onPostNotReviewable(AsPostNotReviewable()),
+            "TooManyReviewLinks" => onTooManyReviewLinks(AsTooManyReviewLinks()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.AlreadyMemberEncoded> onAlreadyMember,
-        Action<Peal.TooManyInvitationsEncoded> onTooManyInvitations,
+        Action<Peal.PostNotReviewableEncoded> onPostNotReviewable,
+        Action<Peal.TooManyReviewLinksEncoded> onTooManyReviewLinks,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "AlreadyMember":
-                onAlreadyMember(AsAlreadyMember());
+            case "PostNotReviewable":
+                onPostNotReviewable(AsPostNotReviewable());
                 break;
-            case "TooManyInvitations":
-                onTooManyInvitations(AsTooManyInvitations());
+            case "TooManyReviewLinks":
+                onTooManyReviewLinks(AsTooManyReviewLinks());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -112,13 +114,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.AlreadyMemberEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.PostNotReviewableEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsAlreadyMember(out Peal.AlreadyMemberEncoded? value)
+    public bool TryAsPostNotReviewable(out Peal.PostNotReviewableEncoded? value)
     {
-        if (Type == "AlreadyMember")
+        if (Type == "PostNotReviewable")
         {
-            value = (Peal.AlreadyMemberEncoded)Value!;
+            value = (Peal.PostNotReviewableEncoded)Value!;
             return true;
         }
         value = null;
@@ -126,13 +128,13 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.TooManyInvitationsEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.TooManyReviewLinksEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsTooManyInvitations(out Peal.TooManyInvitationsEncoded? value)
+    public bool TryAsTooManyReviewLinks(out Peal.TooManyReviewLinksEncoded? value)
     {
-        if (Type == "TooManyInvitations")
+        if (Type == "TooManyReviewLinks")
         {
-            value = (Peal.TooManyInvitationsEncoded)Value!;
+            value = (Peal.TooManyReviewLinksEncoded)Value!;
             return true;
         }
         value = null;
@@ -141,10 +143,10 @@ public record ConflictErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.AlreadyMember value) =>
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.PostNotReviewable value) =>
         new(value);
 
-    public static implicit operator ConflictErrorBody(ConflictErrorBody.TooManyInvitations value) =>
+    public static implicit operator ConflictErrorBody(ConflictErrorBody.TooManyReviewLinks value) =>
         new(value);
 
     [Serializable]
@@ -188,13 +190,15 @@ public record ConflictErrorBody
 
             var value = discriminator switch
             {
-                "AlreadyMember" => jsonWithoutDiscriminator.Deserialize<Peal.AlreadyMemberEncoded?>(
-                    options
-                ) ?? throw new JsonException("Failed to deserialize Peal.AlreadyMemberEncoded"),
-                "TooManyInvitations" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyInvitationsEncoded?>(options)
+                "PostNotReviewable" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.PostNotReviewableEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.TooManyInvitationsEncoded"
+                            "Failed to deserialize Peal.PostNotReviewableEncoded"
+                        ),
+                "TooManyReviewLinks" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.TooManyReviewLinksEncoded?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.TooManyReviewLinksEncoded"
                         ),
                 _ => json.Deserialize<object?>(options),
             };
@@ -210,8 +214,8 @@ public record ConflictErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "AlreadyMember" => JsonSerializer.SerializeToNode(value.Value, options),
-                    "TooManyInvitations" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "PostNotReviewable" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "TooManyReviewLinks" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -241,42 +245,42 @@ public record ConflictErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for AlreadyMember
+    /// Discriminated union type for PostNotReviewable
     /// </summary>
     [Serializable]
-    public struct AlreadyMember
+    public struct PostNotReviewable
     {
-        public AlreadyMember(Peal.AlreadyMemberEncoded value)
+        public PostNotReviewable(Peal.PostNotReviewableEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.AlreadyMemberEncoded Value { get; set; }
+        internal Peal.PostNotReviewableEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.AlreadyMember(
-            Peal.AlreadyMemberEncoded value
+        public static implicit operator ConflictErrorBody.PostNotReviewable(
+            Peal.PostNotReviewableEncoded value
         ) => new(value);
     }
 
     /// <summary>
-    /// Discriminated union type for TooManyInvitations
+    /// Discriminated union type for TooManyReviewLinks
     /// </summary>
     [Serializable]
-    public struct TooManyInvitations
+    public struct TooManyReviewLinks
     {
-        public TooManyInvitations(Peal.TooManyInvitationsEncoded value)
+        public TooManyReviewLinks(Peal.TooManyReviewLinksEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.TooManyInvitationsEncoded Value { get; set; }
+        internal Peal.TooManyReviewLinksEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator ConflictErrorBody.TooManyInvitations(
-            Peal.TooManyInvitationsEncoded value
+        public static implicit operator ConflictErrorBody.TooManyReviewLinks(
+            Peal.TooManyReviewLinksEncoded value
         ) => new(value);
     }
 }

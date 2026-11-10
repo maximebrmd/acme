@@ -9,6 +9,8 @@ import {
   CurrentPrincipal,
   CurrentStaff,
   Forbidden,
+  ReviewVisitor,
+  ReviewVisitorAddress,
   StaffAccess,
   Unauthenticated,
   WorkspaceAccess,
@@ -50,9 +52,14 @@ const objectIdsOf = (
     Object.entries(params).filter(([name]) => name !== "workspaceId")
   );
 
-// The groups whose writes create, change or delete content: the law has
-// Peal keep each such connection a year (ConnectionJournal).
-const contentGroups: ReadonlySet<string> = new Set(["media", "posts"]);
+// The groups whose writes create, change or delete content, comments and
+// approvals included: the law has Peal keep each such connection a year
+// (ConnectionJournal).
+const contentGroups: ReadonlySet<string> = new Set([
+  "media",
+  "posts",
+  "review",
+]);
 
 // Whether the request changes content.
 const changesContent = (
@@ -350,9 +357,23 @@ const noStaffTest = Layer.succeed(
   StaffAccess.of({ session: notFound })
 );
 
-const openIntakeTest = Layer.succeed(
-  ClientErrorIntake,
-  ClientErrorIntake.of((httpEffect) => httpEffect)
+const openIntakeTest = Layer.merge(
+  Layer.succeed(
+    ClientErrorIntake,
+    ClientErrorIntake.of((httpEffect) => httpEffect)
+  ),
+  // Visitors of review links come from a synthetic address.
+  Layer.succeed(
+    ReviewVisitor,
+    ReviewVisitor.of((httpEffect) =>
+      httpEffect.pipe(
+        Effect.provideService(
+          ReviewVisitorAddress,
+          ReviewVisitorAddress.of({ address: "203.0.113.1" })
+        )
+      )
+    )
+  )
 );
 
 /**

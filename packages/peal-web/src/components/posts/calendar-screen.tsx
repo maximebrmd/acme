@@ -96,10 +96,16 @@ const placedIn = (posts: readonly Post[], timeZone: string): Placed[] =>
     );
   });
 
+// A scheduled post moves, and so does one that waits for an approval: it
+// keeps waiting, for its new time.
+const hasMovableTime = ({ status }: Post) =>
+  status === "scheduled" || status === "awaitingApproval";
+
 const firstLine = (post: Post) =>
   post.content.text.split("\n")[0]?.trim() ?? "";
 
 const chipTone: Record<Post["status"], string> = {
+  awaitingApproval: "border border-dashed border-border text-foreground",
   cancelled: "bg-muted text-muted-foreground",
   draft: "bg-muted text-muted-foreground",
   finished: "bg-muted text-muted-foreground",
@@ -287,7 +293,7 @@ const WeekGrid = ({
                       .map((item) => (
                         <PostChip
                           key={item.post.id}
-                          movable={movable && item.post.status === "scheduled"}
+                          movable={movable && hasMovableTime(item.post)}
                           placed={item}
                           timeZone={timeZone}
                           workspaceId={workspaceId}
@@ -375,7 +381,7 @@ const MonthGrid = ({
                       {onDay.slice(0, shownPerDay).map((item) => (
                         <PostChip
                           key={item.post.id}
-                          movable={movable && item.post.status === "scheduled"}
+                          movable={movable && hasMovableTime(item.post)}
                           placed={item}
                           timeZone={timeZone}
                           workspaceId={workspaceId}

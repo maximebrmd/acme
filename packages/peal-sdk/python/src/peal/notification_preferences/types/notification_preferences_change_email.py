@@ -18,6 +18,9 @@ class NotificationPreferencesChangeEmail(UniversalBaseModel):
     post_published: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="postPublished"), pydantic.Field(alias="postPublished")
     ] = None
+    post_review: typing_extensions.Annotated[
+        typing.Optional[bool], FieldMetadata(alias="postReview"), pydantic.Field(alias="postReview")
+    ] = None
     post_unconfirmed: typing_extensions.Annotated[
         typing.Optional[bool], FieldMetadata(alias="postUnconfirmed"), pydantic.Field(alias="postUnconfirmed")
     ] = None

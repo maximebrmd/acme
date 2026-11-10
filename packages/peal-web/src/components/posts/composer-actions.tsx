@@ -34,6 +34,8 @@ interface ComposerActionsProps {
   readonly onAction: (action: ComposerAction) => void;
   /** Whether every channel's platform takes the post as it is. */
   readonly publishable: boolean;
+  /** Whether what this member schedules waits for an approval. */
+  readonly willWait: boolean;
 }
 
 // Deletes the draft once the member confirms.
@@ -89,6 +91,7 @@ export const ComposerActions = ({
   canUnschedule,
   onAction,
   publishable,
+  willWait,
 }: ComposerActionsProps) => {
   const t = useTranslations("Posts.Composer");
   const running = busy !== null;
@@ -115,7 +118,9 @@ export const ComposerActions = ({
             onAction("schedule");
           }}
         >
-          {busy === "schedule" ? t("scheduling") : t("schedule")}
+          {busy === "schedule"
+            ? t(willWait ? "askingApproval" : "scheduling")
+            : t(willWait ? "askApproval" : "schedule")}
         </Button>
       ) : null}
       {canReschedule ? (

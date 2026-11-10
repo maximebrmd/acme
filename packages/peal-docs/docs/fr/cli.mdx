@@ -149,6 +149,27 @@ peal posts confirm <post-id> <target-id> not-published
 - `peal posts repost` renvoie la publication, maintenant, sur un canal où elle a échoué ou n’est pas confirmée. Quand elle n’est pas confirmée, vérifiez d’abord sur la plateforme : elle est peut-être déjà en ligne.
 - `peal posts confirm` enregistre ce que vous avez trouvé sur la plateforme pour une publication que Peal n’a pas pu confirmer : `published`, avec son adresse si vous l’avez, ou `not-published`, qui la marque en échec sur ce canal pour que `peal posts repost` puisse la renvoyer. [Programmer des publications](/scheduling) explique comment finissent les publications.
 
+## Relectures et approbations [#review]
+
+```sh
+peal approvals list
+peal approvals approve <post-id>
+peal approvals request-changes <post-id> --comment "Dites jeudi, pas vendredi."
+peal approvals policy
+peal approvals policy --set always
+peal review show <post-id>
+peal review comment <post-id> --text "Très bien." --reply-to <comment-id>
+peal review link <post-id> --access approve --hours 48
+peal review links <post-id>
+peal review revoke <link-id>
+```
+
+- `peal approvals list` affiche les publications qui attendent une [approbation](/review), avec l’heure demandée pour chacune et qui a demandé. `approve` en programme une ; approuvée après son heure, elle redevient un brouillon. `request-changes` la renvoie en brouillon avec votre commentaire.
+- La ligne de commande est une application : sous la politique qui retient les publications des applications, ce qu’elle programme attend, et elle n’approuve que ce qu’un membre a demandé dans l’application web.
+- `peal approvals policy` montre quelles publications attendent ; `--set never`, `contributorsAndApplications` ou `always` le change, pour les propriétaires et les administrateurs.
+- `peal review show` affiche les approbations d’une publication et ses commentaires, fil par fil. Ce que les personnes invitées ont tapé est affiché comme du texte, les caractères de contrôle remplacés.
+- `peal review link` crée un lien de relecture (`--access view`, `comment`, par défaut, ou `approve` ; `--hours`, 14 jours sinon) et affiche son adresse, une seule fois. `links` liste les liens d’une publication sans leur adresse, et `revoke` en termine un.
+
 ## Statistiques [#analytics]
 
 ```sh

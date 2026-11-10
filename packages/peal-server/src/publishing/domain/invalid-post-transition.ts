@@ -8,6 +8,8 @@ import { PostStatusNameSchema } from "./post-status.ts";
 export const PostActionSchema = Schema.Literals([
   "edit",
   "schedule",
+  "awaitApproval",
+  "release",
   "moveToDraft",
   "startPublishing",
   "finish",

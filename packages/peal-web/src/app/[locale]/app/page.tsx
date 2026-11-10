@@ -41,6 +41,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   const settings = await getTranslations("WorkspaceSettings");
   const billing = await getTranslations("Billing");
   const analytics = await getTranslations("Analytics");
+  const review = await getTranslations("Review");
 
   return (
     <div className="flex flex-col gap-8">
@@ -94,6 +95,12 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                       className="underline-offset-4 hover:underline"
                     >
                       {tPosts("drafts")}
+                    </Link>
+                    <Link
+                      href={`/app/${workspace.id}/approvals`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {review("approvals.nav")}
                     </Link>
                     <Link
                       href={`/app/${workspace.id}/channels`}

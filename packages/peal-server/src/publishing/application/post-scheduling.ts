@@ -8,6 +8,7 @@ import {
   Result,
 } from "effect";
 
+import { approvalSubject } from "#publishing/domain/approval-subject.ts";
 import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { optionsOn } from "#publishing/domain/channel-options.ts";
 import { checkPublishable } from "#publishing/domain/content-rules.ts";
@@ -18,6 +19,7 @@ import { cancelTarget, isSettled } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   authorOf,
+  awaitApproval,
   cancelPost,
   createDraft,
   finishPost,
@@ -32,15 +34,17 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
+import { can } from "#shared/domain/access.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { roomForOneMore, withinAllowance } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
-import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import { AccountRules } from "./account-rules.ts";
+import { ApprovalGate } from "./approval-gate.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
 import { PostAllowance } from "./post-allowance.ts";
 import type { PostNotFound } from "./post-not-found.ts";
@@ -62,8 +66,9 @@ import {
 const applied = (written: boolean) =>
   written ? Effect.void : Effect.die("A post changed under its row lock");
 
+// The time of a post that is scheduled, or waits for an approval to be.
 const scheduleOf = (post: Post) =>
-  post.status._tag === "scheduled"
+  post.status._tag === "scheduled" || post.status._tag === "awaitingApproval"
     ? Effect.succeed(post.status.schedule)
     : Effect.die(`Post ${post.id} is ${post.status._tag}, not scheduled`);
 
@@ -96,14 +101,19 @@ type Unpublishable =
 
 type Ports =
   | AccountRules
+  | ApprovalGate
   | AttachableMedia
   | Ids
   | PostAllowance
   | PostRepository
   | WorkspaceChannels;
 
-const mayPublish = (actor: Actor) =>
-  Effect.fromResult(authorize(actor, "post:schedule"));
+// Someone who only asks acts on drafts and on posts that wait: a scheduled
+// post is for those who may schedule to move or stop.
+const mayChange = (actor: Actor, { status }: Post) =>
+  status._tag === "draft" || status._tag === "awaitingApproval"
+    ? Effect.succeed(actor)
+    : Effect.fromResult(authorize(actor, "post:schedule"));
 
 /**
  * Scheduling posts: create one for a time, schedule a draft, move a post,
@@ -111,6 +121,13 @@ const mayPublish = (actor: Actor) =>
  * starts or stops its job in one transaction, so a post is scheduled exactly
  * when its job exists. Each needs post:schedule, and scheduling reads the
  * workspace's channels, which needs channel:read.
+ *
+ * Every post scheduled here passes the workspace's `ApprovalGate`, in the
+ * transaction that saves it: a post it holds waits for an approval
+ * (`awaitingApproval`) with its time and no job, which `HeldPosts` starts
+ * once it is approved. Where the gate lets them (`maySubmit`), people
+ * without post:schedule ask for posts to go out too, and act on drafts and
+ * on posts that wait, never on a scheduled one.
  *
  * A post is scheduled only on channels of its workspace, with ready media of
  * the workspace, and with content their platforms take, its media included
@@ -205,6 +222,47 @@ export class PostScheduling extends Context.Service<
       const ports = yield* Effect.context<Ports>();
 
       const withPorts = Effect.provideContext(ports);
+      const gate = yield* ApprovalGate;
+
+      // Whoever may schedule, and whoever the gate lets ask for posts to go
+      // out, which then wait for an approval.
+      const mayAsk = Effect.fn("PostScheduling.mayAsk")(function* mayAsk(
+        actor: Actor
+      ) {
+        const allowed =
+          can(actor, "post:schedule") || (yield* gate.maySubmit(actor));
+
+        if (!allowed) {
+          return yield* new MissingPermission({ permission: "post:schedule" });
+        }
+
+        return actor;
+      });
+
+      // The post as the gate leaves it: scheduled, or waiting for an
+      // approval. Run in the transaction that saves it.
+      const throughGate = Effect.fn("PostScheduling.throughGate")(
+        function* throughGate(
+          actor: Actor,
+          post: Post,
+          targets: readonly PostTarget[]
+        ) {
+          const { at, timeZone } = yield* scheduleOf(post);
+
+          const admission = yield* gate.admit(actor, {
+            authorId: post.authorId,
+            postId: post.id,
+            scheduledAt: at,
+            subject: approvalSubject(post.content, targets),
+            timeZone,
+            workspaceId: post.workspaceId,
+          });
+
+          return admission === "admitted"
+            ? post
+            : yield* Effect.fromResult(awaitApproval(post)).pipe(Effect.orDie);
+        }
+      );
 
       // The channels to send the content to, once their platforms take it
       // and the options it has on them.
@@ -290,10 +348,15 @@ export class PostScheduling extends Context.Service<
       );
 
       // Starts the job for the post's current revision, at the time it was
-      // scheduled for (which may be later than asked), and records it.
+      // scheduled for (which may be later than asked), and records it. A
+      // post that waits for an approval gets none.
       const startJob = Effect.fn("PostScheduling.startJob")(function* startJob(
         post: Post
       ) {
+        if (post.status._tag === "awaitingApproval") {
+          return;
+        }
+
         const { at } = yield* scheduleOf(post);
 
         const executionId = yield* scheduler.schedule({
@@ -313,21 +376,35 @@ export class PostScheduling extends Context.Service<
 
       // Saves the post at its new time, and swaps its job for one then.
       const move = Effect.fn("PostScheduling.move")(function* move(
+        actor: Actor,
         current: StoredPost,
-        at: Schedule
+        at: Schedule,
+        targets: readonly PostTarget[]
       ) {
-        const moved = yield* Effect.fromResult(
-          schedulePost(current.post, at, yield* DateTime.now)
+        const moved = yield* throughGate(
+          actor,
+          yield* Effect.fromResult(
+            schedulePost(current.post, at, yield* DateTime.now)
+          ),
+          targets
         );
 
         // A scheduled post moved within its month takes no more room, even
         // in a month already past a smaller plan's allowance.
         const staysInMonth =
-          current.post.status._tag === "scheduled" &&
+          current.post.status._tag !== "draft" &&
           sameMonth(
-            current.post.status.schedule.at,
+            (yield* scheduleOf(current.post)).at,
             (yield* scheduleOf(moved)).at
           );
+
+        // It waited for an approval, and no longer does.
+        if (
+          current.post.status._tag === "awaitingApproval" &&
+          moved.status._tag === "scheduled"
+        ) {
+          yield* gate.withdrawn(moved.workspaceId, moved.id);
+        }
 
         if (!staysInMonth) {
           yield* roomInMonth(moved);
@@ -359,6 +436,12 @@ export class PostScheduling extends Context.Service<
         }
       );
 
+      // Tells the gate that a post which waited for an approval stopped.
+      const noLongerWaits = (post: Post) =>
+        post.status._tag === "awaitingApproval"
+          ? gate.withdrawn(post.workspaceId, post.id)
+          : Effect.void;
+
       const lockPost = (actor: Actor, postId: PostId) =>
         lockInWorkspace(actor.workspaceId, postId).pipe(withPorts);
 
@@ -366,7 +449,7 @@ export class PostScheduling extends Context.Service<
         actor: Actor,
         { channelIds, content, options = [], schedule: at }: SchedulePostRequest
       ) {
-        yield* mayPublish(actor);
+        yield* mayAsk(actor);
 
         const channels = yield* publishableOn(
           actor,
@@ -379,7 +462,7 @@ export class PostScheduling extends Context.Service<
         const postId = yield* newId(PostIdSchema).pipe(withPorts);
 
         // A new draft can always be scheduled.
-        const post = yield* Effect.fromResult(
+        const scheduled = yield* Effect.fromResult(
           schedulePost(
             createDraft(postId, actor.workspaceId, content, authorOf(actor)),
             at,
@@ -394,11 +477,15 @@ export class PostScheduling extends Context.Service<
           Option.some(options)
         ).pipe(withPorts);
 
-        yield* transaction(
+        const post = yield* transaction(
           Effect.gen(function* insertAndStart() {
-            yield* roomInMonth(post);
-            yield* posts.insert(post, targets);
-            yield* startJob(post);
+            const placed = yield* throughGate(actor, scheduled, targets);
+
+            yield* roomInMonth(placed);
+            yield* posts.insert(placed, targets);
+            yield* startJob(placed);
+
+            return placed;
           })
         );
 
@@ -411,7 +498,7 @@ export class PostScheduling extends Context.Service<
           postId: PostId,
           { channelIds, schedule: at }: ScheduleDraftRequest
         ) {
-          yield* mayPublish(actor);
+          yield* mayAsk(actor);
 
           return yield* transaction(
             Effect.gen(function* retargetAndStart() {
@@ -442,7 +529,7 @@ export class PostScheduling extends Context.Service<
 
               yield* posts.setTargets(postId, targets);
 
-              const post = yield* move(current, at);
+              const post = yield* move(actor, current, at, targets);
 
               return { post, targets };
             })
@@ -452,11 +539,14 @@ export class PostScheduling extends Context.Service<
 
       const reschedule = Effect.fn("PostScheduling.reschedule")(
         function* reschedule(actor: Actor, postId: PostId, at: Schedule) {
-          yield* mayPublish(actor);
+          yield* mayAsk(actor);
 
           return yield* transaction(
             Effect.gen(function* moveAndRestart() {
               const current = yield* lockPost(actor, postId);
+
+              yield* mayChange(actor, current.post);
+
               const targets = yield* posts.targets(postId);
 
               // A draft is checked as it is scheduled. A scheduled post was
@@ -472,7 +562,7 @@ export class PostScheduling extends Context.Service<
                 );
               }
 
-              const post = yield* move(current, at);
+              const post = yield* move(actor, current, at, targets);
 
               return { post, targets };
             })
@@ -482,16 +572,19 @@ export class PostScheduling extends Context.Service<
 
       const unschedule = Effect.fn("PostScheduling.unschedule")(
         function* unschedule(actor: Actor, postId: PostId) {
-          yield* mayPublish(actor);
+          yield* mayAsk(actor);
 
           return yield* transaction(
             Effect.gen(function* moveBackAndStop() {
               const current = yield* lockPost(actor, postId);
 
+              yield* mayChange(actor, current.post);
+
               const draft = yield* Effect.fromResult(moveToDraft(current.post));
 
               yield* applied(yield* posts.update(draft, current.post));
               yield* stopJob(current);
+              yield* noLongerWaits(current.post);
 
               return { post: draft, targets: yield* posts.targets(postId) };
             })
@@ -503,12 +596,14 @@ export class PostScheduling extends Context.Service<
         actor: Actor,
         postId: PostId
       ) {
-        yield* mayPublish(actor);
+        yield* mayAsk(actor);
 
         return yield* transaction(
           Effect.gen(function* cancelAndStop() {
             const current = yield* lockPost(actor, postId);
             const now = yield* DateTime.now;
+
+            yield* mayChange(actor, current.post);
 
             // The job already woke: it finishes with the targets it sent.
             // Once every target has settled, as when only a repost that had
@@ -539,6 +634,7 @@ export class PostScheduling extends Context.Service<
             const targets = yield* cancelTargets(postId, now);
 
             yield* stopJob(current);
+            yield* noLongerWaits(current.post);
 
             return { post: cancelled, targets };
           })

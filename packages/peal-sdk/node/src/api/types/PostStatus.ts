@@ -2,6 +2,7 @@
 
 export const PostStatus = {
         Draft: "draft",
+        AwaitingApproval: "awaitingApproval",
         Scheduled: "scheduled",
         Publishing: "publishing",
         Finished: "finished",

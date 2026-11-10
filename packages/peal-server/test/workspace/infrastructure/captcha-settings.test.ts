@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { ConfigProvider, Effect, Option, Redacted } from "effect";
 
-import { captchaConfig } from "#workspace/infrastructure/auth/settings.ts";
+import { captchaConfig } from "#shared/infrastructure/captcha-settings.ts";
 
 const settingsFrom = (env: Record<string, string>) =>
   captchaConfig.parse(ConfigProvider.fromUnknown(env));

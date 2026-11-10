@@ -7,6 +7,7 @@ import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
+import { ReviewTools } from "#app/mcp/review-tools.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 
 const UserSchema = Schema.Struct({
@@ -100,5 +101,6 @@ export const PealTools = Toolkit.merge(
   PostTools,
   ReportTools,
   PeopleTools,
-  CapabilityTools
+  CapabilityTools,
+  ReviewTools
 );

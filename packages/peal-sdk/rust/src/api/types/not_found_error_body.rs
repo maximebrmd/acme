@@ -5,7 +5,7 @@ pub use crate::prelude::*;
 #[non_exhaustive]
 pub enum NotFoundErrorBody {
     #[non_exhaustive]
-    ChannelNotFound {},
+    ReviewLinkNotFound {},
 
     #[non_exhaustive]
     LookupNotFound {},
@@ -21,8 +21,8 @@ pub enum NotFoundErrorBody {
 }
 
 impl NotFoundErrorBody {
-    pub fn channel_not_found() -> Self {
-        Self::ChannelNotFound {}
+    pub fn review_link_not_found() -> Self {
+        Self::ReviewLinkNotFound {}
     }
 
     pub fn lookup_not_found() -> Self {

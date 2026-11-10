@@ -4,8 +4,10 @@ import { FetchHttpClient } from "effect/http";
 
 import { AccountRules } from "#publishing/application/account-rules.ts";
 import { AccountStandings } from "#publishing/application/account-standings.ts";
+import { ApprovalGate } from "#publishing/application/approval-gate.ts";
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
 import { ChannelLookups } from "#publishing/application/channel-lookups.ts";
+import { HeldPosts } from "#publishing/application/held-posts.ts";
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
@@ -49,30 +51,22 @@ import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
-/**
- * The publishing context's use cases (`PostDrafts`, `PostQueries`,
- * `PostScheduling`, `PostFollowUp`, for the handlers; `PostRecords`, for the
- * workspace context's exports and erasures; `PostUsage`, for billing;
- * `PublishedTargets`, which analytics follows; `PostOversight`, for the
- * staff console; in `PublishingLive`, `PostingCapabilities` and
- * `ChannelLookups`, which tell clients what a post may hold) and the adapters behind its
- * ports, with `references` for the channels and media posts refer to and the
- * posts a month allows. Needs the database (Drizzle), the workflow engine, a
- * TransactionRunner and Ids, and PublicationOutcomes for PostFollowUp.
- */
-export const publishingWith = <E, R, E2 = never, R2 = never>(
+// The use cases over their adapters, asking whatever ApprovalGate they are
+// given before a post is scheduled.
+const publishingOver = <E, R, E2, R2>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
     R
   >,
-  accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none
+  accounts: Layer.Layer<AccountRules, E2, R2>
 ) =>
   Layer.mergeAll(
     PostDrafts.layer,
     PostQueries.layer,
     PostRecords.layer,
     PostScheduling.layer,
+    HeldPosts.layer,
     PostFollowUp.layer,
     PostUsage.layer
   ).pipe(
@@ -92,6 +86,46 @@ export const publishingWith = <E, R, E2 = never, R2 = never>(
   );
 
 /**
+ * The publishing context's use cases (`PostDrafts`, `PostQueries`,
+ * `PostScheduling`, `PostFollowUp`, for the handlers; `HeldPosts`, for the
+ * review context; `PostRecords`, for the workspace context's exports and
+ * erasures; `PostUsage`, for billing; `PublishedTargets`, which analytics
+ * follows; `PostOversight`, for the staff console; in `PublishingLive`,
+ * `PostingCapabilities` and `ChannelLookups`, which tell clients what a
+ * post may hold) and the adapters behind its ports, with `references` for
+ * the channels and media posts refer to and the posts a month allows. No
+ * post waits for an approval here
+ * (`ApprovalGate.open`). Needs the database (Drizzle), the
+ * workflow engine, a TransactionRunner and Ids, and PublicationOutcomes for
+ * PostFollowUp.
+ */
+export const publishingWith = <E, R, E2 = never, R2 = never>(
+  references: Layer.Layer<
+    AttachableMedia | PostAllowance | WorkspaceChannels,
+    E,
+    R
+  >,
+  accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none
+) =>
+  publishingOver(references, accounts).pipe(
+    Layer.provideMerge(ApprovalGate.open)
+  );
+
+/**
+ * The same behind `gate`, which says which posts wait for an approval, and
+ * may bring what a test reads it with.
+ */
+export const publishingBehind = <G, E3, R3, E, R>(
+  gate: Layer.Layer<ApprovalGate | G, E3, R3>,
+  references: Layer.Layer<
+    AttachableMedia | PostAllowance | WorkspaceChannels,
+    E,
+    R
+  >
+) =>
+  publishingOver(references, AccountRules.none).pipe(Layer.provideMerge(gate));
+
+/**
  * The use cases as the server runs them: channels are those the channels
  * context lists, media the ready media its library holds, and the posts a
  * month allows the workspace's plan, which the composition root provides
@@ -99,8 +133,10 @@ export const publishingWith = <E, R, E2 = never, R2 = never>(
  * is told through the notifications context (Notify), naming channels as
  * the channels context has them (ChannelRepository), once billing counted
  * the posts that went out on platforms that bill per post (MeteredPosts).
+ * Which posts wait for an approval is the ApprovalGate's say, which the
+ * composition root provides from the review context.
  */
-export const PublishingLive = publishingWith(
+export const PublishingLive = publishingOver(
   Layer.mergeAll(
     ListedWorkspaceChannels,
     LibraryAttachableMedia,

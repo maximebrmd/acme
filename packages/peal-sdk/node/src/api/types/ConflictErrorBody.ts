@@ -3,15 +3,15 @@
 import * as Peal from "../index.js";
 
 export type ConflictErrorBody = 
-    | Peal.ConflictErrorBody.AlreadyMember
-    | Peal.ConflictErrorBody.TooManyInvitations;
+    | Peal.ConflictErrorBody.PostNotReviewable
+    | Peal.ConflictErrorBody.TooManyReviewLinks;
 
 export namespace ConflictErrorBody {
-    export interface AlreadyMember extends Peal.AlreadyMemberEncoded {
-        _tag: "AlreadyMember";
+    export interface PostNotReviewable extends Peal.PostNotReviewableEncoded {
+        _tag: "PostNotReviewable";
     }
 
-    export interface TooManyInvitations extends Peal.TooManyInvitationsEncoded {
-        _tag: "TooManyInvitations";
+    export interface TooManyReviewLinks extends Peal.TooManyReviewLinksEncoded {
+        _tag: "TooManyReviewLinks";
     }
 }

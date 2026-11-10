@@ -157,6 +157,10 @@ const postColumns = (post: Post) => {
   };
 
   return Match.valueTags(status, {
+    awaitingApproval: ({ schedule }) => ({
+      ...cleared,
+      ...scheduleColumns(Option.some(schedule)),
+    }),
     cancelled: ({ cancelledAt, schedule }) => ({
       ...cleared,
       ...scheduleColumns(schedule),

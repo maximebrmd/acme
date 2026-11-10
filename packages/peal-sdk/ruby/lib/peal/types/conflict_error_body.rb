@@ -9,9 +9,9 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::AlreadyMemberEncoded }, key: "ALREADY_MEMBER"
+      member -> { Peal::Types::PostNotReviewableEncoded }, key: "POST_NOT_REVIEWABLE"
 
-      member -> { Peal::Types::TooManyInvitationsEncoded }, key: "TOO_MANY_INVITATIONS"
+      member -> { Peal::Types::TooManyReviewLinksEncoded }, key: "TOO_MANY_REVIEW_LINKS"
     end
   end
 end

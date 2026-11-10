@@ -697,14 +697,14 @@ public class RawPostsClient {
     }
 
     /**
-     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
+     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Where the workspace asks for an approval of this post (its approval policy), the post is not scheduled: it answers with the status <code>awaitingApproval</code>, keeps its time, and goes out only once approved; contributors may then ask too, with post:create. Needs post:schedule and channel:read, and media:read when it shows media.
      */
     public PealClientHttpResponse<Post> schedule(String workspaceId, String postId, SchedulePost request) {
         return schedule(workspaceId, postId, request, null);
     }
 
     /**
-     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
+     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Where the workspace asks for an approval of this post (its approval policy), the post is not scheduled: it answers with the status <code>awaitingApproval</code>, keeps its time, and goes out only once approved; contributors may then ask too, with post:create. Needs post:schedule and channel:read, and media:read when it shows media.
      */
     public PealClientHttpResponse<Post> schedule(
             String workspaceId, String postId, SchedulePost request, RequestOptions requestOptions) {
@@ -789,14 +789,14 @@ public class RawPostsClient {
     }
 
     /**
-     * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
+     * Moves a scheduled post, or one awaiting approval, to another instant, or schedules a draft on the channels it has. A post that needs an approval it does not have waits for it (<code>awaitingApproval</code>). Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
      */
     public PealClientHttpResponse<Post> reschedule(String workspaceId, String postId, ReschedulePostsRequest request) {
         return reschedule(workspaceId, postId, request, null);
     }
 
     /**
-     * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
+     * Moves a scheduled post, or one awaiting approval, to another instant, or schedules a draft on the channels it has. A post that needs an approval it does not have waits for it (<code>awaitingApproval</code>). Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
      */
     public PealClientHttpResponse<Post> reschedule(
             String workspaceId, String postId, ReschedulePostsRequest request, RequestOptions requestOptions) {
@@ -1169,28 +1169,28 @@ public class RawPostsClient {
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public PealClientHttpResponse<Post> cancel(String workspaceId, String postId) {
         return cancel(workspaceId, postId, CancelPostsRequest.builder().build());
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public PealClientHttpResponse<Post> cancel(String workspaceId, String postId, RequestOptions requestOptions) {
         return cancel(workspaceId, postId, CancelPostsRequest.builder().build(), requestOptions);
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public PealClientHttpResponse<Post> cancel(String workspaceId, String postId, CancelPostsRequest request) {
         return cancel(workspaceId, postId, request, null);
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public PealClientHttpResponse<Post> cancel(
             String workspaceId, String postId, CancelPostsRequest request, RequestOptions requestOptions) {

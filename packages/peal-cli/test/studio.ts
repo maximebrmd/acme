@@ -4,6 +4,7 @@ import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
 import {
   AlreadyMember,
   Api,
+  ApprovalNotPending,
   ChannelNotFound,
   CurrentMember,
   CurrentPrincipal,
@@ -13,6 +14,7 @@ import {
   LookupNotFound,
   PostNotFound,
   PostStatusConflict,
+  ReviewLinkNotFound,
   TargetStatusConflict,
   Unauthenticated,
   WorkspaceAccess,
@@ -20,6 +22,8 @@ import {
 } from "peal-contract";
 import type {
   AccountExport,
+  ApprovalPolicy,
+  ApprovalRequest,
   Billing,
   Channel,
   ConnectedApp,
@@ -29,6 +33,8 @@ import type {
   Post,
   PostDraft,
   PostTarget,
+  ReviewComment,
+  ReviewLink,
   TikTokAccount,
 } from "peal-contract";
 
@@ -59,6 +65,8 @@ const everything: readonly Permission[] = [
   "channel:read",
   "invitation:create",
   "invitation:cancel",
+  "organization:update",
+  "post:approve",
   "post:read",
   "post:create",
   "post:update",
@@ -200,6 +208,8 @@ export const scheduledId = "0190f3a0-0000-7000-8000-00000000d002";
 
 export const finishedId = "0190f3a0-0000-7000-8000-00000000d003";
 
+export const awaitingId = "0190f3a0-0000-7000-8000-00000000d004";
+
 export const failedTargetId = "0190f3a0-0000-7000-8000-00000000e001";
 
 export const unconfirmedTargetId = "0190f3a0-0000-7000-8000-00000000e002";
@@ -217,6 +227,10 @@ const pendingOn = (id: string, channelId: string): PostTarget => ({
   status: "pending",
   unconfirmedReason: null,
 });
+
+const escape = String.fromCodePoint(0x1b);
+
+const contributorId = "8d0f7780-8536-41ef-a55c-f18fd2a01bf8";
 
 const content = (text: string) => ({ media: [], overrides: [], text });
 
@@ -238,6 +252,15 @@ const posts: readonly Post[] = [
     schedule: { at: at("2026-11-20T09:00:00Z"), timeZone: "Europe/Paris" },
     status: "scheduled",
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e011", mastodonId)],
+  },
+  {
+    authorId: contributorId,
+    content: content("A synthetic post that waits. Out on Friday."),
+    id: awaitingId,
+    outcome: null,
+    schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
+    status: "awaitingApproval",
+    targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e012", mastodonId)],
   },
   {
     authorId: userId,
@@ -270,6 +293,44 @@ const posts: readonly Post[] = [
     ],
   },
 ];
+
+// The approval that waits for the post a contributor asked to send.
+const approval: ApprovalRequest = {
+  decision: null,
+  id: "0190f3a0-0000-7000-8000-00000000b001",
+  postId: awaitingId,
+  requestedAt: at("2026-11-09T10:00:00Z"),
+  requestedBy: contributorId,
+  requestedByName: "Synthetic Contributor",
+  requestedVia: "member",
+  schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
+  status: "pending",
+};
+
+// A visitor's comment on it, about a word of its text, as a link's holder
+// typed it: what they type is theirs, control characters included.
+const comment: ReviewComment = {
+  anchor: {
+    channelId: mastodonId,
+    selection: {
+      located: { end: 36, start: 30 },
+      quote: "Friday",
+      start: 30,
+    },
+  },
+  author: {
+    kind: "visitor",
+    linkId: "0190f3a0-0000-7000-8000-00000000b002",
+    name: "Ada Lovelace",
+    userId: null,
+  },
+  createdAt: at("2026-11-09T11:00:00Z"),
+  id: "0190f3a0-0000-7000-8000-00000000b003",
+  parentId: null,
+  postId: awaitingId,
+  resolved: null,
+  text: `Could this be ${escape}[31mThursday?`,
+};
 
 const invitation: Invitation = {
   createdAt: at("2026-11-01T10:00:00Z"),
@@ -336,10 +397,12 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       channelReconnect: true,
       postFailed: true,
       postPublished: false,
+      postReview: true,
       postUnconfirmed: true,
     },
     everyPost: false,
   },
+  review: { approvals: [], comments: [] },
   sessions: [],
   signInMethods: [],
   staffActions: [],
@@ -358,8 +421,12 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
 
 /** What the instance holds, and what the commands changed. */
 export interface StudioState {
+  readonly approvals: readonly ApprovalRequest[];
   readonly changes: readonly string[];
+  readonly comments: readonly ReviewComment[];
   readonly invitations: readonly Invitation[];
+  readonly links: readonly ReviewLink[];
+  readonly policy: ApprovalPolicy;
   readonly posts: readonly Post[];
 }
 
@@ -373,8 +440,12 @@ export interface Studio {
 export const makeStudio = (me: Me = studioMe) =>
   Effect.all({
     state: Ref.make<StudioState>({
+      approvals: [approval],
       changes: [],
+      comments: [comment],
       invitations: [invitation],
+      links: [],
+      policy: "contributorsAndApplications",
       posts,
     }),
     whileExporting: Ref.make<Effect.Effect<void>>(Effect.void),
@@ -945,6 +1016,264 @@ export const studioGroupsLive = (studio: Studio) =>
             return (
               playlistPage(payload.cursor) ?? (yield* new LookupInputInvalid())
             );
+          }),
+      })
+    ),
+    HttpApiBuilder.group(Api, "review", (handlers) =>
+      handlers.handleAll({
+        approve: ({ params }) =>
+          Effect.gen(function* approve() {
+            yield* allowed("post:approve");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const { approvals } = yield* Ref.get(studio.state);
+
+            const pending = approvals.find(
+              (asked) => asked.postId === post.id && asked.status === "pending"
+            );
+
+            if (pending === undefined) {
+              return yield* new ApprovalNotPending();
+            }
+
+            const decided: ApprovalRequest = {
+              ...pending,
+              decision: {
+                at: at("2026-11-10T09:00:00Z"),
+                by: {
+                  kind: "member",
+                  linkId: null,
+                  name: studio.me.user.name,
+                  userId,
+                },
+              },
+              status: "approved",
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              approvals: current.approvals.map((asked) =>
+                asked.id === decided.id ? decided : asked
+              ),
+            }));
+            yield* savePost(studio, { ...post, status: "scheduled" });
+            yield* record(studio, `approve:${post.id}`);
+
+            return { approval: decided, late: false };
+          }),
+        comment: ({ params, payload }) =>
+          Effect.gen(function* addComment() {
+            yield* allowed("post:create");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const { comments } = yield* Ref.get(studio.state);
+
+            const written: ReviewComment = {
+              anchor: null,
+              author: {
+                kind: "member",
+                linkId: null,
+                name: studio.me.user.name,
+                userId,
+              },
+              createdAt: at("2026-11-10T09:00:00Z"),
+              id: `0190f3a0-0000-7000-8000-00000000f${String(comments.length).padStart(3, "0")}`,
+              parentId: payload.parentId ?? null,
+              postId: post.id,
+              resolved: null,
+              text: payload.text,
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              comments: [...current.comments, written],
+            }));
+            yield* record(
+              studio,
+              [
+                `comment:${post.id}:${payload.text}`,
+                ...(payload.parentId === undefined ? [] : [payload.parentId]),
+              ].join(":")
+            );
+
+            return written;
+          }),
+        createLink: ({ params, payload }) =>
+          Effect.gen(function* createLink() {
+            yield* allowed("post:approve");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const { links } = yield* Ref.get(studio.state);
+
+            const link: ReviewLink = {
+              access: payload.access,
+              createdAt: at("2026-11-10T09:00:00Z"),
+              createdBy: userId,
+              expiresAt: at("2026-11-12T09:00:00Z"),
+              id: `0190f3a0-0000-7000-8000-00000000a${String(links.length + 100)}`,
+              postId: post.id,
+              revokedAt: null,
+              status: "active",
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              links: [link, ...current.links],
+            }));
+            yield* record(
+              studio,
+              `link:${post.id}:${payload.access}:${String(payload.expiresInHours ?? "default")}`
+            );
+
+            return {
+              link,
+              token: "synthetic-token",
+              url: "https://peal.example.test/review#synthetic-token",
+            };
+          }),
+        links: ({ params }) =>
+          Effect.gen(function* listLinks() {
+            yield* allowed("post:read");
+            yield* findPost(studio, params.workspaceId, params.postId);
+
+            const { links } = yield* Ref.get(studio.state);
+
+            return links.filter(({ postId }) => postId === params.postId);
+          }),
+        pending: ({ params }) =>
+          Effect.gen(function* pending() {
+            yield* allowed("post:read");
+
+            const { approvals } = yield* Ref.get(studio.state);
+
+            return params.workspaceId === studioId
+              ? approvals.filter(({ status }) => status === "pending")
+              : [];
+          }),
+        requestChanges: ({ params, payload }) =>
+          Effect.gen(function* requestChanges() {
+            yield* allowed("post:approve");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const { approvals } = yield* Ref.get(studio.state);
+
+            const pending = approvals.find(
+              (asked) => asked.postId === post.id && asked.status === "pending"
+            );
+
+            if (pending === undefined) {
+              return yield* new ApprovalNotPending();
+            }
+
+            const by = {
+              kind: "member" as const,
+              linkId: null,
+              name: studio.me.user.name,
+              userId,
+            };
+
+            const decided: ApprovalRequest = {
+              ...pending,
+              decision: { at: at("2026-11-10T09:00:00Z"), by },
+              status: "changesRequested",
+            };
+
+            yield* savePost(studio, {
+              ...post,
+              schedule: null,
+              status: "draft",
+            });
+            yield* record(
+              studio,
+              `requestChanges:${post.id}:${payload.comment}`
+            );
+
+            return {
+              approval: decided,
+              comment: {
+                anchor: null,
+                author: by,
+                createdAt: at("2026-11-10T09:00:00Z"),
+                id: "0190f3a0-0000-7000-8000-00000000f900",
+                parentId: null,
+                postId: post.id,
+                resolved: null,
+                text: payload.comment,
+              },
+            };
+          }),
+        resolve: () => refusing,
+        revokeLink: ({ params }) =>
+          Effect.gen(function* revokeLink() {
+            yield* allowed("post:approve");
+
+            const { links } = yield* Ref.get(studio.state);
+            const link = links.find(({ id }) => id === params.linkId);
+
+            if (link === undefined || params.workspaceId !== studioId) {
+              return yield* new ReviewLinkNotFound();
+            }
+
+            yield* record(studio, `revoke:${link.id}`);
+
+            return {
+              ...link,
+              revokedAt: at("2026-11-10T09:30:00Z"),
+              status: "revoked" as const,
+            };
+          }),
+        settings: () =>
+          Effect.gen(function* settings() {
+            yield* allowed("post:read");
+
+            return { approvalPolicy: (yield* Ref.get(studio.state)).policy };
+          }),
+        thread: ({ params }) =>
+          Effect.gen(function* thread() {
+            yield* allowed("post:read");
+            yield* findPost(studio, params.workspaceId, params.postId);
+
+            const { approvals, comments } = yield* Ref.get(studio.state);
+
+            return {
+              approvals: approvals.filter(
+                ({ postId }) => postId === params.postId
+              ),
+              comments: comments.filter(
+                ({ postId }) => postId === params.postId
+              ),
+            };
+          }),
+        updateSettings: ({ payload }) =>
+          Effect.gen(function* updateSettings() {
+            yield* allowed("organization:update");
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              policy: payload.approvalPolicy,
+            }));
+            yield* record(studio, `policy:${payload.approvalPolicy}`);
+
+            return payload;
           }),
       })
     ),

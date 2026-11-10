@@ -13,6 +13,7 @@ from .failure_reason import FailureReason
 from .money import Money
 from .notice_channel import NoticeChannel
 from .paid_plan import PaidPlan
+from .review_party import ReviewParty
 
 
 class NoticeEvent_PostPublished(UniversalBaseModel):
@@ -56,6 +57,77 @@ class NoticeEvent_PostUnconfirmed(UniversalBaseModel):
         typing.Literal["PostUnconfirmed"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "PostUnconfirmed"
     channel: typing.Optional[NoticeChannel] = None
+    post_id: typing_extensions.Annotated[str, FieldMetadata(alias="postId"), pydantic.Field(alias="postId")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_PostApprovalRequested(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["PostApprovalRequested"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "PostApprovalRequested"
+    post_id: typing_extensions.Annotated[str, FieldMetadata(alias="postId"), pydantic.Field(alias="postId")]
+    scheduled_at: typing_extensions.Annotated[
+        str, FieldMetadata(alias="scheduledAt"), pydantic.Field(alias="scheduledAt")
+    ]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_PostApproved(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["PostApproved"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "PostApproved"
+    by: ReviewParty
+    late: bool
+    post_id: typing_extensions.Annotated[str, FieldMetadata(alias="postId"), pydantic.Field(alias="postId")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_PostChangesRequested(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["PostChangesRequested"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "PostChangesRequested"
+    by: ReviewParty
+    post_id: typing_extensions.Annotated[str, FieldMetadata(alias="postId"), pydantic.Field(alias="postId")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_PostCommented(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["PostCommented"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "PostCommented"
+    by: ReviewParty
     post_id: typing_extensions.Annotated[str, FieldMetadata(alias="postId"), pydantic.Field(alias="postId")]
 
     if IS_PYDANTIC_V2:
@@ -200,6 +272,10 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_PostPublished,
         NoticeEvent_PostFailed,
         NoticeEvent_PostUnconfirmed,
+        NoticeEvent_PostApprovalRequested,
+        NoticeEvent_PostApproved,
+        NoticeEvent_PostChangesRequested,
+        NoticeEvent_PostCommented,
         NoticeEvent_ChannelReconnectRequired,
         NoticeEvent_ChannelReconnectSoon,
         NoticeEvent_SubscriptionStarted,

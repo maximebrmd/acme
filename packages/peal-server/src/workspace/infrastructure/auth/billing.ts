@@ -19,11 +19,10 @@ import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { LocaleSchema } from "#shared/domain/locale.ts";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
+import type { CaptchaSettings } from "#shared/infrastructure/captcha-settings.ts";
 import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import type { StripeSettings } from "#shared/infrastructure/stripe-settings.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
-
-import type { CaptchaSettings } from "./settings.ts";
 
 /** A checkout about to start, for the order it needs. */
 export interface CheckoutStart {

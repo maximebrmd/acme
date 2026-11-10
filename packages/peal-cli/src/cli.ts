@@ -4,6 +4,7 @@ import { Command } from "effect/cli";
 import { PealApi } from "#api.ts";
 import { account } from "#commands/account.ts";
 import { analytics } from "#commands/analytics.ts";
+import { approvals } from "#commands/approvals.ts";
 import { billing } from "#commands/billing.ts";
 import { channels } from "#commands/channels.ts";
 import { drafts } from "#commands/drafts.ts";
@@ -14,6 +15,7 @@ import { logout } from "#commands/logout.ts";
 import { mcp } from "#commands/mcp.ts";
 import { members } from "#commands/members.ts";
 import { posts } from "#commands/posts.ts";
+import { review } from "#commands/review.ts";
 import { whoami } from "#commands/whoami.ts";
 import { CredentialStore } from "#credentials.ts";
 import manifest from "#package.json" with { type: "json" };
@@ -34,6 +36,8 @@ export const cli = peal.pipe(
     channels,
     drafts,
     posts,
+    approvals,
+    review,
     analytics,
     billing,
     members,

@@ -9,13 +9,17 @@ Peal prévient les membres concernés quand il arrive quelque chose à une publi
 
 ## Ce dont vous êtes prévenu [#events]
 
-| Notification                          | Quand                                                                                                         | Qui est prévenu                                                                            |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Une publication est partie            | La publication est en ligne sur l’un de ses canaux.                                                           | L’auteur de la publication, et les membres qui suivent toutes les publications, ci-dessous |
-| Une publication n’est pas partie      | La publication a échoué sur l’un de ses canaux, pour la raison ci-dessous.                                    | Les mêmes                                                                                  |
-| Une publication est peut-être partie  | Peal n’a pas pu savoir si un canal l’a publiée. Vérifiez sur la plateforme avant de la republier.             | Les mêmes                                                                                  |
-| Un canal doit être reconnecté         | La plateforme n’accepte plus l’accès de Peal : rien ne part sur le canal tant que personne ne l’a reconnecté. | Les membres qui peuvent connecter des canaux : propriétaires et administrateurs            |
-| Un canal doit être reconnecté bientôt | L’accès du canal ne peut pas être renouvelé, et prend fin à la date qu’indique la notification.               | Les mêmes                                                                                  |
+| Notification                           | Quand                                                                                                                      | Qui est prévenu                                                                            |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Une publication est partie             | La publication est en ligne sur l’un de ses canaux.                                                                        | L’auteur de la publication, et les membres qui suivent toutes les publications, ci-dessous |
+| Une publication n’est pas partie       | La publication a échoué sur l’un de ses canaux, pour la raison ci-dessous.                                                 | Les mêmes                                                                                  |
+| Une publication est peut-être partie   | Peal n’a pas pu savoir si un canal l’a publiée. Vérifiez sur la plateforme avant de la republier.                          | Les mêmes                                                                                  |
+| Un canal doit être reconnecté          | La plateforme n’accepte plus l’accès de Peal : rien ne part sur le canal tant que personne ne l’a reconnecté.              | Les membres qui peuvent connecter des canaux : propriétaires et administrateurs            |
+| Un canal doit être reconnecté bientôt  | L’accès du canal ne peut pas être renouvelé, et prend fin à la date qu’indique la notification.                            | Les mêmes                                                                                  |
+| Une publication attend une approbation | Quelqu’un a demandé l’envoi d’une publication, dans un espace de travail qui demande des [approbations](/review).          | Les membres qui peuvent approuver : propriétaires, administrateurs et éditeurs             |
+| Une publication a été approuvée        | Quelqu’un l’a approuvée, dans Peal ou depuis un lien de relecture. Approuvée après son heure, elle redevient un brouillon. | Son auteur, la personne qui a demandé, et celles qui l’ont commentée                       |
+| Des modifications sont demandées       | Elle redevient un brouillon, avec un commentaire qui dit quoi changer.                                                     | Les mêmes                                                                                  |
+| Une publication a été commentée        | Un membre, ou une personne invitée depuis un lien, l’a commentée.                                                          | Les mêmes                                                                                  |
 
 Les notifications d’une publication vont à son auteur, le membre qui l’a créée, quel que soit son rôle, et aux membres qui peuvent programmer des publications (propriétaires, administrateurs et éditeurs) et ont choisi d’être prévenus pour toutes les publications dans leurs [préférences](#email). Une publication créée avec une clé d’API n’a pas d’auteur : ses notifications vont à tous les membres qui peuvent programmer des publications. Un membre qui a quitté l’espace de travail n’en est plus prévenu, et les notifications de ses publications vont à tous les membres qui peuvent programmer des publications, comme pour une publication sans auteur.
 
@@ -51,12 +55,13 @@ Vous voyez aussi les notifications des espaces de travail que vous avez quittés
 
 Depuis **Notifications**, choisissez **Préférences d’e-mail** pour choisir quelles notifications vous arrivent aussi par e-mail, et sous **Me prévenir pour**, si vous êtes prévenu pour toutes les publications de vos espaces de travail, pas seulement les vôtres (désactivé tant que vous ne l’activez pas). Chaque choix est enregistré dès que vous le changez, et vaut dans tous vos espaces de travail.
 
-| M’envoyer un e-mail quand                                                     | Tant que vous n’y touchez pas |
-| ----------------------------------------------------------------------------- | ----------------------------- |
-| Une publication n’est pas partie                                              | Activé                        |
-| Une publication est peut-être partie, et doit être vérifiée sur la plateforme | Activé                        |
-| Un canal doit être reconnecté, maintenant ou bientôt                          | Activé                        |
-| Une publication est partie                                                    | Désactivé                     |
+| M’envoyer un e-mail quand                                                                                   | Tant que vous n’y touchez pas |
+| ----------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| Une publication n’est pas partie                                                                            | Activé                        |
+| Une publication est peut-être partie, et doit être vérifiée sur la plateforme                               | Activé                        |
+| Un canal doit être reconnecté, maintenant ou bientôt                                                        | Activé                        |
+| Une publication attend mon approbation, ou une publication que je suis est commentée, approuvée ou renvoyée | Activé                        |
+| Une publication est partie                                                                                  | Désactivé                     |
 
 Les e-mails sont écrits dans votre langue. Quand le serveur de messagerie refuse un e-mail pour le moment, Peal réessaie pendant environ cinq heures. Un e-mail en attente d’envoi est abandonné si vous quittez l’espace de travail, ou désactivez cet e-mail, entre-temps.
 

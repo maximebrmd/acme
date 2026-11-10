@@ -14,6 +14,7 @@ export namespace NotificationPreferencesChange {
         channelReconnect?: boolean | undefined;
         postFailed?: boolean | undefined;
         postPublished?: boolean | undefined;
+        postReview?: boolean | undefined;
         postUnconfirmed?: boolean | undefined;
     }
 }

@@ -29,6 +29,7 @@ type EmailKind = keyof NotificationPreferences["email"];
 const kinds: readonly EmailKind[] = [
   "postFailed",
   "postUnconfirmed",
+  "postReview",
   "channelReconnect",
   "postPublished",
 ];

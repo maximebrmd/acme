@@ -9,7 +9,7 @@ module Peal
 
       discriminant :type
 
-      member -> { Peal::Types::ChannelNotFoundEncoded }, key: "CHANNEL_NOT_FOUND"
+      member -> { Peal::Types::ReviewLinkNotFoundEncoded }, key: "REVIEW_LINK_NOT_FOUND"
 
       member -> { Peal::Types::LookupNotFoundEncoded }, key: "LOOKUP_NOT_FOUND"
 

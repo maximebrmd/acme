@@ -93,6 +93,81 @@ export interface AnalyticsRecord {
   readonly targetId: string;
 }
 
+/** A comment on a post, as the review context keeps it. */
+export interface ReviewCommentRecord {
+  /** member, apiKey or visitor. */
+  readonly author: string;
+  /** The name a visitor gave; null for others, or once past its retention. */
+  readonly authorName: string | null;
+  /** The member who wrote it; null for others, or once they are gone. */
+  readonly authorUserId: string | null;
+  /** The channel it is about, if it is about one. */
+  readonly channelId: string | null;
+  readonly createdAt: DateTime.Utc;
+  readonly id: string;
+  /** The comment that started its thread, for an answer. */
+  readonly parentId: string | null;
+  readonly postId: string;
+  /** The words of the post's text it quotes, if any. */
+  readonly quote: string | null;
+  readonly resolvedAt: DateTime.Utc | null;
+  readonly text: string;
+}
+
+/** An approval asked for a post, and what was decided. */
+export interface ApprovalRecord {
+  readonly decidedAt: DateTime.Utc | null;
+  /** member, apiKey or visitor; null while it waits or was withdrawn. */
+  readonly decidedBy: string | null;
+  readonly decidedByName: string | null;
+  readonly decidedByUserId: string | null;
+  readonly id: string;
+  readonly postId: string;
+  readonly requestedAt: DateTime.Utc;
+  readonly requestedBy: string | null;
+  readonly scheduledAt: DateTime.Utc;
+  /** pending, approved, changesRequested or withdrawn. */
+  readonly status: string;
+}
+
+/** A link that showed a post to people without an account: never its token. */
+export interface ReviewLinkRecord {
+  /** view, comment or approve. */
+  readonly access: string;
+  readonly createdAt: DateTime.Utc;
+  readonly createdBy: string | null;
+  readonly expiresAt: DateTime.Utc;
+  readonly id: string;
+  readonly postId: string;
+  readonly revokedAt: DateTime.Utc | null;
+}
+
+/**
+ * What the review context keeps in a workspace: its approval policy, the
+ * links to its posts, their comments and the approvals asked and decided.
+ * Never a link's token, nor the address a visitor left to hear of answers,
+ * which is theirs.
+ */
+export interface ReviewRecord {
+  readonly approvalPolicy: string;
+  readonly approvals: readonly ApprovalRecord[];
+  readonly comments: readonly ReviewCommentRecord[];
+  readonly links: readonly ReviewLinkRecord[];
+}
+
+/**
+ * What a user wrote and decided in the reviews of posts, in every workspace
+ * they are or were a member of.
+ */
+export interface UserReviewRecord {
+  readonly approvals: readonly (ApprovalRecord & {
+    readonly workspaceId: string;
+  })[];
+  readonly comments: readonly (ReviewCommentRecord & {
+    readonly workspaceId: string;
+  })[];
+}
+
 /** How many requests a workspace sent the writing assistant one UTC day. */
 export interface UsageRecord {
   /** YYYY-MM-DD. */
@@ -162,6 +237,27 @@ export type NoticeEventRecord =
       readonly _tag: "ChannelReconnectSoon";
       readonly channel: NoticeChannelRecord;
       readonly expiresAt: DateTime.Utc;
+    }
+  | {
+      readonly _tag: "PostApprovalRequested";
+      readonly postId: string;
+      readonly scheduledAt: DateTime.Utc;
+    }
+  | {
+      readonly _tag: "PostApproved";
+      readonly by: string;
+      readonly late: boolean;
+      readonly postId: string;
+    }
+  | {
+      readonly _tag: "PostChangesRequested";
+      readonly by: string;
+      readonly postId: string;
+    }
+  | {
+      readonly _tag: "PostCommented";
+      readonly by: string;
+      readonly postId: string;
     }
   | {
       readonly _tag: "PostFailed";
@@ -235,6 +331,7 @@ export interface PreferencesRecord {
     readonly channelReconnect: boolean;
     readonly postFailed: boolean;
     readonly postPublished: boolean;
+    readonly postReview: boolean;
     readonly postUnconfirmed: boolean;
   };
   readonly everyPost: boolean;

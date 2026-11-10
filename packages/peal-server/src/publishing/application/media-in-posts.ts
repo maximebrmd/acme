@@ -33,6 +33,8 @@ export type MediaRelease =
 const draftStatuses: readonly PostStatusName[] = ["draft"];
 
 const scheduledStatuses: readonly PostStatusName[] = [
+  // A post that waits for an approval is shown to its reviewers as it is.
+  "awaitingApproval",
   "scheduled",
   "publishing",
 ];
