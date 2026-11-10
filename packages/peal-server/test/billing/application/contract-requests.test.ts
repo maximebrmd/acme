@@ -78,6 +78,7 @@ const studio = (now: string, ...held: readonly Subscription[]) =>
       Ref.set(desk.invoices, [
         {
           invoiceId: "in_synthetic",
+          lines: [],
           paid: { amount: 900, currency: "eur" },
           periodEnd: Option.none(),
           periodStart: Option.none(),
@@ -255,6 +256,7 @@ layer(RequestsTest)("requests to cancel or withdraw, from the form", (it) => {
             Ref.set(desk.invoices, [
               {
                 invoiceId: "in_december",
+                lines: [{ amount: 750, start: at("2026-12-01T00:00:00Z") }],
                 paid: { amount: 900, currency: "eur" },
                 periodEnd: Option.some(at("2027-01-01T00:00:00Z")),
                 periodStart: Option.some(at("2026-12-01T00:00:00Z")),

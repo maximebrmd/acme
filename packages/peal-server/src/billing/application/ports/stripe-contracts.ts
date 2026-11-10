@@ -3,6 +3,7 @@ import type { DateTime, Effect, Option } from "effect";
 
 import type { StripeUnreachable } from "#billing/application/stripe-unreachable.ts";
 import type { Money } from "#billing/domain/billing-notice.ts";
+import type { InvoiceLine } from "#billing/domain/cancellation-effect.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 /**
@@ -11,6 +12,8 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
  */
 export interface PaidInvoice {
   readonly invoiceId: string;
+  /** Its lines: what each charged before tax, and from when. */
+  readonly lines: readonly InvoiceLine[];
   readonly paid: Money;
   readonly periodEnd: Option.Option<DateTime.Utc>;
   readonly periodStart: Option.Option<DateTime.Utc>;

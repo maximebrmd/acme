@@ -1,7 +1,10 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option, Result } from "effect";
 
-import { cancellationEffect } from "#billing/domain/cancellation-effect.ts";
+import {
+  cancellationEffect,
+  renewalRefund,
+} from "#billing/domain/cancellation-effect.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { subscriptionOf } from "#test/billing/support.ts";
 
@@ -161,5 +164,61 @@ describe(cancellationEffect, () => {
         )
       ).toBeTruthy();
     }
+  });
+});
+
+describe(renewalRefund, () => {
+  const since = at("2026-11-25T00:00:00Z");
+
+  it("gives back a renewal charged after the request came, whole", () => {
+    expect(
+      renewalRefund(
+        { lines: [{ amount: 1250, start: at("2026-12-01T00:00:00Z") }], paid: 1500 },
+        since
+      )
+    ).toBe(1500);
+  });
+
+  it("gives back the renewal of an invoice that also settles a change of plan made before, and not what the change cost", () => {
+    // A plan changed on 10 November, prorated onto the invoice of the
+    // renewal of 1 December: 1,415 before tax, 1,698 with it.
+    expect(
+      renewalRefund(
+        {
+          lines: [
+            { amount: -250, start: at("2026-11-10T00:00:00Z") },
+            { amount: 415, start: at("2026-11-10T00:00:00Z") },
+            { amount: 1250, start: at("2026-12-01T00:00:00Z") },
+          ],
+          paid: 1698,
+        },
+        since
+      )
+    ).toBe(1500);
+  });
+
+  it("gives back nothing of an invoice for periods that began before the request", () => {
+    expect(
+      renewalRefund(
+        { lines: [{ amount: 1250, start: at("2026-11-01T00:00:00Z") }], paid: 1500 },
+        since
+      )
+    ).toBe(0);
+  });
+
+  it("never gives back more than was paid, nor anything of an invoice without lines", () => {
+    expect(
+      renewalRefund(
+        {
+          lines: [
+            { amount: -1000, start: at("2026-11-10T00:00:00Z") },
+            { amount: 1250, start: at("2026-12-01T00:00:00Z") },
+          ],
+          paid: 300,
+        },
+        since
+      )
+    ).toBe(300);
+    expect(renewalRefund({ lines: [], paid: 1500 }, since)).toBe(0);
   });
 });

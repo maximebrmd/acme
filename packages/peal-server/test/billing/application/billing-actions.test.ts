@@ -651,6 +651,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         yield* holding(paid());
         yield* paying({
           invoiceId: "in_synthetic",
+          lines: [],
           paid: { amount: 900, currency: "eur" },
           periodEnd: Option.none(),
           periodStart: Option.none(),
@@ -710,6 +711,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         yield* holding(paid());
         yield* paying({
           invoiceId: "in_synthetic",
+          lines: [],
           paid: { amount: 900, currency: "eur" },
           periodEnd: Option.none(),
           periodStart: Option.none(),
@@ -744,6 +746,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         yield* holding(paid());
         yield* paying({
           invoiceId: "in_synthetic",
+          lines: [],
           paid: { amount: 900, currency: "eur" },
           periodEnd: Option.none(),
           periodStart: Option.none(),
@@ -776,12 +779,14 @@ layer(ActionsTest)("billing's actions", (it) => {
         yield* paying(
           {
             invoiceId: "in_proration",
+            lines: [],
             paid: { amount: 1500, currency: "eur" },
             periodEnd: Option.some(at("2026-12-01T00:00:00Z")),
             periodStart: Option.some(at("2026-11-07T00:00:00Z")),
           },
           {
             invoiceId: "in_first",
+            lines: [],
             paid: { amount: 900, currency: "eur" },
             periodEnd: Option.some(at("2026-12-01T00:00:00Z")),
             periodStart: Option.some(at("2026-11-01T00:00:00Z")),
@@ -984,6 +989,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         yield* setNow("2026-11-09T11:00:00Z");
         yield* paying({
           invoiceId: "in_synthetic",
+          lines: [],
           paid: { amount: 30_000, currency: "eur" },
           periodEnd: Option.none(),
           periodStart: Option.none(),
@@ -1023,6 +1029,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         yield* holding(paid());
         yield* paying({
           invoiceId: "in_synthetic",
+          lines: [],
           paid: { amount: 900, currency: "eur" },
           periodEnd: Option.none(),
           periodStart: Option.none(),
@@ -1088,14 +1095,22 @@ layer(ActionsTest)("billing's actions", (it) => {
           })
         );
         yield* paying(
+          // The renewal's invoice also settles a change of plan made on
+          // 10 November, before the request: 1,415 before tax.
           {
             invoiceId: "in_december",
-            paid: { amount: 900, currency: "eur" },
+            lines: [
+              { amount: -250, start: at("2026-11-10T00:00:00Z") },
+              { amount: 415, start: at("2026-11-10T00:00:00Z") },
+              { amount: 1250, start: at("2026-12-01T00:00:00Z") },
+            ],
+            paid: { amount: 1698, currency: "eur" },
             periodEnd: Option.some(at("2027-01-01T00:00:00Z")),
-            periodStart: Option.some(at("2026-12-01T00:00:00Z")),
+            periodStart: Option.some(at("2026-11-10T00:00:00Z")),
           },
           {
             invoiceId: "in_november",
+            lines: [{ amount: 750, start: at("2026-11-01T00:00:00Z") }],
             paid: { amount: 900, currency: "eur" },
             periodEnd: Option.some(at("2026-12-01T00:00:00Z")),
             periodStart: Option.some(at("2026-11-01T00:00:00Z")),
@@ -1114,11 +1129,12 @@ layer(ActionsTest)("billing's actions", (it) => {
         assert.deepStrictEqual(done, {
           endsAt: at("2026-12-02T09:00:00Z"),
           plan: "starter",
-          refunded: Option.some({ amount: 900, currency: "eur" }),
+          // The renewal with its tax, not what the change of plan cost.
+          refunded: Option.some({ amount: 1500, currency: "eur" }),
           stripeSubscriptionId: "sub_synthetic_paid",
         });
         assert.deepStrictEqual(yield* askedOfStripe, [
-          "credit sub_synthetic_paid in_december:900",
+          "credit sub_synthetic_paid in_december:1500",
           "endNow sub_synthetic_paid cancelledLate",
         ]);
 
@@ -1174,6 +1190,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         yield* holding(paid());
         yield* paying({
           invoiceId: "in_synthetic",
+          lines: [],
           paid: { amount: 900, currency: "eur" },
           periodEnd: Option.none(),
           periodStart: Option.none(),

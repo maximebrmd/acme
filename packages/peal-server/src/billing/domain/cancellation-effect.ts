@@ -106,3 +106,36 @@ export const cancellationEffect = (
 
   return Result.succeed({ _tag: "atPeriodEnd", endsAt: periodEnd });
 };
+
+/** A line of a paid invoice: what it charged, before tax, and from when. */
+export interface InvoiceLine {
+  /** In cents; negative for a credit, as for the unused part of a plan. */
+  readonly amount: number;
+  readonly start: DateTime.Utc;
+}
+
+/**
+ * What goes back of a paid invoice when a cancellation received at `since`
+ * is applied after the plan renewed: the lines for periods that began
+ * after it, which the cancellation should have stopped, with their share
+ * of the tax; never what the invoice also settled of earlier periods, as a
+ * change of plan prorated onto it, and never more than was paid. In cents,
+ * rounded down. An invoice whose lines say nothing gives nothing back:
+ * staff look at it.
+ */
+export const renewalRefund = (
+  invoice: { readonly lines: readonly InvoiceLine[]; readonly paid: number },
+  since: DateTime.Utc
+): number => {
+  const total = invoice.lines.reduce((sum, { amount }) => sum + amount, 0);
+
+  const renewed = invoice.lines
+    .filter(({ start }) => DateTime.isGreaterThan(start, since))
+    .reduce((sum, { amount }) => sum + amount, 0);
+
+  if (invoice.paid <= 0 || total <= 0 || renewed <= 0) {
+    return 0;
+  }
+
+  return Math.floor(invoice.paid * Math.min(renewed / total, 1));
+};

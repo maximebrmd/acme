@@ -2,7 +2,10 @@ import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import type { Money } from "#billing/domain/billing-notice.ts";
 import { BillingOff } from "#billing/domain/billing-off.ts";
-import { cancellationEffect } from "#billing/domain/cancellation-effect.ts";
+import {
+  cancellationEffect,
+  renewalRefund,
+} from "#billing/domain/cancellation-effect.ts";
 import type { CancellationEffect } from "#billing/domain/cancellation-effect.ts";
 import {
   ContractRequest,
@@ -63,15 +66,15 @@ type ReceivedFailure =
   | NothingToCancel
   | StripeUnreachable;
 
-// What was charged for the periods that started after `since`, each in
-// full: the renewals a cancellation received before them should have
-// stopped.
+// What goes back of each invoice for the periods that started after
+// `since`: the renewals a cancellation received before them should have
+// stopped, and nothing an invoice also settled of earlier periods.
 const renewalsSince = (invoices: readonly PaidInvoice[], since: DateTime.Utc) =>
-  invoices.flatMap(({ invoiceId, paid, periodStart }) =>
-    Option.exists(periodStart, (start) => DateTime.isGreaterThan(start, since))
-      ? [{ amount: paid.amount, invoiceId }]
-      : []
-  );
+  invoices.flatMap(({ invoiceId, lines, paid }) => {
+    const amount = renewalRefund({ lines, paid: paid.amount }, since);
+
+    return amount > 0 ? [{ amount, invoiceId }] : [];
+  });
 
 /**
  * Cancels the workspace's subscription online, as French law asks it be

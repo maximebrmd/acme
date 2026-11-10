@@ -44,7 +44,10 @@ const PaidInvoiceSchema = Schema.Struct({
   lines: Schema.optionalKey(
     Schema.Struct({
       data: Schema.Array(
-        Schema.Struct({ period: Schema.optionalKey(PeriodSchema) })
+        Schema.Struct({
+          amount: Schema.optionalKey(Schema.Int),
+          period: Schema.optionalKey(PeriodSchema),
+        })
       ),
     })
   ),
@@ -216,6 +219,12 @@ export const StripeContractsLive = Layer.effect(
                 Option.filter(({ amount_paid: paid }) => paid > 0),
                 Option.map((paid): PaidInvoice => ({
                   invoiceId: paid.id,
+                  lines: (paid.lines?.data ?? []).flatMap(
+                    ({ amount, period }) =>
+                      amount === undefined || period === undefined
+                        ? []
+                        : [{ amount, start: fromStripeTime(period.start) }]
+                  ),
                   paid: { amount: paid.amount_paid, currency: paid.currency },
                   ...periodOf(paid.lines?.data ?? []),
                 }))

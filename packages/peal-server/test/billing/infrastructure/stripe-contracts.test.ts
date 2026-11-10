@@ -75,7 +75,10 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
                 id: "in_proration",
                 lines: {
                   data: [
-                    { period: { end: 1_796_083_200, start: 1_794_009_600 } },
+                    {
+                      amount: 1250,
+                      period: { end: 1_796_083_200, start: 1_794_009_600 },
+                    },
                   ],
                 },
                 object: "invoice",
@@ -184,12 +187,16 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
         assert.deepStrictEqual(invoices, [
           {
             invoiceId: "in_proration",
+            lines: [
+              { amount: 1250, start: DateTime.makeUnsafe(1_794_009_600_000) },
+            ],
             paid: { amount: 1500, currency: "eur" },
             periodEnd: Option.some(DateTime.makeUnsafe(1_796_083_200_000)),
             periodStart: Option.some(DateTime.makeUnsafe(1_794_009_600_000)),
           },
           {
             invoiceId: "in_synthetic",
+            lines: [],
             paid: { amount: 900, currency: "eur" },
             periodEnd: Option.some(DateTime.makeUnsafe(1_796_083_200_000)),
             periodStart: Option.some(DateTime.makeUnsafe(1_793_491_200_000)),
