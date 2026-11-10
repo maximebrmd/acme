@@ -95,6 +95,16 @@ pub enum NoticeEvent {
         withdrawn_at: String,
     },
 
+    #[non_exhaustive]
+    WebhookEndpointDisabled {
+        #[serde(rename = "endpointId")]
+        #[serde(default)]
+        endpoint_id: String,
+        #[serde(default)]
+        host: String,
+        reason: WebhookTurnOffReason,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -173,6 +183,18 @@ impl NoticeEvent {
             plan,
             refunded,
             withdrawn_at,
+        }
+    }
+
+    pub fn webhook_endpoint_disabled(
+        endpoint_id: String,
+        host: String,
+        reason: WebhookTurnOffReason,
+    ) -> Self {
+        Self::WebhookEndpointDisabled {
+            endpoint_id,
+            host,
+            reason,
         }
     }
 

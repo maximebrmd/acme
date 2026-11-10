@@ -29,6 +29,8 @@ export const Permission = {
         PostDelete: "post:delete",
         PostSchedule: "post:schedule",
         PostApprove: "post:approve",
-        PostPublish: "post:publish"
+        PostPublish: "post:publish",
+        WebhookRead: "webhook:read",
+        WebhookManage: "webhook:manage"
     } as const;
 export type Permission = typeof Permission[keyof typeof Permission];

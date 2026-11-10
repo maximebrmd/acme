@@ -13,6 +13,7 @@ from .failure_reason import FailureReason
 from .money import Money
 from .notice_channel import NoticeChannel
 from .paid_plan import PaidPlan
+from .webhook_turn_off_reason import WebhookTurnOffReason
 
 
 class NoticeEvent_PostPublished(UniversalBaseModel):
@@ -195,6 +196,24 @@ class NoticeEvent_SubscriptionWithdrawn(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_WebhookEndpointDisabled(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["WebhookEndpointDisabled"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "WebhookEndpointDisabled"
+    endpoint_id: typing_extensions.Annotated[str, FieldMetadata(alias="endpointId"), pydantic.Field(alias="endpointId")]
+    host: str
+    reason: WebhookTurnOffReason
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 NoticeEvent = typing_extensions.Annotated[
     typing.Union[
         NoticeEvent_PostPublished,
@@ -207,6 +226,7 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_SubscriptionRenewing,
         NoticeEvent_SubscriptionCancelled,
         NoticeEvent_SubscriptionWithdrawn,
+        NoticeEvent_WebhookEndpointDisabled,
     ],
     pydantic.Field(discriminator="type"),
 ]

@@ -16,6 +16,7 @@
 //! - **billing**
 //! - **analytics**
 //! - **tiktok**
+//! - **webhooks**
 
 use crate::{ApiError, ClientConfig};
 
@@ -33,6 +34,7 @@ pub mod posts;
 pub mod session;
 pub mod system;
 pub mod tiktok;
+pub mod webhooks;
 pub struct PealClient {
     pub config: ClientConfig,
     pub system: SystemClient,
@@ -49,6 +51,7 @@ pub struct PealClient {
     pub billing: BillingClient,
     pub analytics: AnalyticsClient,
     pub tiktok: TiktokClient,
+    pub webhooks: WebhooksClient,
 }
 
 impl PealClient {
@@ -69,6 +72,7 @@ impl PealClient {
             billing: BillingClient::new(config.clone())?,
             analytics: AnalyticsClient::new(config.clone())?,
             tiktok: TiktokClient::new(config.clone())?,
+            webhooks: WebhooksClient::new(config.clone())?,
         })
     }
 }
@@ -87,3 +91,4 @@ pub use posts::PostsClient;
 pub use session::SessionClient;
 pub use system::SystemClient;
 pub use tiktok::TiktokClient;
+pub use webhooks::WebhooksClient;

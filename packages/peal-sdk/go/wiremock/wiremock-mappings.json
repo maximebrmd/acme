@@ -1811,9 +1811,357 @@
           }
         }
       }
+    },
+    {
+      "id": "530ddc4c-c28a-4a48-868c-27aa07a66903",
+      "name": "List webhook endpoints - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "530ddc4c-c28a-4a48-868c-27aa07a66903",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "1c25b373-35d2-4196-8e77-915aee636398",
+      "name": "Create a webhook endpoint - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"endpoint\": {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"secret\": \"secret\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "1c25b373-35d2-4196-8e77-915aee636398",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "38a842a3-1b30-4e21-9f74-de342f98ef42",
+      "name": "Get a webhook endpoint - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/{endpointId}",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "endpointId": {
+            "equalTo": "endpointId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "38a842a3-1b30-4e21-9f74-de342f98ef42",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "abc24ee6-f9bd-4fcc-b134-b259e084c50d",
+      "name": "Delete a webhook endpoint - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/{endpointId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "endpointId": {
+            "equalTo": "endpointId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "\"\"",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "abc24ee6-f9bd-4fcc-b134-b259e084c50d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "13f52a76-8d02-47ce-b8ea-3178b3134cea",
+      "name": "Update a webhook endpoint - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/{endpointId}",
+        "method": "PATCH",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "endpointId": {
+            "equalTo": "endpointId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"createdAt\": \"createdAt\",\n  \"description\": \"description\",\n  \"disabledAt\": \"disabledAt\",\n  \"disabledReason\": \"manual\",\n  \"enabled\": true,\n  \"eventTypes\": [\n    \"post.scheduled\"\n  ],\n  \"failingSince\": \"failingSince\",\n  \"id\": \"id\",\n  \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "13f52a76-8d02-47ce-b8ea-3178b3134cea",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "c7d1cbd6-8ebe-4536-b931-61ce345c0191",
+      "name": "Rotate a webhook endpoint's secret - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/{endpointId}/secret",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "endpointId": {
+            "equalTo": "endpointId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"endpoint\": {\n    \"createdAt\": \"createdAt\",\n    \"description\": \"description\",\n    \"disabledAt\": \"disabledAt\",\n    \"disabledReason\": \"manual\",\n    \"enabled\": true,\n    \"eventTypes\": [\n      \"post.scheduled\"\n    ],\n    \"failingSince\": \"failingSince\",\n    \"id\": \"id\",\n    \"previousSecretExpiresAt\": \"previousSecretExpiresAt\",\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"secret\": \"secret\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "c7d1cbd6-8ebe-4536-b931-61ce345c0191",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "263464a8-f46f-42e8-8b05-26935b056a5d",
+      "name": "Send a test event - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/{endpointId}/test",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "endpointId": {
+            "equalTo": "endpointId"
+          }
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": "{\n  \"attempts\": 1,\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"durationMs\": 1,\n  \"error\": \"timeout\",\n  \"eventId\": \"eventId\",\n  \"eventType\": \"post.scheduled\",\n  \"failureReason\": \"exhausted\",\n  \"id\": \"id\",\n  \"lastAttemptAt\": \"lastAttemptAt\",\n  \"nextAttemptAt\": \"nextAttemptAt\",\n  \"responseExcerpt\": \"responseExcerpt\",\n  \"responseStatus\": 1,\n  \"status\": \"pending\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "263464a8-f46f-42e8-8b05-26935b056a5d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "3215fcc2-77f9-4219-a169-3c4a9b93b593",
+      "name": "List an endpoint's deliveries - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "endpointId": {
+            "equalTo": "endpointId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"attempts\": 1,\n      \"completedAt\": \"completedAt\",\n      \"createdAt\": \"createdAt\",\n      \"durationMs\": 1,\n      \"error\": \"timeout\",\n      \"eventId\": \"eventId\",\n      \"eventType\": \"post.scheduled\",\n      \"failureReason\": \"exhausted\",\n      \"id\": \"id\",\n      \"lastAttemptAt\": \"lastAttemptAt\",\n      \"nextAttemptAt\": \"nextAttemptAt\",\n      \"responseExcerpt\": \"responseExcerpt\",\n      \"responseStatus\": 1,\n      \"status\": \"pending\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "3215fcc2-77f9-4219-a169-3c4a9b93b593",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "fe8d4ee4-1c4c-436b-8cee-2fe154fbf1ce",
+      "name": "Send a delivery again - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/webhooks/{endpointId}/deliveries/{deliveryId}/redeliver",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "endpointId": {
+            "equalTo": "endpointId"
+          },
+          "deliveryId": {
+            "equalTo": "deliveryId"
+          }
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": "{\n  \"attempts\": 1,\n  \"completedAt\": \"completedAt\",\n  \"createdAt\": \"createdAt\",\n  \"durationMs\": 1,\n  \"error\": \"timeout\",\n  \"eventId\": \"eventId\",\n  \"eventType\": \"post.scheduled\",\n  \"failureReason\": \"exhausted\",\n  \"id\": \"id\",\n  \"lastAttemptAt\": \"lastAttemptAt\",\n  \"nextAttemptAt\": \"nextAttemptAt\",\n  \"responseExcerpt\": \"responseExcerpt\",\n  \"responseStatus\": 1,\n  \"status\": \"pending\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "fe8d4ee4-1c4c-436b-8cee-2fe154fbf1ce",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
     }
   ],
   "meta": {
-    "total": 49
+    "total": 58
   }
 }

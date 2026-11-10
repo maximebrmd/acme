@@ -20,6 +20,7 @@ import (
 	session "github.com/peal-social/peal/packages/peal-sdk/go/session"
 	system "github.com/peal-social/peal/packages/peal-sdk/go/system"
 	tiktok "github.com/peal-social/peal/packages/peal-sdk/go/tiktok"
+	webhooks "github.com/peal-social/peal/packages/peal-sdk/go/webhooks"
 )
 
 type Client struct {
@@ -37,6 +38,7 @@ type Client struct {
 	Billing                 *billing.Client
 	Analytics               *analytics.Client
 	Tiktok                  *tiktok.Client
+	Webhooks                *webhooks.Client
 
 	options *core.RequestOptions
 	baseURL string
@@ -60,6 +62,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Billing:                 billing.NewClient(options),
 		Analytics:               analytics.NewClient(options),
 		Tiktok:                  tiktok.NewClient(options),
+		Webhooks:                webhooks.NewClient(options),
 		options:                 options,
 		baseURL:                 options.BaseURL,
 		caller: internal.NewCaller(
