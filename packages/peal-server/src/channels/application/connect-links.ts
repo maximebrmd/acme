@@ -31,6 +31,7 @@ import { linkInputOf } from "#channels/domain/link-input.ts";
 import type { LinkInput } from "#channels/domain/link-input.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import { returnAddressOf } from "#channels/domain/return-address.ts";
+import type { ReturnStatus } from "#channels/domain/return-address.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
@@ -453,6 +454,23 @@ export class ConnectLinks extends Context.Service<
           : yield* new ConnectLinkNotFound();
       });
 
+      // Where the page sends the browser back, checked when it is used
+      // and not only when the link was made: an origin its partner has
+      // removed since, a domain let go, takes nobody back.
+      const wayBack = Effect.fnUntraced(function* wayBack(
+        link: ConnectLink,
+        status: ReturnStatus
+      ) {
+        if (
+          Option.isNone(link.returnUrl) ||
+          !(yield* hosts.allowsReturnTo(link.workspaceId, link.returnUrl.value))
+        ) {
+          return Option.none<string>();
+        }
+
+        return returnAddressOf(link, status);
+      });
+
       const open = Effect.fn("ConnectLinks.open")(function* open(
         token: Redacted.Redacted
       ) {
@@ -479,7 +497,7 @@ export class ConnectLinks extends Context.Service<
           platform: link.platform,
           reconnecting: channel.pipe(Option.map(({ handle }) => handle)),
           // A link still open offers a way back for whoever declines.
-          returnTo: returnAddressOf(
+          returnTo: yield* wayBack(
             link,
             state === "completed" ? "connected" : "cancelled"
           ),
@@ -516,7 +534,7 @@ export class ConnectLinks extends Context.Service<
 
           return yield* new HostedConnectFailed({
             reason: reason.value,
-            returnTo: returnAddressOf(link, "failed"),
+            returnTo: yield* wayBack(link, "failed"),
           });
         });
 
@@ -617,7 +635,7 @@ export class ConnectLinks extends Context.Service<
           ? pending
           : yield* new HostedConnectFailed({
               reason: "invalidState",
-              returnTo: returnAddressOf(link, "failed"),
+              returnTo: yield* wayBack(link, "failed"),
             });
       });
 
@@ -654,7 +672,7 @@ export class ConnectLinks extends Context.Service<
         const outcome: HostedOutcome = {
           _tag: "connected",
           channels: connected,
-          returnTo: returnAddressOf(done, "connected"),
+          returnTo: yield* wayBack(done, "connected"),
         };
 
         return outcome;

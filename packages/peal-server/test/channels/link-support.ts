@@ -58,6 +58,12 @@ const RememberedConnections = Layer.effect(
 export const pages = "https://peal.test/connect/link#";
 
 /**
+ * The origins the partner has registered, which a test empties to stand
+ * for one removed since a link was made.
+ */
+export const partnerOrigins = ["https://app.example.test"];
+
+/**
  * ConnectLinks with the real store and tokens, under a partner named
  * Partner Suite that returns to https://app.example.test.
  */
@@ -80,7 +86,7 @@ export const LinksTest = ConnectLinks.layer.pipe(
           logoUrl: Option.some("https://cdn.example.test/logo.png"),
           name: "Partner Suite",
         },
-        ["https://app.example.test"]
+        partnerOrigins
       )
     )
   ),

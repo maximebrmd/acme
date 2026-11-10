@@ -17,6 +17,7 @@ import { mastodonInstance } from "#test/channels/connect-support.ts";
 import {
   LinkConnections,
   linked,
+  partnerOrigins,
   LinksTest,
   manager,
   mastodonLink as mastodon,
@@ -411,6 +412,62 @@ layer(LinksTest)("connect links", (it) => {
         assert(read.status._tag === "completed");
         assert.lengthOf(read.status.channelIds, 1);
       }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "send nobody back to an origin the partner has removed since the link was made",
+    () =>
+      Effect.gen(function* removed() {
+        const links = yield* ConnectLinks;
+        const instance = yield* mastodonInstance();
+        const { token } = yield* linked();
+
+        const started = yield* links.start(token, {
+          handle: Option.none(),
+          instance: Option.some(instance.url),
+        });
+
+        const removedOrigins = partnerOrigins.splice(0);
+
+        const answers = Effect.gen(function* answers() {
+          const opened = yield* links.open(token);
+
+          const refused = yield* links
+            .complete(
+              token,
+              Option.none(),
+              callbackOf(instance.approve(started.authorizationUrl))
+            )
+            .pipe(Effect.flip);
+
+          const outcome = yield* links.complete(
+            token,
+            Option.some(started.browser),
+            callbackOf(instance.approve(started.authorizationUrl))
+          );
+
+          return {
+            connected:
+              outcome._tag === "connected"
+                ? outcome.returnTo
+                : Option.some("not connected"),
+            opened: opened.returnTo,
+            refused: "returnTo" in refused ? refused.returnTo : Option.none(),
+          };
+        }).pipe(
+          Effect.ensuring(
+            Effect.sync(() => {
+              partnerOrigins.push(...removedOrigins);
+            })
+          )
+        );
+
+        assert.deepStrictEqual(yield* answers, {
+          connected: Option.none(),
+          opened: Option.none(),
+          refused: Option.none(),
+        });
+      })
   );
 
   it.effect(
