@@ -190,7 +190,7 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
 
           // Past the limit, the export is the API's error like any other:
           // nothing was read, and nothing streamed.
-          const refused = replies[5];
+          const refused = replies.at(5);
 
           assert.include(
             refused?.headers.get("content-type"),
