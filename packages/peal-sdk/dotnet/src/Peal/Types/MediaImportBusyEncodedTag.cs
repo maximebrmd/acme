@@ -1,0 +1,111 @@
+using global::System.Text.Json;
+using global::System.Text.Json.Serialization;
+using Peal.Core;
+
+namespace Peal;
+
+[JsonConverter(typeof(MediaImportBusyEncodedTag.MediaImportBusyEncodedTagSerializer))]
+[Serializable]
+public readonly record struct MediaImportBusyEncodedTag : IStringEnum
+{
+    public static readonly MediaImportBusyEncodedTag MediaImportBusy = new(Values.MediaImportBusy);
+
+    public MediaImportBusyEncodedTag(string value)
+    {
+        Value = value;
+    }
+
+    /// <summary>
+    /// The string value of the enum.
+    /// </summary>
+    public string Value { get; }
+
+    /// <summary>
+    /// Create a string enum with the given value.
+    /// </summary>
+    public static MediaImportBusyEncodedTag FromCustom(string value)
+    {
+        return new MediaImportBusyEncodedTag(value);
+    }
+
+    public bool Equals(string? other)
+    {
+        return Value.Equals(other);
+    }
+
+    /// <summary>
+    /// Returns the string value of the enum.
+    /// </summary>
+    public override string ToString()
+    {
+        return Value;
+    }
+
+    public static bool operator ==(MediaImportBusyEncodedTag value1, string value2) =>
+        value1.Value.Equals(value2);
+
+    public static bool operator !=(MediaImportBusyEncodedTag value1, string value2) =>
+        !value1.Value.Equals(value2);
+
+    public static explicit operator string(MediaImportBusyEncodedTag value) => value.Value;
+
+    public static explicit operator MediaImportBusyEncodedTag(string value) => new(value);
+
+    internal class MediaImportBusyEncodedTagSerializer : JsonConverter<MediaImportBusyEncodedTag>
+    {
+        public override MediaImportBusyEncodedTag Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        )
+        {
+            var stringValue =
+                reader.GetString()
+                ?? throw new global::System.Exception(
+                    "The JSON value could not be read as a string."
+                );
+            return new MediaImportBusyEncodedTag(stringValue);
+        }
+
+        public override void Write(
+            Utf8JsonWriter writer,
+            MediaImportBusyEncodedTag value,
+            JsonSerializerOptions options
+        )
+        {
+            writer.WriteStringValue(value.Value);
+        }
+
+        public override MediaImportBusyEncodedTag ReadAsPropertyName(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options
+        )
+        {
+            var stringValue =
+                reader.GetString()
+                ?? throw new global::System.Exception(
+                    "The JSON property name could not be read as a string."
+                );
+            return new MediaImportBusyEncodedTag(stringValue);
+        }
+
+        public override void WriteAsPropertyName(
+            Utf8JsonWriter writer,
+            MediaImportBusyEncodedTag value,
+            JsonSerializerOptions options
+        )
+        {
+            writer.WritePropertyName(value.Value);
+        }
+    }
+
+    /// <summary>
+    /// Constant strings for enum values
+    /// </summary>
+    [Serializable]
+    public static class Values
+    {
+        public const string MediaImportBusy = "MediaImportBusy";
+    }
+}

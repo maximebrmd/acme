@@ -34,6 +34,7 @@ import social.peal.errors.ConflictError;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.NotFoundError;
 import social.peal.errors.ServiceUnavailableError;
+import social.peal.errors.TooManyRequestsError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
 import social.peal.resources.webhooks.requests.DeleteWebhooksRequest;
@@ -791,7 +792,7 @@ public class AsyncRawWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<PealClientHttpResponse<WebhookDelivery>> sendTest(String workspaceId, String endpointId) {
         return sendTest(
@@ -799,7 +800,7 @@ public class AsyncRawWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<PealClientHttpResponse<WebhookDelivery>> sendTest(
             String workspaceId, String endpointId, RequestOptions requestOptions) {
@@ -808,7 +809,7 @@ public class AsyncRawWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<PealClientHttpResponse<WebhookDelivery>> sendTest(
             String workspaceId, String endpointId, SendTestWebhooksRequest request) {
@@ -816,7 +817,7 @@ public class AsyncRawWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<PealClientHttpResponse<WebhookDelivery>> sendTest(
             String workspaceId, String endpointId, SendTestWebhooksRequest request, RequestOptions requestOptions) {
@@ -883,6 +884,11 @@ public class AsyncRawWebhooksClient {
                                 return;
                             case 409:
                                 future.completeExceptionally(new ConflictError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
                                         ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;
@@ -1054,7 +1060,7 @@ public class AsyncRawWebhooksClient {
     }
 
     /**
-     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. Needs webhook:manage.
+     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<PealClientHttpResponse<WebhookDelivery>> redeliver(
             String workspaceId, String endpointId, String deliveryId) {
@@ -1066,7 +1072,7 @@ public class AsyncRawWebhooksClient {
     }
 
     /**
-     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. Needs webhook:manage.
+     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<PealClientHttpResponse<WebhookDelivery>> redeliver(
             String workspaceId, String endpointId, String deliveryId, RequestOptions requestOptions) {
@@ -1079,7 +1085,7 @@ public class AsyncRawWebhooksClient {
     }
 
     /**
-     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. Needs webhook:manage.
+     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<PealClientHttpResponse<WebhookDelivery>> redeliver(
             String workspaceId, String endpointId, String deliveryId, RedeliverWebhooksRequest request) {
@@ -1087,7 +1093,7 @@ public class AsyncRawWebhooksClient {
     }
 
     /**
-     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. Needs webhook:manage.
+     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<PealClientHttpResponse<WebhookDelivery>> redeliver(
             String workspaceId,
@@ -1160,6 +1166,11 @@ public class AsyncRawWebhooksClient {
                                 return;
                             case 409:
                                 future.completeExceptionally(new ConflictError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
+                                        response));
+                                return;
+                            case 429:
+                                future.completeExceptionally(new TooManyRequestsError(
                                         ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Object.class),
                                         response));
                                 return;

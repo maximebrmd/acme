@@ -224,14 +224,14 @@ func (s *ServiceUnavailableError) GetBody() any {
 	return s.Body
 }
 
-// The workspace used every assistant request it has today. Try again after `resetsAt`, or, on a server that bills, move to `planWithRoom`, which allows more, on the billing page (`billingUrl`).
+// The workspace already imports two files at once, or the server as many as it runs together: nothing was fetched or stored. Ask again in a moment, once one has finished.
 type TooManyRequestsError struct {
 	*core.APIError
-	Body *AssistantQuotaExceededEncoded
+	Body any
 }
 
 func (t *TooManyRequestsError) UnmarshalJSON(data []byte) error {
-	var body *AssistantQuotaExceededEncoded
+	var body any
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -248,7 +248,7 @@ func (t *TooManyRequestsError) Unwrap() error {
 	return t.APIError
 }
 
-func (t *TooManyRequestsError) GetBody() *AssistantQuotaExceededEncoded {
+func (t *TooManyRequestsError) GetBody() any {
 	if t == nil {
 		return nil
 	}

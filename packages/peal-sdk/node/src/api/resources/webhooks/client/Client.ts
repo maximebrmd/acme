@@ -384,7 +384,7 @@ export class WebhooksClient {
     }
 
     /**
-     * Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+     * Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
      *
      * @param {Peal.SendTestWebhooksRequest} request
      * @param {WebhooksClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -393,6 +393,7 @@ export class WebhooksClient {
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -431,6 +432,7 @@ export class WebhooksClient {
                 case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,
@@ -506,7 +508,7 @@ export class WebhooksClient {
     }
 
     /**
-     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same `webhook-id` and body, with a new timestamp and signature. Needs webhook:manage.
+     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same `webhook-id` and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
      *
      * @param {Peal.RedeliverWebhooksRequest} request
      * @param {WebhooksClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -515,6 +517,7 @@ export class WebhooksClient {
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.ConflictError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
      *
@@ -554,6 +557,7 @@ export class WebhooksClient {
                 case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 409: throw new Peal.ConflictError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,
                     body: _response.error.body,

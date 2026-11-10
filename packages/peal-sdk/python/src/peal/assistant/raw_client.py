@@ -19,7 +19,6 @@ from ..errors.too_many_requests_error import TooManyRequestsError
 from ..errors.unauthorized_error import UnauthorizedError
 from ..errors.unprocessable_entity_error import UnprocessableEntityError
 from ..types.assistant_action import AssistantAction
-from ..types.assistant_quota_exceeded_encoded import AssistantQuotaExceededEncoded
 from ..types.assistant_status import AssistantStatus
 from ..types.forbidden_encoded import ForbiddenEncoded
 from ..types.suggestion import Suggestion
@@ -212,9 +211,9 @@ class RawAssistantClient:
                 raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        AssistantQuotaExceededEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=AssistantQuotaExceededEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -433,9 +432,9 @@ class AsyncRawAssistantClient:
                 raise TooManyRequestsError(
                     headers=dict(_response.headers),
                     body=typing.cast(
-                        AssistantQuotaExceededEncoded,
+                        typing.Any,
                         parse_obj_as(
-                            type_=AssistantQuotaExceededEncoded,  # type: ignore
+                            type_=typing.Any,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

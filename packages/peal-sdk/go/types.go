@@ -6648,6 +6648,111 @@ func (i *InvitationNotFoundEncoded) String() string {
 }
 
 var (
+	mediaImportBusyEncodedFieldTag = big.NewInt(1 << 0)
+)
+
+type MediaImportBusyEncoded struct {
+	Tag MediaImportBusyEncodedTag `json:"_tag" url:"_tag"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *MediaImportBusyEncoded) GetTag() MediaImportBusyEncodedTag {
+	if m == nil {
+		return ""
+	}
+	return m.Tag
+}
+
+func (m *MediaImportBusyEncoded) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *MediaImportBusyEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *MediaImportBusyEncoded) SetTag(tag MediaImportBusyEncodedTag) {
+	m.Tag = tag
+	m.require(mediaImportBusyEncodedFieldTag)
+}
+
+func (m *MediaImportBusyEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler MediaImportBusyEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = MediaImportBusyEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *MediaImportBusyEncoded) MarshalJSON() ([]byte, error) {
+	type embed MediaImportBusyEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *MediaImportBusyEncoded) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+type MediaImportBusyEncodedTag string
+
+const (
+	MediaImportBusyEncodedTagMediaImportBusy MediaImportBusyEncodedTag = "MediaImportBusy"
+)
+
+func NewMediaImportBusyEncodedTagFromString(s string) (MediaImportBusyEncodedTag, error) {
+	switch s {
+	case "MediaImportBusy":
+		return MediaImportBusyEncodedTagMediaImportBusy, nil
+	}
+	var t MediaImportBusyEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (m MediaImportBusyEncodedTag) Ptr() *MediaImportBusyEncodedTag {
+	return &m
+}
+
+var (
 	mediaInUseEncodedFieldTag     = big.NewInt(1 << 0)
 	mediaInUseEncodedFieldPostIDs = big.NewInt(1 << 1)
 )
@@ -8671,6 +8776,127 @@ func NewTooManyWebhookEndpointsEncodedTagFromString(s string) (TooManyWebhookEnd
 }
 
 func (t TooManyWebhookEndpointsEncodedTag) Ptr() *TooManyWebhookEndpointsEncodedTag {
+	return &t
+}
+
+var (
+	tooManyWebhookSendsEncodedFieldTag     = big.NewInt(1 << 0)
+	tooManyWebhookSendsEncodedFieldAllowed = big.NewInt(1 << 1)
+)
+
+type TooManyWebhookSendsEncoded struct {
+	Tag     TooManyWebhookSendsEncodedTag `json:"_tag" url:"_tag"`
+	Allowed int                           `json:"allowed" url:"allowed"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TooManyWebhookSendsEncoded) GetTag() TooManyWebhookSendsEncodedTag {
+	if t == nil {
+		return ""
+	}
+	return t.Tag
+}
+
+func (t *TooManyWebhookSendsEncoded) GetAllowed() int {
+	if t == nil {
+		return 0
+	}
+	return t.Allowed
+}
+
+func (t *TooManyWebhookSendsEncoded) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TooManyWebhookSendsEncoded) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetTag sets the Tag field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyWebhookSendsEncoded) SetTag(tag TooManyWebhookSendsEncodedTag) {
+	t.Tag = tag
+	t.require(tooManyWebhookSendsEncodedFieldTag)
+}
+
+// SetAllowed sets the Allowed field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TooManyWebhookSendsEncoded) SetAllowed(allowed int) {
+	t.Allowed = allowed
+	t.require(tooManyWebhookSendsEncodedFieldAllowed)
+}
+
+func (t *TooManyWebhookSendsEncoded) UnmarshalJSON(data []byte) error {
+	type unmarshaler TooManyWebhookSendsEncoded
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TooManyWebhookSendsEncoded(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TooManyWebhookSendsEncoded) MarshalJSON() ([]byte, error) {
+	type embed TooManyWebhookSendsEncoded
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TooManyWebhookSendsEncoded) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+type TooManyWebhookSendsEncodedTag string
+
+const (
+	TooManyWebhookSendsEncodedTagTooManyWebhookSends TooManyWebhookSendsEncodedTag = "TooManyWebhookSends"
+)
+
+func NewTooManyWebhookSendsEncodedTagFromString(s string) (TooManyWebhookSendsEncodedTag, error) {
+	switch s {
+	case "TooManyWebhookSends":
+		return TooManyWebhookSendsEncodedTagTooManyWebhookSends, nil
+	}
+	var t TooManyWebhookSendsEncodedTag
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (t TooManyWebhookSendsEncodedTag) Ptr() *TooManyWebhookSendsEncodedTag {
 	return &t
 }
 

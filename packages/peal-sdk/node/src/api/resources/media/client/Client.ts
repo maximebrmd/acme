@@ -157,7 +157,7 @@ export class MediaClient {
     }
 
     /**
-     * Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
+     * Fetches a file from a public address, stores it as media of the workspace and probes it, as completing an upload does: the answer is the media, ready, or uploaded with why it could not be probed. The server fetches it itself, from HTTPS URLs on the default port whose host resolves to public addresses only, without credentials or cookies, following at most three redirects, each checked the same way (MediaSourceNotPublic otherwise). The file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16 MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90 seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs media:upload.
      *
      * @param {Peal.MediaImport} request
      * @param {MediaClient.RequestOptions} requestOptions - Request-specific configuration.
@@ -167,6 +167,7 @@ export class MediaClient {
      * @throws {@link Peal.ForbiddenError}
      * @throws {@link Peal.NotFoundError}
      * @throws {@link Peal.UnprocessableEntityError}
+     * @throws {@link Peal.TooManyRequestsError}
      * @throws {@link Peal.ServiceUnavailableError}
      * @throws {@link errors.PealError}
      * @throws {@link errors.PealTimeoutError}
@@ -210,6 +211,7 @@ export class MediaClient {
                 case 403: throw new Peal.ForbiddenError(_response.error.body as Peal.ForbiddenEncoded, _response.rawResponse);
                 case 404: throw new Peal.NotFoundError(_response.error.body as unknown, _response.rawResponse);
                 case 422: throw new Peal.UnprocessableEntityError(_response.error.body as unknown, _response.rawResponse);
+                case 429: throw new Peal.TooManyRequestsError(_response.error.body as unknown, _response.rawResponse);
                 case 503: throw new Peal.ServiceUnavailableError(_response.error.body as unknown, _response.rawResponse);
                 default: throw new errors.PealError({
                     statusCode: _response.error.statusCode,

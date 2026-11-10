@@ -123,7 +123,8 @@ module Peal
       # file's type is read from its first bytes, not from what the host says: JPEG, PNG, GIF and WebP images up to 16
       # MiB, MP4 and QuickTime videos up to 1 GiB (UnsupportedMediaType, MediaTooLarge). It must arrive within 90
       # seconds (MediaSourceUnreachable `tooSlow`): upload larger or slower files instead. On a server that bills, it
-      # must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs
+      # must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). A workspace
+      # imports two files at once, and the server eight (429 MediaImportBusy: ask again in a moment). Needs
       # media:upload.
       #
       # @param request_options [Hash]

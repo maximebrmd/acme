@@ -54,12 +54,8 @@ pub enum ApiError {
     #[error("TooManyRequestsError: Rate limit exceeded - {message}")]
     TooManyRequestsError {
         message: String,
-        tag: Option<AssistantQuotaExceededEncodedTag>,
-        billing_url: Option<String>,
-        daily_limit: Option<i64>,
-        plan: Option<Plan>,
-        plan_with_room: Option<PaidPlan>,
-        resets_at: Option<String>,
+        retry_after_seconds: Option<u64>,
+        limit_type: Option<String>,
     },
     #[error("HTTP error {status}: {message}")]
     Http { status: u16, message: String },
@@ -313,38 +309,19 @@ impl ApiError {
                                 .and_then(|v| v.as_str())
                                 .unwrap_or("Unknown error")
                                 .to_string(),
-                            tag: parsed.get("_tag").and_then(|v| {
-                                serde_json::from_value::<AssistantQuotaExceededEncodedTag>(
-                                    v.clone(),
-                                )
-                                .ok()
-                            }),
-                            billing_url: parsed
-                                .get("billingUrl")
-                                .and_then(|v| v.as_str().map(|s| s.to_string())),
-                            daily_limit: parsed
-                                .get("dailyLimit")
-                                .and_then(|v| serde_json::from_value::<i64>(v.clone()).ok()),
-                            plan: parsed
-                                .get("plan")
-                                .and_then(|v| serde_json::from_value::<Plan>(v.clone()).ok()),
-                            plan_with_room: parsed
-                                .get("planWithRoom")
-                                .and_then(|v| serde_json::from_value::<PaidPlan>(v.clone()).ok()),
-                            resets_at: parsed
-                                .get("resetsAt")
+                            retry_after_seconds: parsed
+                                .get("retryAfterSeconds")
+                                .and_then(|v| v.as_u64()),
+                            limit_type: parsed
+                                .get("limitType")
                                 .and_then(|v| v.as_str().map(|s| s.to_string())),
                         };
                     }
                 }
                 return Self::TooManyRequestsError {
                     message: body.unwrap_or("Unknown error").to_string(),
-                    tag: None,
-                    billing_url: None,
-                    daily_limit: None,
-                    plan: None,
-                    plan_with_room: None,
-                    resets_at: None,
+                    retry_after_seconds: None,
+                    limit_type: None,
                 };
             }
             _ => Self::Http {

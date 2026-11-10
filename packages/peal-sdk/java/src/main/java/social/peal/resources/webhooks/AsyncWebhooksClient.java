@@ -379,7 +379,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> sendTest(String workspaceId, String endpointId) {
         CompletableFuture<PealClientHttpResponse<WebhookDelivery>> rawFuture =
@@ -394,7 +394,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> sendTest(
             String workspaceId, String endpointId, RequestOptions requestOptions) {
@@ -410,7 +410,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> sendTest(
             String workspaceId, String endpointId, SendTestWebhooksRequest request) {
@@ -426,7 +426,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+     * Sends the endpoint a <code>webhook.test</code> event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> sendTest(
             String workspaceId, String endpointId, SendTestWebhooksRequest request, RequestOptions requestOptions) {
@@ -508,7 +508,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. Needs webhook:manage.
+     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> redeliver(String workspaceId, String endpointId, String deliveryId) {
         CompletableFuture<PealClientHttpResponse<WebhookDelivery>> rawFuture =
@@ -523,7 +523,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. Needs webhook:manage.
+     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> redeliver(
             String workspaceId, String endpointId, String deliveryId, RequestOptions requestOptions) {
@@ -539,7 +539,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. Needs webhook:manage.
+     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> redeliver(
             String workspaceId, String endpointId, String deliveryId, RedeliverWebhooksRequest request) {
@@ -555,7 +555,7 @@ public class AsyncWebhooksClient {
     }
 
     /**
-     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. Needs webhook:manage.
+     * Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same <code>webhook-id</code> and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 <code>TooManyWebhookSends</code>). Needs webhook:manage.
      */
     public CompletableFuture<WebhookDelivery> redeliver(
             String workspaceId,

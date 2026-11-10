@@ -3,9 +3,8 @@
 import typing
 
 from ..core.api_error import ApiError
-from ..types.assistant_quota_exceeded_encoded import AssistantQuotaExceededEncoded
 
 
 class TooManyRequestsError(ApiError):
-    def __init__(self, body: AssistantQuotaExceededEncoded, headers: typing.Optional[typing.Dict[str, str]] = None):
+    def __init__(self, body: typing.Any, headers: typing.Optional[typing.Dict[str, str]] = None):
         super().__init__(status_code=429, headers=headers, body=body)

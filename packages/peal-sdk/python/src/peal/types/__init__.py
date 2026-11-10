@@ -152,6 +152,8 @@ if typing.TYPE_CHECKING:
     from .media_attachment import MediaAttachment
     from .media_content_type import MediaContentType
     from .media_dimensions import MediaDimensions
+    from .media_import_busy_encoded import MediaImportBusyEncoded
+    from .media_import_busy_encoded_tag import MediaImportBusyEncodedTag
     from .media_in_use_encoded import MediaInUseEncoded
     from .media_in_use_encoded_tag import MediaInUseEncodedTag
     from .media_kind import MediaKind
@@ -282,6 +284,8 @@ if typing.TYPE_CHECKING:
     from .too_many_invitations_encoded import TooManyInvitationsEncoded
     from .too_many_webhook_endpoints_encoded import TooManyWebhookEndpointsEncoded
     from .too_many_webhook_endpoints_encoded_tag import TooManyWebhookEndpointsEncodedTag
+    from .too_many_webhook_sends_encoded import TooManyWebhookSendsEncoded
+    from .too_many_webhook_sends_encoded_tag import TooManyWebhookSendsEncodedTag
     from .top_post import TopPost
     from .translation_language import TranslationLanguage
     from .trial_offer import TrialOffer
@@ -480,6 +484,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "MediaAttachment": ".media_attachment",
     "MediaContentType": ".media_content_type",
     "MediaDimensions": ".media_dimensions",
+    "MediaImportBusyEncoded": ".media_import_busy_encoded",
+    "MediaImportBusyEncodedTag": ".media_import_busy_encoded_tag",
     "MediaInUseEncoded": ".media_in_use_encoded",
     "MediaInUseEncodedTag": ".media_in_use_encoded_tag",
     "MediaKind": ".media_kind",
@@ -614,6 +620,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TooManyInvitationsEncoded": ".too_many_invitations_encoded",
     "TooManyWebhookEndpointsEncoded": ".too_many_webhook_endpoints_encoded",
     "TooManyWebhookEndpointsEncodedTag": ".too_many_webhook_endpoints_encoded_tag",
+    "TooManyWebhookSendsEncoded": ".too_many_webhook_sends_encoded",
+    "TooManyWebhookSendsEncodedTag": ".too_many_webhook_sends_encoded_tag",
     "TopPost": ".top_post",
     "TranslationLanguage": ".translation_language",
     "TrialOffer": ".trial_offer",
@@ -836,6 +844,8 @@ __all__ = [
     "MediaAttachment",
     "MediaContentType",
     "MediaDimensions",
+    "MediaImportBusyEncoded",
+    "MediaImportBusyEncodedTag",
     "MediaInUseEncoded",
     "MediaInUseEncodedTag",
     "MediaKind",
@@ -970,6 +980,8 @@ __all__ = [
     "TooManyInvitationsEncoded",
     "TooManyWebhookEndpointsEncoded",
     "TooManyWebhookEndpointsEncodedTag",
+    "TooManyWebhookSendsEncoded",
+    "TooManyWebhookSendsEncodedTag",
     "TopPost",
     "TranslationLanguage",
     "TrialOffer",

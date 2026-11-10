@@ -285,7 +285,7 @@ class WebhooksClient:
         self, workspace_id: str, endpoint_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> WebhookDelivery:
         """
-        Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+        Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
 
         Parameters
         ----------
@@ -372,7 +372,7 @@ class WebhooksClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookDelivery:
         """
-        Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same `webhook-id` and body, with a new timestamp and signature. Needs webhook:manage.
+        Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same `webhook-id` and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
 
         Parameters
         ----------
@@ -725,7 +725,7 @@ class AsyncWebhooksClient:
         self, workspace_id: str, endpoint_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> WebhookDelivery:
         """
-        Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. Needs webhook:manage.
+        Sends the endpoint a `webhook.test` event, whatever it subscribes to, and answers with its delivery, still pending: read the endpoint's deliveries to see how it ended. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
 
         Parameters
         ----------
@@ -828,7 +828,7 @@ class AsyncWebhooksClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> WebhookDelivery:
         """
-        Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same `webhook-id` and body, with a new timestamp and signature. Needs webhook:manage.
+        Sends the delivery's event to the endpoint again, as a new delivery of the same event: the receiver gets the same `webhook-id` and body, with a new timestamp and signature. A workspace sends 30 test events and deliveries again an hour at most (429 `TooManyWebhookSends`). Needs webhook:manage.
 
         Parameters
         ----------
