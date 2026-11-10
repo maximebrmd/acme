@@ -27,6 +27,9 @@
           "env": "SITE_URL"
         },
         {
+          "env": "SITE_APP_URL"
+        },
+        {
           "env": "SITE_DOCS_URL"
         },
         {

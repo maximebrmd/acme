@@ -1,4 +1,5 @@
 import {
+  SITE_APP_URL,
   SITE_DOCS_URL,
   SITE_PLAUSIBLE_DOMAIN,
   SITE_PLAUSIBLE_HOST,
@@ -31,6 +32,23 @@ export const docsLink = (locale: Locale, path = ""): string | undefined => {
   const prefix = locale === defaultLocale ? "" : `/${locale}`;
 
   return `${docsOrigin}${prefix}/${path}`;
+};
+
+const appOrigin = present(SITE_APP_URL)?.replace(/\/+$/u, "");
+
+/**
+ * A page of the web app in the reader's language, or `undefined` when no
+ * app URL is configured. The app serves English at the root and other
+ * locales under their prefix, as this site does.
+ */
+export const appLink = (locale: Locale, path: string): string | undefined => {
+  if (appOrigin === undefined) {
+    return undefined;
+  }
+
+  const prefix = locale === defaultLocale ? "" : `/${locale}`;
+
+  return `${appOrigin}${prefix}/${path}`;
 };
 
 /** The public repository, which the footer links to on every page. */
