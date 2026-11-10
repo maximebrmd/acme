@@ -79,7 +79,9 @@ if (operationCount(decodeDocument(baseline)) === 0) {
   );
 }
 
-if (sha256(baseline) !== (await read(fingerprint)).trim()) {
+const recorded = await read(fingerprint);
+
+if (sha256(baseline) !== recorded.trim()) {
   throw new Error(
     "packages/peal-sdk/released/openapi.json is not the document the last release recorded (released/openapi.sha256): only `bun scripts/compat.ts --release` writes it. Restore it from Git."
   );

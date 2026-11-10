@@ -586,7 +586,7 @@ const movedErrors = (
   place: string
 ): readonly ApiChange[] =>
   errorsOf(answer).flatMap((name) => {
-    const [now] = Object.entries(answersAfter).filter(
+    const now = Object.entries(answersAfter).find(
       ([other, after]) =>
         Number(other) >= 400 &&
         other !== status &&

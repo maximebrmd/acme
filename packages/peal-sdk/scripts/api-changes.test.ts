@@ -320,9 +320,16 @@ describe("changes between two documents of the API", () => {
 
 describe("what a client sends may not be narrowed, nor what it is promised taken away", () => {
   it("refuses a tighter limit on what is sent, and lets a looser one through", () => {
-    const limited = (limits: JsonObject): Edit => [
+    const limited = (
+      limits: Readonly<Record<string, number | string>>
+    ): Edit => [
       `${newPost}>properties>text`,
-      { maxLength: 500, minLength: 1, type: "string", ...limits },
+      Object.fromEntries([
+        ["maxLength", 500],
+        ["minLength", 1],
+        ["type", "string"],
+        ...Object.entries(limits),
+      ]),
     ];
 
     const before = changed(limited({}));
