@@ -285,7 +285,7 @@ describe("the staff console", { serial: true }, () => {
     await send.tap();
 
     // The member's account is open: no closed account bears the address.
-    await expect(screen.getByText("Answer recorded as")).toBeVisible();
+    await expect(screen.getByRole("button", "Clear the answer")).toBeVisible();
     await expect(
       screen.getByText("No closed account is held for this subject.")
     ).toBeVisible();
