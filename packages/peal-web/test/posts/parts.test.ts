@@ -7,9 +7,11 @@ import {
   movePart,
   partsOf,
   partsTaken,
+  partTextOn,
   removePart,
   roomForParts,
   updatePart,
+  withPartOverride,
 } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
 
@@ -26,6 +28,39 @@ const part = (key: string, text: string, more: Partial<PartDraft> = {}) => ({
 });
 
 const order = (list: readonly PartDraft[]) => list.map(({ key }) => key);
+
+describe("a part's text on a channel", () => {
+  const own = part("a", "For everyone", {
+    overrides: [{ channelId: bluesky, text: "For Bluesky alone" }],
+  });
+
+  it("is the channel's own when the part has one, as the server sends it", () => {
+    expect(partTextOn(own, bluesky)).toBe("For Bluesky alone");
+    expect(partTextOn(own, mastodon)).toBe("For everyone");
+  });
+
+  it("changes with the channel's own text, and goes back to the text for all once it is dropped", () => {
+    const changed = withPartOverride(own.overrides, bluesky, "Rewritten");
+
+    expect(changed).toStrictEqual([{ channelId: bluesky, text: "Rewritten" }]);
+    expect(partTextOn({ ...own, overrides: changed }, bluesky)).toBe(
+      "Rewritten"
+    );
+
+    const dropped = withPartOverride(own.overrides, bluesky, null);
+
+    expect(dropped).toStrictEqual([]);
+    expect(partTextOn({ ...own, overrides: dropped }, bluesky)).toBe(
+      "For everyone"
+    );
+  });
+
+  it("gives a channel no text of its own it did not have", () => {
+    expect(withPartOverride(own.overrides, mastodon, "New")).toStrictEqual(
+      own.overrides
+    );
+  });
+});
 
 describe("the parts that follow a post, as the composer edits them", () => {
   it("start from the post's, each with a key of its own", () => {

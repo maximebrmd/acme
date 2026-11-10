@@ -151,7 +151,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   follow-up-parts.tsx`, state in `#posts/parts.ts`): each part its own
   text, media and wait, checked against each selected channel as a post
   of its platform, and refused in words on a platform that takes a post
-  alone.
+  alone. A part's text of its own on a channel (`overrides`, which the
+  API and other clients set) is shown, counted for that channel
+  (`partTextOn`) and editable, or dropped for the text for all channels:
+  the composer never sends a text it does not show.
 - The inbox (`components/inbox/`) lists threads with counts and never a
   comment's text (`ThreadsList`), and shows one whole (`ThreadScreen`):
   views in `inbox-views.tsx` take links as props, so tests render each

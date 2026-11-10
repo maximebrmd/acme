@@ -19,8 +19,9 @@ export interface PartDraft {
   readonly key: string;
   readonly media: readonly MediaAttachment[];
   /**
-   * The text it has instead on some channels. The composer has no field
-   * for it yet: what the API or another client set is kept as it is.
+   * The text it has instead on some channels, which the API or another
+   * client set: the composer shows each one, counts it for its channel,
+   * and lets the member change it or go back to the text for all channels.
    */
   readonly overrides: readonly TextOverride[];
   readonly text: string;
@@ -74,6 +75,32 @@ export const movePart = (
 
   return parts.toSpliced(from, 1).toSpliced(to, 0, moved);
 };
+
+/**
+ * The text a part goes out with on a channel: its own there when it has
+ * one, as the server sends it, or the text for all channels.
+ */
+export const partTextOn = (
+  part: Pick<PartDraft, "overrides" | "text">,
+  channelId: string
+): string =>
+  part.overrides.find((override) => override.channelId === channelId)?.text ??
+  part.text;
+
+/**
+ * A part's overrides with the channel's own text changed, or, with `null`,
+ * without it: the channel then takes the text for all channels.
+ */
+export const withPartOverride = (
+  overrides: readonly TextOverride[],
+  channelId: string,
+  text: string | null
+): readonly TextOverride[] =>
+  text === null
+    ? overrides.filter((override) => override.channelId !== channelId)
+    : overrides.map((override) =>
+        override.channelId === channelId ? { channelId, text } : override
+      );
 
 /** The parts with `changes` made to this one. */
 export const updatePart = (

@@ -51,7 +51,7 @@ import { connectedTargets } from "#posts/channel-selection.ts";
 import { fitOn, fits } from "#posts/character-count.ts";
 import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits } from "#posts/media-fit.ts";
-import { followUpsOf, partsOf, partsTaken } from "#posts/parts.ts";
+import { followUpsOf, partsOf, partsTaken, partTextOn } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
 import {
   channelOptionsOf,
@@ -315,9 +315,11 @@ export const Composer = ({
   // each one's text, as the server will check them. Their images and
   // videos are checked where they are shown, and again by the server.
   const partsFit = selected.every(
-    ({ platform }) =>
+    ({ id, platform }) =>
       partsTaken(platform, parts.length)._tag === "taken" &&
-      parts.every((part) => fits(fitOn(platform, part.text, part.media.length)))
+      parts.every((part) =>
+        fits(fitOn(platform, partTextOn(part, id), part.media.length))
+      )
   );
 
   const formatted = (at: DateTime.Utc) =>

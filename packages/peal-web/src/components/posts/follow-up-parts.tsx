@@ -27,9 +27,11 @@ import {
   delayChoices,
   movePart,
   partsTaken,
+  partTextOn,
   removePart,
   roomForParts,
   updatePart,
+  withPartOverride,
 } from "#posts/parts.ts";
 import type { PartDraft } from "#posts/parts.ts";
 
@@ -64,6 +66,8 @@ const PartEditor = ({
   workspaceId,
 }: PartEditorProps) => {
   const t = useTranslations("Posts.Parts");
+  const tComposer = useTranslations("Posts.Composer");
+  const tPosts = useTranslations("Posts");
   const id = useId();
   const attached = useAttachedMedia(workspaceId, part.media);
   const named = { position };
@@ -87,9 +91,22 @@ const PartEditor = ({
     );
   };
 
+  // The channels this part has a text of its own on: each is shown, so
+  // nothing goes out that the member did not see.
+  const own = selected.flatMap((channel) =>
+    part.overrides
+      .filter(({ channelId }) => channelId === channel.id)
+      .map(({ text }) => ({ channel, text }))
+  );
+
   const fits = selected.map((channel) => ({
     channel,
-    fit: fitOn(channel.platform, part.text, part.media.length),
+    // Counted as it goes out there: the channel's own text when it has one.
+    fit: fitOn(
+      channel.platform,
+      partTextOn(part, channel.id),
+      part.media.length
+    ),
     media: mediaFitOn(channel.platform, attached),
   }));
 
@@ -152,6 +169,63 @@ const PartEditor = ({
       <p id={`${id}-hint`} className="sr-only">
         {t("textHint", named)}
       </p>
+      {own.map(({ channel, text }) => {
+        const where = {
+          channel: tComposer("channelDetail", {
+            handle: channel.handle,
+            platform: tPosts("platform", { platform: channel.platform }),
+          }),
+          position,
+        };
+
+        return (
+          <div key={channel.id} className="flex flex-col gap-2">
+            <Label id={`${id}-own-${channel.id}`}>{t("ownText", where)}</Label>
+            <PlainTextEditor
+              id={`${id}-own-${channel.id}-text`}
+              labelledBy={`${id}-own-${channel.id}`}
+              describedBy={`${id}-own-${channel.id}-hint`}
+              placeholder={t("textPlaceholder")}
+              readOnly={locked}
+              value={text}
+              onChange={(changed) => {
+                change({
+                  overrides: withPartOverride(
+                    part.overrides,
+                    channel.id,
+                    changed
+                  ),
+                });
+              }}
+            />
+            <p
+              id={`${id}-own-${channel.id}-hint`}
+              className="text-muted-foreground text-sm"
+            >
+              {t("ownTextHint", where)}
+            </p>
+            {locked ? null : (
+              <div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    change({
+                      overrides: withPartOverride(
+                        part.overrides,
+                        channel.id,
+                        null
+                      ),
+                    });
+                  }}
+                >
+                  {t("dropOwnText", where)}
+                </Button>
+              </div>
+            )}
+          </div>
+        );
+      })}
       <CharacterCounters fits={fits} />
       <div className="flex flex-col gap-2">
         <Label id={`${id}-delay`}>{t("delayLabel")}</Label>
